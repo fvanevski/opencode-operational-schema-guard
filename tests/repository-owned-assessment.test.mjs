@@ -1,13 +1,15 @@
 import assert from "node:assert/strict"
 import { createHash } from "node:crypto"
-import { chmod, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises"
+import { chmod, lstat, mkdir, mkdtemp, readFile, readdir, rename, rm, symlink, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { spawnSync } from "node:child_process"
 import test from "node:test"
 import {
+  ASSESSMENT_CONTROL_WORKTREE_ROOT,
   ASSESSMENT_NATIVE_RESULT_ROOT,
   LOCAL_ASSESSMENT_SCHEMA,
+  assessmentControlWorktreePath,
   parseRepoPrAssessmentSpec,
   runRepoPrAssessment,
 } from "../lib/repo-pr-assessment.mjs"
@@ -67,7 +69,7 @@ raise SystemExit(0)
 `
 
 const RUNNER_SOURCE = `#!/usr/bin/env node
-import { mkdirSync, renameSync, symlinkSync, writeFileSync } from "node:fs"
+import { existsSync, mkdirSync, renameSync, symlinkSync, writeFileSync } from "node:fs"
 import { dirname } from "node:path"
 import { spawn, spawnSync } from "node:child_process"
 const args = process.argv.slice(2)
@@ -77,7 +79,7 @@ const value = (flag) => {
 }
 if (args[0] === "plan") {
   if (args.includes("--surviving-plan-child")) {
-    const child = spawn(process.execPath, ["-e", "setInterval(() => {}, 1000)"], { stdio: "ignore" })
+    const child = spawn(process.execPath, ["-e", "setInterval(() => {}, 1000)"], { detached: true, stdio: "ignore" })
     child.unref()
   }
   process.exit(0)
@@ -144,7 +146,7 @@ if (args.includes("--symlink-evidence-dir")) {
   symlinkSync(replacement, evidenceDir)
 }
 if (args.includes("--surviving-run-child")) {
-  const child = spawn(process.execPath, ["-e", "setInterval(() => {}, 1000)"], { stdio: "ignore" })
+  const child = spawn(process.execPath, ["-e", "setInterval(() => {}, 1000)"], { detached: true, stdio: "ignore" })
   child.unref()
 }
 if (args.includes("--dirty-owner")) writeFileSync("owner-mutated.txt", "mutation\\n")
@@ -156,6 +158,16 @@ if (replaceRoot) {
   renameSync(replaceRoot, moved)
   mkdirSync(replacement)
   symlinkSync(replacement, replaceRoot)
+}
+const barrier = value("--barrier")
+if (barrier) {
+  writeFileSync(barrier + ".ready", "ready\\n")
+  const waitState = new Int32Array(new SharedArrayBuffer(4))
+  const deadline = Date.now() + 10000
+  while (!existsSync(barrier + ".release")) {
+    if (Date.now() >= deadline) process.exit(4)
+    Atomics.wait(waitState, 0, 0, 10)
+  }
 }
 const exits = { PASS: 0, FAIL: 1, BLOCKED: 2, STALE: 3, INFRA_ERROR: 4, ISOLATION_BREACH: 5 }
 process.exit(args.includes("--exit-mismatch") ? 1 : (exits[status] ?? 4))
@@ -198,8 +210,9 @@ async function fixture() {
 
   const runnerBlobSha = git(repo, "rev-parse", "HEAD:tools/repository-owned-runner.mjs")
   const pythonRunnerBlobSha = git(repo, "rev-parse", "HEAD:tools/repository-owned-runner.py")
+  const pythonHelperBlobSha = git(repo, "rev-parse", "HEAD:tools/repository_owned_helper.py")
   const controlBlobSha = git(repo, "rev-parse", "HEAD:control.txt")
-  return { root, repo, evidenceRoot, baseSha, headSha, runnerBlobSha, pythonRunnerBlobSha, controlBlobSha }
+  return { root, remote, repo, evidenceRoot, baseSha, headSha, runnerBlobSha, pythonRunnerBlobSha, pythonHelperBlobSha, controlBlobSha }
 }
 
 function makeSpec(fx, assessmentID, extraRun = []) {
@@ -250,8 +263,33 @@ function makePythonSpec(fx, assessmentID) {
       plan_argv: ["plan", "--sha", "{head_sha}", "--pr", "{pr_number}"],
       run_argv: ["run", "--sha", "{head_sha}", "--pr", "{pr_number}", "--assessment-id", "{assessment_id}"],
     },
-    integrity_files: [{ path: "control.txt", blob_sha: fx.controlBlobSha }],
+    integrity_files: [
+      { path: "control.txt", blob_sha: fx.controlBlobSha },
+      { path: "tools/repository_owned_helper.py", blob_sha: fx.pythonHelperBlobSha },
+    ],
   })
+}
+
+async function exists(path) {
+  try {
+    await lstat(path)
+    return true
+  } catch (error) {
+    if (error?.code === "ENOENT") return false
+    throw error
+  }
+}
+
+async function coordinateBarrier(barrier, action) {
+  const ready = `${barrier}.ready`
+  const release = `${barrier}.release`
+  const deadline = Date.now() + 10000
+  while (!(await exists(ready))) {
+    if (Date.now() >= deadline) throw new Error(`barrier was not reached: ${barrier}`)
+    await new Promise((resolvePromise) => setTimeout(resolvePromise, 5))
+  }
+  await action()
+  await writeFile(release, "release\n")
 }
 
 async function cleanupFixture(fx, assessmentIDs) {
@@ -261,6 +299,12 @@ async function cleanupFixture(fx, assessmentIDs) {
     await rm(join(ASSESSMENT_NATIVE_RESULT_ROOT, `${id}.replacement`), { recursive: true, force: true })
   }
   await rm(fx.root, { recursive: true, force: true })
+  const controlEntries = await readdir(ASSESSMENT_CONTROL_WORKTREE_ROOT).catch((error) => error?.code === "ENOENT" ? [] : Promise.reject(error))
+  for (const entry of controlEntries) {
+    if (assessmentIDs.some((id) => entry.endsWith(`-${id}`))) {
+      await rm(join(ASSESSMENT_CONTROL_WORKTREE_ROOT, entry), { recursive: true, force: true })
+    }
+  }
 }
 
 test("repository-owned descriptor execution preserves Python sibling imports", async (t) => {
@@ -297,6 +341,8 @@ test("repository-owned mode admits canonical PR refs without creating a gateway 
   assert.equal(result.final_observed_head_sha, fx.headSha)
   assert.equal(result.native_host_evidence_result, "PASS")
   assert.equal(result.cleanup_result, "PASS")
+  assert.equal(result.control_snapshot_cleanup, "PASS")
+  assert.equal(await exists(result.control_snapshot_worktree), false)
   assert.equal(git(fx.repo, "branch", "--list", "opencode-assess/*"), "")
   const nativeBytes = await readFile(result.native_evidence_path)
   const canonicalBytes = await readFile(result.runner_evidence_path)
@@ -466,14 +512,23 @@ test("repository-owned head authority supports an explicitly pinned reviewed boo
   assert.equal(result.owner_initial.head, fx.headSha)
 })
 
-test("repository-owned evidence-root replacement is an isolation breach", async (t) => {
+test("repository-owned evidence-root replacement by an external writer is an isolation breach with recoverable summary", async (t) => {
   const fx = await fixture()
   const id = `pr20-root-replace-${Math.random().toString(16).slice(2, 8)}`
   t.after(() => cleanupFixture(fx, [id]))
-  const result = await runRepoPrAssessment(makeSpec(fx, id, ["--replace-evidence-root", fx.evidenceRoot]), {
+  const barrier = join(fx.evidenceRoot, `barrier-${id}`)
+  const attack = coordinateBarrier(barrier, async () => {
+    const moved = `${fx.evidenceRoot}.moved`
+    const replacement = `${fx.evidenceRoot}.replacement`
+    await rename(fx.evidenceRoot, moved)
+    await mkdir(replacement)
+    await symlink(replacement, fx.evidenceRoot)
+  })
+  const result = await runRepoPrAssessment(makeSpec(fx, id, ["--barrier", barrier]), {
     repoRoot: fx.repo,
     evidenceRoot: fx.evidenceRoot,
   })
+  await attack
   assert.equal(result.host_evidence_result, "ISOLATION_BREACH")
   assert.match(result.error, /evidence root pathname/)
   assert.match(result.summary_path, /\.moved\/[^/]+\.summary\.json$/)
@@ -481,39 +536,92 @@ test("repository-owned evidence-root replacement is an isolation breach", async 
   assert.equal(summary.host_evidence_result, "ISOLATION_BREACH")
 })
 
+test("repository-owned external control mutation is detected even when bytes are restored", async (t) => {
+  const fx = await fixture()
+  const id = `pr20-control-race-${Math.random().toString(16).slice(2, 8)}`
+  t.after(() => cleanupFixture(fx, [id]))
+  const spec = makeSpec(fx, id, ["--barrier", join(fx.evidenceRoot, `barrier-${id}`)])
+  const barrier = join(fx.evidenceRoot, `barrier-${id}`)
+  const controlWorktree = assessmentControlWorktreePath(fx.repo, spec)
+  const attack = coordinateBarrier(barrier, async () => {
+    const controlPath = join(controlWorktree, "control.txt")
+    const original = await readFile(controlPath)
+    await writeFile(controlPath, "substituted-control\n")
+    await writeFile(controlPath, original)
+  })
+  const result = await runRepoPrAssessment(spec, { repoRoot: fx.repo, evidenceRoot: fx.evidenceRoot })
+  await attack
+  assert.equal(result.host_evidence_result, "ISOLATION_BREACH")
+  assert.match(result.error, /control snapshot changed during run/)
+})
+
 test("repository-owned final owner-proof failure is INFRA_ERROR", async (t) => {
   const fx = await fixture()
   const id = `pr20-owner-proof-${Math.random().toString(16).slice(2, 8)}`
   t.after(() => cleanupFixture(fx, [id]))
-  const result = await runRepoPrAssessment(makeSpec(fx, id, ["--break-owner-index"]), {
+  const barrier = join(fx.evidenceRoot, `barrier-${id}`)
+  const attack = coordinateBarrier(barrier, async () => {
+    await writeFile(join(fx.repo, ".git", "index"), "broken-index\n")
+  })
+  const result = await runRepoPrAssessment(makeSpec(fx, id, ["--barrier", barrier]), {
     repoRoot: fx.repo,
     evidenceRoot: fx.evidenceRoot,
   })
+  await attack
   assert.equal(result.host_evidence_result, "INFRA_ERROR")
   assert.match(result.error, /final owner workspace proof failed/)
 })
 
-test("repository-owned run-time owner mutation is an isolation breach even with native PASS evidence", async (t) => {
+test("repository-owned external owner mutation is an isolation breach even with native PASS evidence", async (t) => {
   const fx = await fixture()
   const id = `pr20-dirty-owner-${Math.random().toString(16).slice(2, 8)}`
   t.after(() => cleanupFixture(fx, [id]))
-  const result = await runRepoPrAssessment(makeSpec(fx, id, ["--dirty-owner"]), {
+  const barrier = join(fx.evidenceRoot, `barrier-${id}`)
+  const attack = coordinateBarrier(barrier, async () => {
+    await writeFile(join(fx.repo, "owner-mutated.txt"), "mutation\n")
+  })
+  const result = await runRepoPrAssessment(makeSpec(fx, id, ["--barrier", barrier]), {
     repoRoot: fx.repo,
     evidenceRoot: fx.evidenceRoot,
   })
+  await attack
   assert.equal(result.native_host_evidence_result, "PASS")
   assert.equal(result.host_evidence_result, "ISOLATION_BREACH")
   assert.match(result.error, /owner workspace HEAD\/branch\/status changed/)
 })
 
-test("repository-owned mode detects canonical PR-head movement at the final authority boundary", async (t) => {
+test("repository-owned owner-root replacement cannot substitute the final proof", async (t) => {
   const fx = await fixture()
-  const id = `pr20-moving-head-${Math.random().toString(16).slice(2, 8)}`
+  const id = `pr20-owner-root-${Math.random().toString(16).slice(2, 8)}`
   t.after(() => cleanupFixture(fx, [id]))
-  const result = await runRepoPrAssessment(makeSpec(fx, id, ["--move-pr-head"]), {
+  const barrier = join(fx.evidenceRoot, `barrier-${id}`)
+  const movedRepo = `${fx.repo}.moved`
+  const attack = coordinateBarrier(barrier, async () => {
+    await rename(fx.repo, movedRepo)
+    await mkdir(fx.repo)
+  })
+  const result = await runRepoPrAssessment(makeSpec(fx, id, ["--barrier", barrier]), {
     repoRoot: fx.repo,
     evidenceRoot: fx.evidenceRoot,
   })
+  await attack
+  assert.equal(result.host_evidence_result, "ISOLATION_BREACH")
+  assert.match(result.error, /owner repository root pathname/)
+})
+
+test("repository-owned mode detects external canonical PR-head movement at the final authority boundary", async (t) => {
+  const fx = await fixture()
+  const id = `pr20-moving-head-${Math.random().toString(16).slice(2, 8)}`
+  t.after(() => cleanupFixture(fx, [id]))
+  const barrier = join(fx.evidenceRoot, `barrier-${id}`)
+  const attack = coordinateBarrier(barrier, async () => {
+    git(fx.root, "--git-dir", fx.remote, "update-ref", "refs/pull/20/head", fx.baseSha)
+  })
+  const result = await runRepoPrAssessment(makeSpec(fx, id, ["--barrier", barrier]), {
+    repoRoot: fx.repo,
+    evidenceRoot: fx.evidenceRoot,
+  })
+  await attack
   assert.equal(result.native_host_evidence_result, "PASS")
   assert.equal(result.host_evidence_result, "STALE")
   assert.match(result.error, /remote authority mismatch/)
