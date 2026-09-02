@@ -1,5 +1,4 @@
 import assert from "node:assert/strict"
-import { createHash } from "node:crypto"
 import { chmod, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
@@ -16,10 +15,6 @@ function git(cwd, ...args) {
   const result = spawnSync("git", args, { cwd, encoding: "utf8", shell: false })
   assert.equal(result.status, 0, `git ${args.join(" ")}\n${result.stderr}`)
   return result.stdout.trim()
-}
-
-function sha256(bytes) {
-  return createHash("sha256").update(bytes).digest("hex")
 }
 
 const RUNNER_SOURCE = `#!/usr/bin/env node
@@ -41,7 +36,12 @@ const baseResult = spawnSync("git", ["rev-parse", "origin/main"], { encoding: "u
 if (baseResult.status !== 0) process.exit(4)
 const base = baseResult.stdout.trim()
 const path = "/tmp/opencode/verify/results/" + assessmentId + "/assessment.json"
+if (args.includes("--skip-evidence")) process.exit(0)
 mkdirSync(dirname(path), { recursive: true })
+if (args.includes("--malformed-evidence")) {
+  writeFileSync(path, "{not-json\\n")
+  process.exit(0)
+}
 const pass = status === "PASS"
 writeFileSync(path, JSON.stringify({
   schema_version: "local-agent-assessment-v1",
@@ -65,7 +65,7 @@ writeFileSync(path, JSON.stringify({
   },
 }) + "\\n")
 const exits = { PASS: 0, FAIL: 1, BLOCKED: 2, STALE: 3, INFRA_ERROR: 4, ISOLATION_BREACH: 5 }
-process.exit(exits[status] ?? 4)
+process.exit(args.includes("--exit-mismatch") ? 1 : (exits[status] ?? 4))
 `
 
 async function fixture() {
@@ -99,9 +99,9 @@ async function fixture() {
   git(root, "--git-dir", remote, "update-ref", "refs/pull/20/head", headSha)
   git(repo, "switch", "main")
 
-  const runnerSha256 = sha256(await readFile(runnerPath))
-  const controlSha256 = sha256(await readFile(join(repo, "control.txt")))
-  return { root, repo, evidenceRoot, baseSha, headSha, runnerSha256, controlSha256 }
+  const runnerBlobSha = git(repo, "rev-parse", "HEAD:tools/repository-owned-runner.mjs")
+  const controlBlobSha = git(repo, "rev-parse", "HEAD:control.txt")
+  return { root, repo, evidenceRoot, baseSha, headSha, runnerBlobSha, controlBlobSha }
 }
 
 function makeSpec(fx, assessmentID, extraRun = []) {
@@ -121,12 +121,12 @@ function makeSpec(fx, assessmentID, extraRun = []) {
       execution: "repository-owned",
       authority: "base",
       path: "tools/repository-owned-runner.mjs",
-      sha256: fx.runnerSha256,
+      blob_sha: fx.runnerBlobSha,
       result_contract: "local-agent-assessment-v1",
       plan_argv: ["plan", "--sha", "{head_sha}", "--pr", "{pr_number}"],
       run_argv: ["run", "--sha", "{head_sha}", "--pr", "{pr_number}", "--assessment-id", "{assessment_id}", ...extraRun],
     },
-    integrity_files: [{ path: "control.txt", sha256: fx.controlSha256 }],
+    integrity_files: [{ path: "control.txt", blob_sha: fx.controlBlobSha }],
   })
 }
 
@@ -158,6 +158,10 @@ test("repository-owned mode admits canonical PR refs without creating a gateway 
   assert.equal(result.final_observed_head_sha, fx.headSha)
   assert.equal(result.native_host_evidence_result, "PASS")
   assert.equal(result.cleanup_result, "PASS")
+  assert.equal(git(fx.repo, "branch", "--list", "opencode-assess/*"), "")
+  const nativeBytes = await readFile(result.native_evidence_path)
+  const canonicalBytes = await readFile(result.runner_evidence_path)
+  assert.deepEqual(canonicalBytes, nativeBytes)
   assert.deepEqual(result.owner_final, result.owner_initial)
   assert.deepEqual({
     head: git(fx.repo, "rev-parse", "HEAD"),
@@ -220,13 +224,48 @@ test("repository-owned execution enforces pinned runner and control-plane hashes
   const id = `pr20-bad-pin-${Math.random().toString(16).slice(2, 8)}`
   t.after(() => cleanupFixture(fx, [id]))
   const spec = makeSpec(fx, id)
-  spec.runner.sha256 = "0".repeat(64)
+  spec.runner.blobSha = "0".repeat(40)
   const result = await runRepoPrAssessment(spec, {
     repoRoot: fx.repo,
     evidenceRoot: fx.evidenceRoot,
   })
   assert.equal(result.host_evidence_result, "BLOCKED")
   assert.match(result.error, /pinned authority/)
+})
+
+test("repository-owned mode fails closed on missing, malformed, or exit-inconsistent evidence", async (t) => {
+  const fx = await fixture()
+  const cases = [
+    ["skip", ["--skip-evidence"], /did not create/],
+    ["malformed", ["--malformed-evidence"], /not strict JSON/],
+    ["exit-mismatch", ["--exit-mismatch"], /exit code contradicts/],
+  ]
+  const ids = cases.map(([name]) => `pr20-${name}-${Math.random().toString(16).slice(2, 8)}`)
+  t.after(() => cleanupFixture(fx, ids))
+  for (const [index, [, argv, pattern]] of cases.entries()) {
+    const result = await runRepoPrAssessment(makeSpec(fx, ids[index], argv), {
+      repoRoot: fx.repo,
+      evidenceRoot: fx.evidenceRoot,
+    })
+    assert.equal(result.host_evidence_result, "INFRA_ERROR")
+    assert.match(result.error, pattern)
+  }
+})
+
+test("repository-owned head authority supports an explicitly pinned reviewed bootstrap checkout", async (t) => {
+  const fx = await fixture()
+  const id = `pr20-head-authority-${Math.random().toString(16).slice(2, 8)}`
+  t.after(() => cleanupFixture(fx, [id]))
+  git(fx.repo, "switch", "issue/native")
+  const spec = makeSpec(fx, id)
+  spec.runner.authority = "head"
+  const result = await runRepoPrAssessment(spec, {
+    repoRoot: fx.repo,
+    evidenceRoot: fx.evidenceRoot,
+  })
+  assert.equal(result.host_evidence_result, "PASS", result.error)
+  assert.equal(result.runner_authority, "head")
+  assert.equal(result.owner_initial.head, fx.headSha)
 })
 
 test("repository-owned schema does not require a venv, base-sha argv, or evidence-path argv", async () => {
