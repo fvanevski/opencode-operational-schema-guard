@@ -19,7 +19,7 @@ function git(cwd, ...args) {
 }
 
 const RUNNER_SOURCE = `#!/usr/bin/env node
-import { mkdirSync, writeFileSync } from "node:fs"
+import { mkdirSync, symlinkSync, writeFileSync } from "node:fs"
 import { dirname } from "node:path"
 import { spawnSync } from "node:child_process"
 const args = process.argv.slice(2)
@@ -44,7 +44,7 @@ if (args.includes("--malformed-evidence")) {
   process.exit(0)
 }
 const pass = status === "PASS"
-writeFileSync(path, JSON.stringify({
+const evidence = JSON.stringify({
   schema_version: "local-agent-assessment-v1",
   host_evidence_result: status,
   gate_decision: args.includes("--bad-gate") ? "PASS" : "NOT_EVALUATED",
@@ -64,7 +64,16 @@ writeFileSync(path, JSON.stringify({
     materials_removed: !args.includes("--bad-cleanup"),
     failures: [],
   },
-}) + "\\n")
+}) + "\\n"
+if (args.includes("--symlink-evidence")) {
+  const target = path + ".target"
+  writeFileSync(target, evidence)
+  symlinkSync(target, path)
+} else if (args.includes("--oversized-evidence")) {
+  writeFileSync(path, evidence + " ".repeat(4 * 1024 * 1024))
+} else {
+  writeFileSync(path, evidence)
+}
 if (args.includes("--move-pr-head")) {
   const remoteResult = spawnSync("git", ["remote", "get-url", "origin"], { encoding: "utf8", shell: false })
   if (remoteResult.status !== 0) process.exit(4)
@@ -244,11 +253,13 @@ test("repository-owned execution enforces pinned runner and control-plane hashes
   assert.match(result.error, /pinned authority/)
 })
 
-test("repository-owned mode fails closed on missing, malformed, or exit-inconsistent evidence", async (t) => {
+test("repository-owned mode fails closed on missing, malformed, symlinked, oversized, or exit-inconsistent evidence", async (t) => {
   const fx = await fixture()
   const cases = [
     ["skip", ["--skip-evidence"], /did not create/],
     ["malformed", ["--malformed-evidence"], /not strict JSON/],
+    ["symlink", ["--symlink-evidence"], /no-follow file/],
+    ["oversized", ["--oversized-evidence"], /exceeds 4194304 bytes/],
     ["exit-mismatch", ["--exit-mismatch"], /exit code contradicts/],
   ]
   const ids = cases.map(([name]) => `pr20-${name}-${Math.random().toString(16).slice(2, 8)}`)
