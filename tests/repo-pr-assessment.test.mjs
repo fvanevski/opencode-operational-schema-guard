@@ -277,11 +277,11 @@ test("gateway-owned post-plan revalidation catches hidden pinned-input mutation"
   assert.equal(result.host_evidence_result, "ISOLATION_BREACH")
   assert.match(result.error, /integrity file \.python-version changed after admission/)
   assert.equal(result.runner.run, null)
+  assert.equal(result.cleanup_result, "PRESERVED_ISOLATION_BREACH")
   const worktree = assessmentWorktreePath(fx.repo, spec, fx.worktreeRoot)
-  if (await exists(worktree)) {
-    git(fx.repo, "worktree", "remove", "--force", worktree)
-    git(fx.repo, "branch", "-D", assessmentBranchName(fx.repo, spec))
-  }
+  assert.equal(await exists(worktree), true)
+  git(fx.repo, "worktree", "remove", "--force", worktree)
+  git(fx.repo, "branch", "-D", assessmentBranchName(fx.repo, spec))
 })
 
 test("gateway-owned evidence-root replacement is an isolation breach", async () => {
@@ -299,7 +299,7 @@ test("gateway-owned mode returns INFRA_ERROR when the outer summary cannot be wr
   spec.runner.runArgv.push("--block-summary-write")
   const result = await run(fx, spec)
   assert.equal(result.host_evidence_result, "INFRA_ERROR")
-  assert.match(result.error, /could not write summary/)
+  assert.match(result.error, /outer summary could not be materialized/)
   assert.equal(result.exit_code, 2)
 })
 
