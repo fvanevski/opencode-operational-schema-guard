@@ -64,6 +64,13 @@ writeFileSync(path, JSON.stringify({
     failures: [],
   },
 }) + "\\n")
+if (args.includes("--move-pr-head")) {
+  const remoteResult = spawnSync("git", ["remote", "get-url", "origin"], { encoding: "utf8", shell: false })
+  if (remoteResult.status !== 0) process.exit(4)
+  const moved = spawnSync("git", ["--git-dir", remoteResult.stdout.trim(), "update-ref", "refs/pull/" + prNumber + "/head", base], { encoding: "utf8", shell: false })
+  if (moved.status !== 0) process.exit(4)
+}
+if (args.includes("--dirty-owner")) writeFileSync("owner-mutated.txt", "mutation\\n")
 const exits = { PASS: 0, FAIL: 1, BLOCKED: 2, STALE: 3, INFRA_ERROR: 4, ISOLATION_BREACH: 5 }
 process.exit(args.includes("--exit-mismatch") ? 1 : (exits[status] ?? 4))
 `
@@ -266,6 +273,32 @@ test("repository-owned head authority supports an explicitly pinned reviewed boo
   assert.equal(result.host_evidence_result, "PASS", result.error)
   assert.equal(result.runner_authority, "head")
   assert.equal(result.owner_initial.head, fx.headSha)
+})
+
+test("repository-owned run-time owner mutation is an isolation breach even with native PASS evidence", async (t) => {
+  const fx = await fixture()
+  const id = `pr20-dirty-owner-${Math.random().toString(16).slice(2, 8)}`
+  t.after(() => cleanupFixture(fx, [id]))
+  const result = await runRepoPrAssessment(makeSpec(fx, id, ["--dirty-owner"]), {
+    repoRoot: fx.repo,
+    evidenceRoot: fx.evidenceRoot,
+  })
+  assert.equal(result.native_host_evidence_result, "PASS")
+  assert.equal(result.host_evidence_result, "ISOLATION_BREACH")
+  assert.match(result.error, /owner workspace HEAD\/branch\/status changed/)
+})
+
+test("repository-owned mode detects canonical PR-head movement at the final authority boundary", async (t) => {
+  const fx = await fixture()
+  const id = `pr20-moving-head-${Math.random().toString(16).slice(2, 8)}`
+  t.after(() => cleanupFixture(fx, [id]))
+  const result = await runRepoPrAssessment(makeSpec(fx, id, ["--move-pr-head"]), {
+    repoRoot: fx.repo,
+    evidenceRoot: fx.evidenceRoot,
+  })
+  assert.equal(result.native_host_evidence_result, "PASS")
+  assert.equal(result.host_evidence_result, "STALE")
+  assert.match(result.error, /remote authority mismatch/)
 })
 
 test("repository-owned schema does not require a venv, base-sha argv, or evidence-path argv", async () => {
