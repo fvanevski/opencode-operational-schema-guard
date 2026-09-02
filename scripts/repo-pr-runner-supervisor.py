@@ -144,14 +144,14 @@ def apply_landlock(write_roots: Iterable[str]) -> None:
         for root in roots:
             if os.path.isdir(root):
                 allowed = handled
-            elif os.path.isfile(root):
+            elif os.path.exists(root):
                 allowed = handled & (
                     LANDLOCK_ACCESS_FS_WRITE_FILE | LANDLOCK_ACCESS_FS_TRUNCATE
                 )
                 if not allowed:
-                    fail(f"Landlock writable file has no supported access rights: {root}")
+                    fail(f"Landlock writable object has no supported access rights: {root}")
             else:
-                fail(f"Landlock writable path is neither a directory nor regular file: {root}")
+                fail(f"Landlock writable path does not exist: {root}")
             path_fd = os.open(root, os.O_PATH | os.O_CLOEXEC)
             try:
                 rule = LandlockPathBeneathAttr(allowed, path_fd)
