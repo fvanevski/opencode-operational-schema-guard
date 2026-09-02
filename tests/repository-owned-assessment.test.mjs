@@ -85,6 +85,7 @@ const value = (flag) => {
   return index >= 0 ? args[index + 1] : undefined
 }
 if (args[0] === "plan") {
+  if (args.includes("--simulate-supervisor-reap-error")) process.exit(243)
   if (args.includes("--surviving-plan-child")) {
     const child = spawn(process.execPath, ["-e", "setInterval(() => {}, 1000)"], { detached: true, stdio: "ignore" })
     child.unref()
@@ -368,6 +369,27 @@ async function cleanupFixture(fx, assessmentIDs) {
     }
   }
 }
+
+test("repository-owned supervisor deterministically reaps an ordinary long-lived descendant", async () => {
+  const root = await mkdtemp(join(tmpdir(), "repo-owned-supervisor-reap-"))
+  const runnerPath = join(root, "runner.mjs")
+  await writeFile(runnerPath, `#!/usr/bin/env node\nimport { spawn } from "node:child_process"\nconst child = spawn(process.execPath, ["-e", "setInterval(() => {}, 1000)"], { detached: true, stdio: "ignore" })\nchild.unref()\n`)
+  await chmod(runnerPath, 0o755)
+  const runnerHandle = await open(runnerPath, constants.O_RDONLY)
+  try {
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      const result = spawnSync("/usr/bin/python3", [RUNNER_SUPERVISOR, "--cwd", root, "--", "probe"], {
+        encoding: "utf8",
+        shell: false,
+        stdio: ["ignore", "pipe", "pipe", runnerHandle.fd],
+      })
+      assert.equal(result.status, 240, `attempt=${attempt + 1}\n${result.stderr}`)
+    }
+  } finally {
+    await runnerHandle.close()
+    await rm(root, { recursive: true, force: true })
+  }
+})
 
 test("repository-owned supervisor stays bound to admitted control descriptors across pathname substitution", async () => {
   const root = await mkdtemp(join(tmpdir(), "repo-owned-supervisor-anchor-"))
@@ -682,6 +704,25 @@ test("repository-owned mode requires the reservation identity through evidence a
   assert.equal(result.runner_evidence_sha256, null)
 })
 
+test("repository-owned uncertain supervisor reaping preserves reservation and control forensic state", async (t) => {
+  const fx = await fixture()
+  const id = `pr20-reap-uncertain-${Math.random().toString(16).slice(2, 8)}`
+  t.after(() => cleanupFixture(fx, [id]))
+  const spec = makeSpec(fx, id)
+  spec.runner.planArgv.push("--simulate-supervisor-reap-error")
+  const result = await runRepoPrAssessment(spec, {
+    repoRoot: fx.repo,
+    evidenceRoot: fx.evidenceRoot,
+  })
+  assert.equal(result.host_evidence_result, "INFRA_ERROR")
+  assert.match(result.error, /could not prove descendant reaping during plan/)
+  assert.equal(result.native_result_reservation_cleanup, "PRESERVED_CONTAINMENT_UNCERTAIN")
+  assert.equal(result.kernel_assessment_reservation_cleanup, "PRESERVED_CONTAINMENT_UNCERTAIN")
+  assert.equal(result.control_snapshot_cleanup, "PRESERVED_CONTAINMENT_UNCERTAIN")
+  assert.equal(await exists(join(ASSESSMENT_RESERVATION_ROOT, `.opencode-reservation-${id}`)), true)
+  assert.equal(await exists(result.control_snapshot_worktree), true)
+})
+
 test("repository-owned mode never follows a substituted assessment-id directory", async (t) => {
   const fx = await fixture()
   const id = `pr20-dir-swap-${Math.random().toString(16).slice(2, 8)}`
@@ -778,6 +819,30 @@ test("repository-owned external control mutation is detected even when bytes are
   await attack
   assert.equal(result.host_evidence_result, "ISOLATION_BREACH")
   assert.match(result.error, /control snapshot changed during run/)
+})
+
+test("repository-owned cleanup never deletes a substituted control-snapshot pathname", async (t) => {
+  const fx = await fixture()
+  const id = `pr20-control-cleanup-swap-${Math.random().toString(16).slice(2, 8)}`
+  const barrier = join(fx.evidenceRoot, `barrier-${id}`)
+  const spec = makeSpec(fx, id, ["--barrier", barrier])
+  const controlWorktree = assessmentControlWorktreePath(fx.repo, spec)
+  const movedControl = `${controlWorktree}.moved`
+  t.after(async () => {
+    await cleanupFixture(fx, [id])
+    await rm(movedControl, { recursive: true, force: true })
+  })
+  const attack = coordinateBarrier(barrier, async () => {
+    await rename(controlWorktree, movedControl)
+    await mkdir(controlWorktree)
+    await writeFile(join(controlWorktree, "replacement-sentinel"), "do-not-delete\n")
+  })
+  const result = await runRepoPrAssessment(spec, { repoRoot: fx.repo, evidenceRoot: fx.evidenceRoot })
+  await attack
+  assert.equal(result.host_evidence_result, "ISOLATION_BREACH")
+  assert.equal(await readFile(join(controlWorktree, "replacement-sentinel"), "utf8"), "do-not-delete\n")
+  assert.equal(await exists(movedControl), true)
+  assert.notEqual(result.control_snapshot_cleanup, "PASS")
 })
 
 test("repository-owned final owner-proof failure is INFRA_ERROR", async (t) => {
