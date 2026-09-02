@@ -36,7 +36,7 @@ async function exists(path) {
 const RUNNER_SOURCE = `#!/usr/bin/env node
 import { appendFileSync, mkdirSync, renameSync, symlinkSync, writeFileSync } from "node:fs"
 import { dirname } from "node:path"
-import { spawnSync } from "node:child_process"
+import { spawn, spawnSync } from "node:child_process"
 const args = process.argv.slice(2)
 if (process.env.ASSESSMENT_TEST_LOG) appendFileSync(process.env.ASSESSMENT_TEST_LOG, args[0] + "\\n")
 if (args[0] === "plan") {
@@ -45,6 +45,10 @@ if (args[0] === "plan") {
   if (args.includes("--hide-pin-mutation")) {
     writeFileSync(".python-version", "mutated\\n")
     spawnSync("git", ["update-index", "--assume-unchanged", ".python-version"], { shell: false })
+  }
+  if (args.includes("--surviving-plan-child")) {
+    const child = spawn(process.execPath, ["-e", "setInterval(() => {}, 1000)"], { stdio: "ignore" })
+    child.unref()
   }
   process.exit(0)
 }
@@ -284,6 +288,21 @@ test("gateway-owned post-plan revalidation catches hidden pinned-input mutation"
   git(fx.repo, "branch", "-D", assessmentBranchName(fx.repo, spec))
 })
 
+test("gateway-owned plan descendants cannot survive into the run boundary", async () => {
+  const fx = await fixture()
+  const spec = structuredClone(fx.spec)
+  spec.runner.planArgv.push("--surviving-plan-child")
+  const result = await run(fx, spec)
+  assert.equal(result.host_evidence_result, "ISOLATION_BREACH")
+  assert.match(result.error, /plan left surviving descendants/)
+  assert.equal(result.runner.run, null)
+  assert.equal(result.cleanup_result, "PRESERVED_ISOLATION_BREACH")
+  const worktree = assessmentWorktreePath(fx.repo, spec, fx.worktreeRoot)
+  assert.equal(await exists(worktree), true)
+  git(fx.repo, "worktree", "remove", "--force", worktree)
+  git(fx.repo, "branch", "-D", assessmentBranchName(fx.repo, spec))
+})
+
 test("gateway-owned evidence-root replacement is an isolation breach", async () => {
   const fx = await fixture()
   const spec = structuredClone(fx.spec)
@@ -291,6 +310,9 @@ test("gateway-owned evidence-root replacement is an isolation breach", async () 
   const result = await run(fx, spec)
   assert.equal(result.host_evidence_result, "ISOLATION_BREACH")
   assert.match(result.error, /evidence root pathname/)
+  assert.match(result.summary_path, /\.moved\/[^/]+\.summary\.json$/)
+  const summary = JSON.parse(await readFile(result.summary_path, "utf8"))
+  assert.equal(summary.host_evidence_result, "ISOLATION_BREACH")
 })
 
 test("gateway-owned mode returns INFRA_ERROR when the outer summary cannot be written", async () => {

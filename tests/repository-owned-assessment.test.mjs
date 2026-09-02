@@ -21,13 +21,19 @@ function git(cwd, ...args) {
 const RUNNER_SOURCE = `#!/usr/bin/env node
 import { mkdirSync, renameSync, symlinkSync, writeFileSync } from "node:fs"
 import { dirname } from "node:path"
-import { spawnSync } from "node:child_process"
+import { spawn, spawnSync } from "node:child_process"
 const args = process.argv.slice(2)
 const value = (flag) => {
   const index = args.indexOf(flag)
   return index >= 0 ? args[index + 1] : undefined
 }
-if (args[0] === "plan") process.exit(0)
+if (args[0] === "plan") {
+  if (args.includes("--surviving-plan-child")) {
+    const child = spawn(process.execPath, ["-e", "setInterval(() => {}, 1000)"], { stdio: "ignore" })
+    child.unref()
+  }
+  process.exit(0)
+}
 if (args[0] !== "run") process.exit(4)
 const assessmentId = value("--assessment-id")
 const head = value("--sha")
@@ -79,6 +85,15 @@ if (args.includes("--move-pr-head")) {
   if (remoteResult.status !== 0) process.exit(4)
   const moved = spawnSync("git", ["--git-dir", remoteResult.stdout.trim(), "update-ref", "refs/pull/" + prNumber + "/head", base], { encoding: "utf8", shell: false })
   if (moved.status !== 0) process.exit(4)
+}
+if (args.includes("--symlink-evidence-dir")) {
+  const evidenceDir = dirname(path)
+  const moved = evidenceDir + ".moved"
+  const replacement = evidenceDir + ".replacement"
+  renameSync(evidenceDir, moved)
+  mkdirSync(replacement)
+  writeFileSync(replacement + "/assessment.json", evidence)
+  symlinkSync(replacement, evidenceDir)
 }
 if (args.includes("--dirty-owner")) writeFileSync("owner-mutated.txt", "mutation\\n")
 if (args.includes("--break-owner-index")) writeFileSync(".git/index", "broken-index\\n")
@@ -159,6 +174,8 @@ function makeSpec(fx, assessmentID, extraRun = []) {
 async function cleanupFixture(fx, assessmentIDs) {
   for (const id of assessmentIDs) {
     await rm(join(ASSESSMENT_NATIVE_RESULT_ROOT, id), { recursive: true, force: true })
+    await rm(join(ASSESSMENT_NATIVE_RESULT_ROOT, `${id}.moved`), { recursive: true, force: true })
+    await rm(join(ASSESSMENT_NATIVE_RESULT_ROOT, `${id}.replacement`), { recursive: true, force: true })
   }
   await rm(fx.root, { recursive: true, force: true })
 }
@@ -283,6 +300,33 @@ test("repository-owned mode fails closed on missing, malformed, symlinked, overs
   }
 })
 
+test("repository-owned mode never follows a substituted assessment-id directory", async (t) => {
+  const fx = await fixture()
+  const id = `pr20-dir-swap-${Math.random().toString(16).slice(2, 8)}`
+  t.after(() => cleanupFixture(fx, [id]))
+  const result = await runRepoPrAssessment(makeSpec(fx, id, ["--symlink-evidence-dir"]), {
+    repoRoot: fx.repo,
+    evidenceRoot: fx.evidenceRoot,
+  })
+  assert.equal(result.host_evidence_result, "INFRA_ERROR")
+  assert.match(result.error, /parent cannot be opened as a no-follow directory/)
+})
+
+test("repository-owned plan descendants cannot survive into the run boundary", async (t) => {
+  const fx = await fixture()
+  const id = `pr20-plan-child-${Math.random().toString(16).slice(2, 8)}`
+  t.after(() => cleanupFixture(fx, [id]))
+  const spec = makeSpec(fx, id)
+  spec.runner.planArgv.push("--surviving-plan-child")
+  const result = await runRepoPrAssessment(spec, {
+    repoRoot: fx.repo,
+    evidenceRoot: fx.evidenceRoot,
+  })
+  assert.equal(result.host_evidence_result, "ISOLATION_BREACH")
+  assert.match(result.error, /plan left surviving descendants/)
+  assert.equal(result.runner.run, null)
+})
+
 test("repository-owned head authority supports an explicitly pinned reviewed bootstrap checkout", async (t) => {
   const fx = await fixture()
   const id = `pr20-head-authority-${Math.random().toString(16).slice(2, 8)}`
@@ -309,6 +353,9 @@ test("repository-owned evidence-root replacement is an isolation breach", async 
   })
   assert.equal(result.host_evidence_result, "ISOLATION_BREACH")
   assert.match(result.error, /evidence root pathname/)
+  assert.match(result.summary_path, /\.moved\/[^/]+\.summary\.json$/)
+  const summary = JSON.parse(await readFile(result.summary_path, "utf8"))
+  assert.equal(summary.host_evidence_result, "ISOLATION_BREACH")
 })
 
 test("repository-owned final owner-proof failure is INFRA_ERROR", async (t) => {
