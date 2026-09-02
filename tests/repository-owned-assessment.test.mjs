@@ -69,7 +69,7 @@ raise SystemExit(0)
 `
 
 const RUNNER_SOURCE = `#!/usr/bin/env node
-import { existsSync, mkdirSync, renameSync, symlinkSync, writeFileSync } from "node:fs"
+import { existsSync, mkdirSync, renameSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
 import { dirname } from "node:path"
 import { spawn, spawnSync } from "node:child_process"
 const args = process.argv.slice(2)
@@ -189,6 +189,9 @@ if (barrier) {
     if (Date.now() >= deadline) process.exit(4)
     Atomics.wait(waitState, 0, 0, 10)
   }
+}
+if (args.includes("--delete-reservation")) {
+  rmSync("/tmp/opencode/verify/results/.opencode-reservation-" + assessmentId)
 }
 const exits = { PASS: 0, FAIL: 1, BLOCKED: 2, STALE: 3, INFRA_ERROR: 4, ISOLATION_BREACH: 5 }
 process.exit(args.includes("--exit-mismatch") ? 1 : (exits[status] ?? 4))
@@ -318,6 +321,7 @@ async function cleanupFixture(fx, assessmentIDs) {
     await rm(join(ASSESSMENT_NATIVE_RESULT_ROOT, id), { recursive: true, force: true })
     await rm(join(ASSESSMENT_NATIVE_RESULT_ROOT, `${id}.moved`), { recursive: true, force: true })
     await rm(join(ASSESSMENT_NATIVE_RESULT_ROOT, `${id}.replacement`), { recursive: true, force: true })
+    await rm(join(ASSESSMENT_NATIVE_RESULT_ROOT, `.opencode-reservation-${id}`), { force: true })
   }
   await rm(fx.root, { recursive: true, force: true })
   const controlEntries = await readdir(ASSESSMENT_CONTROL_WORKTREE_ROOT).catch((error) => error?.code === "ENOENT" ? [] : Promise.reject(error))
@@ -492,6 +496,34 @@ test("repository-owned mode blocks a pre-existing native result directory before
   assert.match(result.error, /native runner result directory already exists/)
   assert.equal(result.runner.plan, null)
   assert.equal(result.runner.run, null)
+})
+
+test("repository-owned mode atomically refuses an already reserved assessment identity", async (t) => {
+  const fx = await fixture()
+  const id = `pr20-native-reserved-${Math.random().toString(16).slice(2, 8)}`
+  t.after(() => cleanupFixture(fx, [id]))
+  await writeFile(join(ASSESSMENT_NATIVE_RESULT_ROOT, `.opencode-reservation-${id}`), "competing-assessment\n")
+  const result = await runRepoPrAssessment(makeSpec(fx, id), {
+    repoRoot: fx.repo,
+    evidenceRoot: fx.evidenceRoot,
+  })
+  assert.equal(result.host_evidence_result, "BLOCKED")
+  assert.match(result.error, /native result reservation already exists/)
+  assert.equal(result.runner.plan, null)
+  assert.equal(result.runner.run, null)
+})
+
+test("repository-owned mode requires the reservation identity through evidence admission", async (t) => {
+  const fx = await fixture()
+  const id = `pr20-native-reservation-delete-${Math.random().toString(16).slice(2, 8)}`
+  t.after(() => cleanupFixture(fx, [id]))
+  const result = await runRepoPrAssessment(makeSpec(fx, id, ["--delete-reservation"]), {
+    repoRoot: fx.repo,
+    evidenceRoot: fx.evidenceRoot,
+  })
+  assert.equal(result.host_evidence_result, "ISOLATION_BREACH")
+  assert.match(result.error, /native result reservation became unavailable/)
+  assert.equal(result.runner_evidence_sha256, null)
 })
 
 test("repository-owned mode never follows a substituted assessment-id directory", async (t) => {
