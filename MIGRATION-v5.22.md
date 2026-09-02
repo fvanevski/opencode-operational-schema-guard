@@ -30,7 +30,7 @@ Canonical `refs/pull/<PR>/head` is now accepted as `repository.head_ref`; arbitr
 
 ## Evidence and freshness
 
-For repository-owned mode the public gateway still owns the outer authority boundary. Before execution it fresh-fetches and proves exact base and head authority, proves the clean owner checkout is at the selected authority SHA, and proves every pinned runner/control file against both its exact Git blob and current working bytes. Optional SHA-256 pins may add a second content check.
+For repository-owned mode the public gateway still owns the outer authority boundary. Before execution it fresh-fetches and proves exact base and head authority, proves the clean owner checkout is at the selected authority SHA, opens immutable directory anchors for the native-result and canonical-evidence roots, and proves every pinned runner/control file against both its exact Git blob and current working bytes. Optional SHA-256 pins may add a second content check. After an optional plan and again immediately before run, it revalidates the admitted directory identities and runner/control inputs; a plan cannot silently substitute later execution bytes.
 
 The native runner writes:
 
@@ -38,7 +38,7 @@ The native runner writes:
 /tmp/opencode/verify/results/<assessment-id>/assessment.json
 ```
 
-The gateway accepts at most the bounded `local-agent-assessment-v1` contract. It opens the native evidence with no-follow semantics, proves the opened regular file remains inside the bounded native-result root, and reads one byte snapshot whose actual size is also checked against the evidence limit. The SHA-256/size metadata, strict JSON validation, and canonical evidence copy all derive from that same immutable in-process buffer so a post-run path replacement cannot make the recorded hash describe different accepted bytes or bypass the symlink/size boundary. It verifies matching assessment/PR/requested-head identity and `GATE_DECISION=NOT_EVALUATED`, requires the native exit code to agree with `PASS|FAIL|BLOCKED|STALE|INFRA_ERROR|ISOLATION_BREACH`, and applies stricter exact tested/head/control/cleanup checks before accepting PASS. It then copies the validated snapshot without reinterpretation to:
+The gateway accepts at most the bounded `local-agent-assessment-v1` contract. It reads the native evidence through the pre-run anchored native-result directory with no-follow semantics and checks both file metadata and actual snapshot length against the evidence bound. The SHA-256/size metadata, strict JSON validation, and canonical evidence copy all derive from that same immutable in-process buffer. Canonical evidence and the outer summary are written through the pre-run anchored evidence directory, so a runner cannot redirect accepted output by renaming a root and substituting a symlink. Root pathname identity is revalidated after execution and any replacement is an isolation breach. It verifies matching assessment/PR/requested-head identity and `GATE_DECISION=NOT_EVALUATED`, requires the native exit code to agree with `PASS|FAIL|BLOCKED|STALE|INFRA_ERROR|ISOLATION_BREACH`, and applies stricter exact tested/head/control/cleanup checks before accepting PASS. It then copies the validated snapshot without reinterpretation to:
 
 ```text
 /tmp/opencode/verify/evidence/<assessment-id>.runner.json
@@ -50,7 +50,7 @@ and writes the normal gateway summary at:
 /tmp/opencode/verify/evidence/<assessment-id>.summary.json
 ```
 
-Both gateway-owned and repository-owned modes now re-fetch and revalidate remote base/head authority at the final boundary. Gateway-owned integrity entries remain backward compatible with path-only and optional SHA-256 forms; when a `blob_sha` is supplied, v5.22.0 enforces it against the exact assessed-head Git blob and current worktree bytes rather than silently accepting an unchecked pin. The outer summary is mandatory evidence: failure to materialize it is `INFRA_ERROR` and can never leave the returned outer disposition as PASS.
+Both gateway-owned and repository-owned modes now re-fetch and revalidate remote base/head authority at the final boundary and fail closed if the final owner-workspace proof itself cannot be obtained. Gateway-owned integrity entries remain backward compatible with path-only and optional SHA-256 forms; when a `blob_sha` is supplied, v5.22.0 enforces it against the exact assessed-head Git blob and current worktree bytes rather than silently accepting an unchecked pin. After an optional plan, gateway-owned runner/integrity bytes are revalidated immediately before run. The outer summary is mandatory evidence: failure to materialize it is `INFRA_ERROR` and can never leave the returned outer disposition as PASS.
 
 ## Upgrade procedure
 
