@@ -184,12 +184,19 @@ def _inotify_add_watch(fd: int, path: str, mask: int) -> None:
 
 
 def configure_inotify(watch_root: str | None, watch_paths: Iterable[str]) -> int | None:
-    paths = tuple(dict.fromkeys(os.path.realpath(path) for path in watch_paths))
-    if watch_root is None and not paths:
+    raw_paths = tuple(dict.fromkeys(watch_paths))
+    if watch_root is None and not raw_paths:
         return None
     if watch_root is None:
         fail("control watches require --watch-root")
-    root = os.path.realpath(watch_root)
+    root_source = watch_root
+    root = os.path.realpath(root_source)
+    paths = tuple(
+        dict.fromkeys(
+            os.path.realpath(path if os.path.isabs(path) else os.path.join(root_source, path))
+            for path in raw_paths
+        )
+    )
     if not os.path.isdir(root):
         fail(f"watch root is not a directory: {root}")
     fd = int(libc.inotify_init1(os.O_NONBLOCK | os.O_CLOEXEC))
@@ -308,7 +315,7 @@ def contain_descendants() -> bool:
     fail("runner descendants could not be fully reaped")
 
 
-def execute_runner(argv: list[str], cwd: str) -> int:
+def execute_runner(argv: list[str], cwd: str | None, cwd_fd: int | None) -> int:
     if not argv:
         fail("runner argv is empty")
     try:
@@ -318,7 +325,12 @@ def execute_runner(argv: list[str], cwd: str) -> int:
     pid = os.fork()
     if pid == 0:
         try:
-            os.chdir(cwd)
+            if cwd_fd is not None:
+                os.fchdir(cwd_fd)
+            elif cwd is not None:
+                os.chdir(cwd)
+            else:
+                raise RuntimeError("runner cwd authority is unavailable")
             os.execve("/proc/self/fd/3", ["/proc/self/fd/3", *argv], dict(os.environ))
         except BaseException as exc:  # noqa: BLE001 - child can only report then exit
             print(f"repo-pr-runner-supervisor: runner exec failed: {type(exc).__name__}: {exc}", file=sys.stderr)
@@ -342,7 +354,9 @@ def execute_runner(argv: list[str], cwd: str) -> int:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--cwd", required=True)
+    cwd_group = parser.add_mutually_exclusive_group(required=True)
+    cwd_group.add_argument("--cwd")
+    cwd_group.add_argument("--cwd-fd", type=int)
     parser.add_argument("--write-root", action="append", default=[])
     parser.add_argument("--watch-root")
     parser.add_argument("--watch", action="append", default=[])
@@ -355,13 +369,20 @@ def main() -> int:
     runner_argv = list(args.runner_argv)
     if runner_argv and runner_argv[0] == "--":
         runner_argv = runner_argv[1:]
-    cwd = os.path.realpath(args.cwd)
-    if not os.path.isdir(cwd):
+    cwd = os.path.realpath(args.cwd) if args.cwd is not None else None
+    if cwd is not None and not os.path.isdir(cwd):
         fail(f"runner cwd is not a directory: {cwd}")
+    if args.cwd_fd is not None:
+        try:
+            os.fstat(args.cwd_fd)
+        except OSError as exc:
+            fail(f"runner cwd descriptor is unavailable ({exc.errno}: {exc.strerror})")
+        if not os.path.isdir(f"/proc/self/fd/{args.cwd_fd}"):
+            fail("runner cwd descriptor is not a directory")
     watch_fd = configure_inotify(args.watch_root, args.watch)
     try:
         apply_landlock(args.write_root)
-        result = execute_runner(runner_argv, cwd)
+        result = execute_runner(runner_argv, cwd, args.cwd_fd)
         if result == SUPERVISOR_DESCENDANTS:
             return result
         if inotify_changed(watch_fd):
