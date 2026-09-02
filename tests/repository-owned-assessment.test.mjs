@@ -8,6 +8,7 @@ import test from "node:test"
 import {
   ASSESSMENT_CONTROL_WORKTREE_ROOT,
   ASSESSMENT_NATIVE_RESULT_ROOT,
+  ASSESSMENT_RESERVATION_ROOT,
   LOCAL_ASSESSMENT_SCHEMA,
   assessmentControlWorktreePath,
   parseRepoPrAssessmentSpec,
@@ -118,6 +119,16 @@ if (args.includes("--native-git-worktree")) {
   if (removed.status !== 0) process.exit(4)
   nativeGitWorktreeProbe = true
 }
+let reservationDeleteBlocked = null
+if (args.includes("--probe-reservation-delete")) {
+  try {
+    rmSync("/tmp/opencode/assessment-reservations/.opencode-reservation-" + assessmentId)
+  } catch (error) {
+    if (error?.code !== "EACCES" && error?.code !== "EPERM") throw error
+    reservationDeleteBlocked = true
+  }
+  if (reservationDeleteBlocked !== true) process.exit(4)
+}
 let ownerGitWriteBlocked = null
 const ownerGitWriteProbe = value("--probe-owner-git-write")
 if (ownerGitWriteProbe) {
@@ -152,6 +163,7 @@ const evidence = JSON.stringify({
   },
   control_write_blocked: controlWriteBlocked,
   native_git_worktree_probe: nativeGitWorktreeProbe,
+  reservation_delete_blocked: reservationDeleteBlocked,
   owner_git_write_blocked: ownerGitWriteBlocked,
 }) + "\\n"
 if (args.includes("--symlink-evidence")) {
@@ -201,9 +213,6 @@ if (barrier) {
     if (Date.now() >= deadline) process.exit(4)
     Atomics.wait(waitState, 0, 0, 10)
   }
-}
-if (args.includes("--delete-reservation")) {
-  rmSync("/tmp/opencode/verify/results/.opencode-reservation-" + assessmentId)
 }
 const exits = { PASS: 0, FAIL: 1, BLOCKED: 2, STALE: 3, INFRA_ERROR: 4, ISOLATION_BREACH: 5 }
 process.exit(args.includes("--exit-mismatch") ? 1 : (exits[status] ?? 4))
@@ -333,7 +342,7 @@ async function cleanupFixture(fx, assessmentIDs) {
     await rm(join(ASSESSMENT_NATIVE_RESULT_ROOT, id), { recursive: true, force: true })
     await rm(join(ASSESSMENT_NATIVE_RESULT_ROOT, `${id}.moved`), { recursive: true, force: true })
     await rm(join(ASSESSMENT_NATIVE_RESULT_ROOT, `${id}.replacement`), { recursive: true, force: true })
-    await rm(join(ASSESSMENT_NATIVE_RESULT_ROOT, `.opencode-reservation-${id}`), { force: true })
+    await rm(join(ASSESSMENT_RESERVATION_ROOT, `.opencode-reservation-${id}`), { force: true })
   }
   await rm(fx.root, { recursive: true, force: true })
   const controlEntries = await readdir(ASSESSMENT_CONTROL_WORKTREE_ROOT).catch((error) => error?.code === "ENOENT" ? [] : Promise.reject(error))
@@ -523,7 +532,8 @@ test("repository-owned mode atomically refuses an already reserved assessment id
   const fx = await fixture()
   const id = `pr20-native-reserved-${Math.random().toString(16).slice(2, 8)}`
   t.after(() => cleanupFixture(fx, [id]))
-  await writeFile(join(ASSESSMENT_NATIVE_RESULT_ROOT, `.opencode-reservation-${id}`), "competing-assessment\n")
+  await mkdir(ASSESSMENT_RESERVATION_ROOT, { recursive: true })
+  await writeFile(join(ASSESSMENT_RESERVATION_ROOT, `.opencode-reservation-${id}`), "competing-assessment\n")
   const result = await runRepoPrAssessment(makeSpec(fx, id), {
     repoRoot: fx.repo,
     evidenceRoot: fx.evidenceRoot,
@@ -534,14 +544,32 @@ test("repository-owned mode atomically refuses an already reserved assessment id
   assert.equal(result.runner.run, null)
 })
 
+test("repository-owned runner cannot delete the gateway-only reservation token", async (t) => {
+  const fx = await fixture()
+  const id = `pr20-native-reservation-probe-${Math.random().toString(16).slice(2, 8)}`
+  t.after(() => cleanupFixture(fx, [id]))
+  const result = await runRepoPrAssessment(makeSpec(fx, id, ["--probe-reservation-delete"]), {
+    repoRoot: fx.repo,
+    evidenceRoot: fx.evidenceRoot,
+  })
+  assert.equal(result.host_evidence_result, "PASS", result.error)
+  const evidence = JSON.parse(await readFile(result.runner_evidence_path, "utf8"))
+  assert.equal(evidence.reservation_delete_blocked, true)
+})
+
 test("repository-owned mode requires the reservation identity through evidence admission", async (t) => {
   const fx = await fixture()
   const id = `pr20-native-reservation-delete-${Math.random().toString(16).slice(2, 8)}`
   t.after(() => cleanupFixture(fx, [id]))
-  const result = await runRepoPrAssessment(makeSpec(fx, id, ["--delete-reservation"]), {
+  const barrier = join(fx.evidenceRoot, `barrier-${id}`)
+  const attack = coordinateBarrier(barrier, async () => {
+    await rm(join(ASSESSMENT_RESERVATION_ROOT, `.opencode-reservation-${id}`))
+  })
+  const result = await runRepoPrAssessment(makeSpec(fx, id, ["--barrier", barrier]), {
     repoRoot: fx.repo,
     evidenceRoot: fx.evidenceRoot,
   })
+  await attack
   assert.equal(result.host_evidence_result, "ISOLATION_BREACH")
   assert.match(result.error, /native result reservation became unavailable/)
   assert.equal(result.runner_evidence_sha256, null)
