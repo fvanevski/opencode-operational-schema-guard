@@ -65,6 +65,14 @@ test("repo-pr assessment schema is project-neutral and authority-bound", () => {
   const sideEffectPlan = spec()
   sideEffectPlan.runner.plan_argv.push("{evidence_path}")
   assert.throws(() => parseRepoPrAssessmentSpec(sideEffectPlan), /must not bind \{evidence_path\}/)
+
+  const fullBaseRef = spec()
+  fullBaseRef.repository.base_ref = "refs/heads/main"
+  assert.throws(() => parseRepoPrAssessmentSpec(fullBaseRef), /base_ref must be a branch name/)
+
+  const wrongCanonicalPrRef = spec()
+  wrongCanonicalPrRef.repository.head_ref = "refs/pull/21/head"
+  assert.throws(() => parseRepoPrAssessmentSpec(wrongCanonicalPrRef), /canonical refs\/pull\/20\/head/)
 })
 
 
