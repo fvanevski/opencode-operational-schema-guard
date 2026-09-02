@@ -666,17 +666,19 @@ test("repository-owned kernel reservation prevents duplicate identity across res
   t.after(() => cleanupFixture(fx, [id]))
   const barrier = join(fx.evidenceRoot, `pre-evidence-${id}`)
   const movedRoot = `${ASSESSMENT_RESERVATION_ROOT}.${id}.moved`
+  const secondEvidenceRoot = join(fx.root, "second-evidence")
   let secondResult
   const firstPromise = runRepoPrAssessment(makeSpec(fx, id, ["--pre-evidence-barrier", barrier]), {
     repoRoot: fx.repo,
     evidenceRoot: fx.evidenceRoot,
   })
   const attack = coordinateBarrier(barrier, async () => {
+    assert.equal(await exists(join(fx.evidenceRoot, `${id}.summary.json`)), true)
     await rename(ASSESSMENT_RESERVATION_ROOT, movedRoot)
     await mkdir(ASSESSMENT_RESERVATION_ROOT)
     secondResult = await runRepoPrAssessment(makeSpec(fx, id), {
       repoRoot: fx.repo,
-      evidenceRoot: fx.evidenceRoot,
+      evidenceRoot: secondEvidenceRoot,
     })
   })
   const firstResult = await firstPromise
