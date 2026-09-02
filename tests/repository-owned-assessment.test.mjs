@@ -512,6 +512,47 @@ test("repository-owned supervisor binds Landlock write authority to inherited de
   }
 })
 
+test("repository-owned Landlock write-fd setup performs no pathname lookup for inherited descriptors", async () => {
+  const root = await mkdtemp(join(tmpdir(), "repo-owned-supervisor-landlock-no-path-"))
+  const probe = `import importlib.util
+import os
+import pathlib
+import sys
+
+supervisor_path = sys.argv[1]
+root = pathlib.Path(sys.argv[2])
+spec = importlib.util.spec_from_file_location("repo_pr_runner_supervisor", supervisor_path)
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+fd = os.open(root, os.O_RDONLY | os.O_DIRECTORY)
+original_open = module.os.open
+original_realpath = module.os.path.realpath
+
+def forbidden_path_lookup(*args, **kwargs):
+    raise AssertionError("pathname lookup used for inherited Landlock descriptor")
+
+module.os.open = forbidden_path_lookup
+module.os.path.realpath = forbidden_path_lookup
+try:
+    module.apply_landlock([], [fd])
+finally:
+    module.os.open = original_open
+    module.os.path.realpath = original_realpath
+os.close(fd)
+(root / "allowed").write_text("descriptor-bound\\n")
+`
+  try {
+    const result = spawnSync("/usr/bin/python3", ["-c", probe, RUNNER_SUPERVISOR, root], {
+      encoding: "utf8",
+      shell: false,
+    })
+    assert.equal(result.status, 0, result.stderr)
+    assert.equal(await readFile(join(root, "allowed"), "utf8"), "descriptor-bound\n")
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
 test("repository-owned descriptor execution preserves Python sibling imports", async (t) => {
   const fx = await fixture()
   const id = `pr20-python-fd-${Math.random().toString(16).slice(2, 8)}`
