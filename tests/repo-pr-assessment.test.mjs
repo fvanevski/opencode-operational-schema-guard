@@ -243,6 +243,17 @@ test("successful runner evidence is preserved and SHA-256 bound", async () => {
   assert.equal(summary.integrity["uv.lock"].length, 64)
 })
 
+test("gateway-owned integrity blob pins are enforced at the assessed head", async () => {
+  const fx = await fixture()
+  const spec = structuredClone(fx.spec)
+  spec.integrityFiles[0].expectedBlobSha = "0".repeat(40)
+  const result = await run(fx, spec)
+  assert.equal(result.host_evidence_result, "BLOCKED")
+  assert.match(result.error, /Git blob does not match the pinned authority/)
+  assert.equal(result.runner.plan, null)
+  assert.equal(result.runner.run, null)
+})
+
 test("cleanup never touches unrelated local branches", async () => {
   const fx = await fixture()
   git(fx.repo, "branch", "developer/keep-me", fx.baseSha)

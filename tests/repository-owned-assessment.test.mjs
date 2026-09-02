@@ -1,4 +1,5 @@
 import assert from "node:assert/strict"
+import { createHash } from "node:crypto"
 import { chmod, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
@@ -169,6 +170,9 @@ test("repository-owned mode admits canonical PR refs without creating a gateway 
   const nativeBytes = await readFile(result.native_evidence_path)
   const canonicalBytes = await readFile(result.runner_evidence_path)
   assert.deepEqual(canonicalBytes, nativeBytes)
+  const acceptedHash = createHash("sha256").update(canonicalBytes).digest("hex")
+  assert.equal(result.runner_evidence_sha256, acceptedHash)
+  assert.equal(result.runner_evidence_bytes, canonicalBytes.length)
   assert.deepEqual(result.owner_final, result.owner_initial)
   assert.deepEqual({
     head: git(fx.repo, "rev-parse", "HEAD"),

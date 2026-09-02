@@ -38,7 +38,7 @@ The native runner writes:
 /tmp/opencode/verify/results/<assessment-id>/assessment.json
 ```
 
-The gateway accepts at most the bounded `local-agent-assessment-v1` contract, verifies matching assessment/PR/requested-head identity and `GATE_DECISION=NOT_EVALUATED`, requires the native exit code to agree with `PASS|FAIL|BLOCKED|STALE|INFRA_ERROR|ISOLATION_BREACH`, and applies stricter exact tested/head/control/cleanup checks before accepting PASS. It then copies the validated bytes without reinterpretation to:
+The gateway accepts at most the bounded `local-agent-assessment-v1` contract. It reads the native evidence into one bounded byte snapshot, then derives the SHA-256/size metadata, strict JSON validation, and canonical evidence copy from that same immutable in-process buffer so a post-run file replacement cannot make the recorded hash describe different accepted bytes. It verifies matching assessment/PR/requested-head identity and `GATE_DECISION=NOT_EVALUATED`, requires the native exit code to agree with `PASS|FAIL|BLOCKED|STALE|INFRA_ERROR|ISOLATION_BREACH`, and applies stricter exact tested/head/control/cleanup checks before accepting PASS. It then copies the validated snapshot without reinterpretation to:
 
 ```text
 /tmp/opencode/verify/evidence/<assessment-id>.runner.json
@@ -50,7 +50,7 @@ and writes the normal gateway summary at:
 /tmp/opencode/verify/evidence/<assessment-id>.summary.json
 ```
 
-Both gateway-owned and repository-owned modes now re-fetch and revalidate remote base/head authority at the final boundary.
+Both gateway-owned and repository-owned modes now re-fetch and revalidate remote base/head authority at the final boundary. Gateway-owned integrity entries remain backward compatible with path-only and optional SHA-256 forms; when a `blob_sha` is supplied, v5.22.0 enforces it against the exact assessed-head Git blob and current worktree bytes rather than silently accepting an unchecked pin.
 
 ## Upgrade procedure
 
