@@ -118,6 +118,17 @@ if (args.includes("--native-git-worktree")) {
   if (removed.status !== 0) process.exit(4)
   nativeGitWorktreeProbe = true
 }
+let ownerGitWriteBlocked = null
+const ownerGitWriteProbe = value("--probe-owner-git-write")
+if (ownerGitWriteProbe) {
+  try {
+    writeFileSync(ownerGitWriteProbe, "forbidden-owner-git-write\\n")
+  } catch (error) {
+    if (error?.code !== "EACCES" && error?.code !== "EPERM") throw error
+    ownerGitWriteBlocked = true
+  }
+  if (ownerGitWriteBlocked !== true) process.exit(4)
+}
 const pass = status === "PASS"
 const evidence = JSON.stringify({
   schema_version: "local-agent-assessment-v1",
@@ -141,6 +152,7 @@ const evidence = JSON.stringify({
   },
   control_write_blocked: controlWriteBlocked,
   native_git_worktree_probe: nativeGitWorktreeProbe,
+  owner_git_write_blocked: ownerGitWriteBlocked,
 }) + "\\n"
 if (args.includes("--symlink-evidence")) {
   const target = path + ".target"
@@ -383,11 +395,18 @@ test("repository-owned mode admits canonical PR refs without creating a gateway 
   }, before)
 })
 
-test("repository-owned sandbox denies control writes while preserving native Git worktree lifecycle", async (t) => {
+test("repository-owned sandbox denies control and owner-Git writes while preserving native Git worktree lifecycle", async (t) => {
   const fx = await fixture()
   const id = `pr20-sandbox-${Math.random().toString(16).slice(2, 8)}`
   t.after(() => cleanupFixture(fx, [id]))
-  const result = await runRepoPrAssessment(makeSpec(fx, id, ["--probe-control-write", "--native-git-worktree"]), {
+  const ownerGitProbe = join(fx.repo, ".git", `owner-write-probe-${id}`)
+  await writeFile(ownerGitProbe, "owner-git-metadata\n")
+  const result = await runRepoPrAssessment(makeSpec(fx, id, [
+    "--probe-control-write",
+    "--native-git-worktree",
+    "--probe-owner-git-write",
+    ownerGitProbe,
+  ]), {
     repoRoot: fx.repo,
     evidenceRoot: fx.evidenceRoot,
   })
@@ -396,6 +415,8 @@ test("repository-owned sandbox denies control writes while preserving native Git
   const evidence = JSON.parse(await readFile(result.runner_evidence_path, "utf8"))
   assert.equal(evidence.control_write_blocked, true)
   assert.equal(evidence.native_git_worktree_probe, true)
+  assert.equal(evidence.owner_git_write_blocked, true)
+  assert.equal(await readFile(ownerGitProbe, "utf8"), "owner-git-metadata\n")
   assert.equal(await readFile(join(fx.repo, "control.txt"), "utf8"), "trusted-control\n")
 })
 
