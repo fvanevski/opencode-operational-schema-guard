@@ -740,7 +740,7 @@ test("repository-owned kernel reservation prevents duplicate identity across res
   const fx = await fixture()
   const id = `pr20-kernel-reservation-${Math.random().toString(16).slice(2, 8)}`
   t.after(() => cleanupFixture(fx, [id]))
-  const barrier = join(fx.evidenceRoot, `pre-evidence-${id}`)
+  const barrier = join(ASSESSMENT_REPOSITORY_RUNTIME_ROOT, id, `pre-evidence-${id}`)
   const movedRoot = `${ASSESSMENT_RESERVATION_ROOT}.${id}.moved`
   const secondEvidenceRoot = join(fx.root, "second-evidence")
   let secondResult
@@ -776,7 +776,7 @@ test("repository-owned mode requires the reservation identity through evidence a
   const fx = await fixture()
   const id = `pr20-native-reservation-delete-${Math.random().toString(16).slice(2, 8)}`
   t.after(() => cleanupFixture(fx, [id]))
-  const barrier = join(fx.evidenceRoot, `barrier-${id}`)
+  const barrier = join(ASSESSMENT_REPOSITORY_RUNTIME_ROOT, id, `barrier-${id}`)
   const attack = coordinateBarrier(barrier, async () => {
     await rm(join(ASSESSMENT_RESERVATION_ROOT, `.opencode-reservation-${id}`))
   })
@@ -868,7 +868,7 @@ test("repository-owned evidence-root replacement by an external writer is an iso
   const fx = await fixture()
   const id = `pr20-root-replace-${Math.random().toString(16).slice(2, 8)}`
   t.after(() => cleanupFixture(fx, [id]))
-  const barrier = join(fx.evidenceRoot, `barrier-${id}`)
+  const barrier = join(ASSESSMENT_REPOSITORY_RUNTIME_ROOT, id, `barrier-${id}`)
   const attack = coordinateBarrier(barrier, async () => {
     const moved = `${fx.evidenceRoot}.moved`
     const replacement = `${fx.evidenceRoot}.replacement`
@@ -892,8 +892,8 @@ test("repository-owned external control mutation is detected even when bytes are
   const fx = await fixture()
   const id = `pr20-control-race-${Math.random().toString(16).slice(2, 8)}`
   t.after(() => cleanupFixture(fx, [id]))
-  const spec = makeSpec(fx, id, ["--barrier", join(fx.evidenceRoot, `barrier-${id}`)])
-  const barrier = join(fx.evidenceRoot, `barrier-${id}`)
+  const barrier = join(ASSESSMENT_REPOSITORY_RUNTIME_ROOT, id, `barrier-${id}`)
+  const spec = makeSpec(fx, id, ["--barrier", barrier])
   const controlWorktree = assessmentControlWorktreePath(fx.repo, spec)
   const attack = coordinateBarrier(barrier, async () => {
     const controlPath = join(controlWorktree, "control.txt")
@@ -910,7 +910,7 @@ test("repository-owned external control mutation is detected even when bytes are
 test("repository-owned cleanup never deletes a substituted control-snapshot pathname", async (t) => {
   const fx = await fixture()
   const id = `pr20-control-cleanup-swap-${Math.random().toString(16).slice(2, 8)}`
-  const barrier = join(fx.evidenceRoot, `barrier-${id}`)
+  const barrier = join(ASSESSMENT_REPOSITORY_RUNTIME_ROOT, id, `barrier-${id}`)
   const spec = makeSpec(fx, id, ["--barrier", barrier])
   const controlWorktree = assessmentControlWorktreePath(fx.repo, spec)
   const movedControl = `${controlWorktree}.moved`
@@ -935,7 +935,7 @@ test("repository-owned final owner-proof failure is INFRA_ERROR", async (t) => {
   const fx = await fixture()
   const id = `pr20-owner-proof-${Math.random().toString(16).slice(2, 8)}`
   t.after(() => cleanupFixture(fx, [id]))
-  const barrier = join(fx.evidenceRoot, `barrier-${id}`)
+  const barrier = join(ASSESSMENT_REPOSITORY_RUNTIME_ROOT, id, `barrier-${id}`)
   const attack = coordinateBarrier(barrier, async () => {
     await writeFile(join(fx.repo, ".git", "index"), "broken-index\n")
   })
@@ -952,7 +952,7 @@ test("repository-owned external owner mutation is an isolation breach even with 
   const fx = await fixture()
   const id = `pr20-dirty-owner-${Math.random().toString(16).slice(2, 8)}`
   t.after(() => cleanupFixture(fx, [id]))
-  const barrier = join(fx.evidenceRoot, `barrier-${id}`)
+  const barrier = join(ASSESSMENT_REPOSITORY_RUNTIME_ROOT, id, `barrier-${id}`)
   const attack = coordinateBarrier(barrier, async () => {
     await writeFile(join(fx.repo, "owner-mutated.txt"), "mutation\n")
   })
@@ -970,7 +970,7 @@ test("repository-owned owner-root replacement cannot substitute the final proof"
   const fx = await fixture()
   const id = `pr20-owner-root-${Math.random().toString(16).slice(2, 8)}`
   t.after(() => cleanupFixture(fx, [id]))
-  const barrier = join(fx.evidenceRoot, `barrier-${id}`)
+  const barrier = join(ASSESSMENT_REPOSITORY_RUNTIME_ROOT, id, `barrier-${id}`)
   const movedRepo = `${fx.repo}.moved`
   const attack = coordinateBarrier(barrier, async () => {
     await rename(fx.repo, movedRepo)
@@ -989,7 +989,7 @@ test("repository-owned mode detects external canonical PR-head movement at the f
   const fx = await fixture()
   const id = `pr20-moving-head-${Math.random().toString(16).slice(2, 8)}`
   t.after(() => cleanupFixture(fx, [id]))
-  const barrier = join(fx.evidenceRoot, `barrier-${id}`)
+  const barrier = join(ASSESSMENT_REPOSITORY_RUNTIME_ROOT, id, `barrier-${id}`)
   const attack = coordinateBarrier(barrier, async () => {
     git(fx.root, "--git-dir", fx.remote, "update-ref", "refs/pull/20/head", fx.baseSha)
   })
