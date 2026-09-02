@@ -1,17 +1,17 @@
 # OpenCode operational-schema guard
 
-This local plugin turns the v5.21.1 delegation, child-capability, resumable-failure, authority-admission, project-neutral repository assessment, prompt-compatibility, interactive-call, trace-audit, and compaction contract into bounded runtime behavior.
+This local plugin turns the v5.22.0 delegation, child-capability, resumable-failure, authority-admission, project-neutral repository assessment, prompt-compatibility, interactive-call, trace-audit, and compaction contract into bounded runtime behavior.
 
 <!-- generated-policy:start -->
-[operational-policy-v5.21.1]
+[operational-policy-v5.22.0]
 Operational budgets are advisory context-engineering signals, not execution authority. Read, reopen, shell-packet, direct-validation, ordinary operation, child-call, and routing-debt thresholds may emit concise guidance but must not stop otherwise permitted work.
 Normalize a non-empty bounded Task prompt into the Turn-1 envelope when safe; reject only unsafe, oversized, or semantically unbounded delegation. A child capability mismatch rejects only that invocation and provides a machine-readable correction code plus the supported route; it never terminalizes the child.
 Inject the selected child's one-bare-call execution rule and exact completion marker directly into every bounded Task packet when space permits; do not make the child reconstruct that contract from guard failures.
 Use question or ask_question only for genuinely missing user input and always provide at least one non-empty question. Once finalization is announced, emit the final response in that same turn; never launch an empty 0/0 interactive prompt. RESPOND_OR_ASK_NONEMPTY means answer directly when ready or retry with one real question.
 Use /home/filip/.config/opencode/plugins/operational-schema-v5/scripts/session-trace-assessment.mjs for bounded session-trace evidence instead of disguising read-only parsing as a test command. Compatibility pattern: /home/filip/.config/opencode/plugins/operational-schema-v5/scripts/session-trace-assessment.mjs --input /tmp/opencode/verify/materials/*.json --session-id ses_* --profile guard-friction-v1. Remediation-audit pattern: /home/filip/.config/opencode/plugins/operational-schema-v5/scripts/session-trace-assessment.mjs --input /tmp/opencode/verify/materials/*.json --session-id ses_* --profile remediation-audit-v1. Actual invocations must provide one concrete .json file and one concrete ses_ identifier.
-For deterministic repository host evidence, prefer the harness-owned local-agent-assessment.mjs gateway with one typed spec under /tmp/opencode/verify/assessments. The gateway owns remote-ref refresh, exact-head admission, isolated named worktree creation, repository-runner invocation, evidence hashing, and cleanup; stale developer branches are not assessment authority.
+For deterministic repository host evidence, prefer the harness-owned local-agent-assessment.mjs gateway with one typed spec under /tmp/opencode/verify/assessments. The default gateway-owned mode owns exact remote-ref admission, isolated named worktree creation, repository-runner invocation, evidence hashing, and cleanup. Repository-owned mode is an explicit alternative only for a pinned repository runner that already owns the candidate worktree/environment/service/test/cleanup lifecycle; the gateway still owns exact base/canonical-PR-head admission, control-plane pin verification, typed native-evidence validation/copying, final freshness, and owner-checkout proof. Stale developer branches are not assessment authority.
 Hard stops remain for exact-head authority admission, unsafe child writes or external access, destructive or publish actions lacking required gates, proven-success duplicate child invocations, and the 195000-token emergency ceiling.
-[/operational-policy-v5.21.1]
+[/operational-policy-v5.22.0]
 <!-- generated-policy:end -->
 
 ## Session trace audits
@@ -124,7 +124,7 @@ gateway:
 /home/filip/.config/opencode/plugins/operational-schema-v5/scripts/local-agent-assessment.mjs --spec /tmp/opencode/verify/assessments/<name>.json
 ```
 
-A repository-neutral spec binds exact authority and the repository-owned runner:
+The default **gateway-owned** mode binds exact authority to a runner that is safe to execute from the gateway-created exact-head worktree:
 
 ```json
 {
@@ -149,17 +149,47 @@ A repository-neutral spec binds exact authority and the repository-owned runner:
 }
 ```
 
-The gateway performs a shell-free exact refspec fetch, requires the remote base and
-head SHAs to match the spec, creates a unique named non-main branch under a
-harness-owned `/tmp/opencode/verify/worktrees/**` worktree at the exact head,
-verifies any declared canonical venv without creating or repairing it, fingerprints
-the tracked runner/integrity files, runs the declared plan/run argv templates, hashes
-the runner evidence, and proves the owner workspace unchanged. A stale developer
-branch with the same name as the PR head ref is irrelevant and is never reset,
-rebased, deleted, or otherwise reconciled. Cleanup removes only the generated
-assessment worktree/branch, and preserves them if their identity changed. The
-runner's `HOST_EVIDENCE_RESULT` remains host evidence; `GATE_DECISION` stays
-`NOT_EVALUATED`.
+In gateway-owned mode the gateway performs a shell-free exact fetch, requires the remote base and head SHAs to match the spec, creates a unique named non-main branch under a harness-owned `/tmp/opencode/verify/worktrees/**` worktree at the exact head, verifies any declared canonical venv without creating or repairing it, fingerprints the tracked runner/integrity files, runs the declared plan/run argv templates, hashes the runner evidence, revalidates remote base/head authority, and proves the owner workspace unchanged. A stale developer branch with the same name as the PR head ref is irrelevant and is never reset, rebased, deleted, or otherwise reconciled. Cleanup removes only the generated assessment worktree/branch, and preserves them if their identity changed.
+
+For a repository whose reviewed runner already owns exact-head worktree, virtual-environment, disposable-service, validation, evidence, isolation, and cleanup lifecycle, use **repository-owned** mode instead of nesting a second gateway lifecycle around it. The repository checkout must already be clean at the explicitly selected `base` or `head` authority SHA. `base` is the normal steady-state choice for a main-owned control runner; `head` is only for an explicitly reviewed and externally pinned pre-merge bootstrap. The runner and every declared integrity file are pinned to exact Git blob SHAs from that authority commit before execution. Optional SHA-256 pins may be added as a second byte-level check.
+
+Repository-owned mode accepts the canonical GitHub PR identity `refs/pull/<PR>/head`, does not create a gateway assessment branch/worktree, does not create or repair a venv, and does not start services or run cleanup itself. The native runner must write `local-agent-assessment-v1` evidence at `/tmp/opencode/verify/results/<assessment-id>/assessment.json`. The gateway validates the native assessment/PR/head/control identity, exact native exit/result mapping, `GATE_DECISION=NOT_EVALUATED`, and complete cleanup proof for PASS; it preserves native `PASS|FAIL|BLOCKED|STALE|INFRA_ERROR|ISOLATION_BREACH`, copies the validated bytes to the canonical `/tmp/opencode/verify/evidence/<assessment-id>.runner.json`, hashes them, writes the ordinary summary, revalidates remote base and canonical PR head, and proves the owner checkout unchanged.
+
+Example repository-owned spec for a main-owned exact-head runner:
+
+```json
+{
+  "schema_version": "opencode-local-assessment-v1",
+  "kind": "repo-pr",
+  "assessment_id": "pr42-head-check",
+  "pr_number": 42,
+  "repository": {
+    "remote": "origin",
+    "base_ref": "main",
+    "base_sha": "<40-lowercase-hex>",
+    "head_ref": "refs/pull/42/head",
+    "head_sha": "<40-lowercase-hex>"
+  },
+  "runner": {
+    "execution": "repository-owned",
+    "authority": "base",
+    "path": "scripts/local-agent-assessment",
+    "blob_sha": "<40-lowercase-git-blob-sha>",
+    "result_contract": "local-agent-assessment-v1",
+    "plan_argv": ["plan", "--repo", "{repo_root}", "--sha", "{head_sha}", "--profile", "phase1-control-policy", "--target-kind", "pr-head", "--pr", "{pr_number}", "--fetch"],
+    "run_argv": ["run", "--repo", "{repo_root}", "--sha", "{head_sha}", "--profile", "phase1-control-policy", "--target-kind", "pr-head", "--pr", "{pr_number}", "--assessment-id", "{assessment_id}", "--fetch"]
+  },
+  "integrity_files": [
+    {"path": "scripts/local_agent_assessment.py", "blob_sha": "<40-lowercase-git-blob-sha>"},
+    {"path": "scripts/local_agent_pr_assessment.py", "blob_sha": "<40-lowercase-git-blob-sha>"},
+    {"path": "references/local-agent-assessment-profiles.toml", "blob_sha": "<40-lowercase-git-blob-sha>"}
+  ]
+}
+```
+
+Do not add `{base_sha}` or `{evidence_path}` merely to satisfy the generic schema in repository-owned mode; the gateway itself binds remote base authority and the native result location. Do not use `authority: "head"` as a shortcut around a main-owned runner. A head-authority spec is valid only when Central has separately reviewed and pinned that exact bootstrap control plane.
+
+In both modes the runner's `HOST_EVIDENCE_RESULT` remains host evidence; `GATE_DECISION` stays `NOT_EVALUATED`.
 
 Explore and Fresh-review similarly end with exactly one role marker:
 
