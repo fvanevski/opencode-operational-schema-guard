@@ -26,7 +26,6 @@ from typing import Iterable
 PR_SET_CHILD_SUBREAPER = 36
 PR_SET_NO_NEW_PRIVS = 38
 PR_SET_PTRACER = 0x59616D61
-PR_SET_PTRACER_ANY = (1 << (ctypes.sizeof(ctypes.c_ulong) * 8)) - 1
 REPO_ROOT_TOKEN = "__OPENCODE_REPOSITORY_ROOT_CAPABILITY__"
 
 LANDLOCK_CREATE_RULESET_VERSION = 1
@@ -101,11 +100,11 @@ def _prctl(option: int, value: int) -> None:
         raise OSError(code, os.strerror(code))
 
 
-def _allow_ptracer_any() -> None:
+def _allow_ptracer_tree(supervisor_pid: int) -> None:
     result = int(
         libc.prctl(
             ctypes.c_int(PR_SET_PTRACER),
-            ctypes.c_ulong(PR_SET_PTRACER_ANY),
+            ctypes.c_ulong(supervisor_pid),
             ctypes.c_ulong(0),
             ctypes.c_ulong(0),
             ctypes.c_ulong(0),
@@ -355,6 +354,7 @@ def _close_holder_fds(keep: set[int]) -> None:
 def start_control_capability_holder(cwd_fd: int) -> tuple[int, int]:
     ready_read, ready_write = os.pipe2(os.O_CLOEXEC)
     lifetime_read, lifetime_write = os.pipe2(os.O_CLOEXEC)
+    supervisor_pid = os.getpid()
     pid = os.fork()
     if pid == 0:
         os.close(ready_read)
@@ -362,7 +362,7 @@ def start_control_capability_holder(cwd_fd: int) -> tuple[int, int]:
         try:
             os.fchdir(cwd_fd)
             _close_holder_fds({ready_write, lifetime_read})
-            _allow_ptracer_any()
+            _allow_ptracer_tree(supervisor_pid)
             os.write(ready_write, b"1")
             os.close(ready_write)
             while os.read(lifetime_read, 1):
@@ -408,8 +408,22 @@ def execute_runner(argv: list[str], cwd: str | None, cwd_fd: int | None) -> tupl
         effective_argv = [arg.replace(REPO_ROOT_TOKEN, capability_path) for arg in effective_argv]
     elif any(REPO_ROOT_TOKEN in arg for arg in effective_argv):
         fail("repository-root capability token requires a descriptor-bound cwd")
-    pid = os.fork()
+    exec_read, exec_write = os.pipe2(os.O_CLOEXEC)
+    try:
+        pid = os.fork()
+    except OSError as exc:
+        os.close(exec_read)
+        os.close(exec_write)
+        if holder_lifetime is not None:
+            os.close(holder_lifetime)
+        if holder_pid is not None:
+            try:
+                os.waitpid(holder_pid, 0)
+            except ChildProcessError:
+                pass
+        fail(f"runner fork failed ({exc.errno}: {exc.strerror})")
     if pid == 0:
+        os.close(exec_read)
         try:
             if cwd_fd is not None:
                 os.fchdir(cwd_fd)
@@ -419,12 +433,22 @@ def execute_runner(argv: list[str], cwd: str | None, cwd_fd: int | None) -> tupl
                 raise RuntimeError("runner cwd authority is unavailable")
             os.execve("/proc/self/fd/3", ["/proc/self/fd/3", *effective_argv], dict(os.environ))
         except BaseException as exc:  # noqa: BLE001 - child can only report then exit
-            print(f"repo-pr-runner-supervisor: runner exec failed: {type(exc).__name__}: {exc}", file=sys.stderr)
+            detail = f"{type(exc).__name__}:{exc}".encode("utf-8", errors="replace")[:512]
+            try:
+                os.write(exec_write, detail)
+            except OSError:
+                pass
             os._exit(SUPERVISOR_SETUP_ERROR)
+    os.close(exec_write)
     try:
         _, status = os.waitpid(pid, 0)
     except OSError as exc:
+        os.close(exec_read)
         fail(f"runner wait failed ({exc.errno}: {exc.strerror})")
+    try:
+        exec_failure = os.read(exec_read, 513)
+    finally:
+        os.close(exec_read)
     holder_status: int | None = None
     if holder_lifetime is not None:
         os.close(holder_lifetime)
@@ -439,6 +463,9 @@ def execute_runner(argv: list[str], cwd: str | None, cwd_fd: int | None) -> tupl
         return ("descendants", SUPERVISOR_DESCENDANTS)
     if holder_status is not None and (not os.WIFEXITED(holder_status) or os.WEXITSTATUS(holder_status) != 0):
         fail("control-root capability holder did not terminate cleanly")
+    if exec_failure:
+        detail = exec_failure.decode("utf-8", errors="replace")
+        fail(f"runner exec failed ({detail})")
     if os.WIFEXITED(status):
         return ("runner", os.WEXITSTATUS(status))
     if os.WIFSIGNALED(status):
