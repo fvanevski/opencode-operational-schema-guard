@@ -34,7 +34,7 @@ async function exists(path) {
 }
 
 const RUNNER_SOURCE = `#!/usr/bin/env node
-import { appendFileSync, mkdirSync, writeFileSync } from "node:fs"
+import { appendFileSync, mkdirSync, renameSync, symlinkSync, writeFileSync } from "node:fs"
 import { dirname } from "node:path"
 import { spawnSync } from "node:child_process"
 const args = process.argv.slice(2)
@@ -42,6 +42,10 @@ if (process.env.ASSESSMENT_TEST_LOG) appendFileSync(process.env.ASSESSMENT_TEST_
 if (args[0] === "plan") {
   if (args.includes("--fail-plan")) process.exit(9)
   if (args.includes("--dirty-plan")) writeFileSync("plan-untracked.txt", "mutation\\n")
+  if (args.includes("--hide-pin-mutation")) {
+    writeFileSync(".python-version", "mutated\\n")
+    spawnSync("git", ["update-index", "--assume-unchanged", ".python-version"], { shell: false })
+  }
   process.exit(0)
 }
 if (args[0] !== "run") process.exit(7)
@@ -59,6 +63,14 @@ if (args.includes("--dirty-worktree")) {
 }
 if (args.includes("--block-summary-write")) {
   mkdirSync(output.replace(/\\.runner\\.json$/, ".summary.json"))
+}
+if (args.includes("--replace-evidence-root")) {
+  const root = dirname(output)
+  const moved = root + ".moved"
+  const replacement = root + ".replacement"
+  renameSync(root, moved)
+  mkdirSync(replacement)
+  symlinkSync(replacement, root)
 }
 process.exit(0)
 `
@@ -255,6 +267,30 @@ test("gateway-owned integrity blob pins are enforced at the assessed head", asyn
   assert.match(result.error, /Git blob does not match the pinned authority/)
   assert.equal(result.runner.plan, null)
   assert.equal(result.runner.run, null)
+})
+
+test("gateway-owned post-plan revalidation catches hidden pinned-input mutation", async () => {
+  const fx = await fixture()
+  const spec = structuredClone(fx.spec)
+  spec.runner.planArgv.push("--hide-pin-mutation")
+  const result = await run(fx, spec)
+  assert.equal(result.host_evidence_result, "ISOLATION_BREACH")
+  assert.match(result.error, /integrity file \.python-version changed after admission/)
+  assert.equal(result.runner.run, null)
+  const worktree = assessmentWorktreePath(fx.repo, spec, fx.worktreeRoot)
+  if (await exists(worktree)) {
+    git(fx.repo, "worktree", "remove", "--force", worktree)
+    git(fx.repo, "branch", "-D", assessmentBranchName(fx.repo, spec))
+  }
+})
+
+test("gateway-owned evidence-root replacement is an isolation breach", async () => {
+  const fx = await fixture()
+  const spec = structuredClone(fx.spec)
+  spec.runner.runArgv.push("--replace-evidence-root")
+  const result = await run(fx, spec)
+  assert.equal(result.host_evidence_result, "ISOLATION_BREACH")
+  assert.match(result.error, /evidence root pathname/)
 })
 
 test("gateway-owned mode returns INFRA_ERROR when the outer summary cannot be written", async () => {

@@ -19,7 +19,7 @@ function git(cwd, ...args) {
 }
 
 const RUNNER_SOURCE = `#!/usr/bin/env node
-import { mkdirSync, symlinkSync, writeFileSync } from "node:fs"
+import { mkdirSync, renameSync, symlinkSync, writeFileSync } from "node:fs"
 import { dirname } from "node:path"
 import { spawnSync } from "node:child_process"
 const args = process.argv.slice(2)
@@ -81,6 +81,15 @@ if (args.includes("--move-pr-head")) {
   if (moved.status !== 0) process.exit(4)
 }
 if (args.includes("--dirty-owner")) writeFileSync("owner-mutated.txt", "mutation\\n")
+if (args.includes("--break-owner-index")) writeFileSync(".git/index", "broken-index\\n")
+const replaceRoot = value("--replace-evidence-root")
+if (replaceRoot) {
+  const moved = replaceRoot + ".moved"
+  const replacement = replaceRoot + ".replacement"
+  renameSync(replaceRoot, moved)
+  mkdirSync(replacement)
+  symlinkSync(replacement, replaceRoot)
+}
 const exits = { PASS: 0, FAIL: 1, BLOCKED: 2, STALE: 3, INFRA_ERROR: 4, ISOLATION_BREACH: 5 }
 process.exit(args.includes("--exit-mismatch") ? 1 : (exits[status] ?? 4))
 `
@@ -288,6 +297,30 @@ test("repository-owned head authority supports an explicitly pinned reviewed boo
   assert.equal(result.host_evidence_result, "PASS", result.error)
   assert.equal(result.runner_authority, "head")
   assert.equal(result.owner_initial.head, fx.headSha)
+})
+
+test("repository-owned evidence-root replacement is an isolation breach", async (t) => {
+  const fx = await fixture()
+  const id = `pr20-root-replace-${Math.random().toString(16).slice(2, 8)}`
+  t.after(() => cleanupFixture(fx, [id]))
+  const result = await runRepoPrAssessment(makeSpec(fx, id, ["--replace-evidence-root", fx.evidenceRoot]), {
+    repoRoot: fx.repo,
+    evidenceRoot: fx.evidenceRoot,
+  })
+  assert.equal(result.host_evidence_result, "ISOLATION_BREACH")
+  assert.match(result.error, /evidence root pathname/)
+})
+
+test("repository-owned final owner-proof failure is INFRA_ERROR", async (t) => {
+  const fx = await fixture()
+  const id = `pr20-owner-proof-${Math.random().toString(16).slice(2, 8)}`
+  t.after(() => cleanupFixture(fx, [id]))
+  const result = await runRepoPrAssessment(makeSpec(fx, id, ["--break-owner-index"]), {
+    repoRoot: fx.repo,
+    evidenceRoot: fx.evidenceRoot,
+  })
+  assert.equal(result.host_evidence_result, "INFRA_ERROR")
+  assert.match(result.error, /final owner workspace proof failed/)
 })
 
 test("repository-owned run-time owner mutation is an isolation breach even with native PASS evidence", async (t) => {
