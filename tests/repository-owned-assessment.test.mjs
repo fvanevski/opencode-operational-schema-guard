@@ -473,6 +473,45 @@ test("repository-owned supervisor stays bound to admitted control descriptors ac
   }
 })
 
+test("repository-owned supervisor binds Landlock write authority to inherited descriptors across pathname substitution", async () => {
+  const root = await mkdtemp(join(tmpdir(), "repo-owned-supervisor-landlock-fd-"))
+  const admitted = join(root, "runtime")
+  const moved = join(root, "runtime-admitted")
+  const replacement = admitted
+  const runnerPath = join(root, "runner.mjs")
+  await mkdir(admitted)
+  await writeFile(runnerPath, `#!/usr/bin/env node\nimport { writeFileSync } from "node:fs"\nconst args = process.argv.slice(2)\nconst value = (flag) => args[args.indexOf(flag) + 1]\nwriteFileSync(value("--allowed"), "admitted\\n")\nlet blocked = false\ntry {\n  writeFileSync(value("--blocked"), "replacement\\n")\n} catch (error) {\n  if (error?.code !== "EACCES" && error?.code !== "EPERM") throw error\n  blocked = true\n}\nif (!blocked) process.exit(7)\n`)
+  await chmod(runnerPath, 0o755)
+  const runnerHandle = await open(runnerPath, constants.O_RDONLY)
+  const runtimeHandle = await open(admitted, constants.O_RDONLY | constants.O_DIRECTORY)
+  try {
+    await rename(admitted, moved)
+    await mkdir(replacement)
+    const result = spawnSync("/usr/bin/python3", [
+      RUNNER_SUPERVISOR,
+      "--cwd", root,
+      "--status-fd", "5",
+      "--write-fd", "4",
+      "--write-root", "/dev/null",
+      "--",
+      "--allowed", join(moved, "allowed"),
+      "--blocked", join(replacement, "blocked"),
+    ], {
+      encoding: "utf8",
+      shell: false,
+      stdio: ["ignore", "pipe", "pipe", runnerHandle.fd, runtimeHandle.fd, "pipe"],
+    })
+    assert.equal(result.status, 0, result.stderr)
+    assert.equal(JSON.parse(result.output[5].trim()).kind, "runner")
+    assert.equal(await readFile(join(moved, "allowed"), "utf8"), "admitted\n")
+    assert.equal(await exists(join(replacement, "blocked")), false)
+  } finally {
+    await runnerHandle.close()
+    await runtimeHandle.close()
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
 test("repository-owned descriptor execution preserves Python sibling imports", async (t) => {
   const fx = await fixture()
   const id = `pr20-python-fd-${Math.random().toString(16).slice(2, 8)}`

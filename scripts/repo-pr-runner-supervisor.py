@@ -17,6 +17,7 @@ import errno
 import json
 import os
 import signal
+import stat as stat_module
 import struct
 import sys
 import time
@@ -136,9 +137,21 @@ def _landlock_write_rights(abi: int) -> int:
     return rights
 
 
-def apply_landlock(write_roots: Iterable[str]) -> None:
+def _add_landlock_rule(ruleset_fd: int, parent_fd: int, allowed: int) -> None:
+    rule = LandlockPathBeneathAttr(allowed, parent_fd)
+    _syscall(
+        SYS_LANDLOCK_ADD_RULE,
+        ctypes.c_int(ruleset_fd),
+        ctypes.c_int(LANDLOCK_RULE_PATH_BENEATH),
+        ctypes.byref(rule),
+        ctypes.c_uint32(0),
+    )
+
+
+def apply_landlock(write_roots: Iterable[str], write_fds: Iterable[int]) -> None:
     roots = tuple(dict.fromkeys(os.path.realpath(path) for path in write_roots))
-    if not roots:
+    inherited_fds = tuple(dict.fromkeys(write_fds))
+    if not roots and not inherited_fds:
         return
     try:
         abi = _syscall(
@@ -163,27 +176,31 @@ def apply_landlock(write_roots: Iterable[str]) -> None:
     except OSError as exc:
         fail(f"Landlock ruleset creation failed ({exc.errno}: {exc.strerror})")
     try:
+        for inherited_fd in inherited_fds:
+            try:
+                info = os.fstat(inherited_fd)
+            except OSError as exc:
+                fail(f"Landlock writable descriptor {inherited_fd} is unavailable ({exc.errno}: {exc.strerror})")
+            if not stat_module.S_ISDIR(info.st_mode):
+                fail(f"Landlock writable descriptor {inherited_fd} is not a directory")
+            rule_fd = os.dup(inherited_fd)
+            try:
+                _add_landlock_rule(ruleset_fd, rule_fd, handled)
+            finally:
+                os.close(rule_fd)
         for root in roots:
-            if os.path.isdir(root):
-                allowed = handled
-            elif os.path.exists(root):
-                allowed = handled & (
-                    LANDLOCK_ACCESS_FS_WRITE_FILE | LANDLOCK_ACCESS_FS_TRUNCATE
-                )
-                if not allowed:
-                    fail(f"Landlock writable object has no supported access rights: {root}")
-            else:
-                fail(f"Landlock writable path does not exist: {root}")
             path_fd = os.open(root, os.O_PATH | os.O_CLOEXEC)
             try:
-                rule = LandlockPathBeneathAttr(allowed, path_fd)
-                _syscall(
-                    SYS_LANDLOCK_ADD_RULE,
-                    ctypes.c_int(ruleset_fd),
-                    ctypes.c_int(LANDLOCK_RULE_PATH_BENEATH),
-                    ctypes.byref(rule),
-                    ctypes.c_uint32(0),
-                )
+                info = os.fstat(path_fd)
+                if stat_module.S_ISDIR(info.st_mode):
+                    allowed = handled
+                else:
+                    allowed = handled & (
+                        LANDLOCK_ACCESS_FS_WRITE_FILE | LANDLOCK_ACCESS_FS_TRUNCATE
+                    )
+                    if not allowed:
+                        fail(f"Landlock writable object has no supported access rights: {root}")
+                _add_landlock_rule(ruleset_fd, path_fd, allowed)
             finally:
                 os.close(path_fd)
         _prctl(PR_SET_NO_NEW_PRIVS, 1)
@@ -533,6 +550,7 @@ def build_parser() -> argparse.ArgumentParser:
     cwd_group.add_argument("--cwd-fd", type=int)
     parser.add_argument("--status-fd", required=True, type=int)
     parser.add_argument("--write-root", action="append", default=[])
+    parser.add_argument("--write-fd", action="append", default=[], type=int)
     parser.add_argument("--watch-root")
     parser.add_argument("--watch", action="append", default=[])
     parser.add_argument("runner_argv", nargs=argparse.REMAINDER)
@@ -568,7 +586,7 @@ def main() -> int:
             if not os.path.isdir(f"/proc/self/fd/{args.cwd_fd}"):
                 fail("runner cwd descriptor is not a directory")
         watch_fd = configure_inotify(args.watch_root, args.watch)
-        apply_landlock(args.write_root)
+        apply_landlock(args.write_root, args.write_fd)
         kind, value = execute_runner(runner_argv, cwd, args.cwd_fd)
         if kind == "descendants":
             _write_status(args.status_fd, "descendants")
