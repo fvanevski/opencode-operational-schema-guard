@@ -59,6 +59,9 @@ IN_IGNORED = 0x00008000
 SUPERVISOR_DESCENDANTS = 240
 SUPERVISOR_CONTROL_MUTATION = 241
 SUPERVISOR_SETUP_ERROR = 242
+SUPERVISOR_REAP_ERROR = 243
+DESCENDANT_REAP_TIMEOUT_SECONDS = 5.0
+DESCENDANT_REAP_POLL_SECONDS = 0.01
 
 libc = ctypes.CDLL(None, use_errno=True)
 
@@ -278,23 +281,9 @@ def direct_children() -> tuple[int, ...]:
 
 def contain_descendants() -> bool:
     found = False
-    for _ in range(256):
+    deadline = time.monotonic() + DESCENDANT_REAP_TIMEOUT_SECONDS
+    while True:
         children = direct_children()
-        if not children:
-            try:
-                while True:
-                    pid, _ = os.waitpid(-1, os.WNOHANG)
-                    if pid == 0:
-                        break
-                    found = True
-            except ChildProcessError:
-                return found
-            children = direct_children()
-            if not children:
-                try:
-                    os.waitpid(-1, os.WNOHANG)
-                except ChildProcessError:
-                    return found
         if children:
             found = True
             for pid in children:
@@ -303,16 +292,31 @@ def contain_descendants() -> bool:
                 except ProcessLookupError:
                     pass
                 except OSError as exc:
-                    fail(f"could not terminate descendant {pid} ({exc.errno}: {exc.strerror})")
+                    print(
+                        f"repo-pr-runner-supervisor: could not terminate descendant {pid} ({exc.errno}: {exc.strerror})",
+                        file=sys.stderr,
+                    )
+                    raise SystemExit(SUPERVISOR_REAP_ERROR)
         try:
             while True:
                 pid, _ = os.waitpid(-1, os.WNOHANG)
                 if pid == 0:
                     break
+                found = True
         except ChildProcessError:
             return found
-        time.sleep(0.002)
-    fail("runner descendants could not be fully reaped")
+        if not direct_children():
+            try:
+                pid, _ = os.waitpid(-1, os.WNOHANG)
+                if pid > 0:
+                    found = True
+                    continue
+            except ChildProcessError:
+                return found
+        if time.monotonic() >= deadline:
+            print("repo-pr-runner-supervisor: runner descendants could not be fully reaped before the bounded deadline", file=sys.stderr)
+            raise SystemExit(SUPERVISOR_REAP_ERROR)
+        time.sleep(DESCENDANT_REAP_POLL_SECONDS)
 
 
 def execute_runner(argv: list[str], cwd: str | None, cwd_fd: int | None) -> int:
