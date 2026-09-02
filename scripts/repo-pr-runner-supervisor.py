@@ -142,11 +142,19 @@ def apply_landlock(write_roots: Iterable[str]) -> None:
         fail(f"Landlock ruleset creation failed ({exc.errno}: {exc.strerror})")
     try:
         for root in roots:
-            if not os.path.isdir(root):
-                fail(f"Landlock writable root is not a directory: {root}")
+            if os.path.isdir(root):
+                allowed = handled
+            elif os.path.isfile(root):
+                allowed = handled & (
+                    LANDLOCK_ACCESS_FS_WRITE_FILE | LANDLOCK_ACCESS_FS_TRUNCATE
+                )
+                if not allowed:
+                    fail(f"Landlock writable file has no supported access rights: {root}")
+            else:
+                fail(f"Landlock writable path is neither a directory nor regular file: {root}")
             path_fd = os.open(root, os.O_PATH | os.O_CLOEXEC)
             try:
-                rule = LandlockPathBeneathAttr(handled, path_fd)
+                rule = LandlockPathBeneathAttr(allowed, path_fd)
                 _syscall(
                     SYS_LANDLOCK_ADD_RULE,
                     ctypes.c_int(ruleset_fd),
