@@ -287,25 +287,77 @@ def inotify_changed(fd: int | None) -> bool:
     return changed
 
 
-def direct_children() -> tuple[int, ...]:
-    path = f"/proc/self/task/{os.getpid()}/children"
+def descendant_processes(root_pid: int | None = None) -> tuple[int, ...]:
+    """Return the current procfs parent-graph descendants of the supervisor.
+
+    A child subreaper may adopt daemonized descendants that are waitable even when a
+    task-local ``children`` view is transiently incomplete.  Reconstructing the live
+    PPid graph from /proc covers both direct children and still-nested descendants;
+    the caller repeats the scan until the bounded reap boundary is empty.
+    """
+    root = os.getpid() if root_pid is None else root_pid
+    parents: dict[int, int] = {}
     try:
-        raw = Path(path).read_text(encoding="ascii").strip()
-    except FileNotFoundError:
-        return ()
-    if not raw:
-        return ()
-    return tuple(int(value) for value in raw.split())
+        entries = tuple(Path("/proc").iterdir())
+    except OSError as exc:
+        print(
+            f"repo-pr-runner-supervisor: procfs descendant scan failed ({exc.errno}: {exc.strerror})",
+            file=sys.stderr,
+        )
+        raise SystemExit(SUPERVISOR_REAP_ERROR) from exc
+
+    for entry in entries:
+        if not entry.name.isdigit():
+            continue
+        pid = int(entry.name)
+        if pid == root:
+            continue
+        try:
+            status = (entry / "status").read_text(encoding="ascii")
+        except (FileNotFoundError, ProcessLookupError, PermissionError):
+            continue
+        except OSError as exc:
+            if exc.errno in {errno.ENOENT, errno.ESRCH}:
+                continue
+            print(
+                f"repo-pr-runner-supervisor: could not inspect descendant candidate {pid} ({exc.errno}: {exc.strerror})",
+                file=sys.stderr,
+            )
+            raise SystemExit(SUPERVISOR_REAP_ERROR) from exc
+        for line in status.splitlines():
+            if not line.startswith("PPid:"):
+                continue
+            fields = line.split()
+            if len(fields) == 2:
+                try:
+                    parents[pid] = int(fields[1])
+                except ValueError:
+                    pass
+            break
+
+    descendants: set[int] = set()
+    frontier = {root}
+    while frontier:
+        next_frontier = {
+            pid
+            for pid, parent in parents.items()
+            if parent in frontier and pid not in descendants and pid != root
+        }
+        if not next_frontier:
+            break
+        descendants.update(next_frontier)
+        frontier = next_frontier
+    return tuple(sorted(descendants))
 
 
 def contain_descendants() -> bool:
     found = False
     deadline = time.monotonic() + DESCENDANT_REAP_TIMEOUT_SECONDS
     while True:
-        children = direct_children()
-        if children:
+        descendants = descendant_processes()
+        if descendants:
             found = True
-            for pid in children:
+            for pid in descendants:
                 try:
                     os.kill(pid, signal.SIGKILL)
                 except ProcessLookupError:
@@ -323,8 +375,9 @@ def contain_descendants() -> bool:
                     break
                 found = True
         except ChildProcessError:
-            return found
-        if not direct_children():
+            if not descendant_processes():
+                return found
+        if not descendant_processes():
             try:
                 pid, _ = os.waitpid(-1, os.WNOHANG)
                 if pid > 0:

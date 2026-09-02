@@ -397,6 +397,26 @@ test("repository-owned supervisor deterministically reaps an ordinary long-lived
   }
 })
 
+test("repository-owned supervisor reaps an adopted double-fork daemon via the procfs parent graph", async () => {
+  const root = await mkdtemp(join(tmpdir(), "repo-owned-supervisor-double-fork-"))
+  const runnerPath = join(root, "runner.py")
+  await writeFile(runnerPath, `#!/usr/bin/env python3\nimport os\nimport time\nfirst = os.fork()\nif first == 0:\n    os.setsid()\n    second = os.fork()\n    if second == 0:\n        time.sleep(30)\n        os._exit(0)\n    os._exit(0)\nos.waitpid(first, 0)\n`)
+  await chmod(runnerPath, 0o755)
+  const runnerHandle = await open(runnerPath, constants.O_RDONLY)
+  try {
+    const result = spawnSync("/usr/bin/python3", [RUNNER_SUPERVISOR, "--cwd", root, "--status-fd", "4", "--", "probe"], {
+      encoding: "utf8",
+      shell: false,
+      stdio: ["ignore", "pipe", "pipe", runnerHandle.fd, "pipe"],
+    })
+    assert.equal(result.status, 240, result.stderr)
+    assert.equal(JSON.parse(result.output[4].trim()).kind, "descendants")
+  } finally {
+    await runnerHandle.close()
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
 test("repository-owned supervisor stays bound to admitted control descriptors across pathname substitution", async () => {
   const root = await mkdtemp(join(tmpdir(), "repo-owned-supervisor-anchor-"))
   const control = join(root, "control")
