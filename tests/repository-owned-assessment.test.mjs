@@ -9,10 +9,11 @@ import { fileURLToPath } from "node:url"
 import test from "node:test"
 import {
   ASSESSMENT_CONTROL_WORKTREE_ROOT,
-  ASSESSMENT_NATIVE_RESULT_ROOT,
+  ASSESSMENT_REPOSITORY_RUNTIME_ROOT,
   ASSESSMENT_RESERVATION_ROOT,
   LOCAL_ASSESSMENT_SCHEMA,
   assessmentControlWorktreePath,
+  assessmentRepositoryRuntimePath,
   parseRepoPrAssessmentSpec,
   runRepoPrAssessment,
 } from "../lib/repo-pr-assessment.mjs"
@@ -52,9 +53,10 @@ assessment_id = value("--assessment-id")
 head = value("--sha")
 pr_number = int(value("--pr"))
 repo_root = value("--repo")
+workspace_root = value("--workspace-root")
 os.chdir("/tmp")
 base = subprocess.check_output(["git", "-C", repo_root, "rev-parse", "origin/main"], text=True).strip()
-path = pathlib.Path("/tmp/opencode/verify/results") / assessment_id / "assessment.json"
+path = pathlib.Path(workspace_root) / "results" / assessment_id / "assessment.json"
 path.parent.mkdir(parents=True, exist_ok=True)
 path.write_text(json.dumps({
     "schema_version": "local-agent-assessment-v1",
@@ -101,11 +103,12 @@ if (args[0] !== "run") process.exit(4)
 const assessmentId = value("--assessment-id")
 const head = value("--sha")
 const prNumber = Number(value("--pr"))
+const workspaceRoot = value("--workspace-root")
 const status = value("--status") || "PASS"
 const baseResult = spawnSync("git", ["rev-parse", "origin/main"], { encoding: "utf8", shell: false })
 if (baseResult.status !== 0) process.exit(4)
 const base = baseResult.stdout.trim()
-const path = "/tmp/opencode/verify/results/" + assessmentId + "/assessment.json"
+const path = workspaceRoot + "/results/" + assessmentId + "/assessment.json"
 if (args.includes("--skip-evidence")) process.exit(0)
 const preEvidenceBarrier = value("--pre-evidence-barrier")
 if (preEvidenceBarrier) {
@@ -134,7 +137,7 @@ if (args.includes("--probe-control-write")) {
 }
 let nativeGitWorktreeProbe = false
 if (args.includes("--native-git-worktree")) {
-  const probe = "/tmp/opencode/verify/worktrees/" + assessmentId + "-native-probe"
+  const probe = workspaceRoot + "/worktrees/" + assessmentId + "-native-probe"
   const added = spawnSync("git", ["worktree", "add", "--detach", probe, head], { encoding: "utf8", shell: false })
   if (added.status !== 0) process.exit(4)
   const removed = spawnSync("git", ["worktree", "remove", "--force", probe], { encoding: "utf8", shell: false })
@@ -162,6 +165,17 @@ if (ownerGitWriteProbe) {
   }
   if (ownerGitWriteBlocked !== true) process.exit(4)
 }
+let externalAssessmentWriteBlocked = null
+const externalAssessmentWriteProbe = value("--probe-external-assessment-write")
+if (externalAssessmentWriteProbe) {
+  try {
+    writeFileSync(externalAssessmentWriteProbe, "forbidden-cross-assessment-write\\n")
+  } catch (error) {
+    if (error?.code !== "EACCES" && error?.code !== "EPERM") throw error
+    externalAssessmentWriteBlocked = true
+  }
+  if (externalAssessmentWriteBlocked !== true) process.exit(4)
+}
 const pass = status === "PASS"
 const evidence = JSON.stringify({
   schema_version: "local-agent-assessment-v1",
@@ -187,6 +201,7 @@ const evidence = JSON.stringify({
   native_git_worktree_probe: nativeGitWorktreeProbe,
   reservation_delete_blocked: reservationDeleteBlocked,
   owner_git_write_blocked: ownerGitWriteBlocked,
+  external_assessment_write_blocked: externalAssessmentWriteBlocked,
 }) + "\\n"
 if (args.includes("--symlink-evidence")) {
   const target = path + ".target"
@@ -301,8 +316,8 @@ function makeSpec(fx, assessmentID, extraRun = []) {
       path: "tools/repository-owned-runner.mjs",
       blob_sha: fx.runnerBlobSha,
       result_contract: "local-agent-assessment-v1",
-      plan_argv: ["plan", "--sha", "{head_sha}", "--pr", "{pr_number}"],
-      run_argv: ["run", "--sha", "{head_sha}", "--pr", "{pr_number}", "--assessment-id", "{assessment_id}", ...extraRun],
+      plan_argv: ["plan", "--sha", "{head_sha}", "--pr", "{pr_number}", "--workspace-root", "{workspace_root}"],
+      run_argv: ["run", "--sha", "{head_sha}", "--pr", "{pr_number}", "--assessment-id", "{assessment_id}", "--workspace-root", "{workspace_root}", ...extraRun],
     },
     integrity_files: [{ path: "control.txt", blob_sha: fx.controlBlobSha }],
   })
@@ -327,8 +342,8 @@ function makePythonSpec(fx, assessmentID) {
       path: "tools/repository-owned-runner.py",
       blob_sha: fx.pythonRunnerBlobSha,
       result_contract: "local-agent-assessment-v1",
-      plan_argv: ["plan", "--sha", "{head_sha}", "--pr", "{pr_number}", "--repo", "{repo_root}"],
-      run_argv: ["run", "--sha", "{head_sha}", "--pr", "{pr_number}", "--assessment-id", "{assessment_id}", "--repo", "{repo_root}"],
+      plan_argv: ["plan", "--sha", "{head_sha}", "--pr", "{pr_number}", "--repo", "{repo_root}", "--workspace-root", "{workspace_root}"],
+      run_argv: ["run", "--sha", "{head_sha}", "--pr", "{pr_number}", "--assessment-id", "{assessment_id}", "--repo", "{repo_root}", "--workspace-root", "{workspace_root}"],
     },
     integrity_files: [
       { path: "control.txt", blob_sha: fx.controlBlobSha },
@@ -361,9 +376,9 @@ async function coordinateBarrier(barrier, action) {
 
 async function cleanupFixture(fx, assessmentIDs) {
   for (const id of assessmentIDs) {
-    await rm(join(ASSESSMENT_NATIVE_RESULT_ROOT, id), { recursive: true, force: true })
-    await rm(join(ASSESSMENT_NATIVE_RESULT_ROOT, `${id}.moved`), { recursive: true, force: true })
-    await rm(join(ASSESSMENT_NATIVE_RESULT_ROOT, `${id}.replacement`), { recursive: true, force: true })
+    await rm(join(ASSESSMENT_REPOSITORY_RUNTIME_ROOT, id), { recursive: true, force: true })
+    await rm(join(ASSESSMENT_REPOSITORY_RUNTIME_ROOT, `${id}.moved`), { recursive: true, force: true })
+    await rm(join(ASSESSMENT_REPOSITORY_RUNTIME_ROOT, `${id}.replacement`), { recursive: true, force: true })
     await rm(join(ASSESSMENT_RESERVATION_ROOT, `.opencode-reservation-${id}`), { force: true })
   }
   await rm(fx.root, { recursive: true, force: true })
@@ -552,6 +567,43 @@ test("repository-owned sandbox denies control and owner-Git writes while preserv
   assert.equal(await readFile(join(fx.repo, "control.txt"), "utf8"), "trusted-control\n")
 })
 
+test("repository-owned Landlock grant cannot write another assessment runtime or canonical evidence", async (t) => {
+  const fx = await fixture()
+  const id = `pr20-runtime-isolation-${Math.random().toString(16).slice(2, 8)}`
+  const foreignID = `foreign-${Math.random().toString(16).slice(2, 8)}`
+  t.after(async () => {
+    await cleanupFixture(fx, [id])
+    await rm(join(ASSESSMENT_REPOSITORY_RUNTIME_ROOT, foreignID), { recursive: true, force: true })
+  })
+  const foreignRuntime = join(ASSESSMENT_REPOSITORY_RUNTIME_ROOT, foreignID)
+  await mkdir(foreignRuntime, { recursive: true })
+  const foreignRuntimeSentinel = join(foreignRuntime, "sentinel")
+  await writeFile(foreignRuntimeSentinel, "foreign-runtime\n")
+  const canonicalSentinel = join(fx.evidenceRoot, "foreign-summary.json")
+  await mkdir(fx.evidenceRoot, { recursive: true })
+  await writeFile(canonicalSentinel, "foreign-summary\n")
+
+  const runtimeResult = await runRepoPrAssessment(makeSpec(fx, id, ["--probe-external-assessment-write", foreignRuntimeSentinel]), {
+    repoRoot: fx.repo,
+    evidenceRoot: fx.evidenceRoot,
+  })
+  assert.equal(runtimeResult.host_evidence_result, "PASS", runtimeResult.error)
+  let evidence = JSON.parse(await readFile(runtimeResult.runner_evidence_path, "utf8"))
+  assert.equal(evidence.external_assessment_write_blocked, true)
+  assert.equal(await readFile(foreignRuntimeSentinel, "utf8"), "foreign-runtime\n")
+
+  const secondID = `pr20-evidence-isolation-${Math.random().toString(16).slice(2, 8)}`
+  t.after(() => cleanupFixture(fx, [secondID]))
+  const evidenceResult = await runRepoPrAssessment(makeSpec(fx, secondID, ["--probe-external-assessment-write", canonicalSentinel]), {
+    repoRoot: fx.repo,
+    evidenceRoot: fx.evidenceRoot,
+  })
+  assert.equal(evidenceResult.host_evidence_result, "PASS", evidenceResult.error)
+  evidence = JSON.parse(await readFile(evidenceResult.runner_evidence_path, "utf8"))
+  assert.equal(evidence.external_assessment_write_blocked, true)
+  assert.equal(await readFile(canonicalSentinel, "utf8"), "foreign-summary\n")
+})
+
 test("repository-owned mode preserves native host-result semantics", async (t) => {
   const fx = await fixture()
   const statuses = ["FAIL", "BLOCKED", "STALE", "INFRA_ERROR", "ISOLATION_BREACH"]
@@ -636,17 +688,21 @@ test("repository-owned mode fails closed on missing, malformed, symlinked, overs
   }
 })
 
-test("repository-owned mode blocks a pre-existing native result directory before runner invocation", async (t) => {
+test("repository-owned mode preserves a pre-existing per-assessment runtime collision", async (t) => {
   const fx = await fixture()
-  const id = `pr20-native-collision-${Math.random().toString(16).slice(2, 8)}`
+  const id = `pr20-runtime-collision-${Math.random().toString(16).slice(2, 8)}`
   t.after(() => cleanupFixture(fx, [id]))
-  await mkdir(join(ASSESSMENT_NATIVE_RESULT_ROOT, id), { recursive: true })
-  const result = await runRepoPrAssessment(makeSpec(fx, id), {
+  const spec = makeSpec(fx, id)
+  const runtime = assessmentRepositoryRuntimePath(spec)
+  await mkdir(runtime, { recursive: true })
+  await writeFile(join(runtime, "sentinel"), "pre-existing-runtime\n")
+  const result = await runRepoPrAssessment(spec, {
     repoRoot: fx.repo,
     evidenceRoot: fx.evidenceRoot,
   })
   assert.equal(result.host_evidence_result, "BLOCKED")
-  assert.match(result.error, /native runner result directory already exists/)
+  assert.match(result.error, /repository-owned runtime path already exists/)
+  assert.equal(await readFile(join(runtime, "sentinel"), "utf8"), "pre-existing-runtime\n")
   assert.equal(result.runner.plan, null)
   assert.equal(result.runner.run, null)
 })
@@ -955,6 +1011,7 @@ test("repository-owned schema does not require a venv, base-sha argv, or evidenc
     assert.equal(spec.environment.venv, undefined)
     assert.equal(spec.runner.runArgv.includes("{base_sha}"), false)
     assert.equal(spec.runner.runArgv.includes("{evidence_path}"), false)
+    assert.equal(spec.runner.runArgv.includes("{workspace_root}"), true)
     assert.equal(spec.repository.headRef, "refs/pull/20/head")
   } finally {
     await cleanupFixture(fx, [id])
