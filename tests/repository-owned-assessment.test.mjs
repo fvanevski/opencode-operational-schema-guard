@@ -31,6 +31,7 @@ const PYTHON_RUNNER_SOURCE = `#!/usr/bin/env python3
 from __future__ import annotations
 
 import json
+import os
 import pathlib
 import subprocess
 import sys
@@ -51,6 +52,7 @@ assessment_id = value("--assessment-id")
 head = value("--sha")
 pr_number = int(value("--pr"))
 repo_root = value("--repo")
+os.chdir("/tmp")
 base = subprocess.check_output(["git", "-C", repo_root, "rev-parse", "origin/main"], text=True).strip()
 path = pathlib.Path("/tmp/opencode/verify/results") / assessment_id / "assessment.json"
 path.parent.mkdir(parents=True, exist_ok=True)
@@ -85,7 +87,10 @@ const value = (flag) => {
   return index >= 0 ? args[index + 1] : undefined
 }
 if (args[0] === "plan") {
-  if (args.includes("--simulate-supervisor-reap-error")) process.exit(243)
+  if (args.includes("--kill-supervisor")) {
+    process.kill(process.ppid, "SIGKILL")
+    process.exit(0)
+  }
   if (args.includes("--surviving-plan-child")) {
     const child = spawn(process.execPath, ["-e", "setInterval(() => {}, 1000)"], { detached: true, stdio: "ignore" })
     child.unref()
@@ -378,12 +383,13 @@ test("repository-owned supervisor deterministically reaps an ordinary long-lived
   const runnerHandle = await open(runnerPath, constants.O_RDONLY)
   try {
     for (let attempt = 0; attempt < 3; attempt += 1) {
-      const result = spawnSync("/usr/bin/python3", [RUNNER_SUPERVISOR, "--cwd", root, "--", "probe"], {
+      const result = spawnSync("/usr/bin/python3", [RUNNER_SUPERVISOR, "--cwd", root, "--status-fd", "4", "--", "probe"], {
         encoding: "utf8",
         shell: false,
-        stdio: ["ignore", "pipe", "pipe", runnerHandle.fd],
+        stdio: ["ignore", "pipe", "pipe", runnerHandle.fd, "pipe"],
       })
       assert.equal(result.status, 240, `attempt=${attempt + 1}\n${result.stderr}`)
+      assert.equal(JSON.parse(result.output[4].trim()).kind, "descendants")
     }
   } finally {
     await runnerHandle.close()
@@ -409,6 +415,7 @@ test("repository-owned supervisor stays bound to admitted control descriptors ac
     const result = spawnSync("/usr/bin/python3", [
       RUNNER_SUPERVISOR,
       "--cwd-fd", "4",
+      "--status-fd", "5",
       "--watch-root", "/proc/self/fd/4",
       "--watch", "control.txt",
       "--write-root", "/dev/null",
@@ -417,9 +424,10 @@ test("repository-owned supervisor stays bound to admitted control descriptors ac
     ], {
       encoding: "utf8",
       shell: false,
-      stdio: ["ignore", "pipe", "pipe", runnerHandle.fd, controlHandle.fd],
+      stdio: ["ignore", "pipe", "pipe", runnerHandle.fd, controlHandle.fd, "pipe"],
     })
     assert.equal(result.status, 0, result.stderr)
+    assert.equal(JSON.parse(result.output[5].trim()).kind, "runner")
     assert.equal(result.stdout.trim(), "trusted-control")
     assert.equal(await readFile(join(control, "control.txt"), "utf8"), "substituted-control\n")
     assert.equal(await readFile(join(moved, "control.txt"), "utf8"), "trusted-control\n")
@@ -441,7 +449,7 @@ test("repository-owned descriptor execution preserves Python sibling imports", a
   assert.equal(result.host_evidence_result, "PASS", result.error)
   const evidence = JSON.parse(await readFile(result.runner_evidence_path, "utf8"))
   assert.equal(evidence.descriptor_import_marker, "descriptor-import-ok")
-  assert.equal(evidence.repo_root, "/proc/self/cwd")
+  assert.equal(evidence.repo_root, "/proc/self/fd/0")
 })
 
 test("repository-owned mode preserves a pre-existing control snapshot collision", async (t) => {
@@ -709,7 +717,7 @@ test("repository-owned uncertain supervisor reaping preserves reservation and co
   const id = `pr20-reap-uncertain-${Math.random().toString(16).slice(2, 8)}`
   t.after(() => cleanupFixture(fx, [id]))
   const spec = makeSpec(fx, id)
-  spec.runner.planArgv.push("--simulate-supervisor-reap-error")
+  spec.runner.planArgv.push("--kill-supervisor")
   const result = await runRepoPrAssessment(spec, {
     repoRoot: fx.repo,
     evidenceRoot: fx.evidenceRoot,
