@@ -57,6 +57,9 @@ if (args.includes("--mutate-head")) {
 if (args.includes("--dirty-worktree")) {
   writeFileSync("runner-untracked.txt", "mutation\\n")
 }
+if (args.includes("--block-summary-write")) {
+  mkdirSync(output.replace(/\\.runner\\.json$/, ".summary.json"))
+}
 process.exit(0)
 `
 
@@ -252,6 +255,16 @@ test("gateway-owned integrity blob pins are enforced at the assessed head", asyn
   assert.match(result.error, /Git blob does not match the pinned authority/)
   assert.equal(result.runner.plan, null)
   assert.equal(result.runner.run, null)
+})
+
+test("gateway-owned mode returns INFRA_ERROR when the outer summary cannot be written", async () => {
+  const fx = await fixture()
+  const spec = structuredClone(fx.spec)
+  spec.runner.runArgv.push("--block-summary-write")
+  const result = await run(fx, spec)
+  assert.equal(result.host_evidence_result, "INFRA_ERROR")
+  assert.match(result.error, /could not write summary/)
+  assert.equal(result.exit_code, 2)
 })
 
 test("cleanup never touches unrelated local branches", async () => {

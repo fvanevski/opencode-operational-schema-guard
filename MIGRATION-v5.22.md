@@ -50,7 +50,7 @@ and writes the normal gateway summary at:
 /tmp/opencode/verify/evidence/<assessment-id>.summary.json
 ```
 
-Both gateway-owned and repository-owned modes now re-fetch and revalidate remote base/head authority at the final boundary. Gateway-owned integrity entries remain backward compatible with path-only and optional SHA-256 forms; when a `blob_sha` is supplied, v5.22.0 enforces it against the exact assessed-head Git blob and current worktree bytes rather than silently accepting an unchecked pin.
+Both gateway-owned and repository-owned modes now re-fetch and revalidate remote base/head authority at the final boundary. Gateway-owned integrity entries remain backward compatible with path-only and optional SHA-256 forms; when a `blob_sha` is supplied, v5.22.0 enforces it against the exact assessed-head Git blob and current worktree bytes rather than silently accepting an unchecked pin. The outer summary is mandatory evidence: failure to materialize it is `INFRA_ERROR` and can never leave the returned outer disposition as PASS.
 
 ## Upgrade procedure
 
