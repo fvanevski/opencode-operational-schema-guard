@@ -39,6 +39,7 @@ import { dirname } from "node:path"
 import { spawn, spawnSync } from "node:child_process"
 const args = process.argv.slice(2)
 if (process.env.ASSESSMENT_TEST_LOG) appendFileSync(process.env.ASSESSMENT_TEST_LOG, args[0] + "\\n")
+if (args.includes("--supervisor-exit")) process.exit(242)
 if (args[0] === "plan") {
   if (args.includes("--fail-plan")) process.exit(9)
   if (args.includes("--dirty-plan")) writeFileSync("plan-untracked.txt", "mutation\\n")
@@ -285,6 +286,35 @@ test("gateway-owned post-plan revalidation catches hidden pinned-input mutation"
   assert.equal(result.host_evidence_result, "ISOLATION_BREACH")
   assert.match(result.error, /integrity file \.python-version changed after admission/)
   assert.equal(result.runner.run, null)
+  assert.equal(result.cleanup_result, "PRESERVED_ISOLATION_BREACH")
+  const worktree = assessmentWorktreePath(fx.repo, spec, fx.worktreeRoot)
+  assert.equal(await exists(worktree), true)
+  git(fx.repo, "worktree", "remove", "--force", worktree)
+  git(fx.repo, "branch", "-D", assessmentBranchName(fx.repo, spec))
+})
+
+test("gateway-owned supervisor setup failure during plan preserves isolated state", async () => {
+  const fx = await fixture()
+  const spec = structuredClone(fx.spec)
+  spec.runner.planArgv.push("--supervisor-exit")
+  const result = await run(fx, spec)
+  assert.equal(result.host_evidence_result, "INFRA_ERROR")
+  assert.match(result.error, /supervisor failed during plan/)
+  assert.equal(result.runner.run, null)
+  assert.equal(result.cleanup_result, "PRESERVED_ISOLATION_BREACH")
+  const worktree = assessmentWorktreePath(fx.repo, spec, fx.worktreeRoot)
+  assert.equal(await exists(worktree), true)
+  git(fx.repo, "worktree", "remove", "--force", worktree)
+  git(fx.repo, "branch", "-D", assessmentBranchName(fx.repo, spec))
+})
+
+test("gateway-owned supervisor setup failure during run preserves isolated state", async () => {
+  const fx = await fixture()
+  const spec = structuredClone(fx.spec)
+  spec.runner.runArgv.push("--supervisor-exit")
+  const result = await run(fx, spec)
+  assert.equal(result.host_evidence_result, "INFRA_ERROR")
+  assert.match(result.error, /supervisor failed during run/)
   assert.equal(result.cleanup_result, "PRESERVED_ISOLATION_BREACH")
   const worktree = assessmentWorktreePath(fx.repo, spec, fx.worktreeRoot)
   assert.equal(await exists(worktree), true)

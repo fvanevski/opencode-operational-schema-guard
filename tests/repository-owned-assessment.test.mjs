@@ -409,6 +409,23 @@ test("repository-owned descriptor execution preserves Python sibling imports", a
   assert.equal(evidence.descriptor_import_marker, "descriptor-import-ok")
 })
 
+test("repository-owned mode preserves a pre-existing control snapshot collision", async (t) => {
+  const fx = await fixture()
+  const id = `pr20-control-collision-${Math.random().toString(16).slice(2, 8)}`
+  t.after(() => cleanupFixture(fx, [id]))
+  const spec = makeSpec(fx, id)
+  const controlWorktree = assessmentControlWorktreePath(fx.repo, spec)
+  await mkdir(controlWorktree, { recursive: true })
+  await writeFile(join(controlWorktree, "sentinel"), "pre-existing\n")
+  const result = await runRepoPrAssessment(spec, {
+    repoRoot: fx.repo,
+    evidenceRoot: fx.evidenceRoot,
+  })
+  assert.equal(result.host_evidence_result, "BLOCKED")
+  assert.match(result.error, /control snapshot path already exists/)
+  assert.equal(await readFile(join(controlWorktree, "sentinel"), "utf8"), "pre-existing\n")
+})
+
 test("repository-owned mode admits canonical PR refs without creating a gateway worktree", async (t) => {
   const fx = await fixture()
   const id = `pr20-native-${Math.random().toString(16).slice(2, 10)}`
