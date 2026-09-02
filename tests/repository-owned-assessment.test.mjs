@@ -18,6 +18,54 @@ function git(cwd, ...args) {
   return result.stdout.trim()
 }
 
+const PYTHON_HELPER_SOURCE = `MARKER = "descriptor-import-ok"\n`
+
+const PYTHON_RUNNER_SOURCE = `#!/usr/bin/env python3
+from __future__ import annotations
+
+import json
+import pathlib
+import subprocess
+import sys
+
+from repository_owned_helper import MARKER
+
+args = sys.argv[1:]
+if not args or args[0] not in {"plan", "run"}:
+    raise SystemExit(4)
+if args[0] == "plan":
+    raise SystemExit(0)
+
+def value(flag: str) -> str:
+    index = args.index(flag)
+    return args[index + 1]
+
+assessment_id = value("--assessment-id")
+head = value("--sha")
+pr_number = int(value("--pr"))
+base = subprocess.check_output(["git", "rev-parse", "origin/main"], text=True).strip()
+path = pathlib.Path("/tmp/opencode/verify/results") / assessment_id / "assessment.json"
+path.parent.mkdir(parents=True, exist_ok=True)
+path.write_text(json.dumps({
+    "schema_version": "local-agent-assessment-v1",
+    "host_evidence_result": "PASS",
+    "gate_decision": "NOT_EVALUATED",
+    "assessment_id": assessment_id,
+    "target_kind": "pr-head",
+    "pr_number": pr_number,
+    "requested_sha": head,
+    "tested_sha": head,
+    "pr_head_start": head,
+    "pr_head_end": head,
+    "control_sha": base,
+    "control_ref_start": base,
+    "control_ref_end": base,
+    "cleanup": {"services_removed": True, "worktree_removed": True, "materials_removed": True, "failures": []},
+    "descriptor_import_marker": MARKER,
+}) + "\\n")
+raise SystemExit(0)
+`
+
 const RUNNER_SOURCE = `#!/usr/bin/env node
 import { mkdirSync, renameSync, symlinkSync, writeFileSync } from "node:fs"
 import { dirname } from "node:path"
@@ -125,6 +173,10 @@ async function fixture() {
   const runnerPath = join(repo, "tools", "repository-owned-runner.mjs")
   await writeFile(runnerPath, RUNNER_SOURCE)
   await chmod(runnerPath, 0o755)
+  const pythonRunnerPath = join(repo, "tools", "repository-owned-runner.py")
+  await writeFile(pythonRunnerPath, PYTHON_RUNNER_SOURCE)
+  await chmod(pythonRunnerPath, 0o755)
+  await writeFile(join(repo, "tools", "repository_owned_helper.py"), PYTHON_HELPER_SOURCE)
   await writeFile(join(repo, "control.txt"), "trusted-control\n")
   git(repo, "add", ".")
   git(repo, "commit", "-m", "base")
@@ -141,8 +193,9 @@ async function fixture() {
   git(repo, "switch", "main")
 
   const runnerBlobSha = git(repo, "rev-parse", "HEAD:tools/repository-owned-runner.mjs")
+  const pythonRunnerBlobSha = git(repo, "rev-parse", "HEAD:tools/repository-owned-runner.py")
   const controlBlobSha = git(repo, "rev-parse", "HEAD:control.txt")
-  return { root, repo, evidenceRoot, baseSha, headSha, runnerBlobSha, controlBlobSha }
+  return { root, repo, evidenceRoot, baseSha, headSha, runnerBlobSha, pythonRunnerBlobSha, controlBlobSha }
 }
 
 function makeSpec(fx, assessmentID, extraRun = []) {
@@ -171,6 +224,32 @@ function makeSpec(fx, assessmentID, extraRun = []) {
   })
 }
 
+function makePythonSpec(fx, assessmentID) {
+  return parseRepoPrAssessmentSpec({
+    schema_version: LOCAL_ASSESSMENT_SCHEMA,
+    kind: "repo-pr",
+    assessment_id: assessmentID,
+    pr_number: 20,
+    repository: {
+      remote: "origin",
+      base_ref: "main",
+      base_sha: fx.baseSha,
+      head_ref: "refs/pull/20/head",
+      head_sha: fx.headSha,
+    },
+    runner: {
+      execution: "repository-owned",
+      authority: "base",
+      path: "tools/repository-owned-runner.py",
+      blob_sha: fx.pythonRunnerBlobSha,
+      result_contract: "local-agent-assessment-v1",
+      plan_argv: ["plan", "--sha", "{head_sha}", "--pr", "{pr_number}"],
+      run_argv: ["run", "--sha", "{head_sha}", "--pr", "{pr_number}", "--assessment-id", "{assessment_id}"],
+    },
+    integrity_files: [{ path: "control.txt", blob_sha: fx.controlBlobSha }],
+  })
+}
+
 async function cleanupFixture(fx, assessmentIDs) {
   for (const id of assessmentIDs) {
     await rm(join(ASSESSMENT_NATIVE_RESULT_ROOT, id), { recursive: true, force: true })
@@ -179,6 +258,19 @@ async function cleanupFixture(fx, assessmentIDs) {
   }
   await rm(fx.root, { recursive: true, force: true })
 }
+
+test("repository-owned descriptor execution preserves Python sibling imports", async (t) => {
+  const fx = await fixture()
+  const id = `pr20-python-fd-${Math.random().toString(16).slice(2, 8)}`
+  t.after(() => cleanupFixture(fx, [id]))
+  const result = await runRepoPrAssessment(makePythonSpec(fx, id), {
+    repoRoot: fx.repo,
+    evidenceRoot: fx.evidenceRoot,
+  })
+  assert.equal(result.host_evidence_result, "PASS", result.error)
+  const evidence = JSON.parse(await readFile(result.runner_evidence_path, "utf8"))
+  assert.equal(evidence.descriptor_import_marker, "descriptor-import-ok")
+})
 
 test("repository-owned mode admits canonical PR refs without creating a gateway worktree", async (t) => {
   const fx = await fixture()
