@@ -50,7 +50,8 @@ def value(flag: str) -> str:
 assessment_id = value("--assessment-id")
 head = value("--sha")
 pr_number = int(value("--pr"))
-base = subprocess.check_output(["git", "rev-parse", "origin/main"], text=True).strip()
+repo_root = value("--repo")
+base = subprocess.check_output(["git", "-C", repo_root, "rev-parse", "origin/main"], text=True).strip()
 path = pathlib.Path("/tmp/opencode/verify/results") / assessment_id / "assessment.json"
 path.parent.mkdir(parents=True, exist_ok=True)
 path.write_text(json.dumps({
@@ -69,6 +70,7 @@ path.write_text(json.dumps({
     "control_ref_end": base,
     "cleanup": {"services_removed": True, "worktree_removed": True, "materials_removed": True, "failures": []},
     "descriptor_import_marker": MARKER,
+    "repo_root": repo_root,
 }) + "\\n")
 raise SystemExit(0)
 `
@@ -99,6 +101,16 @@ if (baseResult.status !== 0) process.exit(4)
 const base = baseResult.stdout.trim()
 const path = "/tmp/opencode/verify/results/" + assessmentId + "/assessment.json"
 if (args.includes("--skip-evidence")) process.exit(0)
+const preEvidenceBarrier = value("--pre-evidence-barrier")
+if (preEvidenceBarrier) {
+  writeFileSync(preEvidenceBarrier + ".ready", "ready\\n")
+  const waitState = new Int32Array(new SharedArrayBuffer(4))
+  const deadline = Date.now() + 10000
+  while (!existsSync(preEvidenceBarrier + ".release")) {
+    if (Date.now() >= deadline) process.exit(4)
+    Atomics.wait(waitState, 0, 0, 10)
+  }
+}
 mkdirSync(dirname(path), { recursive: true })
 if (args.includes("--malformed-evidence")) {
   writeFileSync(path, "{not-json\\n")
@@ -309,8 +321,8 @@ function makePythonSpec(fx, assessmentID) {
       path: "tools/repository-owned-runner.py",
       blob_sha: fx.pythonRunnerBlobSha,
       result_contract: "local-agent-assessment-v1",
-      plan_argv: ["plan", "--sha", "{head_sha}", "--pr", "{pr_number}"],
-      run_argv: ["run", "--sha", "{head_sha}", "--pr", "{pr_number}", "--assessment-id", "{assessment_id}"],
+      plan_argv: ["plan", "--sha", "{head_sha}", "--pr", "{pr_number}", "--repo", "{repo_root}"],
+      run_argv: ["run", "--sha", "{head_sha}", "--pr", "{pr_number}", "--assessment-id", "{assessment_id}", "--repo", "{repo_root}"],
     },
     integrity_files: [
       { path: "control.txt", blob_sha: fx.controlBlobSha },
@@ -407,6 +419,7 @@ test("repository-owned descriptor execution preserves Python sibling imports", a
   assert.equal(result.host_evidence_result, "PASS", result.error)
   const evidence = JSON.parse(await readFile(result.runner_evidence_path, "utf8"))
   assert.equal(evidence.descriptor_import_marker, "descriptor-import-ok")
+  assert.match(evidence.repo_root, new RegExp(`^/proc/${process.pid}/fd/\\d+$`))
 })
 
 test("repository-owned mode preserves a pre-existing control snapshot collision", async (t) => {
@@ -615,6 +628,40 @@ test("repository-owned runner cannot delete the gateway-only reservation token",
   assert.equal(result.host_evidence_result, "PASS", result.error)
   const evidence = JSON.parse(await readFile(result.runner_evidence_path, "utf8"))
   assert.equal(evidence.reservation_delete_blocked, true)
+})
+
+test("repository-owned kernel reservation prevents duplicate identity across reservation-root replacement", async (t) => {
+  const fx = await fixture()
+  const id = `pr20-kernel-reservation-${Math.random().toString(16).slice(2, 8)}`
+  t.after(() => cleanupFixture(fx, [id]))
+  const barrier = join(fx.evidenceRoot, `pre-evidence-${id}`)
+  const movedRoot = `${ASSESSMENT_RESERVATION_ROOT}.${id}.moved`
+  let secondResult
+  const firstPromise = runRepoPrAssessment(makeSpec(fx, id, ["--pre-evidence-barrier", barrier]), {
+    repoRoot: fx.repo,
+    evidenceRoot: fx.evidenceRoot,
+  })
+  const attack = coordinateBarrier(barrier, async () => {
+    await rename(ASSESSMENT_RESERVATION_ROOT, movedRoot)
+    await mkdir(ASSESSMENT_RESERVATION_ROOT)
+    secondResult = await runRepoPrAssessment(makeSpec(fx, id), {
+      repoRoot: fx.repo,
+      evidenceRoot: fx.evidenceRoot,
+    })
+  })
+  const firstResult = await firstPromise
+  await attack
+  try {
+    assert.equal(secondResult.host_evidence_result, "BLOCKED")
+    assert.match(secondResult.error, /kernel assessment reservation already exists/)
+    assert.equal(secondResult.summary_path, null)
+    assert.equal(firstResult.host_evidence_result, "ISOLATION_BREACH")
+    assert.match(firstResult.error, /reservation root pathname/)
+  } finally {
+    await rm(ASSESSMENT_RESERVATION_ROOT, { recursive: true, force: true })
+    await rm(join(movedRoot, `.opencode-reservation-${id}`), { force: true })
+    await rename(movedRoot, ASSESSMENT_RESERVATION_ROOT).catch(() => {})
+  }
 })
 
 test("repository-owned mode requires the reservation identity through evidence admission", async (t) => {
