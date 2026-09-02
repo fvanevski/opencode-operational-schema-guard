@@ -143,6 +143,10 @@ if (args.includes("--symlink-evidence-dir")) {
   writeFileSync(replacement + "/assessment.json", evidence)
   symlinkSync(replacement, evidenceDir)
 }
+if (args.includes("--surviving-run-child")) {
+  const child = spawn(process.execPath, ["-e", "setInterval(() => {}, 1000)"], { stdio: "ignore" })
+  child.unref()
+}
 if (args.includes("--dirty-owner")) writeFileSync("owner-mutated.txt", "mutation\\n")
 if (args.includes("--break-owner-index")) writeFileSync(".git/index", "broken-index\\n")
 const replaceRoot = value("--replace-evidence-root")
@@ -392,6 +396,21 @@ test("repository-owned mode fails closed on missing, malformed, symlinked, overs
   }
 })
 
+test("repository-owned mode blocks a pre-existing native result directory before runner invocation", async (t) => {
+  const fx = await fixture()
+  const id = `pr20-native-collision-${Math.random().toString(16).slice(2, 8)}`
+  t.after(() => cleanupFixture(fx, [id]))
+  await mkdir(join(ASSESSMENT_NATIVE_RESULT_ROOT, id), { recursive: true })
+  const result = await runRepoPrAssessment(makeSpec(fx, id), {
+    repoRoot: fx.repo,
+    evidenceRoot: fx.evidenceRoot,
+  })
+  assert.equal(result.host_evidence_result, "BLOCKED")
+  assert.match(result.error, /native runner result directory already exists/)
+  assert.equal(result.runner.plan, null)
+  assert.equal(result.runner.run, null)
+})
+
 test("repository-owned mode never follows a substituted assessment-id directory", async (t) => {
   const fx = await fixture()
   const id = `pr20-dir-swap-${Math.random().toString(16).slice(2, 8)}`
@@ -417,6 +436,18 @@ test("repository-owned plan descendants cannot survive into the run boundary", a
   assert.equal(result.host_evidence_result, "ISOLATION_BREACH")
   assert.match(result.error, /plan left surviving descendants/)
   assert.equal(result.runner.run, null)
+})
+
+test("repository-owned run descendants terminalize before native evidence acceptance", async (t) => {
+  const fx = await fixture()
+  const id = `pr20-run-child-${Math.random().toString(16).slice(2, 8)}`
+  t.after(() => cleanupFixture(fx, [id]))
+  const result = await runRepoPrAssessment(makeSpec(fx, id, ["--surviving-run-child"]), {
+    repoRoot: fx.repo,
+    evidenceRoot: fx.evidenceRoot,
+  })
+  assert.equal(result.host_evidence_result, "ISOLATION_BREACH")
+  assert.match(result.error, /run left surviving descendants/)
 })
 
 test("repository-owned head authority supports an explicitly pinned reviewed bootstrap checkout", async (t) => {

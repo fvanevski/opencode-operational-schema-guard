@@ -189,7 +189,7 @@ Example repository-owned spec for a main-owned exact-head runner:
 
 Do not add `{base_sha}` or `{evidence_path}` merely to satisfy the generic schema in repository-owned mode; the gateway itself binds remote base authority and the native result location. Do not use `authority: "head"` as a shortcut around a main-owned runner. A head-authority spec is valid only when Central has separately reviewed and pinned that exact bootstrap control plane.
 
-In both modes the runner's `HOST_EVIDENCE_RESULT` remains host evidence; `GATE_DECISION` stays `NOT_EVALUATED`. Failure to materialize the outer summary is itself `INFRA_ERROR`; no mode may return outer PASS without a successfully written authoritative summary.
+In both modes the runner's `HOST_EVIDENCE_RESULT` remains host evidence; `GATE_DECISION` stays `NOT_EVALUATED`. Failure to materialize the outer summary is itself `INFRA_ERROR`; no mode may return outer PASS without a successfully written authoritative summary. When no durable pathname can name the anchored summary directory or the summary write itself fails, `summary_path` is returned as `null` rather than advertising an unreadable path.
 
 Explore and Fresh-review similarly end with exactly one role marker:
 

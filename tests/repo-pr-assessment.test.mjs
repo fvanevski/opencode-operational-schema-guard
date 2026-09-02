@@ -65,6 +65,10 @@ if (args.includes("--mutate-head")) {
 if (args.includes("--dirty-worktree")) {
   writeFileSync("runner-untracked.txt", "mutation\\n")
 }
+if (args.includes("--surviving-run-child")) {
+  const child = spawn(process.execPath, ["-e", "setInterval(() => {}, 1000)"], { stdio: "ignore" })
+  child.unref()
+}
 if (args.includes("--block-summary-write")) {
   mkdirSync(output.replace(/\\.runner\\.json$/, ".summary.json"))
 }
@@ -303,6 +307,20 @@ test("gateway-owned plan descendants cannot survive into the run boundary", asyn
   git(fx.repo, "branch", "-D", assessmentBranchName(fx.repo, spec))
 })
 
+test("gateway-owned run descendants terminalize before evidence acceptance", async () => {
+  const fx = await fixture()
+  const spec = structuredClone(fx.spec)
+  spec.runner.runArgv.push("--surviving-run-child")
+  const result = await run(fx, spec)
+  assert.equal(result.host_evidence_result, "ISOLATION_BREACH")
+  assert.match(result.error, /run left surviving descendants/)
+  assert.equal(result.cleanup_result, "PRESERVED_ISOLATION_BREACH")
+  const worktree = assessmentWorktreePath(fx.repo, spec, fx.worktreeRoot)
+  assert.equal(await exists(worktree), true)
+  git(fx.repo, "worktree", "remove", "--force", worktree)
+  git(fx.repo, "branch", "-D", assessmentBranchName(fx.repo, spec))
+})
+
 test("gateway-owned evidence-root replacement is an isolation breach", async () => {
   const fx = await fixture()
   const spec = structuredClone(fx.spec)
@@ -322,6 +340,7 @@ test("gateway-owned mode returns INFRA_ERROR when the outer summary cannot be wr
   const result = await run(fx, spec)
   assert.equal(result.host_evidence_result, "INFRA_ERROR")
   assert.match(result.error, /outer summary could not be materialized/)
+  assert.equal(result.summary_path, null)
   assert.equal(result.exit_code, 2)
 })
 
