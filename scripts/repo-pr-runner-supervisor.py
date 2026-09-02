@@ -25,6 +25,9 @@ from typing import Iterable
 
 PR_SET_CHILD_SUBREAPER = 36
 PR_SET_NO_NEW_PRIVS = 38
+PR_SET_PTRACER = 0x59616D61
+PR_SET_PTRACER_ANY = (1 << (ctypes.sizeof(ctypes.c_ulong) * 8)) - 1
+REPO_ROOT_TOKEN = "__OPENCODE_REPOSITORY_ROOT_CAPABILITY__"
 
 LANDLOCK_CREATE_RULESET_VERSION = 1
 LANDLOCK_RULE_PATH_BENEATH = 1
@@ -96,6 +99,22 @@ def _prctl(option: int, value: int) -> None:
     if result != 0:
         code = ctypes.get_errno()
         raise OSError(code, os.strerror(code))
+
+
+def _allow_ptracer_any() -> None:
+    result = int(
+        libc.prctl(
+            ctypes.c_int(PR_SET_PTRACER),
+            ctypes.c_ulong(PR_SET_PTRACER_ANY),
+            ctypes.c_ulong(0),
+            ctypes.c_ulong(0),
+            ctypes.c_ulong(0),
+        )
+    )
+    if result != 0:
+        code = ctypes.get_errno()
+        if code not in {errno.EINVAL, errno.ENOSYS}:
+            raise OSError(code, os.strerror(code))
 
 
 def _landlock_write_rights(abi: int) -> int:
@@ -320,6 +339,59 @@ def contain_descendants() -> bool:
         time.sleep(DESCENDANT_REAP_POLL_SECONDS)
 
 
+def _close_holder_fds(keep: set[int]) -> None:
+    for entry in os.listdir("/proc/self/fd"):
+        try:
+            fd = int(entry)
+        except ValueError:
+            continue
+        if fd > 2 and fd not in keep:
+            try:
+                os.close(fd)
+            except OSError:
+                pass
+
+
+def start_control_capability_holder(cwd_fd: int) -> tuple[int, int]:
+    ready_read, ready_write = os.pipe2(os.O_CLOEXEC)
+    lifetime_read, lifetime_write = os.pipe2(os.O_CLOEXEC)
+    pid = os.fork()
+    if pid == 0:
+        os.close(ready_read)
+        os.close(lifetime_write)
+        try:
+            os.fchdir(cwd_fd)
+            _close_holder_fds({ready_write, lifetime_read})
+            _allow_ptracer_any()
+            os.write(ready_write, b"1")
+            os.close(ready_write)
+            while os.read(lifetime_read, 1):
+                pass
+            os.close(lifetime_read)
+            os._exit(0)
+        except BaseException as exc:  # noqa: BLE001 - isolated holder can only report setup failure
+            try:
+                os.write(ready_write, f"0{type(exc).__name__}:{exc}".encode("utf-8")[:512])
+            except OSError:
+                pass
+            os._exit(SUPERVISOR_SETUP_ERROR)
+    os.close(ready_write)
+    os.close(lifetime_read)
+    try:
+        ready = os.read(ready_read, 513)
+    finally:
+        os.close(ready_read)
+    if ready != b"1":
+        os.close(lifetime_write)
+        try:
+            os.waitpid(pid, 0)
+        except ChildProcessError:
+            pass
+        detail = ready[1:].decode("utf-8", errors="replace") if ready.startswith(b"0") else "holder exited before readiness"
+        fail(f"control-root capability holder setup failed ({detail})")
+    return pid, lifetime_write
+
+
 def execute_runner(argv: list[str], cwd: str | None, cwd_fd: int | None) -> tuple[str, int]:
     if not argv:
         fail("runner argv is empty")
@@ -327,17 +399,25 @@ def execute_runner(argv: list[str], cwd: str | None, cwd_fd: int | None) -> tupl
         _prctl(PR_SET_CHILD_SUBREAPER, 1)
     except OSError as exc:
         fail(f"subreaper setup failed ({exc.errno}: {exc.strerror})")
+    holder_pid: int | None = None
+    holder_lifetime: int | None = None
+    effective_argv = list(argv)
+    if cwd_fd is not None and any(REPO_ROOT_TOKEN in arg for arg in effective_argv):
+        holder_pid, holder_lifetime = start_control_capability_holder(cwd_fd)
+        capability_path = f"/proc/{holder_pid}/cwd"
+        effective_argv = [arg.replace(REPO_ROOT_TOKEN, capability_path) for arg in effective_argv]
+    elif any(REPO_ROOT_TOKEN in arg for arg in effective_argv):
+        fail("repository-root capability token requires a descriptor-bound cwd")
     pid = os.fork()
     if pid == 0:
         try:
             if cwd_fd is not None:
                 os.fchdir(cwd_fd)
-                os.dup2(cwd_fd, 0, inheritable=True)
             elif cwd is not None:
                 os.chdir(cwd)
             else:
                 raise RuntimeError("runner cwd authority is unavailable")
-            os.execve("/proc/self/fd/3", ["/proc/self/fd/3", *argv], dict(os.environ))
+            os.execve("/proc/self/fd/3", ["/proc/self/fd/3", *effective_argv], dict(os.environ))
         except BaseException as exc:  # noqa: BLE001 - child can only report then exit
             print(f"repo-pr-runner-supervisor: runner exec failed: {type(exc).__name__}: {exc}", file=sys.stderr)
             os._exit(SUPERVISOR_SETUP_ERROR)
@@ -345,9 +425,20 @@ def execute_runner(argv: list[str], cwd: str | None, cwd_fd: int | None) -> tupl
         _, status = os.waitpid(pid, 0)
     except OSError as exc:
         fail(f"runner wait failed ({exc.errno}: {exc.strerror})")
+    holder_status: int | None = None
+    if holder_lifetime is not None:
+        os.close(holder_lifetime)
+        holder_lifetime = None
+    if holder_pid is not None:
+        try:
+            _, holder_status = os.waitpid(holder_pid, 0)
+        except OSError as exc:
+            fail(f"control-root capability holder wait failed ({exc.errno}: {exc.strerror})")
     descendants = contain_descendants()
     if descendants:
         return ("descendants", SUPERVISOR_DESCENDANTS)
+    if holder_status is not None and (not os.WIFEXITED(holder_status) or os.WEXITSTATUS(holder_status) != 0):
+        fail("control-root capability holder did not terminate cleanly")
     if os.WIFEXITED(status):
         return ("runner", os.WEXITSTATUS(status))
     if os.WIFSIGNALED(status):
