@@ -419,7 +419,7 @@ test("repository-owned descriptor execution preserves Python sibling imports", a
   assert.equal(result.host_evidence_result, "PASS", result.error)
   const evidence = JSON.parse(await readFile(result.runner_evidence_path, "utf8"))
   assert.equal(evidence.descriptor_import_marker, "descriptor-import-ok")
-  assert.match(evidence.repo_root, new RegExp(`^/proc/${process.pid}/fd/\\d+$`))
+  assert.equal(evidence.repo_root, "/proc/self/cwd")
 })
 
 test("repository-owned mode preserves a pre-existing control snapshot collision", async (t) => {
