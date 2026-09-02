@@ -1,0 +1,6 @@
+import "./operation-guard.test.mjs"
+import "./verify-disposable.test.mjs"
+import "./local-agent-assessment.test.mjs"
+import "./repo-pr-assessment.test.mjs"
+import "./workspace-identity.test.mjs"
+import "./config-contract.test.mjs"

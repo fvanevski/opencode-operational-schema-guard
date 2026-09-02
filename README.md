@@ -1,0 +1,191 @@
+# OpenCode operational-schema guard
+
+This local plugin turns the v5.21.1 delegation, child-capability, resumable-failure, authority-admission, project-neutral repository assessment, prompt-compatibility, interactive-call, trace-audit, and compaction contract into bounded runtime behavior.
+
+<!-- generated-policy:start -->
+[operational-policy-v5.21.1]
+Operational budgets are advisory context-engineering signals, not execution authority. Read, reopen, shell-packet, direct-validation, ordinary operation, child-call, and routing-debt thresholds may emit concise guidance but must not stop otherwise permitted work.
+Normalize a non-empty bounded Task prompt into the Turn-1 envelope when safe; reject only unsafe, oversized, or semantically unbounded delegation. A child capability mismatch rejects only that invocation and provides a machine-readable correction code plus the supported route; it never terminalizes the child.
+Inject the selected child's one-bare-call execution rule and exact completion marker directly into every bounded Task packet when space permits; do not make the child reconstruct that contract from guard failures.
+Use question or ask_question only for genuinely missing user input and always provide at least one non-empty question. Once finalization is announced, emit the final response in that same turn; never launch an empty 0/0 interactive prompt. RESPOND_OR_ASK_NONEMPTY means answer directly when ready or retry with one real question.
+Use /home/filip/.config/opencode/plugins/operational-schema-v5/scripts/session-trace-assessment.mjs for bounded session-trace evidence instead of disguising read-only parsing as a test command. Compatibility pattern: /home/filip/.config/opencode/plugins/operational-schema-v5/scripts/session-trace-assessment.mjs --input /tmp/opencode/verify/materials/*.json --session-id ses_* --profile guard-friction-v1. Remediation-audit pattern: /home/filip/.config/opencode/plugins/operational-schema-v5/scripts/session-trace-assessment.mjs --input /tmp/opencode/verify/materials/*.json --session-id ses_* --profile remediation-audit-v1. Actual invocations must provide one concrete .json file and one concrete ses_ identifier.
+For deterministic repository host evidence, prefer the harness-owned local-agent-assessment.mjs gateway with one typed spec under /tmp/opencode/verify/assessments. The gateway owns remote-ref refresh, exact-head admission, isolated named worktree creation, repository-runner invocation, evidence hashing, and cleanup; stale developer branches are not assessment authority.
+Hard stops remain for exact-head authority admission, unsafe child writes or external access, destructive or publish actions lacking required gates, proven-success duplicate child invocations, and the 195000-token emergency ceiling.
+[/operational-policy-v5.21.1]
+<!-- generated-policy:end -->
+
+## Session trace audits
+
+Export an OpenCode session into `/tmp/opencode/verify/materials`, then invoke `scripts/session-trace-assessment.mjs` with the export path, its exact `ses_` identity, and a fixed profile. `guard-friction-v1` retains the legacy aggregate counters. `remediation-audit-v1` produces a deterministic `opencode-session-audit-v1` report with turns, structured fault events, explicit or temporal-only links, remediation candidates, and format diagnostics.
+
+The remediation report never reproduces prompts, reasoning, patches, command arguments, environment values, tool output, or tool errors. It records bounded IDs, reason codes, input key names, source size/hash, and evidence provenance. Structured `metadata.operationalSchema` is authoritative; tool-error pattern matching is only a medium-confidence fallback. Compatibility counters use structured occurrence counts when available. Candidate frequency alone never authorizes relaxing permissions or safety gates.
+
+It enforces:
+
+- safe preflight normalization of format-only Task defects, with normalized/deferred fields reported in Task metadata, while semantic scope and routing limits still fail closed;
+- direct injection of a compact type-specific child execution/result contract into bounded Task packets, reducing marker and shell-shape recovery turns without relaxing child permissions;
+- OpenCode 1.18.20+ Task failures are classified from terminal ToolPart events: only transient failures carrying a `task_id` are resumable, exactly once, with the original subagent type and normalized Scope;
+- unknown `task_id` values, type/Scope drift, repeated resumes, and silent fresh-session fallback are blocked fail-closed instead of inheriting OpenCode's permissive fallback;
+- undefined failed Task results are tolerated without masking the original provider error; failed Tasks never reset parent routing, review, or Verify boundaries;
+- rejection of known exact small-file lookups incorrectly routed to Explore;
+- advisory individual child tool-call budgets rather than model-step approximations;
+- separate child generation headroom and bounded returned handoffs;
+- incomplete classification for `finish:length`, unknown finish, empty, truncated, oversized, or max-step child results;
+- explicit Verify outcomes (`PASS`, `FAIL`, or `BLOCKED`) with matching command counts; transport completion alone cannot satisfy the gate;
+- explicit Explore (`COMPLETE`, `PARTIAL`, or `BLOCKED`) and Fresh-review (`CLEAN`, `FINDINGS`, or `BLOCKED`) outcomes with matching nonzero target counts; partial, blocked, budget-exhausted, or terminal-breaker children cannot satisfy routing or publication gates;
+- child shell-shape rejection for compound commands and redundant standalone exit-status probes; structured capability mismatches reject only the unsafe invocation and do not consume the normal work budget;
+- a small parent reread budget, two bounded exact-range escape slots, and an exact Explore follow-up when direct reopening is exhausted;
+- explicit overflow metadata when a child touches more paths than its bounded handoff can retain;
+- a primary reconnaissance checkpoint and hard ceiling shared by read, grep, glob, Serena, Probe, and common read-only shell discovery commands;
+- primary operation-boundary advisories at 24 and 30 accepted calls without fabricated execution stops;
+- outcome-dependent delegation boundaries: only a healthy completed Explore/Fresh-review or explicit Verify PASS resets parent routing;
+- advisory routing debt after a rejected broad Explore packet;
+- Verify guidance after three direct validation commands, canonicalized across RTK, env, uv, Python-module, and repository-venv spellings;
+- six-substantive-command primary shell advisories with literal output labels and heredoc bodies ignored;
+- native compaction coordinated at 150k with forced same-session auto-continuation and a 195k emergency no-tool ceiling;
+- compaction summaries containing bounded operational generations, authority, routing debt, and validation state;
+- campaign-scoped persistence of workspace-owned edit/review/Verify generations and authority across sessions and harness restarts, closed after successful publish plus clean identity proof at the new HEAD;
+- explicit success markers for empty shell output and rejection of retries after a successful equivalent child command;
+- Verify-plan preflight that rejects equivalent duplicate commands and redundant standalone cleanup after owner-mode `--down-after`;
+- typed `opencode-verify-manifest-v1` JSON plans referenced only by a standalone `Manifest:` field, so headings, explanatory prose, cached JSON, and other staged materials are never inferred to be executable plans;
+- a shell-free Verify manifest runner that executes ordered argv arrays without model copy/replay, emits a SHA-256 command census, rejects shell payloads and write-capable commands, and preserves per-command exit attribution;
+- capability-driven Task preflight that rejects commands and external paths the selected child cannot execute, with a machine-actionable `OPERATIONAL_PACKET_ACTION` before child creation;
+- primary ownership of remote-ref refresh, workdir-based child Git commands instead of `git -C`, safe Verify path derivation through `git ls-files` or staged manifests, and wrapper-only external interpreters;
+- narrowly scoped Explore/Fresh-review access to harness-owned exact-head worktrees under `/tmp/opencode/review/**`, plus the read-only Git identity/history commands required to audit them;
+- explicit `Targets:` accounting, including one-slot `resolve:` aliases, so contextual paths and alternative spellings do not inflate child routing limits; legacy packets retain bounded fallback path parsing;
+- Verify-plan and in-child rejection of `env`, assignment, RTK, or Node prefixes after the disposable wrapper delimiter, with an exact corrected-command hint;
+- explicit shell-mutation tracking plus successful Fresh-review and Verify children before commit or push after multi-file, shell-mutating, or high-risk edits; content-neutral `/tmp` evidence redirection does not fabricate a new workspace edit or invalidate current gates;
+- temporary Verify manifests that remain writable at a hard stop but never count as implementation edits or reset routing;
+- invalidation of prior review, Verify, and delegated coverage when a labeled authoritative exact-head SHA changes, including common `HEAD_SHA` forms;
+- persistent strict admission for `EXPECTED_START_HEAD` declarations, where a proved mismatch blocks reconciliation and edits until new user authority, plus a separately bounded detached-target mode;
+- feedback-driven mismatch guidance: strict-start mismatch stops for new authority, while target mismatch stays out of the initial system prompt and routes repository PR evidence to the typed assessment gateway or caller-owned validation to an authorized disposable worktree, preserving the owner checkout;
+- defensive prompt coalescing plus a required dedicated compatibility plugin configured after all prompt augmentation, producing one leading system message for strict OpenAI-compatible chat templates;
+- bounded primary recovery after reasoning-only `finish:length`, including a one-turn 1024-token cap and an immediate executable next-action directive;
+- operational-schema version and exact-head admission provenance in Task metadata and compaction continuity;
+- bounded structured child guard events in Task metadata for capability mismatches, duplicate attempts, shell-shape corrections, terminal breakers, and tool-budget exhaustion;
+- a strict live-config contract and backup-first atomic installer that never exposes a partially written `opencode.json`;
+- a shell-free disposable-service Verify runner that strictly parses helper exports, allowlists validation executables, propagates failures, and cleans up services it starts.
+- project-specific corpus/database gateways treated as optional project capabilities rather than core operational-schema invariants.
+- a shell-free, typed local host-assessment gateway that proves remote base/head authority, creates an isolated named exact-head worktree, invokes a repository-owned runner, fingerprints evidence, and cleans up only harness-owned state.
+- a file-backed, identity-validating session export wrapper that avoids pipe truncation and fails explicitly on malformed JSON.
+- a fixed-shape, shell-free session-trace assessment runner for bounded friction metrics and replay/fault evidence.
+- reason-code-specific analyzer candidates, including publish-gate friction and completed-but-incomplete delegated result contracts.
+
+`OPENCODE_OPERATION_GUARD_BYPASS=1` disables enforcement for emergency recovery. It should not be set during normal work or validation.
+
+Run:
+
+```text
+npm run check
+npm test
+```
+
+Install a validated staged configuration without directly editing the live file:
+
+```text
+scripts/install-live-config.mjs --candidate /absolute/path/opencode.json --backup /absolute/new/backup.json
+```
+
+The installer validates plugin wiring, ordered Verify path permissions, generic repository-local validation commands with autofix denied, typed assessment and manifest gateways, result-marker prompting, model contexts, and the live-config edit denial before making a same-directory atomic rename.
+
+Export a large parent or child session without piping OpenCode's JSON through a bounded stdout buffer:
+
+```text
+scripts/export-session-safe.mjs ses_... --output /absolute/new/session.json
+```
+
+The wrapper refuses to overwrite an existing target, validates JSON and session identity, and reports an invalid/truncated export as an error.
+
+For a project that owns `scripts/disposable-test-services`, a Verify child can run a disposable integration gate as:
+
+```text
+/home/filip/.config/opencode/plugins/operational-schema-v5/scripts/verify-disposable.mjs --namespace <unique-name> --start --down-after -- pytest -q <target>
+```
+
+The command immediately after `--` must be the repository-pinned executable. Do not insert `env`, assignments, RTK, or `node`; the wrapper injects the disposable helper environment and `PYTHONDONTWRITEBYTECODE=1` itself.
+
+Use that owner mode only when the child owns the lifecycle. If a parent or user already started the named disposable services, attach without ownership flags:
+
+```text
+/home/filip/.config/opencode/plugins/operational-schema-v5/scripts/verify-disposable.mjs --namespace <existing-name> -- pytest -q <target>
+```
+
+Every Verify final response must end with exactly one machine-readable line:
+
+```text
+OPERATIONAL_RESULT: PASS|FAIL|BLOCKED; COMMANDS_RUN: <n>; COMMANDS_REQUIRED: <n>
+```
+
+For deterministic repository PR host evidence, stage one typed spec at
+`/tmp/opencode/verify/assessments/<name>.json`, then invoke only the harness-owned
+gateway:
+
+```text
+/home/filip/.config/opencode/plugins/operational-schema-v5/scripts/local-agent-assessment.mjs --spec /tmp/opencode/verify/assessments/<name>.json
+```
+
+A repository-neutral spec binds exact authority and the repository-owned runner:
+
+```json
+{
+  "schema_version": "opencode-local-assessment-v1",
+  "kind": "repo-pr",
+  "assessment_id": "pr42-head-check",
+  "pr_number": 42,
+  "repository": {
+    "remote": "origin",
+    "base_ref": "main",
+    "base_sha": "<40-lowercase-hex>",
+    "head_ref": "feature/example",
+    "head_sha": "<40-lowercase-hex>"
+  },
+  "environment": { "venv": "/absolute/pre-existing/project/.venv" },
+  "runner": {
+    "path": ".github/ci/assessment.py",
+    "plan_argv": ["plan", "pr", "--base-sha", "{base_sha}", "--expected-head-sha", "{head_sha}", "--pr-number", "{pr_number}", "--venv", "{venv}"],
+    "run_argv": ["run", "pr", "--base-sha", "{base_sha}", "--expected-head-sha", "{head_sha}", "--pr-number", "{pr_number}", "--venv", "{venv}", "--output", "{evidence_path}"]
+  },
+  "integrity_files": [".python-version", ".github/ci/toolchain.txt", "uv.lock"]
+}
+```
+
+The gateway performs a shell-free exact refspec fetch, requires the remote base and
+head SHAs to match the spec, creates a unique named non-main branch under a
+harness-owned `/tmp/opencode/verify/worktrees/**` worktree at the exact head,
+verifies any declared canonical venv without creating or repairing it, fingerprints
+the tracked runner/integrity files, runs the declared plan/run argv templates, hashes
+the runner evidence, and proves the owner workspace unchanged. A stale developer
+branch with the same name as the PR head ref is irrelevant and is never reset,
+rebased, deleted, or otherwise reconciled. Cleanup removes only the generated
+assessment worktree/branch, and preserves them if their identity changed. The
+runner's `HOST_EVIDENCE_RESULT` remains host evidence; `GATE_DECISION` stays
+`NOT_EVALUATED`.
+
+Explore and Fresh-review similarly end with exactly one role marker:
+
+```text
+OPERATIONAL_EXPLORE: COMPLETE|PARTIAL|BLOCKED; TARGETS_INSPECTED: <n>; TARGETS_REQUIRED: <n>
+OPERATIONAL_REVIEW: CLEAN|FINDINGS|BLOCKED; TARGETS_REVIEWED: <n>; TARGETS_REQUIRED: <n>
+```
+
+For a long Verify plan, stage `/tmp/opencode/verify/manifests/<name>.json`:
+
+```json
+{
+  "schema_version": "opencode-verify-manifest-v1",
+  "commands": [
+    { "label": "lint", "argv": [".venv/bin/ruff", "check", "."] },
+    { "label": "types", "argv": [".venv/bin/pyrefly", "check"] }
+  ]
+}
+```
+
+The Verify packet names it on a standalone `Manifest:` line and runs:
+
+```text
+/home/filip/.config/opencode/plugins/operational-schema-v5/scripts/verify-manifest.mjs --manifest /tmp/opencode/verify/manifests/<name>.json
+```
+
+Use `/tmp/opencode/verify/materials/**` for non-command inputs, `/tmp/opencode/verify/manifests/**` for typed Verify command plans, `/tmp/opencode/verify/assessments/**` for typed repository-assessment specs, `/tmp/opencode/verify/evidence/**` for assessment outputs, `/tmp/opencode/verify/worktrees/**` for harness-owned Verify worktrees, and `/tmp/opencode/review/worktrees/**` for Explore/Fresh-review worktrees. Arbitrary `/tmp` access remains denied.
+
+Upgrade a staged v5.20-style configuration with `scripts/migrate-v521-config.mjs --input <existing.json> --output <new.json>`, validate the candidate with `scripts/validate-config.mjs`, and install it only through `scripts/install-live-config.mjs`. The migration removes retired Firecrawl-specific core permissions, replaces the legacy assessment `--sha/--assessment-id` route with the typed `--spec` gateway, and generalizes repository-local Python validation permissions to `.venv*/bin/...`.
