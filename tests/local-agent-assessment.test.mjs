@@ -48,7 +48,11 @@ test("repo-pr assessment schema is project-neutral and authority-bound", () => {
   assert.equal(parsed.kind, "repo-pr")
   assert.equal(parsed.repository.headRef, "issue/phase5")
   assert.equal(parsed.runner.path, ".github/ci/assessment.py")
-  assert.deepEqual(parsed.integrityFiles, [".python-version", ".github/ci/toolchain.txt", "uv.lock"])
+  assert.deepEqual(parsed.integrityFiles, [
+    { path: ".python-version", expectedSha256: undefined },
+    { path: ".github/ci/toolchain.txt", expectedSha256: undefined },
+    { path: "uv.lock", expectedSha256: undefined },
+  ])
 
   const missingHead = spec()
   missingHead.runner.run_argv = missingHead.runner.run_argv.filter((arg) => arg !== "{head_sha}")
