@@ -1,9 +1,11 @@
 import assert from "node:assert/strict"
 import { createHash } from "node:crypto"
-import { chmod, lstat, mkdir, mkdtemp, readFile, readdir, rename, rm, symlink, writeFile } from "node:fs/promises"
+import { constants } from "node:fs"
+import { chmod, lstat, mkdir, mkdtemp, open, readFile, readdir, rename, rm, symlink, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { spawnSync } from "node:child_process"
+import { fileURLToPath } from "node:url"
 import test from "node:test"
 import {
   ASSESSMENT_CONTROL_WORKTREE_ROOT,
@@ -14,6 +16,8 @@ import {
   parseRepoPrAssessmentSpec,
   runRepoPrAssessment,
 } from "../lib/repo-pr-assessment.mjs"
+
+const RUNNER_SUPERVISOR = fileURLToPath(new URL("../scripts/repo-pr-runner-supervisor.py", import.meta.url))
 
 function git(cwd, ...args) {
   const result = spawnSync("git", args, { cwd, encoding: "utf8", shell: false })
@@ -352,6 +356,45 @@ async function cleanupFixture(fx, assessmentIDs) {
     }
   }
 }
+
+test("repository-owned supervisor stays bound to admitted control descriptors across pathname substitution", async () => {
+  const root = await mkdtemp(join(tmpdir(), "repo-owned-supervisor-anchor-"))
+  const control = join(root, "control")
+  const moved = join(root, "control-admitted")
+  await mkdir(control)
+  const runnerPath = join(control, "runner.mjs")
+  await writeFile(runnerPath, `#!/usr/bin/env node\nimport { readFileSync } from "node:fs"\nconsole.log(readFileSync("control.txt", "utf8").trim())\n`)
+  await chmod(runnerPath, 0o755)
+  await writeFile(join(control, "control.txt"), "trusted-control\n")
+  const runnerHandle = await open(runnerPath, constants.O_RDONLY)
+  const controlHandle = await open(control, constants.O_RDONLY | constants.O_DIRECTORY)
+  try {
+    await rename(control, moved)
+    await mkdir(control)
+    await writeFile(join(control, "control.txt"), "substituted-control\n")
+    const result = spawnSync("/usr/bin/python3", [
+      RUNNER_SUPERVISOR,
+      "--cwd-fd", "4",
+      "--watch-root", "/proc/self/fd/4",
+      "--watch", "control.txt",
+      "--write-root", "/dev/null",
+      "--",
+      "probe",
+    ], {
+      encoding: "utf8",
+      shell: false,
+      stdio: ["ignore", "pipe", "pipe", runnerHandle.fd, controlHandle.fd],
+    })
+    assert.equal(result.status, 0, result.stderr)
+    assert.equal(result.stdout.trim(), "trusted-control")
+    assert.equal(await readFile(join(control, "control.txt"), "utf8"), "substituted-control\n")
+    assert.equal(await readFile(join(moved, "control.txt"), "utf8"), "trusted-control\n")
+  } finally {
+    await runnerHandle.close()
+    await controlHandle.close()
+    await rm(root, { recursive: true, force: true })
+  }
+})
 
 test("repository-owned descriptor execution preserves Python sibling imports", async (t) => {
   const fx = await fixture()
