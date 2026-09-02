@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 import ctypes
 import errno
+import json
 import os
 import signal
 import struct
@@ -319,7 +320,7 @@ def contain_descendants() -> bool:
         time.sleep(DESCENDANT_REAP_POLL_SECONDS)
 
 
-def execute_runner(argv: list[str], cwd: str | None, cwd_fd: int | None) -> int:
+def execute_runner(argv: list[str], cwd: str | None, cwd_fd: int | None) -> tuple[str, int]:
     if not argv:
         fail("runner argv is empty")
     try:
@@ -331,6 +332,7 @@ def execute_runner(argv: list[str], cwd: str | None, cwd_fd: int | None) -> int:
         try:
             if cwd_fd is not None:
                 os.fchdir(cwd_fd)
+                os.dup2(cwd_fd, 0, inheritable=True)
             elif cwd is not None:
                 os.chdir(cwd)
             else:
@@ -345,15 +347,12 @@ def execute_runner(argv: list[str], cwd: str | None, cwd_fd: int | None) -> int:
         fail(f"runner wait failed ({exc.errno}: {exc.strerror})")
     descendants = contain_descendants()
     if descendants:
-        return SUPERVISOR_DESCENDANTS
+        return ("descendants", SUPERVISOR_DESCENDANTS)
     if os.WIFEXITED(status):
-        return os.WEXITSTATUS(status)
+        return ("runner", os.WEXITSTATUS(status))
     if os.WIFSIGNALED(status):
-        sig = os.WTERMSIG(status)
-        signal.signal(sig, signal.SIG_DFL)
-        os.kill(os.getpid(), sig)
-        return 128 + sig
-    return SUPERVISOR_SETUP_ERROR
+        return ("runner-signal", os.WTERMSIG(status))
+    fail("runner wait status was neither exited nor signaled")
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -361,6 +360,7 @@ def build_parser() -> argparse.ArgumentParser:
     cwd_group = parser.add_mutually_exclusive_group(required=True)
     cwd_group.add_argument("--cwd")
     cwd_group.add_argument("--cwd-fd", type=int)
+    parser.add_argument("--status-fd", required=True, type=int)
     parser.add_argument("--write-root", action="append", default=[])
     parser.add_argument("--watch-root")
     parser.add_argument("--watch", action="append", default=[])
@@ -368,30 +368,61 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _write_status(fd: int, kind: str, **fields: object) -> None:
+    payload = json.dumps({"version": 1, "kind": kind, **fields}, separators=(",", ":")) + "\n"
+    os.write(fd, payload.encode("utf-8"))
+
+
 def main() -> int:
     args = build_parser().parse_args()
-    runner_argv = list(args.runner_argv)
-    if runner_argv and runner_argv[0] == "--":
-        runner_argv = runner_argv[1:]
-    cwd = os.path.realpath(args.cwd) if args.cwd is not None else None
-    if cwd is not None and not os.path.isdir(cwd):
-        fail(f"runner cwd is not a directory: {cwd}")
-    if args.cwd_fd is not None:
-        try:
-            os.fstat(args.cwd_fd)
-        except OSError as exc:
-            fail(f"runner cwd descriptor is unavailable ({exc.errno}: {exc.strerror})")
-        if not os.path.isdir(f"/proc/self/fd/{args.cwd_fd}"):
-            fail("runner cwd descriptor is not a directory")
-    watch_fd = configure_inotify(args.watch_root, args.watch)
     try:
+        os.fstat(args.status_fd)
+        os.set_inheritable(args.status_fd, False)
+    except OSError as exc:
+        print(f"repo-pr-runner-supervisor: status descriptor is unavailable ({exc.errno}: {exc.strerror})", file=sys.stderr)
+        return SUPERVISOR_SETUP_ERROR
+    watch_fd: int | None = None
+    try:
+        runner_argv = list(args.runner_argv)
+        if runner_argv and runner_argv[0] == "--":
+            runner_argv = runner_argv[1:]
+        cwd = os.path.realpath(args.cwd) if args.cwd is not None else None
+        if cwd is not None and not os.path.isdir(cwd):
+            fail(f"runner cwd is not a directory: {cwd}")
+        if args.cwd_fd is not None:
+            try:
+                os.fstat(args.cwd_fd)
+            except OSError as exc:
+                fail(f"runner cwd descriptor is unavailable ({exc.errno}: {exc.strerror})")
+            if not os.path.isdir(f"/proc/self/fd/{args.cwd_fd}"):
+                fail("runner cwd descriptor is not a directory")
+        watch_fd = configure_inotify(args.watch_root, args.watch)
         apply_landlock(args.write_root)
-        result = execute_runner(runner_argv, cwd, args.cwd_fd)
-        if result == SUPERVISOR_DESCENDANTS:
-            return result
+        kind, value = execute_runner(runner_argv, cwd, args.cwd_fd)
+        if kind == "descendants":
+            _write_status(args.status_fd, "descendants")
+            return SUPERVISOR_DESCENDANTS
         if inotify_changed(watch_fd):
+            _write_status(args.status_fd, "control-mutation")
             return SUPERVISOR_CONTROL_MUTATION
-        return result
+        if kind == "runner-signal":
+            _write_status(args.status_fd, "runner-signal", signal=value)
+            signal.signal(value, signal.SIG_DFL)
+            os.kill(os.getpid(), value)
+            return 128 + value
+        _write_status(args.status_fd, "runner", code=value)
+        return value
+    except SystemExit as exc:
+        code = int(exc.code) if isinstance(exc.code, int) else SUPERVISOR_SETUP_ERROR
+        _write_status(args.status_fd, "reap-error" if code == SUPERVISOR_REAP_ERROR else "setup-error")
+        return code
+    except BaseException as exc:  # noqa: BLE001 - supervisor must fail closed with typed status
+        print(f"repo-pr-runner-supervisor: unexpected supervisor failure: {type(exc).__name__}: {exc}", file=sys.stderr)
+        try:
+            _write_status(args.status_fd, "reap-error")
+        except OSError:
+            pass
+        return SUPERVISOR_REAP_ERROR
     finally:
         if watch_fd is not None:
             os.close(watch_fd)
