@@ -34,14 +34,24 @@ async function exists(path) {
 }
 
 const RUNNER_SOURCE = `#!/usr/bin/env node
-import { appendFileSync, mkdirSync, writeFileSync } from "node:fs"
+import { appendFileSync, mkdirSync, renameSync, symlinkSync, writeFileSync } from "node:fs"
 import { dirname } from "node:path"
-import { spawnSync } from "node:child_process"
+import { spawn, spawnSync } from "node:child_process"
 const args = process.argv.slice(2)
 if (process.env.ASSESSMENT_TEST_LOG) appendFileSync(process.env.ASSESSMENT_TEST_LOG, args[0] + "\\n")
+const runnerExitIndex = args.indexOf("--runner-exit")
+if (runnerExitIndex >= 0) process.exit(Number(args[runnerExitIndex + 1]))
 if (args[0] === "plan") {
   if (args.includes("--fail-plan")) process.exit(9)
   if (args.includes("--dirty-plan")) writeFileSync("plan-untracked.txt", "mutation\\n")
+  if (args.includes("--hide-pin-mutation")) {
+    writeFileSync(".python-version", "mutated\\n")
+    spawnSync("git", ["update-index", "--assume-unchanged", ".python-version"], { shell: false })
+  }
+  if (args.includes("--surviving-plan-child")) {
+    const child = spawn(process.execPath, ["-e", "setInterval(() => {}, 1000)"], { stdio: "ignore" })
+    child.unref()
+  }
   process.exit(0)
 }
 if (args[0] !== "run") process.exit(7)
@@ -56,6 +66,21 @@ if (args.includes("--mutate-head")) {
 }
 if (args.includes("--dirty-worktree")) {
   writeFileSync("runner-untracked.txt", "mutation\\n")
+}
+if (args.includes("--surviving-run-child")) {
+  const child = spawn(process.execPath, ["-e", "setInterval(() => {}, 1000)"], { stdio: "ignore" })
+  child.unref()
+}
+if (args.includes("--block-summary-write")) {
+  mkdirSync(output.replace(/\\.runner\\.json$/, ".summary.json"))
+}
+if (args.includes("--replace-evidence-root")) {
+  const root = dirname(output)
+  const moved = root + ".moved"
+  const replacement = root + ".replacement"
+  renameSync(root, moved)
+  mkdirSync(replacement)
+  symlinkSync(replacement, root)
 }
 process.exit(0)
 `
@@ -241,6 +266,107 @@ test("successful runner evidence is preserved and SHA-256 bound", async () => {
   assert.equal(summary.integrity[".python-version"].length, 64)
   assert.equal(summary.integrity[".github/ci/toolchain.txt"].length, 64)
   assert.equal(summary.integrity["uv.lock"].length, 64)
+})
+
+test("gateway-owned integrity blob pins are enforced at the assessed head", async () => {
+  const fx = await fixture()
+  const spec = structuredClone(fx.spec)
+  spec.integrityFiles[0].expectedBlobSha = "0".repeat(40)
+  const result = await run(fx, spec)
+  assert.equal(result.host_evidence_result, "BLOCKED")
+  assert.match(result.error, /Git blob does not match the pinned authority/)
+  assert.equal(result.runner.plan, null)
+  assert.equal(result.runner.run, null)
+})
+
+test("gateway-owned post-plan revalidation catches hidden pinned-input mutation", async () => {
+  const fx = await fixture()
+  const spec = structuredClone(fx.spec)
+  spec.runner.planArgv.push("--hide-pin-mutation")
+  const result = await run(fx, spec)
+  assert.equal(result.host_evidence_result, "ISOLATION_BREACH")
+  assert.match(result.error, /integrity file \.python-version changed after admission/)
+  assert.equal(result.runner.run, null)
+  assert.equal(result.cleanup_result, "PRESERVED_ISOLATION_BREACH")
+  const worktree = assessmentWorktreePath(fx.repo, spec, fx.worktreeRoot)
+  assert.equal(await exists(worktree), true)
+  git(fx.repo, "worktree", "remove", "--force", worktree)
+  git(fx.repo, "branch", "-D", assessmentBranchName(fx.repo, spec))
+})
+
+test("gateway-owned runner exits cannot collide with supervisor status codes", async () => {
+  for (const code of [240, 241, 242, 243]) {
+    const fx = await fixture()
+    const spec = structuredClone(fx.spec)
+    spec.runner.planArgv.push("--runner-exit", String(code))
+    const result = await run(fx, spec)
+    assert.equal(result.host_evidence_result, "FAIL", `runner exit ${code}: ${result.error}`)
+    assert.equal(result.runner.plan.exit, code)
+    assert.equal(result.runner.run, null)
+    assert.equal(result.cleanup_result, "PASS")
+  }
+})
+
+test("gateway-owned run exit 241 remains a runner failure after evidence creation", async () => {
+  const fx = await fixture()
+  const spec = structuredClone(fx.spec)
+  spec.runner.runArgv.push("--runner-exit", "241")
+  const result = await run(fx, spec)
+  assert.equal(result.host_evidence_result, "FAIL", result.error)
+  assert.equal(result.runner.run.exit, 241)
+  assert.equal(result.cleanup_result, "PASS")
+})
+
+test("gateway-owned plan descendants cannot survive into the run boundary", async () => {
+  const fx = await fixture()
+  const spec = structuredClone(fx.spec)
+  spec.runner.planArgv.push("--surviving-plan-child")
+  const result = await run(fx, spec)
+  assert.equal(result.host_evidence_result, "ISOLATION_BREACH")
+  assert.match(result.error, /plan left surviving descendants/)
+  assert.equal(result.runner.run, null)
+  assert.equal(result.cleanup_result, "PRESERVED_ISOLATION_BREACH")
+  const worktree = assessmentWorktreePath(fx.repo, spec, fx.worktreeRoot)
+  assert.equal(await exists(worktree), true)
+  git(fx.repo, "worktree", "remove", "--force", worktree)
+  git(fx.repo, "branch", "-D", assessmentBranchName(fx.repo, spec))
+})
+
+test("gateway-owned run descendants terminalize before evidence acceptance", async () => {
+  const fx = await fixture()
+  const spec = structuredClone(fx.spec)
+  spec.runner.runArgv.push("--surviving-run-child")
+  const result = await run(fx, spec)
+  assert.equal(result.host_evidence_result, "ISOLATION_BREACH")
+  assert.match(result.error, /run left surviving descendants/)
+  assert.equal(result.cleanup_result, "PRESERVED_ISOLATION_BREACH")
+  const worktree = assessmentWorktreePath(fx.repo, spec, fx.worktreeRoot)
+  assert.equal(await exists(worktree), true)
+  git(fx.repo, "worktree", "remove", "--force", worktree)
+  git(fx.repo, "branch", "-D", assessmentBranchName(fx.repo, spec))
+})
+
+test("gateway-owned evidence-root replacement is an isolation breach", async () => {
+  const fx = await fixture()
+  const spec = structuredClone(fx.spec)
+  spec.runner.runArgv.push("--replace-evidence-root")
+  const result = await run(fx, spec)
+  assert.equal(result.host_evidence_result, "ISOLATION_BREACH")
+  assert.match(result.error, /evidence root pathname/)
+  assert.match(result.summary_path, /\.moved\/[^/]+\.summary\.json$/)
+  const summary = JSON.parse(await readFile(result.summary_path, "utf8"))
+  assert.equal(summary.host_evidence_result, "ISOLATION_BREACH")
+})
+
+test("gateway-owned mode returns INFRA_ERROR when the outer summary cannot be written", async () => {
+  const fx = await fixture()
+  const spec = structuredClone(fx.spec)
+  spec.runner.runArgv.push("--block-summary-write")
+  const result = await run(fx, spec)
+  assert.equal(result.host_evidence_result, "INFRA_ERROR")
+  assert.match(result.error, /outer summary could not be materialized/)
+  assert.equal(result.summary_path, null)
+  assert.equal(result.exit_code, 2)
 })
 
 test("cleanup never touches unrelated local branches", async () => {

@@ -48,7 +48,11 @@ test("repo-pr assessment schema is project-neutral and authority-bound", () => {
   assert.equal(parsed.kind, "repo-pr")
   assert.equal(parsed.repository.headRef, "issue/phase5")
   assert.equal(parsed.runner.path, ".github/ci/assessment.py")
-  assert.deepEqual(parsed.integrityFiles, [".python-version", ".github/ci/toolchain.txt", "uv.lock"])
+  assert.deepEqual(parsed.integrityFiles, [
+    { path: ".python-version", expectedBlobSha: undefined, expectedSha256: undefined },
+    { path: ".github/ci/toolchain.txt", expectedBlobSha: undefined, expectedSha256: undefined },
+    { path: "uv.lock", expectedBlobSha: undefined, expectedSha256: undefined },
+  ])
 
   const missingHead = spec()
   missingHead.runner.run_argv = missingHead.runner.run_argv.filter((arg) => arg !== "{head_sha}")
@@ -61,6 +65,14 @@ test("repo-pr assessment schema is project-neutral and authority-bound", () => {
   const sideEffectPlan = spec()
   sideEffectPlan.runner.plan_argv.push("{evidence_path}")
   assert.throws(() => parseRepoPrAssessmentSpec(sideEffectPlan), /must not bind \{evidence_path\}/)
+
+  const fullBaseRef = spec()
+  fullBaseRef.repository.base_ref = "refs/heads/main"
+  assert.throws(() => parseRepoPrAssessmentSpec(fullBaseRef), /base_ref must be a branch name/)
+
+  const wrongCanonicalPrRef = spec()
+  wrongCanonicalPrRef.repository.head_ref = "refs/pull/21/head"
+  assert.throws(() => parseRepoPrAssessmentSpec(wrongCanonicalPrRef), /canonical refs\/pull\/20\/head/)
 })
 
 
