@@ -99,6 +99,25 @@ if (args.includes("--malformed-evidence")) {
   writeFileSync(path, "{not-json\\n")
   process.exit(0)
 }
+let controlWriteBlocked = null
+if (args.includes("--probe-control-write")) {
+  try {
+    writeFileSync("control.txt", "forbidden-control-write\\n")
+  } catch (error) {
+    if (error?.code !== "EACCES" && error?.code !== "EPERM") throw error
+    controlWriteBlocked = true
+  }
+  if (controlWriteBlocked !== true) process.exit(4)
+}
+let nativeGitWorktreeProbe = false
+if (args.includes("--native-git-worktree")) {
+  const probe = "/tmp/opencode/verify/worktrees/" + assessmentId + "-native-probe"
+  const added = spawnSync("git", ["worktree", "add", "--detach", probe, head], { encoding: "utf8", shell: false })
+  if (added.status !== 0) process.exit(4)
+  const removed = spawnSync("git", ["worktree", "remove", "--force", probe], { encoding: "utf8", shell: false })
+  if (removed.status !== 0) process.exit(4)
+  nativeGitWorktreeProbe = true
+}
 const pass = status === "PASS"
 const evidence = JSON.stringify({
   schema_version: "local-agent-assessment-v1",
@@ -120,6 +139,8 @@ const evidence = JSON.stringify({
     materials_removed: !args.includes("--bad-cleanup"),
     failures: [],
   },
+  control_write_blocked: controlWriteBlocked,
+  native_git_worktree_probe: nativeGitWorktreeProbe,
 }) + "\\n"
 if (args.includes("--symlink-evidence")) {
   const target = path + ".target"
@@ -356,6 +377,22 @@ test("repository-owned mode admits canonical PR refs without creating a gateway 
     branch: git(fx.repo, "branch", "--show-current"),
     status: git(fx.repo, "status", "--porcelain=v1", "--untracked-files=normal"),
   }, before)
+})
+
+test("repository-owned sandbox denies control writes while preserving native Git worktree lifecycle", async (t) => {
+  const fx = await fixture()
+  const id = `pr20-sandbox-${Math.random().toString(16).slice(2, 8)}`
+  t.after(() => cleanupFixture(fx, [id]))
+  const result = await runRepoPrAssessment(makeSpec(fx, id, ["--probe-control-write", "--native-git-worktree"]), {
+    repoRoot: fx.repo,
+    evidenceRoot: fx.evidenceRoot,
+  })
+  assert.equal(result.host_evidence_result, "PASS", result.error)
+  assert.equal(result.control_snapshot_cleanup, "PASS")
+  const evidence = JSON.parse(await readFile(result.runner_evidence_path, "utf8"))
+  assert.equal(evidence.control_write_blocked, true)
+  assert.equal(evidence.native_git_worktree_probe, true)
+  assert.equal(await readFile(join(fx.repo, "control.txt"), "utf8"), "trusted-control\n")
 })
 
 test("repository-owned mode preserves native host-result semantics", async (t) => {
