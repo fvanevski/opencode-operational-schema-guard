@@ -400,7 +400,7 @@ test("repository-owned supervisor deterministically reaps an ordinary long-lived
 test("repository-owned supervisor reaps an adopted double-fork daemon via the procfs parent graph", async () => {
   const root = await mkdtemp(join(tmpdir(), "repo-owned-supervisor-double-fork-"))
   const runnerPath = join(root, "runner.py")
-  await writeFile(runnerPath, `#!/usr/bin/env python3\nimport os\nimport time\nfirst = os.fork()\nif first == 0:\n    os.setsid()\n    second = os.fork()\n    if second == 0:\n        time.sleep(30)\n        os._exit(0)\n    os._exit(0)\nos.waitpid(first, 0)\n`)
+  await writeFile(runnerPath, `#!/usr/bin/env python3\nimport ctypes\nimport os\nimport time\nfirst = os.fork()\nif first == 0:\n    os.setsid()\n    second = os.fork()\n    if second == 0:\n        name = b"daemon-" + bytes([0xFF])\n        ctypes.CDLL(None).prctl(15, ctypes.c_char_p(name), 0, 0, 0)\n        time.sleep(30)\n        os._exit(0)\n    os._exit(0)\nos.waitpid(first, 0)\n`)
   await chmod(runnerPath, 0o755)
   const runnerHandle = await open(runnerPath, constants.O_RDONLY)
   try {

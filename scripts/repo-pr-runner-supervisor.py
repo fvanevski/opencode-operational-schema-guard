@@ -313,7 +313,7 @@ def descendant_processes(root_pid: int | None = None) -> tuple[int, ...]:
         if pid == root:
             continue
         try:
-            status = (entry / "status").read_text(encoding="ascii")
+            status = (entry / "status").read_bytes()
         except (FileNotFoundError, ProcessLookupError, PermissionError):
             continue
         except OSError as exc:
@@ -325,7 +325,7 @@ def descendant_processes(root_pid: int | None = None) -> tuple[int, ...]:
             )
             raise SystemExit(SUPERVISOR_REAP_ERROR) from exc
         for line in status.splitlines():
-            if not line.startswith("PPid:"):
+            if not line.startswith(b"PPid:"):
                 continue
             fields = line.split()
             if len(fields) == 2:
