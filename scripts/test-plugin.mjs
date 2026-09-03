@@ -6,10 +6,14 @@ import { dirname, resolve } from "node:path"
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const tests = [
   "tests/operation-guard.test.mjs",
+  "tests/target-lifecycle-guard.test.mjs",
+  "tests/target-lifecycle-after-boundary.test.mjs",
+  "tests/target-terminal-exit-contract.test.mjs",
   "tests/todo-ledger.test.mjs",
   "tests/verify-disposable.test.mjs",
   "tests/verify-manifest.test.mjs",
   "tests/local-agent-assessment.test.mjs",
+  "tests/owner-base-reconciliation.test.mjs",
   "tests/repo-pr-assessment.test.mjs",
   "tests/repository-owned-assessment.test.mjs",
   "tests/workspace-identity.test.mjs",

@@ -1377,6 +1377,7 @@ test("target mismatch proof and rejected mutation provide one-step recovery feed
   await before(hooks, "parent", "proof", "bash", { command: "git rev-parse HEAD" })
   const proof = await after(hooks, "parent", "proof", "bash", { command: "git rev-parse HEAD" }, { output: `${observed}\n`, metadata: { exit: 0 } })
   assert.match(proof.output, /local-agent-assessment\.mjs --spec/)
+  assert.match(proof.output, /reconcile-owner-base\.mjs --spec/)
   assert.match(proof.output, new RegExp(`git worktree add --detach <absolute-disposable-path> ${target}`))
   assert.doesNotMatch(proof.output, /run one bare git switch --detach/)
   assert.doesNotMatch(await system(hooks, "parent"), /TARGET RECOVERY|git switch --detach/)
@@ -1384,6 +1385,81 @@ test("target mismatch proof and rejected mutation provide one-step recovery feed
     () => before(hooks, "parent", "branch", "bash", { command: "git switch refactor/research-controller" }),
     new RegExp(`local-agent-assessment\\.mjs --spec.*git worktree add --detach <absolute-disposable-path> ${target}`, "s"),
   )
+})
+
+test("STALE target assessment admits only typed owner reconciliation and successful reconciliation releases target authority", async () => {
+  const hooks = createOperationGuard({ directory: "/tmp/project", env: {} })
+  const target = "d".repeat(40)
+  const observed = "a".repeat(40)
+  const base = "b".repeat(40)
+  const spec = "/tmp/opencode/verify/assessments/pr357.json"
+  const assessmentRunner = "/home/filip/.config/opencode/plugins/operational-schema-v5/scripts/local-agent-assessment.mjs"
+  const reconciliationRunner = "/home/filip/.config/opencode/plugins/operational-schema-v5/scripts/reconcile-owner-base.mjs"
+  await message(hooks, "parent", "build", `REQUIRED EXACT HEAD: ${target}`)
+  await before(hooks, "parent", "proof", "bash", { command: "git rev-parse HEAD" })
+  await after(hooks, "parent", "proof", "bash", { command: "git rev-parse HEAD" }, { output: `${observed}\n`, metadata: { exit: 0 } })
+
+  const assessment = { command: `${assessmentRunner} --spec ${spec}` }
+  await assert.doesNotReject(() => before(hooks, "parent", "assessment", "bash", assessment))
+  const stale = await after(hooks, "parent", "assessment", "bash", assessment, {
+    output: "HOST_EVIDENCE_RESULT=STALE\nGATE_DECISION=NOT_EVALUATED\n",
+    metadata: { exit: 3 },
+  })
+  assert.match(stale.output, /ASSESSMENT_TERMINAL -> OWNER_RECONCILIATION/)
+  await assert.rejects(() => before(hooks, "parent", "raw-base-merge", "bash", { command: `git merge --ff-only ${base}` }), /exact-head admission is mismatch/)
+  await assert.rejects(() => before(hooks, "parent", "candidate-merge", "bash", { command: `git merge --ff-only ${target}` }), /exact-head admission is mismatch/)
+  await assert.rejects(() => before(hooks, "parent", "malformed-reconcile", "bash", { command: `${reconciliationRunner} --spec ${spec} --expected-old-sha ${observed} --expected-base-sha ${base} --expected-target-sha ${target} --destination ${base}` }), /Owner-base reconciliation must use exactly/)
+  await assert.rejects(() => before(hooks, "parent", "wrong-target-reconcile", "bash", { command: `${reconciliationRunner} --spec ${spec} --expected-old-sha ${observed} --expected-base-sha ${base} --expected-target-sha ${"f".repeat(40)}` }), /does not match persisted exact-head target/)
+
+  const reconciliation = { command: `${reconciliationRunner} --spec ${spec} --expected-old-sha ${observed} --expected-base-sha ${base} --expected-target-sha ${target}` }
+  await assert.doesNotReject(() => before(hooks, "parent", "reconcile", "bash", reconciliation))
+  const reconciled = await after(hooks, "parent", "reconcile", "bash", reconciliation, {
+    output: `OPERATIONAL_OWNER_RECONCILIATION: PASS; schema=opencode-owner-base-reconciliation-v1; assessment_id=pr357; expected_old_sha=${observed}; base_sha=${base}; head_sha=${target}; branch=main\nOWNER_BASE_RECONCILIATION_RESULT=PASS\n`,
+    metadata: { exit: 0 },
+  })
+  assert.match(reconciled.output, new RegExp(`OWNER_RECONCILIATION -> TARGET_RELEASED; base=${base}`))
+  const compacting = { context: [] }
+  await hooks["experimental.session.compacting"]({ sessionID: "parent" }, compacting)
+  assert.match(compacting.context.join("\n"), /Authority: unbound/)
+})
+
+test("recognized non-STALE assessment terminal releases target while interrupted execution remains fail-closed", async () => {
+  const runner = "/home/filip/.config/opencode/plugins/operational-schema-v5/scripts/local-agent-assessment.mjs"
+  const spec = "/tmp/opencode/verify/assessments/pr-terminal.json"
+  const target = "c".repeat(40)
+  const observed = "a".repeat(40)
+
+  const released = createOperationGuard({ directory: "/tmp/project-released", env: {} })
+  await message(released, "parent-release", "build", `REQUIRED EXACT HEAD: ${target}`)
+  await before(released, "parent-release", "proof", "bash", { command: "git rev-parse HEAD" })
+  await after(released, "parent-release", "proof", "bash", { command: "git rev-parse HEAD" }, { output: `${observed}\n`, metadata: { exit: 0 } })
+  const command = { command: `${runner} --spec ${spec}` }
+  await before(released, "parent-release", "assessment", "bash", command)
+  const failed = await after(released, "parent-release", "assessment", "bash", command, { output: "HOST_EVIDENCE_RESULT=FAIL\nGATE_DECISION=NOT_EVALUATED\n", metadata: { exit: 1 } })
+  assert.match(failed.output, /ASSESSMENT_TERMINAL -> TARGET_RELEASED; result=FAIL/)
+  const compacted = { context: [] }
+  await released["experimental.session.compacting"]({ sessionID: "parent-release" }, compacted)
+  assert.match(compacted.context.join("\n"), /Authority: unbound/)
+
+  const interrupted = createOperationGuard({ directory: "/tmp/project-interrupted", env: {} })
+  await message(interrupted, "parent-interrupted", "build", `REQUIRED EXACT HEAD: ${target}`)
+  await before(interrupted, "parent-interrupted", "proof", "bash", { command: "git rev-parse HEAD" })
+  await after(interrupted, "parent-interrupted", "proof", "bash", { command: "git rev-parse HEAD" }, { output: `${observed}\n`, metadata: { exit: 0 } })
+  await before(interrupted, "parent-interrupted", "assessment", "bash", command)
+  await after(interrupted, "parent-interrupted", "assessment", "bash", command, { output: "dispatcher crashed before typed terminal evidence", metadata: { exit: 2 } })
+  await assert.rejects(() => before(interrupted, "parent-interrupted", "raw-merge", "bash", { command: `git merge --ff-only ${"b".repeat(40)}` }), /exact-head admission is mismatch/)
+})
+
+test("strict-start mismatch cannot use owner-base reconciliation as an escape hatch", async () => {
+  const hooks = createOperationGuard({ directory: "/tmp/project-strict-reconcile", env: {} })
+  const expected = "a".repeat(40)
+  const observed = "b".repeat(40)
+  const spec = "/tmp/opencode/verify/assessments/strict.json"
+  const runner = "/home/filip/.config/opencode/plugins/operational-schema-v5/scripts/reconcile-owner-base.mjs"
+  await message(hooks, "parent", "build", `EXPECTED_START_HEAD=${expected}`)
+  await before(hooks, "parent", "proof", "bash", { command: "git rev-parse HEAD" })
+  await after(hooks, "parent", "proof", "bash", { command: "git rev-parse HEAD" }, { output: `${observed}\n`, metadata: { exit: 0 } })
+  await assert.rejects(() => before(hooks, "parent", "reconcile", "bash", { command: `${runner} --spec ${spec} --expected-old-sha ${observed} --expected-base-sha ${expected} --expected-target-sha ${expected}` }), /available only for exact-head target authority/)
 })
 
 test("system augmentation is always coalesced into one leading message", async () => {
@@ -1669,8 +1745,8 @@ test("proactive upfront manifest staging does not consume direct validation budg
   await assert.doesNotReject(() => before(hooks, "parent", "verify-task", "task", verifyArgs))
 })
 
-test("v5.22.0 advisory policy limits and schema version are correctly exposed", async () => {
-  assert.equal(SCHEMA_VERSION, "5.22.0")
+test("v5.23.0 advisory policy limits and schema version are correctly exposed", async () => {
+  assert.equal(SCHEMA_VERSION, "5.23.0")
   assert.equal(DEFAULT_POLICY.primaryReadWarning, 8)
   assert.equal(DEFAULT_POLICY.primaryReadHardLimit, 10)
   assert.equal(DEFAULT_POLICY.parentReopenLimit, 5)
