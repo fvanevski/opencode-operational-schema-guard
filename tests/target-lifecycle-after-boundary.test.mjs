@@ -96,10 +96,8 @@ async function fixture(t, label) {
   return { hooks, sessionID, target, base, observed, assessmentID, specPath, specSha256 }
 }
 
-async function assessmentResult(f, { result = "STALE", exit = 3 } = {}) {
-  await mkdir(EVIDENCE_ROOT, { recursive: true })
-  const summaryPath = join(EVIDENCE_ROOT, `${f.assessmentID}.summary.json`)
-  const summary = {
+function summaryDocument(f, result) {
+  return {
     schema_version: "opencode-repo-pr-assessment-result-v1",
     assessment_id: f.assessmentID,
     expected_base_sha: f.base,
@@ -117,10 +115,18 @@ async function assessmentResult(f, { result = "STALE", exit = 3 } = {}) {
       ? `repo-pr-assessment: repository-owned owner checkout is ${f.observed}, not pinned base authority ${f.base}`
       : "repo-pr-assessment: runner failed",
   }
-  await writeFile(summaryPath, `${JSON.stringify(summary)}\n`)
+}
+
+async function assessmentResult(f, { result = "STALE", exit = 3 } = {}) {
+  await mkdir(EVIDENCE_ROOT, { recursive: true })
+  const summaryPath = join(EVIDENCE_ROOT, `${f.assessmentID}.summary.json`)
+  const summary = summaryDocument(f, result)
+  const summaryBytes = `${JSON.stringify(summary)}\n`
+  await writeFile(summaryPath, summaryBytes)
   generated.add(summaryPath)
+  const summarySha256 = createHash("sha256").update(summaryBytes).digest("hex")
   return {
-    output: `OPERATIONAL_ASSESSMENT: schema=opencode-local-assessment-v1; assessment_id=${f.assessmentID}; spec_sha256=${f.specSha256}; base_sha=${f.base}; target_sha=${f.target}; summary=${summaryPath}\nHOST_EVIDENCE_RESULT=${result}\nGATE_DECISION=NOT_EVALUATED\n`,
+    output: `OPERATIONAL_ASSESSMENT: schema=opencode-local-assessment-v1; assessment_id=${f.assessmentID}; spec_sha256=${f.specSha256}; base_sha=${f.base}; target_sha=${f.target}; summary_sha256=${summarySha256}; summary=${summaryPath}\nHOST_EVIDENCE_RESULT=${result}\nGATE_DECISION=NOT_EVALUATED\n`,
     metadata: { exit },
   }
 }
@@ -159,4 +165,26 @@ test("reconciliation after-event without matching admitted before-state cannot c
   const continuity = await compaction(f.hooks, f.sessionID)
   assert.match(continuity, new RegExp(`Authority: ${f.target}`))
   assert.match(continuity, /Target lifecycle: OWNER_RECONCILIATION/)
+})
+
+test("assessment summary pathname substitution cannot change an authenticated terminal cause", async (t) => {
+  const f = await fixture(t, "summary-substitution")
+  const assessment = assessmentCommand(f.specPath)
+  await before(f.hooks, f.sessionID, "assessment", assessment)
+  const terminal = await assessmentResult(f)
+
+  const summaryPath = join(EVIDENCE_ROOT, `${f.assessmentID}.summary.json`)
+  const substituted = {
+    ...summaryDocument(f, "STALE"),
+    observed_base_sha: undefined,
+    observed_head_sha: undefined,
+    error: `repo-pr-assessment: remote authority mismatch (base=${"c".repeat(40)}; head=${f.target})`,
+  }
+  await writeFile(summaryPath, `${JSON.stringify(substituted)}\n`)
+
+  const result = await after(f.hooks, f.sessionID, "assessment", assessment, terminal)
+  assert.match(result.output, /REJECTED unauthenticated assessment terminal evidence/)
+  assert.doesNotMatch(result.output, /ASSESSMENT_TERMINAL -> OWNER_RECONCILIATION/)
+  assert.doesNotMatch(result.output, /TARGET_RELEASED/)
+  assert.match(await compaction(f.hooks, f.sessionID), new RegExp(`Authority: ${f.target}`))
 })
