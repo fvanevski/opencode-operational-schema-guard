@@ -1,9 +1,10 @@
 import assert from "node:assert/strict"
+import { createHash } from "node:crypto"
 import { mkdtemp, mkdir, symlink, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import test from "node:test"
-import { parseAssessmentArgs } from "../scripts/local-agent-assessment.mjs"
+import { assessmentSummarySha256, parseAssessmentArgs } from "../scripts/local-agent-assessment.mjs"
 import { LOCAL_ASSESSMENT_SCHEMA, loadAssessmentSpec, parseRepoPrAssessmentSpec } from "../lib/repo-pr-assessment.mjs"
 
 const ROOT = "/tmp/opencode/verify/assessments"
@@ -41,6 +42,23 @@ test("local assessment entrypoint accepts only one concrete typed-spec path", ()
   ]) {
     assert.throws(() => parseAssessmentArgs(argv), /usage|concrete|under/)
   }
+})
+
+test("public assessment marker hashes the exact persisted summary serialization", () => {
+  const result = {
+    schema_version: "opencode-repo-pr-assessment-result-v1",
+    assessment_id: "summary-hash",
+    expected_base_sha: "a".repeat(40),
+    expected_head_sha: "b".repeat(40),
+    host_evidence_result: "STALE",
+    gate_decision: "NOT_EVALUATED",
+    summary_path: "/tmp/opencode/verify/evidence/summary-hash.summary.json",
+    exit_code: 3,
+  }
+  const { summary_path: _summaryPath, exit_code: _exitCode, ...summary } = result
+  const expected = createHash("sha256").update(`${JSON.stringify(summary, null, 2)}\n`).digest("hex")
+  assert.equal(assessmentSummarySha256(result), expected)
+  assert.equal(assessmentSummarySha256({ ...result, summary_path: null }), null)
 })
 
 test("repo-pr assessment schema is project-neutral and authority-bound", () => {
