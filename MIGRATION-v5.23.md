@@ -33,14 +33,19 @@ The new public helper is:
 ```text
 /home/filip/.config/opencode/plugins/operational-schema-v5/scripts/reconcile-owner-base.mjs \
   --spec /tmp/opencode/verify/assessments/<assessment>.json \
-  --expected-old-sha <40-lowercase-owner-sha>
+  --expected-old-sha <40-lowercase-owner-sha> \
+  --expected-base-sha <40-lowercase-pinned-base-sha> \
+  --expected-target-sha <40-lowercase-target-sha>
 ```
 
-It accepts no destination argument. The destination is derived only from the exact typed spec.
+It accepts no destination argument. The caller must explicitly bind the expected old-owner, pinned-base, and target SHAs; the helper requires the latter two to equal the exact typed spec before any repository inspection or mutation. The destination is then derived only from that doubly bound pinned base.
 
 The helper requires all of the following before owner movement:
 
 - the spec is `kind: "repo-pr"`;
+- the spec's `repository.base_sha` exactly equals `--expected-base-sha`;
+- the spec's `repository.head_sha` exactly equals `--expected-target-sha`;
+- when invoked under a persisted exact-head guard target, `--expected-target-sha` exactly equals that persisted target;
 - `runner.execution == "repository-owned"`;
 - `runner.authority == "base"`;
 - the current owner branch exactly equals `repository.base_ref`;
