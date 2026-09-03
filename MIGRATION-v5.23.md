@@ -4,7 +4,7 @@ v5.23.0 resolves a lifecycle deadlock between persistent exact-head target autho
 
 ## Root defect
 
-v5.22.0 persisted target-mode authority per workspace across sessions and plugin restarts. That is intentional for fail-closed exact-head admission, but the target binding represented only the candidate SHA. A repository-owned assessment with `runner.authority: "base"` independently requires the owner checkout to be clean at the pinned base SHA. If authoritative `main` advanced after a prior merge while the owner remained on the previous clean main SHA, a candidate-bound target mismatch blocked every owner HEAD-changing operation except exact detached movement to the candidate. The gateway therefore could not run because the owner was behind its pinned base, while the guard prevented satisfying that gateway precondition.
+v5.22.0 persisted target-mode authority per workspace across sessions and plugin restarts. That is intentional for fail-closed exact-head admission, but the target binding represented only the candidate SHA. A repository-owned assessment with `runner.authority: "base"` independently requires the owner checkout to be clean at the pinned base SHA. If authoritative `main` advanced after the prior PR merged while the owner remained on the previous clean main SHA, a candidate-bound target mismatch blocked every owner HEAD-changing operation except exact detached movement to the candidate. The gateway therefore could not run because the owner was behind its pinned base, while the guard prevented satisfying that gateway precondition.
 
 A fresh chat, terminal, or OpenCode session was not a lifecycle transition: workspace safety state was deliberately persisted and restored. v5.22.0 also had no authenticated assessment-terminal transition and no separately modeled trusted-base reconciliation capability. The result was a repository-owned gateway admission cycle rather than evidence against the candidate PR.
 
@@ -25,7 +25,7 @@ IDLE
 
 `ASSESSMENT_ACTIVE`, `ASSESSMENT_TERMINAL`, and `OWNER_RECONCILIATION` are lifecycle states, not alternative Git authorities. The persisted exact-head target remains the authority boundary until an authenticated terminal transition releases it or a new explicit target supersedes it under the existing authority-change rules.
 
-A fresh chat/session does not release target authority. An interrupted assessment, malformed output, missing terminal evidence, inconsistent exit code, cross-target result, or result whose exact spec/summary identity cannot be authenticated leaves the target bound.
+A fresh chat/session does not release target authority. An interrupted assessment, malformed output, missing matching before-state, missing terminal evidence, inconsistent exit code, cross-target result, or result whose exact spec/summary identity cannot be authenticated leaves the target bound.
 
 ## Assessment-terminal authentication
 
@@ -36,21 +36,23 @@ The public assessment command remains fixed-shape:
   --spec /tmp/opencode/verify/assessments/<assessment>.json
 ```
 
-Before invocation, the operation guard loads that exact non-symlink typed spec and, when target authority is bound, requires `repository.head_sha` to equal the persisted target. The public wrapper emits a structured marker containing the assessment ID, SHA-256 of the exact spec bytes, pinned base SHA, pinned target SHA, and gateway outer-summary path.
+Before invocation, the operation guard loads that exact non-symlink typed spec and, when target authority is bound, requires `repository.head_sha` to equal the persisted target. The public wrapper emits a structured marker containing the assessment ID, SHA-256 of the exact spec bytes, pinned base SHA, pinned target SHA, SHA-256 of the exact serialized gateway outer-summary bytes, and outer-summary path. The summary hash is derived from the in-memory result object returned by `runRepoPrAssessment`, excluding only the wrapper-only `summary_path` and `exit_code` fields; it therefore does not depend on reopening the pathname after the gateway has closed its inode anchors.
 
 A terminal transition is accepted only when all of the following agree:
 
+- a matching admitted public-command `before` state exists for the same session/call identity;
 - the exact public command and the preflight-loaded spec;
 - the persisted target SHA;
 - assessment ID;
 - exact spec SHA-256;
 - pinned base and target SHAs;
+- exact outer-summary SHA-256;
 - one and only one `HOST_EVIDENCE_RESULT` marker;
 - `GATE_DECISION=NOT_EVALUATED`;
 - the public gateway exit-code contract (`PASS=0`, `FAIL=1`, `BLOCKED=2`, `STALE=3`, `INFRA_ERROR=2`, `ISOLATION_BREACH=4`); and
-- the bounded no-follow outer summary under `/tmp/opencode/verify/evidence`, including its schema, assessment identity, exact spec hash, base/target identities, host result, and gate decision.
+- the bounded no-follow outer summary under `/tmp/opencode/verify/evidence`, including its byte hash, schema, assessment identity, exact spec hash, base/target identities, host result, and gate decision.
 
-If any element disagrees, the wrapper sanitizes the terminal marker before the legacy/core after-hook sees it, records a rejected lifecycle transition, and leaves target authority bound. This prevents a different valid assessment spec, forged terminal text, wrong exit status, or mismatched summary from releasing an unrelated target.
+If any element disagrees, the wrapper sanitizes the terminal marker before the legacy/core after-hook sees it, records a rejected lifecycle transition, and leaves target authority bound. An assessment or reconciliation `after` event without its matching admitted `before` state is treated the same way. This prevents plugin/hook discontinuity, a different valid assessment spec, forged terminal text, wrong exit status, a pathname-substituted summary, or a mismatched summary from releasing an unrelated target.
 
 ## Which `STALE` results admit reconciliation
 
@@ -113,7 +115,7 @@ git merge --ff-only <repository.base_sha>
 
 Afterward it requires branch == pinned base branch, HEAD == pinned base SHA, a clean owner worktree, and another fresh remote base/head authority proof. There is no reset, rebase, force operation, merge-commit path, user-selected destination, or candidate-head movement capability.
 
-A successful helper output is itself authenticated before target release. Its exit must be zero and its unique result marker must match the persisted capability and admitted command/spec on assessment ID, exact spec SHA-256, expected old-owner SHA, base SHA, target SHA, and base branch. A forged or inconsistent success marker leaves the target and reconciliation capability bound.
+A successful helper output is itself authenticated before target release. Its exit must be zero and its unique result marker must match the persisted capability and admitted command/spec on assessment ID, exact spec SHA-256, expected old-owner SHA, base SHA, target SHA, and base branch. A success `after` event without its matching admitted `before` state, or a forged/inconsistent success marker, leaves the target and reconciliation capability bound.
 
 After authenticated reconciliation PASS, the operation guard updates current workspace provenance to the exact pinned base, releases target authority, consumes the reconciliation capability, and requires any subsequent exact-head assessment to establish fresh target authority/spec identity.
 
@@ -122,7 +124,9 @@ After authenticated reconciliation PASS, the operation guard updates current wor
 The v5.23.0 suite covers:
 
 - cross-target assessment-spec rejection before execution;
-- forged/mismatched assessment ID, target, spec hash, outer-summary identity, and exit status;
+- forged/mismatched assessment ID, target, spec hash, outer-summary identity, outer-summary byte hash, and exit status;
+- outer-summary pathname/byte substitution after public result construction;
+- assessment and reconciliation `after` events without matching admitted `before` state;
 - fail-closed interrupted or missing terminal evidence;
 - all public gateway terminal exit mappings;
 - generic mismatch rejection of owner reconciliation;
