@@ -98,7 +98,24 @@ test("plugin initialization snapshots client.config.get exactly once", async () 
   assert.equal(reads, 1)
 })
 
-test("plugin initialization fails closed when the live config surface is unavailable", async () => {
-  await assert.rejects(() => OperationalSchemaGuardPlugin({ client: {}, directory: "/tmp/context-policy-plugin-test" }), /client\.config\.get/)
+test("plugin initialization remains active and fails closed when live config authority is unavailable or malformed", async () => {
+  const missingHooks = await OperationalSchemaGuardPlugin({ client: {}, directory: "/tmp/context-policy-plugin-test-missing" })
+  await assert.rejects(
+    () => missingHooks["tool.execute.before"]({ sessionID: "missing", callID: "tool-1", tool: "todowrite" }, { args: { todos: [] } }),
+    /context policy initialization failed closed.*client\.config\.get\(\) is unavailable/,
+  )
+
+  let reads = 0
+  const malformed = liveConfig()
+  malformed.compaction.reserved = 0
+  const malformedHooks = await OperationalSchemaGuardPlugin({
+    client: { config: { get: async () => { reads += 1; return { data: malformed } } } },
+    directory: "/tmp/context-policy-plugin-test-malformed",
+  })
+  assert.equal(reads, 1)
+  await assert.rejects(
+    () => malformedHooks["tool.execute.before"]({ sessionID: "malformed", callID: "tool-1", tool: "read" }, { args: { filePath: "README.md" } }),
+    /context policy initialization failed closed.*compaction\.reserved must be a positive integer/,
+  )
   assert.throws(() => unwrapLiveConfig(undefined), /did not return a live configuration object/)
 })

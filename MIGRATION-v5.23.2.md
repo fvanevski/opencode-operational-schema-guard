@@ -24,6 +24,8 @@ There are no operational-schema token constants corresponding to the former 1500
 
 Configuration changes do not alter an already initialized plugin instance. Start a genuinely fresh OpenCode process to load changed model limits or compaction reserve values.
 
+If the initialization snapshot cannot be read or validated, v5.23.2 does not throw out of the plugin entry point: OpenCode catches external-plugin initialization exceptions and can otherwise continue without that plugin. Instead the plugin returns an active guard carrying the initialization failure and rejects every subsequent tool invocation until the live configuration is corrected and a genuinely fresh OpenCode process is started.
+
 ## Configuration validation
 
 The live-config contract no longer caps `model.limit.input` at 180000 or imposes a fixed minimum context size. Instead it requires positive coherent context/input/output/reserve values while retaining the existing plugin ordering, permissions, typed gateway, and atomic-install invariants.
