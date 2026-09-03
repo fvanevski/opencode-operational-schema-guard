@@ -10,6 +10,7 @@ const tests = [
   "tests/verify-disposable.test.mjs",
   "tests/verify-manifest.test.mjs",
   "tests/local-agent-assessment.test.mjs",
+  "tests/owner-base-reconciliation.test.mjs",
   "tests/repo-pr-assessment.test.mjs",
   "tests/repository-owned-assessment.test.mjs",
   "tests/workspace-identity.test.mjs",
