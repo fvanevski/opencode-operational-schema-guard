@@ -5,6 +5,7 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import test, { after as afterAll } from "node:test"
 import { createOperationGuard } from "../lib/operation-guard.mjs"
+import { ASSESSMENT_RESULT_SCHEMA } from "../lib/repo-pr-assessment.mjs"
 
 const ASSESSMENT_ROOT = "/tmp/opencode/verify/assessments"
 const EVIDENCE_ROOT = "/tmp/opencode/verify/evidence"
@@ -107,6 +108,7 @@ function summaryDocument(f, result) {
     runner_execution: "repository-owned",
     runner_authority: "base",
     owner_initial: { head: f.observed, branch: "main", status: "" },
+    owner_final: { head: f.observed, branch: "main", status: "" },
     observed_base_sha: f.base,
     observed_head_sha: f.target,
     host_evidence_result: result,
@@ -126,7 +128,7 @@ async function assessmentResult(f, { result = "STALE", exit = 3 } = {}) {
   generated.add(summaryPath)
   const summarySha256 = createHash("sha256").update(summaryBytes).digest("hex")
   return {
-    output: `OPERATIONAL_ASSESSMENT: schema=opencode-local-assessment-v1; assessment_id=${f.assessmentID}; spec_sha256=${f.specSha256}; base_sha=${f.base}; target_sha=${f.target}; summary_sha256=${summarySha256}; summary=${summaryPath}\nHOST_EVIDENCE_RESULT=${result}\nGATE_DECISION=NOT_EVALUATED\n`,
+    output: `OPERATIONAL_ASSESSMENT: schema=${ASSESSMENT_RESULT_SCHEMA}; assessment_id=${f.assessmentID}; spec_sha256=${f.specSha256}; base_sha=${f.base}; target_sha=${f.target}; summary_sha256=${summarySha256}; summary=${summaryPath}\nHOST_EVIDENCE_RESULT=${result}\nGATE_DECISION=NOT_EVALUATED\n`,
     metadata: { exit },
   }
 }
