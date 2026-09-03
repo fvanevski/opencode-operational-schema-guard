@@ -182,12 +182,8 @@ test("non-fast-forward pinned base and non-base authority are rejected", async (
   const canonicalSpec = "/tmp/opencode/verify/assessments/reconcile-owner-base-nonff.json"
   await mkdir("/tmp/opencode/verify/assessments", { recursive: true })
 
-  git(f.seed, ["switch", "--orphan", "divergent-main"])
-  git(f.seed, ["rm", "-rf", "."])
-  await writeFile(join(f.seed, "divergent.txt"), "divergent\n")
-  git(f.seed, ["add", "divergent.txt"])
-  git(f.seed, ["commit", "-m", "divergent main"])
-  const divergentSha = git(f.seed, ["rev-parse", "HEAD"]).stdout
+  const emptyTree = git(f.seed, ["mktree"]).stdout
+  const divergentSha = git(f.seed, ["commit-tree", emptyTree, "-m", "divergent main"]).stdout
   git(f.seed, ["push", "--force", "origin", `${divergentSha}:refs/heads/main`])
   const divergent = structuredClone(f.spec)
   divergent.repository.base_sha = divergentSha
