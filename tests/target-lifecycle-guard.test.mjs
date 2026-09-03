@@ -5,6 +5,8 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import test, { after as afterAll } from "node:test"
 import { createOperationGuard } from "../lib/operation-guard.mjs"
+import { ASSESSMENT_RESULT_SCHEMA } from "../lib/repo-pr-assessment.mjs"
+import { assessmentTerminalOutput } from "../scripts/local-agent-assessment.mjs"
 
 const ASSESSMENT_ROOT = "/tmp/opencode/verify/assessments"
 const EVIDENCE_ROOT = "/tmp/opencode/verify/evidence"
@@ -103,11 +105,12 @@ async function assessmentOutput({
   execution = "repository-owned",
   authority = "base",
   summaryOverrides = {},
+  markerSchema = ASSESSMENT_RESULT_SCHEMA,
 }) {
   await mkdir(EVIDENCE_ROOT, { recursive: true })
   const summaryPath = join(EVIDENCE_ROOT, `${assessmentID}.summary.json`)
   const summary = {
-    schema_version: "opencode-repo-pr-assessment-result-v1",
+    schema_version: ASSESSMENT_RESULT_SCHEMA,
     assessment_id: assessmentID,
     expected_base_sha: base,
     expected_head_sha: target,
@@ -116,6 +119,7 @@ async function assessmentOutput({
     runner_execution: execution,
     runner_authority: authority,
     owner_initial: { head: observed, branch: "main", status: "" },
+    owner_final: { head: observed, branch: "main", status: "" },
     observed_base_sha: base,
     observed_head_sha: target,
     host_evidence_result: result,
@@ -128,9 +132,37 @@ async function assessmentOutput({
   generated.add(summaryPath)
   const summarySha256 = createHash("sha256").update(summaryBytes).digest("hex")
   return {
-    output: `OPERATIONAL_ASSESSMENT: schema=opencode-local-assessment-v1; assessment_id=${assessmentID}; spec_sha256=${specSha256}; base_sha=${base}; target_sha=${target}; summary_sha256=${summarySha256}; summary=${summaryPath}\nHOST_EVIDENCE_RESULT=${result}\nGATE_DECISION=NOT_EVALUATED\n`,
+    output: `OPERATIONAL_ASSESSMENT: schema=${markerSchema}; assessment_id=${assessmentID}; spec_sha256=${specSha256}; base_sha=${base}; target_sha=${target}; summary_sha256=${summarySha256}; summary=${summaryPath}\nHOST_EVIDENCE_RESULT=${result}\nGATE_DECISION=NOT_EVALUATED\n`,
     metadata: { exit },
   }
+}
+
+async function realWrapperAssessmentOutput({ assessmentID, specSha256, base, target, observed }) {
+  await mkdir(EVIDENCE_ROOT, { recursive: true })
+  const summaryPath = join(EVIDENCE_ROOT, `${assessmentID}.summary.json`)
+  const result = {
+    schema_version: ASSESSMENT_RESULT_SCHEMA,
+    assessment_id: assessmentID,
+    expected_base_sha: base,
+    expected_head_sha: target,
+    spec_sha256: specSha256,
+    base_ref: "main",
+    runner_execution: "repository-owned",
+    runner_authority: "base",
+    owner_initial: { head: observed, branch: "main", status: "" },
+    owner_final: { head: observed, branch: "main", status: "" },
+    observed_base_sha: base,
+    observed_head_sha: target,
+    host_evidence_result: "STALE",
+    gate_decision: "NOT_EVALUATED",
+    error: `repo-pr-assessment: repository-owned owner checkout is ${observed}, not pinned base authority ${base}`,
+    summary_path: summaryPath,
+    exit_code: 3,
+  }
+  const { summary_path: _summaryPath, exit_code: _exitCode, ...summary } = result
+  await writeFile(summaryPath, `${JSON.stringify(summary, null, 2)}\n`)
+  generated.add(summaryPath)
+  return { output: assessmentTerminalOutput(result, specSha256), metadata: { exit: 3 } }
 }
 
 function reconciliationOutput({ assessmentID, specSha256, oldSha, base, target, branch = "main" }) {
@@ -140,16 +172,18 @@ function reconciliationOutput({ assessmentID, specSha256, oldSha, base, target, 
   }
 }
 
-async function mismatchedGuard(t, label, { target = "d".repeat(40), observed = "a".repeat(40) } = {}) {
+async function mismatchedGuard(t, label, { target = "d".repeat(40), observed = "a".repeat(40), proveObserved = true } = {}) {
   const stateDirectory = await mkdtemp(join(tmpdir(), `target-lifecycle-${label}-`))
   const directory = join(stateDirectory, "workspace")
   await mkdir(directory)
   const hooks = createOperationGuard({ directory, env: {}, stateDirectory })
   const sessionID = `session-${label}`
   await message(hooks, sessionID, `REQUIRED EXACT HEAD: ${target}`)
-  const proof = { command: "git rev-parse HEAD" }
-  await before(hooks, sessionID, "proof", proof)
-  await after(hooks, sessionID, "proof", proof, { output: `${observed}\n`, metadata: { exit: 0 } })
+  if (proveObserved) {
+    const proof = { command: "git rev-parse HEAD" }
+    await before(hooks, sessionID, "proof", proof)
+    await after(hooks, sessionID, "proof", proof, { output: `${observed}\n`, metadata: { exit: 0 } })
+  }
   t.after(async () => rm(stateDirectory, { recursive: true, force: true }))
   return { hooks, sessionID, stateDirectory, directory, target, observed }
 }
@@ -170,6 +204,79 @@ test("generic target mismatch cannot invoke owner reconciliation before authenti
     /not admitted by a generic target mismatch.*clean-owner-behind-base STALE/s,
   )
   assert.match(await compaction(f.hooks, f.sessionID), new RegExp(`Authority: ${f.target}`))
+})
+
+test("real gateway result schema admits owner-base STALE from authenticated summary without pre-seeded core observedHead", async (t) => {
+  const f = await mismatchedGuard(t, "real-schema-no-core-head", { proveObserved: false })
+  const base = "b".repeat(40)
+  const assessmentID = `real-schema-${Math.random().toString(16).slice(2, 8)}`
+  const written = await writeSpec(makeSpec({ assessmentID, base, target: f.target }))
+  const command = assessmentCommand(written.path)
+  await before(f.hooks, f.sessionID, "assessment", command)
+  const stale = await after(f.hooks, f.sessionID, "assessment", command, await realWrapperAssessmentOutput({ assessmentID, specSha256: written.sha256, base, target: f.target, observed: f.observed }))
+  assert.match(stale.output, /ASSESSMENT_TERMINAL -> OWNER_RECONCILIATION/)
+  assert.match(stale.output, new RegExp(`OPERATIONAL_TARGET_RECONCILIATION: admitted; target=${f.target}; base=${base}; owner=${f.observed}`))
+  const continuity = await compaction(f.hooks, f.sessionID)
+  assert.match(continuity, new RegExp(`Target lifecycle: OWNER_RECONCILIATION; target=${f.target}; base_ref=main; base=${base}; owner=${f.observed}`))
+})
+
+test("input-spec schema in a public assessment result marker is rejected as unauthenticated terminal evidence", async (t) => {
+  const f = await mismatchedGuard(t, "old-marker-schema")
+  const base = "b".repeat(40)
+  const assessmentID = `old-marker-${Math.random().toString(16).slice(2, 8)}`
+  const written = await writeSpec(makeSpec({ assessmentID, base, target: f.target }))
+  const command = assessmentCommand(written.path)
+  await before(f.hooks, f.sessionID, "assessment", command)
+  const stale = await after(f.hooks, f.sessionID, "assessment", command, await assessmentOutput({
+    assessmentID,
+    specSha256: written.sha256,
+    base,
+    target: f.target,
+    observed: f.observed,
+    markerSchema: "opencode-local-assessment-v1",
+  }))
+  assert.match(stale.output, /REJECTED unauthenticated assessment terminal evidence/)
+  assert.doesNotMatch(stale.output, /OPERATIONAL_TARGET_RECONCILIATION: admitted/)
+})
+
+test("summary owner identity must agree with a separately proven core observedHead when one exists", async (t) => {
+  const f = await mismatchedGuard(t, "core-head-cross-check")
+  const base = "b".repeat(40)
+  const summaryOwner = "c".repeat(40)
+  const assessmentID = `owner-cross-${Math.random().toString(16).slice(2, 8)}`
+  const written = await writeSpec(makeSpec({ assessmentID, base, target: f.target }))
+  const command = assessmentCommand(written.path)
+  await before(f.hooks, f.sessionID, "assessment", command)
+  const stale = await after(f.hooks, f.sessionID, "assessment", command, await assessmentOutput({ assessmentID, specSha256: written.sha256, base, target: f.target, observed: summaryOwner }))
+  assert.match(stale.output, /ASSESSMENT_TERMINAL -> TARGET_BOUND; result=STALE; reconciliation=not-admitted/)
+  assert.doesNotMatch(stale.output, /OPERATIONAL_TARGET_RECONCILIATION: admitted/)
+})
+
+test("missing or changed owner-final identity prevents a STALE terminal from minting reconciliation authority", async (t) => {
+  const cases = [
+    ["missing", undefined],
+    ["head", { head: "c".repeat(40), branch: "main", status: "" }],
+    ["branch", { head: "a".repeat(40), branch: "other", status: "" }],
+    ["dirty", { head: "a".repeat(40), branch: "main", status: " M changed.txt" }],
+  ]
+  for (const [name, ownerFinal] of cases) {
+    const f = await mismatchedGuard(t, `owner-final-${name}`)
+    const base = "b".repeat(40)
+    const assessmentID = `owner-final-${name}-${Math.random().toString(16).slice(2, 8)}`
+    const written = await writeSpec(makeSpec({ assessmentID, base, target: f.target }))
+    const command = assessmentCommand(written.path)
+    await before(f.hooks, f.sessionID, "assessment", command)
+    const stale = await after(f.hooks, f.sessionID, "assessment", command, await assessmentOutput({
+      assessmentID,
+      specSha256: written.sha256,
+      base,
+      target: f.target,
+      observed: f.observed,
+      summaryOverrides: { owner_final: ownerFinal },
+    }))
+    assert.match(stale.output, /ASSESSMENT_TERMINAL -> TARGET_BOUND; result=STALE; reconciliation=not-admitted/, name)
+    assert.doesNotMatch(stale.output, /OPERATIONAL_TARGET_RECONCILIATION: admitted/, name)
+  }
 })
 
 test("authenticated owner-base STALE persists exact reconciliation identity across plugin restart and blocks alternate HEAD movement", async (t) => {
@@ -278,6 +385,31 @@ test("remote-authority and non-base STALE results remain target-bound without mi
     assert.doesNotMatch(continuity, /Target lifecycle: OWNER_RECONCILIATION/)
     await assert.doesNotReject(() => before(f.hooks, f.sessionID, "assessment-again", command))
   }
+})
+
+test("divergent clean-owner STALE remains target-bound and permits corrected same-target reassessment", async (t) => {
+  const f = await mismatchedGuard(t, "divergent-owner-stale", { proveObserved: false })
+  const base = "b".repeat(40)
+  const assessmentID = `divergent-owner-${Math.random().toString(16).slice(2, 8)}`
+  const written = await writeSpec(makeSpec({ assessmentID, base, target: f.target }))
+  const command = assessmentCommand(written.path)
+  await before(f.hooks, f.sessionID, "assessment", command)
+  const stale = await after(f.hooks, f.sessionID, "assessment", command, await assessmentOutput({
+    assessmentID,
+    specSha256: written.sha256,
+    base,
+    target: f.target,
+    observed: f.observed,
+    summaryOverrides: {
+      error: `repo-pr-assessment: repository-owned owner checkout ${f.observed} is not an ancestor of pinned base authority ${base}`,
+    },
+  }))
+  assert.match(stale.output, /ASSESSMENT_TERMINAL -> TARGET_BOUND; result=STALE; reconciliation=not-admitted/)
+  assert.doesNotMatch(stale.output, /OPERATIONAL_TARGET_RECONCILIATION: admitted/)
+  const continuity = await compaction(f.hooks, f.sessionID)
+  assert.match(continuity, new RegExp(`Authority: ${f.target}`))
+  assert.doesNotMatch(continuity, /Target lifecycle: OWNER_RECONCILIATION/)
+  await assert.doesNotReject(() => before(f.hooks, f.sessionID, "assessment-again", command))
 })
 
 test("reconciliation release requires exact stale spec hash and old/base/target/branch result identity", async (t) => {

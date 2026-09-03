@@ -5,6 +5,7 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import test from "node:test"
 import { createOperationGuard } from "../lib/operation-guard.mjs"
+import { ASSESSMENT_RESULT_SCHEMA } from "../lib/repo-pr-assessment.mjs"
 
 const SPEC_ROOT = "/tmp/opencode/verify/assessments"
 const EVIDENCE_ROOT = "/tmp/opencode/verify/evidence"
@@ -68,7 +69,7 @@ async function runTerminalCase(t, result, exit) {
   const specSha256 = createHash("sha256").update(specBytes).digest("hex")
   await writeFile(specPath, specBytes)
   const summary = {
-    schema_version: "opencode-repo-pr-assessment-result-v1",
+    schema_version: ASSESSMENT_RESULT_SCHEMA,
     assessment_id: assessmentID,
     expected_base_sha: base,
     expected_head_sha: target,
@@ -92,7 +93,7 @@ async function runTerminalCase(t, result, exit) {
   await hooks["tool.execute.before"]({ sessionID, callID: "assessment", tool: "bash" }, { args })
   const output = {
     title: "",
-    output: `OPERATIONAL_ASSESSMENT: schema=opencode-local-assessment-v1; assessment_id=${assessmentID}; spec_sha256=${specSha256}; base_sha=${base}; target_sha=${target}; summary_sha256=${summarySha256}; summary=${summaryPath}\nHOST_EVIDENCE_RESULT=${result}\nGATE_DECISION=NOT_EVALUATED\n`,
+    output: `OPERATIONAL_ASSESSMENT: schema=${ASSESSMENT_RESULT_SCHEMA}; assessment_id=${assessmentID}; spec_sha256=${specSha256}; base_sha=${base}; target_sha=${target}; summary_sha256=${summarySha256}; summary=${summaryPath}\nHOST_EVIDENCE_RESULT=${result}\nGATE_DECISION=NOT_EVALUATED\n`,
     metadata: { exit },
   }
   await hooks["tool.execute.after"]({ sessionID, callID: "assessment", tool: "bash", args }, output)

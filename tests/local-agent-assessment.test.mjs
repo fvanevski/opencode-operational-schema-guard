@@ -4,8 +4,8 @@ import { mkdtemp, mkdir, symlink, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import test from "node:test"
-import { assessmentSummarySha256, parseAssessmentArgs } from "../scripts/local-agent-assessment.mjs"
-import { LOCAL_ASSESSMENT_SCHEMA, loadAssessmentSpec, parseRepoPrAssessmentSpec } from "../lib/repo-pr-assessment.mjs"
+import { assessmentSummarySha256, assessmentTerminalOutput, parseAssessmentArgs } from "../scripts/local-agent-assessment.mjs"
+import { ASSESSMENT_RESULT_SCHEMA, LOCAL_ASSESSMENT_SCHEMA, loadAssessmentSpec, parseRepoPrAssessmentSpec } from "../lib/repo-pr-assessment.mjs"
 
 const ROOT = "/tmp/opencode/verify/assessments"
 
@@ -46,7 +46,7 @@ test("local assessment entrypoint accepts only one concrete typed-spec path", ()
 
 test("public assessment marker hashes the exact persisted summary serialization", () => {
   const result = {
-    schema_version: "opencode-repo-pr-assessment-result-v1",
+    schema_version: ASSESSMENT_RESULT_SCHEMA,
     assessment_id: "summary-hash",
     expected_base_sha: "a".repeat(40),
     expected_head_sha: "b".repeat(40),
@@ -57,8 +57,13 @@ test("public assessment marker hashes the exact persisted summary serialization"
   }
   const { summary_path: _summaryPath, exit_code: _exitCode, ...summary } = result
   const expected = createHash("sha256").update(`${JSON.stringify(summary, null, 2)}\n`).digest("hex")
+  assert.equal(result.schema_version, ASSESSMENT_RESULT_SCHEMA)
   assert.equal(assessmentSummarySha256(result), expected)
   assert.equal(assessmentSummarySha256({ ...result, summary_path: null }), null)
+  assert.equal(
+    assessmentTerminalOutput(result, "c".repeat(64)),
+    `OPERATIONAL_ASSESSMENT: schema=${ASSESSMENT_RESULT_SCHEMA}; assessment_id=summary-hash; spec_sha256=${"c".repeat(64)}; base_sha=${"a".repeat(40)}; target_sha=${"b".repeat(40)}; summary_sha256=${expected}; summary=/tmp/opencode/verify/evidence/summary-hash.summary.json\nHOST_EVIDENCE_RESULT=STALE\nGATE_DECISION=NOT_EVALUATED\n`,
+  )
 })
 
 test("repo-pr assessment schema is project-neutral and authority-bound", () => {

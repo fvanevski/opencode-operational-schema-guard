@@ -19,6 +19,7 @@ import {
 } from "../lib/repo-pr-assessment.mjs"
 
 const RUNNER_SUPERVISOR = fileURLToPath(new URL("../scripts/repo-pr-runner-supervisor.py", import.meta.url))
+const RUNNER_SUPERVISOR_CACHE = fileURLToPath(new URL("../scripts/__pycache__", import.meta.url))
 
 function git(cwd, ...args) {
   const result = spawnSync("git", args, { cwd, encoding: "utf8", shell: false })
@@ -512,8 +513,9 @@ test("repository-owned supervisor binds Landlock write authority to inherited de
   }
 })
 
-test("repository-owned Landlock write-fd setup performs no pathname lookup for inherited descriptors", async () => {
+test("repository-owned Landlock write-fd setup performs no pathname lookup or repository bytecode write", async () => {
   const root = await mkdtemp(join(tmpdir(), "repo-owned-supervisor-landlock-no-path-"))
+  const cacheExistedBefore = await exists(RUNNER_SUPERVISOR_CACHE)
   const probe = `import importlib.util
 import os
 import pathlib
@@ -542,12 +544,15 @@ os.close(fd)
 (root / "allowed").write_text("descriptor-bound\\n")
 `
   try {
-    const result = spawnSync("/usr/bin/python3", ["-c", probe, RUNNER_SUPERVISOR, root], {
+    const result = spawnSync("/usr/bin/python3", ["-B", "-c", probe, RUNNER_SUPERVISOR, root], {
       encoding: "utf8",
       shell: false,
     })
     assert.equal(result.status, 0, result.stderr)
     assert.equal(await readFile(join(root, "allowed"), "utf8"), "descriptor-bound\n")
+    if (!cacheExistedBefore) {
+      assert.equal(await exists(RUNNER_SUPERVISOR_CACHE), false, "Python import probe must not create repository __pycache__ state")
+    }
   } finally {
     await rm(root, { recursive: true, force: true })
   }
@@ -620,6 +625,50 @@ test("repository-owned mode admits canonical PR refs without creating a gateway 
     branch: git(fx.repo, "branch", "--show-current"),
     status: git(fx.repo, "status", "--porcelain=v1", "--untracked-files=normal"),
   }, before)
+})
+
+test("repository-owned base-authority mismatch emits the reconcilable STALE cause only for an owner behind the pinned base", async (t) => {
+  const fx = await fixture()
+  const behindID = `pr20-owner-behind-${Math.random().toString(16).slice(2, 8)}`
+  const divergentID = `pr20-owner-divergent-${Math.random().toString(16).slice(2, 8)}`
+  t.after(() => cleanupFixture(fx, [behindID, divergentID]))
+
+  await writeFile(join(fx.repo, "advanced-base.txt"), "advanced base\n")
+  git(fx.repo, "add", "advanced-base.txt")
+  git(fx.repo, "commit", "-m", "advanced base")
+  const advancedBaseSha = git(fx.repo, "rev-parse", "HEAD")
+  git(fx.repo, "push", "origin", "main")
+  git(fx.repo, "reset", "--hard", fx.baseSha)
+
+  const advanced = { ...fx, baseSha: advancedBaseSha }
+  const behind = await runRepoPrAssessment(makeSpec(advanced, behindID), {
+    repoRoot: fx.repo,
+    evidenceRoot: fx.evidenceRoot,
+  })
+  assert.equal(behind.host_evidence_result, "STALE")
+  assert.equal(behind.error, `repo-pr-assessment: repository-owned owner checkout is ${fx.baseSha}, not pinned base authority ${advancedBaseSha}`)
+  assert.equal(behind.owner_initial.head, fx.baseSha)
+  assert.deepEqual(behind.owner_final, behind.owner_initial)
+  assert.equal(behind.runner.plan, null)
+  assert.equal(behind.runner.run, null)
+
+  await writeFile(join(fx.repo, "divergent-owner.txt"), "divergent owner\n")
+  git(fx.repo, "add", "divergent-owner.txt")
+  git(fx.repo, "commit", "-m", "divergent owner")
+  const divergentSha = git(fx.repo, "rev-parse", "HEAD")
+  const divergent = await runRepoPrAssessment(makeSpec(advanced, divergentID), {
+    repoRoot: fx.repo,
+    evidenceRoot: fx.evidenceRoot,
+  })
+  assert.equal(divergent.host_evidence_result, "STALE")
+  assert.equal(divergent.error, `repo-pr-assessment: repository-owned owner checkout ${divergentSha} is not an ancestor of pinned base authority ${advancedBaseSha}`)
+  assert.equal(divergent.owner_initial.head, divergentSha)
+  assert.deepEqual(divergent.owner_final, divergent.owner_initial)
+  assert.equal(divergent.observed_base_sha, advancedBaseSha)
+  assert.equal(divergent.observed_head_sha, fx.headSha)
+  assert.equal(divergent.runner.plan, null)
+  assert.equal(divergent.runner.run, null)
+  assert.equal(git(fx.repo, "rev-parse", "HEAD"), divergentSha)
 })
 
 test("repository-owned sandbox denies control and owner-Git writes while preserving native Git worktree lifecycle", async (t) => {

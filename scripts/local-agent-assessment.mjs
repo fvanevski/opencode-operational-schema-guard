@@ -21,6 +21,11 @@ export function assessmentSummarySha256(result) {
   return createHash("sha256").update(`${JSON.stringify(summary, null, 2)}\n`).digest("hex")
 }
 
+export function assessmentTerminalOutput(result, specSha256) {
+  const summarySha256 = assessmentSummarySha256(result)
+  return `OPERATIONAL_ASSESSMENT: schema=${result.schema_version}; assessment_id=${result.assessment_id}; spec_sha256=${specSha256}; base_sha=${result.expected_base_sha}; target_sha=${result.expected_head_sha}; summary_sha256=${summarySha256 ?? "unavailable"}; summary=${result.summary_path}\nHOST_EVIDENCE_RESULT=${result.host_evidence_result}\nGATE_DECISION=${result.gate_decision}\n`
+}
+
 export async function runAssessment(argv = process.argv.slice(2)) {
   const { specPath } = parseAssessmentArgs(argv)
   const loaded = await loadAssessmentSpec(specPath)
@@ -32,10 +37,7 @@ export async function runAssessment(argv = process.argv.slice(2)) {
     default:
       throw new Error(`local-agent-assessment: unsupported assessment kind ${loaded.spec.kind}`)
   }
-  const summarySha256 = assessmentSummarySha256(result)
-  process.stdout.write(`OPERATIONAL_ASSESSMENT: schema=${result.schema_version}; assessment_id=${result.assessment_id}; spec_sha256=${loaded.sha256}; base_sha=${result.expected_base_sha}; target_sha=${result.expected_head_sha}; summary_sha256=${summarySha256 ?? "unavailable"}; summary=${result.summary_path}\n`)
-  process.stdout.write(`HOST_EVIDENCE_RESULT=${result.host_evidence_result}\n`)
-  process.stdout.write(`GATE_DECISION=${result.gate_decision}\n`)
+  process.stdout.write(assessmentTerminalOutput(result, loaded.sha256))
   return result.exit_code
 }
 
