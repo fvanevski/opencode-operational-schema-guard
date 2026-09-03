@@ -268,7 +268,9 @@ test("remote-authority and non-base STALE results remain target-bound without mi
       authority,
       summaryOverrides: overrides,
     }))
-    assert.match(stale.output, /OPERATIONAL_TARGET_RECONCILIATION: not-admitted/)
+    assert.match(stale.output, /ASSESSMENT_TERMINAL -> TARGET_BOUND; result=STALE; reconciliation=not-admitted/)
+    assert.doesNotMatch(stale.output, /ASSESSMENT_TERMINAL -> OWNER_RECONCILIATION/)
+    assert.doesNotMatch(stale.output, /OPERATIONAL_TARGET_RECONCILIATION: admitted/)
     const continuity = await compaction(f.hooks, f.sessionID)
     assert.match(continuity, new RegExp(`Authority: ${f.target}`))
     assert.doesNotMatch(continuity, /Target lifecycle: OWNER_RECONCILIATION/)
