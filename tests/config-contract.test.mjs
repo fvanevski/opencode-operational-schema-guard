@@ -10,6 +10,7 @@ import { BUILD_AGENT_PROMPT, EVIDENCE_ASSESSMENT_RULE, EXPLORE_AGENT_PROMPT, REA
 function validConfig(context = 204800) {
   const models = Object.fromEntries(["chat", "chat-fast", "chat-review", "chat-audit"].map((name) => [name, { limit: { context, input: 180000, output: 8192 } }]))
   return {
+    model: "local/chat",
     compaction: { auto: true, prune: true, reserved: 20000 },
     plugin: [
       "file:///home/filip/.config/opencode/plugins/operational-schema-v5/index.mjs",
@@ -118,9 +119,15 @@ test("the live-config contract rejects syntax, undersized contexts, and unsafe V
   const legacyCompaction = validConfig()
   legacyCompaction.compaction.tail_turns = 1
   assert.throws(() => parseAndValidateConfig(JSON.stringify(legacyCompaction)), /legacy undocumented compaction keys/)
-  const lateCompaction = validConfig()
-  lateCompaction.provider.local.models.chat.limit.input = 190000
-  assert.throws(() => parseAndValidateConfig(JSON.stringify(lateCompaction)), /input limit.*no greater than 180000/)
+  const expandedInput = validConfig()
+  expandedInput.provider.local.models.chat.limit.input = 190000
+  assert.doesNotThrow(() => parseAndValidateConfig(JSON.stringify(expandedInput)))
+  const oversubscribed = validConfig()
+  oversubscribed.provider.local.models.chat.limit.input = 200000
+  assert.throws(() => parseAndValidateConfig(JSON.stringify(oversubscribed)), /input limit plus output limit must not exceed.*context limit/)
+  const excessiveReserve = validConfig()
+  excessiveReserve.compaction.reserved = 180000
+  assert.throws(() => parseAndValidateConfig(JSON.stringify(excessiveReserve)), /compaction reserve must be smaller/)
   const unsafe = validConfig()
   unsafe.agent.verify.permission.external_directory = {
     "/tmp/opencode/verify/**": "allow",

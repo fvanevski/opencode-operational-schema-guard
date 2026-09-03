@@ -4,7 +4,7 @@ import { mkdir, mkdtemp, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import test from "node:test"
-import { createOperationGuard, DEFAULT_POLICY, EVIDENCE_ASSESSMENT_PATH, extractPaths, normalizeTaskPacket, SCHEMA_VERSION, validateChildPlan, validateTaskPacket } from "../lib/operation-guard.mjs"
+import { createOperationGuard, DEFAULT_POLICY, EVIDENCE_ASSESSMENT_PATH, extractPaths, normalizeTaskPacket, policyFromConfig, SCHEMA_VERSION, validateChildPlan, validateTaskPacket } from "../lib/operation-guard.mjs"
 
 function taskArgs(overrides = {}) {
   return {
@@ -1097,15 +1097,38 @@ test("file redirects are mutations but descriptor-only redirects are not", async
   await assert.rejects(() => before(dirtyHooks, "dirty-parent", "dirty-commit", "bash", { command: "git commit -m generated" }), /fresh-review/)
 })
 
-test("primary context pressure requests same-session compaction and emergency-blocks every tool", async () => {
-  const hooks = createOperationGuard({ directory: "/tmp/project", env: {} })
+test("primary context pressure uses the active agent's initialization-derived model budget", async () => {
+  const config = {
+    model: "local/chat",
+    compaction: { reserved: 40960 },
+    provider: { local: { models: {
+      chat: { limit: { context: 262144, input: 241664, output: 20480 } },
+      "chat-review": { limit: { context: 262144, input: 245760, output: 16384 } },
+      "chat-audit": { limit: { context: 262144, input: 241664, output: 20480 } },
+    } } },
+    agent: {
+      plan: { model: "local/chat-audit" },
+      build: { model: "local/chat" },
+      review: { model: "local/chat-review" },
+      research: { model: "local/chat-audit" },
+    },
+  }
+  const policy = policyFromConfig(config, {})
+  const hooks = createOperationGuard({ directory: "/tmp/project", env: {}, policy })
   await register(hooks, "parent", "build")
-  await hooks.event({ event: { type: "message.updated", properties: { info: { sessionID: "parent", role: "assistant", finish: "tool-calls", tokens: { input: DEFAULT_POLICY.primaryContextWarningTokens } } } } })
-  assert.match(await system(hooks, "parent"), /primary input context is 150000 tokens.*Remain in this session.*Do not write a session-close handoff/s)
-  await hooks.event({ event: { type: "message.updated", properties: { info: { sessionID: "parent", role: "assistant", finish: "tool-calls", tokens: { input: DEFAULT_POLICY.primaryContextHardLimitTokens } } } } })
-  await assert.rejects(() => before(hooks, "parent", "context-block", "todowrite", { todos: [] }), /emergency context ceiling reached 195000 tokens.*same session/)
+  await hooks.event({ event: { type: "message.updated", properties: { info: { sessionID: "parent", role: "assistant", finish: "tool-calls", tokens: { input: policy.primaryContext.build.warningTokens } } } } })
+  assert.match(await system(hooks, "parent"), /primary input context is 200704 tokens.*warning=200704.*model=local\/chat.*Remain in this session/s)
+  await hooks.event({ event: { type: "message.updated", properties: { info: { sessionID: "parent", role: "assistant", finish: "tool-calls", tokens: { input: policy.primaryContext.build.hardLimitTokens } } } } })
+  await assert.rejects(() => before(hooks, "parent", "context-block", "todowrite", { todos: [] }), /emergency context ceiling reached 241664 tokens.*model input limit 241664.*same session/)
   await assert.rejects(() => before(hooks, "parent", "context-edit", "edit", { filePath: "src/final.mjs" }), /Call no more tools/)
   await assert.rejects(() => before(hooks, "parent", "context-task", "task", taskArgs()), /Call no more tools/)
+
+  const reviewHooks = createOperationGuard({ directory: "/tmp/project-review", env: {}, policy })
+  await register(reviewHooks, "review-parent", "review")
+  await reviewHooks.event({ event: { type: "message.updated", properties: { info: { sessionID: "review-parent", role: "assistant", finish: "tool-calls", tokens: { input: 200704 } } } } })
+  assert.doesNotMatch(await system(reviewHooks, "review-parent"), /primary input context/)
+  await reviewHooks.event({ event: { type: "message.updated", properties: { info: { sessionID: "review-parent", role: "assistant", finish: "tool-calls", tokens: { input: policy.primaryContext.review.warningTokens } } } } })
+  assert.match(await system(reviewHooks, "review-parent"), /primary input context is 204800 tokens.*model=local\/chat-review/)
 })
 
 test("compaction hook preserves operational generations and forces auto-continue", async () => {
@@ -1745,14 +1768,14 @@ test("proactive upfront manifest staging does not consume direct validation budg
   await assert.doesNotReject(() => before(hooks, "parent", "verify-task", "task", verifyArgs))
 })
 
-test("v5.23.1 advisory policy limits and schema version are correctly exposed", async () => {
-  assert.equal(SCHEMA_VERSION, "5.23.1")
+test("v5.23.2 advisory policy limits and schema version are correctly exposed", async () => {
+  assert.equal(SCHEMA_VERSION, "5.23.2")
   assert.equal(DEFAULT_POLICY.primaryReadWarning, 8)
   assert.equal(DEFAULT_POLICY.primaryReadHardLimit, 10)
   assert.equal(DEFAULT_POLICY.parentReopenLimit, 5)
   assert.equal(DEFAULT_POLICY.parentExactRangeReopenLimit, 3)
   assert.equal(DEFAULT_POLICY.primaryOperationWarning, 24)
   assert.equal(DEFAULT_POLICY.primaryOperationHardLimit, 30)
-  assert.equal(DEFAULT_POLICY.primaryContextWarningTokens, 150000)
-  assert.equal(DEFAULT_POLICY.primaryContextHardLimitTokens, 195000)
+  assert.equal("primaryContextWarningTokens" in DEFAULT_POLICY, false)
+  assert.equal("primaryContextHardLimitTokens" in DEFAULT_POLICY, false)
 })
