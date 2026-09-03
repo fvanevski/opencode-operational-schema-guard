@@ -99,7 +99,7 @@ async function fixture(t, label) {
 
 function summaryDocument(f, result) {
   return {
-    schema_version: "opencode-repo-pr-assessment-result-v1",
+    schema_version: ASSESSMENT_RESULT_SCHEMA,
     assessment_id: f.assessmentID,
     expected_base_sha: f.base,
     expected_head_sha: f.target,

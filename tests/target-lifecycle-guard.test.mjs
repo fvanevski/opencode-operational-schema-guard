@@ -109,7 +109,7 @@ async function assessmentOutput({
   await mkdir(EVIDENCE_ROOT, { recursive: true })
   const summaryPath = join(EVIDENCE_ROOT, `${assessmentID}.summary.json`)
   const summary = {
-    schema_version: "opencode-repo-pr-assessment-result-v1",
+    schema_version: ASSESSMENT_RESULT_SCHEMA,
     assessment_id: assessmentID,
     expected_base_sha: base,
     expected_head_sha: target,
