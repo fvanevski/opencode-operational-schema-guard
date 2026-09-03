@@ -622,6 +622,50 @@ test("repository-owned mode admits canonical PR refs without creating a gateway 
   }, before)
 })
 
+test("repository-owned base-authority mismatch emits the reconcilable STALE cause only for an owner behind the pinned base", async (t) => {
+  const fx = await fixture()
+  const behindID = `pr20-owner-behind-${Math.random().toString(16).slice(2, 8)}`
+  const divergentID = `pr20-owner-divergent-${Math.random().toString(16).slice(2, 8)}`
+  t.after(() => cleanupFixture(fx, [behindID, divergentID]))
+
+  await writeFile(join(fx.repo, "advanced-base.txt"), "advanced base\n")
+  git(fx.repo, "add", "advanced-base.txt")
+  git(fx.repo, "commit", "-m", "advanced base")
+  const advancedBaseSha = git(fx.repo, "rev-parse", "HEAD")
+  git(fx.repo, "push", "origin", "main")
+  git(fx.repo, "reset", "--hard", fx.baseSha)
+
+  const advanced = { ...fx, baseSha: advancedBaseSha }
+  const behind = await runRepoPrAssessment(makeSpec(advanced, behindID), {
+    repoRoot: fx.repo,
+    evidenceRoot: fx.evidenceRoot,
+  })
+  assert.equal(behind.host_evidence_result, "STALE")
+  assert.equal(behind.error, `repo-pr-assessment: repository-owned owner checkout is ${fx.baseSha}, not pinned base authority ${advancedBaseSha}`)
+  assert.equal(behind.owner_initial.head, fx.baseSha)
+  assert.deepEqual(behind.owner_final, behind.owner_initial)
+  assert.equal(behind.runner.plan, null)
+  assert.equal(behind.runner.run, null)
+
+  await writeFile(join(fx.repo, "divergent-owner.txt"), "divergent owner\n")
+  git(fx.repo, "add", "divergent-owner.txt")
+  git(fx.repo, "commit", "-m", "divergent owner")
+  const divergentSha = git(fx.repo, "rev-parse", "HEAD")
+  const divergent = await runRepoPrAssessment(makeSpec(advanced, divergentID), {
+    repoRoot: fx.repo,
+    evidenceRoot: fx.evidenceRoot,
+  })
+  assert.equal(divergent.host_evidence_result, "STALE")
+  assert.equal(divergent.error, `repo-pr-assessment: repository-owned owner checkout ${divergentSha} is not an ancestor of pinned base authority ${advancedBaseSha}`)
+  assert.equal(divergent.owner_initial.head, divergentSha)
+  assert.deepEqual(divergent.owner_final, divergent.owner_initial)
+  assert.equal(divergent.observed_base_sha, advancedBaseSha)
+  assert.equal(divergent.observed_head_sha, fx.headSha)
+  assert.equal(divergent.runner.plan, null)
+  assert.equal(divergent.runner.run, null)
+  assert.equal(git(fx.repo, "rev-parse", "HEAD"), divergentSha)
+})
+
 test("repository-owned sandbox denies control and owner-Git writes while preserving native Git worktree lifecycle", async (t) => {
   const fx = await fixture()
   const id = `pr20-sandbox-${Math.random().toString(16).slice(2, 8)}`

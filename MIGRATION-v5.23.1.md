@@ -36,6 +36,7 @@ v5.23.1 instead derives the reconciliation old-owner SHA from the authenticated 
 - `owner_initial.branch == repository.base_ref`;
 - `owner_initial.status == ""`;
 - `owner_final.head/branch/status` exactly equal `owner_initial`;
+- the gateway has proved `owner_initial.head` is an ancestor of the exact pinned base SHA before emitting the reconcilable owner-behind-base `STALE` cause;
 - `runner_execution == "repository-owned"`;
 - `runner_authority == "base"`;
 - exact observed remote base/head equality with the pinned spec identities; and
@@ -43,7 +44,7 @@ v5.23.1 instead derives the reconciliation old-owner SHA from the authenticated 
 
 If core `observedHead` is present and is a valid SHA, it remains an additional fail-closed equality check. It is no longer a prerequisite and is no longer the source from which lifecycle `owner_sha` is minted.
 
-The persisted `OWNER_RECONCILIATION.owner_sha` now comes from the authenticated gateway summary.
+The persisted `OWNER_RECONCILIATION.owner_sha` now comes from the authenticated gateway summary. A clean owner on the base branch that is ahead of or divergent from the pinned base produces a distinct non-reconcilable `STALE`; it remains `TARGET_BOUND`, does not mint `OWNER_RECONCILIATION`, and may be reassessed for the same exact target after the underlying authority condition is corrected.
 
 ## Regression repair
 
@@ -55,6 +56,8 @@ v5.23.1 changes the fixtures to consume the exported result-schema constant and 
 - rejection of the retired/wrong input-spec schema when it appears in a public result marker;
 - rejection when authenticated summary owner identity disagrees with an independently proven core `observedHead`;
 - rejection when `owner_final` drifts from `owner_initial`;
+- gateway-level proof that an actual ancestor-behind owner emits the reconcilable `STALE` cause while a clean ahead/divergent owner emits a distinct non-reconcilable `STALE` without mutation;
+- lifecycle proof that the divergent-owner `STALE` remains `TARGET_BOUND` and permits corrected same-target reassessment;
 - shared result-schema use in public terminal exit-contract tests; and
 - shared result-schema use in the assessment-wrapper summary-hash test.
 

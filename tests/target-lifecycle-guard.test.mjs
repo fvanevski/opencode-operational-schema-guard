@@ -387,6 +387,31 @@ test("remote-authority and non-base STALE results remain target-bound without mi
   }
 })
 
+test("divergent clean-owner STALE remains target-bound and permits corrected same-target reassessment", async (t) => {
+  const f = await mismatchedGuard(t, "divergent-owner-stale", { proveObserved: false })
+  const base = "b".repeat(40)
+  const assessmentID = `divergent-owner-${Math.random().toString(16).slice(2, 8)}`
+  const written = await writeSpec(makeSpec({ assessmentID, base, target: f.target }))
+  const command = assessmentCommand(written.path)
+  await before(f.hooks, f.sessionID, "assessment", command)
+  const stale = await after(f.hooks, f.sessionID, "assessment", command, await assessmentOutput({
+    assessmentID,
+    specSha256: written.sha256,
+    base,
+    target: f.target,
+    observed: f.observed,
+    summaryOverrides: {
+      error: `repo-pr-assessment: repository-owned owner checkout ${f.observed} is not an ancestor of pinned base authority ${base}`,
+    },
+  }))
+  assert.match(stale.output, /ASSESSMENT_TERMINAL -> TARGET_BOUND; result=STALE; reconciliation=not-admitted/)
+  assert.doesNotMatch(stale.output, /OPERATIONAL_TARGET_RECONCILIATION: admitted/)
+  const continuity = await compaction(f.hooks, f.sessionID)
+  assert.match(continuity, new RegExp(`Authority: ${f.target}`))
+  assert.doesNotMatch(continuity, /Target lifecycle: OWNER_RECONCILIATION/)
+  await assert.doesNotReject(() => before(f.hooks, f.sessionID, "assessment-again", command))
+})
+
 test("reconciliation release requires exact stale spec hash and old/base/target/branch result identity", async (t) => {
   const mutations = [
     ["hash", (value) => ({ ...value, specSha256: "f".repeat(64) })],
