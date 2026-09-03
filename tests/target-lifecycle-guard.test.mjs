@@ -123,10 +123,12 @@ async function assessmentOutput({
     error: `repo-pr-assessment: repository-owned owner checkout is ${observed}, not pinned base authority ${base}`,
     ...summaryOverrides,
   }
-  await writeFile(summaryPath, `${JSON.stringify(summary)}\n`)
+  const summaryBytes = `${JSON.stringify(summary)}\n`
+  await writeFile(summaryPath, summaryBytes)
   generated.add(summaryPath)
+  const summarySha256 = createHash("sha256").update(summaryBytes).digest("hex")
   return {
-    output: `OPERATIONAL_ASSESSMENT: schema=opencode-local-assessment-v1; assessment_id=${assessmentID}; spec_sha256=${specSha256}; base_sha=${base}; target_sha=${target}; summary=${summaryPath}\nHOST_EVIDENCE_RESULT=${result}\nGATE_DECISION=NOT_EVALUATED\n`,
+    output: `OPERATIONAL_ASSESSMENT: schema=opencode-local-assessment-v1; assessment_id=${assessmentID}; spec_sha256=${specSha256}; base_sha=${base}; target_sha=${target}; summary_sha256=${summarySha256}; summary=${summaryPath}\nHOST_EVIDENCE_RESULT=${result}\nGATE_DECISION=NOT_EVALUATED\n`,
     metadata: { exit },
   }
 }
