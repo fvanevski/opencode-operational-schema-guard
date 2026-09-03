@@ -148,24 +148,26 @@ test("trusted-base reconciliation advances exact clean old main and admits the r
   assert.equal(gateway.observed_head_sha, f.headSha)
 })
 
-test("dirty owner and wrong expected old SHA fail before reconciliation", async () => {
+test("dirty owner, wrong branch, and wrong expected identities fail before reconciliation", async () => {
   const f = await fixture()
   const canonicalSpec = "/tmp/opencode/verify/assessments/reconcile-owner-base-preconditions.json"
   await mkdir("/tmp/opencode/verify/assessments", { recursive: true })
   await writeSpec(canonicalSpec, f.spec)
   await writeFile(join(f.owner, "dirty.txt"), "dirty\n")
   await assert.rejects(() => reconcileOwnerBase({ specPath: canonicalSpec, expectedOldSha: f.oldSha, expectedBaseSha: f.baseSha, expectedTargetSha: f.headSha, cwd: f.owner }), /must be clean/)
-  await writeFile(join(f.owner, "dirty.txt"), "", { flag: "w" })
   git(f.owner, ["clean", "-fd"])
+  git(f.owner, ["switch", "-c", "other"])
+  await assert.rejects(() => reconcileOwnerBase({ specPath: canonicalSpec, expectedOldSha: f.oldSha, expectedBaseSha: f.baseSha, expectedTargetSha: f.headSha, cwd: f.owner }), /owner branch is other, not pinned base branch main/)
+  git(f.owner, ["switch", "main"])
   await assert.rejects(() => reconcileOwnerBase({ specPath: canonicalSpec, expectedOldSha: "f".repeat(40), expectedBaseSha: f.baseSha, expectedTargetSha: f.headSha, cwd: f.owner }), /not expected old SHA/)
   await assert.rejects(() => reconcileOwnerBase({ specPath: canonicalSpec, expectedOldSha: f.oldSha, expectedBaseSha: "f".repeat(40), expectedTargetSha: f.headSha, cwd: f.owner }), /does not match expected base/)
   await assert.rejects(() => reconcileOwnerBase({ specPath: canonicalSpec, expectedOldSha: f.oldSha, expectedBaseSha: f.baseSha, expectedTargetSha: "f".repeat(40), cwd: f.owner }), /does not match expected target/)
   assert.equal(git(f.owner, ["rev-parse", "HEAD"]).stdout, f.oldSha)
 })
 
-test("moved remote base or head fails stale without owner mutation", async () => {
+test("moved remote base fails stale without owner mutation", async () => {
   const f = await fixture()
-  const canonicalSpec = "/tmp/opencode/verify/assessments/reconcile-owner-base-remote-stale.json"
+  const canonicalSpec = "/tmp/opencode/verify/assessments/reconcile-owner-base-remote-base-stale.json"
   await mkdir("/tmp/opencode/verify/assessments", { recursive: true })
   await writeSpec(canonicalSpec, f.spec)
   git(f.seed, ["switch", "main"])
@@ -173,6 +175,22 @@ test("moved remote base or head fails stale without owner mutation", async () =>
   git(f.seed, ["add", "later.txt"])
   git(f.seed, ["commit", "-m", "later main"])
   git(f.seed, ["push", "origin", "main"])
+  await assert.rejects(() => reconcileOwnerBase({ specPath: canonicalSpec, expectedOldSha: f.oldSha, expectedBaseSha: f.baseSha, expectedTargetSha: f.headSha, cwd: f.owner }), (error) => error.reconciliationKind === "STALE" && /remote authority mismatch/.test(error.message))
+  assert.equal(git(f.owner, ["rev-parse", "HEAD"]).stdout, f.oldSha)
+})
+
+test("moved canonical PR head fails stale without owner mutation", async () => {
+  const f = await fixture()
+  const canonicalSpec = "/tmp/opencode/verify/assessments/reconcile-owner-base-remote-head-stale.json"
+  await mkdir("/tmp/opencode/verify/assessments", { recursive: true })
+  await writeSpec(canonicalSpec, f.spec)
+  git(f.seed, ["switch", "feature"])
+  await writeFile(join(f.seed, "later-feature.txt"), "later candidate\n")
+  git(f.seed, ["add", "later-feature.txt"])
+  git(f.seed, ["commit", "-m", "later candidate"])
+  const movedHead = git(f.seed, ["rev-parse", "HEAD"]).stdout
+  git(f.seed, ["push", "origin", "feature"])
+  git(f.root, ["--git-dir", f.remote, "update-ref", "refs/pull/7/head", movedHead])
   await assert.rejects(() => reconcileOwnerBase({ specPath: canonicalSpec, expectedOldSha: f.oldSha, expectedBaseSha: f.baseSha, expectedTargetSha: f.headSha, cwd: f.owner }), (error) => error.reconciliationKind === "STALE" && /remote authority mismatch/.test(error.message))
   assert.equal(git(f.owner, ["rev-parse", "HEAD"]).stdout, f.oldSha)
 })
