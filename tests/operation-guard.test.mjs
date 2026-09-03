@@ -1745,8 +1745,8 @@ test("proactive upfront manifest staging does not consume direct validation budg
   await assert.doesNotReject(() => before(hooks, "parent", "verify-task", "task", verifyArgs))
 })
 
-test("v5.23.0 advisory policy limits and schema version are correctly exposed", async () => {
-  assert.equal(SCHEMA_VERSION, "5.23.0")
+test("v5.23.1 advisory policy limits and schema version are correctly exposed", async () => {
+  assert.equal(SCHEMA_VERSION, "5.23.1")
   assert.equal(DEFAULT_POLICY.primaryReadWarning, 8)
   assert.equal(DEFAULT_POLICY.primaryReadHardLimit, 10)
   assert.equal(DEFAULT_POLICY.parentReopenLimit, 5)
