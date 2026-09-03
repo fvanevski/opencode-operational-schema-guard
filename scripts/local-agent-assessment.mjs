@@ -25,7 +25,7 @@ export async function runAssessment(argv = process.argv.slice(2)) {
     default:
       throw new Error(`local-agent-assessment: unsupported assessment kind ${loaded.spec.kind}`)
   }
-  process.stdout.write(`OPERATIONAL_ASSESSMENT: schema=${result.schema_version}; assessment_id=${result.assessment_id}; summary=${result.summary_path}\n`)
+  process.stdout.write(`OPERATIONAL_ASSESSMENT: schema=${result.schema_version}; assessment_id=${result.assessment_id}; spec_sha256=${loaded.sha256}; base_sha=${result.expected_base_sha}; target_sha=${result.expected_head_sha}; summary=${result.summary_path}\n`)
   process.stdout.write(`HOST_EVIDENCE_RESULT=${result.host_evidence_result}\n`)
   process.stdout.write(`GATE_DECISION=${result.gate_decision}\n`)
   return result.exit_code

@@ -30,7 +30,7 @@ export function parseReconciliationArgs(argv) {
 export async function runReconciliation(argv = process.argv.slice(2), { cwd = process.cwd() } = {}) {
   const { specPath, expectedOldSha, expectedBaseSha, expectedTargetSha } = parseReconciliationArgs(argv)
   const result = await reconcileOwnerBase({ specPath, expectedOldSha, expectedBaseSha, expectedTargetSha, cwd })
-  process.stdout.write(`OPERATIONAL_OWNER_RECONCILIATION: PASS; schema=${OWNER_BASE_RECONCILIATION_SCHEMA}; assessment_id=${result.assessment_id}; expected_old_sha=${result.expected_old_sha}; base_sha=${result.pinned_base_sha}; head_sha=${result.pinned_head_sha}; branch=${result.branch}\n`)
+  process.stdout.write(`OPERATIONAL_OWNER_RECONCILIATION: PASS; schema=${OWNER_BASE_RECONCILIATION_SCHEMA}; assessment_id=${result.assessment_id}; spec_sha256=${result.spec_sha256}; expected_old_sha=${result.expected_old_sha}; base_sha=${result.pinned_base_sha}; head_sha=${result.pinned_head_sha}; branch=${result.branch}\n`)
   process.stdout.write("OWNER_BASE_RECONCILIATION_RESULT=PASS\n")
   return 0
 }
