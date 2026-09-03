@@ -1408,9 +1408,10 @@ test("STALE target assessment admits only typed owner reconciliation and success
   assert.match(stale.output, /ASSESSMENT_TERMINAL -> OWNER_RECONCILIATION/)
   await assert.rejects(() => before(hooks, "parent", "raw-base-merge", "bash", { command: `git merge --ff-only ${base}` }), /exact-head admission is mismatch/)
   await assert.rejects(() => before(hooks, "parent", "candidate-merge", "bash", { command: `git merge --ff-only ${target}` }), /exact-head admission is mismatch/)
-  await assert.rejects(() => before(hooks, "parent", "malformed-reconcile", "bash", { command: `${reconciliationRunner} --spec ${spec} --expected-old-sha ${observed} --destination ${base}` }), /Owner-base reconciliation must use exactly/)
+  await assert.rejects(() => before(hooks, "parent", "malformed-reconcile", "bash", { command: `${reconciliationRunner} --spec ${spec} --expected-old-sha ${observed} --expected-base-sha ${base} --expected-target-sha ${target} --destination ${base}` }), /Owner-base reconciliation must use exactly/)
+  await assert.rejects(() => before(hooks, "parent", "wrong-target-reconcile", "bash", { command: `${reconciliationRunner} --spec ${spec} --expected-old-sha ${observed} --expected-base-sha ${base} --expected-target-sha ${"f".repeat(40)}` }), /does not match persisted exact-head target/)
 
-  const reconciliation = { command: `${reconciliationRunner} --spec ${spec} --expected-old-sha ${observed}` }
+  const reconciliation = { command: `${reconciliationRunner} --spec ${spec} --expected-old-sha ${observed} --expected-base-sha ${base} --expected-target-sha ${target}` }
   await assert.doesNotReject(() => before(hooks, "parent", "reconcile", "bash", reconciliation))
   const reconciled = await after(hooks, "parent", "reconcile", "bash", reconciliation, {
     output: `OPERATIONAL_OWNER_RECONCILIATION: PASS; schema=opencode-owner-base-reconciliation-v1; assessment_id=pr357; expected_old_sha=${observed}; base_sha=${base}; head_sha=${target}; branch=main\nOWNER_BASE_RECONCILIATION_RESULT=PASS\n`,
@@ -1458,7 +1459,7 @@ test("strict-start mismatch cannot use owner-base reconciliation as an escape ha
   await message(hooks, "parent", "build", `EXPECTED_START_HEAD=${expected}`)
   await before(hooks, "parent", "proof", "bash", { command: "git rev-parse HEAD" })
   await after(hooks, "parent", "proof", "bash", { command: "git rev-parse HEAD" }, { output: `${observed}\n`, metadata: { exit: 0 } })
-  await assert.rejects(() => before(hooks, "parent", "reconcile", "bash", { command: `${runner} --spec ${spec} --expected-old-sha ${observed}` }), /available only for exact-head target authority/)
+  await assert.rejects(() => before(hooks, "parent", "reconcile", "bash", { command: `${runner} --spec ${spec} --expected-old-sha ${observed} --expected-base-sha ${expected} --expected-target-sha ${expected}` }), /available only for exact-head target authority/)
 })
 
 test("system augmentation is always coalesced into one leading message", async () => {
