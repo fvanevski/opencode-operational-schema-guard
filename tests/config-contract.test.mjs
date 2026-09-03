@@ -113,9 +113,14 @@ test("the live-config contract rejects the v5.8-v5.9 preloaded recovery prompt",
   assert.throws(() => parseAndValidateConfig(JSON.stringify(unsafe)), /Build prompt must exactly match/)
 })
 
-test("the live-config contract rejects syntax, undersized contexts, and unsafe Verify path ordering", () => {
+test("the live-config contract rejects syntax, incoherent budgets, and unsafe Verify path ordering", () => {
   assert.throws(() => parseAndValidateConfig('{"plugin":'), /not strict JSON/)
-  assert.throws(() => parseAndValidateConfig(JSON.stringify(validConfig(131072))), /context limit must be at least 196608/)
+  const smallerContext = validConfig(131072)
+  for (const model of Object.values(smallerContext.provider.local.models)) model.limit.input = 100000
+  assert.doesNotThrow(() => parseAndValidateConfig(JSON.stringify(smallerContext)))
+  const invalidContext = validConfig()
+  invalidContext.provider.local.models.chat.limit.context = 0
+  assert.throws(() => parseAndValidateConfig(JSON.stringify(invalidContext)), /context limit must be a positive integer/)
   const legacyCompaction = validConfig()
   legacyCompaction.compaction.tail_turns = 1
   assert.throws(() => parseAndValidateConfig(JSON.stringify(legacyCompaction)), /legacy undocumented compaction keys/)

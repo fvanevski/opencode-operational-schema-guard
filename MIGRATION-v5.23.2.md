@@ -26,7 +26,7 @@ Configuration changes do not alter an already initialized plugin instance. Start
 
 ## Configuration validation
 
-The live-config contract no longer caps `model.limit.input` at 180000. Instead it validates the internal context/input/output/reserve relationships above while retaining the existing minimum context, plugin ordering, permissions, typed gateway, and atomic-install invariants.
+The live-config contract no longer caps `model.limit.input` at 180000 or imposes a fixed minimum context size. Instead it requires positive coherent context/input/output/reserve values while retaining the existing plugin ordering, permissions, typed gateway, and atomic-install invariants.
 
 Because the generated Build policy changes in v5.23.2, an existing live `opencode.json` must be staged with the current generated prompt before installation. Use the repository migration/config tooling, validate the complete candidate, install it with a backup, and prove the new configuration in a fresh process.
 
