@@ -19,6 +19,7 @@ import {
 } from "../lib/repo-pr-assessment.mjs"
 
 const RUNNER_SUPERVISOR = fileURLToPath(new URL("../scripts/repo-pr-runner-supervisor.py", import.meta.url))
+const RUNNER_SUPERVISOR_CACHE = fileURLToPath(new URL("../scripts/__pycache__", import.meta.url))
 
 function git(cwd, ...args) {
   const result = spawnSync("git", args, { cwd, encoding: "utf8", shell: false })
@@ -512,8 +513,9 @@ test("repository-owned supervisor binds Landlock write authority to inherited de
   }
 })
 
-test("repository-owned Landlock write-fd setup performs no pathname lookup for inherited descriptors", async () => {
+test("repository-owned Landlock write-fd setup performs no pathname lookup or repository bytecode write", async () => {
   const root = await mkdtemp(join(tmpdir(), "repo-owned-supervisor-landlock-no-path-"))
+  const cacheExistedBefore = await exists(RUNNER_SUPERVISOR_CACHE)
   const probe = `import importlib.util
 import os
 import pathlib
@@ -542,12 +544,15 @@ os.close(fd)
 (root / "allowed").write_text("descriptor-bound\\n")
 `
   try {
-    const result = spawnSync("/usr/bin/python3", ["-c", probe, RUNNER_SUPERVISOR, root], {
+    const result = spawnSync("/usr/bin/python3", ["-B", "-c", probe, RUNNER_SUPERVISOR, root], {
       encoding: "utf8",
       shell: false,
     })
     assert.equal(result.status, 0, result.stderr)
     assert.equal(await readFile(join(root, "allowed"), "utf8"), "descriptor-bound\n")
+    if (!cacheExistedBefore) {
+      assert.equal(await exists(RUNNER_SUPERVISOR_CACHE), false, "Python import probe must not create repository __pycache__ state")
+    }
   } finally {
     await rm(root, { recursive: true, force: true })
   }

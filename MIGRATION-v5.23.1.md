@@ -63,6 +63,12 @@ v5.23.1 changes the fixtures to consume the exported result-schema constant and 
 
 All prior exact spec/hash/target/summary/exit, restart persistence, forged-evidence, unrelated-`STALE`, and reconciliation-consumption regressions remain required.
 
+## Exact-head validation hygiene follow-up
+
+The first caller-owned exact-head validation of the remediated PR passed every substantive static and test gate, but the focused repository-owned assessment test imported `scripts/repo-pr-runner-supervisor.py` through Python `importlib` without disabling bytecode generation. On Python 3.14 that left an untracked `scripts/__pycache__/repo-pr-runner-supervisor.cpython-314.pyc` in the otherwise disposable validation worktree. Under the strict clean-worktree handoff contract, Central correctly classified that run as `ISOLATION_BREACH` even though tracked source, owner checkout, remote refs, GitHub state, and the live plugin were unchanged.
+
+v5.23.1 now runs that repository-source import probe with Python `-B`, preventing `.pyc` materialization at the source path, and the regression explicitly proves that a clean scripts directory does not acquire `__pycache__` state. This is test-harness isolation hygiene only; it does not change runtime gateway, guard, supervisor, or reconciliation authority semantics. The cache is intentionally not hidden with a `.gitignore` rule, because masking the byproduct would not satisfy the clean-worktree validation invariant.
+
 ## Important non-blocking session-audit findings
 
 The Firecrawl host-assessment session audit also identified several operational-friction findings. They do not justify weakening authority or containment enforcement, but v5.23.1 makes the intended route explicit in generated policy/documentation:
