@@ -1,4 +1,5 @@
 import "./operation-guard.test.mjs"
+import "./context-policy.test.mjs"
 import "./verify-disposable.test.mjs"
 import "./local-agent-assessment.test.mjs"
 import "./repo-pr-assessment.test.mjs"
