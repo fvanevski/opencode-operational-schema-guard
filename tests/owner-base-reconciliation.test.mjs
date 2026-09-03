@@ -114,15 +114,20 @@ async function writeSpec(path, spec) {
   await writeFile(path, `${JSON.stringify(spec)}\n`)
 }
 
-test("public reconciliation argv is exact and destination-free", () => {
+test("public reconciliation argv is exact, identity-bound, and destination-free", () => {
   const spec = "/tmp/opencode/verify/assessments/pr7.json"
-  const sha = "a".repeat(40)
-  assert.deepEqual(parseReconciliationArgs(["--spec", spec, "--expected-old-sha", sha]), { specPath: spec, expectedOldSha: sha })
-  for (const argv of [
-    ["--spec", spec, "--expected-old-sha", sha, "--destination", "b".repeat(40)],
-    ["--spec", "/tmp/opencode/verify/assessments/*.json", "--expected-old-sha", sha],
-    ["--spec", spec, "--expected-old-sha", "short"],
-  ]) assert.throws(() => parseReconciliationArgs(argv))
+  const oldSha = "a".repeat(40)
+  const baseSha = "b".repeat(40)
+  const targetSha = "c".repeat(40)
+  const argv = ["--spec", spec, "--expected-old-sha", oldSha, "--expected-base-sha", baseSha, "--expected-target-sha", targetSha]
+  assert.deepEqual(parseReconciliationArgs(argv), { specPath: spec, expectedOldSha: oldSha, expectedBaseSha: baseSha, expectedTargetSha: targetSha })
+  for (const invalid of [
+    [...argv, "--destination", "d".repeat(40)],
+    ["--spec", "/tmp/opencode/verify/assessments/*.json", "--expected-old-sha", oldSha, "--expected-base-sha", baseSha, "--expected-target-sha", targetSha],
+    ["--spec", spec, "--expected-old-sha", "short", "--expected-base-sha", baseSha, "--expected-target-sha", targetSha],
+    ["--spec", spec, "--expected-old-sha", oldSha, "--expected-base-sha", "short", "--expected-target-sha", targetSha],
+    ["--spec", spec, "--expected-old-sha", oldSha, "--expected-base-sha", baseSha, "--expected-target-sha", "short"],
+  ]) assert.throws(() => parseReconciliationArgs(invalid))
 })
 
 test("trusted-base reconciliation advances exact clean old main and admits the repository-owned gateway", async () => {
@@ -131,7 +136,7 @@ test("trusted-base reconciliation advances exact clean old main and admits the r
   const evidenceRoot = join(f.root, "evidence")
   await mkdir("/tmp/opencode/verify/assessments", { recursive: true })
   await writeSpec(canonicalSpec, f.spec)
-  const result = await reconcileOwnerBase({ specPath: canonicalSpec, expectedOldSha: f.oldSha, cwd: f.owner })
+  const result = await reconcileOwnerBase({ specPath: canonicalSpec, expectedOldSha: f.oldSha, expectedBaseSha: f.baseSha, expectedTargetSha: f.headSha, cwd: f.owner })
   assert.equal(result.owner_head_after, f.baseSha)
   assert.equal(result.branch, "main")
   assert.equal(result.owner_clean_after, true)
@@ -149,10 +154,12 @@ test("dirty owner and wrong expected old SHA fail before reconciliation", async 
   await mkdir("/tmp/opencode/verify/assessments", { recursive: true })
   await writeSpec(canonicalSpec, f.spec)
   await writeFile(join(f.owner, "dirty.txt"), "dirty\n")
-  await assert.rejects(() => reconcileOwnerBase({ specPath: canonicalSpec, expectedOldSha: f.oldSha, cwd: f.owner }), /must be clean/)
+  await assert.rejects(() => reconcileOwnerBase({ specPath: canonicalSpec, expectedOldSha: f.oldSha, expectedBaseSha: f.baseSha, expectedTargetSha: f.headSha, cwd: f.owner }), /must be clean/)
   await writeFile(join(f.owner, "dirty.txt"), "", { flag: "w" })
   git(f.owner, ["clean", "-fd"])
-  await assert.rejects(() => reconcileOwnerBase({ specPath: canonicalSpec, expectedOldSha: "f".repeat(40), cwd: f.owner }), /not expected old SHA/)
+  await assert.rejects(() => reconcileOwnerBase({ specPath: canonicalSpec, expectedOldSha: "f".repeat(40), expectedBaseSha: f.baseSha, expectedTargetSha: f.headSha, cwd: f.owner }), /not expected old SHA/)
+  await assert.rejects(() => reconcileOwnerBase({ specPath: canonicalSpec, expectedOldSha: f.oldSha, expectedBaseSha: "f".repeat(40), expectedTargetSha: f.headSha, cwd: f.owner }), /does not match expected base/)
+  await assert.rejects(() => reconcileOwnerBase({ specPath: canonicalSpec, expectedOldSha: f.oldSha, expectedBaseSha: f.baseSha, expectedTargetSha: "f".repeat(40), cwd: f.owner }), /does not match expected target/)
   assert.equal(git(f.owner, ["rev-parse", "HEAD"]).stdout, f.oldSha)
 })
 
@@ -166,7 +173,7 @@ test("moved remote base or head fails stale without owner mutation", async () =>
   git(f.seed, ["add", "later.txt"])
   git(f.seed, ["commit", "-m", "later main"])
   git(f.seed, ["push", "origin", "main"])
-  await assert.rejects(() => reconcileOwnerBase({ specPath: canonicalSpec, expectedOldSha: f.oldSha, cwd: f.owner }), (error) => error.reconciliationKind === "STALE" && /remote authority mismatch/.test(error.message))
+  await assert.rejects(() => reconcileOwnerBase({ specPath: canonicalSpec, expectedOldSha: f.oldSha, expectedBaseSha: f.baseSha, expectedTargetSha: f.headSha, cwd: f.owner }), (error) => error.reconciliationKind === "STALE" && /remote authority mismatch/.test(error.message))
   assert.equal(git(f.owner, ["rev-parse", "HEAD"]).stdout, f.oldSha)
 })
 
@@ -185,12 +192,12 @@ test("non-fast-forward pinned base and non-base authority are rejected", async (
   const divergent = structuredClone(f.spec)
   divergent.repository.base_sha = divergentSha
   await writeSpec(canonicalSpec, divergent)
-  await assert.rejects(() => reconcileOwnerBase({ specPath: canonicalSpec, expectedOldSha: f.oldSha, cwd: f.owner }), /is not an ancestor of pinned base/)
+  await assert.rejects(() => reconcileOwnerBase({ specPath: canonicalSpec, expectedOldSha: f.oldSha, expectedBaseSha: divergentSha, expectedTargetSha: f.headSha, cwd: f.owner }), /is not an ancestor of pinned base/)
   assert.equal(git(f.owner, ["rev-parse", "HEAD"]).stdout, f.oldSha)
 
   git(f.root, ["--git-dir", f.remote, "update-ref", "refs/heads/main", f.baseSha])
   const headAuthority = structuredClone(f.spec)
   headAuthority.runner.authority = "head"
   await writeSpec(canonicalSpec, headAuthority)
-  await assert.rejects(() => reconcileOwnerBase({ specPath: canonicalSpec, expectedOldSha: f.oldSha, cwd: f.owner }), /base runner authority/)
+  await assert.rejects(() => reconcileOwnerBase({ specPath: canonicalSpec, expectedOldSha: f.oldSha, expectedBaseSha: f.baseSha, expectedTargetSha: f.headSha, cwd: f.owner }), /base runner authority/)
 })
