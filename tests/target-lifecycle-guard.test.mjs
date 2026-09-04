@@ -222,7 +222,7 @@ test("malformed multiline assessment cannot mint lifecycle and malformed reconci
   const assessmentID = `malformed-${Math.random().toString(16).slice(2, 8)}`
   const written = await writeSpec(makeSpec({ assessmentID, base, target: f.target }))
   const malformedAssessment = { command: `${ASSESSMENT_RUNNER}\n--spec ${written.path}` }
-  await assert.rejects(() => before(f.hooks, f.sessionID, "malformed-assessment", malformedAssessment), /one logical bare invocation/)
+  await assert.rejects(() => before(f.hooks, f.sessionID, "malformed-assessment", malformedAssessment), /one bare invocation/)
   assert.doesNotMatch(await compaction(f.hooks, f.sessionID), /Target lifecycle: OWNER_RECONCILIATION/)
   await assert.rejects(
     () => before(f.hooks, f.sessionID, "premature-reconcile", reconciliationCommand(written.path, f.observed, base, f.target)),
@@ -235,7 +235,7 @@ test("malformed multiline assessment cannot mint lifecycle and malformed reconci
   assert.match(await compaction(f.hooks, f.sessionID), /Target lifecycle: OWNER_RECONCILIATION/)
 
   const malformedReconciliation = { command: `${RECONCILIATION_RUNNER} \\ \n --spec ${written.path} --expected-old-sha ${f.observed} --expected-base-sha ${base} --expected-target-sha ${f.target}` }
-  await assert.rejects(() => before(f.hooks, f.sessionID, "malformed-reconcile", malformedReconciliation), /one logical bare invocation/)
+  await assert.rejects(() => before(f.hooks, f.sessionID, "malformed-reconcile", malformedReconciliation), /one bare invocation/)
   assert.match(await compaction(f.hooks, f.sessionID), /Target lifecycle: OWNER_RECONCILIATION/)
 
   const exactReconciliation = reconciliationCommand(written.path, f.observed, base, f.target)
