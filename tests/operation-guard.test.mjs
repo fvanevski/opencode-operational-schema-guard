@@ -173,17 +173,27 @@ test("Fresh-review normalizes bounded envelope-less prompts beyond the legacy 12
 })
 
 test("Fresh-review preserves the 10-target ceiling for explicit and envelope-less packets", () => {
-  const targets = Array.from({ length: 11 }, (_, index) => `lib/f${index}.mjs`)
-  const explicit = `Scope: bounded changed-file review\nTargets:\n${targets.map((target) => `- ${target}`).join("\n")}\nQuestions:\n- Is the bounded change safe?\nStop condition: every admitted target is reviewed.`
-  assert.throws(() => validateTaskPacket(taskArgs({ subagent_type: "fresh-review", prompt: explicit })), /limit is 10/)
+  const admittedTargets = Array.from({ length: 10 }, (_, index) => `lib/f${index}.mjs`)
+  const overflowTargets = [...admittedTargets, "lib/f10.mjs"]
+  const explicit = (targets) => `Scope: bounded changed-file review\nTargets:\n${targets.map((target) => `- ${target}`).join("\n")}\nQuestions:\n- Is the bounded change safe?\nStop condition: every admitted target is reviewed.`
+  assert.doesNotThrow(() => validateTaskPacket(taskArgs({ subagent_type: "fresh-review", prompt: explicit(admittedTargets) })))
+  assert.throws(() => validateTaskPacket(taskArgs({ subagent_type: "fresh-review", prompt: explicit(overflowTargets) })), /limit is 10/)
 
-  const envelopeLess = normalizeTaskPacket({
+  const admittedEnvelopeLess = normalizeTaskPacket({
     subagent_type: "fresh-review",
     description: "Review the explicitly named files",
-    prompt: `Review only ${targets.join(", ")} and return source-review findings.`,
+    prompt: `Review only ${admittedTargets.join(", ")} and return source-review findings.`,
   })
-  assert.ok(!envelopeLess.normalizations.includes("packet-envelope-inferred"))
-  assert.throws(() => validateTaskPacket(envelopeLess.args), /packet envelope/)
+  assert.ok(admittedEnvelopeLess.normalizations.includes("packet-envelope-inferred"))
+  assert.doesNotThrow(() => validateTaskPacket(admittedEnvelopeLess.args))
+
+  const overflowEnvelopeLess = normalizeTaskPacket({
+    subagent_type: "fresh-review",
+    description: "Review the explicitly named files",
+    prompt: `Review only ${overflowTargets.join(", ")} and return source-review findings.`,
+  })
+  assert.ok(!overflowEnvelopeLess.normalizations.includes("packet-envelope-inferred"))
+  assert.throws(() => validateTaskPacket(overflowEnvelopeLess.args), /packet envelope/)
 })
 
 test("Task normalization injects a compact type-specific execution and result contract", () => {
