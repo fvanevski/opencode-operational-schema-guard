@@ -157,6 +157,14 @@ test("Fresh-review normalizes bounded envelope-less prompts beyond the legacy 12
   assert.ok(!openEndedAnything.normalizations.includes("packet-envelope-inferred"))
   assert.throws(() => validateTaskPacket(openEndedAnything.args), /packet envelope/)
 
+  const relatedExpansion = normalizeTaskPacket({ subagent_type: "fresh-review", description: "Review the bounded implementation diff", prompt: "Review the current diff and inspect related dependencies as needed." })
+  assert.ok(!relatedExpansion.normalizations.includes("packet-envelope-inferred"))
+  assert.throws(() => validateTaskPacket(relatedExpansion.args), /packet envelope/)
+
+  const finiteTargetExpansion = normalizeTaskPacket({ subagent_type: "fresh-review", description: "Review one implementation file", prompt: "Review lib/operation-guard-core.mjs and inspect any related callers." })
+  assert.ok(!finiteTargetExpansion.normalizations.includes("packet-envelope-inferred"))
+  assert.throws(() => validateTaskPacket(finiteTargetExpansion.args), /packet envelope/)
+
   const nearLimit = normalizeTaskPacket({ subagent_type: "fresh-review", description: "Bounded review", prompt: "x".repeat(3900) })
   assert.ok(!nearLimit.normalizations.includes("packet-envelope-inferred"))
   assert.throws(() => validateTaskPacket(nearLimit.args), /packet envelope|characters/)
@@ -169,6 +177,16 @@ test("Fresh-review normalizes bounded envelope-less prompts beyond the legacy 12
     const partial = normalizeTaskPacket({ subagent_type: "fresh-review", description: "Partial packet", prompt })
     assert.ok(!partial.normalizations.includes("packet-envelope-inferred"))
     assert.throws(() => validateTaskPacket(partial.args), /packet envelope/)
+  }
+})
+
+test("Explore and Verify do not broaden long envelope-less prompts without boundedness proof", () => {
+  for (const type of ["explore", "verify"]) {
+    const original = `${type === "explore" ? "Inspect" : "Validate"} the entire repository and everything necessary before returning a result.\n${"open-ended context ".repeat(80)}`
+    assert.ok(original.length > 1200)
+    const result = normalizeTaskPacket({ subagent_type: type, description: "Bounded child task", prompt: original })
+    assert.ok(!result.normalizations.includes("packet-envelope-inferred"))
+    assert.throws(() => validateTaskPacket(result.args), /packet envelope/)
   }
 })
 
