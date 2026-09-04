@@ -221,9 +221,14 @@ test("malformed multiline assessment cannot mint lifecycle and malformed reconci
   const base = "b".repeat(40)
   const assessmentID = `malformed-${Math.random().toString(16).slice(2, 8)}`
   const written = await writeSpec(makeSpec({ assessmentID, base, target: f.target }))
-  const malformedAssessment = { command: `${ASSESSMENT_RUNNER}\n--spec ${written.path}` }
-  await assert.rejects(() => before(f.hooks, f.sessionID, "malformed-assessment", malformedAssessment), /one bare invocation/)
-  assert.doesNotMatch(await compaction(f.hooks, f.sessionID), /Target lifecycle: OWNER_RECONCILIATION/)
+  for (const [index, command] of [
+    `${ASSESSMENT_RUNNER}\n--spec ${written.path}`,
+    `${ASSESSMENT_RUNNER} --spec ${written.path}\n`,
+    `\n${ASSESSMENT_RUNNER} --spec ${written.path}`,
+  ].entries()) {
+    await assert.rejects(() => before(f.hooks, f.sessionID, `malformed-assessment-${index}`, { command }), /one bare invocation/)
+    assert.doesNotMatch(await compaction(f.hooks, f.sessionID), /Target lifecycle: OWNER_RECONCILIATION/)
+  }
   await assert.rejects(
     () => before(f.hooks, f.sessionID, "premature-reconcile", reconciliationCommand(written.path, f.observed, base, f.target)),
     /not admitted by a generic target mismatch.*clean-owner-behind-base STALE/s,
@@ -234,9 +239,13 @@ test("malformed multiline assessment cannot mint lifecycle and malformed reconci
   await after(f.hooks, f.sessionID, "assessment", assessment, await assessmentOutput({ assessmentID, specSha256: written.sha256, base, target: f.target, observed: f.observed }))
   assert.match(await compaction(f.hooks, f.sessionID), /Target lifecycle: OWNER_RECONCILIATION/)
 
-  const malformedReconciliation = { command: `${RECONCILIATION_RUNNER} \\ \n --spec ${written.path} --expected-old-sha ${f.observed} --expected-base-sha ${base} --expected-target-sha ${f.target}` }
-  await assert.rejects(() => before(f.hooks, f.sessionID, "malformed-reconcile", malformedReconciliation), /one bare invocation/)
-  assert.match(await compaction(f.hooks, f.sessionID), /Target lifecycle: OWNER_RECONCILIATION/)
+  for (const [index, command] of [
+    `${RECONCILIATION_RUNNER} \\ \n --spec ${written.path} --expected-old-sha ${f.observed} --expected-base-sha ${base} --expected-target-sha ${f.target}`,
+    `${RECONCILIATION_RUNNER} --spec ${written.path} --expected-old-sha ${f.observed} --expected-base-sha ${base} --expected-target-sha ${f.target}\n`,
+  ].entries()) {
+    await assert.rejects(() => before(f.hooks, f.sessionID, `malformed-reconcile-${index}`, { command }), /one bare invocation/)
+    assert.match(await compaction(f.hooks, f.sessionID), /Target lifecycle: OWNER_RECONCILIATION/)
+  }
 
   const exactReconciliation = reconciliationCommand(written.path, f.observed, base, f.target)
   await before(f.hooks, f.sessionID, "exact-reconcile", exactReconciliation)
