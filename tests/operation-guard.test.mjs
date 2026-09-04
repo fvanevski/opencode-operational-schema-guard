@@ -128,9 +128,15 @@ test("Fresh-review normalizes bounded envelope-less prompts beyond the legacy 12
   assert.ok(!nearLimit.normalizations.includes("packet-envelope-inferred"))
   assert.throws(() => validateTaskPacket(nearLimit.args), /packet envelope|characters/)
 
-  const partial = normalizeTaskPacket({ subagent_type: "fresh-review", description: "Partial packet", prompt: "Scope: existing partial envelope without questions or stop condition" })
-  assert.ok(!partial.normalizations.includes("packet-envelope-inferred"))
-  assert.throws(() => validateTaskPacket(partial.args), /packet envelope/)
+  for (const prompt of [
+    "Scope: existing partial envelope without questions or stop condition",
+    "Questions:\nSupporting prose without a complete envelope",
+    "Targets:\n- lib/operation-guard-core.mjs",
+  ]) {
+    const partial = normalizeTaskPacket({ subagent_type: "fresh-review", description: "Partial packet", prompt })
+    assert.ok(!partial.normalizations.includes("packet-envelope-inferred"))
+    assert.throws(() => validateTaskPacket(partial.args), /packet envelope/)
+  }
 })
 
 test("Task normalization injects a compact type-specific execution and result contract", () => {
@@ -340,6 +346,8 @@ Stop condition: report typed host evidence.`,
     `${runner} --spec ${spec} --extra`,
     `${runner} --sha ${"a".repeat(40)} --assessment-id legacy`,
     `${runner} --spec ${spec}; git status`,
+    `${runner} --spec ${spec}\n`,
+    `\n${runner} --spec ${spec}`,
     `${runner}\n--spec ${spec}`,
     `${runner} \\ \n --spec ${spec}`,
     `${runner} \\`,
