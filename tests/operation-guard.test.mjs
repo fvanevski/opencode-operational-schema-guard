@@ -157,9 +157,22 @@ test("Fresh-review normalizes bounded envelope-less prompts beyond the legacy 12
   assert.ok(!openEndedAnything.normalizations.includes("packet-envelope-inferred"))
   assert.throws(() => validateTaskPacket(openEndedAnything.args), /packet envelope/)
 
-  const relatedExpansion = normalizeTaskPacket({ subagent_type: "fresh-review", description: "Review the bounded implementation diff", prompt: "Review the current diff and inspect related dependencies as needed." })
-  assert.ok(!relatedExpansion.normalizations.includes("packet-envelope-inferred"))
-  assert.throws(() => validateTaskPacket(relatedExpansion.args), /packet envelope/)
+  const plainBoundedAnchor = normalizeTaskPacket({ subagent_type: "fresh-review", description: "Review the bounded implementation diff", prompt: "Review the current diff and return source-review findings." })
+  assert.ok(plainBoundedAnchor.normalizations.includes("packet-envelope-inferred"))
+  assert.doesNotThrow(() => validateTaskPacket(plainBoundedAnchor.args))
+
+  for (const prompt of [
+    "Review the current diff and inspect related dependencies as needed.",
+    "Review the current diff and inspect dependencies where relevant.",
+    "Review the current diff and follow callers when necessary.",
+    "Review the current diff and dependencies.",
+    "Review the current diff plus modules.",
+    "Review the current diff and look at related code if useful.",
+  ]) {
+    const expanded = normalizeTaskPacket({ subagent_type: "fresh-review", description: "Review the bounded implementation diff", prompt })
+    assert.ok(!expanded.normalizations.includes("packet-envelope-inferred"), prompt)
+    assert.throws(() => validateTaskPacket(expanded.args), /packet envelope/, prompt)
+  }
 
   const finiteTargetExpansion = normalizeTaskPacket({ subagent_type: "fresh-review", description: "Review one implementation file", prompt: "Review lib/operation-guard-core.mjs and inspect any related callers." })
   assert.ok(!finiteTargetExpansion.normalizations.includes("packet-envelope-inferred"))
