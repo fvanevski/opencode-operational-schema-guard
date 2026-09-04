@@ -168,6 +168,11 @@ test("Fresh-review normalizes bounded envelope-less prompts beyond the legacy 12
     "Review the current diff and dependencies.",
     "Review the current diff plus modules.",
     "Review the current diff and look at related code if useful.",
+    "Review the current diff, then expand the review scope wherever you think useful.",
+    "Review lib/operation-guard-core.mjs, then expand beyond it as you see fit.",
+    "Review the current diff and use your judgment to inspect anything that may affect correctness.",
+    "Review the current diff and investigate whatever seems important.",
+    "Review the current diff and go beyond it if that helps.",
   ]) {
     const expanded = normalizeTaskPacket({ subagent_type: "fresh-review", description: "Review the bounded implementation diff", prompt })
     assert.ok(!expanded.normalizations.includes("packet-envelope-inferred"), prompt)
