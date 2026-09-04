@@ -208,7 +208,7 @@ test("Fresh-review normalizes bounded envelope-less prompts beyond the legacy 12
   const explicitlyLabeledContext = normalizeTaskPacket({
     subagent_type: "fresh-review",
     description: "Review the bounded implementation diff",
-    prompt: "Review only the current diff.\nContext: The tests discuss surrounding implementation and adjacent modules as historical background.",
+    prompt: "Review only the current diff.\nContext: Historical parser background is provided for interpretation only.",
   })
   assert.ok(explicitlyLabeledContext.normalizations.includes("packet-envelope-inferred"))
   assert.doesNotThrow(() => validateTaskPacket(explicitlyLabeledContext.args))
@@ -217,6 +217,10 @@ test("Fresh-review normalizes bounded envelope-less prompts beyond the legacy 12
     "Review only the current diff.\nContext: inspect adjacent tests if useful.",
     "Review only the current diff.\nSupporting context: Tests should also be inspected.",
     "Review only the current diff.\nContext: Please review the rest of the repository before deciding.",
+    "Review only the current diff.\nContext: Adjacent tests are also in scope.",
+    "Review only the current diff.\nContext: Coverage includes adjacent tests.",
+    "Review only the current diff.\nContext: lib/other.mjs provides background.",
+    "Review only the current diff.\nContext: Additional behavior is required for completeness.",
   ]) {
     const directiveContext = normalizeTaskPacket({ subagent_type: "fresh-review", description: "Review the bounded implementation diff", prompt })
     assert.ok(!directiveContext.normalizations.includes("packet-envelope-inferred"), prompt)
