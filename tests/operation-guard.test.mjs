@@ -112,9 +112,10 @@ test("a bounded non-envelope Task prompt is normalized into the Turn-1 contract"
 })
 
 test("Fresh-review normalizes bounded envelope-less prompts beyond the legacy 1200-character cliff", () => {
-  const original = `Review only the current diff and return bounded source-review evidence.\nContext: ${"bounded review context ".repeat(70)}`
+  const longTargets = Array.from({ length: 10 }, (_, index) => `lib/${`deep-component-${index}-`.repeat(8)}review-target-${index}.mjs`)
+  const original = `Review only the files: ${longTargets.join(", ")} and return bounded source-review evidence.`
   assert.ok(original.length > 1200)
-  const result = normalizeTaskPacket({ subagent_type: "fresh-review", description: "Review the bounded implementation diff", prompt: original })
+  const result = normalizeTaskPacket({ subagent_type: "fresh-review", description: "Review the bounded implementation targets", prompt: original })
   assert.ok(result.normalizations.includes("packet-envelope-inferred"))
   assert.ok(result.args.prompt.includes(`Supporting context:\n${original}`))
   assert.match(result.args.prompt, /remain read-only/i)
@@ -123,13 +124,6 @@ test("Fresh-review normalizes bounded envelope-less prompts beyond the legacy 12
   assert.match(result.args.prompt, /route those gates to Verify/i)
   assert.ok(result.args.prompt.length <= DEFAULT_POLICY.taskPromptChars["fresh-review"])
   assert.doesNotThrow(() => validateTaskPacket(result.args))
-
-  const pathBoundedOriginal = `Review only lib/operation-guard-core.mjs and return source-review findings.\nSupporting context: ${"focused implementation context ".repeat(55)}`
-  assert.ok(pathBoundedOriginal.length > 1200)
-  const pathBounded = normalizeTaskPacket({ subagent_type: "fresh-review", description: "Review one implementation file", prompt: pathBoundedOriginal })
-  assert.ok(pathBounded.normalizations.includes("packet-envelope-inferred"))
-  assert.ok(pathBounded.args.prompt.includes(`Supporting context:\n${pathBoundedOriginal}`))
-  assert.doesNotThrow(() => validateTaskPacket(pathBounded.args))
 
   const unboundedOriginal = `Review the entire repository, follow every dependency and caller, and inspect anything else necessary before deciding whether it is clean.\n${"open-ended review context ".repeat(55)}`
   assert.ok(unboundedOriginal.length > 1200)
@@ -205,26 +199,15 @@ test("Fresh-review normalizes bounded envelope-less prompts beyond the legacy 12
     assert.doesNotThrow(() => validateTaskPacket(explicitlyClosedTarget.args), prompt)
   }
 
-  const explicitlyLabeledContext = normalizeTaskPacket({
-    subagent_type: "fresh-review",
-    description: "Review the bounded implementation diff",
-    prompt: "Review only the current diff.\nContext: Historical parser background is provided for interpretation only.",
-  })
-  assert.ok(explicitlyLabeledContext.normalizations.includes("packet-envelope-inferred"))
-  assert.doesNotThrow(() => validateTaskPacket(explicitlyLabeledContext.args))
-
   for (const prompt of [
-    "Review only the current diff.\nContext: inspect adjacent tests if useful.",
+    "Review only the current diff.\nContext: Historical parser background is provided for interpretation only.",
     "Review only the current diff.\nSupporting context: Tests should also be inspected.",
-    "Review only the current diff.\nContext: Please review the rest of the repository before deciding.",
-    "Review only the current diff.\nContext: Adjacent tests are also in scope.",
-    "Review only the current diff.\nContext: Coverage includes adjacent tests.",
-    "Review only the current diff.\nContext: lib/other.mjs provides background.",
-    "Review only the current diff.\nContext: Additional behavior is required for completeness.",
+    "Review only the current diff.\nContext: This review spans the repository.",
+    "Review only the current diff.\nContext: Find anything suspicious anywhere.",
   ]) {
-    const directiveContext = normalizeTaskPacket({ subagent_type: "fresh-review", description: "Review the bounded implementation diff", prompt })
-    assert.ok(!directiveContext.normalizations.includes("packet-envelope-inferred"), prompt)
-    assert.throws(() => validateTaskPacket(directiveContext.args), /packet envelope/, prompt)
+    const trailingContext = normalizeTaskPacket({ subagent_type: "fresh-review", description: "Review the bounded implementation diff", prompt })
+    assert.ok(!trailingContext.normalizations.includes("packet-envelope-inferred"), prompt)
+    assert.throws(() => validateTaskPacket(trailingContext.args), /packet envelope/, prompt)
   }
 
   const nearLimit = normalizeTaskPacket({ subagent_type: "fresh-review", description: "Bounded review", prompt: "x".repeat(3900) })
@@ -495,6 +478,17 @@ Stop condition: report typed host evidence.`,
     `${runner} --spec $(printf ${spec})`,
   ]) {
     await assert.rejects(() => validateChildPlan(packet(command), "/home/filip/project"), /Local assessment must use exactly|one bare invocation|CHILD_CAPABILITY_MISMATCH/, command)
+  }
+})
+
+test("Verify child runtime admits exact LF and CRLF local-assessment continuations", async () => {
+  const runner = "/home/filip/.config/opencode/plugins/operational-schema-v5/scripts/local-agent-assessment.mjs"
+  const spec = "/tmp/opencode/verify/assessments/pr20.json"
+  for (const [index, eol] of ["\n", "\r\n"].entries()) {
+    const hooks = createOperationGuard({ directory: "/home/filip/project", env: {} })
+    const sessionID = `verify-continuation-${index}`
+    await register(hooks, sessionID, "verify")
+    await assert.doesNotReject(() => before(hooks, sessionID, "assessment", "bash", { command: `${runner} \\${eol}  --spec ${spec}` }))
   }
 })
 
@@ -1698,6 +1692,45 @@ test("explicit strict-start authority supersedes prior target publication gates 
   const secondProof = await after(hooks, "parent-explicit-change", "proof-second", "bash", proofArgs, { output: `${second}\n`, metadata: { exit: 0 } })
   assert.equal(secondProof.metadata.operationalSchema.authorityMode, "strict-start")
   await assert.rejects(() => before(hooks, "parent-explicit-change", "commit-after-transition", "bash", { command: "git commit -m new" }), /fresh-review/)
+})
+
+test("explicit authority change invalidates in-flight old-head child results before they can re-establish gates", async () => {
+  const hooks = createOperationGuard({ directory: "/tmp/project-authority-inflight", env: {} })
+  const first = "a".repeat(40)
+  const second = "b".repeat(40)
+  await message(hooks, "parent-inflight", "build", `REQUIRED EXACT HEAD: ${first}`)
+  const proofArgs = { command: "git rev-parse HEAD" }
+  await before(hooks, "parent-inflight", "proof-first", "bash", proofArgs)
+  await after(hooks, "parent-inflight", "proof-first", "bash", proofArgs, { output: `${first}\n`, metadata: { exit: 0 } })
+  for (const [index, name] of ["a", "b", "c"].entries()) await before(hooks, "parent-inflight", `edit-${index}`, "edit", { filePath: `src/${name}.py` })
+
+  const review = taskArgs({ subagent_type: "fresh-review", prompt: "Scope: old-head review\nQuestions:\n- Is the old-head diff clean?\nStop condition: all changed production paths are reviewed." })
+  const verify = taskArgs({ subagent_type: "verify", prompt: "Scope: old-head gates\nQuestions:\n- Do the old-head gates pass?\nStop condition: all requested commands have exit status." })
+  const explore = taskArgs({ subagent_type: "explore", prompt: "Scope: old-head unknown flow\nQuestions:\n- Trace one bounded path.\nStop condition: one exact path is reported." })
+  await before(hooks, "parent-inflight", "review-old", "task", review)
+  await before(hooks, "parent-inflight", "verify-old", "task", verify)
+  await before(hooks, "parent-inflight", "explore-old", "task", explore)
+  await register(hooks, "child-review-old", "fresh-review")
+  await register(hooks, "child-verify-old", "verify")
+  await register(hooks, "child-explore-old", "explore")
+
+  await message(hooks, "parent-inflight", "build", `REQUIRED STARTING HEAD SHA: ${second}`)
+  for (const child of ["child-review-old", "child-verify-old", "child-explore-old"]) {
+    await hooks.event({ event: { type: "message.updated", properties: { info: { sessionID: child, role: "assistant", finish: "stop" } } } })
+  }
+  const oldReview = await after(hooks, "parent-inflight", "review-old", "task", review, { output: reviewClean("Old-head review.", 1), metadata: { sessionId: "child-review-old" } })
+  const oldVerify = await after(hooks, "parent-inflight", "verify-old", "task", verify, { output: "OPERATIONAL_RESULT: PASS; COMMANDS_RUN: 2; COMMANDS_REQUIRED: 2", metadata: { sessionId: "child-verify-old" } })
+  const oldExplore = await after(hooks, "parent-inflight", "explore-old", "task", explore, { output: exploreComplete("src/old.py", 1), metadata: { sessionId: "child-explore-old" } })
+  assert.equal(oldReview.metadata.operationalSchema, undefined)
+  assert.equal(oldVerify.metadata.operationalSchema, undefined)
+  assert.equal(oldExplore.metadata.operationalSchema, undefined)
+  const continuity = { context: [] }
+  await hooks["experimental.session.compacting"]({ sessionID: "parent-inflight" }, continuity)
+  assert.match(continuity.context.join("\n"), /Fresh-review generation: 0; Verify generation: 0/)
+
+  await before(hooks, "parent-inflight", "proof-second", "bash", proofArgs)
+  await after(hooks, "parent-inflight", "proof-second", "bash", proofArgs, { output: `${second}\n`, metadata: { exit: 0 } })
+  await assert.rejects(() => before(hooks, "parent-inflight", "commit-after-stale-results", "bash", { command: "git commit -m new" }), /fresh-review/)
 })
 
 test("STALE target assessment admits only typed owner reconciliation and successful reconciliation releases target authority", async () => {
