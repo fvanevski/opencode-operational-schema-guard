@@ -124,6 +124,24 @@ test("Fresh-review normalizes bounded envelope-less prompts beyond the legacy 12
   assert.ok(result.args.prompt.length <= DEFAULT_POLICY.taskPromptChars["fresh-review"])
   assert.doesNotThrow(() => validateTaskPacket(result.args))
 
+  const pathBoundedOriginal = `Review only lib/operation-guard-core.mjs and return source-review findings.\n${"focused implementation context ".repeat(55)}`
+  assert.ok(pathBoundedOriginal.length > 1200)
+  const pathBounded = normalizeTaskPacket({ subagent_type: "fresh-review", description: "Review one implementation file", prompt: pathBoundedOriginal })
+  assert.ok(pathBounded.normalizations.includes("packet-envelope-inferred"))
+  assert.ok(pathBounded.args.prompt.includes(`Supporting context:\n${pathBoundedOriginal}`))
+  assert.doesNotThrow(() => validateTaskPacket(pathBounded.args))
+
+  const unboundedOriginal = `Review the entire repository, follow every dependency and caller, and inspect anything else necessary before deciding whether it is clean.\n${"open-ended review context ".repeat(55)}`
+  assert.ok(unboundedOriginal.length > 1200)
+  const unbounded = normalizeTaskPacket({ subagent_type: "fresh-review", description: "Review the bounded implementation diff", prompt: unboundedOriginal })
+  assert.ok(!unbounded.normalizations.includes("packet-envelope-inferred"))
+  assert.equal(unbounded.args.prompt, unboundedOriginal)
+  assert.throws(() => validateTaskPacket(unbounded.args), /packet envelope/)
+
+  const shortUnbounded = normalizeTaskPacket({ subagent_type: "fresh-review", description: "Review the bounded implementation diff", prompt: "Review the whole codebase and inspect whatever else is relevant." })
+  assert.ok(!shortUnbounded.normalizations.includes("packet-envelope-inferred"))
+  assert.throws(() => validateTaskPacket(shortUnbounded.args), /packet envelope/)
+
   const nearLimit = normalizeTaskPacket({ subagent_type: "fresh-review", description: "Bounded review", prompt: "x".repeat(3900) })
   assert.ok(!nearLimit.normalizations.includes("packet-envelope-inferred"))
   assert.throws(() => validateTaskPacket(nearLimit.args), /packet envelope|characters/)
