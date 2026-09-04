@@ -196,6 +196,15 @@ test("Fresh-review normalizes bounded envelope-less prompts beyond the legacy 12
   assert.ok(!finiteTargetExpansion.normalizations.includes("packet-envelope-inferred"))
   assert.throws(() => validateTaskPacket(finiteTargetExpansion.args), /packet envelope/)
 
+  for (const prompt of [
+    "Review exactly lib/operation-guard-core.mjs and return source-review findings.",
+    "Inspect strictly the files: lib/operation-guard-core.mjs, tests/operation-guard.test.mjs and return source-review findings.",
+  ]) {
+    const explicitlyClosedTarget = normalizeTaskPacket({ subagent_type: "fresh-review", description: "Review the explicitly closed targets", prompt })
+    assert.ok(explicitlyClosedTarget.normalizations.includes("packet-envelope-inferred"), prompt)
+    assert.doesNotThrow(() => validateTaskPacket(explicitlyClosedTarget.args), prompt)
+  }
+
   const explicitlyLabeledContext = normalizeTaskPacket({
     subagent_type: "fresh-review",
     description: "Review the bounded implementation diff",
@@ -203,6 +212,16 @@ test("Fresh-review normalizes bounded envelope-less prompts beyond the legacy 12
   })
   assert.ok(explicitlyLabeledContext.normalizations.includes("packet-envelope-inferred"))
   assert.doesNotThrow(() => validateTaskPacket(explicitlyLabeledContext.args))
+
+  for (const prompt of [
+    "Review only the current diff.\nContext: inspect adjacent tests if useful.",
+    "Review only the current diff.\nSupporting context: Tests should also be inspected.",
+    "Review only the current diff.\nContext: Please review the rest of the repository before deciding.",
+  ]) {
+    const directiveContext = normalizeTaskPacket({ subagent_type: "fresh-review", description: "Review the bounded implementation diff", prompt })
+    assert.ok(!directiveContext.normalizations.includes("packet-envelope-inferred"), prompt)
+    assert.throws(() => validateTaskPacket(directiveContext.args), /packet envelope/, prompt)
+  }
 
   const nearLimit = normalizeTaskPacket({ subagent_type: "fresh-review", description: "Bounded review", prompt: "x".repeat(3900) })
   assert.ok(!nearLimit.normalizations.includes("packet-envelope-inferred"))
