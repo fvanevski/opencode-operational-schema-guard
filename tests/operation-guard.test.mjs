@@ -135,7 +135,7 @@ test("Fresh-review normalizes bounded envelope-less prompts beyond the legacy 12
   assert.ok(unboundedOriginal.length > 1200)
   const unbounded = normalizeTaskPacket({ subagent_type: "fresh-review", description: "Review the bounded implementation diff", prompt: unboundedOriginal })
   assert.ok(!unbounded.normalizations.includes("packet-envelope-inferred"))
-  assert.ok(unbounded.args.prompt.startsWith(unboundedOriginal))
+  assert.ok(unbounded.args.prompt.startsWith(unboundedOriginal.trimEnd()))
   assert.doesNotMatch(unbounded.args.prompt, /^Scope:/m)
   assert.doesNotMatch(unbounded.args.prompt, /^Questions:/m)
   assert.doesNotMatch(unbounded.args.prompt, /^Stop condition:/m)
