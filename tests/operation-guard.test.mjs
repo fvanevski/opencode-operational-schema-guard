@@ -149,6 +149,14 @@ test("Fresh-review normalizes bounded envelope-less prompts beyond the legacy 12
   assert.ok(!contradictory.normalizations.includes("packet-envelope-inferred"))
   assert.throws(() => validateTaskPacket(contradictory.args), /packet envelope/)
 
+  const boundedAnything = normalizeTaskPacket({ subagent_type: "fresh-review", description: "Review the bounded implementation diff", prompt: "Review only the current diff and report anything suspicious." })
+  assert.ok(boundedAnything.normalizations.includes("packet-envelope-inferred"))
+  assert.doesNotThrow(() => validateTaskPacket(boundedAnything.args))
+
+  const openEndedAnything = normalizeTaskPacket({ subagent_type: "fresh-review", description: "Review the bounded implementation diff", prompt: "Review the current diff and inspect anything else necessary." })
+  assert.ok(!openEndedAnything.normalizations.includes("packet-envelope-inferred"))
+  assert.throws(() => validateTaskPacket(openEndedAnything.args), /packet envelope/)
+
   const nearLimit = normalizeTaskPacket({ subagent_type: "fresh-review", description: "Bounded review", prompt: "x".repeat(3900) })
   assert.ok(!nearLimit.normalizations.includes("packet-envelope-inferred"))
   assert.throws(() => validateTaskPacket(nearLimit.args), /packet envelope|characters/)
@@ -162,6 +170,20 @@ test("Fresh-review normalizes bounded envelope-less prompts beyond the legacy 12
     assert.ok(!partial.normalizations.includes("packet-envelope-inferred"))
     assert.throws(() => validateTaskPacket(partial.args), /packet envelope/)
   }
+})
+
+test("Fresh-review preserves the 10-target ceiling for explicit and envelope-less packets", () => {
+  const targets = Array.from({ length: 11 }, (_, index) => `lib/f${index}.mjs`)
+  const explicit = `Scope: bounded changed-file review\nTargets:\n${targets.map((target) => `- ${target}`).join("\n")}\nQuestions:\n- Is the bounded change safe?\nStop condition: every admitted target is reviewed.`
+  assert.throws(() => validateTaskPacket(taskArgs({ subagent_type: "fresh-review", prompt: explicit })), /limit is 10/)
+
+  const envelopeLess = normalizeTaskPacket({
+    subagent_type: "fresh-review",
+    description: "Review the explicitly named files",
+    prompt: `Review only ${targets.join(", ")} and return source-review findings.`,
+  })
+  assert.ok(!envelopeLess.normalizations.includes("packet-envelope-inferred"))
+  assert.throws(() => validateTaskPacket(envelopeLess.args), /packet envelope/)
 })
 
 test("Task normalization injects a compact type-specific execution and result contract", () => {
@@ -365,6 +387,9 @@ Stop condition: report typed host evidence.`,
   })
   await assert.doesNotReject(() => validateChildPlan(packet(`${runner} --spec ${spec}`), "/home/filip/project"))
   await assert.doesNotReject(() => validateChildPlan(packet(`rtk ${runner} --spec ${spec}`), "/home/filip/project"))
+  for (const eol of ["\n", "\r\n"]) {
+    await assert.doesNotReject(() => validateChildPlan(packet(`${runner} \\${eol}  --spec ${spec}`), "/home/filip/project"))
+  }
   for (const command of [
     `${runner} --spec /tmp/opencode/verify/assessments/*.json`,
     `${runner} --spec /tmp/opencode/verify/assessments/../escape.json`,
