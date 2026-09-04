@@ -112,7 +112,7 @@ test("a bounded non-envelope Task prompt is normalized into the Turn-1 contract"
 })
 
 test("Fresh-review normalizes bounded envelope-less prompts beyond the legacy 1200-character cliff", () => {
-  const original = `Review only the explicitly named diff-relevant symbols and return bounded evidence.\n${"bounded review context ".repeat(70)}`
+  const original = `Review only the current diff and return bounded source-review evidence.\n${"bounded review context ".repeat(70)}`
   assert.ok(original.length > 1200)
   const result = normalizeTaskPacket({ subagent_type: "fresh-review", description: "Review the bounded implementation diff", prompt: original })
   assert.ok(result.normalizations.includes("packet-envelope-inferred"))
@@ -135,12 +135,19 @@ test("Fresh-review normalizes bounded envelope-less prompts beyond the legacy 12
   assert.ok(unboundedOriginal.length > 1200)
   const unbounded = normalizeTaskPacket({ subagent_type: "fresh-review", description: "Review the bounded implementation diff", prompt: unboundedOriginal })
   assert.ok(!unbounded.normalizations.includes("packet-envelope-inferred"))
-  assert.equal(unbounded.args.prompt, unboundedOriginal)
+  assert.ok(unbounded.args.prompt.startsWith(unboundedOriginal))
+  assert.doesNotMatch(unbounded.args.prompt, /^Scope:/m)
+  assert.doesNotMatch(unbounded.args.prompt, /^Questions:/m)
+  assert.doesNotMatch(unbounded.args.prompt, /^Stop condition:/m)
   assert.throws(() => validateTaskPacket(unbounded.args), /packet envelope/)
 
   const shortUnbounded = normalizeTaskPacket({ subagent_type: "fresh-review", description: "Review the bounded implementation diff", prompt: "Review the whole codebase and inspect whatever else is relevant." })
   assert.ok(!shortUnbounded.normalizations.includes("packet-envelope-inferred"))
   assert.throws(() => validateTaskPacket(shortUnbounded.args), /packet envelope/)
+
+  const contradictory = normalizeTaskPacket({ subagent_type: "fresh-review", description: "Review the bounded implementation diff", prompt: "Review the current diff and all dependencies and callers across the codebase." })
+  assert.ok(!contradictory.normalizations.includes("packet-envelope-inferred"))
+  assert.throws(() => validateTaskPacket(contradictory.args), /packet envelope/)
 
   const nearLimit = normalizeTaskPacket({ subagent_type: "fresh-review", description: "Bounded review", prompt: "x".repeat(3900) })
   assert.ok(!nearLimit.normalizations.includes("packet-envelope-inferred"))
