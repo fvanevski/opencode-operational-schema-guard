@@ -112,7 +112,7 @@ test("a bounded non-envelope Task prompt is normalized into the Turn-1 contract"
 })
 
 test("Fresh-review normalizes bounded envelope-less prompts beyond the legacy 1200-character cliff", () => {
-  const original = `Review only the current diff and return bounded source-review evidence.\n${"bounded review context ".repeat(70)}`
+  const original = `Review only the current diff and return bounded source-review evidence.\nContext: ${"bounded review context ".repeat(70)}`
   assert.ok(original.length > 1200)
   const result = normalizeTaskPacket({ subagent_type: "fresh-review", description: "Review the bounded implementation diff", prompt: original })
   assert.ok(result.normalizations.includes("packet-envelope-inferred"))
@@ -124,7 +124,7 @@ test("Fresh-review normalizes bounded envelope-less prompts beyond the legacy 12
   assert.ok(result.args.prompt.length <= DEFAULT_POLICY.taskPromptChars["fresh-review"])
   assert.doesNotThrow(() => validateTaskPacket(result.args))
 
-  const pathBoundedOriginal = `Review only lib/operation-guard-core.mjs and return source-review findings.\n${"focused implementation context ".repeat(55)}`
+  const pathBoundedOriginal = `Review only lib/operation-guard-core.mjs and return source-review findings.\nSupporting context: ${"focused implementation context ".repeat(55)}`
   assert.ok(pathBoundedOriginal.length > 1200)
   const pathBounded = normalizeTaskPacket({ subagent_type: "fresh-review", description: "Review one implementation file", prompt: pathBoundedOriginal })
   assert.ok(pathBounded.normalizations.includes("packet-envelope-inferred"))
@@ -183,6 +183,9 @@ test("Fresh-review normalizes bounded envelope-less prompts beyond the legacy 12
     "Review only the current diff and inspect surrounding implementation.",
     "Review only the current diff.\nInspect adjacent components if useful.",
     "Review only the current diff and trace the impact through the system.",
+    "Review only the current diff and inspect adjacent tests.",
+    "Review only the current diff.\nInspect adjacent tests if useful.",
+    "Review only the behavior affected by this change, starting with lib/operation-guard-core.mjs.",
   ]) {
     const expanded = normalizeTaskPacket({ subagent_type: "fresh-review", description: "Review the bounded implementation diff", prompt })
     assert.ok(!expanded.normalizations.includes("packet-envelope-inferred"), prompt)
@@ -192,6 +195,14 @@ test("Fresh-review normalizes bounded envelope-less prompts beyond the legacy 12
   const finiteTargetExpansion = normalizeTaskPacket({ subagent_type: "fresh-review", description: "Review one implementation file", prompt: "Review only lib/operation-guard-core.mjs and inspect any related callers." })
   assert.ok(!finiteTargetExpansion.normalizations.includes("packet-envelope-inferred"))
   assert.throws(() => validateTaskPacket(finiteTargetExpansion.args), /packet envelope/)
+
+  const explicitlyLabeledContext = normalizeTaskPacket({
+    subagent_type: "fresh-review",
+    description: "Review the bounded implementation diff",
+    prompt: "Review only the current diff.\nContext: The tests discuss surrounding implementation and adjacent modules as historical background.",
+  })
+  assert.ok(explicitlyLabeledContext.normalizations.includes("packet-envelope-inferred"))
+  assert.doesNotThrow(() => validateTaskPacket(explicitlyLabeledContext.args))
 
   const nearLimit = normalizeTaskPacket({ subagent_type: "fresh-review", description: "Bounded review", prompt: "x".repeat(3900) })
   assert.ok(!nearLimit.normalizations.includes("packet-envelope-inferred"))
