@@ -111,6 +111,28 @@ test("a bounded non-envelope Task prompt is normalized into the Turn-1 contract"
   assert.doesNotThrow(() => validateTaskPacket(result.args))
 })
 
+test("Fresh-review normalizes bounded envelope-less prompts beyond the legacy 1200-character cliff", () => {
+  const original = `Review only the explicitly named diff-relevant symbols and return bounded evidence.\n${"bounded review context ".repeat(70)}`
+  assert.ok(original.length > 1200)
+  const result = normalizeTaskPacket({ subagent_type: "fresh-review", description: "Review the bounded implementation diff", prompt: original })
+  assert.ok(result.normalizations.includes("packet-envelope-inferred"))
+  assert.ok(result.args.prompt.includes(`Supporting context:\n${original}`))
+  assert.match(result.args.prompt, /remain read-only/i)
+  assert.match(result.args.prompt, /one bare allowlisted invocation per call/i)
+  assert.match(result.args.prompt, /Do not run test or validation suites in Fresh-review/i)
+  assert.match(result.args.prompt, /route those gates to Verify/i)
+  assert.ok(result.args.prompt.length <= DEFAULT_POLICY.taskPromptChars["fresh-review"])
+  assert.doesNotThrow(() => validateTaskPacket(result.args))
+
+  const nearLimit = normalizeTaskPacket({ subagent_type: "fresh-review", description: "Bounded review", prompt: "x".repeat(3900) })
+  assert.ok(!nearLimit.normalizations.includes("packet-envelope-inferred"))
+  assert.throws(() => validateTaskPacket(nearLimit.args), /packet envelope|characters/)
+
+  const partial = normalizeTaskPacket({ subagent_type: "fresh-review", description: "Partial packet", prompt: "Scope: existing partial envelope without questions or stop condition" })
+  assert.ok(!partial.normalizations.includes("packet-envelope-inferred"))
+  assert.throws(() => validateTaskPacket(partial.args), /packet envelope/)
+})
+
 test("Task normalization injects a compact type-specific execution and result contract", () => {
   const verify = normalizeTaskPacket(taskArgs({ subagent_type: "verify" }))
   assert.match(verify.args.prompt, /one bare supported invocation per shell call/i)
@@ -118,6 +140,12 @@ test("Task normalization injects a compact type-specific execution and result co
   assert.equal((verify.args.prompt.match(/OPERATIONAL_RESULT:/g) ?? []).length, 1)
 
   const review = normalizeTaskPacket(taskArgs({ subagent_type: "fresh-review" }))
+  assert.match(review.args.prompt, /remain read-only/i)
+  assert.match(review.args.prompt, /built-in read\/grep\/glob and allowlisted read-only Git/i)
+  assert.match(review.args.prompt, /one bare allowlisted invocation per call/i)
+  assert.match(review.args.prompt, /no &&, ;, pipes, redirects, command substitutions, or appended status probes/i)
+  assert.match(review.args.prompt, /Do not run test or validation suites in Fresh-review/i)
+  assert.match(review.args.prompt, /route those gates to Verify/i)
   assert.match(review.args.prompt, /OPERATIONAL_REVIEW: CLEAN\|FINDINGS\|BLOCKED/)
 })
 
@@ -233,6 +261,28 @@ test("an absolute review path in packet prose is not misclassified as a shell co
   }), "/tmp/opencode/review/worktrees/packet-a"))
 })
 
+test("Fresh-review preflight and runtime keep validation, discovery, mutation, and compound shell calls out", async () => {
+  const packet = (command) => taskArgs({
+    subagent_type: "fresh-review",
+    prompt: `Scope: exact implementation review\nQuestions:\n- Is the bounded diff clean?\nCommands:\n${command}\nStop condition: report only source-review findings.`,
+  })
+  const rejected = [
+    "node --test tests/operation-guard.test.mjs",
+    "ls tests",
+    "git checkout main",
+    "git status && git log -1",
+  ]
+  for (const command of rejected) {
+    await assert.rejects(() => validateChildPlan(packet(command), "/home/filip/project"), /CHILD_CAPABILITY_MISMATCH/, command)
+  }
+
+  const hooks = createOperationGuard({ directory: "/home/filip/project", env: {} })
+  await register(hooks, "fresh-review-runtime", "fresh-review")
+  for (const [index, command] of rejected.entries()) {
+    await assert.rejects(() => before(hooks, "fresh-review-runtime", `rejected-${index}`, "bash", { command }), /OPERATIONAL_CHILD_BLOCK|SPLIT_TO_BARE_CALLS/, command)
+  }
+})
+
 test("child capability preflight rejects git -C and primary-owned remote refresh", async () => {
   await assert.rejects(() => validateChildPlan(taskArgs({
     subagent_type: "verify",
@@ -290,6 +340,13 @@ Stop condition: report typed host evidence.`,
     `${runner} --spec ${spec} --extra`,
     `${runner} --sha ${"a".repeat(40)} --assessment-id legacy`,
     `${runner} --spec ${spec}; git status`,
+    `${runner}\n--spec ${spec}`,
+    `${runner} \\ \n --spec ${spec}`,
+    `${runner} \\`,
+    `${runner} --spec ${spec} && git status`,
+    `${runner} --spec ${spec} | cat`,
+    `${runner} --spec ${spec} > /tmp/result`,
+    `${runner} --spec $(printf ${spec})`,
   ]) {
     await assert.rejects(() => validateChildPlan(packet(command), "/home/filip/project"), /Local assessment must use exactly|one bare invocation|CHILD_CAPABILITY_MISMATCH/, command)
   }
@@ -1359,6 +1416,40 @@ test("strict starting-head admission blocks reconciliation after a proved mismat
   assert.doesNotMatch(notice, /TARGET RECOVERY|git switch --detach/)
 })
 
+test("strict starting-head SHA aliases bind exact 40-hex tokens and tolerate trailing punctuation", async () => {
+  const expected = "a".repeat(40)
+  for (const [index, declaration] of [
+    `REQUIRED STARTING HEAD: ${expected}`,
+    `REQUIRED STARTING HEAD SHA: ${expected}`,
+    `EXPECTED STARTING HEAD SHA: ${expected},`,
+    `REQUIRED STARTING HEAD SHA: ${expected}"`,
+  ].entries()) {
+    const hooks = createOperationGuard({ directory: `/tmp/project-strict-alias-${index}`, env: {} })
+    const sessionID = `strict-alias-${index}`
+    await message(hooks, sessionID, "build", declaration)
+    await before(hooks, sessionID, "proof", "bash", { command: "git rev-parse HEAD" })
+    const proof = await after(hooks, sessionID, "proof", "bash", { command: "git rev-parse HEAD" }, { output: `${expected}\n`, metadata: { exit: 0 } })
+    assert.equal(proof.metadata.operationalSchema.authorityBinding, expected)
+    assert.equal(proof.metadata.operationalSchema.authorityMode, "strict-start")
+    assert.equal(proof.metadata.operationalSchema.authorityStatus, "verified")
+  }
+
+  for (const [index, declaration] of [
+    `REQUIRED STARTING HEAD SHA: ${"a".repeat(39)}`,
+    `REQUIRED STARTING HEAD SHA: ${"a".repeat(41)}`,
+    "REQUIRED STARTING HEAD SHA: main",
+    expected,
+  ].entries()) {
+    const hooks = createOperationGuard({ directory: `/tmp/project-strict-invalid-${index}`, env: {} })
+    const sessionID = `strict-invalid-${index}`
+    await message(hooks, sessionID, "build", declaration)
+    await before(hooks, sessionID, "proof", "bash", { command: "git rev-parse HEAD" })
+    const proof = await after(hooks, sessionID, "proof", "bash", { command: "git rev-parse HEAD" }, { output: `${expected}\n`, metadata: { exit: 0 } })
+    assert.equal(proof.metadata.operationalSchema.authorityBinding, undefined)
+    assert.equal(proof.metadata.operationalSchema.authorityMode, undefined)
+  }
+})
+
 test("exact-head target admission permits only an exact detached transition before proof", async () => {
   const hooks = createOperationGuard({ directory: "/tmp/project", env: {} })
   const target = "c".repeat(40)
@@ -1399,6 +1490,9 @@ test("target mismatch proof and rejected mutation provide one-step recovery feed
   await message(hooks, "parent", "build", `REQUIRED EXACT HEAD: ${target}`)
   await before(hooks, "parent", "proof", "bash", { command: "git rev-parse HEAD" })
   const proof = await after(hooks, "parent", "proof", "bash", { command: "git rev-parse HEAD" }, { output: `${observed}\n`, metadata: { exit: 0 } })
+  assert.match(proof.output, /REQUIRED STARTING HEAD: <40-lowercase-sha>/)
+  assert.match(proof.output, /REQUIRED STARTING HEAD SHA: <40-lowercase-sha>/)
+  assert.match(proof.output, /guard never infers a task change or releases target authority/i)
   assert.match(proof.output, /local-agent-assessment\.mjs --spec/)
   assert.match(proof.output, /reconcile-owner-base\.mjs --spec/)
   assert.match(proof.output, new RegExp(`git worktree add --detach <absolute-disposable-path> ${target}`))
@@ -1408,6 +1502,56 @@ test("target mismatch proof and rejected mutation provide one-step recovery feed
     () => before(hooks, "parent", "branch", "bash", { command: "git switch refactor/research-controller" }),
     new RegExp(`local-agent-assessment\\.mjs --spec.*git worktree add --detach <absolute-disposable-path> ${target}`, "s"),
   )
+})
+
+test("target-mode compound worktree setup is rejected with the safe two-step sequence while the corrected sequence is admitted", async () => {
+  const hooks = createOperationGuard({ directory: "/tmp/project-target-worktree", env: {} })
+  const target = "d".repeat(40)
+  const path = "/tmp/opencode/verify/worktrees/issue13-target"
+  await message(hooks, "parent-target-worktree", "build", `REQUIRED EXACT HEAD: ${target}`)
+  await assert.rejects(
+    () => before(hooks, "parent-target-worktree", "compound-worktree", "bash", { command: `git worktree add --detach ${path} ${target} && git -C ${path} rev-parse HEAD` }),
+    /one bare git worktree add --detach.*set subsequent tool workdir.*one separate bare git rev-parse HEAD/s,
+  )
+
+  const add = { command: `git worktree add --detach ${path} ${target}` }
+  await assert.doesNotReject(() => before(hooks, "parent-target-worktree", "worktree-add", "bash", add))
+  await after(hooks, "parent-target-worktree", "worktree-add", "bash", add, { output: "prepared", metadata: { exit: 0 } })
+  const proofArgs = { command: "git rev-parse HEAD", workdir: path }
+  await before(hooks, "parent-target-worktree", "worktree-proof", "bash", proofArgs)
+  const proof = await after(hooks, "parent-target-worktree", "worktree-proof", "bash", proofArgs, { output: `${target}\n`, metadata: { exit: 0 } })
+  assert.equal(proof.metadata.operationalSchema.authorityStatus, "verified")
+})
+
+test("explicit strict-start authority supersedes prior target publication gates only after the new declaration", async () => {
+  const hooks = createOperationGuard({ directory: "/tmp/project-explicit-authority-change", env: {} })
+  const first = "a".repeat(40)
+  const second = "b".repeat(40)
+  await message(hooks, "parent-explicit-change", "build", `REQUIRED EXACT HEAD: ${first}`)
+  const proofArgs = { command: "git rev-parse HEAD" }
+  await before(hooks, "parent-explicit-change", "proof-first", "bash", proofArgs)
+  await after(hooks, "parent-explicit-change", "proof-first", "bash", proofArgs, { output: `${first}\n`, metadata: { exit: 0 } })
+  for (const [index, name] of ["a", "b", "c"].entries()) await before(hooks, "parent-explicit-change", `edit-${index}`, "edit", { filePath: `src/${name}.py` })
+
+  const review = taskArgs({ subagent_type: "fresh-review", prompt: "Scope: exact prior-head diff\nQuestions:\n- Is the bounded diff clean?\nStop condition: all changed production paths are reviewed." })
+  await register(hooks, "review-explicit-change", "fresh-review")
+  await hooks.event({ event: { type: "message.updated", properties: { info: { sessionID: "review-explicit-change", role: "assistant", finish: "stop" } } } })
+  await before(hooks, "parent-explicit-change", "review", "task", review)
+  await after(hooks, "parent-explicit-change", "review", "task", review, { output: reviewClean("No findings. src/a.py src/b.py src/c.py", 3), metadata: { sessionId: "review-explicit-change" } })
+
+  const verify = taskArgs({ subagent_type: "verify", prompt: "Scope: exact prior-head gates\nQuestions:\n- Do the bounded gates pass?\nStop condition: all requested commands have exit status." })
+  await register(hooks, "verify-explicit-change", "verify")
+  await hooks.event({ event: { type: "message.updated", properties: { info: { sessionID: "verify-explicit-change", role: "assistant", finish: "stop" } } } })
+  await before(hooks, "parent-explicit-change", "verify", "task", verify)
+  await after(hooks, "parent-explicit-change", "verify", "task", verify, { output: "OPERATIONAL_RESULT: PASS; COMMANDS_RUN: 2; COMMANDS_REQUIRED: 2", metadata: { sessionId: "verify-explicit-change" } })
+  await assert.doesNotReject(() => before(hooks, "parent-explicit-change", "commit-before-transition", "bash", { command: "git commit -m prior" }))
+
+  await message(hooks, "parent-explicit-change", "build", `REQUIRED STARTING HEAD SHA: ${second}`)
+  assert.match(await system(hooks, "parent-explicit-change"), new RegExp(`authority changed from ${first} to ${second}.*superseded`))
+  await before(hooks, "parent-explicit-change", "proof-second", "bash", proofArgs)
+  const secondProof = await after(hooks, "parent-explicit-change", "proof-second", "bash", proofArgs, { output: `${second}\n`, metadata: { exit: 0 } })
+  assert.equal(secondProof.metadata.operationalSchema.authorityMode, "strict-start")
+  await assert.rejects(() => before(hooks, "parent-explicit-change", "commit-after-transition", "bash", { command: "git commit -m new" }), /fresh-review/)
 })
 
 test("STALE target assessment admits only typed owner reconciliation and successful reconciliation releases target authority", async () => {
