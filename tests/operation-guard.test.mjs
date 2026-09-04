@@ -157,9 +157,13 @@ test("Fresh-review normalizes bounded envelope-less prompts beyond the legacy 12
   assert.ok(!openEndedAnything.normalizations.includes("packet-envelope-inferred"))
   assert.throws(() => validateTaskPacket(openEndedAnything.args), /packet envelope/)
 
-  const plainBoundedAnchor = normalizeTaskPacket({ subagent_type: "fresh-review", description: "Review the bounded implementation diff", prompt: "Review the current diff and return source-review findings." })
-  assert.ok(plainBoundedAnchor.normalizations.includes("packet-envelope-inferred"))
-  assert.doesNotThrow(() => validateTaskPacket(plainBoundedAnchor.args))
+  const bareAnchor = normalizeTaskPacket({ subagent_type: "fresh-review", description: "Review the bounded implementation diff", prompt: "Review the current diff and return source-review findings." })
+  assert.ok(!bareAnchor.normalizations.includes("packet-envelope-inferred"))
+  assert.throws(() => validateTaskPacket(bareAnchor.args), /packet envelope/)
+
+  const explicitlyBoundedAnchor = normalizeTaskPacket({ subagent_type: "fresh-review", description: "Review the bounded implementation diff", prompt: "Limit the review to the current diff and return source-review findings." })
+  assert.ok(explicitlyBoundedAnchor.normalizations.includes("packet-envelope-inferred"))
+  assert.doesNotThrow(() => validateTaskPacket(explicitlyBoundedAnchor.args))
 
   for (const prompt of [
     "Review the current diff and inspect related dependencies as needed.",
@@ -173,13 +177,19 @@ test("Fresh-review normalizes bounded envelope-less prompts beyond the legacy 12
     "Review the current diff and use your judgment to inspect anything that may affect correctness.",
     "Review the current diff and investigate whatever seems important.",
     "Review the current diff and go beyond it if that helps.",
+    "Review lib/operation-guard-core.mjs and the rest of the repository.",
+    "Review the current diff and inspect surrounding implementation.",
+    "Review only lib/operation-guard-core.mjs and the rest of the repository.",
+    "Review only the current diff and inspect surrounding implementation.",
+    "Review only the current diff.\nInspect adjacent components if useful.",
+    "Review only the current diff and trace the impact through the system.",
   ]) {
     const expanded = normalizeTaskPacket({ subagent_type: "fresh-review", description: "Review the bounded implementation diff", prompt })
     assert.ok(!expanded.normalizations.includes("packet-envelope-inferred"), prompt)
     assert.throws(() => validateTaskPacket(expanded.args), /packet envelope/, prompt)
   }
 
-  const finiteTargetExpansion = normalizeTaskPacket({ subagent_type: "fresh-review", description: "Review one implementation file", prompt: "Review lib/operation-guard-core.mjs and inspect any related callers." })
+  const finiteTargetExpansion = normalizeTaskPacket({ subagent_type: "fresh-review", description: "Review one implementation file", prompt: "Review only lib/operation-guard-core.mjs and inspect any related callers." })
   assert.ok(!finiteTargetExpansion.normalizations.includes("packet-envelope-inferred"))
   assert.throws(() => validateTaskPacket(finiteTargetExpansion.args), /packet envelope/)
 
