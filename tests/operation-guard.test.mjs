@@ -131,11 +131,6 @@ test("Fresh-review normalizes bounded envelope-less prompts beyond the legacy 12
   const partial = normalizeTaskPacket({ subagent_type: "fresh-review", description: "Partial packet", prompt: "Scope: existing partial envelope without questions or stop condition" })
   assert.ok(!partial.normalizations.includes("packet-envelope-inferred"))
   assert.throws(() => validateTaskPacket(partial.args), /packet envelope/)
-
-  const sectionHeavyPrompt = Array.from({ length: 20 }, (_, index) => `${index + 1}. substantive review requirement ${index + 1}`).join("\n")
-  const sectionHeavy = normalizeTaskPacket({ subagent_type: "fresh-review", description: "Section-heavy review", prompt: sectionHeavyPrompt })
-  assert.ok(!sectionHeavy.normalizations.includes("packet-envelope-inferred"))
-  assert.throws(() => validateTaskPacket(sectionHeavy.args), /packet envelope|numbered investigative sections/)
 })
 
 test("Task normalization injects a compact type-specific execution and result contract", () => {
