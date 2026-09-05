@@ -146,6 +146,7 @@ test("terminal parser accepts semicolon, multiline, whitespace, and field-order 
 
 test("terminal parser rejects conflicts, missing fields, incidental marker prose, and incomplete counts", () => {
   assert.equal(parseChildTerminal("OPERATIONAL_RESULT: PASS\nOPERATIONAL_RESULT: FAIL\nCOMMANDS_RUN: 2\nCOMMANDS_REQUIRED: 2", "verify").complete, false)
+  assert.ok(parseChildTerminal("OPERATIONAL_RESULT: PASS\nOPERATIONAL_RESULT: PASS\nCOMMANDS_RUN: 2\nCOMMANDS_REQUIRED: 2", "verify").reasons.includes("duplicate-operational_result"))
   assert.equal(parseChildTerminal("OPERATIONAL_RESULT: PASS\nCOMMANDS_RUN: 2", "verify").complete, false)
   assert.ok(parseChildTerminal("I think OPERATIONAL_RESULT: PASS is likely\nCOMMANDS_RUN: 2\nCOMMANDS_REQUIRED: 2", "verify").reasons.includes("terminal-narrative-or-unknown-field"))
   assert.ok(parseChildTerminal("OPERATIONAL_REVIEW: CLEAN\nTARGETS_REVIEWED: 1\nTARGETS_REQUIRED: 2", "fresh-review").reasons.includes("success-count-mismatch"))

@@ -15,6 +15,8 @@ if (args.length !== 2 || args[0] !== "--spec" || !args[1]?.startsWith("/") || !a
 
 try {
   const specPath = resolve(args[1])
+  const materialRoot = "/tmp/opencode/verify/materials/"
+  if (!specPath.startsWith(materialRoot)) throw new Error(`spec must be under ${materialRoot}`)
   const input = JSON.parse(await readFile(specPath, "utf8"))
   const result = planChildWork(input)
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
