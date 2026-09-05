@@ -57,19 +57,55 @@ async function currentControllerSha() {
   }
 }
 
-async function changedPaths(prNumber) {
-  const paths = []
-  for (let page = 1; page <= 10; page += 1) {
-    const batch = await githubJson(`/pulls/${prNumber}/files?per_page=100&page=${page}`)
-    if (!Array.isArray(batch)) fail("PR files response is not an array")
-    for (const item of batch) {
-      if (typeof item?.filename !== "string") fail("PR files response contains an invalid filename")
-      paths.push(item.filename)
-      if (typeof item.previous_filename === "string") paths.push(item.previous_filename)
-    }
-    if (batch.length < 100) return paths
+function validateTreePath(path) {
+  if (typeof path !== "string" || path.length < 1 || path.length > 4096 || path.includes("\u0000") || path.includes("\n") || path.includes("\r") || path.startsWith("/") || path.split("/").some((part) => part === "" || part === "." || part === "..")) {
+    fail("immutable Git tree contains an invalid repository-relative path")
   }
-  fail("PR changed-file set exceeds the bounded 1000-file controller limit")
+  return path
+}
+
+async function treeSnapshot(commitSha) {
+  let treeSha
+  try {
+    const commit = await githubJson(`/git/commits/${commitSha}`)
+    treeSha = assertSha(commit?.tree?.sha, `tree SHA for ${commitSha}`)
+  } catch {
+    fail(`immutable Git commit/tree identity is unavailable for ${commitSha}`)
+  }
+
+  const response = await githubJson(`/git/trees/${treeSha}?recursive=1`)
+  if (!response || typeof response !== "object" || response.truncated === true || !Array.isArray(response.tree)) {
+    fail(`immutable Git tree response is invalid or truncated for ${commitSha}`)
+  }
+
+  const snapshot = new Map()
+  for (const item of response.tree) {
+    const path = validateTreePath(item?.path)
+    if (snapshot.has(path)) fail(`immutable Git tree contains duplicate path ${path}`)
+    let sha
+    try {
+      sha = assertSha(item?.sha, `tree entry SHA for ${path}`)
+    } catch {
+      fail(`immutable Git tree contains invalid entry identity for ${path}`)
+    }
+    if (typeof item?.mode !== "string" || !/^[0-7]{6}$/.test(item.mode) || !new Set(["blob", "tree", "commit"]).has(item?.type)) {
+      fail(`immutable Git tree contains invalid entry metadata for ${path}`)
+    }
+    snapshot.set(path, `${item.mode}:${item.type}:${sha}`)
+  }
+  return snapshot
+}
+
+async function changedPaths(expectedBaseSha, expectedHeadSha) {
+  const [baseTree, headTree] = await Promise.all([treeSnapshot(expectedBaseSha), treeSnapshot(expectedHeadSha)])
+  const allPaths = new Set([...baseTree.keys(), ...headTree.keys()])
+  const changed = []
+  for (const path of [...allPaths].sort()) {
+    if (baseTree.get(path) === headTree.get(path)) continue
+    changed.push(path)
+    if (changed.length > 1000) fail("immutable changed-path set exceeds the bounded 1000-path controller limit")
+  }
+  return changed
 }
 
 async function loadInputs() {
@@ -108,7 +144,8 @@ async function main() {
   if (!identity.admitted) fail(`${identity.result}:${identity.reason}; observed_base=${identity.observed_base_sha ?? "unknown"}; observed_head=${identity.observed_head_sha ?? "unknown"}`, identity.result === "STALE" ? 3 : 2)
 
   if (mode === "preflight") {
-    const selfCertification = detectSelfCertification(await changedPaths(dispatch.pr_number), profile.trusted_control_paths, profile.trusted_control_prefixes)
+    const immutableChangedPaths = await changedPaths(dispatch.expected_base_sha, dispatch.expected_head_sha)
+    const selfCertification = detectSelfCertification(immutableChangedPaths, profile.trusted_control_paths, profile.trusted_control_prefixes)
     if (selfCertification.denied) fail(`SELF_CERTIFICATION_DENIED: ${selfCertification.conflicting_paths.join(",")}`)
   }
 
