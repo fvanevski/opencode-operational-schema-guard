@@ -1,11 +1,14 @@
 import assert from "node:assert/strict"
-import { readFile } from "node:fs/promises"
+import { mkdir, mkdtemp, readFile, symlink, writeFile } from "node:fs/promises"
+import { tmpdir } from "node:os"
+import { join } from "node:path"
 import test from "node:test"
 import {
   buildReceipt,
   commandFingerprint,
   detectSelfCertification,
   evaluatePrIdentity,
+  fingerprintFiles,
   parseNodeTapTotals,
   receiptDigest,
   validateDispatchInput,
@@ -111,6 +114,14 @@ test("candidate cannot self-certify trusted control-plane changes", () => {
   const denied = detectSelfCertification(["README.md", ".github/workflows/ghdev-verify.yml", "lib/actions-evidence.mjs", "node_modules/.bin/node"], profile.trusted_control_paths, profile.trusted_control_prefixes)
   assert.equal(denied.denied, true)
   assert.deepEqual(denied.conflicting_paths, [".github/workflows/ghdev-verify.yml", "lib/actions-evidence.mjs", "node_modules/.bin/node"])
+})
+
+test("candidate fingerprints reject symlinks instead of dereferencing host paths", async () => {
+  const root = await mkdtemp(join(tmpdir(), "ghdev-fingerprint-"))
+  await mkdir(join(root, "scripts"))
+  await writeFile(join(root, "package.json"), "{}\n")
+  await symlink("/etc/passwd", join(root, "package-lock.json"))
+  await assert.rejects(() => fingerprintFiles(root, ["package.json", "package-lock.json"]), /regular file/)
 })
 
 test("node TAP totals are parsed deterministically", () => {
