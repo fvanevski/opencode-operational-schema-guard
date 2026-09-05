@@ -78,6 +78,21 @@ test("deterministic Task planner refuses excess questions without deferring them
   )
 })
 
+test("bounded Task records deterministic planning provenance when exact authority is declared", async () => {
+  const hooks = createOperationGuard({ directory: "/tmp/issue15-planner-ready", env: {} })
+  await message(hooks, "parent", "build", `HEAD_SHA: ${HEAD}`)
+  const args = taskArgs("verify")
+  const preflight = await before(hooks, "parent", "verify-plan", "task", args)
+  await register(hooks, "verify-plan-child", "verify")
+  await hooks.event({ event: { type: "message.updated", properties: { info: { sessionID: "verify-plan-child", role: "assistant", finish: "stop" } } } })
+  const result = await after(hooks, "parent", "verify-plan", "task", preflight.args, {
+    output: "OPERATIONAL_RESULT: PASS; COMMANDS_RUN: 1; COMMANDS_REQUIRED: 1",
+    metadata: { sessionId: "verify-plan-child" },
+  })
+  assert.equal(result.metadata.operationalSchema.planning.status, "READY")
+  assert.equal(result.metadata.operationalSchema.planning.coverage.unique_complete, true)
+})
+
 test("central-owned semantic review deterministically elides local Fresh-review", async () => {
   const hooks = createOperationGuard({ directory: "/tmp/issue15-central-review", env: {} })
   await message(hooks, "parent", "build", "SEMANTIC REVIEW AUTHORITY: central-owned")
@@ -111,11 +126,9 @@ test("central-owned mode removes only the local review publish gate and preserve
 
 test("local-fresh-review mode preserves the strict Fresh-review publish gate", async () => {
   const hooks = createOperationGuard({ directory: "/tmp/issue15-local-review", env: {} })
-  await message(hooks, "parent", "build", `HEAD_SHA: ${HEAD}`)
   await message(hooks, "parent", "build", "SEMANTIC REVIEW AUTHORITY: local-fresh-review")
   await editThree(hooks, "parent")
-  const verify = await completeVerify(hooks, "parent", "verify-child-local")
-  assert.equal(verify.metadata.operationalSchema.planning.status, "READY")
+  await completeVerify(hooks, "parent", "verify-child-local")
   await assert.rejects(
     () => before(hooks, "parent", "commit", "bash", { command: "git commit -m issue15" }),
     /require a CLEAN fresh-review/,
