@@ -35,6 +35,7 @@ function exactCommandOutput(argv) {
 }
 
 const COMMAND_TAIL_BYTES = 1024 * 1024
+const SANDBOX_STATUS_BYTES = 64 * 1024
 
 function readTail(path, maxBytes = COMMAND_TAIL_BYTES) {
   const size = statSync(path).size
@@ -56,12 +57,47 @@ function candidateCommandOutput(argv, logRoot, commandId, options = {}) {
   const stderrFd = openSync(stderrPath, "wx", 0o600)
   let result
   try {
-    result = spawnSync(argv[0], argv.slice(1), { shell: false, stdio: ["ignore", stdoutFd, stderrFd], ...options })
+    result = spawnSync(argv[0], argv.slice(1), { shell: false, stdio: ["ignore", stdoutFd, stderrFd, "pipe"], ...options })
   } finally {
     closeSync(stdoutFd)
     closeSync(stderrFd)
   }
   return { result, stdout: readTail(stdoutPath), stderr: readTail(stderrPath) }
+}
+
+function parseSandboxStatus(value) {
+  const text = Buffer.isBuffer(value) ? value.toString("utf8") : typeof value === "string" ? value : ""
+  if (Buffer.byteLength(text, "utf8") > SANDBOX_STATUS_BYTES) throw new Error("Bubblewrap status channel exceeds bounded size")
+  const documents = []
+  for (const line of text.split(/\r?\n/)) {
+    if (!line) continue
+    let document
+    try {
+      document = JSON.parse(line)
+    } catch {
+      throw new Error("Bubblewrap status channel contains invalid JSON")
+    }
+    if (!document || typeof document !== "object" || Array.isArray(document)) throw new Error("Bubblewrap status channel contains an invalid document")
+    documents.push(document)
+  }
+
+  const childDocuments = documents.filter((document) => Object.hasOwn(document, "child-pid"))
+  if (childDocuments.length > 1) throw new Error("Bubblewrap status channel contains multiple child startup records")
+  for (const document of childDocuments) {
+    if (!Number.isSafeInteger(document["child-pid"]) || document["child-pid"] < 1) throw new Error("Bubblewrap child startup record is invalid")
+  }
+
+  const exitDocuments = documents.filter((document) => Object.hasOwn(document, "exit-code"))
+  if (exitDocuments.length > 1) throw new Error("Bubblewrap status channel contains multiple child exit records")
+  for (const document of exitDocuments) {
+    if (!Number.isSafeInteger(document["exit-code"]) || document["exit-code"] < 0 || document["exit-code"] > 255) throw new Error("Bubblewrap child exit record is invalid")
+  }
+  if (childDocuments.length === 0 && exitDocuments.length > 0) throw new Error("Bubblewrap exit record exists without a child startup record")
+
+  return {
+    child_started: childDocuments.length === 1,
+    exit_code: exitDocuments.length === 1 ? exitDocuments[0]["exit-code"] : null,
+  }
 }
 
 function boundedVersion(value, field) {
@@ -92,6 +128,7 @@ function sandboxArgs(candidatePath, argv) {
   const args = [
     "--die-with-parent",
     "--new-session",
+    "--json-status-fd", "3",
     "--unshare-all",
     "--unshare-user",
     "--cap-drop", "ALL",
@@ -265,9 +302,9 @@ async function main() {
       npm_sha256: sha256Hex(await readFile("/usr/bin/npm")),
       bwrap_sha256: sha256Hex(await readFile("/usr/bin/bwrap")),
       sandbox: profile.runner.sandbox,
-      network: "unshared",
-      candidate_mount: "read-only",
-      candidate_environment: "clearenv-allowlist",
+      network: "not-executed",
+      candidate_mount: "not-executed",
+      candidate_environment: "not-executed",
     }
 
     for (const command of profile.commands) {
@@ -282,14 +319,52 @@ async function main() {
         process.stderr.write(`GHDEV_ACTIONS_EXECUTOR: BLOCKED; command ${command.id} spawn failed: ${run.error.code ?? run.error.message}\n`)
         break
       }
+
+      let sandboxStatus
+      try {
+        sandboxStatus = parseSandboxStatus(run.output?.[3])
+      } catch (error) {
+        record.result = "BLOCKED"
+        record.block_reason = "SETUP_OR_ISOLATION_ERROR"
+        process.stderr.write(`GHDEV_ACTIONS_EXECUTOR: BLOCKED; command ${command.id} has invalid Bubblewrap status evidence: ${error?.message ?? String(error)}\n`)
+        break
+      }
+      if (!sandboxStatus.child_started) {
+        record.result = "BLOCKED"
+        record.block_reason = "SETUP_OR_ISOLATION_ERROR"
+        process.stderr.write(`GHDEV_ACTIONS_EXECUTOR: BLOCKED; command ${command.id} never reached sandbox child startup\n`)
+        break
+      }
+
+      record.environment.network = "unshared"
+      record.environment.candidate_mount = "read-only"
+      record.environment.candidate_environment = "clearenv-allowlist"
+
       const exit = Number.isSafeInteger(run.status) ? run.status : null
       const signal = typeof run.signal === "string" ? run.signal : null
       if (exit === null && signal === null) {
         record.result = "BLOCKED"
         record.block_reason = "SETUP_OR_ISOLATION_ERROR"
-        process.stderr.write(`GHDEV_ACTIONS_EXECUTOR: BLOCKED; command ${command.id} returned no exit or signal\n`)
+        process.stderr.write(`GHDEV_ACTIONS_EXECUTOR: BLOCKED; command ${command.id} returned no exit or signal after sandbox startup\n`)
         break
       }
+      if (exit !== null && sandboxStatus.exit_code !== exit) {
+        record.commands_run += 1
+        record.per_command_exit.push({ id: command.id, exit, signal: null })
+        record.result = "BLOCKED"
+        record.block_reason = "SETUP_OR_ISOLATION_ERROR"
+        process.stderr.write(`GHDEV_ACTIONS_EXECUTOR: BLOCKED; command ${command.id} Bubblewrap exit evidence mismatched process status\n`)
+        break
+      }
+      if (exit === null && signal !== null && sandboxStatus.exit_code !== null) {
+        record.commands_run += 1
+        record.per_command_exit.push({ id: command.id, exit: null, signal })
+        record.result = "BLOCKED"
+        record.block_reason = "SETUP_OR_ISOLATION_ERROR"
+        process.stderr.write(`GHDEV_ACTIONS_EXECUTOR: BLOCKED; command ${command.id} Bubblewrap exit evidence conflicts with signal termination\n`)
+        break
+      }
+
       record.commands_run += 1
       record.per_command_exit.push({ id: command.id, exit, signal })
       if (command.collect_test_totals === "node-tap") {
