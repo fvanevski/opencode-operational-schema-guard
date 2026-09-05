@@ -200,6 +200,9 @@ test("final non-stale PR identity denial cannot preserve executor PASS", () => {
   assert.equal(receipt.result, "BLOCKED")
   assert.equal(receipt.block_reason, "FINAL_PR_IDENTITY_BLOCKED")
   assert.doesNotThrow(() => validateReceipt(receipt, profile, dispatch))
+  const conflict = { ...receipt, block_reason: "SETUP_OR_ISOLATION_ERROR" }
+  conflict.receipt_sha256 = receiptDigest(conflict)
+  assert.throws(() => validateReceipt(conflict, profile, dispatch), /block_reason conflicts/)
 })
 
 test("final source movement forces STALE and never PASS on the old receipt", () => {
