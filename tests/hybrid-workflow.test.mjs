@@ -66,6 +66,7 @@ function planInput(overrides = {}) {
 
 test("semantic review authority is exact, typed, and conflict rejecting", () => {
   assert.equal(semanticReviewAuthorityFromMessage("SEMANTIC REVIEW AUTHORITY: central-owned"), "central-owned")
+  assert.equal(semanticReviewAuthorityFromMessage("SEMANTIC REVIEW AUTHORITY: CENTRAL-OWNED"), "central-owned")
   assert.equal(semanticReviewAuthorityFromMessage("prose central-owned"), undefined)
   assert.throws(() => semanticReviewAuthorityFromMessage("SEMANTIC REVIEW AUTHORITY: central-owned\nSEMANTIC REVIEW AUTHORITY: both"), /conflicting/)
   assert.deepEqual(semanticReviewRequirement("central-owned"), {
@@ -177,19 +178,23 @@ test("role-limit tuning is evidence-based and preserves existing limits when opt
 
 test("friction replay proves Central-led zero local Fresh-review/Verify and preserved local-Fresh-review control path", () => {
   const central = replayFrictionScenario("central-owned")
-  assert.equal(central.fresh_review_launches, 0)
-  assert.equal(central.local_verify_launches, 0)
-  assert.equal(central.actions_executions, 1)
-  assert.ok(central.actions_receipt_reuses > 0)
-  assert.equal(central.capability_mismatches, 0)
-  assert.equal(central.malformed_invocations, 0)
+  assert.equal(central.after_metrics.fresh_review_launches, 0)
+  assert.equal(central.after_metrics.local_verify_launches, 0)
+  assert.equal(central.after_metrics.actions_executions, 1)
+  assert.ok(central.after_metrics.actions_receipt_reuses > 0)
+  assert.equal(central.after_metrics.capability_mismatches, 0)
+  assert.equal(central.after_metrics.malformed_invocations, 0)
+  assert.equal(central.after_metrics.terminal_parse_normalizations, 2)
+  assert.equal(central.baseline_metrics.fresh_review_launches, 8)
+  assert.equal(central.delta_metrics.capability_mismatches, -35)
+  assert.ok(central.after_metrics.wall_clock_duration_ms >= 0)
   assert.equal(central.local_semantic_review, "NOT_EVALUATED")
   assert.equal(central.central_semantic_review_required, true)
 
   const local = replayFrictionScenario("local-fresh-review")
-  assert.ok(local.fresh_review_launches > 0)
-  assert.equal(local.local_verify_launches, 0)
-  assert.equal(local.representative_six_target_max_step_failure, false)
-  assert.equal(local.marker_format_semantic_reruns, 0)
+  assert.ok(local.after_metrics.fresh_review_launches > 0)
+  assert.equal(local.after_metrics.local_verify_launches, 0)
+  assert.equal(local.after_metrics.representative_six_target_max_step_failure, false)
+  assert.equal(local.after_metrics.marker_format_semantic_reruns, 0)
   assert.equal(local.fresh_review_plan.coverage.unique_complete, true)
 })
