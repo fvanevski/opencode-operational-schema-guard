@@ -384,6 +384,57 @@ test("explicit strict-start authority declaration supersedes an incompatible per
   )
 })
 
+test("authority away-and-back invalidates an in-flight assessment admission from the prior epoch", async (t) => {
+  const f = await mismatchedGuard(t, "assessment-epoch-reuse")
+  const base = "b".repeat(40)
+  const assessmentID = `assessment-epoch-${Math.random().toString(16).slice(2, 8)}`
+  const written = await writeSpec(makeSpec({ assessmentID, base, target: f.target }))
+  const assessment = assessmentCommand(written.path)
+  await before(f.hooks, f.sessionID, "old-assessment", assessment)
+
+  const alternate = "e".repeat(40)
+  await message(f.hooks, f.sessionID, `REQUIRED STARTING HEAD SHA: ${alternate}`)
+  await message(f.hooks, f.sessionID, `REQUIRED EXACT HEAD: ${f.target}`)
+
+  const stale = await after(f.hooks, f.sessionID, "old-assessment", assessment, await assessmentOutput({ assessmentID, specSha256: written.sha256, base, target: f.target, observed: f.observed }))
+  assert.match(stale.output, /REJECTED assessment terminal without matching admitted before-state/)
+  const continuity = await compaction(f.hooks, f.sessionID)
+  assert.match(continuity, new RegExp(`Authority: ${f.target}`))
+  assert.match(continuity, /mode: target/)
+  assert.doesNotMatch(continuity, /Target lifecycle: OWNER_RECONCILIATION/)
+})
+
+test("authority away-and-back invalidates an old reconciliation admission even if the same lifecycle identity is recreated", async (t) => {
+  const f = await mismatchedGuard(t, "reconciliation-epoch-reuse")
+  const base = "b".repeat(40)
+  const assessmentID = `reconciliation-epoch-${Math.random().toString(16).slice(2, 8)}`
+  const written = await writeSpec(makeSpec({ assessmentID, base, target: f.target }))
+  const assessment = assessmentCommand(written.path)
+  await before(f.hooks, f.sessionID, "assessment-old", assessment)
+  await after(f.hooks, f.sessionID, "assessment-old", assessment, await assessmentOutput({ assessmentID, specSha256: written.sha256, base, target: f.target, observed: f.observed }))
+  const reconciliation = reconciliationCommand(written.path, f.observed, base, f.target)
+  await before(f.hooks, f.sessionID, "reconcile-old", reconciliation)
+
+  const alternate = "e".repeat(40)
+  await message(f.hooks, f.sessionID, `REQUIRED STARTING HEAD SHA: ${alternate}`)
+  await message(f.hooks, f.sessionID, `REQUIRED EXACT HEAD: ${f.target}`)
+
+  await before(f.hooks, f.sessionID, "assessment-new", assessment)
+  await after(f.hooks, f.sessionID, "assessment-new", assessment, await assessmentOutput({ assessmentID, specSha256: written.sha256, base, target: f.target, observed: f.observed }))
+  assert.match(await compaction(f.hooks, f.sessionID), /Target lifecycle: OWNER_RECONCILIATION/)
+
+  const staleReconciliation = await after(f.hooks, f.sessionID, "reconcile-old", reconciliation, reconciliationOutput({ assessmentID, specSha256: written.sha256, oldSha: f.observed, base, target: f.target }))
+  assert.match(staleReconciliation.output, /REJECTED reconciliation result without matching admitted before-state/)
+  const continuity = await compaction(f.hooks, f.sessionID)
+  assert.match(continuity, new RegExp(`Authority: ${f.target}`))
+  assert.match(continuity, /Target lifecycle: OWNER_RECONCILIATION/)
+
+  const exactReconciliation = reconciliationCommand(written.path, f.observed, base, f.target)
+  await before(f.hooks, f.sessionID, "reconcile-new", exactReconciliation)
+  const reconciled = await after(f.hooks, f.sessionID, "reconcile-new", exactReconciliation, reconciliationOutput({ assessmentID, specSha256: written.sha256, oldSha: f.observed, base, target: f.target }))
+  assert.match(reconciled.output, /OWNER_RECONCILIATION -> TARGET_RELEASED/)
+})
+
 test("authenticated owner-base STALE persists exact reconciliation identity across plugin restart and blocks alternate HEAD movement", async (t) => {
   const f = await mismatchedGuard(t, "stale-restart")
   const base = "b".repeat(40)
