@@ -2,6 +2,8 @@ import test from "node:test"
 import assert from "node:assert/strict"
 import { createOperationGuard } from "../lib/operation-guard.mjs"
 
+const HEAD = "a".repeat(40)
+
 async function message(hooks, sessionID, agent, text) {
   await hooks["chat.message"]({ sessionID, agent }, { message: {}, parts: [{ type: "text", text }] })
 }
@@ -49,6 +51,33 @@ async function completeVerify(hooks, parentSession, childSession, callID = "veri
   })
 }
 
+test("deterministic Task planner partitions complexity before child launch", async () => {
+  const hooks = createOperationGuard({ directory: "/tmp/issue15-planner", env: {} })
+  await message(hooks, "parent", "build", `HEAD_SHA: ${HEAD}`)
+  const targets = Array.from({ length: 7 }, (_, index) => `- lib/target-${index}.mjs`).join("\n")
+  await assert.rejects(
+    () => before(hooks, "parent", "large-review", "task", {
+      subagent_type: "fresh-review",
+      description: "Review the bounded changed files",
+      prompt: `Scope: review seven production targets\nQuestions:\n- Are the changed invariants correct?\nStop condition: all targets are reviewed.\nTargets:\n${targets}`,
+    }),
+    /PARTITION_REQUIRED.*deterministic-complexity-partition.*target_paths/s,
+  )
+})
+
+test("deterministic Task planner refuses excess questions without deferring them", async () => {
+  const hooks = createOperationGuard({ directory: "/tmp/issue15-question-plan", env: {} })
+  await message(hooks, "parent", "build", `HEAD_SHA: ${HEAD}`)
+  await assert.rejects(
+    () => before(hooks, "parent", "questions", "task", {
+      subagent_type: "explore",
+      description: "Inspect bounded unknown flow",
+      prompt: "Scope: inspect one unknown flow\nQuestions:\n- q1\n- q2\n- q3\n- q4\nStop condition: all questions are answered.\nTargets:\n- lib/a.mjs",
+    }),
+    /UNREPRESENTABLE.*question-count-exceeds-three/s,
+  )
+})
+
 test("central-owned semantic review deterministically elides local Fresh-review", async () => {
   const hooks = createOperationGuard({ directory: "/tmp/issue15-central-review", env: {} })
   await message(hooks, "parent", "build", "SEMANTIC REVIEW AUTHORITY: central-owned")
@@ -82,9 +111,11 @@ test("central-owned mode removes only the local review publish gate and preserve
 
 test("local-fresh-review mode preserves the strict Fresh-review publish gate", async () => {
   const hooks = createOperationGuard({ directory: "/tmp/issue15-local-review", env: {} })
+  await message(hooks, "parent", "build", `HEAD_SHA: ${HEAD}`)
   await message(hooks, "parent", "build", "SEMANTIC REVIEW AUTHORITY: local-fresh-review")
   await editThree(hooks, "parent")
-  await completeVerify(hooks, "parent", "verify-child-local")
+  const verify = await completeVerify(hooks, "parent", "verify-child-local")
+  assert.equal(verify.metadata.operationalSchema.planning.status, "READY")
   await assert.rejects(
     () => before(hooks, "parent", "commit", "bash", { command: "git commit -m issue15" }),
     /require a CLEAN fresh-review/,
