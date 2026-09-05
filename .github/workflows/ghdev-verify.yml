@@ -81,12 +81,17 @@ jobs:
     outputs:
       execution_artifact_id: ${{ steps.upload_execution.outputs.artifact-id }}
     env:
+      GHDEV_RUN_PARENT: ${{ github.workspace }}/_ghdev
       GHDEV_RUN_ROOT: ${{ github.workspace }}/_ghdev/${{ github.run_id }}-${{ github.run_attempt }}
       GHDEV_EXECUTION_DIR: ${{ runner.temp }}/ghdev-${{ github.run_id }}-${{ github.run_attempt }}
     steps:
-      - name: Require a never-reused runner workspace
+      - name: Reset dedicated executor workspace
         run: |
           set -euo pipefail
+          rm -rf -- "$GHDEV_RUN_PARENT"
+          mkdir -p -- "$GHDEV_RUN_PARENT"
+          test -d "$GHDEV_RUN_PARENT"
+          test ! -L "$GHDEV_RUN_PARENT"
           test ! -e "$GHDEV_RUN_ROOT"
           test ! -e "$GHDEV_EXECUTION_DIR"
           mkdir -p "$GHDEV_EXECUTION_DIR"
@@ -158,8 +163,8 @@ jobs:
         if: always()
         run: |
           set -euo pipefail
-          rm -rf -- "$GHDEV_RUN_ROOT" "$GHDEV_EXECUTION_DIR"
-          test ! -e "$GHDEV_RUN_ROOT"
+          rm -rf -- "$GHDEV_RUN_PARENT" "$GHDEV_EXECUTION_DIR"
+          test ! -e "$GHDEV_RUN_PARENT"
           test ! -e "$GHDEV_EXECUTION_DIR"
 
   publisher:
