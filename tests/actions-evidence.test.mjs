@@ -49,7 +49,7 @@ function execution(overrides = {}) {
     controller_workflow_ref: "refs/heads/main",
     controller_commit_sha: controller,
     profile_id: "repository-final-v1",
-    profile_version: 1,
+    profile_version: 2,
     command_fingerprint: commandFingerprint(profile),
     candidate_fingerprints: {
       ".npmrc": "MISSING",
@@ -62,18 +62,22 @@ function execution(overrides = {}) {
     runner_labels: ["self-hosted", "Linux", "X64", "ghdev-verify"],
     environment: {
       image_fingerprint: "f".repeat(64),
-      image_schema: "ghdev-runner-image-v1",
+      image_schema: "ghdev-runner-image-v2",
       image_id: "fixture",
       base_image_digest: `sha256:${"1".repeat(64)}`,
-      actions_runner_version: "2.328.0",
+      actions_runner_version: "2.337.0",
+      git_version: "git version 2.43.0",
       node_version: "v22.16.0",
       npm_version: "10.9.2",
+      python_version: "Python 3.12.3",
       bwrap_version: "bubblewrap 0.10.0",
       os_id: "ubuntu",
       os_version_id: "24.04",
       os_release_fingerprint: "2".repeat(64),
+      git_sha256: "6".repeat(64),
       node_sha256: "3".repeat(64),
       npm_sha256: "4".repeat(64),
+      python_sha256: "7".repeat(64),
       bwrap_sha256: "5".repeat(64),
       sandbox: "bubblewrap-no-network-v1",
       network: "unshared",
@@ -100,6 +104,12 @@ test("dispatch input fails closed on malformed PR/SHA/profile/controller values"
   assert.throws(() => validateDispatchInput({ pr_number: "0", expected_base_sha: base, expected_head_sha: head, expected_controller_sha: controller, profile: "repository-final-v1" }), /pr_number/)
   assert.throws(() => validateDispatchInput({ pr_number: "15", expected_base_sha: base.toUpperCase(), expected_head_sha: head, expected_controller_sha: controller, profile: "repository-final-v1" }), /expected_base_sha/)
   assert.throws(() => validateDispatchInput({ pr_number: "15", expected_base_sha: base, expected_head_sha: head, expected_controller_sha: controller, profile: "candidate-profile" }), /profile/)
+})
+
+test("repository-final profile requires the current runner image schema", () => {
+  assert.equal(profile.profile_version, 2)
+  assert.equal(profile.runner.image_schema, "ghdev-runner-image-v2")
+  assert.throws(() => validateProfile({ ...profile, runner: { ...profile.runner, image_schema: "ghdev-runner-image-v1" } }), /runner image schema/)
 })
 
 test("same-repository exact PR identity is required and fork/head movement is rejected", () => {
@@ -137,6 +147,13 @@ test("execution record rejects duplicate/missing/conflicting command evidence", 
   assert.throws(() => validateExecutionRecord(execution({ environment: { ...execution().environment, candidate_environment: "inherited" } }), profile, dispatch), /sanitized/)
 })
 
+test("started execution requires complete Git and Python provenance", () => {
+  assert.throws(() => validateExecutionRecord(execution({ environment: { ...execution().environment, python_version: null } }), profile, dispatch), /python_version provenance missing/)
+  assert.throws(() => validateExecutionRecord(execution({ environment: { ...execution().environment, python_sha256: null } }), profile, dispatch), /python_sha256 missing/)
+  assert.throws(() => validateExecutionRecord(execution({ environment: { ...execution().environment, git_version: null } }), profile, dispatch), /git_version provenance missing/)
+  assert.throws(() => validateExecutionRecord(execution({ environment: { ...execution().environment, git_sha256: null } }), profile, dispatch), /git_sha256 missing/)
+})
+
 test("signal termination is BLOCKED without fabricating a numeric exit", () => {
   const blocked = execution({
     commands_run: 1,
@@ -159,18 +176,22 @@ test("setup failures can produce a typed BLOCKED execution without fabricating e
     candidate_fingerprints: {},
     environment: {
       image_fingerprint: null,
-      image_schema: "ghdev-runner-image-v1",
+      image_schema: "ghdev-runner-image-v2",
       image_id: null,
       base_image_digest: null,
       actions_runner_version: null,
+      git_version: null,
       node_version: null,
       npm_version: null,
+      python_version: null,
       bwrap_version: null,
       os_id: null,
       os_version_id: null,
       os_release_fingerprint: null,
+      git_sha256: null,
       node_sha256: null,
       npm_sha256: null,
+      python_sha256: null,
       bwrap_sha256: null,
       sandbox: "bubblewrap-no-network-v1",
       network: "not-executed",
@@ -226,6 +247,8 @@ test("receipt digest/provenance is deterministic and malformed/conflicting recei
   assert.equal(receipt.result, "PASS")
   assert.equal(receipt.semantic_review, "NOT_EVALUATED")
   assert.equal(receipt.host_specific_evidence, "NOT_EVALUATED")
+  assert.equal(receipt.environment.python_version, "Python 3.12.3")
+  assert.equal(receipt.environment.git_version, "git version 2.43.0")
   assert.equal(receipt.receipt_sha256, receiptDigest(receipt))
   assert.doesNotThrow(() => validateReceipt(receipt, profile, dispatch))
   assert.throws(() => validateReceipt({ ...receipt, result: "FAIL" }, profile, dispatch), /digest mismatch/)
