@@ -224,6 +224,24 @@ test("Fresh-review normalizes bounded envelope-less prompts beyond the legacy 12
     assert.throws(() => validateTaskPacket(conflictingDescription.args), /packet envelope/, description)
   }
 
+  for (const [description, prompt] of [
+    ["Review the current diff", "Review only lib/operation-guard-core.mjs and return source-review findings."],
+    ["Review the explicitly named files", "Limit the review to the current diff and return source-review findings."],
+  ]) {
+    const mismatchedBoundary = normalizeTaskPacket({ subagent_type: "fresh-review", description, prompt })
+    assert.ok(!mismatchedBoundary.normalizations.includes("packet-envelope-inferred"), `${description} :: ${prompt}`)
+    assert.throws(() => validateTaskPacket(mismatchedBoundary.args), /packet envelope/, `${description} :: ${prompt}`)
+  }
+
+  for (const [description, prompt] of [
+    ["Review the bounded implementation diff", "Limit the review to the current diff and return source-review findings."],
+    ["Review the explicitly named files", "Review only lib/operation-guard-core.mjs and return source-review findings."],
+  ]) {
+    const matchedBoundary = normalizeTaskPacket({ subagent_type: "fresh-review", description, prompt })
+    assert.ok(matchedBoundary.normalizations.includes("packet-envelope-inferred"), `${description} :: ${prompt}`)
+    assert.doesNotThrow(() => validateTaskPacket(matchedBoundary.args), `${description} :: ${prompt}`)
+  }
+
   const nearLimit = normalizeTaskPacket({ subagent_type: "fresh-review", description: "Bounded review", prompt: "x".repeat(3900) })
   assert.ok(!nearLimit.normalizations.includes("packet-envelope-inferred"))
   assert.throws(() => validateTaskPacket(nearLimit.args), /packet envelope|characters/)
@@ -1723,6 +1741,52 @@ test("explicit strict-start authority supersedes prior target publication gates 
   const secondProof = await after(hooks, "parent-explicit-change", "proof-second", "bash", proofArgs, { output: `${second}\n`, metadata: { exit: 0 } })
   assert.equal(secondProof.metadata.operationalSchema.authorityMode, "strict-start")
   await assert.rejects(() => before(hooks, "parent-explicit-change", "commit-after-transition", "bash", { command: "git commit -m new" }), /fresh-review/)
+})
+
+test("new binding after terminal target release starts a fresh authority epoch", async () => {
+  const hooks = createOperationGuard({ directory: "/tmp/project-authority-release-rebind", env: {} })
+  const first = "a".repeat(40)
+  const second = "b".repeat(40)
+  const oldParent = "parent-released-authority"
+  const newParent = "parent-new-after-release"
+  const proofArgs = { command: "git rev-parse HEAD" }
+
+  await message(hooks, oldParent, "build", `REQUIRED EXACT HEAD: ${first}`)
+  await before(hooks, oldParent, "proof-first", "bash", proofArgs)
+  await after(hooks, oldParent, "proof-first", "bash", proofArgs, { output: `${first}\n`, metadata: { exit: 0 } })
+  for (const [index, name] of ["a", "b", "c"].entries()) await before(hooks, oldParent, `edit-${index}`, "edit", { filePath: `src/${name}.py` })
+
+  const review = taskArgs({ subagent_type: "fresh-review", prompt: "Scope: released-target review\nQuestions:\n- Is the bounded diff clean?\nStop condition: all changed production paths are reviewed." })
+  await register(hooks, "review-release-rebind", "fresh-review")
+  await hooks.event({ event: { type: "message.updated", properties: { info: { sessionID: "review-release-rebind", role: "assistant", finish: "stop" } } } })
+  await before(hooks, oldParent, "review", "task", review)
+  await after(hooks, oldParent, "review", "task", review, { output: reviewClean("No findings. src/a.py src/b.py src/c.py", 3), metadata: { sessionId: "review-release-rebind" } })
+
+  const verify = taskArgs({ subagent_type: "verify", prompt: "Scope: released-target gates\nQuestions:\n- Do the bounded gates pass?\nStop condition: all requested commands have exit status." })
+  await register(hooks, "verify-release-rebind", "verify")
+  await hooks.event({ event: { type: "message.updated", properties: { info: { sessionID: "verify-release-rebind", role: "assistant", finish: "stop" } } } })
+  await before(hooks, oldParent, "verify", "task", verify)
+  await after(hooks, oldParent, "verify", "task", verify, { output: "OPERATIONAL_RESULT: PASS; COMMANDS_RUN: 2; COMMANDS_REQUIRED: 2", metadata: { sessionId: "verify-release-rebind" } })
+
+  const oldExplore = taskArgs({ subagent_type: "explore", prompt: "Scope: released-target old flow\nQuestions:\n- Trace one bounded path.\nStop condition: one exact path is reported." })
+  await before(hooks, oldParent, "old-explore", "task", oldExplore)
+  await register(hooks, "child-release-rebind-old", "explore")
+
+  const assessmentRunner = "/home/filip/.config/opencode/plugins/operational-schema-v5/scripts/local-agent-assessment.mjs"
+  const assessment = { command: `${assessmentRunner} --spec /tmp/opencode/verify/assessments/release-rebind.json` }
+  await before(hooks, oldParent, "terminal-assessment", "bash", assessment)
+  const released = await after(hooks, oldParent, "terminal-assessment", "bash", assessment, { output: "HOST_EVIDENCE_RESULT=PASS\nGATE_DECISION=NOT_EVALUATED\n", metadata: { exit: 0 } })
+  assert.match(released.output, /ASSESSMENT_TERMINAL -> TARGET_RELEASED; result=PASS/)
+
+  await message(hooks, newParent, "build", `REQUIRED STARTING HEAD SHA: ${second}`)
+  assert.match(await system(hooks, newParent), new RegExp(`authority changed from released/unbound to ${second}.*superseded`))
+  await hooks.event({ event: { type: "message.updated", properties: { info: { sessionID: "child-release-rebind-old", role: "assistant", finish: "stop" } } } })
+  const staleExplore = await after(hooks, oldParent, "old-explore", "task", oldExplore, { output: exploreComplete("src/old.py", 1), metadata: { sessionId: "child-release-rebind-old" } })
+  assert.equal(staleExplore.metadata.operationalSchema, undefined)
+
+  await before(hooks, newParent, "proof-second", "bash", proofArgs)
+  await after(hooks, newParent, "proof-second", "bash", proofArgs, { output: `${second}\n`, metadata: { exit: 0 } })
+  await assert.rejects(() => before(hooks, newParent, "commit-after-release-rebind", "bash", { command: "git commit -m new" }), /fresh-review/)
 })
 
 test("explicit authority change invalidates in-flight old-head child results before they can re-establish gates", async () => {
