@@ -1,0 +1,52 @@
+{
+  "schema_version": "ghdev-actions-profile-v1",
+  "profile_id": "repository-final-v1",
+  "profile_version": 1,
+  "commands": [
+    {
+      "id": "npm-check",
+      "argv": ["npm", "run", "check"]
+    },
+    {
+      "id": "npm-test",
+      "argv": ["npm", "test"],
+      "collect_test_totals": "node-tap"
+    }
+  ],
+  "candidate_fingerprint_paths": [
+    ".npmrc",
+    "npm-shrinkwrap.json",
+    "package-lock.json",
+    "package.json",
+    "scripts/test-plugin.mjs"
+  ],
+  "trusted_control_paths": [
+    ".github/workflows/ghdev-verify.yml",
+    ".npmrc",
+    "evidence/profiles/repository-final-v1.json",
+    "lib/actions-evidence.mjs",
+    "package.json",
+    "scripts/ghdev-actions-controller.mjs",
+    "scripts/ghdev-actions-executor.mjs",
+    "scripts/ghdev-actions-publisher.mjs",
+    "scripts/test-plugin.mjs"
+  ],
+  "trusted_control_prefixes": [
+    "node_modules/"
+  ],
+  "runner": {
+    "labels": ["self-hosted", "Linux", "X64", "ghdev-verify"],
+    "os": "Linux",
+    "arch": "X64",
+    "sandbox": "bubblewrap-no-network-v1",
+    "image_schema": "ghdev-runner-image-v1"
+  },
+  "evidence_classes": ["actions-repository-deterministic"],
+  "not_equivalent_to": [
+    "semantic-review",
+    "local-host-specific",
+    "typed-operational-schema-assessment",
+    "gpu-runtime-service-filesystem-process",
+    "merged-main-different-sha"
+  ]
+}
