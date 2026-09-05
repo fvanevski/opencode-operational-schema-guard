@@ -70,6 +70,23 @@ async function loadCommon() {
   return { profile, dispatch }
 }
 
+function publicationIdentity(identity, pr, dispatch, observedControllerSha) {
+  const observedBaseSha = identity.observed_base_sha ?? pr?.base?.sha
+  const observedHeadSha = identity.observed_head_sha ?? pr?.head?.sha
+  if (observedControllerSha !== dispatch.expected_controller_sha) {
+    return { result: "STALE", reason: "CONTROLLER_REF_MOVED", observedBaseSha, observedHeadSha }
+  }
+  const sourceMoved = typeof observedBaseSha === "string" && typeof observedHeadSha === "string"
+    && (observedBaseSha !== dispatch.expected_base_sha || observedHeadSha !== dispatch.expected_head_sha)
+  if (sourceMoved) return { result: "STALE", reason: "REMOTE_IDENTITY_CHANGED", observedBaseSha, observedHeadSha }
+  return {
+    result: identity.admitted ? "PASS" : identity.result,
+    reason: identity.reason,
+    observedBaseSha,
+    observedHeadSha,
+  }
+}
+
 async function buildMode(profile, dispatch) {
   const execution = JSON.parse(await readFile(resolve(argValue("--execution")), "utf8"))
   if (execution.repository !== process.env.GITHUB_REPOSITORY) fail("execution repository does not match workflow repository")
@@ -80,12 +97,10 @@ async function buildMode(profile, dispatch) {
   const pr = await githubRequest(`/pulls/${dispatch.pr_number}`)
   const identity = evaluatePrIdentity(pr, dispatch, process.env.GITHUB_REPOSITORY)
   const observedControllerFinal = await currentControllerSha()
-  const observedBaseFinal = identity.observed_base_sha ?? pr?.base?.sha
-  const observedHeadFinal = identity.observed_head_sha ?? pr?.head?.sha
+  const publication = publicationIdentity(identity, pr, dispatch, observedControllerFinal)
+  const observedBaseFinal = publication.observedBaseSha
+  const observedHeadFinal = publication.observedHeadSha
   if (typeof observedBaseFinal !== "string" || typeof observedHeadFinal !== "string") fail("final PR identity is unavailable")
-  const controllerMoved = observedControllerFinal !== dispatch.expected_controller_sha
-  const finalIdentityResult = controllerMoved ? "STALE" : (identity.admitted ? "PASS" : identity.result)
-  const finalIdentityReason = controllerMoved ? "CONTROLLER_REF_MOVED" : identity.reason
 
   const receipt = buildReceipt({
     execution,
@@ -94,8 +109,8 @@ async function buildMode(profile, dispatch) {
     observedBaseFinal,
     observedHeadFinal,
     observedControllerFinal,
-    finalIdentityResult,
-    finalIdentityReason,
+    finalIdentityResult: publication.result,
+    finalIdentityReason: publication.reason,
     workflowRunId: process.env.GITHUB_RUN_ID,
     workflowRunAttempt: process.env.GITHUB_RUN_ATTEMPT,
     executionArtifactId,
@@ -117,7 +132,8 @@ async function statusMode(profile, dispatch) {
   const pr = await githubRequest(`/pulls/${dispatch.pr_number}`)
   const identity = evaluatePrIdentity(pr, dispatch, process.env.GITHUB_REPOSITORY)
   const observedControllerNow = await currentControllerSha()
-  const effectiveResult = observedControllerNow !== dispatch.expected_controller_sha ? "STALE" : (identity.admitted ? receipt.result : identity.result)
+  const publication = publicationIdentity(identity, pr, dispatch, observedControllerNow)
+  const effectiveResult = publication.result === "PASS" ? receipt.result : publication.result
   const status = statusForResult(effectiveResult)
   const targetUrl = `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
   const published = await githubRequest(`/statuses/${dispatch.expected_head_sha}`, {
