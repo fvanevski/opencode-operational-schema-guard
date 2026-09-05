@@ -1,9 +1,8 @@
 #!/usr/bin/env node
 import { spawnSync } from "node:child_process"
-import { constants } from "node:fs"
-import { lstatSync, readlinkSync } from "node:fs"
+import { closeSync, constants, lstatSync, openSync, readSync, readlinkSync, statSync } from "node:fs"
 import { access, mkdir, readFile, rm, writeFile } from "node:fs/promises"
-import { dirname, resolve } from "node:path"
+import { dirname, join, resolve } from "node:path"
 import {
   EXECUTION_SCHEMA,
   RUNNER_IMAGE_SCHEMA,
@@ -33,6 +32,36 @@ function exactCommandOutput(argv) {
   const result = commandOutput(argv)
   if (result.status !== 0) throw new Error(`${argv[0]} failed with exit ${result.status}: ${(result.stderr ?? "").trim()}`)
   return (result.stdout ?? "").trim()
+}
+
+const COMMAND_TAIL_BYTES = 1024 * 1024
+
+function readTail(path, maxBytes = COMMAND_TAIL_BYTES) {
+  const size = statSync(path).size
+  const length = Math.min(size, maxBytes)
+  const buffer = Buffer.alloc(length)
+  const fd = openSync(path, "r")
+  try {
+    if (length > 0) readSync(fd, buffer, 0, length, Math.max(0, size - length))
+  } finally {
+    closeSync(fd)
+  }
+  return { text: buffer.toString("utf8"), bytes: size, truncated: size > length }
+}
+
+function candidateCommandOutput(argv, logRoot, commandId, options = {}) {
+  const stdoutPath = join(logRoot, `${commandId}.stdout.log`)
+  const stderrPath = join(logRoot, `${commandId}.stderr.log`)
+  const stdoutFd = openSync(stdoutPath, "wx", 0o600)
+  const stderrFd = openSync(stderrPath, "wx", 0o600)
+  let result
+  try {
+    result = spawnSync(argv[0], argv.slice(1), { shell: false, stdio: ["ignore", stdoutFd, stderrFd], ...options })
+  } finally {
+    closeSync(stdoutFd)
+    closeSync(stderrFd)
+  }
+  return { result, stdout: readTail(stdoutPath), stderr: readTail(stderrPath) }
 }
 
 function boundedVersion(value, field) {
@@ -243,15 +272,28 @@ async function main() {
 
     for (const command of profile.commands) {
       process.stdout.write(`GHDEV_ACTIONS_EXECUTOR_COMMAND: ${command.id}\n`)
-      const run = commandOutput(["/usr/bin/bwrap", ...sandboxArgs(candidatePath, command.argv)], { env: { PATH: "/usr/bin:/bin" } })
-      if (run.stdout) process.stdout.write(run.stdout)
-      if (run.stderr) process.stderr.write(run.stderr)
+      const capture = candidateCommandOutput(["/usr/bin/bwrap", ...sandboxArgs(candidatePath, command.argv)], dirname(outputPath), command.id, { env: { PATH: "/usr/bin:/bin" } })
+      const run = capture.result
+      if (capture.stdout.text) process.stdout.write(capture.stdout.text)
+      if (capture.stderr.text) process.stderr.write(capture.stderr.text)
+      if (run.error) {
+        record.result = "BLOCKED"
+        record.block_reason = "COMMAND_SPAWN_ERROR"
+        process.stderr.write(`GHDEV_ACTIONS_EXECUTOR: BLOCKED; command ${command.id} spawn failed: ${run.error.code ?? run.error.message}\n`)
+        break
+      }
       const exit = Number.isSafeInteger(run.status) ? run.status : null
       const signal = typeof run.signal === "string" ? run.signal : null
+      if (exit === null && signal === null) {
+        record.result = "BLOCKED"
+        record.block_reason = "SETUP_OR_ISOLATION_ERROR"
+        process.stderr.write(`GHDEV_ACTIONS_EXECUTOR: BLOCKED; command ${command.id} returned no exit or signal\n`)
+        break
+      }
       record.commands_run += 1
       record.per_command_exit.push({ id: command.id, exit, signal })
       if (command.collect_test_totals === "node-tap") {
-        const totals = parseNodeTapTotals(`${run.stdout ?? ""}\n${run.stderr ?? ""}`)
+        const totals = parseNodeTapTotals(`${capture.stdout.text}\n${capture.stderr.text}`)
         if (totals) {
           record.npm_test_count = totals.count
           record.npm_test_pass = totals.pass
