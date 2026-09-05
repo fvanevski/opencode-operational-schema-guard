@@ -344,6 +344,24 @@ test("missing or changed owner-final identity prevents a STALE terminal from min
   }
 })
 
+test("same-SHA strict-start declaration cannot escape persisted target owner-reconciliation lifecycle", async (t) => {
+  const f = await mismatchedGuard(t, "same-sha-strict-keeps-lifecycle")
+  const base = "b".repeat(40)
+  const assessmentID = `same-sha-${Math.random().toString(16).slice(2, 8)}`
+  const written = await writeSpec(makeSpec({ assessmentID, base, target: f.target }))
+  const assessment = assessmentCommand(written.path)
+  await before(f.hooks, f.sessionID, "assessment", assessment)
+  await after(f.hooks, f.sessionID, "assessment", assessment, await assessmentOutput({ assessmentID, specSha256: written.sha256, base, target: f.target, observed: f.observed }))
+  assert.match(await compaction(f.hooks, f.sessionID), /Target lifecycle: OWNER_RECONCILIATION/)
+
+  await message(f.hooks, f.sessionID, `REQUIRED STARTING HEAD SHA: ${f.target}`)
+  const continuity = await compaction(f.hooks, f.sessionID)
+  assert.match(continuity, new RegExp(`Authority: ${f.target}`))
+  assert.match(continuity, /mode: target/)
+  assert.match(continuity, /Target lifecycle: OWNER_RECONCILIATION/)
+  await assert.doesNotReject(() => before(f.hooks, f.sessionID, "reconcile", reconciliationCommand(written.path, f.observed, base, f.target)))
+})
+
 test("explicit strict-start authority declaration supersedes an incompatible persisted owner-reconciliation lifecycle", async (t) => {
   const f = await mismatchedGuard(t, "explicit-strict-supersedes-lifecycle")
   const base = "b".repeat(40)
