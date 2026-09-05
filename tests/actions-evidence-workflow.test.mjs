@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises"
 import test from "node:test"
 
 const workflow = await readFile(new URL("../.github/workflows/ghdev-verify.yml", import.meta.url), "utf8")
+const controller = await readFile(new URL("../scripts/ghdev-actions-controller.mjs", import.meta.url), "utf8")
 const executor = await readFile(new URL("../scripts/ghdev-actions-executor.mjs", import.meta.url), "utf8")
 const publisher = await readFile(new URL("../scripts/ghdev-actions-publisher.mjs", import.meta.url), "utf8")
 
@@ -37,6 +38,14 @@ test("candidate sandbox clears environment, unshares namespaces, and mounts sour
   assert.match(executor, /"--ro-bind", candidatePath, "\/workspace"/)
   assert.match(executor, /candidate_environment: "clearenv-allowlist"/)
   assert.match(executor, /network: "unshared"/)
+})
+
+test("self-certification census is derived from immutable expected-base and expected-head Git trees", () => {
+  assert.doesNotMatch(controller, /\/pulls\/\$\{prNumber\}\/files/)
+  assert.match(controller, /githubJson\(`\/git\/commits\/\$\{commitSha\}`\)/)
+  assert.match(controller, /githubJson\(`\/git\/trees\/\$\{treeSha\}\?recursive=1`\)/)
+  assert.match(controller, /response\.truncated === true/)
+  assert.match(controller, /changedPaths\(dispatch\.expected_base_sha, dispatch\.expected_head_sha\)/)
 })
 
 test("candidate checkout happens only after the self-hosted remote recheck", () => {
@@ -85,10 +94,21 @@ test("candidate command output is file-backed and bounded independently of spawn
   assert.match(executor, /const COMMAND_TAIL_BYTES = 1024 \* 1024/)
   assert.match(executor, /openSync\(stdoutPath, "wx", 0o600\)/)
   assert.match(executor, /openSync\(stderrPath, "wx", 0o600\)/)
-  assert.match(executor, /stdio: \["ignore", stdoutFd, stderrFd\]/)
+  assert.match(executor, /stdio: \["ignore", stdoutFd, stderrFd, "pipe"\]/)
   assert.match(executor, /candidateCommandOutput\(\["\/usr\/bin\/bwrap"/)
   assert.match(executor, /if \(run\.error\)/)
   assert.match(executor, /block_reason = "COMMAND_SPAWN_ERROR"/)
+})
+
+test("Bubblewrap child-start handshake precedes command accounting and isolation claims", () => {
+  assert.match(executor, /"--json-status-fd", "3"/)
+  assert.match(executor, /parseSandboxStatus\(run\.output\?\.\[3\]\)/)
+  const childProof = executor.indexOf("if (!sandboxStatus.child_started)")
+  const environmentProof = executor.indexOf('record.environment.network = "unshared"')
+  const commandAccounting = executor.indexOf("record.commands_run += 1")
+  assert.ok(childProof >= 0 && environmentProof > childProof && commandAccounting > environmentProof)
+  assert.match(executor, /never reached sandbox child startup/)
+  assert.match(executor, /block_reason = "SETUP_OR_ISOLATION_ERROR"/)
 })
 
 test("publisher prioritizes final source movement as STALE over a simultaneous PR closure", () => {
