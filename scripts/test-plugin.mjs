@@ -23,6 +23,8 @@ const tests = [
   "tests/session-trace-assessment.test.mjs",
   "tests/actions-evidence.test.mjs",
   "tests/actions-evidence-workflow.test.mjs",
+  "tests/hybrid-workflow.test.mjs",
+  "tests/hybrid-workflow-guard.test.mjs",
 ]
 const child = spawn(process.execPath, ["--test", "--test-reporter=tap", ...tests], { cwd: root, stdio: "inherit", shell: false })
 child.on("error", (error) => {
