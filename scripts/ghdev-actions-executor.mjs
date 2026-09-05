@@ -161,6 +161,7 @@ function validateImageMarker(marker) {
   if (!new Set(["ubuntu", "debian"]).has(marker.os_id)) throw new Error("runner image marker os_id must be ubuntu or debian")
   if (typeof marker.os_version_id !== "string" || marker.os_version_id.length < 1) throw new Error("runner image marker os_version_id missing")
   if (!Number.isSafeInteger(marker.node_major) || marker.node_major !== 22) throw new Error("runner image marker node_major must be 22")
+  if (!Number.isSafeInteger(marker.python_major) || marker.python_major !== 3) throw new Error("runner image marker python_major must be 3")
   if (marker.sandbox !== "bubblewrap-no-network-v1") throw new Error("runner image marker sandbox mismatch")
   if (typeof marker.image_id !== "string" || marker.image_id.length < 1 || marker.image_id.length > 128) throw new Error("runner image marker image_id invalid")
   if (typeof marker.base_image_digest !== "string" || !/^sha256:[0-9a-f]{64}$/.test(marker.base_image_digest)) throw new Error("runner image marker base_image_digest must be an exact sha256 digest")
@@ -187,14 +188,18 @@ function emptyEnvironment(profile) {
     image_id: null,
     base_image_digest: null,
     actions_runner_version: null,
+    git_version: null,
     node_version: null,
     npm_version: null,
+    python_version: null,
     bwrap_version: null,
     os_id: null,
     os_version_id: null,
     os_release_fingerprint: null,
+    git_sha256: null,
     node_sha256: null,
     npm_sha256: null,
+    python_sha256: null,
     bwrap_sha256: null,
     sandbox: profile.runner.sandbox,
     network: "not-executed",
@@ -273,11 +278,14 @@ async function main() {
     record.observed_candidate_head_initial = observedCandidateInitial
     record.observed_candidate_head_final = observedCandidateInitial
 
-    for (const tool of ["/usr/bin/git", "/usr/bin/node", "/usr/bin/npm", "/usr/bin/bwrap"]) await access(tool, constants.X_OK)
+    for (const tool of ["/usr/bin/git", "/usr/bin/node", "/usr/bin/npm", "/usr/bin/python3", "/usr/bin/bwrap"]) await access(tool, constants.X_OK)
+    const gitVersion = boundedVersion(exactCommandOutput(["/usr/bin/git", "--version"]), "git")
     const nodeVersion = boundedVersion(exactCommandOutput(["/usr/bin/node", "--version"]), "node")
     const npmVersion = boundedVersion(exactCommandOutput(["/usr/bin/npm", "--version"]), "npm")
+    const pythonVersion = boundedVersion(exactCommandOutput(["/usr/bin/python3", "--version"]), "python")
     const bwrapVersion = boundedVersion(exactCommandOutput(["/usr/bin/bwrap", "--version"]), "bwrap")
     if (!/^v22\./.test(nodeVersion)) throw new Error(`self-hosted runner must provide Node 22; observed ${nodeVersion}`)
+    if (!/^Python 3\./.test(pythonVersion)) throw new Error(`self-hosted runner must provide Python 3; observed ${pythonVersion}`)
 
     const markerBytes = await readFile(imageMarkerPath)
     const marker = validateImageMarker(JSON.parse(markerBytes.toString("utf8")))
@@ -292,14 +300,18 @@ async function main() {
       image_id: marker.image_id,
       base_image_digest: marker.base_image_digest,
       actions_runner_version: marker.actions_runner_version,
+      git_version: gitVersion,
       node_version: nodeVersion,
       npm_version: npmVersion,
+      python_version: pythonVersion,
       bwrap_version: bwrapVersion,
       os_id: osRelease.ID,
       os_version_id: osRelease.VERSION_ID,
       os_release_fingerprint: sha256Hex(osReleaseBytes),
+      git_sha256: sha256Hex(await readFile("/usr/bin/git")),
       node_sha256: sha256Hex(await readFile("/usr/bin/node")),
       npm_sha256: sha256Hex(await readFile("/usr/bin/npm")),
+      python_sha256: sha256Hex(await readFile("/usr/bin/python3")),
       bwrap_sha256: sha256Hex(await readFile("/usr/bin/bwrap")),
       sandbox: profile.runner.sandbox,
       network: "not-executed",
