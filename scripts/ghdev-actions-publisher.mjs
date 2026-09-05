@@ -136,17 +136,28 @@ async function statusMode(profile, dispatch) {
   const effectiveResult = publication.result === "PASS" ? receipt.result : publication.result
   const status = statusForResult(effectiveResult)
   const targetUrl = `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
-  const published = await githubRequest(`/statuses/${dispatch.expected_head_sha}`, {
+  const description = `${status.description}; receipt ${receipt.receipt_sha256.slice(0, 12)}`
+  const statusPath = `/statuses/${dispatch.expected_head_sha}`
+  const expectedStatusUrl = `https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}${statusPath}`
+  const published = await githubRequest(statusPath, {
     method: "POST",
     body: JSON.stringify({
       state: status.state,
       context: STATUS_CONTEXT,
-      description: `${status.description}; receipt ${receipt.receipt_sha256.slice(0, 12)}`,
+      description,
       target_url: targetUrl,
     }),
   })
-  if (!Number.isSafeInteger(published?.id) || published.id < 1 || published?.sha !== dispatch.expected_head_sha || published?.context !== STATUS_CONTEXT) {
-    fail("published status readback did not bind to the intended exact head/context")
+  if (
+    !Number.isSafeInteger(published?.id)
+    || published.id < 1
+    || published?.url !== expectedStatusUrl
+    || published?.context !== STATUS_CONTEXT
+    || published?.state !== status.state
+    || published?.description !== description
+    || published?.target_url !== targetUrl
+  ) {
+    fail("published status response did not bind to the intended exact head/context/result")
   }
   await writeOutputs({ effective_result: effectiveResult, status_id: published.id, receipt_artifact_id: receiptArtifactId })
   process.stdout.write(`GHDEV_ACTIONS_PUBLISHER: STATUS_${effectiveResult}; head=${dispatch.expected_head_sha}; status_id=${published.id}; receipt_artifact_id=${receiptArtifactId}\n`)
