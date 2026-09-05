@@ -27,9 +27,18 @@ For work that may exceed a child packet's bounded limits, stage an `opencode-chi
 /home/filip/.config/opencode/plugins/operational-schema-v5/scripts/plan-child-work.mjs --spec /tmp/opencode/verify/materials/<plan>.json
 ```
 
-The planner uses target count, file size, diff size/hunk complexity, and production-vs-test/document role to produce stable `READY` or `PARTITION_REQUIRED` packets with complete unique target coverage. If one target cannot be represented safely, it returns `UNREPRESENTABLE`; it never truncates or silently drops scope.
+The planner uses target count, file size, diff size/hunk complexity, and production-vs-test/document role to produce stable `READY` or `PARTITION_REQUIRED` packets with complete unique target coverage. If one target cannot be represented safely, it returns `UNREPRESENTABLE`; it never truncates or silently drops scope. Live Task preflight invokes the same planner when exact authority and explicit targets are available; partition-required preflight returns the canonical rendered partition packets rather than asking the child LLM to discover or hand-split limits.
 
-Repository-final deterministic Verify uses the trusted self-hosted Actions evidence class when a current equivalent Slice-K receipt exists. Evidence reuse is keyed by exact candidate head and generation/scope plus profile, dependency/config, environment, and producer fingerprints. A mismatched head or provenance component invalidates reuse; an Actions receipt never substitutes for semantic review or host/runtime/service-specific evidence. Child result parsing accepts benign semicolon/multiline/field-order/whitespace variation but still rejects duplicate/conflicting required fields, missing fields, incidental narrative markers, and incomplete success counts.
+Replay the deterministic Issue #15 friction fixture in both supported semantic-review modes with:
+
+```text
+scripts/replay-issue15-friction.mjs --mode central-owned
+scripts/replay-issue15-friction.mjs --mode local-fresh-review
+```
+
+The report preserves the archived Issue #15 baseline counts as source-labeled evidence, leaves baseline values `null` when the issue did not state a trustworthy count, and reports measured fixture wall-clock duration plus child launches, planner partitions, elisions, receipt reuse, avoided local Verify/full-suite executions, terminal normalizations, and preventable capability events.
+
+Repository-final deterministic Verify uses the trusted self-hosted Actions evidence class when a current equivalent Slice-K receipt exists. Evidence reuse is keyed by exact candidate head and generation/scope plus profile, dependency/config, environment, and stable trusted producer/controller fingerprints. The immutable workflow run/artifact identity and command/test counts remain attached to each receipt, but run-specific artifact IDs are not themselves producer-equivalence keys. A mismatched head or dependent provenance component invalidates reuse; an Actions receipt never substitutes for semantic review or host/runtime/service-specific evidence. Child result parsing accepts benign semicolon/multiline/field-order/whitespace variation but still rejects duplicate/conflicting required fields, missing fields, incidental narrative markers, and incomplete success counts. Gateway-owned detached assessment may preserve a pre-existing dirty owner checkout only by proving an exact Git-visible dirty-state content fingerprint before and after; repository-owned/base-authority assessment remains strictly clean-owner-only.
 
 ## Session trace audits
 
