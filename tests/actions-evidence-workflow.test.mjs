@@ -52,9 +52,12 @@ test("immutable receipt artifact is published before the final exact-head status
   assert.ok(build >= 0 && upload > build && status > upload)
 })
 
-test("executor cleanup removes both run-root and execution scratch state", () => {
-  assert.match(workflow, /rm -rf -- "\$GHDEV_RUN_ROOT" "\$GHDEV_EXECUTION_DIR"/)
-  assert.match(workflow, /test ! -e "\$GHDEV_RUN_ROOT"/)
+test("executor resets the dedicated workspace parent and removes it after the job", () => {
+  assert.match(workflow, /rm -rf -- "\$GHDEV_RUN_PARENT"/)
+  assert.match(workflow, /mkdir -p -- "\$GHDEV_RUN_PARENT"/)
+  assert.match(workflow, /test ! -L "\$GHDEV_RUN_PARENT"/)
+  assert.match(workflow, /rm -rf -- "\$GHDEV_RUN_PARENT" "\$GHDEV_EXECUTION_DIR"/)
+  assert.match(workflow, /test ! -e "\$GHDEV_RUN_PARENT"/)
   assert.match(workflow, /test ! -e "\$GHDEV_EXECUTION_DIR"/)
 })
 
