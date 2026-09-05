@@ -36,8 +36,8 @@ test("candidate sandbox clears environment, unshares namespaces, and mounts sour
   assert.match(executor, /"--cap-drop", "ALL"/)
   assert.match(executor, /"--clearenv"/)
   assert.match(executor, /"--ro-bind", candidatePath, "\/workspace"/)
-  assert.match(executor, /candidate_environment: "clearenv-allowlist"/)
-  assert.match(executor, /network: "unshared"/)
+  assert.match(executor, /record\.environment\.candidate_environment = "clearenv-allowlist"/)
+  assert.match(executor, /record\.environment\.network = "unshared"/)
 })
 
 test("self-certification census is derived from immutable expected-base and expected-head Git trees", () => {
