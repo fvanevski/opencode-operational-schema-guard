@@ -1804,6 +1804,53 @@ test("new binding after terminal target release starts a fresh authority epoch",
   await assert.rejects(() => before(hooks, newParent, "commit-after-release-rebind", "bash", { command: "git commit -m new" }), /fresh-review/)
 })
 
+test("same-SHA strict-start to target mode transition starts a fresh delegation authority epoch", async () => {
+  const hooks = createOperationGuard({ directory: "/tmp/project-same-sha-mode-epoch", env: {} })
+  const target = "a".repeat(40)
+  const observed = "b".repeat(40)
+  const oldParent = "parent-strict-mode-epoch"
+  const newParent = "parent-target-mode-epoch"
+  const proofArgs = { command: "git rev-parse HEAD" }
+
+  for (const [index, name] of ["a", "b", "c"].entries()) await before(hooks, oldParent, `edit-${index}`, "edit", { filePath: `src/${name}.py` })
+  await message(hooks, oldParent, "build", `REQUIRED STARTING HEAD SHA: ${target}`)
+  await before(hooks, oldParent, "proof-mismatch", "bash", proofArgs)
+  await after(hooks, oldParent, "proof-mismatch", "bash", proofArgs, { output: `${observed}\n`, metadata: { exit: 0 } })
+
+  const review = taskArgs({ subagent_type: "fresh-review", prompt: "Scope: strict-mode review\nQuestions:\n- Is the bounded diff clean?\nStop condition: all changed production paths are reviewed." })
+  await register(hooks, "review-strict-mode", "fresh-review")
+  await hooks.event({ event: { type: "message.updated", properties: { info: { sessionID: "review-strict-mode", role: "assistant", finish: "stop" } } } })
+  await before(hooks, oldParent, "review-strict", "task", review)
+  await after(hooks, oldParent, "review-strict", "task", review, { output: reviewClean("No findings. src/a.py src/b.py src/c.py", 3), metadata: { sessionId: "review-strict-mode" } })
+
+  const verify = taskArgs({ subagent_type: "verify", prompt: "Scope: strict-mode gates\nQuestions:\n- Do the bounded gates pass?\nStop condition: all requested commands have exit status." })
+  await register(hooks, "verify-strict-mode", "verify")
+  await hooks.event({ event: { type: "message.updated", properties: { info: { sessionID: "verify-strict-mode", role: "assistant", finish: "stop" } } } })
+  await before(hooks, oldParent, "verify-strict", "task", verify)
+  await after(hooks, oldParent, "verify-strict", "task", verify, { output: "OPERATIONAL_RESULT: PASS; COMMANDS_RUN: 2; COMMANDS_REQUIRED: 2", metadata: { sessionId: "verify-strict-mode" } })
+
+  const explore = taskArgs({ subagent_type: "explore", prompt: "Scope: strict-mode pending flow\nQuestions:\n- Trace one bounded path.\nStop condition: one exact path is reported." })
+  await before(hooks, oldParent, "explore-strict-old", "task", explore)
+  await register(hooks, "child-strict-mode-old", "explore")
+  await before(hooks, oldParent, "failed-strict-old", "task", taskArgs())
+  await taskFailureEvent(hooks, oldParent, "failed-strict-old", "Subagent failed (task_id: ses_strict_mode_resume): provider network timeout")
+
+  await message(hooks, newParent, "build", `REQUIRED EXACT HEAD: ${target}`)
+  const continuity = { context: [] }
+  await hooks["experimental.session.compacting"]({ sessionID: newParent }, continuity)
+  assert.match(continuity.context.join("\n"), new RegExp(`Authority: ${target}`))
+  assert.match(continuity.context.join("\n"), /mode: target/)
+  assert.match(continuity.context.join("\n"), /Fresh-review generation: 0; Verify generation: 0/)
+
+  await hooks.event({ event: { type: "message.updated", properties: { info: { sessionID: "child-strict-mode-old", role: "assistant", finish: "stop" } } } })
+  const staleExplore = await after(hooks, oldParent, "explore-strict-old", "task", explore, { output: exploreComplete("src/old.py", 1), metadata: { sessionId: "child-strict-mode-old" } })
+  assert.equal(staleExplore.metadata.operationalSchema, undefined)
+  await assert.rejects(
+    () => before(hooks, oldParent, "resume-strict-old", "task", taskArgs({ task_id: "ses_strict_mode_resume" })),
+    /not an admitted resumable failure/,
+  )
+})
+
 test("explicit authority change invalidates in-flight old-head child results before they can re-establish gates", async () => {
   const hooks = createOperationGuard({ directory: "/tmp/project-authority-inflight", env: {} })
   const first = "a".repeat(40)
