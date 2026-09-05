@@ -4,6 +4,7 @@ import test from "node:test"
 
 const workflow = await readFile(new URL("../.github/workflows/ghdev-verify.yml", import.meta.url), "utf8")
 const executor = await readFile(new URL("../scripts/ghdev-actions-executor.mjs", import.meta.url), "utf8")
+const publisher = await readFile(new URL("../scripts/ghdev-actions-publisher.mjs", import.meta.url), "utf8")
 
 test("evidence workflow is dispatch-only and never uses pull_request_target", () => {
   assert.match(workflow, /\bon:\n\s+workflow_dispatch:/)
@@ -88,4 +89,13 @@ test("candidate command output is file-backed and bounded independently of spawn
   assert.match(executor, /candidateCommandOutput\(\["\/usr\/bin\/bwrap"/)
   assert.match(executor, /if \(run\.error\)/)
   assert.match(executor, /block_reason = "COMMAND_SPAWN_ERROR"/)
+})
+
+test("publisher prioritizes final source movement as STALE over a simultaneous PR closure", () => {
+  const identityHelper = publisher.match(/function publicationIdentity\([\s\S]*?\n}\n\nasync function buildMode/)?.[0] ?? ""
+  assert.ok(identityHelper)
+  assert.match(identityHelper, /observedBaseSha !== dispatch\.expected_base_sha \|\| observedHeadSha !== dispatch\.expected_head_sha/)
+  assert.match(identityHelper, /if \(sourceMoved\) return \{ result: "STALE", reason: "REMOTE_IDENTITY_CHANGED"/)
+  assert.match(publisher, /finalIdentityResult: publication\.result/)
+  assert.match(publisher, /const effectiveResult = publication\.result === "PASS" \? receipt\.result : publication\.result/)
 })
