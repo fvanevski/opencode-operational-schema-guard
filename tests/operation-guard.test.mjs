@@ -1812,6 +1812,7 @@ test("same-SHA strict-start to target mode transition starts a fresh delegation 
   const newParent = "parent-target-mode-epoch"
   const proofArgs = { command: "git rev-parse HEAD" }
 
+  await register(hooks, oldParent, "build")
   for (const [index, name] of ["a", "b", "c"].entries()) await before(hooks, oldParent, `edit-${index}`, "edit", { filePath: `src/${name}.py` })
   await message(hooks, oldParent, "build", `REQUIRED STARTING HEAD SHA: ${target}`)
   await before(hooks, oldParent, "proof-mismatch", "bash", proofArgs)
@@ -1834,6 +1835,10 @@ test("same-SHA strict-start to target mode transition starts a fresh delegation 
   await register(hooks, "child-strict-mode-old", "explore")
   await before(hooks, oldParent, "failed-strict-old", "task", taskArgs())
   await taskFailureEvent(hooks, oldParent, "failed-strict-old", "Subagent failed (task_id: ses_strict_mode_resume): provider network timeout")
+
+  const beforeTransition = { context: [] }
+  await hooks["experimental.session.compacting"]({ sessionID: oldParent }, beforeTransition)
+  assert.match(beforeTransition.context.join("\n"), /Edit generation: 3; Fresh-review generation: 3; Verify generation: 3/)
 
   await message(hooks, newParent, "build", `REQUIRED EXACT HEAD: ${target}`)
   const continuity = { context: [] }
