@@ -129,3 +129,12 @@ test("publisher prioritizes final source movement as STALE over a simultaneous P
   assert.match(publisher, /finalIdentityResult: publication\.result/)
   assert.match(publisher, /const effectiveResult = publication\.result === "PASS" \? receipt\.result : publication\.result/)
 })
+
+test("publisher binds status response through the exact-head status URL instead of a nonexistent sha field", () => {
+  assert.doesNotMatch(publisher, /published\?\.sha/)
+  assert.match(publisher, /const statusPath = `\/statuses\/\$\{dispatch\.expected_head_sha\}`/)
+  assert.match(publisher, /const expectedStatusUrl = `https:\/\/api\.github\.com\/repos\/\$\{process\.env\.GITHUB_REPOSITORY\}\$\{statusPath\}`/)
+  assert.match(publisher, /published\?\.url !== expectedStatusUrl/)
+  assert.match(publisher, /published\?\.state !== status\.state/)
+  assert.match(publisher, /published\?\.target_url !== targetUrl/)
+})
