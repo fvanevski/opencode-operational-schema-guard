@@ -188,6 +188,71 @@ async function mismatchedGuard(t, label, { target = "d".repeat(40), observed = "
   return { hooks, sessionID, stateDirectory, directory, target, observed }
 }
 
+test("LF and CRLF backslash continuations are accepted identically by exact assessment and reconciliation layers", async (t) => {
+  for (const [name, eol] of [["lf", "\n"], ["crlf", "\r\n"]]) {
+    const f = await mismatchedGuard(t, `continued-${name}`)
+    const base = "b".repeat(40)
+    const assessmentID = `continued-${name}-${Math.random().toString(16).slice(2, 8)}`
+    const written = await writeSpec(makeSpec({ assessmentID, base, target: f.target }))
+    const assessment = { command: `${ASSESSMENT_RUNNER} \\${eol}  --spec ${written.path}` }
+    await assert.doesNotReject(() => before(f.hooks, f.sessionID, "assessment", assessment))
+    const stale = await after(f.hooks, f.sessionID, "assessment", assessment, await assessmentOutput({ assessmentID, specSha256: written.sha256, base, target: f.target, observed: f.observed }))
+    assert.match(stale.output, /ASSESSMENT_TERMINAL -> OWNER_RECONCILIATION/)
+    assert.match(await compaction(f.hooks, f.sessionID), /Target lifecycle: OWNER_RECONCILIATION/)
+
+    const reconciliation = {
+      command: [
+        `${RECONCILIATION_RUNNER} \\`,
+        `  --spec ${written.path} \\`,
+        `  --expected-old-sha ${f.observed} \\`,
+        `  --expected-base-sha ${base} \\`,
+        `  --expected-target-sha ${f.target}`,
+      ].join(eol),
+    }
+    await assert.doesNotReject(() => before(f.hooks, f.sessionID, "reconcile", reconciliation))
+    const reconciled = await after(f.hooks, f.sessionID, "reconcile", reconciliation, reconciliationOutput({ assessmentID, specSha256: written.sha256, oldSha: f.observed, base, target: f.target }))
+    assert.match(reconciled.output, /OWNER_RECONCILIATION -> TARGET_RELEASED/)
+    assert.match(await compaction(f.hooks, f.sessionID), /Authority: unbound/)
+  }
+})
+
+test("malformed multiline assessment cannot mint lifecycle and malformed reconciliation cannot consume it", async (t) => {
+  const f = await mismatchedGuard(t, "malformed-multiline")
+  const base = "b".repeat(40)
+  const assessmentID = `malformed-${Math.random().toString(16).slice(2, 8)}`
+  const written = await writeSpec(makeSpec({ assessmentID, base, target: f.target }))
+  for (const [index, command] of [
+    `${ASSESSMENT_RUNNER}\n--spec ${written.path}`,
+    `${ASSESSMENT_RUNNER} --spec ${written.path}\n`,
+    `\n${ASSESSMENT_RUNNER} --spec ${written.path}`,
+  ].entries()) {
+    await assert.rejects(() => before(f.hooks, f.sessionID, `malformed-assessment-${index}`, { command }), /one bare invocation/)
+    assert.doesNotMatch(await compaction(f.hooks, f.sessionID), /Target lifecycle: OWNER_RECONCILIATION/)
+  }
+  await assert.rejects(
+    () => before(f.hooks, f.sessionID, "premature-reconcile", reconciliationCommand(written.path, f.observed, base, f.target)),
+    /not admitted by a generic target mismatch.*clean-owner-behind-base STALE/s,
+  )
+
+  const assessment = assessmentCommand(written.path)
+  await before(f.hooks, f.sessionID, "assessment", assessment)
+  await after(f.hooks, f.sessionID, "assessment", assessment, await assessmentOutput({ assessmentID, specSha256: written.sha256, base, target: f.target, observed: f.observed }))
+  assert.match(await compaction(f.hooks, f.sessionID), /Target lifecycle: OWNER_RECONCILIATION/)
+
+  for (const [index, command] of [
+    `${RECONCILIATION_RUNNER} \\ \n --spec ${written.path} --expected-old-sha ${f.observed} --expected-base-sha ${base} --expected-target-sha ${f.target}`,
+    `${RECONCILIATION_RUNNER} --spec ${written.path} --expected-old-sha ${f.observed} --expected-base-sha ${base} --expected-target-sha ${f.target}\n`,
+  ].entries()) {
+    await assert.rejects(() => before(f.hooks, f.sessionID, `malformed-reconcile-${index}`, { command }), /one bare invocation/)
+    assert.match(await compaction(f.hooks, f.sessionID), /Target lifecycle: OWNER_RECONCILIATION/)
+  }
+
+  const exactReconciliation = reconciliationCommand(written.path, f.observed, base, f.target)
+  await before(f.hooks, f.sessionID, "exact-reconcile", exactReconciliation)
+  await after(f.hooks, f.sessionID, "exact-reconcile", exactReconciliation, reconciliationOutput({ assessmentID, specSha256: written.sha256, oldSha: f.observed, base, target: f.target }))
+  assert.match(await compaction(f.hooks, f.sessionID), /Authority: unbound/)
+})
+
 test("cross-target assessment spec is rejected before execution", async (t) => {
   const f = await mismatchedGuard(t, "cross-target")
   const written = await writeSpec(makeSpec({ assessmentID: `cross-${Math.random().toString(16).slice(2, 8)}`, base: "b".repeat(40), target: "e".repeat(40) }))
@@ -277,6 +342,97 @@ test("missing or changed owner-final identity prevents a STALE terminal from min
     assert.match(stale.output, /ASSESSMENT_TERMINAL -> TARGET_BOUND; result=STALE; reconciliation=not-admitted/, name)
     assert.doesNotMatch(stale.output, /OPERATIONAL_TARGET_RECONCILIATION: admitted/, name)
   }
+})
+
+test("same-SHA strict-start declaration cannot escape persisted target owner-reconciliation lifecycle", async (t) => {
+  const f = await mismatchedGuard(t, "same-sha-strict-keeps-lifecycle")
+  const base = "b".repeat(40)
+  const assessmentID = `same-sha-${Math.random().toString(16).slice(2, 8)}`
+  const written = await writeSpec(makeSpec({ assessmentID, base, target: f.target }))
+  const assessment = assessmentCommand(written.path)
+  await before(f.hooks, f.sessionID, "assessment", assessment)
+  await after(f.hooks, f.sessionID, "assessment", assessment, await assessmentOutput({ assessmentID, specSha256: written.sha256, base, target: f.target, observed: f.observed }))
+  assert.match(await compaction(f.hooks, f.sessionID), /Target lifecycle: OWNER_RECONCILIATION/)
+
+  await message(f.hooks, f.sessionID, `REQUIRED STARTING HEAD SHA: ${f.target}`)
+  const continuity = await compaction(f.hooks, f.sessionID)
+  assert.match(continuity, new RegExp(`Authority: ${f.target}`))
+  assert.match(continuity, /mode: target/)
+  assert.match(continuity, /Target lifecycle: OWNER_RECONCILIATION/)
+  await assert.doesNotReject(() => before(f.hooks, f.sessionID, "reconcile", reconciliationCommand(written.path, f.observed, base, f.target)))
+})
+
+test("explicit strict-start authority declaration supersedes an incompatible persisted owner-reconciliation lifecycle", async (t) => {
+  const f = await mismatchedGuard(t, "explicit-strict-supersedes-lifecycle")
+  const base = "b".repeat(40)
+  const assessmentID = `supersede-${Math.random().toString(16).slice(2, 8)}`
+  const written = await writeSpec(makeSpec({ assessmentID, base, target: f.target }))
+  const assessment = assessmentCommand(written.path)
+  await before(f.hooks, f.sessionID, "assessment", assessment)
+  await after(f.hooks, f.sessionID, "assessment", assessment, await assessmentOutput({ assessmentID, specSha256: written.sha256, base, target: f.target, observed: f.observed }))
+  assert.match(await compaction(f.hooks, f.sessionID), /Target lifecycle: OWNER_RECONCILIATION/)
+
+  const next = "e".repeat(40)
+  await message(f.hooks, f.sessionID, `REQUIRED STARTING HEAD SHA: ${next}`)
+  const continuity = await compaction(f.hooks, f.sessionID)
+  assert.match(continuity, new RegExp(`Authority: ${next}`))
+  assert.match(continuity, /mode: strict-start/)
+  assert.doesNotMatch(continuity, /Target lifecycle: OWNER_RECONCILIATION/)
+  await assert.rejects(
+    () => before(f.hooks, f.sessionID, "stale-reconcile", reconciliationCommand(written.path, f.observed, base, f.target)),
+    /available only for exact-head target authority|requires a persisted exact-head target authority/,
+  )
+})
+
+test("authority away-and-back invalidates an in-flight assessment admission from the prior epoch", async (t) => {
+  const f = await mismatchedGuard(t, "assessment-epoch-reuse")
+  const base = "b".repeat(40)
+  const assessmentID = `assessment-epoch-${Math.random().toString(16).slice(2, 8)}`
+  const written = await writeSpec(makeSpec({ assessmentID, base, target: f.target }))
+  const assessment = assessmentCommand(written.path)
+  await before(f.hooks, f.sessionID, "old-assessment", assessment)
+
+  const alternate = "e".repeat(40)
+  await message(f.hooks, f.sessionID, `REQUIRED STARTING HEAD SHA: ${alternate}`)
+  await message(f.hooks, f.sessionID, `REQUIRED EXACT HEAD: ${f.target}`)
+
+  const stale = await after(f.hooks, f.sessionID, "old-assessment", assessment, await assessmentOutput({ assessmentID, specSha256: written.sha256, base, target: f.target, observed: f.observed }))
+  assert.match(stale.output, /REJECTED assessment terminal without matching admitted before-state/)
+  const continuity = await compaction(f.hooks, f.sessionID)
+  assert.match(continuity, new RegExp(`Authority: ${f.target}`))
+  assert.match(continuity, /mode: target/)
+  assert.doesNotMatch(continuity, /Target lifecycle: OWNER_RECONCILIATION/)
+})
+
+test("authority away-and-back invalidates an old reconciliation admission even if the same lifecycle identity is recreated", async (t) => {
+  const f = await mismatchedGuard(t, "reconciliation-epoch-reuse")
+  const base = "b".repeat(40)
+  const assessmentID = `reconciliation-epoch-${Math.random().toString(16).slice(2, 8)}`
+  const written = await writeSpec(makeSpec({ assessmentID, base, target: f.target }))
+  const assessment = assessmentCommand(written.path)
+  await before(f.hooks, f.sessionID, "assessment-old", assessment)
+  await after(f.hooks, f.sessionID, "assessment-old", assessment, await assessmentOutput({ assessmentID, specSha256: written.sha256, base, target: f.target, observed: f.observed }))
+  const reconciliation = reconciliationCommand(written.path, f.observed, base, f.target)
+  await before(f.hooks, f.sessionID, "reconcile-old", reconciliation)
+
+  const alternate = "e".repeat(40)
+  await message(f.hooks, f.sessionID, `REQUIRED STARTING HEAD SHA: ${alternate}`)
+  await message(f.hooks, f.sessionID, `REQUIRED EXACT HEAD: ${f.target}`)
+
+  await before(f.hooks, f.sessionID, "assessment-new", assessment)
+  await after(f.hooks, f.sessionID, "assessment-new", assessment, await assessmentOutput({ assessmentID, specSha256: written.sha256, base, target: f.target, observed: f.observed }))
+  assert.match(await compaction(f.hooks, f.sessionID), /Target lifecycle: OWNER_RECONCILIATION/)
+
+  const staleReconciliation = await after(f.hooks, f.sessionID, "reconcile-old", reconciliation, reconciliationOutput({ assessmentID, specSha256: written.sha256, oldSha: f.observed, base, target: f.target }))
+  assert.match(staleReconciliation.output, /REJECTED reconciliation result without matching admitted before-state/)
+  const continuity = await compaction(f.hooks, f.sessionID)
+  assert.match(continuity, new RegExp(`Authority: ${f.target}`))
+  assert.match(continuity, /Target lifecycle: OWNER_RECONCILIATION/)
+
+  const exactReconciliation = reconciliationCommand(written.path, f.observed, base, f.target)
+  await before(f.hooks, f.sessionID, "reconcile-new", exactReconciliation)
+  const reconciled = await after(f.hooks, f.sessionID, "reconcile-new", exactReconciliation, reconciliationOutput({ assessmentID, specSha256: written.sha256, oldSha: f.observed, base, target: f.target }))
+  assert.match(reconciled.output, /OWNER_RECONCILIATION -> TARGET_RELEASED/)
 })
 
 test("authenticated owner-base STALE persists exact reconciliation identity across plugin restart and blocks alternate HEAD movement", async (t) => {
