@@ -79,3 +79,13 @@ test("controller freshness is revalidated before execution and again by the publ
   assert.match(workflow, /Revalidate and build typed receipt/)
   assert.match(workflow, /Revalidate and publish exact-head status after artifact publication/)
 })
+
+test("candidate command output is file-backed and bounded independently of spawn buffers", () => {
+  assert.match(executor, /const COMMAND_TAIL_BYTES = 1024 \* 1024/)
+  assert.match(executor, /openSync\(stdoutPath, "wx", 0o600\)/)
+  assert.match(executor, /openSync\(stderrPath, "wx", 0o600\)/)
+  assert.match(executor, /stdio: \["ignore", stdoutFd, stderrFd\]/)
+  assert.match(executor, /candidateCommandOutput\(\["\/usr\/bin\/bwrap"/)
+  assert.match(executor, /if \(run\.error\)/)
+  assert.match(executor, /block_reason = "COMMAND_SPAWN_ERROR"/)
+})
