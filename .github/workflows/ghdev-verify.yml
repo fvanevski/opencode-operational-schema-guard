@@ -1,0 +1,249 @@
+name: GHDEV exact-head Verify
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: Canonical pull request number
+        required: true
+        type: string
+      expected_base_sha:
+        description: Exact current PR base SHA
+        required: true
+        type: string
+      expected_head_sha:
+        description: Exact canonical PR head SHA
+        required: true
+        type: string
+      expected_controller_sha:
+        description: Exact trusted main commit hosting this workflow/profile
+        required: true
+        type: string
+      profile:
+        description: Trusted evidence profile
+        required: true
+        type: choice
+        options:
+          - repository-final-v1
+
+permissions: {}
+
+jobs:
+  controller:
+    name: trusted controller
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      observed_base_sha: ${{ steps.preflight.outputs.observed_base_sha }}
+      observed_head_sha: ${{ steps.preflight.outputs.observed_head_sha }}
+      controller_sha: ${{ steps.preflight.outputs.controller_sha }}
+      command_fingerprint: ${{ steps.preflight.outputs.command_fingerprint }}
+    steps:
+      - name: Checkout trusted controller
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          path: control
+      - name: Use Node 22
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "22"
+      - name: Validate trusted controller and exact PR identity
+        id: preflight
+        env:
+          GHDEV_GITHUB_TOKEN: ${{ github.token }}
+          GHDEV_INPUT_PR_NUMBER: ${{ inputs.pr_number }}
+          GHDEV_INPUT_EXPECTED_BASE_SHA: ${{ inputs.expected_base_sha }}
+          GHDEV_INPUT_EXPECTED_HEAD_SHA: ${{ inputs.expected_head_sha }}
+          GHDEV_INPUT_EXPECTED_CONTROLLER_SHA: ${{ inputs.expected_controller_sha }}
+          GHDEV_INPUT_PROFILE: ${{ inputs.profile }}
+        run: >-
+          node control/scripts/ghdev-actions-controller.mjs preflight
+          --profile-path control/evidence/profiles/repository-final-v1.json
+          --pr-number "$GHDEV_INPUT_PR_NUMBER"
+          --expected-base-sha "$GHDEV_INPUT_EXPECTED_BASE_SHA"
+          --expected-head-sha "$GHDEV_INPUT_EXPECTED_HEAD_SHA"
+          --expected-controller-sha "$GHDEV_INPUT_EXPECTED_CONTROLLER_SHA"
+          --profile "$GHDEV_INPUT_PROFILE"
+
+  executor:
+    name: isolated self-hosted executor
+    needs: controller
+    runs-on: [self-hosted, Linux, X64, ghdev-verify]
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      execution_artifact_id: ${{ steps.upload_execution.outputs.artifact-id }}
+    env:
+      GHDEV_RUN_PARENT: ${{ github.workspace }}/_ghdev
+      GHDEV_RUN_ROOT: ${{ github.workspace }}/_ghdev/${{ github.run_id }}-${{ github.run_attempt }}
+      GHDEV_EXECUTION_DIR: ${{ runner.temp }}/ghdev-${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
+      - name: Reset dedicated executor workspace
+        run: |
+          set -euo pipefail
+          rm -rf -- "$GHDEV_RUN_PARENT"
+          mkdir -p -- "$GHDEV_RUN_PARENT"
+          test -d "$GHDEV_RUN_PARENT"
+          test ! -L "$GHDEV_RUN_PARENT"
+          test ! -e "$GHDEV_RUN_ROOT"
+          test ! -e "$GHDEV_EXECUTION_DIR"
+          mkdir -p "$GHDEV_EXECUTION_DIR"
+      - name: Checkout trusted controller bytes
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ needs.controller.outputs.controller_sha }}
+          persist-credentials: false
+          path: _ghdev/${{ github.run_id }}-${{ github.run_attempt }}/control
+      - name: Revalidate canonical PR identity immediately before execution
+        id: recheck
+        env:
+          GHDEV_GITHUB_TOKEN: ${{ github.token }}
+          GHDEV_INPUT_PR_NUMBER: ${{ inputs.pr_number }}
+          GHDEV_INPUT_EXPECTED_BASE_SHA: ${{ inputs.expected_base_sha }}
+          GHDEV_INPUT_EXPECTED_HEAD_SHA: ${{ inputs.expected_head_sha }}
+          GHDEV_INPUT_EXPECTED_CONTROLLER_SHA: ${{ inputs.expected_controller_sha }}
+          GHDEV_INPUT_PROFILE: ${{ inputs.profile }}
+        run: >-
+          /usr/bin/node "$GHDEV_RUN_ROOT/control/scripts/ghdev-actions-controller.mjs" recheck
+          --profile-path "$GHDEV_RUN_ROOT/control/evidence/profiles/repository-final-v1.json"
+          --pr-number "$GHDEV_INPUT_PR_NUMBER"
+          --expected-base-sha "$GHDEV_INPUT_EXPECTED_BASE_SHA"
+          --expected-head-sha "$GHDEV_INPUT_EXPECTED_HEAD_SHA"
+          --expected-controller-sha "$GHDEV_INPUT_EXPECTED_CONTROLLER_SHA"
+          --profile "$GHDEV_INPUT_PROFILE"
+      - name: Checkout exact candidate head
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ inputs.expected_head_sha }}
+          fetch-depth: 1
+          persist-credentials: false
+          path: _ghdev/${{ github.run_id }}-${{ github.run_attempt }}/candidate
+      - name: Execute exact profile in Bubblewrap isolation
+        env:
+          GHDEV_INPUT_REPOSITORY: ${{ github.repository }}
+          GHDEV_INPUT_PR_NUMBER: ${{ inputs.pr_number }}
+          GHDEV_INPUT_EXPECTED_BASE_SHA: ${{ inputs.expected_base_sha }}
+          GHDEV_INPUT_EXPECTED_HEAD_SHA: ${{ inputs.expected_head_sha }}
+          GHDEV_INPUT_EXPECTED_CONTROLLER_SHA: ${{ inputs.expected_controller_sha }}
+          GHDEV_INPUT_PROFILE: ${{ inputs.profile }}
+          GHDEV_OBSERVED_BASE_SHA: ${{ steps.recheck.outputs.observed_base_sha }}
+          GHDEV_OBSERVED_HEAD_SHA: ${{ steps.recheck.outputs.observed_head_sha }}
+          GHDEV_OBSERVED_CONTROLLER_SHA: ${{ steps.recheck.outputs.observed_controller_sha }}
+        run: >-
+          /usr/bin/node "$GHDEV_RUN_ROOT/control/scripts/ghdev-actions-executor.mjs"
+          --profile-path "$GHDEV_RUN_ROOT/control/evidence/profiles/repository-final-v1.json"
+          --candidate-path "$GHDEV_RUN_ROOT/candidate"
+          --output "$GHDEV_EXECUTION_DIR/execution.json"
+          --image-marker /etc/ghdev-runner-image.json
+          --repository "$GHDEV_INPUT_REPOSITORY"
+          --pr-number "$GHDEV_INPUT_PR_NUMBER"
+          --expected-base-sha "$GHDEV_INPUT_EXPECTED_BASE_SHA"
+          --expected-head-sha "$GHDEV_INPUT_EXPECTED_HEAD_SHA"
+          --expected-controller-sha "$GHDEV_INPUT_EXPECTED_CONTROLLER_SHA"
+          --profile "$GHDEV_INPUT_PROFILE"
+          --observed-base-sha "$GHDEV_OBSERVED_BASE_SHA"
+          --observed-head-sha "$GHDEV_OBSERVED_HEAD_SHA"
+          --observed-controller-sha "$GHDEV_OBSERVED_CONTROLLER_SHA"
+      - name: Upload typed execution handoff
+        id: upload_execution
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: ghdev-execution-${{ github.run_id }}-${{ inputs.pr_number }}-${{ inputs.expected_head_sha }}
+          path: ${{ env.GHDEV_EXECUTION_DIR }}/execution.json
+          if-no-files-found: error
+          retention-days: 7
+      - name: Remove executor job workspace
+        if: always()
+        run: |
+          set -euo pipefail
+          rm -rf -- "$GHDEV_RUN_PARENT" "$GHDEV_EXECUTION_DIR"
+          test ! -e "$GHDEV_RUN_PARENT"
+          test ! -e "$GHDEV_EXECUTION_DIR"
+
+  publisher:
+    name: trusted publisher
+    needs: [controller, executor]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: read
+      actions: read
+      statuses: write
+    steps:
+      - name: Checkout trusted publisher bytes
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ needs.controller.outputs.controller_sha }}
+          persist-credentials: false
+          path: control
+      - name: Use Node 22
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "22"
+      - name: Download isolated execution handoff
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: ghdev-execution-${{ github.run_id }}-${{ inputs.pr_number }}-${{ inputs.expected_head_sha }}
+          path: execution
+      - name: Revalidate and build typed receipt
+        id: build_receipt
+        env:
+          GHDEV_GITHUB_TOKEN: ${{ github.token }}
+          GHDEV_INPUT_PR_NUMBER: ${{ inputs.pr_number }}
+          GHDEV_INPUT_EXPECTED_BASE_SHA: ${{ inputs.expected_base_sha }}
+          GHDEV_INPUT_EXPECTED_HEAD_SHA: ${{ inputs.expected_head_sha }}
+          GHDEV_INPUT_EXPECTED_CONTROLLER_SHA: ${{ inputs.expected_controller_sha }}
+          GHDEV_INPUT_PROFILE: ${{ inputs.profile }}
+          GHDEV_EXECUTION_ARTIFACT_ID: ${{ needs.executor.outputs.execution_artifact_id }}
+          GHDEV_RECEIPT_ARTIFACT_NAME: ghdev-receipt-${{ github.run_id }}-${{ inputs.pr_number }}-${{ inputs.expected_head_sha }}
+        run: >-
+          node control/scripts/ghdev-actions-publisher.mjs build
+          --profile-path control/evidence/profiles/repository-final-v1.json
+          --execution execution/execution.json
+          --output receipt.json
+          --pr-number "$GHDEV_INPUT_PR_NUMBER"
+          --expected-base-sha "$GHDEV_INPUT_EXPECTED_BASE_SHA"
+          --expected-head-sha "$GHDEV_INPUT_EXPECTED_HEAD_SHA"
+          --expected-controller-sha "$GHDEV_INPUT_EXPECTED_CONTROLLER_SHA"
+          --profile "$GHDEV_INPUT_PROFILE"
+          --execution-artifact-id "$GHDEV_EXECUTION_ARTIFACT_ID"
+          --receipt-artifact-name "$GHDEV_RECEIPT_ARTIFACT_NAME"
+      - name: Upload immutable typed receipt
+        id: upload_receipt
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: ghdev-receipt-${{ github.run_id }}-${{ inputs.pr_number }}-${{ inputs.expected_head_sha }}
+          path: receipt.json
+          if-no-files-found: error
+          retention-days: 30
+      - name: Revalidate and publish exact-head status after artifact publication
+        id: publish_status
+        env:
+          GHDEV_GITHUB_TOKEN: ${{ github.token }}
+          GHDEV_INPUT_PR_NUMBER: ${{ inputs.pr_number }}
+          GHDEV_INPUT_EXPECTED_BASE_SHA: ${{ inputs.expected_base_sha }}
+          GHDEV_INPUT_EXPECTED_HEAD_SHA: ${{ inputs.expected_head_sha }}
+          GHDEV_INPUT_EXPECTED_CONTROLLER_SHA: ${{ inputs.expected_controller_sha }}
+          GHDEV_INPUT_PROFILE: ${{ inputs.profile }}
+          GHDEV_RECEIPT_ARTIFACT_ID: ${{ steps.upload_receipt.outputs.artifact-id }}
+        run: >-
+          node control/scripts/ghdev-actions-publisher.mjs status
+          --profile-path control/evidence/profiles/repository-final-v1.json
+          --receipt receipt.json
+          --pr-number "$GHDEV_INPUT_PR_NUMBER"
+          --expected-base-sha "$GHDEV_INPUT_EXPECTED_BASE_SHA"
+          --expected-head-sha "$GHDEV_INPUT_EXPECTED_HEAD_SHA"
+          --expected-controller-sha "$GHDEV_INPUT_EXPECTED_CONTROLLER_SHA"
+          --profile "$GHDEV_INPUT_PROFILE"
+          --receipt-artifact-id "$GHDEV_RECEIPT_ARTIFACT_ID"
+      - name: Fail workflow on non-PASS evidence
+        if: steps.publish_status.outputs.effective_result != 'PASS'
+        run: exit 1

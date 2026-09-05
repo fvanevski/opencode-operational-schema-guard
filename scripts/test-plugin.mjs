@@ -21,6 +21,8 @@ const tests = [
   "tests/config-contract.test.mjs",
   "tests/export-session-safe.test.mjs",
   "tests/session-trace-assessment.test.mjs",
+  "tests/actions-evidence.test.mjs",
+  "tests/actions-evidence-workflow.test.mjs",
 ]
 const child = spawn(process.execPath, ["--test", "--test-reporter=tap", ...tests], { cwd: root, stdio: "inherit", shell: false })
 child.on("error", (error) => {
