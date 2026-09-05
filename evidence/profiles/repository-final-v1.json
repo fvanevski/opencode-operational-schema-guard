@@ -25,6 +25,7 @@
     ".npmrc",
     "evidence/profiles/repository-final-v1.json",
     "lib/actions-evidence.mjs",
+    "node_modules",
     "package.json",
     "scripts/ghdev-actions-controller.mjs",
     "scripts/ghdev-actions-executor.mjs",
