@@ -210,6 +210,20 @@ test("Fresh-review normalizes bounded envelope-less prompts beyond the legacy 12
     assert.throws(() => validateTaskPacket(trailingContext.args), /packet envelope/, prompt)
   }
 
+  for (const description of [
+    "Review the entire repository",
+    "Review bounded files and all dependencies",
+    "Review lib/unrelated.mjs",
+  ]) {
+    const conflictingDescription = normalizeTaskPacket({
+      subagent_type: "fresh-review",
+      description,
+      prompt: "Review only lib/operation-guard-core.mjs and return source-review findings.",
+    })
+    assert.ok(!conflictingDescription.normalizations.includes("packet-envelope-inferred"), description)
+    assert.throws(() => validateTaskPacket(conflictingDescription.args), /packet envelope/, description)
+  }
+
   const nearLimit = normalizeTaskPacket({ subagent_type: "fresh-review", description: "Bounded review", prompt: "x".repeat(3900) })
   assert.ok(!nearLimit.normalizations.includes("packet-envelope-inferred"))
   assert.throws(() => validateTaskPacket(nearLimit.args), /packet envelope|characters/)
@@ -489,6 +503,23 @@ test("Verify child runtime admits exact LF and CRLF local-assessment continuatio
     const sessionID = `verify-continuation-${index}`
     await register(hooks, sessionID, "verify")
     await assert.doesNotReject(() => before(hooks, sessionID, "assessment", "bash", { command: `${runner} \\${eol}  --spec ${spec}` }))
+  }
+})
+
+test("Verify duplicate-success identity canonicalizes exact assessment continuation formatting", async () => {
+  const runner = "/home/filip/.config/opencode/plugins/operational-schema-v5/scripts/local-agent-assessment.mjs"
+  const spec = "/tmp/opencode/verify/assessments/pr20.json"
+  const hooks = createOperationGuard({ directory: "/home/filip/project", env: {} })
+  const sessionID = "verify-continuation-duplicate"
+  await register(hooks, sessionID, "verify")
+  const single = { command: `${runner} --spec ${spec}` }
+  await before(hooks, sessionID, "assessment-single", "bash", single)
+  await after(hooks, sessionID, "assessment-single", "bash", single, { output: "done", metadata: { exit: 0 } })
+  for (const [index, eol] of ["\n", "\r\n"].entries()) {
+    await assert.rejects(
+      () => before(hooks, sessionID, `assessment-duplicate-${index}`, "bash", { command: `${runner} \\${eol}  --spec ${spec}` }),
+      /already completed successfully/,
+    )
   }
 })
 
