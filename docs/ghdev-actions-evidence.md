@@ -14,7 +14,9 @@ The workflow is `workflow_dispatch` only. Dispatch must target trusted `main` an
 
 The controller requires its live workflow identity to be `.github/workflows/ghdev-verify.yml@refs/heads/main` and `github.sha` to equal `expected_controller_sha`. It resolves the canonical PR before the self-hosted job is admitted, requires `base.ref=main`, exact base/head SHA equality, and `head.repo.full_name` equal to this repository. Fork/foreign heads are denied before the self-hosted runner is acquired.
 
-The trusted profile lives at `evidence/profiles/repository-final-v1.json`. A PR that changes the workflow, profile, controller/executor/publisher scripts, receipt library, or validation launch authority (`package.json`, `scripts/test-plugin.mjs`, `.npmrc`, or tracked `node_modules/**` launcher shadowing) is classified as a control-plane change and is denied self-certification by the existing trusted controller. This prevents a candidate from retaining the nominal `npm run check` / `npm test` profile while silently redefining what those commands execute. Such a change must use the pre-existing trusted acceptance route and, after merge, be proven from trusted `main`.
+Self-certification is not decided from the PR's mutable `/pulls/{number}/files` view. The trusted controller resolves the immutable Git trees for the dispatched `expected_base_sha` and `expected_head_sha`, fails closed if either recursive tree response is truncated or malformed, computes the changed-path set from those exact tree identities, and applies the bounded 1,000-path control-plane census to that immutable set. A force-push/restore race therefore cannot substitute a benign changed-file list for the exact candidate SHA that will execute.
+
+The trusted profile lives at `evidence/profiles/repository-final-v1.json`. A PR that changes the workflow, profile, controller/executor/publisher scripts, receipt library, or validation launch authority (`package.json`, `scripts/test-plugin.mjs`, `.npmrc`, the exact top-level `node_modules` path, or any tracked `node_modules/**` descendant) is classified as a control-plane change and is denied self-certification by the existing trusted controller. This prevents a candidate from retaining the nominal `npm run check` / `npm test` profile while silently redefining what those commands execute. Such a change must use the pre-existing trusted acceptance route and, after merge, be proven from trusted `main`.
 
 ## Executor isolation
 
@@ -27,12 +29,15 @@ Candidate execution is a second isolation boundary. Before every run the workflo
 - `--unshare-all` plus an explicit required user namespace (`--unshare-user`) and `--cap-drop ALL`;
 - `--clearenv` plus only `HOME`, `PATH`, `CI`, and locale allowlist values;
 - a fresh `/proc`, `/dev`, and tmpfs `/tmp`;
-- only system toolchain/runtime mounts needed for execution; and
-- the exact candidate checkout mounted read-only at `/workspace`.
+- only system toolchain/runtime mounts needed for execution;
+- the exact candidate checkout mounted read-only at `/workspace`; and
+- a dedicated Bubblewrap `--json-status-fd` channel used as trusted startup/exit evidence.
 
-The candidate does not see the trusted controller checkout, runner home, host home, parent process namespace, GitHub publisher token, or Actions write credentials. Its sandbox PATH is fixed to `/usr/bin:/bin`; tracked `node_modules/**` launcher shadowing is a trusted-control denial. The self-hosted job has read-only repository permissions. The publisher is a separate GitHub-hosted job and is the only job with `statuses: write`.
+The executor does not count a profile command or claim the dynamic `unshared`/`read-only`/`clearenv-allowlist` execution properties until Bubblewrap's status channel reports a valid `child-pid`, which Bubblewrap emits only after the sandboxed child starts. A numeric nonzero Bubblewrap process status without that child-start record is an isolation/setup failure and is typed `BLOCKED`, not an ordinary candidate `FAIL`. Once a child has started, Bubblewrap's reported child exit record must agree with the process status; inconsistent status evidence also fails closed.
 
-The self-hosted runner must provide `/usr/bin/node` (major 22), `/usr/bin/npm`, `/usr/bin/git`, and `/usr/bin/bwrap`. The trusted executor invokes those absolute system paths for its own identity/provenance operations and constrains the candidate PATH to `/usr/bin:/bin`. It also reads `/etc/os-release`, requires its actual `ID`/`VERSION_ID` to match the image marker, and records SHA-256 fingerprints for `os-release`, Node, npm, and Bubblewrap. Missing/mismatched provenance is typed `BLOCKED`; the producer does not silently fall back to a host/user toolchain.
+The candidate does not see the trusted controller checkout, runner home, host home, parent process namespace, GitHub publisher token, or Actions write credentials. Its sandbox PATH is fixed to `/usr/bin:/bin`; the exact top-level `node_modules` path and tracked `node_modules/**` descendants are trusted-control denials because npm script launcher resolution can otherwise be shadowed. The self-hosted job has read-only repository permissions. The publisher is a separate GitHub-hosted job and is the only job with `statuses: write`.
+
+The self-hosted runner must provide `/usr/bin/node` (major 22), `/usr/bin/npm`, `/usr/bin/git`, and `/usr/bin/bwrap`; the installed Bubblewrap must support `--json-status-fd`. The trusted executor invokes those absolute system paths for its own identity/provenance operations and constrains the candidate PATH to `/usr/bin:/bin`. It also reads `/etc/os-release`, requires its actual `ID`/`VERSION_ID` to match the image marker, and records SHA-256 fingerprints for `os-release`, Node, npm, and Bubblewrap. Missing/mismatched provenance or unsupported sandbox startup is typed `BLOCKED`; the producer does not silently fall back to a host/user toolchain.
 
 ## Runner image marker and operator bootstrap
 
@@ -57,12 +62,12 @@ Because this is a **public user-owned repository**, GitHub's general self-hosted
 
 Repository registration is operator-owned because GitHub runner registration tokens are short-lived credentials and must never be committed. Preferred deployment is an ephemeral repository-scoped runner/container:
 
-1. build/start a dedicated Ubuntu/Debian runner image with system Node 22, npm, Git, Bubblewrap, and the marker above;
+1. build/start a dedicated Ubuntu/Debian runner image with system Node 22, npm, Git, Bubblewrap (including `--json-status-fd` support), and the marker above;
 2. drop all unnecessary Linux capabilities, enable `no-new-privileges`, expose no privileged host mounts, and ensure unprivileged user namespaces required by Bubblewrap are actually available;
 3. run the dedicated runner container/VM with explicit CPU, memory, PID/process-count, and writable-filesystem limits appropriate to this repository so candidate code cannot turn host-wide resource exhaustion into an implicit privilege boundary;
 4. register against this repository using GitHub's current one-time registration token and the custom label `ghdev-verify` (default `self-hosted`, `Linux`, and `X64` labels remain required);
 5. prefer `--ephemeral` registration so one container handles one job; if a persistent runner is temporarily used, the workflow's never-reused run/attempt workspace remains mandatory and prior workspace state is never evidence authority; and
-6. validate Bubblewrap isolation and those resource limits from inside the runner image before treating the runner as production evidence infrastructure.
+6. validate Bubblewrap isolation, its status-channel startup proof, and those resource limits from inside the runner image before treating the runner as production evidence infrastructure.
 
 Do not store registration tokens, runner credentials, or host secrets in the repository, Actions artifacts, receipts, or project KB.
 
@@ -75,7 +80,7 @@ npm run check
 npm test
 ```
 
-The controller revalidates canonical PR identity on the self-hosted runner immediately before command execution. The candidate checkout must prove `HEAD == expected_head_sha`. A command that exits nonzero stops the profile and produces `FAIL`. A command terminated by signal or otherwise lacking a numeric exit is recorded with `exit=null` plus its signal and produces `BLOCKED`; infrastructure/provenance/isolation/cleanup deficiencies likewise produce `BLOCKED`.
+The controller revalidates canonical PR identity on the self-hosted runner immediately before command execution. The candidate checkout must prove `HEAD == expected_head_sha`. Each command is launched only through Bubblewrap. A command is considered started only after the trusted Bubblewrap JSON status channel supplies a valid `child-pid`. A pre-child Bubblewrap failure, malformed/missing startup evidence, or inconsistent Bubblewrap exit evidence produces `BLOCKED`; only a proven-started command with consistent numeric nonzero child/process exit evidence produces ordinary `FAIL`. A supervising process termination without usable numeric exit remains `BLOCKED` rather than being normalized into a candidate failure.
 
 The repository is mounted read-only during candidate execution, and after the commands the trusted executor independently proves exact HEAD plus `git status --porcelain=v1 --untracked-files=all` cleanliness. The candidate checkout is then removed; removal is part of PASS evidence. After the execution handoff artifact is uploaded, the workflow separately removes both its trusted-control run root and execution scratch directory and fails closed if either remains. The profile fingerprints `.npmrc`, `npm-shrinkwrap.json`, `package-lock.json`, `package.json`, and `scripts/test-plugin.mjs` as dependency/test-configuration provenance; missing optional files are represented explicitly as `MISSING`. Because the launcher-bearing files are also trusted-control paths, a candidate that changes them is not self-certifiable. `npm test` TAP totals are required for PASS when the profile declares the `node-tap` collector.
 
