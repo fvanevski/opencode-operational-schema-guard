@@ -267,6 +267,21 @@ test("Explore and Verify do not broaden long envelope-less prompts without bound
   }
 })
 
+test("Fresh-review envelope-less target proof rejects wildcard selectors", () => {
+  for (const prompt of [
+    "Review only lib/*.mjs and return source-review findings.",
+    "Review only lib/file?.mjs and return source-review findings.",
+  ]) {
+    const result = normalizeTaskPacket({
+      subagent_type: "fresh-review",
+      description: "Review the explicitly named files",
+      prompt,
+    })
+    assert.ok(!result.normalizations.includes("packet-envelope-inferred"), prompt)
+    assert.throws(() => validateTaskPacket(result.args), /packet envelope/, prompt)
+  }
+})
+
 test("Fresh-review preserves the 10-target ceiling for explicit and envelope-less packets", () => {
   const admittedTargets = Array.from({ length: 10 }, (_, index) => `lib/f${index}.mjs`)
   const overflowTargets = [...admittedTargets, "lib/f10.mjs"]
