@@ -133,6 +133,79 @@ test("legacy metrics use structured occurrence counts and incomplete-result reas
   assert.equal(report.metrics.incompleteDelegations, 1)
 })
 
+test("legacy friction metrics expose child launches, planner provenance, elisions, and terminal normalization", async () => {
+  const path = await fixture("issue15-routing-metrics", {
+    info: { id: "ses_Synthetic123" },
+    messages: [{ info: { id: "msg_task", role: "assistant" }, parts: [
+      {
+        id: "fresh", type: "tool", tool: "task", state: {
+          status: "completed",
+          input: { subagent_type: "fresh-review" },
+          metadata: { sessionId: "ses_Fresh123", operationalSchema: {
+            complete: true,
+            planning: { status: "READY", partitionCount: 1 },
+            terminalNormalizations: ["multiline-fields", "field-order-normalized"],
+          } },
+        },
+      },
+      {
+        id: "verify", type: "tool", tool: "task", state: {
+          status: "completed",
+          input: { subagent_type: "verify" },
+          metadata: { sessionId: "ses_Verify123", operationalSchema: {
+            complete: true,
+            planning: { status: "READY", partitionCount: 1 },
+            terminalNormalizations: [],
+          } },
+        },
+      },
+      {
+        id: "elided", type: "tool", tool: "task", state: {
+          status: "error",
+          input: { subagent_type: "fresh-review" },
+          error: "Fresh-review is elided by explicit central-owned semantic-review authority. OPERATIONAL_PACKET_ACTION: HONOR_SEMANTIC_REVIEW_AUTHORITY.",
+        },
+      },
+      {
+        id: "partitioned", type: "tool", tool: "task", state: {
+          status: "error",
+          input: { subagent_type: "fresh-review" },
+          error: "deterministic planner returned PARTITION_REQUIRED: deterministic-complexity-partition",
+        },
+      },
+    ] }],
+  })
+  const result = run(path)
+  assert.equal(result.status, 0, result.stderr)
+  const report = JSON.parse(result.stdout.split("\n")[0])
+  assert.equal(report.metrics.freshReviewLaunches, 1)
+  assert.equal(report.metrics.verifyLaunches, 1)
+  assert.equal(report.metrics.exploreLaunches, 0)
+  assert.equal(report.metrics.plannerSuccesses, 2)
+  assert.equal(report.metrics.plannerPartitions, 2)
+  assert.equal(report.metrics.terminalNormalizations, 2)
+  assert.equal(report.metrics.freshReviewElisions, 1)
+  assert.equal(report.metrics.plannerPreventedLaunches, 1)
+  assert.equal(report.metrics.capabilityPrevented, 2)
+})
+
+test("remediation audit classifies deterministic role elision and planner partition boundaries", async () => {
+  const path = await fixture("issue15-routing-audit", {
+    info: { id: "ses_Synthetic123" },
+    messages: [{ info: { id: "msg_task", role: "assistant", time: { created: 1 } }, parts: [
+      { id: "elided", type: "tool", tool: "task", callID: "call_elided", state: { status: "error", input: { subagent_type: "fresh-review" }, error: "Fresh-review is elided. OPERATIONAL_PACKET_ACTION: HONOR_SEMANTIC_REVIEW_AUTHORITY." } },
+      { id: "partitioned", type: "tool", tool: "task", callID: "call_partitioned", state: { status: "error", input: { subagent_type: "fresh-review" }, error: "deterministic planner returned PARTITION_REQUIRED because deterministic-complexity-partition applies." } },
+    ] }],
+  })
+  const result = run(path, "ses_Synthetic123", [], "remediation-audit-v1")
+  assert.equal(result.status, 0, result.stderr)
+  const report = JSON.parse(result.stdout.split("\n")[0])
+  assert.equal(report.summary.event_counts.role_elision, 1)
+  assert.equal(report.summary.event_counts.planner_partition, 1)
+  assert.ok(report.remediation_candidates.some((candidate) => candidate.kind === "prevented_unnecessary_delegation"))
+  assert.ok(report.remediation_candidates.some((candidate) => candidate.kind === "deterministic_partition_boundary"))
+})
+
 test("detects an empty interactive call and its premature finalization sequence without exposing text", async () => {
   const secret = "private-final-packet-details"
   const path = await fixture("empty-interactive", {
