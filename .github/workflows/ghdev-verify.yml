@@ -83,9 +83,10 @@ jobs:
     env:
       GHDEV_RUN_PARENT: ${{ github.workspace }}/_ghdev
       GHDEV_RUN_ROOT: ${{ github.workspace }}/_ghdev/${{ github.run_id }}-${{ github.run_attempt }}
-      GHDEV_EXECUTION_DIR: ${{ runner.temp }}/ghdev-${{ github.run_id }}-${{ github.run_attempt }}
     steps:
       - name: Reset dedicated executor workspace
+        env:
+          GHDEV_EXECUTION_DIR: ${{ runner.temp }}/ghdev-${{ github.run_id }}-${{ github.run_attempt }}
         run: |
           set -euo pipefail
           rm -rf -- "$GHDEV_RUN_PARENT"
@@ -127,6 +128,7 @@ jobs:
           path: _ghdev/${{ github.run_id }}-${{ github.run_attempt }}/candidate
       - name: Execute exact profile in Bubblewrap isolation
         env:
+          GHDEV_EXECUTION_DIR: ${{ runner.temp }}/ghdev-${{ github.run_id }}-${{ github.run_attempt }}
           GHDEV_INPUT_REPOSITORY: ${{ github.repository }}
           GHDEV_INPUT_PR_NUMBER: ${{ inputs.pr_number }}
           GHDEV_INPUT_EXPECTED_BASE_SHA: ${{ inputs.expected_base_sha }}
@@ -156,11 +158,13 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: ghdev-execution-${{ github.run_id }}-${{ inputs.pr_number }}-${{ inputs.expected_head_sha }}
-          path: ${{ env.GHDEV_EXECUTION_DIR }}/execution.json
+          path: ${{ runner.temp }}/ghdev-${{ github.run_id }}-${{ github.run_attempt }}/execution.json
           if-no-files-found: error
           retention-days: 7
       - name: Remove executor job workspace
         if: always()
+        env:
+          GHDEV_EXECUTION_DIR: ${{ runner.temp }}/ghdev-${{ github.run_id }}-${{ github.run_attempt }}
         run: |
           set -euo pipefail
           rm -rf -- "$GHDEV_RUN_PARENT" "$GHDEV_EXECUTION_DIR"
