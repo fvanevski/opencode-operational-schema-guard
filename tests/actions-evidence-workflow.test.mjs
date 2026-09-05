@@ -71,6 +71,16 @@ test("executor resets the dedicated workspace parent and removes it after the jo
   assert.match(workflow, /test ! -e "\$GHDEV_EXECUTION_DIR"/)
 })
 
+test("runner-scoped temp path is used only where runner context is available", () => {
+  const executorBlock = workflow.match(/\n  executor:\n([\s\S]*?)\n  publisher:\n/)?.[1] ?? ""
+  const jobEnv = executorBlock.match(/\n    env:\n([\s\S]*?)\n    steps:/)?.[1] ?? ""
+  assert.ok(executorBlock)
+  assert.ok(jobEnv)
+  assert.doesNotMatch(jobEnv, /\$\{\{\s*runner\./)
+  assert.match(executorBlock, /GHDEV_EXECUTION_DIR: \$\{\{ runner\.temp \}\}\/ghdev-\$\{\{ github\.run_id \}\}-\$\{\{ github\.run_attempt \}\}/)
+  assert.match(executorBlock, /path: \$\{\{ runner\.temp \}\}\/ghdev-\$\{\{ github\.run_id \}\}-\$\{\{ github\.run_attempt \}\}\/execution\.json/)
+})
+
 test("all reusable third-party Actions are pinned to full commit SHAs", () => {
   const uses = [...workflow.matchAll(/^\s*-?\s*uses:\s*([^\s#]+)/gm)].map((match) => match[1])
   assert.ok(uses.length >= 4)
