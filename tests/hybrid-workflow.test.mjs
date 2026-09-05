@@ -31,6 +31,20 @@ const BASE_ENTRY = Object.freeze({
   environment_fingerprint: "env-2",
   producer_fingerprint: "controller-main-1",
   receipt_sha256: "b".repeat(64),
+  receipt_identity: {
+    workflow_run_id: "1001",
+    workflow_run_attempt: "1",
+    execution_artifact_id: "2001",
+    receipt_artifact_name: "ghdev-receipt-1001",
+  },
+  counts: {
+    commands_required: 2,
+    commands_run: 2,
+    test_count: 10,
+    test_pass: 10,
+    test_fail: 0,
+    test_skip: 0,
+  },
   result: "PASS",
 })
 
@@ -106,6 +120,7 @@ test("evidence ledger is exact-head and provenance sensitive", () => {
   assert.equal(ledger.lookup({ ...REQUIREMENT, environment_fingerprint: "env-3" }).reusable, false)
   assert.equal(ledger.lookup({ ...REQUIREMENT, producer_fingerprint: "controller-main-2" }).reusable, false)
   assert.equal(evidenceEquivalence({ ...BASE_ENTRY, result: "FAIL" }, REQUIREMENT).equivalent, false)
+  assert.equal(evidenceEquivalence({ ...BASE_ENTRY, receipt_identity: { ...BASE_ENTRY.receipt_identity, workflow_run_id: "1002" } }, REQUIREMENT).equivalent, true)
   assert.equal(gateSatisfiedByEvidence("repository-final", BASE_ENTRY), true)
   assert.equal(gateSatisfiedByEvidence("host-specific-runtime", BASE_ENTRY), false)
   assert.equal(gateSatisfiedByEvidence("semantic-review-evidence", BASE_ENTRY), false)
