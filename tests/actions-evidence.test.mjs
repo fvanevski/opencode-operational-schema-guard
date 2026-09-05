@@ -111,9 +111,9 @@ test("same-repository exact PR identity is required and fork/head movement is re
 test("candidate cannot self-certify trusted control-plane changes", () => {
   const clean = detectSelfCertification(["README.md"], profile.trusted_control_paths, profile.trusted_control_prefixes)
   assert.equal(clean.denied, false)
-  const denied = detectSelfCertification(["README.md", ".github/workflows/ghdev-verify.yml", "lib/actions-evidence.mjs", "node_modules/.bin/node"], profile.trusted_control_paths, profile.trusted_control_prefixes)
+  const denied = detectSelfCertification(["README.md", ".github/workflows/ghdev-verify.yml", "lib/actions-evidence.mjs", "node_modules", "node_modules/.bin/node"], profile.trusted_control_paths, profile.trusted_control_prefixes)
   assert.equal(denied.denied, true)
-  assert.deepEqual(denied.conflicting_paths, [".github/workflows/ghdev-verify.yml", "lib/actions-evidence.mjs", "node_modules/.bin/node"])
+  assert.deepEqual(denied.conflicting_paths, [".github/workflows/ghdev-verify.yml", "lib/actions-evidence.mjs", "node_modules", "node_modules/.bin/node"])
 })
 
 test("candidate fingerprints reject symlinks instead of dereferencing host paths", async () => {
