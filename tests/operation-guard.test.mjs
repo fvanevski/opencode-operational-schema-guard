@@ -90,13 +90,13 @@ test("Task packet requires the structured envelope and no more than three questi
   )
 })
 
-test("format-only Task packet defects are normalized without weakening strict validation", () => {
+test("format-only Task packet defects are normalized without dropping semantic requirements", () => {
   const crowded = normalizeTaskPacket(taskArgs({ prompt: "Scope: unknown flow\nQuestions:\n- One\n- Two\n- Three\n- Four\n- Five\nStop condition: done\n1. A\n2. B\n3. C\n4. D\n5. E\n6. F" }))
-  assert.deepEqual(crowded.normalizations, ["questions-deferred:2", "numbered-sections-normalized:2"])
-  assert.match(crowded.args.prompt, /Deferred by operational guard: 2 additional questions/)
-  assert.equal((crowded.args.prompt.match(/^\s*-\s+/gm) ?? []).length, 3)
+  assert.deepEqual(crowded.normalizations, ["numbered-sections-normalized:2"])
+  assert.doesNotMatch(crowded.args.prompt, /Deferred by operational guard/)
+  assert.equal((crowded.args.prompt.match(/^\s*-\s+/gm) ?? []).length, 5)
   assert.equal((crowded.args.prompt.match(/^\s*\d+[.)]\s+/gm) ?? []).length, 4)
-  assert.doesNotThrow(() => validateTaskPacket(crowded.args))
+  assert.throws(() => validateTaskPacket(crowded.args), /5 investigative questions.*cannot silently discard requirements/)
 
   const oversized = normalizeTaskPacket(taskArgs({ prompt: `Missing envelope ${"x".repeat(4500)}` }))
   assert.equal(oversized.normalizations.length, 0)
@@ -1102,20 +1102,14 @@ test("rejected Task packets produce a compact preflight reminder", async () => {
   await assert.doesNotReject(() => before(hooks, "parent", "debt-cleared", "read", { filePath: "src/another.mjs" }))
 })
 
-test("Task output records and reports packet normalizations", async () => {
+test("Task preflight rejects excess questions instead of fabricating a normalized child result", async () => {
   const hooks = createOperationGuard({ directory: "/tmp/project", env: {} })
   await register(hooks, "parent", "build")
-  await register(hooks, "child-normalized", "explore")
-  await hooks.event({ event: { type: "message.updated", properties: { info: { sessionID: "child-normalized", role: "assistant", finish: "stop" } } } })
-  const preflight = await before(hooks, "parent", "task-normalized", "task", taskArgs({ prompt: "Scope: Trace the unknown request flow.\nQuestions:\n- One\n- Two\n- Three\n- Four\n- Five\nStop condition: Done." }))
-  const output = await after(hooks, "parent", "task-normalized", "task", preflight.args, {
-      output: exploreComplete("The flow is mapped."),
-    metadata: { sessionId: "child-normalized" },
-  })
-  assert.deepEqual(output.metadata.operationalSchema.preflightNormalizations, ["questions-deferred:2"])
-  assert.equal(output.metadata.operationalSchema.schemaVersion, SCHEMA_VERSION)
-  assert.equal(output.metadata.operationalSchema.boundaryReset, true)
-  assert.match(output.output, /Task packet normalized before launch \(questions-deferred:2\)/)
+  await assert.rejects(
+    () => before(hooks, "parent", "task-normalized", "task", taskArgs({ prompt: "Scope: Trace the unknown request flow.\nQuestions:\n- One\n- Two\n- Three\n- Four\n- Five\nStop condition: Done." })),
+    /5 investigative questions.*cannot silently discard requirements/,
+  )
+  assert.match(await system(hooks, "parent"), /previous Task packet failed preflight/)
 })
 
 test("Verify transport completion does not imply verification success or path coverage", async () => {
