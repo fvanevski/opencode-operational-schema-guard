@@ -1733,6 +1733,56 @@ test("explicit authority change invalidates in-flight old-head child results bef
   await assert.rejects(() => before(hooks, "parent-inflight", "commit-after-stale-results", "bash", { command: "git commit -m new" }), /fresh-review/)
 })
 
+test("authority change in another primary session invalidates old-head pending and resumable delegation workspace-wide", async () => {
+  const hooks = createOperationGuard({ directory: "/tmp/project-authority-cross-session", env: {} })
+  const first = "a".repeat(40)
+  const second = "b".repeat(40)
+  const oldParent = "parent-old-authority"
+  const newParent = "parent-new-authority"
+  const proofArgs = { command: "git rev-parse HEAD" }
+
+  await message(hooks, oldParent, "build", `REQUIRED EXACT HEAD: ${first}`)
+  await before(hooks, oldParent, "proof-first", "bash", proofArgs)
+  await after(hooks, oldParent, "proof-first", "bash", proofArgs, { output: `${first}\n`, metadata: { exit: 0 } })
+  for (const [index, name] of ["a", "b", "c"].entries()) await before(hooks, oldParent, `edit-${index}`, "edit", { filePath: `src/${name}.py` })
+
+  const review = taskArgs({ subagent_type: "fresh-review", prompt: "Scope: old-head review\nQuestions:\n- Is the old-head diff clean?\nStop condition: all changed production paths are reviewed." })
+  const verify = taskArgs({ subagent_type: "verify", prompt: "Scope: old-head gates\nQuestions:\n- Do the old-head gates pass?\nStop condition: all requested commands have exit status." })
+  const explore = taskArgs({ subagent_type: "explore", prompt: "Scope: old-head unknown flow\nQuestions:\n- Trace one bounded path.\nStop condition: one exact path is reported." })
+  await before(hooks, oldParent, "review-old", "task", review)
+  await before(hooks, oldParent, "verify-old", "task", verify)
+  await before(hooks, oldParent, "explore-old", "task", explore)
+  await register(hooks, "child-review-cross-old", "fresh-review")
+  await register(hooks, "child-verify-cross-old", "verify")
+  await register(hooks, "child-explore-cross-old", "explore")
+
+  await before(hooks, oldParent, "failed-old", "task", taskArgs())
+  await taskFailureEvent(hooks, oldParent, "failed-old", "Subagent failed (task_id: ses_old_authority_resume): provider network timeout")
+
+  await message(hooks, newParent, "build", `REQUIRED STARTING HEAD SHA: ${second}`)
+
+  for (const child of ["child-review-cross-old", "child-verify-cross-old", "child-explore-cross-old"]) {
+    await hooks.event({ event: { type: "message.updated", properties: { info: { sessionID: child, role: "assistant", finish: "stop" } } } })
+  }
+  const oldReview = await after(hooks, oldParent, "review-old", "task", review, { output: reviewClean("Old-head review.", 1), metadata: { sessionId: "child-review-cross-old" } })
+  const oldVerify = await after(hooks, oldParent, "verify-old", "task", verify, { output: "OPERATIONAL_RESULT: PASS; COMMANDS_RUN: 2; COMMANDS_REQUIRED: 2", metadata: { sessionId: "child-verify-cross-old" } })
+  const oldExplore = await after(hooks, oldParent, "explore-old", "task", explore, { output: exploreComplete("src/old.py", 1), metadata: { sessionId: "child-explore-cross-old" } })
+  assert.equal(oldReview.metadata.operationalSchema, undefined)
+  assert.equal(oldVerify.metadata.operationalSchema, undefined)
+  assert.equal(oldExplore.metadata.operationalSchema, undefined)
+  await assert.rejects(
+    () => before(hooks, oldParent, "resume-old", "task", taskArgs({ task_id: "ses_old_authority_resume" })),
+    /not an admitted resumable failure/,
+  )
+
+  await before(hooks, newParent, "proof-second", "bash", proofArgs)
+  await after(hooks, newParent, "proof-second", "bash", proofArgs, { output: `${second}\n`, metadata: { exit: 0 } })
+  const continuity = { context: [] }
+  await hooks["experimental.session.compacting"]({ sessionID: oldParent }, continuity)
+  assert.match(continuity.context.join("\n"), /Fresh-review generation: 0; Verify generation: 0/)
+  await assert.rejects(() => before(hooks, oldParent, "commit-after-cross-session-stale-results", "bash", { command: "git commit -m new" }), /fresh-review/)
+})
+
 test("STALE target assessment admits only typed owner reconciliation and successful reconciliation releases target authority", async () => {
   const hooks = createOperationGuard({ directory: "/tmp/project", env: {} })
   const target = "d".repeat(40)
