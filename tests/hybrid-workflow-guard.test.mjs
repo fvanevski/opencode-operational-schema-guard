@@ -54,7 +54,7 @@ test("central-owned semantic review deterministically elides local Fresh-review"
   await message(hooks, "parent", "build", "SEMANTIC REVIEW AUTHORITY: central-owned")
   await assert.rejects(
     () => before(hooks, "parent", "fresh", "task", taskArgs("fresh-review")),
-    /HONOR_SEMANTIC_REVIEW_AUTHORITY.*central-owned|central-owned.*Central semantic review remains required/s,
+    /central-owned.*NOT_EVALUATED.*HONOR_SEMANTIC_REVIEW_AUTHORITY/s,
   )
 
   await message(hooks, "parent", "build", "SEMANTIC REVIEW AUTHORITY: local-fresh-review")
