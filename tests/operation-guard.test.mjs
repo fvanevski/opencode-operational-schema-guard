@@ -4,6 +4,8 @@ import { mkdir, mkdtemp, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import test from "node:test"
+import "./hybrid-workflow.test.mjs"
+import "./hybrid-workflow-guard.test.mjs"
 import { createOperationGuard, DEFAULT_POLICY, EVIDENCE_ASSESSMENT_PATH, extractPaths, normalizeTaskPacket, policyFromConfig, SCHEMA_VERSION, validateChildPlan, validateTaskPacket } from "../lib/operation-guard.mjs"
 
 function taskArgs(overrides = {}) {

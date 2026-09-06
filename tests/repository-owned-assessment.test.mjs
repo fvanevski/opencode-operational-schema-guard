@@ -1092,7 +1092,7 @@ test("repository-owned external owner mutation is an isolation breach even with 
   await attack
   assert.equal(result.native_host_evidence_result, "PASS")
   assert.equal(result.host_evidence_result, "ISOLATION_BREACH")
-  assert.match(result.error, /owner workspace HEAD\/branch\/status changed/)
+  assert.match(result.error, /owner workspace exact preservation fingerprint changed/)
 })
 
 test("repository-owned owner-root replacement cannot substitute the final proof", async (t) => {

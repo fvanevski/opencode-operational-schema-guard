@@ -1,5 +1,8 @@
 import test from "node:test"
 import assert from "node:assert/strict"
+import { spawnSync } from "node:child_process"
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises"
+import { join } from "node:path"
 import {
   CHILD_PLAN_SCHEMA,
   EVIDENCE_ENTRY_SCHEMA,
@@ -60,6 +63,9 @@ const REQUIREMENT = Object.freeze({
   producer_fingerprint: BASE_ENTRY.producer_fingerprint,
 })
 
+const PLAN_CLI = new URL("../scripts/plan-child-work.mjs", import.meta.url).pathname
+const REPLAY_CLI = new URL("../scripts/replay-issue15-friction.mjs", import.meta.url).pathname
+
 function planInput(overrides = {}) {
   return {
     schema_version: CHILD_PLAN_SCHEMA,
@@ -77,6 +83,27 @@ function planInput(overrides = {}) {
     ...overrides,
   }
 }
+
+test("Issue 15 planner and replay CLI entrypoints are executable through the trusted test graph", async () => {
+  const materialRoot = "/tmp/opencode/verify/materials"
+  await mkdir(materialRoot, { recursive: true })
+  const directory = await mkdtemp(join(materialRoot, "/issue15-cli-"))
+  try {
+    const spec = join(directory, "plan.json")
+    await writeFile(spec, JSON.stringify(planInput()))
+    const planner = spawnSync(process.execPath, [PLAN_CLI, "--spec", spec], { encoding: "utf8", shell: false })
+    assert.equal(planner.status, 0, planner.stderr)
+    assert.match(planner.stdout, /CHILD_WORK_PLAN_RESULT=(?:READY|PARTITION_REQUIRED|ELIDED)/)
+
+    for (const mode of ["central-owned", "local-fresh-review"]) {
+      const replay = spawnSync(process.execPath, [REPLAY_CLI, "--mode", mode], { encoding: "utf8", shell: false })
+      assert.equal(replay.status, 0, replay.stderr)
+      assert.match(replay.stdout, /ISSUE15_FRICTION_REPLAY_RESULT=PASS/)
+    }
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+})
 
 test("semantic review authority is exact, typed, and conflict rejecting", () => {
   assert.equal(semanticReviewAuthorityFromMessage("SEMANTIC REVIEW AUTHORITY: central-owned"), "central-owned")
