@@ -300,6 +300,141 @@ test("canonical Explore partitions returned by preflight are admitted on exact r
   }
 })
 
+test("canonical partitions preserve bounded supporting context and target annotations", async () => {
+  const directory = await gitFixture("issue15-partition-context-")
+  try {
+    await mkdir(join(directory, "lib"), { recursive: true })
+    const targetLines = []
+    for (let index = 0; index < 6; index += 1) {
+      const relative = `lib/context-${index}.mjs`
+      targetLines.push(`- ${relative} inspection-note-${index}`)
+      await writeFile(join(directory, relative), "x".repeat(120000))
+    }
+    git(directory, "add", "lib")
+    git(directory, "commit", "-qm", "base")
+    const base = git(directory, "rev-parse", "HEAD")
+    const hooks = createOperationGuard({ directory, env: {} })
+    await message(hooks, "parent", "build", `HEAD_SHA: ${base}`)
+    let error
+    try {
+      await before(hooks, "parent", "context-review", "task", {
+        subagent_type: "fresh-review",
+        description: "Review bounded targets with shared context",
+        prompt: `Scope: review bounded context-sensitive targets\nQuestions:\n- Are all target-specific contracts preserved?\nStop condition: all listed targets are reviewed.\nTargets:\n${targetLines.join("\n")}\nSupporting context:\nCONTEXT-MUST-SURVIVE: preserve the shared lifecycle invariant exactly.\nDo not broaden beyond the listed files.`,
+      })
+    } catch (caught) {
+      error = caught
+    }
+    assert.ok(error)
+    const match = error.message.match(/deterministic planner returned PARTITION_REQUIRED: (\{.*\}) OPERATIONAL_PACKET_ACTION:/s)
+    assert.ok(match, error.message)
+    const details = JSON.parse(match[1])
+    assert.ok(details.partitions.length > 1)
+    for (const partition of details.partitions) {
+      assert.match(partition.packet, /CONTEXT-MUST-SURVIVE: preserve the shared lifecycle invariant exactly\./)
+      assert.match(partition.packet, /Do not broaden beyond the listed files\./)
+      for (const path of partition.target_paths) {
+        const index = Number(path.match(/context-(\d+)\.mjs$/)?.[1])
+        assert.match(partition.packet, new RegExp(`- ${path} inspection-note-${index}`))
+      }
+    }
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+})
+
+test("partitioned Fresh-review and Verify advance their generations only after every canonical partition succeeds", async () => {
+  const directory = await gitFixture("issue15-partition-gates-")
+  try {
+    await mkdir(join(directory, "lib"), { recursive: true })
+    const targets = []
+    for (let index = 0; index < 6; index += 1) {
+      const relative = `lib/gate-${index}.mjs`
+      targets.push(`- ${relative}`)
+      await writeFile(join(directory, relative), "x".repeat(120000))
+    }
+    git(directory, "add", "lib")
+    git(directory, "commit", "-qm", "base")
+    const base = git(directory, "rev-parse", "HEAD")
+    const hooks = createOperationGuard({ directory, env: {} })
+    await register(hooks, "parent", "build")
+    await editThree(hooks, "parent")
+    await message(hooks, "parent", "build", `HEAD_SHA: ${base}\nSEMANTIC REVIEW AUTHORITY: local-fresh-review`)
+
+    async function partitionDetails(role, callID) {
+      let error
+      try {
+        await before(hooks, "parent", callID, "task", {
+          subagent_type: role,
+          description: role === "fresh-review" ? "Review all bounded partition targets" : "Verify all bounded partition targets",
+          prompt: `Scope: ${role} all bounded partition targets\nQuestions:\n- Does this complete the required bounded gate?\nStop condition: all listed targets are covered.\nTargets:\n${targets.join("\n")}`,
+        })
+      } catch (caught) {
+        error = caught
+      }
+      assert.ok(error)
+      const match = error.message.match(/deterministic planner returned PARTITION_REQUIRED: (\{.*\}) OPERATIONAL_PACKET_ACTION:/s)
+      assert.ok(match, error.message)
+      const details = JSON.parse(match[1])
+      assert.ok(details.partitions.length > 1)
+      return details
+    }
+
+    async function runPartition(role, partition, index) {
+      const callID = `${role}-partition-${index}`
+      const childID = `${role}-child-${index}`
+      const preflight = await before(hooks, "parent", callID, "task", {
+        subagent_type: role,
+        description: `Run canonical ${role} partition`,
+        prompt: partition.packet,
+      })
+      await register(hooks, childID, role)
+      await hooks.event({ event: { type: "message.updated", properties: { info: { sessionID: childID, role: "assistant", finish: "stop" } } } })
+      const count = partition.target_paths.length
+      return after(hooks, "parent", callID, "task", preflight.args, {
+        output: role === "verify"
+          ? "OPERATIONAL_RESULT: PASS; COMMANDS_RUN: 1; COMMANDS_REQUIRED: 1"
+          : `OPERATIONAL_REVIEW: CLEAN; TARGETS_REVIEWED: ${count}; TARGETS_REQUIRED: ${count}`,
+        metadata: { sessionId: childID },
+      })
+    }
+
+    const review = await partitionDetails("fresh-review", "broad-review")
+    for (let index = 0; index < review.partitions.length; index += 1) {
+      const result = await runPartition("fresh-review", review.partitions[index], index)
+      const last = index === review.partitions.length - 1
+      assert.equal(result.metadata.operationalSchema.partitionAggregate.aggregateComplete, last)
+      assert.equal(result.metadata.operationalSchema.boundaryReset, last)
+      const compact = { context: [] }
+      await hooks["experimental.session.compacting"]({ sessionID: "parent" }, compact)
+      assert.match(compact.context.join("\n"), last ? /Fresh-review generation: 3/ : /Fresh-review generation: 0/)
+      if (!last) {
+        await assert.rejects(
+          () => before(hooks, "parent", `duplicate-review-${index}`, "task", {
+            subagent_type: "fresh-review",
+            description: "Do not duplicate completed partition",
+            prompt: review.partitions[index].packet,
+          }),
+          /already completed successfully/,
+        )
+      }
+    }
+
+    const verify = await partitionDetails("verify", "broad-verify")
+    for (let index = 0; index < verify.partitions.length; index += 1) {
+      const result = await runPartition("verify", verify.partitions[index], index)
+      const last = index === verify.partitions.length - 1
+      assert.equal(result.metadata.operationalSchema.partitionAggregate.aggregateComplete, last)
+      assert.equal(result.metadata.operationalSchema.boundaryReset, last)
+      const compact = { context: [] }
+      await hooks["experimental.session.compacting"]({ sessionID: "parent" }, compact)
+      assert.match(compact.context.join("\n"), last ? /Verify generation: 3/ : /Verify generation: 0/)
+    }
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+})
+
 test("central-owned semantic review deterministically elides local Fresh-review", async () => {
   const hooks = createOperationGuard({ directory: "/tmp/issue15-central-review", env: {} })
   await message(hooks, "parent", "build", "SEMANTIC REVIEW AUTHORITY: central-owned")
