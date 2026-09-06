@@ -457,6 +457,64 @@ test("partitioned Fresh-review and Verify advance their generations only after e
   }
 })
 
+test("gate partition obligations survive plugin restart and preserve canonical membership", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "issue15-partition-restart-"))
+  const stateDirectory = await mkdtemp(join(tmpdir(), "issue15-partition-state-"))
+  try {
+    await mkdir(join(directory, "lib"), { recursive: true })
+    const targets = []
+    for (let index = 0; index < 6; index += 1) {
+      const relative = `lib/restart-gate-${index}.mjs`
+      targets.push(`- ${relative}`)
+      await writeFile(join(directory, relative), "x".repeat(120000))
+    }
+
+    const hooks1 = createOperationGuard({ directory, env: {}, stateDirectory })
+    await message(hooks1, "parent-before-restart", "build", `HEAD_SHA: ${HEAD}`)
+    let firstError
+    try {
+      await before(hooks1, "parent-before-restart", "broad-restart-verify", "task", {
+        subagent_type: "verify",
+        description: "Verify all bounded restart targets",
+        prompt: `Scope: verify all bounded restart targets\nQuestions:\n- Does the complete bounded gate pass?\nStop condition: all listed targets are covered.\nTargets:\n${targets.join("\n")}`,
+      })
+    } catch (error) {
+      firstError = error
+    }
+    assert.ok(firstError)
+    const match = firstError.message.match(/deterministic planner returned PARTITION_REQUIRED: (\{.*\}) OPERATIONAL_PACKET_ACTION:/s)
+    assert.ok(match, firstError.message)
+    const details = JSON.parse(match[1])
+    assert.ok(details.partitions.length > 1)
+    const canonicalPacket = details.partitions[0].packet
+    hooks1.dispose()
+
+    const hooks2 = createOperationGuard({ directory, env: {}, stateDirectory })
+    await register(hooks2, "parent-after-restart", "build")
+    const compact = { context: [] }
+    await hooks2["experimental.session.compacting"]({ sessionID: "parent-after-restart" }, compact)
+    assert.match(compact.context.join("\n"), /Outstanding deterministic partition obligations: 1/)
+    assert.match(compact.context.join("\n"), /Verify generation: 0/)
+
+    await assert.rejects(
+      () => before(hooks2, "parent-after-restart", "alternate-after-restart", "task", {
+        subagent_type: "verify",
+        description: "Attempt alternate Verify packet after restart",
+        prompt: "Scope: alternate Verify subset after restart\nQuestions:\n- Does this subset pass?\nStop condition: the subset result is reported.\nTargets:\n- lib/restart-gate-0.mjs",
+      }),
+      /outstanding deterministic verify partition obligation.*only its exact canonical packets.*evidence-elision routes cannot satisfy this gate/s,
+    )
+    await assert.doesNotReject(() => before(hooks2, "parent-after-restart", "canonical-after-restart", "task", {
+      subagent_type: "verify",
+      description: "Run persisted canonical Verify partition",
+      prompt: canonicalPacket,
+    }))
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+    await rm(stateDirectory, { recursive: true, force: true })
+  }
+})
+
 test("outstanding Verify partitions reject trusted receipt elision until canonical completion", async () => {
   const directory = await mkdtemp(join(tmpdir(), "issue15-partition-receipt-bypass-"))
   const materialRoot = "/tmp/opencode/verify/materials"
