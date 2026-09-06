@@ -85,6 +85,9 @@ if (args.includes("--replace-evidence-root")) {
 if (args.includes("--mutate-owner-dirty") && process.env.ASSESSMENT_OWNER_DIRTY_PATH) {
   writeFileSync(process.env.ASSESSMENT_OWNER_DIRTY_PATH, "mutated owner state\\n")
 }
+if (args.includes("--mutate-owner-dirty-b64") && process.env.ASSESSMENT_OWNER_DIRTY_PATH_B64) {
+  writeFileSync(Buffer.from(process.env.ASSESSMENT_OWNER_DIRTY_PATH_B64, "base64"), "mutated owner raw path state\\n")
+}
 process.exit(0)
 `
 
@@ -240,6 +243,26 @@ test("dirty owner byte mutation is detected even when porcelain status is unchan
   } finally {
     if (previous === undefined) delete process.env.ASSESSMENT_OWNER_DIRTY_PATH
     else process.env.ASSESSMENT_OWNER_DIRTY_PATH = previous
+  }
+})
+
+test("dirty owner mutation is detected for a filename containing invalid UTF-8 bytes", async () => {
+  const fx = await fixture()
+  const dirtyPath = Buffer.concat([Buffer.from(`${fx.repo}/owner-`), Buffer.from([0xff]), Buffer.from(".txt")])
+  await writeFile(dirtyPath, "raw owner state\n")
+  const spec = structuredClone(fx.spec)
+  spec.runner.runArgv.push("--mutate-owner-dirty-b64")
+  const previous = process.env.ASSESSMENT_OWNER_DIRTY_PATH_B64
+  process.env.ASSESSMENT_OWNER_DIRTY_PATH_B64 = dirtyPath.toString("base64")
+  try {
+    const result = await run(fx, spec)
+    assert.equal(result.owner_initial.status, result.owner_final.status)
+    assert.notEqual(result.owner_initial.fingerprint, result.owner_final.fingerprint)
+    assert.equal(result.host_evidence_result, "ISOLATION_BREACH")
+    assert.match(result.error, /exact preservation fingerprint changed/)
+  } finally {
+    if (previous === undefined) delete process.env.ASSESSMENT_OWNER_DIRTY_PATH_B64
+    else process.env.ASSESSMENT_OWNER_DIRTY_PATH_B64 = previous
   }
 })
 
