@@ -178,6 +178,28 @@ test("planner returns UNREPRESENTABLE instead of silently dropping excess questi
   assert.equal(result.reason, "question-count-exceeds-three")
 })
 
+test("planner fails closed when one target exceeds the role complexity limit", () => {
+  const result = planChildWork(planInput({
+    targets: [{ path: "lib/oversized.mjs", kind: "production", file_bytes: 120000, diff_bytes: 240000, hunks: 80 }],
+  }))
+  assert.equal(result.status, "UNREPRESENTABLE")
+  assert.equal(result.reason, "single-target-complexity-exceeds-role-limit")
+  assert.equal(result.target_path, "lib/oversized.mjs")
+  assert.ok(result.target_complexity > result.role_complexity_limit)
+  assert.equal(result.partitions.length, 0)
+})
+
+test("planner target ordering is deterministic without locale-sensitive collation", () => {
+  const result = planChildWork(planInput({
+    targets: [
+      { path: "lib/a.mjs", kind: "production", file_bytes: 1000, diff_bytes: 100, hunks: 1 },
+      { path: "lib/Z.mjs", kind: "production", file_bytes: 1000, diff_bytes: 100, hunks: 1 },
+    ],
+  }))
+  assert.equal(result.status, "READY")
+  assert.deepEqual(result.partitions[0].target_paths, ["lib/Z.mjs", "lib/a.mjs"])
+})
+
 test("terminal parser accepts semicolon, multiline, whitespace, and field-order normalization", () => {
   const semicolon = parseChildTerminal("OPERATIONAL_RESULT: PASS; COMMANDS_RUN: 2; COMMANDS_REQUIRED: 2", "verify")
   const multiline = parseChildTerminal("COMMANDS_REQUIRED: 2\nOPERATIONAL_RESULT: PASS\nCOMMANDS_RUN: 2", "verify")
