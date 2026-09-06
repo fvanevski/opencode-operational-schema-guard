@@ -400,6 +400,17 @@ test("partitioned Fresh-review and Verify advance their generations only after e
     }
 
     const review = await partitionDetails("fresh-review", "broad-review")
+    await assert.rejects(
+      () => before(hooks, "parent", "noncanonical-review-bypass", "task", {
+        subagent_type: "fresh-review",
+        description: "Attempt alternate bounded review packet",
+        prompt: "Scope: alternate review subset\nQuestions:\n- Is this subset correct?\nStop condition: the subset is reviewed.\nTargets:\n- lib/gate-0.mjs",
+      }),
+      /outstanding deterministic fresh-review partition obligation.*only its exact canonical packets.*evidence-elision routes cannot satisfy this gate/s,
+    )
+    const reviewBlockedCompact = { context: [] }
+    await hooks["experimental.session.compacting"]({ sessionID: "parent" }, reviewBlockedCompact)
+    assert.match(reviewBlockedCompact.context.join("\n"), /Fresh-review generation: 0/)
     for (let index = 0; index < review.partitions.length; index += 1) {
       const result = await runPartition("fresh-review", review.partitions[index], index)
       const last = index === review.partitions.length - 1
@@ -421,6 +432,17 @@ test("partitioned Fresh-review and Verify advance their generations only after e
     }
 
     const verify = await partitionDetails("verify", "broad-verify")
+    await assert.rejects(
+      () => before(hooks, "parent", "noncanonical-verify-bypass", "task", {
+        subagent_type: "verify",
+        description: "Attempt alternate bounded Verify packet",
+        prompt: "Scope: alternate Verify subset\nQuestions:\n- Does this subset pass?\nStop condition: the subset result is reported.\nTargets:\n- lib/gate-0.mjs",
+      }),
+      /outstanding deterministic verify partition obligation.*only its exact canonical packets.*evidence-elision routes cannot satisfy this gate/s,
+    )
+    const verifyBlockedCompact = { context: [] }
+    await hooks["experimental.session.compacting"]({ sessionID: "parent" }, verifyBlockedCompact)
+    assert.match(verifyBlockedCompact.context.join("\n"), /Verify generation: 0/)
     for (let index = 0; index < verify.partitions.length; index += 1) {
       const result = await runPartition("verify", verify.partitions[index], index)
       const last = index === verify.partitions.length - 1
@@ -432,6 +454,52 @@ test("partitioned Fresh-review and Verify advance their generations only after e
     }
   } finally {
     await rm(directory, { recursive: true, force: true })
+  }
+})
+
+test("outstanding Verify partitions reject trusted receipt elision until canonical completion", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "issue15-partition-receipt-bypass-"))
+  const materialRoot = "/tmp/opencode/verify/materials"
+  await mkdir(materialRoot, { recursive: true })
+  const materialDirectory = await mkdtemp(join(materialRoot, "/issue15-partition-receipt-"))
+  try {
+    await mkdir(join(directory, "lib"), { recursive: true })
+    const targets = []
+    for (let index = 0; index < 6; index += 1) {
+      const relative = `lib/receipt-gate-${index}.mjs`
+      targets.push(`- ${relative}`)
+      await writeFile(join(directory, relative), "x".repeat(120000))
+    }
+    const hooks = createOperationGuard({ directory, env: {} })
+    await message(hooks, "parent", "build", `HEAD_SHA: ${HEAD}`)
+    await assert.rejects(
+      () => before(hooks, "parent", "broad-receipt-verify", "task", {
+        subagent_type: "verify",
+        description: "Verify all bounded receipt-gate targets",
+        prompt: `Scope: verify all bounded receipt-gate targets\nQuestions:\n- Does the complete bounded gate pass?\nStop condition: all listed targets are covered.\nTargets:\n${targets.join("\n")}`,
+      }),
+      /PARTITION_REQUIRED.*deterministic-complexity-partition/s,
+    )
+
+    const receipt = actionsReceipt()
+    const evidencePath = join(materialDirectory, "receipt.json")
+    await writeFile(evidencePath, `${JSON.stringify({ schema_version: "ghdev-actions-plan-evidence-v1", receipt, profile: ACTIONS_PROFILE })}\n`)
+    await message(hooks, "parent", "build", `TRUSTED ACTIONS RECEIPT: head=${HEAD}; sha256=${receipt.receipt_sha256}`)
+    await assert.rejects(
+      () => before(hooks, "parent", "receipt-elision-bypass", "task", {
+        subagent_type: "verify",
+        description: "Attempt receipt reuse while partitions remain",
+        prompt: `Scope: repository-final deterministic Verify evidence\nQuestions:\n- Is the equivalent trusted Actions receipt current?\nStop condition: stop when exact evidence equivalence is decided.\nEvidence: ${evidencePath}`,
+      }),
+      /outstanding deterministic verify partition obligation.*evidence-elision routes cannot satisfy this gate/s,
+    )
+    const compact = { context: [] }
+    await hooks["experimental.session.compacting"]({ sessionID: "parent" }, compact)
+    assert.match(compact.context.join("\n"), /Verify generation: 0/)
+    assert.match(compact.context.join("\n"), /Outstanding deterministic partition obligations: 1/)
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+    await rm(materialDirectory, { recursive: true, force: true })
   }
 })
 
