@@ -82,6 +82,12 @@ if (args.includes("--replace-evidence-root")) {
   mkdirSync(replacement)
   symlinkSync(replacement, root)
 }
+if (args.includes("--mutate-owner-dirty") && process.env.ASSESSMENT_OWNER_DIRTY_PATH) {
+  writeFileSync(process.env.ASSESSMENT_OWNER_DIRTY_PATH, "mutated owner state\\n")
+}
+if (args.includes("--mutate-owner-dirty-b64") && process.env.ASSESSMENT_OWNER_DIRTY_PATH_B64) {
+  writeFileSync(Buffer.from(process.env.ASSESSMENT_OWNER_DIRTY_PATH_B64, "base64"), "mutated owner raw path state\\n")
+}
 process.exit(0)
 `
 
@@ -208,7 +214,7 @@ test("remote authority mismatch fails STALE before worktree or runner execution"
   assert.equal(await exists(fx.log), false)
 })
 
-test("dirty owner workspace is preserved byte-for-byte at the Git identity layer", async () => {
+test("dirty owner workspace is preserved with an exact content fingerprint", async () => {
   const fx = await fixture()
   await writeFile(join(fx.repo, "owner-local.txt"), "untracked owner state\n")
   const before = { head: git(fx.repo, "rev-parse", "HEAD"), branch: git(fx.repo, "branch", "--show-current"), status: gitStatus(fx.repo) }
@@ -216,7 +222,48 @@ test("dirty owner workspace is preserved byte-for-byte at the Git identity layer
   assert.equal(result.host_evidence_result, "PASS", result.error)
   const after = { head: git(fx.repo, "rev-parse", "HEAD"), branch: git(fx.repo, "branch", "--show-current"), status: gitStatus(fx.repo) }
   assert.deepEqual(after, before)
-  assert.deepEqual(result.owner_final, result.owner_initial)
+  assert.equal(result.owner_initial.fingerprint.length, 64)
+  assert.equal(result.owner_final.fingerprint, result.owner_initial.fingerprint)
+})
+
+test("dirty owner byte mutation is detected even when porcelain status is unchanged", async () => {
+  const fx = await fixture()
+  const dirtyPath = join(fx.repo, "owner-local.txt")
+  await writeFile(dirtyPath, "untracked owner state\n")
+  const spec = structuredClone(fx.spec)
+  spec.runner.runArgv.push("--mutate-owner-dirty")
+  const previous = process.env.ASSESSMENT_OWNER_DIRTY_PATH
+  process.env.ASSESSMENT_OWNER_DIRTY_PATH = dirtyPath
+  try {
+    const result = await run(fx, spec)
+    assert.equal(result.owner_initial.status, result.owner_final.status)
+    assert.notEqual(result.owner_initial.fingerprint, result.owner_final.fingerprint)
+    assert.equal(result.host_evidence_result, "ISOLATION_BREACH")
+    assert.match(result.error, /exact preservation fingerprint changed/)
+  } finally {
+    if (previous === undefined) delete process.env.ASSESSMENT_OWNER_DIRTY_PATH
+    else process.env.ASSESSMENT_OWNER_DIRTY_PATH = previous
+  }
+})
+
+test("dirty owner mutation is detected for a filename containing invalid UTF-8 bytes", async () => {
+  const fx = await fixture()
+  const dirtyPath = Buffer.concat([Buffer.from(`${fx.repo}/owner-`), Buffer.from([0xff]), Buffer.from(".txt")])
+  await writeFile(dirtyPath, "raw owner state\n")
+  const spec = structuredClone(fx.spec)
+  spec.runner.runArgv.push("--mutate-owner-dirty-b64")
+  const previous = process.env.ASSESSMENT_OWNER_DIRTY_PATH_B64
+  process.env.ASSESSMENT_OWNER_DIRTY_PATH_B64 = dirtyPath.toString("base64")
+  try {
+    const result = await run(fx, spec)
+    assert.equal(result.owner_initial.status, result.owner_final.status)
+    assert.notEqual(result.owner_initial.fingerprint, result.owner_final.fingerprint)
+    assert.equal(result.host_evidence_result, "ISOLATION_BREACH")
+    assert.match(result.error, /exact preservation fingerprint changed/)
+  } finally {
+    if (previous === undefined) delete process.env.ASSESSMENT_OWNER_DIRTY_PATH_B64
+    else process.env.ASSESSMENT_OWNER_DIRTY_PATH_B64 = previous
+  }
 })
 
 test("assessment branch and worktree collisions fail closed and are never reclaimed", async () => {

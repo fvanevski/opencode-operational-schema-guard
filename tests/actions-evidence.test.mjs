@@ -16,6 +16,7 @@ import {
   validateProfile,
   validateReceipt,
 } from "../lib/actions-evidence.mjs"
+import { actionsReceiptLedgerEntry, evidenceEquivalence } from "../lib/hybrid-workflow.mjs"
 
 const profile = validateProfile(JSON.parse(await readFile(new URL("../evidence/profiles/repository-final-v1.json", import.meta.url), "utf8")))
 const base = "a".repeat(40)
@@ -255,6 +256,39 @@ test("receipt digest/provenance is deterministic and malformed/conflicting recei
   const conflict = { ...receipt, observed_head_sha_final: "9".repeat(40) }
   conflict.receipt_sha256 = receiptDigest(conflict)
   assert.throws(() => validateReceipt(conflict, profile, dispatch), /PASS final identity conflicts|PASS head identity mismatch/)
+})
+
+test("Actions receipt adapter excludes immutable run identity from producer equivalence while retaining it on each entry", () => {
+  const firstReceipt = buildReceipt({ execution: execution(), profile, dispatch, observedBaseFinal: base, observedHeadFinal: head, observedControllerFinal: controller, workflowRunId: 123, workflowRunAttempt: 1, executionArtifactId: 456, receiptArtifactName: "ghdev-receipt-fixture-123" })
+  const secondReceipt = buildReceipt({ execution: execution(), profile, dispatch, observedBaseFinal: base, observedHeadFinal: head, observedControllerFinal: controller, workflowRunId: 124, workflowRunAttempt: 1, executionArtifactId: 457, receiptArtifactName: "ghdev-receipt-fixture-124" })
+  const first = actionsReceiptLedgerEntry(firstReceipt, profile, dispatch, { generation: 3 })
+  const second = actionsReceiptLedgerEntry(secondReceipt, profile, dispatch, { generation: 3 })
+
+  assert.equal(first.producer_fingerprint, second.producer_fingerprint)
+  assert.notEqual(first.receipt_sha256, second.receipt_sha256)
+  assert.deepEqual(first.receipt_identity, {
+    workflow_run_id: "123",
+    workflow_run_attempt: "1",
+    execution_artifact_id: "456",
+    receipt_artifact_name: "ghdev-receipt-fixture-123",
+  })
+  assert.deepEqual(second.receipt_identity, {
+    workflow_run_id: "124",
+    workflow_run_attempt: "1",
+    execution_artifact_id: "457",
+    receipt_artifact_name: "ghdev-receipt-fixture-124",
+  })
+  assert.equal(evidenceEquivalence(second, {
+    evidence_class: first.evidence_class,
+    repository: first.repository,
+    head_sha: first.head_sha,
+    generation: first.generation,
+    gate_id: first.gate_id,
+    profile_fingerprint: first.profile_fingerprint,
+    dependency_fingerprint: first.dependency_fingerprint,
+    environment_fingerprint: first.environment_fingerprint,
+    producer_fingerprint: first.producer_fingerprint,
+  }).equivalent, true)
 })
 
 test("new head cannot reuse an old receipt and evidence classes remain distinct", () => {
