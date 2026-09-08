@@ -1529,7 +1529,7 @@ test("destination-aware shell ownership keeps direct workspace mutators and prot
     `chown 1000:1000 ${workspace}/owner.txt`,
     `sed -i s/a/b/ ${workspace}/sed.txt`,
     `perl -pi -e s/a/b/ ${workspace}/perl.txt`,
-    `printf changed > ${workspace}/redirect.txt`,
+    "printf changed > redirect.txt",
     `ruff format ${workspace}/src/format.py`,
     "git reset --hard HEAD",
   ].entries()) {
