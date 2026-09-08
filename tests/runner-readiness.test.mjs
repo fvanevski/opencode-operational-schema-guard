@@ -207,7 +207,7 @@ test("Docker-persisted security options require NNP plus the exact custom seccom
   await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, SecurityOpt: [`seccomp=${seccompInline}`] } })), /no-new-privileges/i)
   await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, SecurityOpt: ["no-new-privileges:true"] } })), /exactly one applied seccomp/i)
   await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, SecurityOpt: ["no-new-privileges:true", "seccomp=unconfined"] } })), /custom seccomp profile/i)
-  await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, SecurityOpt: ["no-new-privileges:true", "seccomp={not-json"] } })), /not valid inline JSON/i)
+  await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, SecurityOpt: ["no-new-privileges:true", "seccomp={not-json"] } })), /invalid JSON/i)
   await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, SecurityOpt: ["no-new-privileges:true", `seccomp=${JSON.stringify({ ...seccompProfile, defaultAction: "SCMP_ACT_ALLOW" })}`] } })), /differs from frozen host profile/i)
   await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, SecurityOpt: ["no-new-privileges:true", `seccomp=${seccompInline}`, "apparmor=unconfined"] } })), /unexpected SecurityOpt/i)
 })
