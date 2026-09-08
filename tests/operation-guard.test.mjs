@@ -1916,7 +1916,10 @@ test("strict starting-head admission blocks reconciliation after a proved mismat
   const observed = "b".repeat(40)
   await message(hooks, "parent", "build", `EXPECTED_START_HEAD=${expected}`)
   assert.match(await system(hooks, "parent"), /strict starting-head admission.*git rev-parse HEAD/s)
-  await assert.rejects(() => before(hooks, "parent", "compound-proof", "bash", { command: "git status && git rev-parse HEAD" }), /proof must be one bare native git rev-parse HEAD/)
+  await assert.rejects(
+    () => before(hooks, "parent", "compound-proof", "bash", { command: "git status && git rev-parse HEAD" }),
+    /OPERATIONAL_CORRECTION: PROVE_STRICT_START_HEAD.*do_not_execute_or_auto_split=true.*git rev-parse HEAD/s,
+  )
   await before(hooks, "parent", "proof", "bash", { command: "git rev-parse HEAD" })
   const proof = await after(hooks, "parent", "proof", "bash", { command: "git rev-parse HEAD" }, { output: `${observed}\n`, metadata: { exit: 0 } })
   assert.match(proof.output, new RegExp(`OPERATIONAL_AUTHORITY: mismatch; required=${expected}; observed=${observed}; mode=strict-start`))
@@ -2060,7 +2063,10 @@ test("exact-head target admission permits only an exact detached transition befo
   await message(hooks, "parent", "build", `REQUIRED EXACT HEAD: ${target}`)
   await assert.rejects(() => before(hooks, "parent", "wrong-merge", "bash", { command: `git merge --ff-only ${target}` }), new RegExp(`local-agent-assessment\\.mjs --spec.*git worktree add --detach <absolute-disposable-path> ${target}`, "s"))
   const compound = `git checkout --quiet --detach ${target} && git rev-parse HEAD`
-  await assert.rejects(() => before(hooks, "parent", "compound-checkout", "bash", { command: compound }), /separate bare git rev-parse HEAD proof/)
+  await assert.rejects(
+    () => before(hooks, "parent", "compound-checkout", "bash", { command: compound }),
+    new RegExp(`OPERATIONAL_CORRECTION: SPLIT_TARGET_ADMISSION.*Call 1 exactly: git checkout --detach ${target}.*Call 2.*git rev-parse HEAD`, "s"),
+  )
   const command = `git checkout --quiet --detach ${target}`
   await before(hooks, "parent", "checkout", "bash", { command })
   await after(hooks, "parent", "checkout", "bash", { command }, { output: "", metadata: { exit: 0 } })
@@ -2115,7 +2121,7 @@ test("target-mode compound worktree setup is rejected with the safe two-step seq
   await message(hooks, "parent-target-worktree", "build", `REQUIRED EXACT HEAD: ${target}`)
   await assert.rejects(
     () => before(hooks, "parent-target-worktree", "compound-worktree", "bash", { command: `git worktree add --detach ${path} ${target} && git -C ${path} rev-parse HEAD` }),
-    /one bare git worktree add --detach.*set subsequent tool workdir.*one separate bare git rev-parse HEAD/s,
+    new RegExp(`OPERATIONAL_CORRECTION: SPLIT_TARGET_ADMISSION.*Call 1 exactly: git worktree add --detach ${path} ${target}.*Call 2 with tool workdir=${path} exactly: git rev-parse HEAD`, "s"),
   )
 
   const add = { command: `git worktree add --detach ${path} ${target}` }
