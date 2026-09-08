@@ -341,6 +341,7 @@ test("Verify accepts a bounded 24-target packet and rejects a 25th target", () =
 test("path extraction strips prose punctuation and ignores slash-separated non-path labels", () => {
   const paths = extractPaths("Read /tmp/opencode/verify/i307/commands.md. Do not use --start/--down-after; report passed/failed/skipped.", "/")
   assert.deepEqual([...paths], ["/tmp/opencode/verify/i307/commands.md"])
+  assert.deepEqual([...extractPaths("README.md index.mjs package.json", "/repo")], [])
 
   const prompt = `Scope: integration gates\nQuestions:\n- Do ${Array.from({ length: 13 }, (_, index) => `tests/integration/f${index}.py`).join(" ")} pass/failed/skipped?\nStop condition: report failures/skips without --start/--down-after.`
   assert.doesNotThrow(() => validateTaskPacket(taskArgs({ subagent_type: "verify", prompt })))
