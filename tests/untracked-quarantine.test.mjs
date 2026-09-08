@@ -101,26 +101,26 @@ async function continuity(hooks, sessionID) {
 test("typed quarantine removes only two exact untracked paths and restore reproduces them byte-for-byte", async () => {
   const root = await repo()
   await writeFile(join(root, "alpha.txt"), Buffer.from([0, 1, 2, 3, 255]))
-  await mkdir(join(root, "nested"))
-  await writeFile(join(root, "nested", "beta.txt"), "beta\n")
-  await chmod(join(root, "nested", "beta.txt"), 0o640)
+  await mkdir(join(root, "outer", "nested"), { recursive: true })
+  await writeFile(join(root, "outer", "nested", "beta.txt"), "beta\n")
+  await chmod(join(root, "outer", "nested", "beta.txt"), 0o640)
   const beforeTracked = git(root, "diff", "--cached", "--binary") + git(root, "diff", "--binary")
 
-  const { quarantined, id } = await inspectAndQuarantine(root, ["alpha.txt", "nested"])
+  const { quarantined, id } = await inspectAndQuarantine(root, ["alpha.txt", "outer/nested"])
   assert.equal(git(root, "status", "--porcelain=v1", "--untracked-files=all"), "")
   assert.equal(git(root, "diff", "--cached", "--binary") + git(root, "diff", "--binary"), beforeTracked)
 
   const restored = await runUntrackedQuarantine({
-    ...inspectSpec(root, ["alpha.txt", "nested"], id),
+    ...inspectSpec(root, ["alpha.txt", "outer/nested"], id),
     action: "restore",
     receipt_path: receiptPath(id),
     expected_receipt_sha256: quarantined.receipt_sha256,
   })
   assert.equal(restored.result, "PASS")
   assert.deepEqual(await readFile(join(root, "alpha.txt")), Buffer.from([0, 1, 2, 3, 255]))
-  assert.equal(await readFile(join(root, "nested", "beta.txt"), "utf8"), "beta\n")
-  assert.equal((await (await import("node:fs/promises")).stat(join(root, "nested", "beta.txt"))).mode & 0o777, 0o640)
-  assert.match(git(root, "status", "--porcelain=v1", "--untracked-files=all"), /\?\? alpha\.txt[\s\S]*\?\? nested\/beta\.txt/)
+  assert.equal(await readFile(join(root, "outer", "nested", "beta.txt"), "utf8"), "beta\n")
+  assert.equal((await (await import("node:fs/promises")).stat(join(root, "outer", "nested", "beta.txt"))).mode & 0o777, 0o640)
+  assert.match(git(root, "status", "--porcelain=v1", "--untracked-files=all"), /\?\? alpha\.txt[\s\S]*\?\? outer\/nested\/beta\.txt/)
 })
 
 test("tracked, staged, conflicted, ignored-only, escaping, overlapping, and special paths block before source removal", async () => {
