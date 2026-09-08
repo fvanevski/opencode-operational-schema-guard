@@ -203,6 +203,21 @@ test("effective systempaths, namespaces, devices, named volumes, and tmpfs mount
   await blocked(() => assess(config(), inspect({ Mounts: inspect().Mounts.map((mount, index) => index === 0 ? { ...mount, Name: "wrong-volume" } : mount) })), /unexpected or mismatched named volume/i)
   await blocked(() => assess(config(), inspect({ Mounts: inspect().Mounts.map((mount, index) => index === 0 ? { ...mount, Destination: "/wrong" } : mount) })), /unexpected or mismatched named volume/i)
   await blocked(() => assess(config(), inspect({ Mounts: inspect().Mounts.map((mount, index) => index === 0 ? { ...mount, RW: false } : mount) })), /unexpected or mismatched named volume/i)
+  await blocked(() => assess(config(), inspect({ Mounts: inspect().Mounts.map((mount, index) => index === 0 ? { ...mount, RW: "false" } : mount) })), /malformed or duplicated/i)
+
+  const duplicateVolume = inspect()
+  duplicateVolume.Mounts = [{ ...duplicateVolume.Mounts[0] }, { ...duplicateVolume.Mounts[0] }, duplicateVolume.Mounts[2]]
+  await blocked(() => assess(config(), duplicateVolume), /named-volume mount evidence is malformed or duplicated/i)
+
+  const duplicateTmpfsConfig = config({ allowed_tmpfs: [
+    { destination: "/tmp", options: "rw,noexec,nosuid,size=1g" },
+    { destination: "/scratch", options: "rw,noexec,nosuid,size=1g" },
+  ] })
+  const duplicateTmpfs = inspect({
+    HostConfig: { ...inspect().HostConfig, Tmpfs: { "/tmp": "rw,noexec,nosuid,size=1g", "/scratch": "rw,noexec,nosuid,size=1g" } },
+    Mounts: [...inspect().Mounts.filter((mount) => mount.Type === "volume"), { Type: "tmpfs", Destination: "/tmp", RW: true }, { Type: "tmpfs", Destination: "/tmp", RW: true }],
+  })
+  await blocked(() => assess(duplicateTmpfsConfig, duplicateTmpfs), /tmpfs mount evidence is malformed or duplicated/i)
 })
 
 test("Docker-persisted security options require NNP plus the exact custom seccomp semantics", async () => {
