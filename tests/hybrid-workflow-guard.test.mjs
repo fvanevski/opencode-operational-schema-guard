@@ -360,6 +360,14 @@ test("live Issue 29 packet partitions root-relative and nested targets before ge
   }
 })
 
+test("explicit target counting stays independent of unrelated host-root entries", () => {
+  assert.doesNotThrow(() => validateTaskPacket({
+    subagent_type: "explore",
+    description: "Count one opaque explicit target",
+    prompt: "Scope: inspect one bounded target\nQuestions:\n- What does the target represent?\nStop condition: the target is addressed.\nTargets:\n- tmp",
+  }))
+})
+
 test("explicit root-target planning does not reinterpret dot traversal tokens as bounded filesystem targets", async () => {
   const directory = await mkdtemp(join(tmpdir(), "issue29-root-dot-targets-"))
   try {
