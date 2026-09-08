@@ -238,11 +238,27 @@ test("unbound Explore partitions thirteen finite targets before target-limit rej
       }
     }
 
-    await assert.doesNotReject(() => before(hooks, "parent", "canonical-unbound-explore", "task", {
-      subagent_type: "explore",
-      description: "Inspect canonical unbound Explore partition",
-      prompt: details.partitions[0].packet,
-    }))
+    for (let index = 0; index < details.partitions.length; index += 1) {
+      const partition = details.partitions[index]
+      const callID = `canonical-unbound-explore-${index}`
+      const childID = `canonical-unbound-explore-child-${index}`
+      const preflight = await before(hooks, "parent", callID, "task", {
+        subagent_type: "explore",
+        description: "Inspect canonical unbound Explore partition",
+        prompt: partition.packet,
+      })
+      await register(hooks, childID, "explore")
+      await hooks.event({ event: { type: "message.updated", properties: { info: { sessionID: childID, role: "assistant", finish: "stop" } } } })
+      const count = partition.target_paths.length
+      const result = await after(hooks, "parent", callID, "task", preflight.args, {
+        output: `OPERATIONAL_EXPLORE: COMPLETE; TARGETS_INSPECTED: ${count}; TARGETS_REQUIRED: ${count}`,
+        metadata: { sessionId: childID },
+      })
+      const last = index === details.partitions.length - 1
+      assert.equal(result.metadata.operationalSchema.partitionAggregate.aggregateComplete, last)
+      assert.equal(result.metadata.operationalSchema.boundaryReset, last)
+      if (!last) assert.match(result.output, /EXPLORE PARTITION COMPLETE.*aggregate partition obligation remains incomplete/s)
+    }
     await assert.rejects(
       () => before(hooks, "parent", "hand-authored-oversized", "task", {
         subagent_type: "explore",
