@@ -238,6 +238,25 @@ test("unbound Explore partitions thirteen finite targets before target-limit rej
       }
     }
 
+    const undercountedPartition = details.partitions[0]
+    assert.ok(undercountedPartition.target_paths.length > 1)
+    const undercountedPreflight = await before(hooks, "parent", "canonical-unbound-explore-undercounted", "task", {
+      subagent_type: "explore",
+      description: "Reject an undercounted canonical Explore completion",
+      prompt: undercountedPartition.packet,
+    })
+    await register(hooks, "canonical-unbound-explore-undercounted-child", "explore")
+    await hooks.event({ event: { type: "message.updated", properties: { info: { sessionID: "canonical-unbound-explore-undercounted-child", role: "assistant", finish: "stop" } } } })
+    const undercountedResult = await after(hooks, "parent", "canonical-unbound-explore-undercounted", "task", undercountedPreflight.args, {
+      output: "OPERATIONAL_EXPLORE: COMPLETE; TARGETS_INSPECTED: 1; TARGETS_REQUIRED: 1",
+      metadata: { sessionId: "canonical-unbound-explore-undercounted-child" },
+    })
+    assert.equal(undercountedResult.metadata.operationalSchema.complete, false)
+    assert.equal(undercountedResult.metadata.operationalSchema.boundaryReset, false)
+    assert.equal(undercountedResult.metadata.operationalSchema.partitionAggregate.aggregateComplete, false)
+    assert.equal(undercountedResult.metadata.operationalSchema.canonicalTargetsRequired, undercountedPartition.target_paths.length)
+    assert.ok(undercountedResult.metadata.operationalSchema.reasons.includes("operational-explore-canonical-target-count-mismatch"))
+
     for (let index = 0; index < details.partitions.length; index += 1) {
       const partition = details.partitions[index]
       const callID = `canonical-unbound-explore-${index}`
@@ -358,6 +377,22 @@ test("unbound Explore rejects open-ended and partial envelopes rather than manuf
       subagent_type: "explore",
       description: "Inspect broad repository scope",
       prompt: "Scope: inspect the entire repository and all files\nQuestions:\n- What does everything do?\nStop condition: stop after the repository is understood.\nTargets:\n- lib/a.mjs",
+    }),
+    /UNREPRESENTABLE.*unbound-explore-open-ended-scope/s,
+  )
+  await assert.rejects(
+    () => before(hooks, "parent", "scope-expanding-supporting-context", "task", {
+      subagent_type: "explore",
+      description: "Reject supporting context that widens bounded Explore scope",
+      prompt: "Scope: inspect only the listed target\nQuestions:\n- What owns the listed target?\nStop condition: stop after the listed target is addressed.\nTargets:\n- lib/a.mjs\nSupporting context:\nInspect the entire repository and any related files before answering.",
+    }),
+    /UNREPRESENTABLE.*unbound-explore-open-ended-scope/s,
+  )
+  await assert.rejects(
+    () => before(hooks, "parent", "scope-expanding-question", "task", {
+      subagent_type: "explore",
+      description: "Reject a question that widens bounded Explore scope",
+      prompt: "Scope: inspect only the listed target\nQuestions:\n- Follow additional callers as needed beyond the listed target.\nStop condition: stop after the question is answered.\nTargets:\n- lib/a.mjs",
     }),
     /UNREPRESENTABLE.*unbound-explore-open-ended-scope/s,
   )
