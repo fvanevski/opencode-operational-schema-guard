@@ -87,7 +87,7 @@ function inspect(overrides = {}) {
       MaskedPaths: [],
       ReadonlyPaths: [],
       SecurityOpt: ["no-new-privileges:true", `seccomp=${seccompInline}`],
-      Binds: null,
+      Binds: ["ghdev-runner-state:/runner", "ghdev-runner-work:/runner/_work"],
       Tmpfs: { "/tmp": "rw,noexec,nosuid,size=1g" },
     },
     Mounts: [
@@ -164,9 +164,15 @@ test("persistent hardened listener fixture is admitted", () => {
   assert.equal(result.healthy, true)
 })
 
-test("credential-like static environment and host binds fail closed", async () => {
+test("credential-like static environment and effective host binds fail closed", async () => {
   await blocked(() => assess(config(), inspect({ Config: { ...inspect().Config, Env: ["GH_TOKEN=secret"] } })), /credential-like environment/i)
-  await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, Binds: ["/home/user:/host"] } })), /host bind mounts/i)
+  await blocked(() => assess(config(), inspect({ Mounts: [...inspect().Mounts, { Type: "bind", Source: "/home/user", Destination: "/host", RW: true }] })), /unexpected mount type/i)
+})
+
+test("named volumes encoded through HostConfig.Binds are admitted from effective Mounts", () => {
+  const observed = inspect()
+  assert.deepEqual(observed.HostConfig.Binds, ["ghdev-runner-state:/runner", "ghdev-runner-work:/runner/_work"])
+  assert.equal(assess(config(), observed).result, "PASS")
 })
 
 test("privilege, every numeric UID-zero spelling, image, restart, resource, and health drift fail closed", async () => {
@@ -189,9 +195,38 @@ test("effective systempaths, namespaces, devices, named volumes, and tmpfs mount
   await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, ReadonlyPaths: undefined } })), /explicit empty Docker masked\/read-only path lists/i)
   await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, PidMode: "host" } })), /PidMode/i)
   await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, DeviceRequests: [{ Driver: "nvidia" }] } })), /host devices/i)
+  await blocked(() => assess(config(), inspect({ Mounts: null })), /Docker inspect Mounts is invalid/i)
+  await blocked(() => assess(config(), inspect({ Mounts: { unexpected: true } })), /Docker inspect Mounts is invalid/i)
   await blocked(() => assess(config(), inspect({ Mounts: inspect().Mounts.filter((mount) => mount.Type !== "volume") })), /named-volume set/i)
   await blocked(() => assess(config(), inspect({ Mounts: inspect().Mounts.filter((mount) => mount.Type !== "tmpfs") })), /tmpfs mount set/i)
   await blocked(() => assess(config(), inspect({ Mounts: [...inspect().Mounts, { Type: "bind", Source: "/host", Destination: "/unexpected", RW: false }] })), /unexpected mount type/i)
+  await blocked(() => assess(config(), inspect({ Mounts: inspect().Mounts.map((mount, index) => index === 0 ? { ...mount, Name: "wrong-volume" } : mount) })), /unexpected or mismatched named volume/i)
+  await blocked(() => assess(config(), inspect({ Mounts: inspect().Mounts.map((mount, index) => index === 0 ? { ...mount, Destination: "/wrong" } : mount) })), /unexpected or mismatched named volume/i)
+  await blocked(() => assess(config(), inspect({ Mounts: inspect().Mounts.map((mount, index) => index === 0 ? { ...mount, RW: false } : mount) })), /unexpected or mismatched named volume/i)
+  await blocked(() => assess(config(), inspect({ Mounts: inspect().Mounts.map((mount, index) => index === 0 ? { ...mount, RW: "false" } : mount) })), /malformed or duplicated/i)
+
+  const duplicateVolume = inspect()
+  duplicateVolume.Mounts = [{ ...duplicateVolume.Mounts[0] }, { ...duplicateVolume.Mounts[0] }, duplicateVolume.Mounts[2]]
+  await blocked(() => assess(config(), duplicateVolume), /named-volume mount evidence is malformed or duplicated/i)
+
+  const duplicateTmpfsConfig = config({ allowed_tmpfs: [
+    { destination: "/tmp", options: "rw,noexec,nosuid,size=1g" },
+    { destination: "/scratch", options: "rw,noexec,nosuid,size=1g" },
+  ] })
+  const duplicateTmpfs = inspect({
+    HostConfig: { ...inspect().HostConfig, Tmpfs: { "/tmp": "rw,noexec,nosuid,size=1g", "/scratch": "rw,noexec,nosuid,size=1g" } },
+    Mounts: [...inspect().Mounts.filter((mount) => mount.Type === "volume"), { Type: "tmpfs", Destination: "/tmp", RW: true }, { Type: "tmpfs", Destination: "/tmp", RW: true }],
+  })
+  await blocked(() => assess(duplicateTmpfsConfig, duplicateTmpfs), /tmpfs mount evidence is malformed or duplicated/i)
+
+  await blocked(() => assess(config(), inspect({ Mounts: inspect().Mounts.map((mount) => mount.Type === "tmpfs" ? { ...mount, RW: false } : mount) })), /tmpfs writability differs/i)
+
+  const readOnlyTmpfsConfig = config({ allowed_tmpfs: [{ destination: "/tmp", options: "ro,noexec,nosuid,size=1g" }] })
+  const readOnlyTmpfs = inspect({
+    HostConfig: { ...inspect().HostConfig, Tmpfs: { "/tmp": "ro,noexec,nosuid,size=1g" } },
+    Mounts: inspect().Mounts.map((mount) => mount.Type === "tmpfs" ? { ...mount, RW: false } : mount),
+  })
+  assert.equal(assess(readOnlyTmpfsConfig, readOnlyTmpfs).result, "PASS")
 })
 
 test("Docker-persisted security options require NNP plus the exact custom seccomp semantics", async () => {
@@ -232,9 +267,10 @@ test("seccomp comparison preserves 64-bit JSON integer distinctions", async (t) 
   await blocked(() => assessRunnerContainer(config64, different, { volumeInspects: volumes(), seccompProof: assessmentProof64 }), /differs from frozen host profile/i)
 })
 
-test("named volumes reject local-driver bind backing, non-local drivers, and missing writable runner-state coverage", async () => {
+test("named volumes reject local-driver bind backing, non-local driver/scope, and missing writable runner-state coverage", async () => {
   await blocked(() => assessRunnerContainer(config(), inspect(), { volumeInspects: volumes({ "ghdev-runner-state": { Options: { type: "none", o: "bind", device: "/home/user" } } }), seccompProof: seccompProof() }), /must not use local-driver options/i)
-  await blocked(() => assessRunnerContainer(config(), inspect(), { volumeInspects: volumes({ "ghdev-runner-work": { Driver: "custom" } }), seccompProof: seccompProof() }), /local Docker driver/i)
+  await blocked(() => assessRunnerContainer(config(), inspect(), { volumeInspects: volumes({ "ghdev-runner-work": { Driver: "custom" } }), seccompProof: seccompProof() }), /local Docker driver\/scope/i)
+  await blocked(() => assessRunnerContainer(config(), inspect(), { volumeInspects: volumes({ "ghdev-runner-work": { Scope: "global" } }), seccompProof: seccompProof() }), /local Docker driver\/scope/i)
   await blocked(() => validateRunnerReadinessConfig(config({ allowed_named_volumes: [{ name: "unrelated", destination: "/data", read_only: false }] })), /writable named-volume coverage.*\/runner\/\.runner/i)
   await blocked(() => validateRunnerReadinessConfig(config({ allowed_named_volumes: [{ name: "state-ro", destination: "/runner", read_only: true }, { name: "work", destination: "/runner/_work", read_only: false }] })), /writable named-volume coverage.*\/runner\/\.runner/i)
 })
@@ -267,12 +303,14 @@ test("seccomp bytes must be unchanged since before container creation", async ()
   await blocked(() => assessRunnerContainer(config(), inspect(), { volumeInspects: volumes(), seccompProof: seccompProof({ sha256: "d".repeat(64) }) }), /seccomp proof/i)
 })
 
-test("config requires exact GitHub routing labels, isolated network mode, and normalized absolute paths", async () => {
+test("config requires exact GitHub routing labels, isolated network mode, normalized paths, and explicit tmpfs writability", async () => {
   await blocked(() => validateRunnerReadinessConfig(config({ github_runner_labels: ["self-hosted", "ghdev-verify"] })), /github_runner_labels/i)
   await blocked(() => validateRunnerReadinessConfig(config({ network_mode: "container:other" })), /cannot share another container namespace/i)
   await blocked(() => validateRunnerReadinessConfig(config({ seccomp: { path: "/etc/ghdev/../bad.json", sha256: seccomp } })), /normalized absolute path/i)
   await blocked(() => validateRunnerReadinessConfig(config({ runner_settings_path: "/tmp/decoy/.runner" })), /runner_settings_path must be exactly/i)
   await blocked(() => validateRunnerReadinessConfig(config({ runner_listener_path: "/tmp/decoy/Runner.Listener" })), /runner_listener_path must be exactly/i)
+  await blocked(() => validateRunnerReadinessConfig(config({ allowed_tmpfs: [{ destination: "/tmp", options: "noexec,nosuid,size=1g" }] })), /exactly one explicit rw or ro/i)
+  await blocked(() => validateRunnerReadinessConfig(config({ allowed_tmpfs: [{ destination: "/tmp", options: "rw,ro,noexec,nosuid,size=1g" }] })), /exactly one explicit rw or ro/i)
 })
 
 test("runner registration settings prove persistent update-disabled repository binding", async () => {
