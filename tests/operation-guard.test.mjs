@@ -1534,7 +1534,7 @@ test("destination-aware shell ownership keeps direct workspace mutators and prot
     `chown 1000:1000 ${workspace}/owner.txt`,
     `sed -i s/a/b/ ${workspace}/sed.txt`,
     `perl -pi -e s/a/b/ ${workspace}/perl.txt`,
-    "printf changed > redirect.txt",
+    `printf changed > ${workspace}/redirect.txt`,
     `ruff format ${workspace}/src/format.py`,
     "git reset --hard HEAD",
   ].entries()) {
@@ -1545,6 +1545,42 @@ test("destination-aware shell ownership keeps direct workspace mutators and prot
     () => before(hooks, "parent-write-targets", "protected-source", "bash", { command: `cp ${stateDirectory}/guard-state.json /tmp/opencode/verify/materials/guard-state-copy.json` }),
     /guard-owned persisted state and recovery material/,
   )
+  await assert.doesNotReject(
+    () => before(hooks, "parent-write-targets", "external-temp-redirection", "bash", { command: "printf staged > /tmp/issue27-external-redirection.txt" }),
+  )
+  const compacting = { context: [] }
+  await hooks["experimental.session.compacting"]({ sessionID: "parent-write-targets" }, compacting)
+  assert.match(compacting.context.join("\n"), /Edit generation: 0; Fresh-review generation: 0; Verify generation: 0/)
+})
+
+test("mutating Git global path options classify their actual workspace write targets", async () => {
+  const workspace = "/tmp/project-destination-git-targets"
+  const external = "/tmp/issue27-external-git"
+  const hooks = createOperationGuard({ directory: workspace, env: {} })
+  const target = "e".repeat(40)
+  await message(hooks, "parent-git-targets", "build", `REQUIRED EXACT HEAD: ${target}`)
+  await before(hooks, "parent-git-targets", "proof", "bash", { command: "git rev-parse HEAD" })
+  await after(hooks, "parent-git-targets", "proof", "bash", { command: "git rev-parse HEAD" }, { output: `${target}\n`, metadata: { exit: 0 } })
+
+  await assert.doesNotReject(() => before(hooks, "parent-git-targets", "workspace-git", "bash", {
+    command: `git --git-dir=${workspace}/.git --work-tree=${workspace} reset --hard HEAD`,
+    workdir: external,
+  }))
+  const workspaceState = { context: [] }
+  await hooks["experimental.session.compacting"]({ sessionID: "parent-git-targets" }, workspaceState)
+  assert.match(workspaceState.context.join("\n"), /Edit generation: 1; Fresh-review generation: 0; Verify generation: 0/)
+
+  const externalHooks = createOperationGuard({ directory: workspace, env: {} })
+  await message(externalHooks, "parent-external-git", "build", `REQUIRED EXACT HEAD: ${target}`)
+  await before(externalHooks, "parent-external-git", "proof", "bash", { command: "git rev-parse HEAD" })
+  await after(externalHooks, "parent-external-git", "proof", "bash", { command: "git rev-parse HEAD" }, { output: `${target}\n`, metadata: { exit: 0 } })
+  await assert.doesNotReject(() => before(externalHooks, "parent-external-git", "external-git", "bash", {
+    command: `git -C ${external} reset --hard HEAD`,
+    workdir: workspace,
+  }))
+  const externalState = { context: [] }
+  await externalHooks["experimental.session.compacting"]({ sessionID: "parent-external-git" }, externalState)
+  assert.match(externalState.context.join("\n"), /Edit generation: 0; Fresh-review generation: 0; Verify generation: 0/)
 })
 
 test("admitted workspace-source copy leaves workspace bytes, git status, and publication generations unchanged", async () => {
