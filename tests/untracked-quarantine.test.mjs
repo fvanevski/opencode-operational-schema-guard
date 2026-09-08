@@ -268,6 +268,9 @@ test("pending exact-head guard admits only the exact typed helper and preserves 
     await assert.rejects(() => before(hooks, session, `generic-${index}`, unsafe), /exact-head admission is pending|pending exact-head|exact-head target/i, unsafe)
   }
 
+  await assert.doesNotReject(() => before(hooks, session, "external-copy", "cp /tmp/source.dat /tmp/destination.dat"))
+  await assert.doesNotReject(() => before(hooks, session, "external-move", "mv /tmp/source.dat /tmp/destination.dat"))
+
   await assert.rejects(() => before(hooks, session, "malformed-helper", `${HELPER} --spec ${specPath} --extra`), /untracked-quarantine.*exactly|typed untracked/i)
 
   const wrongID = operationID("wrong")
