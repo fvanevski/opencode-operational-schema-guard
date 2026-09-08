@@ -93,7 +93,6 @@ function inspect(overrides = {}) {
     Mounts: [
       { Type: "volume", Name: "ghdev-runner-state", Destination: "/runner", RW: true },
       { Type: "volume", Name: "ghdev-runner-work", Destination: "/runner/_work", RW: true },
-      { Type: "tmpfs", Destination: "/tmp", RW: true },
     ],
     State: { Running: true, Status: "running", Health: { Status: "healthy" } },
     ...overrides,
@@ -188,7 +187,7 @@ test("privilege, every numeric UID-zero spelling, image, restart, resource, and 
   await blocked(() => assess(config(), inspect({ State: { Running: true, Status: "running", Health: { Status: "unhealthy" } } })), /not healthy/i)
 })
 
-test("effective systempaths, namespaces, devices, named volumes, and tmpfs mount census are enforced", async () => {
+test("effective systempaths, namespaces, devices, named volumes, and tmpfs contracts are enforced", async () => {
   await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, MaskedPaths: ["/proc/acpi"] } })), /empty Docker masked\/read-only path lists/i)
   await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, ReadonlyPaths: ["/proc/sys"] } })), /empty Docker masked\/read-only path lists/i)
   await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, MaskedPaths: null } })), /explicit empty Docker masked\/read-only path lists/i)
@@ -198,35 +197,31 @@ test("effective systempaths, namespaces, devices, named volumes, and tmpfs mount
   await blocked(() => assess(config(), inspect({ Mounts: null })), /Docker inspect Mounts is invalid/i)
   await blocked(() => assess(config(), inspect({ Mounts: { unexpected: true } })), /Docker inspect Mounts is invalid/i)
   await blocked(() => assess(config(), inspect({ Mounts: inspect().Mounts.filter((mount) => mount.Type !== "volume") })), /named-volume set/i)
-  await blocked(() => assess(config(), inspect({ Mounts: inspect().Mounts.filter((mount) => mount.Type !== "tmpfs") })), /tmpfs mount set/i)
   await blocked(() => assess(config(), inspect({ Mounts: [...inspect().Mounts, { Type: "bind", Source: "/host", Destination: "/unexpected", RW: false }] })), /unexpected mount type/i)
+  await blocked(() => assess(config(), inspect({ Mounts: [...inspect().Mounts, { Type: "tmpfs", Destination: "/tmp", RW: true }] })), /unexpected mount type/i)
   await blocked(() => assess(config(), inspect({ Mounts: inspect().Mounts.map((mount, index) => index === 0 ? { ...mount, Name: "wrong-volume" } : mount) })), /unexpected or mismatched named volume/i)
   await blocked(() => assess(config(), inspect({ Mounts: inspect().Mounts.map((mount, index) => index === 0 ? { ...mount, Destination: "/wrong" } : mount) })), /unexpected or mismatched named volume/i)
   await blocked(() => assess(config(), inspect({ Mounts: inspect().Mounts.map((mount, index) => index === 0 ? { ...mount, RW: false } : mount) })), /unexpected or mismatched named volume/i)
   await blocked(() => assess(config(), inspect({ Mounts: inspect().Mounts.map((mount, index) => index === 0 ? { ...mount, RW: "false" } : mount) })), /malformed or duplicated/i)
 
   const duplicateVolume = inspect()
-  duplicateVolume.Mounts = [{ ...duplicateVolume.Mounts[0] }, { ...duplicateVolume.Mounts[0] }, duplicateVolume.Mounts[2]]
+  duplicateVolume.Mounts = [{ ...duplicateVolume.Mounts[0] }, { ...duplicateVolume.Mounts[0] }]
   await blocked(() => assess(config(), duplicateVolume), /named-volume mount evidence is malformed or duplicated/i)
 
-  const duplicateTmpfsConfig = config({ allowed_tmpfs: [
-    { destination: "/tmp", options: "rw,noexec,nosuid,size=1g" },
-    { destination: "/scratch", options: "rw,noexec,nosuid,size=1g" },
-  ] })
-  const duplicateTmpfs = inspect({
-    HostConfig: { ...inspect().HostConfig, Tmpfs: { "/tmp": "rw,noexec,nosuid,size=1g", "/scratch": "rw,noexec,nosuid,size=1g" } },
-    Mounts: [...inspect().Mounts.filter((mount) => mount.Type === "volume"), { Type: "tmpfs", Destination: "/tmp", RW: true }, { Type: "tmpfs", Destination: "/tmp", RW: true }],
-  })
-  await blocked(() => assess(duplicateTmpfsConfig, duplicateTmpfs), /tmpfs mount evidence is malformed or duplicated/i)
-
-  await blocked(() => assess(config(), inspect({ Mounts: inspect().Mounts.map((mount) => mount.Type === "tmpfs" ? { ...mount, RW: false } : mount) })), /tmpfs writability differs/i)
+  await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, Tmpfs: null } })), /Docker inspect Tmpfs is invalid/i)
+  await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, Tmpfs: undefined } })), /Docker inspect Tmpfs is invalid/i)
+  await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, Tmpfs: {} } })), /tmpfs contract differs/i)
+  await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, Tmpfs: { "/tmp": "rw,noexec,nosuid,size=1g", "/scratch": "rw,noexec,nosuid,size=1g" } } })), /tmpfs contract differs/i)
+  await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, Tmpfs: { "/tmp": "ro,noexec,nosuid,size=1g" } } })), /tmpfs contract differs/i)
+  await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, Tmpfs: { "/tmp": false } } })), /Docker inspect Tmpfs entry is invalid/i)
 
   const readOnlyTmpfsConfig = config({ allowed_tmpfs: [{ destination: "/tmp", options: "ro,noexec,nosuid,size=1g" }] })
-  const readOnlyTmpfs = inspect({
-    HostConfig: { ...inspect().HostConfig, Tmpfs: { "/tmp": "ro,noexec,nosuid,size=1g" } },
-    Mounts: inspect().Mounts.map((mount) => mount.Type === "tmpfs" ? { ...mount, RW: false } : mount),
-  })
+  const readOnlyTmpfs = inspect({ HostConfig: { ...inspect().HostConfig, Tmpfs: { "/tmp": "ro,noexec,nosuid,size=1g" } } })
   assert.equal(assess(readOnlyTmpfsConfig, readOnlyTmpfs).result, "PASS")
+
+  const noTmpfsConfig = config({ allowed_tmpfs: [] })
+  const noTmpfs = inspect({ HostConfig: { ...inspect().HostConfig, Tmpfs: null } })
+  assert.equal(assess(noTmpfsConfig, noTmpfs).result, "PASS")
 })
 
 test("Docker-persisted security options require NNP plus the exact custom seccomp semantics", async () => {
