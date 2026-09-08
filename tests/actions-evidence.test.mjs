@@ -69,6 +69,11 @@ function execution(overrides = {}) {
       listener_mode: "persistent-listener-v1",
       runner_updates: "disabled",
       actions_runner_version: "2.337.0",
+      runner_settings_sha256: "8".repeat(64),
+      runner_listener_sha256: "9".repeat(64),
+      runner_agent_id: 123,
+      runner_name: "ghdev-verify-runner",
+      runner_identity_clean_final: true,
       git_version: "git version 2.43.0",
       node_version: "v22.16.0",
       npm_version: "10.9.2",
@@ -161,6 +166,8 @@ test("started execution requires complete Git and Python provenance", () => {
   assert.throws(() => validateExecutionRecord(execution({ environment: { ...execution().environment, git_sha256: null } }), profile, dispatch), /git_sha256 missing/)
   assert.throws(() => validateExecutionRecord(execution({ environment: { ...execution().environment, listener_mode: "ephemeral" } }), profile, dispatch), /listener mode mismatch/)
   assert.throws(() => validateExecutionRecord(execution({ environment: { ...execution().environment, runner_updates: "automatic" } }), profile, dispatch), /runner update mode mismatch/)
+  assert.throws(() => validateExecutionRecord(execution({ environment: { ...execution().environment, runner_settings_sha256: null } }), profile, dispatch), /runner_settings_sha256 missing/)
+  assert.throws(() => validateExecutionRecord(execution({ environment: { ...execution().environment, runner_identity_clean_final: false } }), profile, dispatch), /unchanged live runner identity/)
 })
 
 test("signal termination is BLOCKED without fabricating a numeric exit", () => {
@@ -191,6 +198,11 @@ test("setup failures can produce a typed BLOCKED execution without fabricating e
       listener_mode: null,
       runner_updates: null,
       actions_runner_version: null,
+      runner_settings_sha256: null,
+      runner_listener_sha256: null,
+      runner_agent_id: null,
+      runner_name: null,
+      runner_identity_clean_final: false,
       git_version: null,
       node_version: null,
       npm_version: null,

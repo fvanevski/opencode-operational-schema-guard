@@ -120,6 +120,19 @@ test("ordinary CI uses the same Node-24-native checkout/setup-node pins without 
   assert.match(ci, /package-manager-cache: false/)
 })
 
+test("executor receipts bind to live persistent runner registration state rather than marker declarations", () => {
+  assert.match(executor, /LIVE_RUNNER_SETTINGS_PATH = "\\/runner\\/\\.runner"/)
+  assert.match(executor, /LIVE_RUNNER_LISTENER_PATH = "\\/runner\\/bin\\/Runner\\.Listener"/)
+  assert.match(executor, /settings\.DisableUpdate !== true/)
+  assert.match(executor, /settings\.Ephemeral === true/)
+  assert.match(executor, /settings\.AgentName !== process\.env\.RUNNER_NAME/)
+  assert.match(executor, /runner_settings_sha256: sha256Hex\(settingsBytes\)/)
+  assert.match(executor, /runner_listener_sha256: sha256Hex\(listenerBytes\)/)
+  assert.match(executor, /runner_identity_clean_final/)
+  assert.doesNotMatch(executor, /listener_mode: marker\.listener_mode/)
+  assert.doesNotMatch(executor, /runner_updates: marker\.runner_updates/)
+})
+
 test("executor preflights and attests Python and Git before any profile command", () => {
   assert.match(executor, /"\/usr\/bin\/git", "\/usr\/bin\/node", "\/usr\/bin\/npm", "\/usr\/bin\/python3", "\/usr\/bin\/bwrap"/)
   assert.match(executor, /exactCommandOutput\(\["\/usr\/bin\/git", "--version"\]\)/)
