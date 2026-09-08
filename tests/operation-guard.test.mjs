@@ -2068,6 +2068,61 @@ test("pending mutations return mode-specific machine correction codes", async ()
   )
 })
 
+test("authority proof admission binds workdir and completion to the exact authority epoch", async () => {
+  const strictTarget = "1".repeat(40)
+  const strictObserved = "2".repeat(40)
+  const strict = createOperationGuard({ directory: "/tmp/project-issue28-proof-binding", env: {} })
+  await message(strict, "issue28-proof-binding", "build", `REQUIRED STARTING HEAD: ${strictTarget}`)
+  await assert.rejects(
+    () => before(strict, "issue28-proof-binding", "external-proof", "bash", { command: "git rev-parse HEAD", workdir: "/tmp/unrelated-repository" }),
+    /OPERATIONAL_CORRECTION: SET_WORKDIR_AND_PROVE_HEAD.*offending_workdir=.*unrelated-repository.*do_not_execute=true/s,
+  )
+
+  const proofArgs = { command: "git rev-parse HEAD" }
+  await before(strict, "issue28-proof-binding", "proof-first", "bash", proofArgs)
+  await before(strict, "issue28-proof-binding", "proof-concurrent", "bash", proofArgs)
+  await after(strict, "issue28-proof-binding", "proof-first", "bash", proofArgs, { output: `${strictObserved}\n`, metadata: { exit: 0 } })
+  const late = await after(strict, "issue28-proof-binding", "proof-concurrent", "bash", proofArgs, { output: `${strictTarget}\n`, metadata: { exit: 0 } })
+  assert.match(late.output, /OPERATIONAL_AUTHORITY_PROOF: STALE.*current_status=mismatch/s)
+  const mismatch = { context: [] }
+  await strict["experimental.session.compacting"]({ sessionID: "issue28-proof-binding" }, mismatch)
+  assert.match(mismatch.context.join("\n"), /Authority admission: mismatch; mode: strict-start/)
+  await assert.rejects(() => before(strict, "issue28-proof-binding", "edit-after-late-proof", "edit", { filePath: "src/a.py" }), /strict-start mismatch requires new user starting-revision authority/i)
+
+  const aba = createOperationGuard({ directory: "/tmp/project-issue28-proof-aba", env: {} })
+  const first = "3".repeat(40)
+  const second = "4".repeat(40)
+  await message(aba, "issue28-proof-aba", "build", `REQUIRED STARTING HEAD: ${first}`)
+  await before(aba, "issue28-proof-aba", "old-proof", "bash", proofArgs)
+  await message(aba, "issue28-proof-aba", "build", `REQUIRED STARTING HEAD: ${second}`)
+  await message(aba, "issue28-proof-aba", "build", `REQUIRED STARTING HEAD: ${first}`)
+  const staleEpoch = await after(aba, "issue28-proof-aba", "old-proof", "bash", proofArgs, { output: `${first}\n`, metadata: { exit: 0 } })
+  assert.match(staleEpoch.output, /OPERATIONAL_AUTHORITY_PROOF: STALE.*admitted_epoch=1.*current_epoch=3/s)
+  const pending = { context: [] }
+  await aba["experimental.session.compacting"]({ sessionID: "issue28-proof-aba" }, pending)
+  assert.match(pending.context.join("\n"), /Authority admission: pending; mode: strict-start/)
+
+  const target = "5".repeat(40)
+  const targetPath = "/tmp/opencode/verify/worktrees/issue28-proof-binding"
+  const targetHooks = createOperationGuard({ directory: "/tmp/project-issue28-target-binding", env: {} })
+  await message(targetHooks, "issue28-target-binding", "build", `REQUIRED EXACT HEAD: ${target}`)
+  await assert.rejects(
+    () => before(targetHooks, "issue28-target-binding", "unrelated-target-proof", "bash", { command: "git rev-parse HEAD", workdir: targetPath }),
+    /OPERATIONAL_CORRECTION: TARGET_PROOF_WORKDIR_NOT_ADMITTED.*do_not_execute=true/s,
+  )
+  await assert.rejects(
+    () => before(targetHooks, "issue28-target-binding", "git-c-target-setup", "bash", { command: `git -C /tmp/unrelated-repository switch --detach ${target}` }),
+    /exact-head admission is pending/,
+  )
+  const add = { command: `git worktree add --detach ${targetPath} ${target}` }
+  await before(targetHooks, "issue28-target-binding", "target-worktree-add", "bash", add)
+  await after(targetHooks, "issue28-target-binding", "target-worktree-add", "bash", add, { output: "prepared", metadata: { exit: 0 } })
+  const targetProof = { command: "git rev-parse HEAD", workdir: targetPath }
+  await assert.doesNotReject(() => before(targetHooks, "issue28-target-binding", "target-proof", "bash", targetProof))
+  const targetResult = await after(targetHooks, "issue28-target-binding", "target-proof", "bash", targetProof, { output: `${target}\n`, metadata: { exit: 0 } })
+  assert.equal(targetResult.metadata.operationalSchema.authorityStatus, "verified")
+})
+
 test("exact-head target admission permits only an exact detached transition before proof", async () => {
   const hooks = createOperationGuard({ directory: "/tmp/project", env: {} })
   const target = "c".repeat(40)
@@ -2491,6 +2546,7 @@ test("strict admission mismatch survives a plugin restart", async () => {
 
   const second = createOperationGuard({ directory: "/tmp/project-authority", env: {}, stateDirectory })
   await register(second, "parent-b", "build")
+  await assert.rejects(() => before(second, "parent-b", "retry-proof", "bash", { command: "git rev-parse HEAD" }), /NEW_STARTING_REVISION_AUTHORITY_REQUIRED/)
   await assert.rejects(() => before(second, "parent-b", "merge", "bash", { command: `git merge --ff-only ${expected}` }), /strict-start.*new user starting-revision authority/i)
 })
 
