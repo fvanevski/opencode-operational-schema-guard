@@ -1,4 +1,8 @@
 import assert from "node:assert/strict"
+import { createHash } from "node:crypto"
+import { mkdtemp, rm, writeFile } from "node:fs/promises"
+import { tmpdir } from "node:os"
+import { join } from "node:path"
 import test from "node:test"
 import {
   assessRunnerContainer,
@@ -7,11 +11,18 @@ import {
   validateNamedVolumeInspects,
   validateRunnerReadinessConfig,
   validateRunnerSettings,
+  verifySeccompProfile,
 } from "../lib/runner-readiness.mjs"
 
 const image = `sha256:${"a".repeat(64)}`
 const seccomp = "b".repeat(64)
 const listener = "c".repeat(64)
+const seccompProfile = {
+  defaultAction: "SCMP_ACT_ERRNO",
+  architectures: ["SCMP_ARCH_X86_64"],
+  syscalls: [{ names: ["clone"], action: "SCMP_ACT_ALLOW", args: [] }],
+}
+const seccompInline = JSON.stringify(seccompProfile)
 
 function config(overrides = {}) {
   return {
@@ -75,7 +86,7 @@ function inspect(overrides = {}) {
       PidsLimit: 1024,
       MaskedPaths: [],
       ReadonlyPaths: [],
-      SecurityOpt: ["no-new-privileges:true", "systempaths=unconfined", "seccomp=/etc/ghdev/runner-seccomp.json"],
+      SecurityOpt: ["no-new-privileges:true", `seccomp=${seccompInline}`],
       Binds: null,
       Tmpfs: { "/tmp": "rw,noexec,nosuid,size=1g" },
     },
@@ -110,7 +121,7 @@ function volumes(overrides = {}) {
 }
 
 function seccompProof(overrides = {}) {
-  return { sha256: seccomp, mtime_ns: "1000000000", ctime_ns: "1000000000", ...overrides }
+  return { sha256: seccomp, mtime_ns: "1000000000", ctime_ns: "1000000000", profile: seccompProfile, ...overrides }
 }
 
 function githubRunners(overrides = {}) {
@@ -171,8 +182,11 @@ test("privilege, every numeric UID-zero spelling, image, restart, resource, and 
   await blocked(() => assess(config(), inspect({ State: { Running: true, Status: "running", Health: { Status: "unhealthy" } } })), /not healthy/i)
 })
 
-test("systempaths, namespaces, devices, named volumes, and tmpfs mount census are enforced", async () => {
-  await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, SecurityOpt: ["no-new-privileges:true", "seccomp=/etc/ghdev/runner-seccomp.json"] } })), /SecurityOpt/i)
+test("effective systempaths, namespaces, devices, named volumes, and tmpfs mount census are enforced", async () => {
+  await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, MaskedPaths: ["/proc/acpi"] } })), /empty Docker masked\/read-only path lists/i)
+  await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, ReadonlyPaths: ["/proc/sys"] } })), /empty Docker masked\/read-only path lists/i)
+  await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, MaskedPaths: null } })), /explicit empty Docker masked\/read-only path lists/i)
+  await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, ReadonlyPaths: undefined } })), /explicit empty Docker masked\/read-only path lists/i)
   await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, PidMode: "host" } })), /PidMode/i)
   await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, DeviceRequests: [{ Driver: "nvidia" }] } })), /host devices/i)
   await blocked(() => assess(config(), inspect({ Mounts: inspect().Mounts.filter((mount) => mount.Type !== "volume") })), /named-volume set/i)
@@ -180,11 +194,72 @@ test("systempaths, namespaces, devices, named volumes, and tmpfs mount census ar
   await blocked(() => assess(config(), inspect({ Mounts: [...inspect().Mounts, { Type: "bind", Source: "/host", Destination: "/unexpected", RW: false }] })), /unexpected mount type/i)
 })
 
+test("Docker-persisted security options require NNP plus the exact custom seccomp semantics", async () => {
+  const reorderedProfile = {
+    syscalls: seccompProfile.syscalls,
+    defaultAction: seccompProfile.defaultAction,
+    architectures: seccompProfile.architectures,
+  }
+  const reordered = inspect()
+  reordered.HostConfig = { ...reordered.HostConfig, SecurityOpt: ["no-new-privileges=true", `seccomp=${JSON.stringify(reorderedProfile)}`] }
+  assert.equal(assess(config(), reordered).result, "PASS")
+
+  await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, SecurityOpt: [`seccomp=${seccompInline}`] } })), /no-new-privileges/i)
+  await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, SecurityOpt: ["no-new-privileges:true"] } })), /exactly one applied seccomp/i)
+  await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, SecurityOpt: ["no-new-privileges:true", "seccomp=unconfined"] } })), /custom seccomp profile/i)
+  await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, SecurityOpt: ["no-new-privileges:true", "seccomp={not-json"] } })), /invalid JSON/i)
+  await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, SecurityOpt: ["no-new-privileges:true", `seccomp=${JSON.stringify({ ...seccompProfile, defaultAction: "SCMP_ACT_ALLOW" })}`] } })), /differs from frozen host profile/i)
+  await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, SecurityOpt: ["no-new-privileges:true", `seccomp=${seccompInline}`, "apparmor=unconfined"] } })), /unexpected SecurityOpt/i)
+})
+
+test("seccomp comparison preserves 64-bit JSON integer distinctions", async (t) => {
+  const directory = await mkdtemp(join(tmpdir(), "ghdev-runner-readiness-64bit-"))
+  t.after(() => rm(directory, { recursive: true, force: true }))
+  const path = join(directory, "seccomp.json")
+  const hostProfile = `{"defaultAction":"SCMP_ACT_ERRNO","syscalls":[{"names":["clone"],"action":"SCMP_ACT_ALLOW","args":[{"index":0,"value":9007199254740993,"op":"SCMP_CMP_EQ"}]}]}`
+  await writeFile(path, hostProfile)
+  const hostHash = createHash("sha256").update(hostProfile).digest("hex")
+  const config64 = config({ seccomp: { path, sha256: hostHash } })
+  const proof64 = await verifySeccompProfile(config64)
+  const assessmentProof64 = { ...proof64, mtime_ns: "1000000000", ctime_ns: "1000000000" }
+
+  const matching = inspect()
+  matching.HostConfig = { ...matching.HostConfig, SecurityOpt: ["no-new-privileges:true", `seccomp=${hostProfile}`] }
+  assert.equal(assessRunnerContainer(config64, matching, { volumeInspects: volumes(), seccompProof: assessmentProof64 }).result, "PASS")
+
+  const different = inspect()
+  different.HostConfig = { ...different.HostConfig, SecurityOpt: ["no-new-privileges:true", `seccomp=${hostProfile.replace("9007199254740993", "9007199254740992")}`] }
+  await blocked(() => assessRunnerContainer(config64, different, { volumeInspects: volumes(), seccompProof: assessmentProof64 }), /differs from frozen host profile/i)
+})
+
 test("named volumes reject local-driver bind backing, non-local drivers, and missing writable runner-state coverage", async () => {
   await blocked(() => assessRunnerContainer(config(), inspect(), { volumeInspects: volumes({ "ghdev-runner-state": { Options: { type: "none", o: "bind", device: "/home/user" } } }), seccompProof: seccompProof() }), /must not use local-driver options/i)
   await blocked(() => assessRunnerContainer(config(), inspect(), { volumeInspects: volumes({ "ghdev-runner-work": { Driver: "custom" } }), seccompProof: seccompProof() }), /local Docker driver/i)
   await blocked(() => validateRunnerReadinessConfig(config({ allowed_named_volumes: [{ name: "unrelated", destination: "/data", read_only: false }] })), /writable named-volume coverage.*\/runner\/\.runner/i)
   await blocked(() => validateRunnerReadinessConfig(config({ allowed_named_volumes: [{ name: "state-ro", destination: "/runner", read_only: true }, { name: "work", destination: "/runner/_work", read_only: false }] })), /writable named-volume coverage.*\/runner\/\.runner/i)
+})
+
+test("frozen seccomp proof requires hash-bound object JSON", async (t) => {
+  const directory = await mkdtemp(join(tmpdir(), "ghdev-runner-readiness-"))
+  t.after(() => rm(directory, { recursive: true, force: true }))
+  const path = join(directory, "seccomp.json")
+
+  const valid = `${JSON.stringify(seccompProfile, null, 2)}\n`
+  await writeFile(path, valid)
+  const validHash = createHash("sha256").update(valid).digest("hex")
+  const proof = await verifySeccompProfile(config({ seccomp: { path, sha256: validHash } }))
+  assert.deepEqual(proof.profile, seccompProfile)
+  assert.equal(proof.sha256, validHash)
+
+  const invalid = "not-json\n"
+  await writeFile(path, invalid)
+  const invalidHash = createHash("sha256").update(invalid).digest("hex")
+  await blocked(() => verifySeccompProfile(config({ seccomp: { path, sha256: invalidHash } })), /invalid JSON/i)
+
+  const array = "[]\n"
+  await writeFile(path, array)
+  const arrayHash = createHash("sha256").update(array).digest("hex")
+  await blocked(() => verifySeccompProfile(config({ seccomp: { path, sha256: arrayHash } })), /one JSON object/i)
 })
 
 test("seccomp bytes must be unchanged since before container creation", async () => {
