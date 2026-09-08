@@ -100,7 +100,9 @@ test("credential-like static environment and host binds fail closed", async () =
   await blocked(() => assessRunnerContainer(config(), inspect({ HostConfig: { ...inspect().HostConfig, Binds: ["/home/user:/host"] } })), /host bind mounts/i)
 })
 
-test("privilege, image, restart, resource, and health drift fail closed", async () => {
+test("privilege, root identity, image, restart, resource, and health drift fail closed", async () => {
+  await blocked(() => assessRunnerContainer(config(), inspect({ Config: { ...inspect().Config, User: "0:1000" } })), /non-root user/i)
+  await blocked(() => assessRunnerContainer(config(), inspect({ Config: { ...inspect().Config, User: "root:1000" } })), /non-root user/i)
   await blocked(() => assessRunnerContainer(config(), inspect({ HostConfig: { ...inspect().HostConfig, Privileged: true } })), /must not be privileged/i)
   await blocked(() => assessRunnerContainer(config(), inspect({ Image: `sha256:${"c".repeat(64)}` })), /image ID/i)
   await blocked(() => assessRunnerContainer(config(), inspect({ HostConfig: { ...inspect().HostConfig, RestartPolicy: { Name: "no", MaximumRetryCount: 0 } } })), /restart policy/i)
