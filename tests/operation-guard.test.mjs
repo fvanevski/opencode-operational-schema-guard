@@ -1,6 +1,7 @@
 import assert from "node:assert/strict"
+import { spawnSync } from "node:child_process"
 import { createHash } from "node:crypto"
-import { mkdir, mkdtemp, writeFile } from "node:fs/promises"
+import { link, mkdir, mkdtemp, readFile, symlink, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import test from "node:test"
@@ -1475,6 +1476,315 @@ test("workspace identity ownership rejects shell operators in helper arguments",
     const output = await after(hooks, "parent-operator-identity", `operator-${index}`, "bash", { command }, { output: clean, metadata: { exit: 0 } })
     assert.doesNotMatch(output.output, /OPERATIONAL_CAMPAIGN: closed/)
   }
+})
+
+test("destination-aware shell ownership admits read-only workspace sources while preserving write-side blocks", async () => {
+  const workspace = "/tmp/project-destination-aware"
+  const hooks = createOperationGuard({ directory: workspace, env: {} })
+  const target = "a".repeat(40)
+  const source = `${workspace}/src/input.txt`
+  const external = "/tmp/opencode/verify/materials/issue27-stage"
+  await message(hooks, "parent-destination-aware", "build", `REQUIRED EXACT HEAD: ${target}`)
+
+  for (const [index, command] of [
+    `mkdir -p ${external}/functional`,
+    `touch ${external}/functional/probe.py`,
+    `cp ${source} ${external}/copy.txt`,
+    `cp ${source} ${external}/`,
+    `cp "${source}" "${external}/quoted copy.txt"`,
+    `cp "${workspace}/src/*.txt" ${external}/literal-wildcard.txt`,
+    `cp ./src/../src/input.txt ${external}/canonical-relative.txt`,
+    `cp -vt${external} ${source}`,
+    `cp --target-directory=${external} ${source}`,
+    `cp -- ${source} ${external}/copy-dashdash.txt`,
+    `install ${source} ${external}/installed.txt`,
+    `rsync -a ${source} ${external}/`,
+    `ln -s ${source} ${external}/linked.txt`,
+  ].entries()) {
+    await assert.doesNotReject(() => before(hooks, "parent-destination-aware", `external-${index}`, "bash", { command }), command)
+  }
+
+  await assert.doesNotReject(() => before(hooks, "parent-destination-aware", "external-workdir-relative-source", "bash", {
+    command: "cp ../../../../project-destination-aware/src/input.txt ./copy-relative.txt",
+    workdir: external,
+  }))
+
+  for (const [index, command] of [
+    `cp /tmp/external-input.txt ${workspace}/copied.txt`,
+    `cp ${source} ${workspace}/sibling.txt`,
+    `cp "/tmp/external input.txt" "${workspace}/quoted copy.txt"`,
+    `install /tmp/external-input.txt ${workspace}/installed.txt`,
+    `rsync -a /tmp/external-input.txt ${workspace}/synced.txt`,
+    `ln /tmp/external-input.txt ${workspace}/linked.txt`,
+    `ln ${source} ${external}/hard-linked.txt`,
+    `cp -l ${source} ${external}/hard-copy.txt`,
+    `mv ${source} ${external}/moved.txt`,
+    `touch ${external}/mixed-write.txt ${workspace}/mixed-write.txt`,
+  ].entries()) {
+    await assert.rejects(() => before(hooks, "parent-destination-aware", `workspace-${index}`, "bash", { command }), /exact-head admission is pending/, command)
+  }
+
+  await assert.rejects(() => before(hooks, "parent-destination-aware", "external-workdir-relative-destination", "bash", {
+    command: "cp /tmp/external-input.txt ../../../../project-destination-aware/copied-relative.txt",
+    workdir: external,
+  }), /exact-head admission is pending/)
+
+  for (const [callID, command] of [
+    ["ambiguous-rsync", `rsync -a ${source} ${external}/ --unsupported-option maybe`],
+    ["relative-rsync", `rsync -aR ${source} ${external}/`],
+    ["exchange-mv", `mv --exchange /tmp/external-a /tmp/external-b`],
+    ["dynamic-source", `cp $(printf '%s' ${source}) ${external}/dynamic.txt`],
+    ["glob-source", `cp ${workspace}/src/*.txt ${external}/globbed.txt`],
+    ["background-write", `cp /tmp/external-input.txt ${workspace}/background.txt &`],
+  ]) {
+    await assert.rejects(
+      () => before(hooks, "parent-destination-aware", callID, "bash", { command, workdir: callID === "background-write" ? external : undefined }),
+      /exact-head admission is pending/,
+      command,
+    )
+  }
+
+  const compacting = { context: [] }
+  await hooks["experimental.session.compacting"]({ sessionID: "parent-destination-aware" }, compacting)
+  assert.match(compacting.context.join("\n"), /Edit generation: 0; Fresh-review generation: 0; Verify generation: 0/)
+})
+
+test("pending authority fails closed on symlinked shell and direct-edit destinations that can alias the workspace", async () => {
+  const workspace = await mkdtemp(join(tmpdir(), "opencode-issue27-alias-workspace-"))
+  const external = await mkdtemp(join(tmpdir(), "opencode-issue27-alias-external-"))
+  const source = join(workspace, "source.txt")
+  const workspaceTarget = join(workspace, "tracked.txt")
+  const targetLink = join(external, "target-link")
+  const directoryLink = join(external, "workspace-link")
+  await writeFile(source, "source\n")
+  await writeFile(workspaceTarget, "tracked\n")
+  await symlink(workspaceTarget, targetLink)
+  await symlink(workspace, directoryLink, "dir")
+
+  const hooks = createOperationGuard({ directory: workspace, env: {} })
+  const target = "8".repeat(40)
+  await message(hooks, "parent-alias-targets", "build", `REQUIRED EXACT HEAD: ${target}`)
+
+  await assert.rejects(
+    () => before(hooks, "parent-alias-targets", "shell-leaf-link", "bash", { command: `cp ${source} ${targetLink}`, workdir: external }),
+    /exact-head admission is pending/,
+  )
+  await assert.rejects(
+    () => before(hooks, "parent-alias-targets", "shell-ancestor-link", "bash", { command: `cp ${source} ${directoryLink}/nested.txt`, workdir: external }),
+    /exact-head admission is pending/,
+  )
+  await assert.rejects(
+    () => before(hooks, "parent-alias-targets", "direct-edit-link", "write", { filePath: targetLink, content: "changed\n" }),
+    /exact-head admission is pending/,
+  )
+  for (const [callID, command] of [
+    ["sed-symlink-target", `sed -i s/source/changed/ ${targetLink}`],
+    ["perl-symlink-target", `perl -pi -e s/source/changed/ ${targetLink}`],
+    ["ruff-symlink-target", `ruff format ${targetLink}`],
+  ]) {
+    await assert.rejects(
+      () => before(hooks, "parent-alias-targets", callID, "bash", { command, workdir: external }),
+      /exact-head admission is pending/,
+      command,
+    )
+  }
+  await assert.rejects(
+    () => before(hooks, "parent-alias-targets", "dependency-symlink-workdir", "bash", { command: "npm install", workdir: directoryLink }),
+    /exact-head admission is pending/,
+  )
+  await assert.rejects(
+    () => before(hooks, "parent-alias-targets", "git-symlink-workdir", "bash", { command: "git reset --hard HEAD", workdir: directoryLink }),
+    /exact-head admission is pending/,
+  )
+  const hardLinkTarget = join(external, "hard-link-target")
+  await link(workspaceTarget, hardLinkTarget)
+  await assert.rejects(
+    () => before(hooks, "parent-alias-targets", "shell-hard-link-target", "bash", { command: `cp ${source} ${hardLinkTarget}`, workdir: external }),
+    /exact-head admission is pending/,
+  )
+  await assert.rejects(
+    () => before(hooks, "parent-alias-targets", "direct-edit-hard-link", "write", { filePath: hardLinkTarget, content: "changed\n" }),
+    /exact-head admission is pending/,
+  )
+  const hardLinkDirectory = join(external, "hard-link-directory")
+  await mkdir(hardLinkDirectory)
+  await link(workspaceTarget, join(hardLinkDirectory, "source.txt"))
+  for (const [callID, command] of [
+    ["shell-hard-link-directory-cp", `cp ${source} ${hardLinkDirectory}/`],
+    ["shell-hard-link-directory-target", `cp --target-directory=${hardLinkDirectory} ${source}`],
+    ["shell-hard-link-directory-install", `install ${source} ${hardLinkDirectory}/`],
+    ["shell-hard-link-directory-rsync", `rsync -a ${source} ${hardLinkDirectory}/`],
+  ]) {
+    await assert.rejects(
+      () => before(hooks, "parent-alias-targets", callID, "bash", { command, workdir: external }),
+      /exact-head admission is pending/,
+      command,
+    )
+  }
+  const futureAlias = join(external, "future-alias")
+  await assert.rejects(
+    () => before(hooks, "parent-alias-targets", "compound-alias-then-write", "bash", {
+      command: `ln -s ${workspaceTarget} ${futureAlias} && cp ${source} ${futureAlias}`,
+      workdir: external,
+    }),
+    /exact-head admission is pending/,
+  )
+
+  const protectedRoot = await mkdtemp(join(tmpdir(), "opencode-issue27-protected-"))
+  const protectedFile = join(protectedRoot, "guard-state.json")
+  const protectedAlias = join(external, "protected-alias.json")
+  await writeFile(protectedFile, "protected\n")
+  await symlink(protectedFile, protectedAlias)
+  const protectedHooks = createOperationGuard({ directory: workspace, env: {}, protectedMutationRoots: [protectedRoot] })
+  await message(protectedHooks, "parent-protected-alias", "build", `REQUIRED EXACT HEAD: ${target}`)
+  await assert.rejects(
+    () => before(protectedHooks, "parent-protected-alias", "protected-source-alias", "bash", { command: `cp ${protectedAlias} ${external}/protected-copy.json` }),
+    /guard-owned persisted state and recovery material/,
+  )
+})
+
+test("redirection ownership distinguishes descriptor duplication from combined file redirection", async () => {
+  const workspace = "/tmp/project-redirection-targets"
+  const external = "/tmp/opencode/functional/issue27-redirection"
+  const hooks = createOperationGuard({ directory: workspace, env: {} })
+  const target = "7".repeat(40)
+  await message(hooks, "parent-redirection-targets", "build", `REQUIRED EXACT HEAD: ${target}`)
+
+  await assert.doesNotReject(() => before(hooks, "parent-redirection-targets", "descriptor-plus-external", "bash", {
+    command: `cat ${workspace}/read-only.txt 2>&1 > ${external}/stdout.log`,
+  }))
+  await assert.doesNotReject(() => before(hooks, "parent-redirection-targets", "combined-external", "bash", {
+    command: `cat ${workspace}/read-only.txt >& ${external}/combined.log`,
+  }))
+  await assert.rejects(() => before(hooks, "parent-redirection-targets", "combined-workspace", "bash", {
+    command: `printf changed >& ${workspace}/combined.log`,
+  }), /exact-head admission is pending/)
+  await assert.rejects(() => before(hooks, "parent-redirection-targets", "background-redirection", "bash", {
+    command: `printf changed > ${workspace}/background.log &`,
+    workdir: external,
+  }), /exact-head admission is pending/)
+})
+
+test("Session-4-style pending-authority replay admits disposable functional harness staging only outside the workspace", async () => {
+  const workspace = "/tmp/project-session4-replay"
+  const external = "/tmp/opencode/functional/issue27-session4"
+  const hooks = createOperationGuard({ directory: workspace, env: {} })
+  const target = "9".repeat(40)
+  await message(hooks, "parent-session4-replay", "build", `REQUIRED EXACT HEAD: ${target}`)
+
+  for (const [index, command] of [
+    `mkdir -p ${external}`,
+    `touch ${external}/probe.py`,
+    `cp ${workspace}/scripts/probe.py ${external}/probe.py`,
+    `cat ${workspace}/fixtures/input.json > ${external}/input.json`,
+  ].entries()) {
+    await assert.doesNotReject(() => before(hooks, "parent-session4-replay", `stage-${index}`, "bash", { command }), command)
+  }
+
+  await assert.rejects(
+    () => before(hooks, "parent-session4-replay", "workspace-write", "bash", { command: `cp ${external}/probe.py ${workspace}/scripts/probe.py` }),
+    /exact-head admission is pending/,
+  )
+  const compacting = { context: [] }
+  await hooks["experimental.session.compacting"]({ sessionID: "parent-session4-replay" }, compacting)
+  assert.match(compacting.context.join("\n"), /Edit generation: 0; Fresh-review generation: 0; Verify generation: 0/)
+})
+
+test("destination-aware shell ownership keeps direct workspace mutators and protected recovery state fail-closed", async () => {
+  const workspace = "/tmp/project-destination-write-targets"
+  const stateDirectory = await mkdtemp(join(tmpdir(), "opencode-issue27-state-"))
+  const hooks = createOperationGuard({ directory: workspace, env: {}, stateDirectory })
+  const target = "b".repeat(40)
+  await message(hooks, "parent-write-targets", "build", `REQUIRED EXACT HEAD: ${target}`)
+
+  for (const [index, command] of [
+    `rm ${workspace}/old.txt`,
+    `mkdir -p ${workspace}/new-dir`,
+    `touch ${workspace}/touch.txt`,
+    `truncate -s 0 ${workspace}/truncate.txt`,
+    `chmod 600 ${workspace}/mode.txt`,
+    `chown 1000:1000 ${workspace}/owner.txt`,
+    `sed -i s/a/b/ ${workspace}/sed.txt`,
+    `perl -pi -e s/a/b/ ${workspace}/perl.txt`,
+    `printf changed > ${workspace}/redirect.txt`,
+    `ruff format ${workspace}/src/format.py`,
+    "git reset --hard HEAD",
+  ].entries()) {
+    await assert.rejects(() => before(hooks, "parent-write-targets", `mutator-${index}`, "bash", { command }), /exact-head admission is pending/, command)
+  }
+
+  await assert.rejects(
+    () => before(hooks, "parent-write-targets", "protected-source", "bash", { command: `cp ${stateDirectory}/guard-state.json /tmp/opencode/verify/materials/guard-state-copy.json` }),
+    /guard-owned persisted state and recovery material/,
+  )
+  await assert.doesNotReject(
+    () => before(hooks, "parent-write-targets", "external-temp-redirection", "bash", { command: `cat ${workspace}/read-only.txt > /tmp/issue27-external-redirection.txt` }),
+  )
+  const compacting = { context: [] }
+  await hooks["experimental.session.compacting"]({ sessionID: "parent-write-targets" }, compacting)
+  assert.match(compacting.context.join("\n"), /Edit generation: 0; Fresh-review generation: 0; Verify generation: 0/)
+})
+
+test("mutating Git global path options classify their actual workspace write targets", async () => {
+  const workspace = "/tmp/project-destination-git-targets"
+  const external = "/tmp/issue27-external-git"
+  const hooks = createOperationGuard({ directory: workspace, env: {} })
+  const target = "e".repeat(40)
+  await message(hooks, "parent-git-targets", "build", `REQUIRED EXACT HEAD: ${target}`)
+  await before(hooks, "parent-git-targets", "proof", "bash", { command: "git rev-parse HEAD" })
+  await after(hooks, "parent-git-targets", "proof", "bash", { command: "git rev-parse HEAD" }, { output: `${target}\n`, metadata: { exit: 0 } })
+
+  await assert.doesNotReject(() => before(hooks, "parent-git-targets", "workspace-git", "bash", {
+    command: `git --git-dir=${workspace}/.git --work-tree=${workspace} reset --hard HEAD`,
+    workdir: external,
+  }))
+  const workspaceState = { context: [] }
+  await hooks["experimental.session.compacting"]({ sessionID: "parent-git-targets" }, workspaceState)
+  assert.match(workspaceState.context.join("\n"), /Edit generation: 1; Fresh-review generation: 0; Verify generation: 0/)
+
+  const externalHooks = createOperationGuard({ directory: workspace, env: {} })
+  await message(externalHooks, "parent-external-git", "build", `REQUIRED EXACT HEAD: ${target}`)
+  await before(externalHooks, "parent-external-git", "proof", "bash", { command: "git rev-parse HEAD" })
+  await after(externalHooks, "parent-external-git", "proof", "bash", { command: "git rev-parse HEAD" }, { output: `${target}\n`, metadata: { exit: 0 } })
+  await assert.doesNotReject(() => before(externalHooks, "parent-external-git", "external-git", "bash", {
+    command: `git -C ${external} reset --hard HEAD`,
+    workdir: workspace,
+  }))
+  const externalState = { context: [] }
+  await externalHooks["experimental.session.compacting"]({ sessionID: "parent-external-git" }, externalState)
+  assert.match(externalState.context.join("\n"), /Edit generation: 0; Fresh-review generation: 0; Verify generation: 0/)
+})
+
+test("admitted workspace-source copy leaves workspace bytes, git status, and publication generations unchanged", async () => {
+  const workspace = await mkdtemp(join(tmpdir(), "opencode-issue27-copy-"))
+  const external = await mkdtemp(join(tmpdir(), "opencode-issue27-external-"))
+  const source = join(workspace, "input.txt")
+  const destination = join(external, "input.txt")
+  await writeFile(source, "preserve-me\n")
+  const run = (argv) => spawnSync("git", argv, { cwd: workspace, encoding: "utf8" })
+  assert.equal(run(["init", "-q"]).status, 0)
+  assert.equal(run(["add", "input.txt"]).status, 0)
+  assert.equal(run(["-c", "user.name=GHDEV", "-c", "user.email=ghdev@example.invalid", "commit", "-qm", "base"]).status, 0)
+  const observed = run(["rev-parse", "HEAD"]).stdout.trim()
+  const target = observed === "c".repeat(40) ? "d".repeat(40) : "c".repeat(40)
+  const hooks = createOperationGuard({ directory: workspace, env: {} })
+  await message(hooks, "parent-copy-integration", "build", `REQUIRED EXACT HEAD: ${target}`)
+  const command = `cp ${source} ${destination}`
+  await assert.doesNotReject(() => before(hooks, "parent-copy-integration", "copy-before", "bash", { command }))
+  const copied = spawnSync("cp", [source, destination], { encoding: "utf8" })
+  assert.equal(copied.status, 0, copied.stderr)
+  assert.equal(await readFile(source, "utf8"), "preserve-me\n")
+  assert.equal(await readFile(destination, "utf8"), "preserve-me\n")
+  assert.equal(run(["status", "--porcelain=v1", "--untracked-files=all"]).stdout, "")
+
+  await before(hooks, "parent-copy-integration", "proof", "bash", { command: "git rev-parse HEAD" })
+  const proof = await after(hooks, "parent-copy-integration", "proof", "bash", { command: "git rev-parse HEAD" }, { output: `${observed}\n`, metadata: { exit: 0 } })
+  assert.match(proof.output, /OPERATIONAL_AUTHORITY: mismatch/)
+  await assert.doesNotReject(() => before(hooks, "parent-copy-integration", "copy-mismatch", "bash", { command }))
+
+  const compacting = { context: [] }
+  await hooks["experimental.session.compacting"]({ sessionID: "parent-copy-integration" }, compacting)
+  assert.match(compacting.context.join("\n"), /Edit generation: 0; Fresh-review generation: 0; Verify generation: 0/)
 })
 
 test("pending authority permits merge-base while retaining exact mutation blocks", async () => {

@@ -465,7 +465,7 @@ test("receipt mismatch and restore overwrite both fail closed while quarantine e
   assert.equal(await readFile(receiptPath(id), "utf8").then(() => true), true)
 })
 
-test("pending exact-head guard admits only the exact typed helper and preserves authority/review/Verify generations", async () => {
+test("pending exact-head guard admits typed quarantine and read-only outward staging while preserving authority/review/Verify generations", async () => {
   const root = await repo()
   await writeFile(join(root, "untracked.txt"), "keep\n")
   const stateDirectory = await mkdtemp(join(tmpdir(), "untracked-quarantine-state-"))
@@ -495,12 +495,12 @@ test("pending exact-head guard admits only the exact typed helper and preserves 
   for (const [index, unsafe] of [
     "rm -f untracked.txt",
     "mv untracked.txt /tmp/untracked.txt",
-    "cp untracked.txt /tmp/untracked.txt",
     "git clean -fd",
     `git reset --hard ${target}`,
   ].entries()) {
     await assert.rejects(() => before(hooks, session, `generic-${index}`, unsafe), /exact-head admission is pending|pending exact-head|exact-head target/i, unsafe)
   }
+  await assert.doesNotReject(() => before(hooks, session, "workspace-source-copy", "cp untracked.txt /tmp/untracked.txt"))
 
   await assert.doesNotReject(() => before(hooks, session, "external-copy", "cp /tmp/source.dat /tmp/destination.dat"))
   await assert.doesNotReject(() => before(hooks, session, "external-move", "mv /tmp/source.dat /tmp/destination.dat"))
@@ -524,8 +524,9 @@ test("pending exact-head guard admits only the exact typed helper and preserves 
     const output = { args: { command: unsafe, workdir: tmpdir() } }
     await assert.rejects(() => hooks["tool.execute.before"]({ sessionID: session, callID: `target-directory-${index}`, tool: "bash" }, output), /exact-head admission is pending|pending exact-head|exact-head target/i, unsafe)
   }
+  const externalWorkspaceCopy = { args: { command: `cp ${join(root, "untracked.txt")} /tmp/untracked-copy-${id}`, workdir: tmpdir() } }
+  await assert.doesNotReject(() => hooks["tool.execute.before"]({ sessionID: session, callID: "external-workdir-copy", tool: "bash" }, externalWorkspaceCopy))
   for (const [index, unsafe] of [
-    `cp ${join(root, "untracked.txt")} /tmp/untracked-copy-${id}`,
     `mv ${join(root, "untracked.txt")} /tmp/untracked-move-${id}`,
     `rm ${join(root, "untracked.txt")}`,
   ].entries()) {
