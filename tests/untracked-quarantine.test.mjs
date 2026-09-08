@@ -361,6 +361,10 @@ test("pending exact-head guard admits only the exact typed helper and preserves 
 
   await assert.doesNotReject(() => before(hooks, session, "external-copy", "cp /tmp/source.dat /tmp/destination.dat"))
   await assert.doesNotReject(() => before(hooks, session, "external-move", "mv /tmp/source.dat /tmp/destination.dat"))
+  for (const [index, external] of ["cp source.dat destination.dat", "mv source.dat destination.dat"].entries()) {
+    const output = { args: { command: external, workdir: tmpdir() } }
+    await assert.doesNotReject(() => hooks["tool.execute.before"]({ sessionID: session, callID: `external-relative-${index}`, tool: "bash" }, output), external)
+  }
   for (const [index, unsafe] of [
     `cp ${join(root, "untracked.txt")} /tmp/untracked-copy-${id}`,
     `mv ${join(root, "untracked.txt")} /tmp/untracked-move-${id}`,
