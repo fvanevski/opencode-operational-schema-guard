@@ -360,6 +360,21 @@ test("live Issue 29 packet partitions root-relative and nested targets before ge
   }
 })
 
+test("explicit root-target planning does not reinterpret dot traversal tokens as bounded filesystem targets", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "issue29-root-dot-targets-"))
+  try {
+    const hooks = createOperationGuard({ directory, env: {} })
+    await register(hooks, "parent", "build")
+    await assert.doesNotReject(() => before(hooks, "parent", "dot-target", "task", {
+      subagent_type: "explore",
+      description: "Preserve legacy opaque target handling",
+      prompt: "Scope: inspect one explicit bounded target\nQuestions:\n- What does the target represent?\nStop condition: the target is addressed.\nTargets:\n- .",
+    }))
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+})
+
 test("unbound Explore rejects root-level multi-path target bullets rather than undercounting them", async () => {
   const directory = await mkdtemp(join(tmpdir(), "issue29-unbound-root-multipath-"))
   try {
