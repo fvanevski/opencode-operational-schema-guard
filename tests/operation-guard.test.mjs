@@ -2108,12 +2108,41 @@ test("authority proof admission binds workdir and completion to the exact author
   await aba["experimental.session.compacting"]({ sessionID: "issue28-proof-aba" }, pending)
   assert.match(pending.context.join("\n"), /Authority admission: pending; mode: strict-start/)
 
+  const lateUnbound = createOperationGuard({ directory: "/tmp/project-issue28-late-unbound-proof", env: {} })
+  await register(lateUnbound, "issue28-late-unbound-proof", "build")
+  const lateUnboundArgs = { command: "git rev-parse HEAD", workdir: "/tmp/unrelated-late-proof" }
+  await before(lateUnbound, "issue28-late-unbound-proof", "proof-before-authority", "bash", lateUnboundArgs)
+  const lateUnboundTarget = "6".repeat(40)
+  await message(lateUnbound, "issue28-late-unbound-proof", "build", `REQUIRED STARTING HEAD: ${lateUnboundTarget}`)
+  const lateUnboundResult = await after(lateUnbound, "issue28-late-unbound-proof", "proof-before-authority", "bash", lateUnboundArgs, { output: `${lateUnboundTarget}\n`, metadata: { exit: 0 } })
+  assert.match(lateUnboundResult.output, /OPERATIONAL_AUTHORITY_PROOF: STALE.*current_mode=strict-start.*current_status=pending/s)
+  const lateUnboundState = { context: [] }
+  await lateUnbound["experimental.session.compacting"]({ sessionID: "issue28-late-unbound-proof" }, lateUnboundState)
+  assert.match(lateUnboundState.context.join("\n"), /Authority admission: pending; mode: strict-start/)
+
+  const lateVerified = createOperationGuard({ directory: "/tmp/project-issue28-late-verified-proof", env: {} })
+  const oldVerifiedTarget = "7".repeat(40)
+  const newVerifiedTarget = "8".repeat(40)
+  await message(lateVerified, "issue28-late-verified-proof", "build", `REQUIRED STARTING HEAD: ${oldVerifiedTarget}`)
+  const initialVerifiedArgs = { command: "git rev-parse HEAD" }
+  await before(lateVerified, "issue28-late-verified-proof", "initial-proof", "bash", initialVerifiedArgs)
+  await after(lateVerified, "issue28-late-verified-proof", "initial-proof", "bash", initialVerifiedArgs, { output: `${oldVerifiedTarget}\n`, metadata: { exit: 0 } })
+  const lateVerifiedArgs = { command: "git rev-parse HEAD", workdir: "/tmp/unrelated-verified-proof" }
+  await before(lateVerified, "issue28-late-verified-proof", "proof-after-verified", "bash", lateVerifiedArgs)
+  await message(lateVerified, "issue28-late-verified-proof", "build", `REQUIRED STARTING HEAD: ${newVerifiedTarget}`)
+  const lateVerifiedResult = await after(lateVerified, "issue28-late-verified-proof", "proof-after-verified", "bash", lateVerifiedArgs, { output: `${newVerifiedTarget}\n`, metadata: { exit: 0 } })
+  assert.match(lateVerifiedResult.output, /OPERATIONAL_AUTHORITY_PROOF: STALE.*current_mode=strict-start.*current_status=pending/s)
+  const lateVerifiedState = { context: [] }
+  await lateVerified["experimental.session.compacting"]({ sessionID: "issue28-late-verified-proof" }, lateVerifiedState)
+  assert.match(lateVerifiedState.context.join("\n"), /Authority admission: pending; mode: strict-start/)
+
   const targetRepo = await mkdtemp(join(tmpdir(), "opencode-issue28-target-binding-repo-"))
   runGit(targetRepo, ["init", "-q"])
   runGit(targetRepo, ["-c", "user.name=GHDEV", "-c", "user.email=ghdev@example.invalid", "commit", "--allow-empty", "-qm", "base"])
   const target = runGit(targetRepo, ["rev-parse", "HEAD"])
   const targetRoot = await mkdtemp(join(tmpdir(), "opencode-issue28-target-binding-worktrees-"))
   const replacedPath = join(targetRoot, "replaced")
+  const racePath = join(targetRoot, "race")
   const validPath = join(targetRoot, "valid")
   const targetHooks = createOperationGuard({ directory: targetRepo, env: {} })
   await message(targetHooks, "issue28-target-binding", "build", `REQUIRED EXACT HEAD: ${target}`)
@@ -2137,6 +2166,21 @@ test("authority proof admission binds workdir and completion to the exact author
     () => before(targetHooks, "issue28-target-binding", "replaced-target-proof", "bash", { command: "git rev-parse HEAD", workdir: replacedPath }),
     /OPERATIONAL_CORRECTION: TARGET_PROOF_WORKDIR_NOT_ADMITTED.*do_not_execute=true/s,
   )
+
+  const raceAdd = { command: `git worktree add --detach ${racePath} ${target}` }
+  await before(targetHooks, "issue28-target-binding", "race-worktree-add", "bash", raceAdd)
+  runGit(targetRepo, ["worktree", "add", "--detach", racePath, target])
+  await after(targetHooks, "issue28-target-binding", "race-worktree-add", "bash", raceAdd, { output: "prepared", metadata: { exit: 0 } })
+  const raceProof = { command: "git rev-parse HEAD", workdir: racePath }
+  await assert.doesNotReject(() => before(targetHooks, "issue28-target-binding", "race-target-proof", "bash", raceProof))
+  runGit(targetRepo, ["worktree", "remove", "--force", racePath])
+  await mkdir(racePath)
+  runGit(racePath, ["init", "-q"])
+  const raceResult = await after(targetHooks, "issue28-target-binding", "race-target-proof", "bash", raceProof, { output: `${target}\n`, metadata: { exit: 0 } })
+  assert.match(raceResult.output, /OPERATIONAL_AUTHORITY_PROOF: STALE.*current_mode=target.*current_status=pending/s)
+  const raceState = { context: [] }
+  await targetHooks["experimental.session.compacting"]({ sessionID: "issue28-target-binding" }, raceState)
+  assert.match(raceState.context.join("\n"), /Authority admission: pending; mode: target/)
 
   const validAdd = { command: `git worktree add --detach ${validPath} ${target}` }
   await before(targetHooks, "issue28-target-binding", "valid-worktree-add", "bash", validAdd)
