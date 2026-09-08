@@ -1575,6 +1575,14 @@ test("pending authority fails closed on symlinked shell and direct-edit destinat
     () => before(hooks, "parent-alias-targets", "direct-edit-link", "write", { filePath: targetLink, content: "changed\n" }),
     /exact-head admission is pending/,
   )
+  const futureAlias = join(external, "future-alias")
+  await assert.rejects(
+    () => before(hooks, "parent-alias-targets", "compound-alias-then-write", "bash", {
+      command: `ln -s ${workspaceTarget} ${futureAlias} && cp ${source} ${futureAlias}`,
+      workdir: external,
+    }),
+    /exact-head admission is pending/,
+  )
 
   const protectedRoot = await mkdtemp(join(tmpdir(), "opencode-issue27-protected-"))
   const protectedFile = join(protectedRoot, "guard-state.json")
