@@ -410,33 +410,39 @@ test("fallback restore recovers authenticated incomplete staging but preserves u
   const root = await repo()
   await writeFile(join(root, "keep.txt"), "original\n")
   const { quarantined, id } = await inspectAndQuarantine(root, ["keep.txt"])
-+  const receipt = JSON.parse(await readFile(receiptPath(id), "utf8"))
-+  await rm(receipt.quarantine.capture_root, { recursive: true, force: true })
-+
-+  const digest = createHash("sha256").update(`${id}\0keep.txt`).digest("hex").slice(0, 24)
-+  const stagingName = `.opencode-uq-restore-${digest}`
-+  const stagingPath = join(root, stagingName)
-+  await writeFile(stagingPath, "partial\n")
-+  const restoreSpec = {
-+    ...inspectSpec(root, ["keep.txt"], id),
-+    action: "restore",
-+    receipt_path: receiptPath(id),
-+    expected_receipt_sha256: quarantined.receipt_sha256,
-+  }
-+  await expectBlocked(() => runUntrackedQuarantine(restoreSpec), /not authenticated as helper-owned/i)
-+  assert.equal(await readFile(stagingPath, "utf8"), "partial\n")
-+
-+  const markerDirectory = join(receipt.quarantine.root, ".restore-staging")
-+  await mkdir(markerDirectory, { recursive: true })
-+  await writeFile(join(markerDirectory, `${digest}.owned`), `${id}\0keep.txt\0${stagingName}\n`, { mode: 0o600 })
-+  const restored = await runUntrackedQuarantine(restoreSpec)
-+  assert.equal(restored.result, "PASS")
-+  assert.equal(await readFile(join(root, "keep.txt"), "utf8"), "original\n")
-+  await assert.rejects(() => readFile(stagingPath), /ENOENT/)
-+  await assert.rejects(() => readFile(join(markerDirectory, `${digest}.owned`)), /ENOENT/)
-+})
-+
-+test("receipt mismatch and restore overwrite both fail closed while quarantine evidence is retained", async () => {
+  const receipt = JSON.parse(await readFile(receiptPath(id), "utf8"))
+  await rm(receipt.quarantine.capture_root, { recursive: true, force: true })
+
+  const digest = createHash("sha256").update(`${id}\0keep.txt`).digest("hex").slice(0, 24)
+  const stagingName = `.opencode-uq-restore-${digest}`
+  const stagingPath = join(root, stagingName)
+  await writeFile(stagingPath, "partial\n")
+  const restoreSpec = {
+    ...inspectSpec(root, ["keep.txt"], id),
+    action: "restore",
+    receipt_path: receiptPath(id),
+    expected_receipt_sha256: quarantined.receipt_sha256,
+  }
+  await expectBlocked(() => runUntrackedQuarantine(restoreSpec), /not authenticated as helper-owned/i)
+  assert.equal(await readFile(stagingPath, "utf8"), "partial\n")
+
+  const markerDirectory = join(receipt.quarantine.root, ".restore-staging")
+  await mkdir(markerDirectory, { recursive: true })
+  await writeFile(join(markerDirectory, `${digest}.owned`), `${id}\0keep.txt\0${stagingName}\n`, { mode: 0o600 })
+  const restored = await runUntrackedQuarantine(restoreSpec)
+  assert.equal(restored.result, "PASS")
+  assert.equal(await readFile(join(root, "keep.txt"), "utf8"), "original\n")
+  await assert.rejects(() => readFile(stagingPath), /ENOENT/)
+  await assert.rejects(() => readFile(join(markerDirectory, `${digest}.owned`)), /ENOENT/)
+
+  await writeFile(join(markerDirectory, `${digest}.owned`), `${id}\0keep.txt\0${stagingName}\n`, { mode: 0o600 })
+  const idempotent = await runUntrackedQuarantine(restoreSpec)
+  assert.equal(idempotent.result, "PASS")
+  assert.equal(await readFile(join(root, "keep.txt"), "utf8"), "original\n")
+  await assert.rejects(() => readFile(join(markerDirectory, `${digest}.owned`)), /ENOENT/)
+})
+
+test("receipt mismatch and restore overwrite both fail closed while quarantine evidence is retained", async () => {
   const root = await repo()
   await writeFile(join(root, "keep.txt"), "original\n")
   const { quarantined, id } = await inspectAndQuarantine(root, ["keep.txt"])

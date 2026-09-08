@@ -494,6 +494,20 @@ def restore_path(request):
                         blocked("both restored destination and capture source exist; refusing ambiguous restore state")
                     if lexists_at(dst_parent, temp_name):
                         blocked("unattributed restore staging exists beside an already-restored destination")
+                    marker_dir_name = ".restore-staging"
+                    try:
+                        marker_dir = os.open(marker_dir_name, DIR_FLAGS, dir_fd=operation_fd)
+                    except FileNotFoundError:
+                        marker_dir = None
+                    if marker_dir is not None:
+                        marker_name = f"{digest}.owned"
+                        if lexists_at(marker_dir, marker_name):
+                            owned_marker_dir, owned_marker_name = restore_marker(operation_fd, digest, request["operation_id"], repo_path, temp_name)
+                            try:
+                                clear_restore_marker(owned_marker_dir, owned_marker_name)
+                            finally:
+                                os.close(owned_marker_dir)
+                        os.close(marker_dir)
                     return {"result": "PASS", "action": "restore", "status": "already_restored"}
                 if captured_exists:
                     if inventory_one(cap_parent, cap_name, repo_path) != expected:
