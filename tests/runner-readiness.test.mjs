@@ -3,12 +3,15 @@ import test from "node:test"
 import {
   assessRunnerContainer,
   RunnerReadinessBlockedError,
+  validateGitHubRunnerRegistration,
+  validateNamedVolumeInspects,
   validateRunnerReadinessConfig,
   validateRunnerSettings,
 } from "../lib/runner-readiness.mjs"
 
 const image = `sha256:${"a".repeat(64)}`
 const seccomp = "b".repeat(64)
+const listener = "c".repeat(64)
 
 function config(overrides = {}) {
   return {
@@ -18,15 +21,15 @@ function config(overrides = {}) {
     expected_image_id: image,
     github_runner_labels: ["self-hosted", "Linux", "X64", "ghdev-verify"],
     network_mode: "bridge",
-    runner_settings_path: "/opt/actions-runner/.runner",
-    runner_listener_path: "/opt/actions-runner/bin/Runner.Listener",
-    runner_listener_sha256: "c".repeat(64),
+    runner_settings_path: "/runner/.runner",
+    runner_listener_path: "/runner/bin/Runner.Listener",
+    runner_listener_sha256: listener,
     runner_version: "2.337.0",
     healthcheck_test: ["CMD-SHELL", "pgrep -u 1000 -f 'Runner.Listener' >/dev/null"],
     seccomp: { path: "/etc/ghdev/runner-seccomp.json", sha256: seccomp },
     resources: { memory_bytes: 4294967296, nano_cpus: 4000000000, pids_limit: 1024 },
     allowed_named_volumes: [
-      { name: "ghdev-runner-state", destination: "/runner/state", read_only: false },
+      { name: "ghdev-runner-state", destination: "/runner", read_only: false },
       { name: "ghdev-runner-work", destination: "/runner/_work", read_only: false },
     ],
     allowed_tmpfs: [{ destination: "/tmp", options: "rw,noexec,nosuid,size=1g" }],
@@ -38,6 +41,7 @@ function inspect(overrides = {}) {
   return {
     Name: "/ghdev-verify-runner",
     Image: image,
+    Created: "2026-09-08T00:00:00.000000000Z",
     Config: {
       User: "1000:1000",
       Image: "runner@example",
@@ -76,12 +80,56 @@ function inspect(overrides = {}) {
       Tmpfs: { "/tmp": "rw,noexec,nosuid,size=1g" },
     },
     Mounts: [
-      { Type: "volume", Name: "ghdev-runner-state", Destination: "/runner/state", RW: true },
+      { Type: "volume", Name: "ghdev-runner-state", Destination: "/runner", RW: true },
       { Type: "volume", Name: "ghdev-runner-work", Destination: "/runner/_work", RW: true },
     ],
     State: { Running: true, Status: "running", Health: { Status: "healthy" } },
     ...overrides,
   }
+}
+
+function runnerSettings(overrides = {}) {
+  return {
+    DisableUpdate: true,
+    Ephemeral: false,
+    GitHubUrl: "https://github.com/fvanevski/opencode-operational-schema-guard",
+    AgentId: 42,
+    AgentName: "ghdev-verify-runner",
+    WorkFolder: "_work",
+    ...overrides,
+  }
+}
+
+function volumes(overrides = {}) {
+  const values = [
+    { Name: "ghdev-runner-state", Driver: "local", Scope: "local", Options: null },
+    { Name: "ghdev-runner-work", Driver: "local", Scope: "local", Options: null },
+  ]
+  return values.map((value) => ({ ...value, ...(overrides[value.Name] ?? {}) }))
+}
+
+function seccompProof(overrides = {}) {
+  return { sha256: seccomp, mtime_ns: "1000000000", ctime_ns: "1000000000", ...overrides }
+}
+
+function githubRunners(overrides = {}) {
+  const runner = {
+    id: 42,
+    name: "ghdev-verify-runner",
+    status: "online",
+    busy: false,
+    labels: ["self-hosted", "Linux", "X64", "ghdev-verify"].map((name) => ({ name })),
+    ...(overrides.runner ?? {}),
+  }
+  return { total_count: 1, runners: [runner], ...overrides.response }
+}
+
+function assess(configInput = config(), inspectInput = inspect(), options = {}) {
+  return assessRunnerContainer(configInput, inspectInput, {
+    volumeInspects: volumes(),
+    seccompProof: seccompProof(),
+    ...options,
+  })
 }
 
 async function blocked(fn, pattern) {
@@ -94,33 +142,47 @@ async function blocked(fn, pattern) {
 
 test("persistent hardened listener fixture is admitted", () => {
   assert.equal(validateRunnerReadinessConfig(config()).schema_version, "ghdev-runner-readiness-v1")
-  assert.doesNotThrow(() => validateRunnerSettings(config(), { DisableUpdate: true, Ephemeral: false, GitHubUrl: "https://github.com/fvanevski/opencode-operational-schema-guard", AgentName: "ghdev-verify-runner", WorkFolder: "_work" }))
-  const result = assessRunnerContainer(config(), inspect())
+  assert.doesNotThrow(() => validateRunnerSettings(config(), runnerSettings()))
+  assert.doesNotThrow(() => validateNamedVolumeInspects(config(), volumes()))
+  const registration = validateGitHubRunnerRegistration(config(), runnerSettings(), githubRunners())
+  assert.deepEqual(registration.labels, ["Linux", "X64", "ghdev-verify", "self-hosted"].sort())
+  const result = assess()
   assert.equal(result.result, "PASS")
   assert.equal(result.running, true)
   assert.equal(result.healthy, true)
 })
 
 test("credential-like static environment and host binds fail closed", async () => {
-  await blocked(() => assessRunnerContainer(config(), inspect({ Config: { ...inspect().Config, Env: ["GH_TOKEN=secret"] } })), /credential-like environment/i)
-  await blocked(() => assessRunnerContainer(config(), inspect({ HostConfig: { ...inspect().HostConfig, Binds: ["/home/user:/host"] } })), /host bind mounts/i)
+  await blocked(() => assess(config(), inspect({ Config: { ...inspect().Config, Env: ["GH_TOKEN=secret"] } })), /credential-like environment/i)
+  await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, Binds: ["/home/user:/host"] } })), /host bind mounts/i)
 })
 
-test("privilege, root identity, image, restart, resource, and health drift fail closed", async () => {
-  await blocked(() => assessRunnerContainer(config(), inspect({ Config: { ...inspect().Config, User: "0:1000" } })), /non-root user/i)
-  await blocked(() => assessRunnerContainer(config(), inspect({ Config: { ...inspect().Config, User: "root:1000" } })), /non-root user/i)
-  await blocked(() => assessRunnerContainer(config(), inspect({ HostConfig: { ...inspect().HostConfig, Privileged: true } })), /must not be privileged/i)
-  await blocked(() => assessRunnerContainer(config(), inspect({ Image: `sha256:${"c".repeat(64)}` })), /image ID/i)
-  await blocked(() => assessRunnerContainer(config(), inspect({ HostConfig: { ...inspect().HostConfig, RestartPolicy: { Name: "no", MaximumRetryCount: 0 } } })), /restart policy/i)
-  await blocked(() => assessRunnerContainer(config(), inspect({ HostConfig: { ...inspect().HostConfig, Memory: 1024 } })), /resource limits/i)
-  await blocked(() => assessRunnerContainer(config(), inspect({ State: { Running: true, Status: "running", Health: { Status: "unhealthy" } } })), /not healthy/i)
+test("privilege, every numeric UID-zero spelling, image, restart, resource, and health drift fail closed", async () => {
+  for (const user of ["0:1000", "00:1000", "0000", "root:1000", "ROOT:1000"]) {
+    await blocked(() => assess(config(), inspect({ Config: { ...inspect().Config, User: user } })), /non-root user/i)
+  }
+  await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, Privileged: true } })), /must not be privileged/i)
+  await blocked(() => assess(config(), inspect({ Image: `sha256:${"d".repeat(64)}` })), /image ID/i)
+  await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, RestartPolicy: { Name: "no", MaximumRetryCount: 0 } })), /restart policy/i)
+  await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, Memory: 1024 } })), /resource limits/i)
+  await blocked(() => assess(config(), inspect({ State: { Running: true, Status: "running", Health: { Status: "unhealthy" } } })), /not healthy/i)
 })
 
-test("systempaths, seccomp, namespaces, devices, and exact volume set are enforced", async () => {
-  await blocked(() => assessRunnerContainer(config(), inspect({ HostConfig: { ...inspect().HostConfig, SecurityOpt: ["no-new-privileges:true", "seccomp=/etc/ghdev/runner-seccomp.json"] } })), /SecurityOpt/i)
-  await blocked(() => assessRunnerContainer(config(), inspect({ HostConfig: { ...inspect().HostConfig, PidMode: "host" } })), /PidMode/i)
-  await blocked(() => assessRunnerContainer(config(), inspect({ HostConfig: { ...inspect().HostConfig, DeviceRequests: [{ Driver: "nvidia" }] } })), /host devices/i)
-  await blocked(() => assessRunnerContainer(config(), inspect({ Mounts: [] })), /named-volume set/i)
+test("systempaths, namespaces, devices, and exact volume set are enforced", async () => {
+  await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, SecurityOpt: ["no-new-privileges:true", "seccomp=/etc/ghdev/runner-seccomp.json"] } })), /SecurityOpt/i)
+  await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, PidMode: "host" } })), /PidMode/i)
+  await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, DeviceRequests: [{ Driver: "nvidia" }] } })), /host devices/i)
+  await blocked(() => assess(config(), inspect({ Mounts: [] })), /named-volume set/i)
+})
+
+test("named volumes reject local-driver bind backing and non-local drivers", async () => {
+  await blocked(() => assessRunnerContainer(config(), inspect(), { volumeInspects: volumes({ "ghdev-runner-state": { Options: { type: "none", o: "bind", device: "/home/user" } } }), seccompProof: seccompProof() }), /must not use local-driver options/i)
+  await blocked(() => assessRunnerContainer(config(), inspect(), { volumeInspects: volumes({ "ghdev-runner-work": { Driver: "custom" } }), seccompProof: seccompProof() }), /local Docker driver/i)
+})
+
+test("seccomp bytes must be unchanged since before container creation", async () => {
+  await blocked(() => assessRunnerContainer(config(), inspect(), { volumeInspects: volumes(), seccompProof: seccompProof({ mtime_ns: "9999999999999999999" }) }), /changed after container creation/i)
+  await blocked(() => assessRunnerContainer(config(), inspect(), { volumeInspects: volumes(), seccompProof: seccompProof({ sha256: "d".repeat(64) }) }), /seccomp proof/i)
 })
 
 test("config requires exact GitHub routing labels, isolated network mode, and normalized absolute paths", async () => {
@@ -130,9 +192,16 @@ test("config requires exact GitHub routing labels, isolated network mode, and no
 })
 
 test("runner registration settings prove persistent update-disabled repository binding", async () => {
-  const valid = { DisableUpdate: true, Ephemeral: false, GitHubUrl: "https://github.com/fvanevski/opencode-operational-schema-guard", AgentName: "ghdev-verify-runner", WorkFolder: "_work" }
-  assert.doesNotThrow(() => validateRunnerSettings(config(), valid))
-  await blocked(() => validateRunnerSettings(config(), { ...valid, DisableUpdate: false }), /DisableUpdate=true/i)
-  await blocked(() => validateRunnerSettings(config(), { ...valid, Ephemeral: true }), /must not be ephemeral/i)
-  await blocked(() => validateRunnerSettings(config(), { ...valid, GitHubUrl: "https://github.com/other/repo" }), /GitHubUrl/i)
+  assert.doesNotThrow(() => validateRunnerSettings(config(), runnerSettings()))
+  await blocked(() => validateRunnerSettings(config(), runnerSettings({ DisableUpdate: false })), /DisableUpdate=true/i)
+  await blocked(() => validateRunnerSettings(config(), runnerSettings({ Ephemeral: true })), /must not be ephemeral/i)
+  await blocked(() => validateRunnerSettings(config(), runnerSettings({ GitHubUrl: "https://github.com/other/repo" })), /GitHubUrl/i)
+  await blocked(() => validateRunnerSettings(config(), runnerSettings({ AgentId: 0 })), /AgentId/i)
+})
+
+test("GitHub runner registration proves server-side identity, labels, and online idle state", async () => {
+  assert.doesNotThrow(() => validateGitHubRunnerRegistration(config(), runnerSettings(), githubRunners()))
+  await blocked(() => validateGitHubRunnerRegistration(config(), runnerSettings(), githubRunners({ runner: { labels: [{ name: "self-hosted" }, { name: "Linux" }, { name: "X64" }] } })), /labels do not match/i)
+  await blocked(() => validateGitHubRunnerRegistration(config(), runnerSettings(), githubRunners({ runner: { status: "offline" } })), /online and idle/i)
+  await blocked(() => validateGitHubRunnerRegistration(config(), runnerSettings(), githubRunners({ runner: { id: 99 } })), /does not uniquely match/i)
 })
