@@ -1,6 +1,7 @@
 import assert from "node:assert/strict"
+import { spawnSync } from "node:child_process"
 import { createHash } from "node:crypto"
-import { mkdir, mkdtemp, writeFile } from "node:fs/promises"
+import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import test from "node:test"
@@ -1475,6 +1476,102 @@ test("workspace identity ownership rejects shell operators in helper arguments",
     const output = await after(hooks, "parent-operator-identity", `operator-${index}`, "bash", { command }, { output: clean, metadata: { exit: 0 } })
     assert.doesNotMatch(output.output, /OPERATIONAL_CAMPAIGN: closed/)
   }
+})
+
+test("destination-aware shell ownership admits read-only workspace sources while preserving write-side blocks", async () => {
+  const workspace = "/tmp/project-destination-aware"
+  const hooks = createOperationGuard({ directory: workspace, env: {} })
+  const target = "a".repeat(40)
+  const source = `${workspace}/src/input.txt`
+  const external = "/tmp/opencode/verify/materials/issue27-stage"
+  await message(hooks, "parent-destination-aware", "build", `REQUIRED EXACT HEAD: ${target}`)
+
+  for (const [index, command] of [
+    `cp ${source} ${external}/copy.txt`,
+    `cp -vt${external} ${source}`,
+    `cp --target-directory=${external} ${source}`,
+    `cp -- ${source} ${external}/copy-dashdash.txt`,
+    `install ${source} ${external}/installed.txt`,
+    `rsync -a ${source} ${external}/`,
+    `ln ${source} ${external}/linked.txt`,
+  ].entries()) {
+    await assert.doesNotReject(() => before(hooks, "parent-destination-aware", `external-${index}`, "bash", { command }), command)
+  }
+
+  for (const [index, command] of [
+    `cp /tmp/external-input.txt ${workspace}/copied.txt`,
+    `install /tmp/external-input.txt ${workspace}/installed.txt`,
+    `rsync -a /tmp/external-input.txt ${workspace}/synced.txt`,
+    `ln /tmp/external-input.txt ${workspace}/linked.txt`,
+    `mv ${source} ${external}/moved.txt`,
+  ].entries()) {
+    await assert.rejects(() => before(hooks, "parent-destination-aware", `workspace-${index}`, "bash", { command }), /exact-head admission is pending/, command)
+  }
+
+  const compacting = { context: [] }
+  await hooks["experimental.session.compacting"]({ sessionID: "parent-destination-aware" }, compacting)
+  assert.match(compacting.context.join("\n"), /Edit generation: 0; Fresh-review generation: 0; Verify generation: 0/)
+})
+
+test("destination-aware shell ownership keeps direct workspace mutators and protected recovery state fail-closed", async () => {
+  const workspace = "/tmp/project-destination-write-targets"
+  const stateDirectory = await mkdtemp(join(tmpdir(), "opencode-issue27-state-"))
+  const hooks = createOperationGuard({ directory: workspace, env: {}, stateDirectory })
+  const target = "b".repeat(40)
+  await message(hooks, "parent-write-targets", "build", `REQUIRED EXACT HEAD: ${target}`)
+
+  for (const [index, command] of [
+    `rm ${workspace}/old.txt`,
+    `mkdir -p ${workspace}/new-dir`,
+    `touch ${workspace}/touch.txt`,
+    `truncate -s 0 ${workspace}/truncate.txt`,
+    `chmod 600 ${workspace}/mode.txt`,
+    `chown 1000:1000 ${workspace}/owner.txt`,
+    `sed -i s/a/b/ ${workspace}/sed.txt`,
+    `perl -pi -e s/a/b/ ${workspace}/perl.txt`,
+    `printf changed > ${workspace}/redirect.txt`,
+    `ruff format ${workspace}/src/format.py`,
+    "git reset --hard HEAD",
+  ].entries()) {
+    await assert.rejects(() => before(hooks, "parent-write-targets", `mutator-${index}`, "bash", { command }), /exact-head admission is pending/, command)
+  }
+
+  await assert.rejects(
+    () => before(hooks, "parent-write-targets", "protected-source", "bash", { command: `cp ${stateDirectory}/guard-state.json /tmp/opencode/verify/materials/guard-state-copy.json` }),
+    /guard-owned persisted state and recovery material/,
+  )
+})
+
+test("admitted workspace-source copy leaves workspace bytes, git status, and publication generations unchanged", async () => {
+  const workspace = await mkdtemp(join(tmpdir(), "opencode-issue27-copy-"))
+  const external = await mkdtemp(join(tmpdir(), "opencode-issue27-external-"))
+  const source = join(workspace, "input.txt")
+  const destination = join(external, "input.txt")
+  await writeFile(source, "preserve-me\n")
+  const run = (argv) => spawnSync("git", argv, { cwd: workspace, encoding: "utf8" })
+  assert.equal(run(["init", "-q"]).status, 0)
+  assert.equal(run(["add", "input.txt"]).status, 0)
+  assert.equal(run(["-c", "user.name=GHDEV", "-c", "user.email=ghdev@example.invalid", "commit", "-qm", "base"]).status, 0)
+  const observed = run(["rev-parse", "HEAD"]).stdout.trim()
+  const target = observed === "c".repeat(40) ? "d".repeat(40) : "c".repeat(40)
+  const hooks = createOperationGuard({ directory: workspace, env: {} })
+  await message(hooks, "parent-copy-integration", "build", `REQUIRED EXACT HEAD: ${target}`)
+  const command = `cp ${source} ${destination}`
+  await assert.doesNotReject(() => before(hooks, "parent-copy-integration", "copy-before", "bash", { command }))
+  const copied = spawnSync("cp", [source, destination], { encoding: "utf8" })
+  assert.equal(copied.status, 0, copied.stderr)
+  assert.equal(await readFile(source, "utf8"), "preserve-me\n")
+  assert.equal(await readFile(destination, "utf8"), "preserve-me\n")
+  assert.equal(run(["status", "--porcelain=v1", "--untracked-files=all"]).stdout, "")
+
+  await before(hooks, "parent-copy-integration", "proof", "bash", { command: "git rev-parse HEAD" })
+  const proof = await after(hooks, "parent-copy-integration", "proof", "bash", { command: "git rev-parse HEAD" }, { output: `${observed}\n`, metadata: { exit: 0 } })
+  assert.match(proof.output, /OPERATIONAL_AUTHORITY: mismatch/)
+  await assert.doesNotReject(() => before(hooks, "parent-copy-integration", "copy-mismatch", "bash", { command }))
+
+  const compacting = { context: [] }
+  await hooks["experimental.session.compacting"]({ sessionID: "parent-copy-integration" }, compacting)
+  assert.match(compacting.context.join("\n"), /Edit generation: 0; Fresh-review generation: 0; Verify generation: 0/)
 })
 
 test("pending authority permits merge-base while retaining exact mutation blocks", async () => {
