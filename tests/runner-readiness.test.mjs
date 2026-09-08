@@ -221,14 +221,15 @@ test("seccomp comparison preserves 64-bit JSON integer distinctions", async (t) 
   const hostHash = createHash("sha256").update(hostProfile).digest("hex")
   const config64 = config({ seccomp: { path, sha256: hostHash } })
   const proof64 = await verifySeccompProfile(config64)
+  const assessmentProof64 = { ...proof64, mtime_ns: "1000000000", ctime_ns: "1000000000" }
 
   const matching = inspect()
   matching.HostConfig = { ...matching.HostConfig, SecurityOpt: ["no-new-privileges:true", `seccomp=${hostProfile}`] }
-  assert.equal(assessRunnerContainer(config64, matching, { volumeInspects: volumes(), seccompProof: proof64 }).result, "PASS")
+  assert.equal(assessRunnerContainer(config64, matching, { volumeInspects: volumes(), seccompProof: assessmentProof64 }).result, "PASS")
 
   const different = inspect()
   different.HostConfig = { ...different.HostConfig, SecurityOpt: ["no-new-privileges:true", `seccomp=${hostProfile.replace("9007199254740993", "9007199254740992")}`] }
-  await blocked(() => assessRunnerContainer(config64, different, { volumeInspects: volumes(), seccompProof: proof64 }), /differs from frozen host profile/i)
+  await blocked(() => assessRunnerContainer(config64, different, { volumeInspects: volumes(), seccompProof: assessmentProof64 }), /differs from frozen host profile/i)
 })
 
 test("named volumes reject local-driver bind backing, non-local drivers, and missing writable runner-state coverage", async () => {
