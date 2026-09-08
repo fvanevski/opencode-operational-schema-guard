@@ -12,6 +12,12 @@ import {
 const image = `sha256:${"a".repeat(64)}`
 const seccomp = "b".repeat(64)
 const listener = "c".repeat(64)
+const seccompProfile = {
+  defaultAction: "SCMP_ACT_ERRNO",
+  architectures: ["SCMP_ARCH_X86_64"],
+  syscalls: [{ names: ["clone"], action: "SCMP_ACT_ALLOW", args: [] }],
+}
+const seccompInline = JSON.stringify(seccompProfile)
 
 function config(overrides = {}) {
   return {
@@ -75,7 +81,7 @@ function inspect(overrides = {}) {
       PidsLimit: 1024,
       MaskedPaths: [],
       ReadonlyPaths: [],
-      SecurityOpt: ["no-new-privileges:true", "systempaths=unconfined", "seccomp=/etc/ghdev/runner-seccomp.json"],
+      SecurityOpt: ["no-new-privileges:true", `seccomp=${seccompInline}`],
       Binds: null,
       Tmpfs: { "/tmp": "rw,noexec,nosuid,size=1g" },
     },
@@ -110,7 +116,7 @@ function volumes(overrides = {}) {
 }
 
 function seccompProof(overrides = {}) {
-  return { sha256: seccomp, mtime_ns: "1000000000", ctime_ns: "1000000000", ...overrides }
+  return { sha256: seccomp, mtime_ns: "1000000000", ctime_ns: "1000000000", profile: seccompProfile, ...overrides }
 }
 
 function githubRunners(overrides = {}) {
@@ -171,13 +177,32 @@ test("privilege, every numeric UID-zero spelling, image, restart, resource, and 
   await blocked(() => assess(config(), inspect({ State: { Running: true, Status: "running", Health: { Status: "unhealthy" } } })), /not healthy/i)
 })
 
-test("systempaths, namespaces, devices, named volumes, and tmpfs mount census are enforced", async () => {
-  await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, SecurityOpt: ["no-new-privileges:true", "seccomp=/etc/ghdev/runner-seccomp.json"] } })), /SecurityOpt/i)
+test("effective systempaths, namespaces, devices, named volumes, and tmpfs mount census are enforced", async () => {
+  await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, MaskedPaths: ["/proc/acpi"] } })), /masked\/read-only path lists/i)
+  await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, ReadonlyPaths: ["/proc/sys"] } })), /masked\/read-only path lists/i)
   await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, PidMode: "host" } })), /PidMode/i)
   await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, DeviceRequests: [{ Driver: "nvidia" }] } })), /host devices/i)
   await blocked(() => assess(config(), inspect({ Mounts: inspect().Mounts.filter((mount) => mount.Type !== "volume") })), /named-volume set/i)
   await blocked(() => assess(config(), inspect({ Mounts: inspect().Mounts.filter((mount) => mount.Type !== "tmpfs") })), /tmpfs mount set/i)
   await blocked(() => assess(config(), inspect({ Mounts: [...inspect().Mounts, { Type: "bind", Source: "/host", Destination: "/unexpected", RW: false }] })), /unexpected mount type/i)
+})
+
+test("Docker-persisted security options require NNP plus the exact custom seccomp semantics", async () => {
+  const reorderedProfile = {
+    syscalls: seccompProfile.syscalls,
+    defaultAction: seccompProfile.defaultAction,
+    architectures: seccompProfile.architectures,
+  }
+  const reordered = inspect()
+  reordered.HostConfig = { ...reordered.HostConfig, SecurityOpt: ["no-new-privileges=true", `seccomp=${JSON.stringify(reorderedProfile)}`] }
+  assert.equal(assess(config(), reordered).result, "PASS")
+
+  await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, SecurityOpt: [`seccomp=${seccompInline}`] } })), /no-new-privileges/i)
+  await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, SecurityOpt: ["no-new-privileges:true"] } })), /exactly one applied seccomp/i)
+  await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, SecurityOpt: ["no-new-privileges:true", "seccomp=unconfined"] } })), /custom seccomp profile/i)
+  await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, SecurityOpt: ["no-new-privileges:true", "seccomp={not-json"] } })), /not valid inline JSON/i)
+  await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, SecurityOpt: ["no-new-privileges:true", `seccomp=${JSON.stringify({ ...seccompProfile, defaultAction: "SCMP_ACT_ALLOW" })}`] } })), /differs from frozen host profile/i)
+  await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, SecurityOpt: ["no-new-privileges:true", `seccomp=${seccompInline}`, "apparmor=unconfined"] } })), /unexpected SecurityOpt/i)
 })
 
 test("named volumes reject local-driver bind backing, non-local drivers, and missing writable runner-state coverage", async () => {
