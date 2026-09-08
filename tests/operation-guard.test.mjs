@@ -1968,6 +1968,7 @@ test("pending authority compound HEAD proofs fail closed with deterministic corr
   const strictCases = [
     ["cd-proof", "cd /repo && git rev-parse HEAD", /OPERATIONAL_CORRECTION: SET_WORKDIR_AND_PROVE_HEAD.*workdir to \/repo.*git rev-parse HEAD/s],
     ["status-probe", "git rev-parse HEAD; echo $?", /OPERATIONAL_CORRECTION: PROVE_STRICT_START_HEAD.*do_not_execute_or_auto_split=true.*git rev-parse HEAD/s],
+    ["git-c", "git -C /repo rev-parse HEAD", /OPERATIONAL_CORRECTION: PROVE_STRICT_START_HEAD.*git rev-parse HEAD/s],
     ["pipe", "git rev-parse HEAD | cat", /OPERATIONAL_CORRECTION: PROVE_STRICT_START_HEAD/],
     ["redirect", "git rev-parse HEAD > /tmp/head", /OPERATIONAL_CORRECTION: PROVE_STRICT_START_HEAD/],
     ["substitution", "printf '%s\\n' $(git rev-parse HEAD)", /OPERATIONAL_CORRECTION: PROVE_STRICT_START_HEAD/],
