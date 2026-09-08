@@ -1,7 +1,7 @@
 import assert from "node:assert/strict"
 import { spawnSync } from "node:child_process"
 import { createHash } from "node:crypto"
-import { mkdir, mkdtemp, readFile, symlink, writeFile } from "node:fs/promises"
+import { link, mkdir, mkdtemp, readFile, symlink, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import test from "node:test"
@@ -1573,6 +1573,16 @@ test("pending authority fails closed on symlinked shell and direct-edit destinat
   )
   await assert.rejects(
     () => before(hooks, "parent-alias-targets", "direct-edit-link", "write", { filePath: targetLink, content: "changed\n" }),
+    /exact-head admission is pending/,
+  )
+  const hardLinkTarget = join(external, "hard-link-target")
+  await link(workspaceTarget, hardLinkTarget)
+  await assert.rejects(
+    () => before(hooks, "parent-alias-targets", "shell-hard-link-target", "bash", { command: `cp ${source} ${hardLinkTarget}`, workdir: external }),
+    /exact-head admission is pending/,
+  )
+  await assert.rejects(
+    () => before(hooks, "parent-alias-targets", "direct-edit-hard-link", "write", { filePath: hardLinkTarget, content: "changed\n" }),
     /exact-head admission is pending/,
   )
   const futureAlias = join(external, "future-alias")
