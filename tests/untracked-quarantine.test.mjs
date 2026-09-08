@@ -542,8 +542,16 @@ test("pending exact-head guard admits only the exact typed helper and preserves 
     /guard-owned persisted state and recovery material/i,
   )
   await assert.rejects(
+    () => before(hooks, session, "remove-ledger-parent", `rm -rf ${stateDirectory}`),
+    /guard-owned persisted state and recovery material/i,
+  )
+  await assert.rejects(
     () => before(hooks, session, "forge-receipt", `cp /tmp/forged.json ${receiptPath(id)}`),
     /guard-owned persisted state and recovery material/i,
+  )
+  await assert.rejects(
+    () => before(hooks, session, "direct-fs-helper", `/usr/bin/python3 ${REPOSITORY_FS_HELPER}`),
+    /typed untracked recovery must use exactly/i,
   )
   const writableSpecPath = join(UNTRACKED_QUARANTINE_SPEC_ROOT, `${id}.agent-writable.json`)
   await assert.doesNotReject(() => before(hooks, session, "write-spec", `printf '{}' > ${writableSpecPath}`))
