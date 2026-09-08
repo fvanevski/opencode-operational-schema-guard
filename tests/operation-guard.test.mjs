@@ -51,6 +51,12 @@ async function after(hooks, sessionID, callID, tool, args = {}, output = {}) {
   return result
 }
 
+function runGit(cwd, args) {
+  const result = spawnSync("git", args, { cwd, encoding: "utf8" })
+  assert.equal(result.status, 0, result.stderr || `${args.join(" ")} failed`)
+  return String(result.stdout ?? "").trim()
+}
+
 async function taskFailureEvent(hooks, sessionID, callID, error, messageID = `msg-${callID}`) {
   await hooks.event({ event: { type: "message.part.updated", properties: { part: {
     sessionID,
@@ -2102,22 +2108,41 @@ test("authority proof admission binds workdir and completion to the exact author
   await aba["experimental.session.compacting"]({ sessionID: "issue28-proof-aba" }, pending)
   assert.match(pending.context.join("\n"), /Authority admission: pending; mode: strict-start/)
 
-  const target = "5".repeat(40)
-  const targetPath = "/tmp/opencode/verify/worktrees/issue28-proof-binding"
-  const targetHooks = createOperationGuard({ directory: "/tmp/project-issue28-target-binding", env: {} })
+  const targetRepo = await mkdtemp(join(tmpdir(), "opencode-issue28-target-binding-repo-"))
+  runGit(targetRepo, ["init", "-q"])
+  runGit(targetRepo, ["-c", "user.name=GHDEV", "-c", "user.email=ghdev@example.invalid", "commit", "--allow-empty", "-qm", "base"])
+  const target = runGit(targetRepo, ["rev-parse", "HEAD"])
+  const targetRoot = await mkdtemp(join(tmpdir(), "opencode-issue28-target-binding-worktrees-"))
+  const replacedPath = join(targetRoot, "replaced")
+  const validPath = join(targetRoot, "valid")
+  const targetHooks = createOperationGuard({ directory: targetRepo, env: {} })
   await message(targetHooks, "issue28-target-binding", "build", `REQUIRED EXACT HEAD: ${target}`)
   await assert.rejects(
-    () => before(targetHooks, "issue28-target-binding", "unrelated-target-proof", "bash", { command: "git rev-parse HEAD", workdir: targetPath }),
+    () => before(targetHooks, "issue28-target-binding", "unrelated-target-proof", "bash", { command: "git rev-parse HEAD", workdir: replacedPath }),
     /OPERATIONAL_CORRECTION: TARGET_PROOF_WORKDIR_NOT_ADMITTED.*do_not_execute=true/s,
   )
   await assert.rejects(
     () => before(targetHooks, "issue28-target-binding", "git-c-target-setup", "bash", { command: `git -C /tmp/unrelated-repository switch --detach ${target}` }),
     /exact-head admission is pending/,
   )
-  const add = { command: `git worktree add --detach ${targetPath} ${target}` }
-  await before(targetHooks, "issue28-target-binding", "target-worktree-add", "bash", add)
-  await after(targetHooks, "issue28-target-binding", "target-worktree-add", "bash", add, { output: "prepared", metadata: { exit: 0 } })
-  const targetProof = { command: "git rev-parse HEAD", workdir: targetPath }
+
+  const replacedAdd = { command: `git worktree add --detach ${replacedPath} ${target}` }
+  await before(targetHooks, "issue28-target-binding", "replaced-worktree-add", "bash", replacedAdd)
+  runGit(targetRepo, ["worktree", "add", "--detach", replacedPath, target])
+  await after(targetHooks, "issue28-target-binding", "replaced-worktree-add", "bash", replacedAdd, { output: "prepared", metadata: { exit: 0 } })
+  runGit(targetRepo, ["worktree", "remove", "--force", replacedPath])
+  await mkdir(replacedPath)
+  runGit(replacedPath, ["init", "-q"])
+  await assert.rejects(
+    () => before(targetHooks, "issue28-target-binding", "replaced-target-proof", "bash", { command: "git rev-parse HEAD", workdir: replacedPath }),
+    /OPERATIONAL_CORRECTION: TARGET_PROOF_WORKDIR_NOT_ADMITTED.*do_not_execute=true/s,
+  )
+
+  const validAdd = { command: `git worktree add --detach ${validPath} ${target}` }
+  await before(targetHooks, "issue28-target-binding", "valid-worktree-add", "bash", validAdd)
+  runGit(targetRepo, ["worktree", "add", "--detach", validPath, target])
+  await after(targetHooks, "issue28-target-binding", "valid-worktree-add", "bash", validAdd, { output: "prepared", metadata: { exit: 0 } })
+  const targetProof = { command: "git rev-parse HEAD", workdir: validPath }
   await assert.doesNotReject(() => before(targetHooks, "issue28-target-binding", "target-proof", "bash", targetProof))
   const targetResult = await after(targetHooks, "issue28-target-binding", "target-proof", "bash", targetProof, { output: `${target}\n`, metadata: { exit: 0 } })
   assert.equal(targetResult.metadata.operationalSchema.authorityStatus, "verified")
@@ -2181,21 +2206,26 @@ test("target mismatch proof and rejected mutation provide one-step recovery feed
 })
 
 test("target-mode compound worktree setup is rejected with the safe two-step sequence while the corrected sequence is admitted", async () => {
-  const hooks = createOperationGuard({ directory: "/tmp/project-target-worktree", env: {} })
-  const target = "d".repeat(40)
-  const path = "/tmp/opencode/verify/worktrees/issue13-target"
+  const repo = await mkdtemp(join(tmpdir(), "opencode-target-worktree-repo-"))
+  runGit(repo, ["init", "-q"])
+  runGit(repo, ["-c", "user.name=GHDEV", "-c", "user.email=ghdev@example.invalid", "commit", "--allow-empty", "-qm", "base"])
+  const target = runGit(repo, ["rev-parse", "HEAD"])
+  const worktreeRoot = await mkdtemp(join(tmpdir(), "opencode-target-worktree-root-"))
+  const path = join(worktreeRoot, "candidate")
+  const hooks = createOperationGuard({ directory: repo, env: {} })
   await message(hooks, "parent-target-worktree", "build", `REQUIRED EXACT HEAD: ${target}`)
   await assert.rejects(
     () => before(hooks, "parent-target-worktree", "compound-worktree", "bash", { command: `git worktree add --detach ${path} ${target} && git -C ${path} rev-parse HEAD` }),
-    new RegExp(`OPERATIONAL_CORRECTION: SPLIT_TARGET_ADMISSION.*Call 1 exactly: git worktree add --detach ${path} ${target}.*Call 2 with tool workdir=${path} exactly: git rev-parse HEAD`, "s"),
+    new RegExp(`OPERATIONAL_CORRECTION: SPLIT_TARGET_ADMISSION.*git worktree add --detach ${path} ${target}.*workdir=${path}.*git rev-parse HEAD`, "s"),
   )
 
   const add = { command: `git worktree add --detach ${path} ${target}` }
   await assert.doesNotReject(() => before(hooks, "parent-target-worktree", "worktree-add", "bash", add))
+  runGit(repo, ["worktree", "add", "--detach", path, target])
   await after(hooks, "parent-target-worktree", "worktree-add", "bash", add, { output: "prepared", metadata: { exit: 0 } })
   const proofArgs = { command: "git rev-parse HEAD", workdir: path }
   await before(hooks, "parent-target-worktree", "worktree-proof", "bash", proofArgs)
-  const proof = await after(hooks, "parent-target-worktree", "worktree-proof", "bash", proofArgs, { output: `${target}\n`, metadata: { exit: 0 } })
+  const proof = await after(hooks, "parent-target-worktree", "worktree-proof", "bash", proofArgs, { output: `${runGit(path, ["rev-parse", "HEAD"])}\n`, metadata: { exit: 0 } })
   assert.equal(proof.metadata.operationalSchema.authorityStatus, "verified")
 })
 
