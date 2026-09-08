@@ -1961,6 +1961,98 @@ test("strict starting-head SHA aliases bind exact 40-hex tokens and tolerate tra
   }
 })
 
+test("pending authority compound HEAD proofs fail closed with deterministic correction paths and no state transition", async () => {
+  const strictTarget = "a".repeat(40)
+  const strict = createOperationGuard({ directory: "/tmp/project-issue28-strict", env: {} })
+  await message(strict, "issue28-strict", "build", `REQUIRED STARTING HEAD SHA: ${strictTarget}`)
+  const strictCases = [
+    ["cd-proof", "cd /repo && git rev-parse HEAD", /OPERATIONAL_CORRECTION: SET_WORKDIR_AND_PROVE_HEAD.*workdir to \/repo.*git rev-parse HEAD/s],
+    ["status-probe", "git rev-parse HEAD; echo $?", /OPERATIONAL_CORRECTION: PROVE_STRICT_START_HEAD.*do_not_execute_or_auto_split=true.*git rev-parse HEAD/s],
+    ["pipe", "git rev-parse HEAD | cat", /OPERATIONAL_CORRECTION: PROVE_STRICT_START_HEAD/],
+    ["redirect", "git rev-parse HEAD > /tmp/head", /OPERATIONAL_CORRECTION: PROVE_STRICT_START_HEAD/],
+    ["substitution", "printf '%s\\n' $(git rev-parse HEAD)", /OPERATIONAL_CORRECTION: PROVE_STRICT_START_HEAD/],
+  ]
+  for (const [callID, command, pattern] of strictCases) {
+    await assert.rejects(() => before(strict, "issue28-strict", callID, "bash", { command }), pattern, command)
+  }
+  const strictState = { context: [] }
+  await strict["experimental.session.compacting"]({ sessionID: "issue28-strict" }, strictState)
+  assert.match(strictState.context.join("\n"), new RegExp(`Authority: ${strictTarget}`))
+  assert.match(strictState.context.join("\n"), /mode: strict-start/)
+  assert.match(strictState.context.join("\n"), /Edit generation: 0; Fresh-review generation: 0; Verify generation: 0/)
+
+  const target = "b".repeat(40)
+  const targetHooks = createOperationGuard({ directory: "/tmp/project-issue28-target", env: {} })
+  await message(targetHooks, "issue28-target", "build", `REQUIRED EXACT HEAD: ${target}`)
+  await assert.rejects(
+    () => before(targetHooks, "issue28-target", "switch-proof", "bash", { command: `git switch --detach ${target} && git rev-parse HEAD` }),
+    new RegExp(`OPERATIONAL_CORRECTION: SPLIT_TARGET_ADMISSION.*Call 1 exactly: git switch --detach ${target}.*Call 2.*git rev-parse HEAD`, "s"),
+  )
+  await assert.rejects(
+    () => before(targetHooks, "issue28-target", "checkout-proof", "bash", { command: `git checkout --detach ${target}; git rev-parse HEAD` }),
+    new RegExp(`OPERATIONAL_CORRECTION: SPLIT_TARGET_ADMISSION.*Call 1 exactly: git checkout --detach ${target}.*Call 2.*git rev-parse HEAD`, "s"),
+  )
+  const worktree = "/tmp/opencode/verify/worktrees/issue28-target"
+  await assert.rejects(
+    () => before(targetHooks, "issue28-target", "worktree-proof", "bash", { command: `git worktree add --detach ${worktree} ${target} && git rev-parse HEAD` }),
+    new RegExp(`OPERATIONAL_CORRECTION: SPLIT_TARGET_ADMISSION.*git worktree add --detach ${worktree} ${target}.*workdir=${worktree}.*git rev-parse HEAD`, "s"),
+  )
+  await assert.rejects(
+    () => before(targetHooks, "issue28-target", "target-cd-proof", "bash", { command: "cd /repo && git rev-parse HEAD" }),
+    /OPERATIONAL_CORRECTION: SET_WORKDIR_AND_PROVE_HEAD.*workdir to \/repo.*git rev-parse HEAD/s,
+  )
+  const targetState = { context: [] }
+  await targetHooks["experimental.session.compacting"]({ sessionID: "issue28-target" }, targetState)
+  assert.match(targetState.context.join("\n"), new RegExp(`Authority: ${target}`))
+  assert.match(targetState.context.join("\n"), /mode: target/)
+  assert.match(targetState.context.join("\n"), /Edit generation: 0; Fresh-review generation: 0; Verify generation: 0/)
+})
+
+test("strict-start and target current-workspace bare proofs admit work without rewriting authority mode", async () => {
+  const strictTarget = "c".repeat(40)
+  const strict = createOperationGuard({ directory: "/tmp/project-issue28-strict-proof", env: {} })
+  await message(strict, "issue28-strict-proof", "build", `REQUIRED STARTING HEAD: ${strictTarget}`)
+  const strictProofArgs = { command: "git rev-parse HEAD" }
+  await before(strict, "issue28-strict-proof", "proof", "bash", strictProofArgs)
+  const strictProof = await after(strict, "issue28-strict-proof", "proof", "bash", strictProofArgs, { output: `${strictTarget}\n`, metadata: { exit: 0 } })
+  assert.equal(strictProof.metadata.operationalSchema.authorityMode, "strict-start")
+  assert.equal(strictProof.metadata.operationalSchema.authorityStatus, "verified")
+  await assert.doesNotReject(() => before(strict, "issue28-strict-proof", "edit", "edit", { filePath: "src/a.py" }))
+
+  const target = "d".repeat(40)
+  const targetHooks = createOperationGuard({ directory: "/tmp/project-issue28-target-proof", env: {} })
+  await message(targetHooks, "issue28-target-proof", "build", `REQUIRED EXACT HEAD: ${target}`)
+  const targetProofArgs = { command: "git rev-parse HEAD" }
+  await before(targetHooks, "issue28-target-proof", "proof", "bash", targetProofArgs)
+  const targetProof = await after(targetHooks, "issue28-target-proof", "proof", "bash", targetProofArgs, { output: `${target}\n`, metadata: { exit: 0 } })
+  assert.equal(targetProof.metadata.operationalSchema.authorityMode, "target")
+  assert.equal(targetProof.metadata.operationalSchema.authorityStatus, "verified")
+  await assert.doesNotReject(() => before(targetHooks, "issue28-target-proof", "edit", "edit", { filePath: "src/a.py" }))
+
+  await message(targetHooks, "issue28-target-proof", "build", `REQUIRED STARTING HEAD SHA: ${target}`)
+  const continuity = { context: [] }
+  await targetHooks["experimental.session.compacting"]({ sessionID: "issue28-target-proof" }, continuity)
+  assert.match(continuity.context.join("\n"), /mode: target/)
+})
+
+test("pending mutations return mode-specific machine correction codes", async () => {
+  const strictTarget = "e".repeat(40)
+  const strict = createOperationGuard({ directory: "/tmp/project-issue28-pending-strict", env: {} })
+  await message(strict, "issue28-pending-strict", "build", `REQUIRED STARTING HEAD: ${strictTarget}`)
+  await assert.rejects(
+    () => before(strict, "issue28-pending-strict", "edit", "edit", { filePath: "src/a.py" }),
+    /OPERATIONAL_CORRECTION: PROVE_STRICT_START_HEAD.*STRICT_START_PROOF=.*git rev-parse HEAD/s,
+  )
+
+  const target = "f".repeat(40)
+  const targetHooks = createOperationGuard({ directory: "/tmp/project-issue28-pending-target", env: {} })
+  await message(targetHooks, "issue28-pending-target", "build", `REQUIRED EXACT HEAD: ${target}`)
+  await assert.rejects(
+    () => before(targetHooks, "issue28-pending-target", "merge", "bash", { command: `git merge --ff-only ${target}` }),
+    /OPERATIONAL_CORRECTION: ADMIT_EXACT_TARGET.*CURRENT_WORKSPACE_PROOF=.*PR_ASSESSMENT=.*CALLER_OWNED_WORKTREE=/s,
+  )
+})
+
 test("exact-head target admission permits only an exact detached transition before proof", async () => {
   const hooks = createOperationGuard({ directory: "/tmp/project", env: {} })
   const target = "c".repeat(40)
