@@ -256,6 +256,84 @@ test("unbound Explore partitions thirteen finite targets before target-limit rej
   }
 })
 
+test("unbound Explore rejects multi-path target bullets instead of falling back with an undercounted target ceiling", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "issue29-unbound-multipath-"))
+  try {
+    await mkdir(join(directory, "lib"), { recursive: true })
+    const targetLines = []
+    for (let index = 0; index < 14; index += 2) {
+      const left = `lib/paired-${index}.mjs`
+      const right = `lib/paired-${index + 1}.mjs`
+      await writeFile(join(directory, left), `export const left${index} = ${index}\n`)
+      await writeFile(join(directory, right), `export const right${index + 1} = ${index + 1}\n`)
+      targetLines.push(`- ${left} and ${right}`)
+    }
+    const hooks = createOperationGuard({ directory, env: {} })
+    await register(hooks, "parent", "build")
+    await assert.rejects(
+      () => before(hooks, "parent", "multi-path-targets", "task", {
+        subagent_type: "explore",
+        description: "Inspect only the explicitly paired targets",
+        prompt: `Scope: inspect only the explicitly paired targets\nQuestions:\n- What ownership relationships do the listed targets expose?\nStop condition: all listed target bullets are addressed.\nTargets:\n${targetLines.join("\n")}`,
+      }),
+      /UNREPRESENTABLE.*unbound-explore-target-bullet-must-resolve-to-one-path/s,
+    )
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+})
+
+test("canonical Explore partitions preserve CRLF bytes outside the replaced Targets bullets", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "issue29-crlf-partition-"))
+  try {
+    await mkdir(join(directory, "lib"), { recursive: true })
+    const targetLines = []
+    for (let index = 0; index < 9; index += 1) {
+      const relative = `lib/crlf-${index}.mjs`
+      targetLines.push(`- ${relative} crlf-annotation-${index}`)
+      await writeFile(join(directory, relative), `export const crlf${index} = ${index}\n`)
+    }
+    const prompt = [
+      "Scope: inspect only the nine CRLF targets",
+      "Questions:",
+      "- What ownership relationships do the listed targets expose?",
+      "Stop condition: all nine targets are addressed.",
+      "Targets:",
+      ...targetLines,
+      "Supporting context:",
+      "CRLF-MUST-SURVIVE: first bounded context line.",
+      "CRLF-MUST-SURVIVE: second bounded context line.",
+    ].join("\r\n")
+    const hooks = createOperationGuard({ directory, env: {} })
+    await register(hooks, "parent", "build")
+    let error
+    try {
+      await before(hooks, "parent", "crlf-broad-explore", "task", {
+        subagent_type: "explore",
+        description: "Inspect nine bounded CRLF targets",
+        prompt,
+      })
+    } catch (caught) {
+      error = caught
+    }
+    assert.ok(error)
+    const match = error.message.match(/deterministic planner returned PARTITION_REQUIRED: (\{.*\}) OPERATIONAL_PACKET_ACTION:/s)
+    assert.ok(match, error.message)
+    const details = JSON.parse(match[1])
+    assert.ok(details.partitions.length >= 2)
+    for (const partition of details.partitions) {
+      assert.ok(partition.packet.includes("Scope: inspect only the nine CRLF targets\r\nQuestions:\r\n- What ownership relationships do the listed targets expose?\r\nStop condition: all nine targets are addressed.\r\nTargets:\r\n"))
+      assert.ok(partition.packet.includes("Supporting context:\r\nCRLF-MUST-SURVIVE: first bounded context line.\r\nCRLF-MUST-SURVIVE: second bounded context line."))
+      for (const path of partition.target_paths) {
+        const index = Number(path.match(/crlf-(\d+)\.mjs$/)?.[1])
+        assert.ok(partition.packet.includes(`- ${path} crlf-annotation-${index}\r\n`))
+      }
+    }
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+})
+
 test("unbound Explore rejects open-ended and partial envelopes rather than manufacturing boundedness", async () => {
   const hooks = createOperationGuard({ directory: "/tmp/issue29-unbound-reject", env: {} })
   await register(hooks, "parent", "build")
