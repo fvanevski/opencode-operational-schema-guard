@@ -191,6 +191,8 @@ test("config requires exact GitHub routing labels, isolated network mode, and no
   await blocked(() => validateRunnerReadinessConfig(config({ github_runner_labels: ["self-hosted", "ghdev-verify"] })), /github_runner_labels/i)
   await blocked(() => validateRunnerReadinessConfig(config({ network_mode: "container:other" })), /cannot share another container namespace/i)
   await blocked(() => validateRunnerReadinessConfig(config({ seccomp: { path: "/etc/ghdev/../bad.json", sha256: seccomp } })), /normalized absolute path/i)
+  await blocked(() => validateRunnerReadinessConfig(config({ runner_settings_path: "/tmp/decoy/.runner" })), /runner_settings_path must be exactly/i)
+  await blocked(() => validateRunnerReadinessConfig(config({ runner_listener_path: "/tmp/decoy/Runner.Listener" })), /runner_listener_path must be exactly/i)
 })
 
 test("runner registration settings prove persistent update-disabled repository binding", async () => {
@@ -199,6 +201,7 @@ test("runner registration settings prove persistent update-disabled repository b
   await blocked(() => validateRunnerSettings(config(), runnerSettings({ Ephemeral: true })), /must not be ephemeral/i)
   await blocked(() => validateRunnerSettings(config(), runnerSettings({ GitHubUrl: "https://github.com/other/repo" })), /GitHubUrl/i)
   await blocked(() => validateRunnerSettings(config(), runnerSettings({ AgentId: 0 })), /AgentId/i)
+  await blocked(() => validateRunnerSettings(config(), runnerSettings({ WorkFolder: "alternate-work" })), /WorkFolder must be exactly/i)
 })
 
 test("GitHub runner registration proves server-side identity, labels, and online idle state", async () => {
