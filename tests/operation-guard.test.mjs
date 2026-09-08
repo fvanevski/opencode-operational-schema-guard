@@ -1508,6 +1508,11 @@ test("destination-aware shell ownership admits read-only workspace sources while
     await assert.rejects(() => before(hooks, "parent-destination-aware", `workspace-${index}`, "bash", { command }), /exact-head admission is pending/, command)
   }
 
+  await assert.rejects(
+    () => before(hooks, "parent-destination-aware", "ambiguous-rsync", "bash", { command: `rsync -a ${source} ${external}/ --unsupported-option maybe` }),
+    /exact-head admission is pending/,
+  )
+
   const compacting = { context: [] }
   await hooks["experimental.session.compacting"]({ sessionID: "parent-destination-aware" }, compacting)
   assert.match(compacting.context.join("\n"), /Edit generation: 0; Fresh-review generation: 0; Verify generation: 0/)
