@@ -276,7 +276,7 @@ def open_repo_parent(root_fd, repo_path, create=False):
 
 def capture_path(request):
     repo_path, expected = expected_for_path(request)
-    parts, _ = normalize_repo_path(repo_path)
+    _, parts = normalize_repo_path(repo_path)
     workspace_fd = open_abs_dir(request.get("workspace_root"))
     try:
         workspace_info = validate_workspace_fd(workspace_fd, request)
