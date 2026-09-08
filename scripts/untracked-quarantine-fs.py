@@ -393,6 +393,66 @@ def copy_entry(src_parent, src_name, dst_parent, dst_name):
         os.close(dst_fd)
 
 
+def remove_helper_staging(parent_fd, name):
+    info = os.stat(name, dir_fd=parent_fd, follow_symlinks=False)
+    if stat.S_ISREG(info.st_mode) or stat.S_ISLNK(info.st_mode):
+        os.unlink(name, dir_fd=parent_fd)
+        return
+    if not stat.S_ISDIR(info.st_mode):
+        blocked("helper-owned restore staging changed to an unsupported special object")
+    child_fd = os.open(name, DIR_FLAGS, dir_fd=parent_fd)
+    try:
+        names = os.listdir(child_fd)
+        for child in names:
+            valid_name(child)
+        for child in sorted(names, key=lambda value: value.encode("utf-8", "strict")):
+            remove_helper_staging(child_fd, child)
+    finally:
+        os.close(child_fd)
+    os.rmdir(name, dir_fd=parent_fd)
+
+
+def restore_marker(operation_fd, digest, operation_id, repo_path, temp_name):
+    marker_dir_name = ".restore-staging"
+    try:
+        marker_dir = os.open(marker_dir_name, DIR_FLAGS, dir_fd=operation_fd)
+    except FileNotFoundError:
+        os.mkdir(marker_dir_name, 0o700, dir_fd=operation_fd)
+        marker_dir = os.open(marker_dir_name, DIR_FLAGS, dir_fd=operation_fd)
+    marker_name = f"{digest}.owned"
+    expected = (operation_id + "\0" + repo_path + "\0" + temp_name + "\n").encode("utf-8")
+    try:
+        marker_fd = os.open(marker_name, FILE_FLAGS, dir_fd=marker_dir)
+    except FileNotFoundError:
+        marker_fd = os.open(
+            marker_name,
+            os.O_WRONLY | os.O_CREAT | os.O_EXCL | O_NOFOLLOW | O_CLOEXEC,
+            0o600,
+            dir_fd=marker_dir,
+        )
+        try:
+            write_all(marker_fd, expected)
+            os.fsync(marker_fd)
+        finally:
+            os.close(marker_fd)
+        marker_fd = os.open(marker_name, FILE_FLAGS, dir_fd=marker_dir)
+    try:
+        info = os.fstat(marker_fd)
+        content = os.read(marker_fd, len(expected) + 1)
+        if not stat.S_ISREG(info.st_mode) or content != expected:
+            blocked("restore staging ownership marker is invalid")
+    finally:
+        os.close(marker_fd)
+    return marker_dir, marker_name
+
+
+def clear_restore_marker(marker_dir, marker_name):
+    try:
+        os.unlink(marker_name, dir_fd=marker_dir)
+    except FileNotFoundError:
+        pass
+
+
 def cleanup_empty_capture_parents(capture_fd, parts):
     for depth in range(len(parts) - 1, 0, -1):
         parent_parts = parts[:depth]
@@ -417,10 +477,13 @@ def restore_path(request):
         workspace_info = validate_workspace_fd(workspace_fd, request)
         capture_fd = open_capture(request, workspace_info)
         quarantine_fd = open_abs_dir(request.get("quarantine_root"))
+        operation_fd = open_abs_dir(request.get("operation_root"))
         try:
             dst_parent, dst_name = open_relative_parent(workspace_fd, parts)
             cap_parent, cap_name = open_relative_parent(capture_fd, parts, create=True)
             src_parent, src_name = open_relative_parent(quarantine_fd, parts)
+            digest = hashlib.sha256((request["operation_id"] + "\0" + repo_path).encode("utf-8")).hexdigest()[:24]
+            temp_name = f".opencode-uq-restore-{digest}"
             try:
                 destination_exists = lexists_at(dst_parent, dst_name)
                 captured_exists = lexists_at(cap_parent, cap_name)
@@ -429,6 +492,8 @@ def restore_path(request):
                         blocked("restore refuses to overwrite existing destination content")
                     if captured_exists:
                         blocked("both restored destination and capture source exist; refusing ambiguous restore state")
+                    if lexists_at(dst_parent, temp_name):
+                        blocked("unattributed restore staging exists beside an already-restored destination")
                     return {"result": "PASS", "action": "restore", "status": "already_restored"}
                 if captured_exists:
                     if inventory_one(cap_parent, cap_name, repo_path) != expected:
@@ -440,20 +505,41 @@ def restore_path(request):
                     return {"result": "PASS", "action": "restore", "status": "renamed"}
                 if not lexists_at(src_parent, src_name):
                     blocked("receipt-backed quarantine source is missing")
-                digest = hashlib.sha256((request["operation_id"] + "\0" + repo_path).encode("utf-8")).hexdigest()[:24]
-                temp_name = f".opencode-uq-restore-{digest}"
-                if lexists_at(dst_parent, temp_name):
-                    if inventory_one(dst_parent, temp_name, repo_path) != expected:
-                        blocked("existing descriptor-anchored restore staging content is invalid")
-                else:
-                    copy_entry(src_parent, src_name, dst_parent, temp_name)
+
+                marker_exists = False
+                marker_dir = None
+                marker_name = None
+                marker_dir_name = ".restore-staging"
+                try:
+                    marker_dir = os.open(marker_dir_name, DIR_FLAGS, dir_fd=operation_fd)
+                    marker_name = f"{digest}.owned"
+                    marker_exists = lexists_at(marker_dir, marker_name)
+                except FileNotFoundError:
+                    pass
+                finally:
+                    if marker_dir is not None:
+                        os.close(marker_dir)
+
+                if lexists_at(dst_parent, temp_name) and not marker_exists:
+                    blocked("existing restore staging is not authenticated as helper-owned recovery state")
+
+                marker_dir, marker_name = restore_marker(operation_fd, digest, request["operation_id"], repo_path, temp_name)
+                try:
+                    if lexists_at(dst_parent, temp_name):
+                        if inventory_one(dst_parent, temp_name, repo_path) != expected:
+                            remove_helper_staging(dst_parent, temp_name)
+                    if not lexists_at(dst_parent, temp_name):
+                        copy_entry(src_parent, src_name, dst_parent, temp_name)
                     if inventory_one(dst_parent, temp_name, repo_path) != expected:
                         blocked("descriptor-anchored restore staging copy differs from receipt inventory")
-                if lexists_at(dst_parent, dst_name):
-                    blocked("restore destination appeared before atomic publication")
-                os.rename(temp_name, dst_name, src_dir_fd=dst_parent, dst_dir_fd=dst_parent)
-                if inventory_one(dst_parent, dst_name, repo_path) != expected:
-                    blocked("descriptor-anchored restored destination differs from receipt inventory")
+                    if lexists_at(dst_parent, dst_name):
+                        blocked("restore destination appeared before atomic publication")
+                    os.rename(temp_name, dst_name, src_dir_fd=dst_parent, dst_dir_fd=dst_parent)
+                    if inventory_one(dst_parent, dst_name, repo_path) != expected:
+                        blocked("descriptor-anchored restored destination differs from receipt inventory")
+                    clear_restore_marker(marker_dir, marker_name)
+                finally:
+                    os.close(marker_dir)
                 return {"result": "PASS", "action": "restore", "status": "copied"}
             finally:
                 os.close(dst_parent)
@@ -462,6 +548,7 @@ def restore_path(request):
         finally:
             os.close(capture_fd)
             os.close(quarantine_fd)
+            os.close(operation_fd)
     finally:
         os.close(workspace_fd)
 

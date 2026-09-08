@@ -406,7 +406,37 @@ test("restore rejects substituted workspace ancestors without escaped writes", a
   await assert.rejects(() => readFile(join(outside, "keep.txt")), /ENOENT/)
 })
 
-test("receipt mismatch and restore overwrite both fail closed while quarantine evidence is retained", async () => {
+test("fallback restore recovers authenticated incomplete staging but preserves unattributed collisions", async () => {
+  const root = await repo()
+  await writeFile(join(root, "keep.txt"), "original\n")
+  const { quarantined, id } = await inspectAndQuarantine(root, ["keep.txt"])
++  const receipt = JSON.parse(await readFile(receiptPath(id), "utf8"))
++  await rm(receipt.quarantine.capture_root, { recursive: true, force: true })
++
++  const digest = createHash("sha256").update(`${id}\0keep.txt`).digest("hex").slice(0, 24)
++  const stagingName = `.opencode-uq-restore-${digest}`
++  const stagingPath = join(root, stagingName)
++  await writeFile(stagingPath, "partial\n")
++  const restoreSpec = {
++    ...inspectSpec(root, ["keep.txt"], id),
++    action: "restore",
++    receipt_path: receiptPath(id),
++    expected_receipt_sha256: quarantined.receipt_sha256,
++  }
++  await expectBlocked(() => runUntrackedQuarantine(restoreSpec), /not authenticated as helper-owned/i)
++  assert.equal(await readFile(stagingPath, "utf8"), "partial\n")
++
++  const markerDirectory = join(receipt.quarantine.root, ".restore-staging")
++  await mkdir(markerDirectory, { recursive: true })
++  await writeFile(join(markerDirectory, `${digest}.owned`), `${id}\0keep.txt\0${stagingName}\n`, { mode: 0o600 })
++  const restored = await runUntrackedQuarantine(restoreSpec)
++  assert.equal(restored.result, "PASS")
++  assert.equal(await readFile(join(root, "keep.txt"), "utf8"), "original\n")
++  await assert.rejects(() => readFile(stagingPath), /ENOENT/)
++  await assert.rejects(() => readFile(join(markerDirectory, `${digest}.owned`)), /ENOENT/)
++})
++
++test("receipt mismatch and restore overwrite both fail closed while quarantine evidence is retained", async () => {
   const root = await repo()
   await writeFile(join(root, "keep.txt"), "original\n")
   const { quarantined, id } = await inspectAndQuarantine(root, ["keep.txt"])
@@ -482,6 +512,8 @@ test("pending exact-head guard admits only the exact typed helper and preserves 
     `cp --target-directory ${root} /tmp/source-${id}`,
     `mv -t${root} /tmp/source-${id}`,
     `mv -t ${root} /tmp/source-${id}`,
+    `cp -vt${root} /tmp/source-${id}`,
+    `mv -vft${root} /tmp/source-${id}`,
   ].entries()) {
     const output = { args: { command: unsafe, workdir: tmpdir() } }
     await assert.rejects(() => hooks["tool.execute.before"]({ sessionID: session, callID: `target-directory-${index}`, tool: "bash" }, output), /exact-head admission is pending|pending exact-head|exact-head target/i, unsafe)
@@ -496,6 +528,19 @@ test("pending exact-head guard admits only the exact typed helper and preserves 
   }
 
   await assert.rejects(() => before(hooks, session, "malformed-helper", `${HELPER} --spec ${specPath} --extra`), /untracked-quarantine.*exactly|typed untracked/i)
+
+  const stateKey = createHash("sha256").update(root).digest("hex")
+  const protectedLedger = join(stateDirectory, `${stateKey}.untracked-quarantine.json`)
+  await assert.rejects(
+    () => before(hooks, session, "forge-ledger", `printf '{}' > ${protectedLedger}`),
+    /guard-owned persisted state and recovery material/i,
+  )
+  await assert.rejects(
+    () => before(hooks, session, "forge-receipt", `cp /tmp/forged.json ${receiptPath(id)}`),
+    /guard-owned persisted state and recovery material/i,
+  )
+  const writableSpecPath = join(UNTRACKED_QUARANTINE_SPEC_ROOT, `${id}.agent-writable.json`)
+  await assert.doesNotReject(() => before(hooks, session, "write-spec", `printf '{}' > ${writableSpecPath}`))
 
   const wrongID = operationID("wrong")
   const wrongPath = join(UNTRACKED_QUARANTINE_SPEC_ROOT, `${wrongID}.json`)
