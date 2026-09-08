@@ -1,4 +1,8 @@
 import assert from "node:assert/strict"
+import { createHash } from "node:crypto"
+import { mkdtemp, rm, writeFile } from "node:fs/promises"
+import { tmpdir } from "node:os"
+import { join } from "node:path"
 import test from "node:test"
 import {
   assessRunnerContainer,
@@ -7,6 +11,7 @@ import {
   validateNamedVolumeInspects,
   validateRunnerReadinessConfig,
   validateRunnerSettings,
+  verifySeccompProfile,
 } from "../lib/runner-readiness.mjs"
 
 const image = `sha256:${"a".repeat(64)}`
@@ -210,6 +215,29 @@ test("named volumes reject local-driver bind backing, non-local drivers, and mis
   await blocked(() => assessRunnerContainer(config(), inspect(), { volumeInspects: volumes({ "ghdev-runner-work": { Driver: "custom" } }), seccompProof: seccompProof() }), /local Docker driver/i)
   await blocked(() => validateRunnerReadinessConfig(config({ allowed_named_volumes: [{ name: "unrelated", destination: "/data", read_only: false }] })), /writable named-volume coverage.*\/runner\/\.runner/i)
   await blocked(() => validateRunnerReadinessConfig(config({ allowed_named_volumes: [{ name: "state-ro", destination: "/runner", read_only: true }, { name: "work", destination: "/runner/_work", read_only: false }] })), /writable named-volume coverage.*\/runner\/\.runner/i)
+})
+
+test("frozen seccomp proof requires hash-bound object JSON", async (t) => {
+  const directory = await mkdtemp(join(tmpdir(), "ghdev-runner-readiness-"))
+  t.after(() => rm(directory, { recursive: true, force: true }))
+  const path = join(directory, "seccomp.json")
+
+  const valid = `${JSON.stringify(seccompProfile, null, 2)}\n`
+  await writeFile(path, valid)
+  const validHash = createHash("sha256").update(valid).digest("hex")
+  const proof = await verifySeccompProfile(config({ seccomp: { path, sha256: validHash } }))
+  assert.deepEqual(proof.profile, seccompProfile)
+  assert.equal(proof.sha256, validHash)
+
+  const invalid = "not-json\n"
+  await writeFile(path, invalid)
+  const invalidHash = createHash("sha256").update(invalid).digest("hex")
+  await blocked(() => verifySeccompProfile(config({ seccomp: { path, sha256: invalidHash } })), /invalid JSON/i)
+
+  const array = "[]\n"
+  await writeFile(path, array)
+  const arrayHash = createHash("sha256").update(array).digest("hex")
+  await blocked(() => verifySeccompProfile(config({ seccomp: { path, sha256: arrayHash } })), /one JSON object/i)
 })
 
 test("seccomp bytes must be unchanged since before container creation", async () => {
