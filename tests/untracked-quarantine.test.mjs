@@ -310,4 +310,51 @@ test("pending exact-head guard admits only the exact typed helper and preserves 
   const wrongPath = join(UNTRACKED_QUARANTINE_SPEC_ROOT, `${wrongID}.json`)
   await writeFile(wrongPath, `${JSON.stringify({ ...inspectSpec(root, ["untracked.txt"], wrongID), authority: { mode: "target", binding: "b".repeat(40) } })}\n`)
   await assert.rejects(() => before(hooks, session, "wrong-authority", `${HELPER} --spec ${wrongPath}`), /authority.*does not match|persisted.*authority/i)
+
+  const inspected = await runUntrackedQuarantine(inspectSpec(root, ["untracked.txt"], id))
+  const quarantineSpec = {
+    ...inspectSpec(root, ["untracked.txt"], id),
+    action: "quarantine",
+    expected_workspace_sha256: inspected.workspace_sha256,
+    expected_status_sha256: inspected.status_sha256,
+    expected_paths_sha256: inspected.paths_sha256,
+    expected_inventory_sha256: inspected.inventory_sha256,
+  }
+  const quarantinePath = join(UNTRACKED_QUARANTINE_SPEC_ROOT, `${id}.quarantine.json`)
+  await writeFile(quarantinePath, `${JSON.stringify(quarantineSpec)}\n`)
+  const quarantineCommand = `${HELPER} --spec ${quarantinePath}`
+  await assert.doesNotReject(() => before(hooks, session, "typed-quarantine", quarantineCommand))
+  const quarantined = await runUntrackedQuarantine(quarantineSpec)
+  await after(hooks, session, "typed-quarantine", quarantineCommand, "UNTRACKED_QUARANTINE_RESULT=PASS", 0)
+  await assert.rejects(() => readFile(join(root, "untracked.txt")), /ENOENT/)
+
+  const badRestorePath = join(UNTRACKED_QUARANTINE_SPEC_ROOT, `${id}.bad-restore.json`)
+  await writeFile(badRestorePath, `${JSON.stringify({
+    ...inspectSpec(root, ["untracked.txt"], id),
+    action: "restore",
+    receipt_path: receiptPath(id),
+    expected_receipt_sha256: "f".repeat(64),
+  })}\n`)
+  await assert.rejects(() => before(hooks, session, "bad-restore", `${HELPER} --spec ${badRestorePath}`), /receipt path\/digest.*authenticated|authenticated.*receipt/i)
+
+  await hooks.dispose()
+  const restarted = createOperationGuard({ directory: root, env: {}, stateDirectory })
+  const restartedSession = "quarantine-guard-restarted"
+  await register(restarted, restartedSession)
+  const restorePath = join(UNTRACKED_QUARANTINE_SPEC_ROOT, `${id}.restore.json`)
+  const restoreSpec = {
+    ...inspectSpec(root, ["untracked.txt"], id),
+    action: "restore",
+    receipt_path: receiptPath(id),
+    expected_receipt_sha256: quarantined.receipt_sha256,
+  }
+  await writeFile(restorePath, `${JSON.stringify(restoreSpec)}\n`)
+  const restoreCommand = `${HELPER} --spec ${restorePath}`
+  await assert.doesNotReject(() => before(restarted, restartedSession, "typed-restore", restoreCommand))
+  await runUntrackedQuarantine(restoreSpec)
+  await after(restarted, restartedSession, "typed-restore", restoreCommand, "UNTRACKED_QUARANTINE_RESULT=PASS", 0)
+  assert.equal(await readFile(join(root, "untracked.txt"), "utf8"), "keep\n")
+  const restoredState = await continuity(restarted, restartedSession)
+  assert.match(restoredState, new RegExp(`Authority: ${target}`))
+  assert.match(restoredState, /Edit generation: 0; Fresh-review generation: 0; Verify generation: 0/)
 })
