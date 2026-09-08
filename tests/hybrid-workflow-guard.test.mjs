@@ -10,7 +10,7 @@ import {
   validateDispatchInput,
   validateProfile,
 } from "../lib/actions-evidence.mjs"
-import { createOperationGuard } from "../lib/operation-guard.mjs"
+import { createOperationGuard, validateTaskPacket } from "../lib/operation-guard.mjs"
 
 const HEAD = "a".repeat(40)
 const BASE = "b".repeat(40)
