@@ -390,14 +390,16 @@ test("unbound Explore rejects root-level multi-path target bullets rather than u
     await writeFile(join(directory, "index.mjs"), "export {}\n")
     const hooks = createOperationGuard({ directory, env: {} })
     await register(hooks, "parent", "build")
-    await assert.rejects(
-      () => before(hooks, "parent", "root-multi-path-target", "task", {
-        subagent_type: "explore",
-        description: "Reject paired root-level targets in one bullet",
-        prompt: "Scope: inspect only the explicitly paired root targets\nQuestions:\n- What do the targets contain?\nStop condition: both targets are addressed.\nTargets:\n- README.md and index.mjs",
-      }),
-      /UNREPRESENTABLE.*unbound-explore-target-bullet-must-resolve-to-one-path/s,
-    )
+    for (const [index, targetBullet] of ["README.md and index.mjs", "README.md index.mjs", "README.md; index.mjs"].entries()) {
+      await assert.rejects(
+        () => before(hooks, "parent", `root-multi-path-target-${index}`, "task", {
+          subagent_type: "explore",
+          description: "Reject paired root-level targets in one bullet",
+          prompt: `Scope: inspect only the explicitly paired root targets\nQuestions:\n- What do the targets contain?\nStop condition: both targets are addressed.\nTargets:\n- ${targetBullet}`,
+        }),
+        /UNREPRESENTABLE.*unbound-explore-target-bullet-must-resolve-to-one-path/s,
+      )
+    }
   } finally {
     await rm(directory, { recursive: true, force: true })
   }
