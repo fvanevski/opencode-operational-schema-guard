@@ -261,19 +261,23 @@ test("interrupted removal resumes from the verified receipt and remaining source
   assert.equal(git(root, "status", "--porcelain=v1", "--untracked-files=all"), "")
 })
 
-test("restore blocks before writing when the exact post-quarantine dirty state has drifted", async () => {
+test("restore preserves unrelated intervening dirty state while reproducing the quarantined path exactly", async () => {
   const root = await repo()
   await writeFile(join(root, "keep.txt"), "original\n")
   const { quarantined, id } = await inspectAndQuarantine(root, ["keep.txt"])
   await writeFile(join(root, "unrelated.txt"), "drift\n")
-  await expectBlocked(() => runUntrackedQuarantine({
+  await writeFile(join(root, "tracked.txt"), "tracked-drift\n")
+  const beforeTracked = git(root, "diff", "--binary")
+  const restored = await runUntrackedQuarantine({
     ...inspectSpec(root, ["keep.txt"], id),
     action: "restore",
     receipt_path: receiptPath(id),
     expected_receipt_sha256: quarantined.receipt_sha256,
-  }), /pre-restore dirty-state fingerprint/i)
-  await assert.rejects(() => readFile(join(root, "keep.txt")), /ENOENT/)
+  })
+  assert.equal(restored.result, "PASS")
+  assert.equal(await readFile(join(root, "keep.txt"), "utf8"), "original\n")
   assert.equal(await readFile(join(root, "unrelated.txt"), "utf8"), "drift\n")
+  assert.equal(git(root, "diff", "--binary"), beforeTracked)
 })
 
 test("receipt mismatch and restore overwrite both fail closed while quarantine evidence is retained", async () => {
