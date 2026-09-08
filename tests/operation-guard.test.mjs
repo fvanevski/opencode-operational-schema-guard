@@ -1923,6 +1923,17 @@ test("strict starting-head admission blocks reconciliation after a proved mismat
   await before(hooks, "parent", "proof", "bash", { command: "git rev-parse HEAD" })
   const proof = await after(hooks, "parent", "proof", "bash", { command: "git rev-parse HEAD" }, { output: `${observed}\n`, metadata: { exit: 0 } })
   assert.match(proof.output, new RegExp(`OPERATIONAL_AUTHORITY: mismatch; required=${expected}; observed=${observed}; mode=strict-start`))
+  await assert.rejects(
+    () => before(hooks, "parent", "retry-proof", "bash", { command: "git rev-parse HEAD" }),
+    /OPERATIONAL_CORRECTION: NEW_STARTING_REVISION_AUTHORITY_REQUIRED.*do_not_execute=true.*Do not retry or reshape the HEAD proof/s,
+  )
+  await assert.rejects(
+    () => before(hooks, "parent", "retry-compound-proof", "bash", { command: "cd /repo && git rev-parse HEAD" }),
+    /OPERATIONAL_CORRECTION: NEW_STARTING_REVISION_AUTHORITY_REQUIRED.*do_not_execute=true/s,
+  )
+  const mismatchState = { context: [] }
+  await hooks["experimental.session.compacting"]({ sessionID: "parent" }, mismatchState)
+  assert.match(mismatchState.context.join("\n"), /Authority admission: mismatch; mode: strict-start/)
   await assert.rejects(() => before(hooks, "parent", "fast-forward", "bash", { command: `git merge --ff-only ${expected}` }), /strict-start.*new user starting-revision authority/i)
   await assert.rejects(() => before(hooks, "parent", "edit", "edit", { filePath: "src/a.py" }), /strict-start mismatch requires new user starting-revision authority/i)
   const notice = await system(hooks, "parent")
