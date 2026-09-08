@@ -1487,7 +1487,12 @@ test("destination-aware shell ownership admits read-only workspace sources while
   await message(hooks, "parent-destination-aware", "build", `REQUIRED EXACT HEAD: ${target}`)
 
   for (const [index, command] of [
+    `mkdir -p ${external}/functional`,
+    `touch ${external}/functional/probe.py`,
     `cp ${source} ${external}/copy.txt`,
+    `cp ${source} ${external}/`,
+    `cp "${source}" "${external}/quoted copy.txt"`,
+    `cp ./src/../src/input.txt ${external}/canonical-relative.txt`,
     `cp -vt${external} ${source}`,
     `cp --target-directory=${external} ${source}`,
     `cp -- ${source} ${external}/copy-dashdash.txt`,
@@ -1498,17 +1503,30 @@ test("destination-aware shell ownership admits read-only workspace sources while
     await assert.doesNotReject(() => before(hooks, "parent-destination-aware", `external-${index}`, "bash", { command }), command)
   }
 
+  await assert.doesNotReject(() => before(hooks, "parent-destination-aware", "external-workdir-relative-source", "bash", {
+    command: "cp ../../../../project-destination-aware/src/input.txt ./copy-relative.txt",
+    workdir: external,
+  }))
+
   for (const [index, command] of [
     `cp /tmp/external-input.txt ${workspace}/copied.txt`,
+    `cp ${source} ${workspace}/sibling.txt`,
+    `cp "/tmp/external input.txt" "${workspace}/quoted copy.txt"`,
     `install /tmp/external-input.txt ${workspace}/installed.txt`,
     `rsync -a /tmp/external-input.txt ${workspace}/synced.txt`,
     `ln /tmp/external-input.txt ${workspace}/linked.txt`,
     `ln ${source} ${external}/hard-linked.txt`,
     `cp -l ${source} ${external}/hard-copy.txt`,
     `mv ${source} ${external}/moved.txt`,
+    `touch ${external}/mixed-write.txt ${workspace}/mixed-write.txt`,
   ].entries()) {
     await assert.rejects(() => before(hooks, "parent-destination-aware", `workspace-${index}`, "bash", { command }), /exact-head admission is pending/, command)
   }
+
+  await assert.rejects(() => before(hooks, "parent-destination-aware", "external-workdir-relative-destination", "bash", {
+    command: "cp /tmp/external-input.txt ../../../../project-destination-aware/copied-relative.txt",
+    workdir: external,
+  }), /exact-head admission is pending/)
 
   await assert.rejects(
     () => before(hooks, "parent-destination-aware", "ambiguous-rsync", "bash", { command: `rsync -a ${source} ${external}/ --unsupported-option maybe` }),
@@ -1517,6 +1535,31 @@ test("destination-aware shell ownership admits read-only workspace sources while
 
   const compacting = { context: [] }
   await hooks["experimental.session.compacting"]({ sessionID: "parent-destination-aware" }, compacting)
+  assert.match(compacting.context.join("\n"), /Edit generation: 0; Fresh-review generation: 0; Verify generation: 0/)
+})
+
+test("Session-4-style pending-authority replay admits disposable functional harness staging only outside the workspace", async () => {
+  const workspace = "/tmp/project-session4-replay"
+  const external = "/tmp/opencode/functional/issue27-session4"
+  const hooks = createOperationGuard({ directory: workspace, env: {} })
+  const target = "9".repeat(40)
+  await message(hooks, "parent-session4-replay", "build", `REQUIRED EXACT HEAD: ${target}`)
+
+  for (const [index, command] of [
+    `mkdir -p ${external}`,
+    `touch ${external}/probe.py`,
+    `cp ${workspace}/scripts/probe.py ${external}/probe.py`,
+    `cat ${workspace}/fixtures/input.json > ${external}/input.json`,
+  ].entries()) {
+    await assert.doesNotReject(() => before(hooks, "parent-session4-replay", `stage-${index}`, "bash", { command }), command)
+  }
+
+  await assert.rejects(
+    () => before(hooks, "parent-session4-replay", "workspace-write", "bash", { command: `cp ${external}/probe.py ${workspace}/scripts/probe.py` }),
+    /exact-head admission is pending/,
+  )
+  const compacting = { context: [] }
+  await hooks["experimental.session.compacting"]({ sessionID: "parent-session4-replay" }, compacting)
   assert.match(compacting.context.join("\n"), /Edit generation: 0; Fresh-review generation: 0; Verify generation: 0/)
 })
 
