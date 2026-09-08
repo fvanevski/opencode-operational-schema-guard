@@ -327,7 +327,7 @@ test("restore preserves unrelated intervening dirty state while reproducing the 
   assert.equal(git(root, "diff", "--binary"), beforeTracked)
 })
 
-test("descriptor-anchored restore rejects substituted workspace ancestors without escaped writes", async () => {
+test("restore rejects substituted workspace ancestors without escaped writes", async () => {
   const root = await repo()
   await mkdir(join(root, "parent"))
   await writeFile(join(root, "parent", "keep.txt"), "original\n")
@@ -340,7 +340,7 @@ test("descriptor-anchored restore rejects substituted workspace ancestors withou
     action: "restore",
     receipt_path: receiptPath(id),
     expected_receipt_sha256: quarantined.receipt_sha256,
-  }), /descriptor-anchored restore|filesystem helper/i)
+  }), /quarantine path traverses a non-directory or symlink ancestor|descriptor-anchored restore|filesystem helper/i)
   await assert.rejects(() => readFile(join(outside, "keep.txt")), /ENOENT/)
 })
 
