@@ -1585,6 +1585,21 @@ test("pending authority fails closed on symlinked shell and direct-edit destinat
     () => before(hooks, "parent-alias-targets", "direct-edit-hard-link", "write", { filePath: hardLinkTarget, content: "changed\n" }),
     /exact-head admission is pending/,
   )
+  const hardLinkDirectory = join(external, "hard-link-directory")
+  await mkdir(hardLinkDirectory)
+  await link(workspaceTarget, join(hardLinkDirectory, "source.txt"))
+  for (const [callID, command] of [
+    ["shell-hard-link-directory-cp", `cp ${source} ${hardLinkDirectory}/`],
+    ["shell-hard-link-directory-target", `cp --target-directory=${hardLinkDirectory} ${source}`],
+    ["shell-hard-link-directory-install", `install ${source} ${hardLinkDirectory}/`],
+    ["shell-hard-link-directory-rsync", `rsync -a ${source} ${hardLinkDirectory}/`],
+  ]) {
+    await assert.rejects(
+      () => before(hooks, "parent-alias-targets", callID, "bash", { command, workdir: external }),
+      /exact-head admission is pending/,
+      command,
+    )
+  }
   const futureAlias = join(external, "future-alias")
   await assert.rejects(
     () => before(hooks, "parent-alias-targets", "compound-alias-then-write", "bash", {
