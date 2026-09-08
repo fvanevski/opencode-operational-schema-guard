@@ -1493,7 +1493,7 @@ test("destination-aware shell ownership admits read-only workspace sources while
     `cp -- ${source} ${external}/copy-dashdash.txt`,
     `install ${source} ${external}/installed.txt`,
     `rsync -a ${source} ${external}/`,
-    `ln ${source} ${external}/linked.txt`,
+    `ln -s ${source} ${external}/linked.txt`,
   ].entries()) {
     await assert.doesNotReject(() => before(hooks, "parent-destination-aware", `external-${index}`, "bash", { command }), command)
   }
@@ -1503,6 +1503,8 @@ test("destination-aware shell ownership admits read-only workspace sources while
     `install /tmp/external-input.txt ${workspace}/installed.txt`,
     `rsync -a /tmp/external-input.txt ${workspace}/synced.txt`,
     `ln /tmp/external-input.txt ${workspace}/linked.txt`,
+    `ln ${source} ${external}/hard-linked.txt`,
+    `cp -l ${source} ${external}/hard-copy.txt`,
     `mv ${source} ${external}/moved.txt`,
   ].entries()) {
     await assert.rejects(() => before(hooks, "parent-destination-aware", `workspace-${index}`, "bash", { command }), /exact-head admission is pending/, command)
@@ -1546,7 +1548,7 @@ test("destination-aware shell ownership keeps direct workspace mutators and prot
     /guard-owned persisted state and recovery material/,
   )
   await assert.doesNotReject(
-    () => before(hooks, "parent-write-targets", "external-temp-redirection", "bash", { command: "printf staged > /tmp/issue27-external-redirection.txt" }),
+    () => before(hooks, "parent-write-targets", "external-temp-redirection", "bash", { command: `cat ${workspace}/read-only.txt > /tmp/issue27-external-redirection.txt` }),
   )
   const compacting = { context: [] }
   await hooks["experimental.session.compacting"]({ sessionID: "parent-write-targets" }, compacting)
