@@ -218,6 +218,15 @@ test("effective systempaths, namespaces, devices, named volumes, and tmpfs mount
     Mounts: [...inspect().Mounts.filter((mount) => mount.Type === "volume"), { Type: "tmpfs", Destination: "/tmp", RW: true }, { Type: "tmpfs", Destination: "/tmp", RW: true }],
   })
   await blocked(() => assess(duplicateTmpfsConfig, duplicateTmpfs), /tmpfs mount evidence is malformed or duplicated/i)
+
+  await blocked(() => assess(config(), inspect({ Mounts: inspect().Mounts.map((mount) => mount.Type === "tmpfs" ? { ...mount, RW: false } : mount) })), /tmpfs writability differs/i)
+
+  const readOnlyTmpfsConfig = config({ allowed_tmpfs: [{ destination: "/tmp", options: "ro,noexec,nosuid,size=1g" }] })
+  const readOnlyTmpfs = inspect({
+    HostConfig: { ...inspect().HostConfig, Tmpfs: { "/tmp": "ro,noexec,nosuid,size=1g" } },
+    Mounts: inspect().Mounts.map((mount) => mount.Type === "tmpfs" ? { ...mount, RW: false } : mount),
+  })
+  assert.equal(assess(readOnlyTmpfsConfig, readOnlyTmpfs).result, "PASS")
 })
 
 test("Docker-persisted security options require NNP plus the exact custom seccomp semantics", async () => {
@@ -294,12 +303,14 @@ test("seccomp bytes must be unchanged since before container creation", async ()
   await blocked(() => assessRunnerContainer(config(), inspect(), { volumeInspects: volumes(), seccompProof: seccompProof({ sha256: "d".repeat(64) }) }), /seccomp proof/i)
 })
 
-test("config requires exact GitHub routing labels, isolated network mode, and normalized absolute paths", async () => {
+test("config requires exact GitHub routing labels, isolated network mode, normalized paths, and explicit tmpfs writability", async () => {
   await blocked(() => validateRunnerReadinessConfig(config({ github_runner_labels: ["self-hosted", "ghdev-verify"] })), /github_runner_labels/i)
   await blocked(() => validateRunnerReadinessConfig(config({ network_mode: "container:other" })), /cannot share another container namespace/i)
   await blocked(() => validateRunnerReadinessConfig(config({ seccomp: { path: "/etc/ghdev/../bad.json", sha256: seccomp } })), /normalized absolute path/i)
   await blocked(() => validateRunnerReadinessConfig(config({ runner_settings_path: "/tmp/decoy/.runner" })), /runner_settings_path must be exactly/i)
   await blocked(() => validateRunnerReadinessConfig(config({ runner_listener_path: "/tmp/decoy/Runner.Listener" })), /runner_listener_path must be exactly/i)
+  await blocked(() => validateRunnerReadinessConfig(config({ allowed_tmpfs: [{ destination: "/tmp", options: "noexec,nosuid,size=1g" }] })), /exactly one explicit rw or ro/i)
+  await blocked(() => validateRunnerReadinessConfig(config({ allowed_tmpfs: [{ destination: "/tmp", options: "rw,ro,noexec,nosuid,size=1g" }] })), /exactly one explicit rw or ro/i)
 })
 
 test("runner registration settings prove persistent update-disabled repository binding", async () => {
