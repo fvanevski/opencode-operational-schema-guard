@@ -181,9 +181,9 @@ test("deterministic Task planner partitions complexity before child launch", asy
   )
 })
 
-test("deterministic Task planner refuses excess questions without deferring them", async () => {
-  const hooks = createOperationGuard({ directory: "/tmp/issue15-question-plan", env: {} })
-  await message(hooks, "parent", "build", `HEAD_SHA: ${HEAD}`)
+test("deterministic Task planner refuses excess questions without deferring them in unbound Explore", async () => {
+  const hooks = createOperationGuard({ directory: "/tmp/issue29-question-plan", env: {} })
+  await register(hooks, "parent", "build")
   await assert.rejects(
     () => before(hooks, "parent", "questions", "task", {
       subagent_type: "explore",
@@ -191,6 +191,244 @@ test("deterministic Task planner refuses excess questions without deferring them
       prompt: "Scope: inspect one unknown flow\nQuestions:\n- q1\n- q2\n- q3\n- q4\nStop condition: all questions are answered.\nTargets:\n- lib/a.mjs",
     }),
     /UNREPRESENTABLE.*question-count-exceeds-three/s,
+  )
+})
+
+test("unbound Explore partitions thirteen finite targets before target-limit rejection and admits its canonical packets", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "issue29-unbound-explore-"))
+  try {
+    await mkdir(join(directory, "lib"), { recursive: true })
+    const targetLines = []
+    for (let index = 0; index < 13; index += 1) {
+      const relative = `lib/unbound-${index}.mjs`
+      targetLines.push(`- ${relative} annotation-${index}`)
+      await writeFile(join(directory, relative), `export const value${index} = ${index}\n`)
+    }
+    const hooks = createOperationGuard({ directory, env: {} })
+    await register(hooks, "parent", "build")
+    const prompt = `Scope: inspect only the thirteen listed ownership targets\nQuestions:\n- What ownership relationships do the listed targets expose?\nStop condition: all thirteen listed targets are addressed.\nTargets:\n${targetLines.join("\n")}\nSupporting context:\nCONTEXT-MUST-SURVIVE: preserve this bounded caller context byte-for-byte.\nDo not broaden beyond the listed targets.`
+    let firstError
+    try {
+      await before(hooks, "parent", "broad-unbound-explore", "task", {
+        subagent_type: "explore",
+        description: "Inspect thirteen bounded ownership targets",
+        prompt,
+      })
+    } catch (error) {
+      firstError = error
+    }
+    assert.ok(firstError)
+    const match = firstError.message.match(/deterministic planner returned PARTITION_REQUIRED: (\{.*\}) OPERATIONAL_PACKET_ACTION:/s)
+    assert.ok(match, firstError.message)
+    const details = JSON.parse(match[1])
+    assert.equal(details.coverage.required_targets, 13)
+    assert.equal(details.coverage.planned_targets, 13)
+    assert.equal(details.coverage.unique_complete, true)
+    assert.ok(details.partitions.length >= 2)
+    assert.ok(details.partitions.every((partition) => partition.target_paths.length <= 8))
+    assert.doesNotMatch(firstError.message, /"head_sha"/)
+    const planned = details.partitions.flatMap((partition) => partition.target_paths)
+    assert.equal(new Set(planned).size, 13)
+    for (const partition of details.partitions) {
+      assert.match(partition.packet, /CONTEXT-MUST-SURVIVE: preserve this bounded caller context byte-for-byte\./)
+      assert.match(partition.packet, /Do not broaden beyond the listed targets\./)
+      for (const path of partition.target_paths) {
+        const index = Number(path.match(/unbound-(\d+)\.mjs$/)?.[1])
+        assert.match(partition.packet, new RegExp(`- ${path} annotation-${index}`))
+      }
+    }
+
+    const undercountedPartition = details.partitions[0]
+    assert.ok(undercountedPartition.target_paths.length > 1)
+    const undercountedPreflight = await before(hooks, "parent", "canonical-unbound-explore-undercounted", "task", {
+      subagent_type: "explore",
+      description: "Reject an undercounted canonical Explore completion",
+      prompt: undercountedPartition.packet,
+    })
+    await register(hooks, "canonical-unbound-explore-undercounted-child", "explore")
+    await hooks.event({ event: { type: "message.updated", properties: { info: { sessionID: "canonical-unbound-explore-undercounted-child", role: "assistant", finish: "stop" } } } })
+    const undercountedResult = await after(hooks, "parent", "canonical-unbound-explore-undercounted", "task", undercountedPreflight.args, {
+      output: "OPERATIONAL_EXPLORE: COMPLETE; TARGETS_INSPECTED: 1; TARGETS_REQUIRED: 1",
+      metadata: { sessionId: "canonical-unbound-explore-undercounted-child" },
+    })
+    assert.equal(undercountedResult.metadata.operationalSchema.complete, false)
+    assert.equal(undercountedResult.metadata.operationalSchema.boundaryReset, false)
+    assert.equal(undercountedResult.metadata.operationalSchema.partitionAggregate.aggregateComplete, false)
+    assert.equal(undercountedResult.metadata.operationalSchema.canonicalTargetsRequired, undercountedPartition.target_paths.length)
+    assert.ok(undercountedResult.metadata.operationalSchema.reasons.includes("operational-explore-canonical-target-count-mismatch"))
+
+    for (let index = 0; index < details.partitions.length; index += 1) {
+      const partition = details.partitions[index]
+      const callID = `canonical-unbound-explore-${index}`
+      const childID = `canonical-unbound-explore-child-${index}`
+      const preflight = await before(hooks, "parent", callID, "task", {
+        subagent_type: "explore",
+        description: "Inspect canonical unbound Explore partition",
+        prompt: partition.packet,
+      })
+      await register(hooks, childID, "explore")
+      await hooks.event({ event: { type: "message.updated", properties: { info: { sessionID: childID, role: "assistant", finish: "stop" } } } })
+      const count = partition.target_paths.length
+      const result = await after(hooks, "parent", callID, "task", preflight.args, {
+        output: `OPERATIONAL_EXPLORE: COMPLETE; TARGETS_INSPECTED: ${count}; TARGETS_REQUIRED: ${count}`,
+        metadata: { sessionId: childID },
+      })
+      const last = index === details.partitions.length - 1
+      assert.equal(result.metadata.operationalSchema.partitionAggregate.aggregateComplete, last)
+      assert.equal(result.metadata.operationalSchema.boundaryReset, last)
+      if (!last) assert.match(result.output, /EXPLORE PARTITION COMPLETE.*aggregate partition obligation remains incomplete/s)
+    }
+    await assert.rejects(
+      () => before(hooks, "parent", "hand-authored-oversized", "task", {
+        subagent_type: "explore",
+        description: "Retry the hand-authored oversized packet",
+        prompt,
+      }),
+      /PARTITION_REQUIRED/,
+    )
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+})
+
+test("unbound Explore rejects multi-path target bullets instead of falling back with an undercounted target ceiling", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "issue29-unbound-multipath-"))
+  try {
+    await mkdir(join(directory, "lib"), { recursive: true })
+    const targetLines = []
+    for (let index = 0; index < 14; index += 2) {
+      const left = `lib/paired-${index}.mjs`
+      const right = `lib/paired-${index + 1}.mjs`
+      await writeFile(join(directory, left), `export const left${index} = ${index}\n`)
+      await writeFile(join(directory, right), `export const right${index + 1} = ${index + 1}\n`)
+      targetLines.push(`- ${left} and ${right}`)
+    }
+    const hooks = createOperationGuard({ directory, env: {} })
+    await register(hooks, "parent", "build")
+    await assert.rejects(
+      () => before(hooks, "parent", "multi-path-targets", "task", {
+        subagent_type: "explore",
+        description: "Inspect only the explicitly paired targets",
+        prompt: `Scope: inspect only the explicitly paired targets\nQuestions:\n- What ownership relationships do the listed targets expose?\nStop condition: all listed target bullets are addressed.\nTargets:\n${targetLines.join("\n")}`,
+      }),
+      /UNREPRESENTABLE.*unbound-explore-target-bullet-must-resolve-to-one-path/s,
+    )
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+})
+
+test("canonical Explore partitions preserve CRLF bytes outside the replaced Targets bullets", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "issue29-crlf-partition-"))
+  try {
+    await mkdir(join(directory, "lib"), { recursive: true })
+    const targetLines = []
+    for (let index = 0; index < 9; index += 1) {
+      const relative = `lib/crlf-${index}.mjs`
+      targetLines.push(`- ${relative} crlf-annotation-${index}`)
+      await writeFile(join(directory, relative), `export const crlf${index} = ${index}\n`)
+    }
+    const prompt = [
+      "Scope: inspect only the nine CRLF targets",
+      "Questions:",
+      "- What ownership relationships do the listed targets expose?",
+      "Stop condition: all nine targets are addressed.",
+      "Targets:",
+      ...targetLines,
+      "Supporting context:",
+      "CRLF-MUST-SURVIVE: first bounded context line.",
+      "CRLF-MUST-SURVIVE: second bounded context line.",
+    ].join("\r\n")
+    const hooks = createOperationGuard({ directory, env: {} })
+    await register(hooks, "parent", "build")
+    let error
+    try {
+      await before(hooks, "parent", "crlf-broad-explore", "task", {
+        subagent_type: "explore",
+        description: "Inspect nine bounded CRLF targets",
+        prompt,
+      })
+    } catch (caught) {
+      error = caught
+    }
+    assert.ok(error)
+    const match = error.message.match(/deterministic planner returned PARTITION_REQUIRED: (\{.*\}) OPERATIONAL_PACKET_ACTION:/s)
+    assert.ok(match, error.message)
+    const details = JSON.parse(match[1])
+    assert.ok(details.partitions.length >= 2)
+    for (const partition of details.partitions) {
+      assert.ok(partition.packet.includes("Scope: inspect only the nine CRLF targets\r\nQuestions:\r\n- What ownership relationships do the listed targets expose?\r\nStop condition: all nine targets are addressed.\r\nTargets:\r\n"))
+      assert.ok(partition.packet.includes("Supporting context:\r\nCRLF-MUST-SURVIVE: first bounded context line.\r\nCRLF-MUST-SURVIVE: second bounded context line."))
+      for (const path of partition.target_paths) {
+        const index = Number(path.match(/crlf-(\d+)\.mjs$/)?.[1])
+        assert.ok(partition.packet.includes(`- ${path} crlf-annotation-${index}\r\n`))
+      }
+    }
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+})
+
+test("unbound Explore rejects open-ended and partial envelopes rather than manufacturing boundedness", async () => {
+  const hooks = createOperationGuard({ directory: "/tmp/issue29-unbound-reject", env: {} })
+  await register(hooks, "parent", "build")
+  await assert.rejects(
+    () => before(hooks, "parent", "open-ended", "task", {
+      subagent_type: "explore",
+      description: "Inspect broad repository scope",
+      prompt: "Scope: inspect the entire repository and all files\nQuestions:\n- What does everything do?\nStop condition: stop after the repository is understood.\nTargets:\n- lib/a.mjs",
+    }),
+    /UNREPRESENTABLE.*unbound-explore-open-ended-scope/s,
+  )
+  await assert.rejects(
+    () => before(hooks, "parent", "scope-expanding-supporting-context", "task", {
+      subagent_type: "explore",
+      description: "Reject supporting context that widens bounded Explore scope",
+      prompt: "Scope: inspect only the listed target\nQuestions:\n- What owns the listed target?\nStop condition: stop after the listed target is addressed.\nTargets:\n- lib/a.mjs\nSupporting context:\nInspect the entire repository and any related files before answering.",
+    }),
+    /UNREPRESENTABLE.*unbound-explore-open-ended-scope/s,
+  )
+  await assert.rejects(
+    () => before(hooks, "parent", "scope-expanding-question", "task", {
+      subagent_type: "explore",
+      description: "Reject a question that widens bounded Explore scope",
+      prompt: "Scope: inspect only the listed target\nQuestions:\n- Follow additional callers as needed beyond the listed target.\nStop condition: stop after the question is answered.\nTargets:\n- lib/a.mjs",
+    }),
+    /UNREPRESENTABLE.*unbound-explore-open-ended-scope/s,
+  )
+  await assert.rejects(
+    () => before(hooks, "parent", "scope-expanding-after-negation", "task", {
+      subagent_type: "explore",
+      description: "Reject scope widening after a negated clause",
+      prompt: "Scope: inspect only the listed target\nQuestions:\n- What owns the listed target?\nStop condition: stop after the listed target is addressed.\nTargets:\n- lib/a.mjs\nSupporting context:\nDo not inspect unrelated files, but inspect any related files as needed.",
+    }),
+    /UNREPRESENTABLE.*unbound-explore-open-ended-scope/s,
+  )
+  await assert.rejects(
+    () => before(hooks, "parent", "partial-envelope", "task", {
+      subagent_type: "explore",
+      description: "Inspect one partial packet",
+      prompt: "Scope: inspect one explicit target\nTargets:\n- lib/a.mjs",
+    }),
+    /packet envelope.*Questions.*Stop condition/s,
+  )
+})
+
+test("Explore injection prefers built-in discovery and runtime find rejection returns the machine-readable correction", async () => {
+  const hooks = createOperationGuard({ directory: "/tmp/issue29-explore-contract", env: {} })
+  await register(hooks, "parent", "build")
+  const preflight = await before(hooks, "parent", "explore-contract", "task", {
+    subagent_type: "explore",
+    description: "Inspect one bounded unknown flow",
+    prompt: "Scope: inspect one bounded unknown flow\nQuestions:\n- What owns this path?\nStop condition: the listed target is addressed.\nTargets:\n- lib/a.mjs",
+  })
+  assert.match(preflight.args.prompt, /Prefer built-in read\/grep\/glob for discovery/)
+  assert.match(preflight.args.prompt, /Do not use raw ls\/find\/fd/)
+  assert.match(preflight.args.prompt, /Stop and synthesize as soon as the bounded questions and targets are answered/)
+  await register(hooks, "explore-child", "explore")
+  await assert.rejects(
+    () => before(hooks, "explore-child", "raw-find", "bash", { command: "find . -maxdepth 1" }),
+    /OPERATIONAL_CORRECTION: USE_BUILTIN_DISCOVERY/,
   )
 })
 
@@ -242,8 +480,8 @@ test("trusted-actions Verify authority removes only the pre-publication local re
   assert.match(output.context.join("\n"), /Repository Verify authority: trusted-actions/)
 })
 
-test("live planner derives exact diff and hunk complexity instead of treating rewritten targets as zero-diff", async () => {
-  const directory = await gitFixture("issue15-live-diff-")
+test("same packet uses conservative structure while unbound and exact diff/hunk complexity once authority exists", async () => {
+  const directory = await gitFixture("issue29-live-diff-")
   try {
     await mkdir(join(directory, "lib"), { recursive: true })
     const target = join(directory, "lib", "oversized.mjs")
@@ -253,13 +491,16 @@ test("live planner derives exact diff and hunk complexity instead of treating re
     const base = git(directory, "rev-parse", "HEAD")
     await writeFile(target, Array.from({ length: 20000 }, (_, index) => `export const value${index} = ${index}\n`).join(""))
     const hooks = createOperationGuard({ directory, env: {} })
+    await register(hooks, "parent", "build")
+    const packet = {
+      subagent_type: "explore",
+      description: "Inspect the bounded rewritten target",
+      prompt: "Scope: inspect rewritten production target\nQuestions:\n- What changed in this target?\nStop condition: the listed target is inspected.\nTargets:\n- lib/oversized.mjs",
+    }
+    await assert.doesNotReject(() => before(hooks, "parent", "unbound-rewritten", "task", packet))
     await message(hooks, "parent", "build", `HEAD_SHA: ${base}\nEXPECTED_BASE_SHA: ${base}`)
     await assert.rejects(
-      () => before(hooks, "parent", "rewritten-review", "task", {
-        subagent_type: "fresh-review",
-        description: "Review the bounded rewritten target",
-        prompt: "Scope: review rewritten production target\nQuestions:\n- Is the rewrite correct?\nStop condition: the listed target is reviewed.\nTargets:\n- lib/oversized.mjs",
-      }),
+      () => before(hooks, "parent", "exact-rewritten", "task", packet),
       /UNREPRESENTABLE.*single-target-complexity-exceeds-role-limit/s,
     )
   } finally {
