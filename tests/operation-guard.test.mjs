@@ -1531,6 +1531,8 @@ test("destination-aware shell ownership admits read-only workspace sources while
 
   for (const [callID, command] of [
     ["ambiguous-rsync", `rsync -a ${source} ${external}/ --unsupported-option maybe`],
+    ["relative-rsync", `rsync -aR ${source} ${external}/`],
+    ["exchange-mv", `mv --exchange /tmp/external-a /tmp/external-b`],
     ["dynamic-source", `cp $(printf '%s' ${source}) ${external}/dynamic.txt`],
     ["glob-source", `cp ${workspace}/src/*.txt ${external}/globbed.txt`],
     ["background-write", `cp /tmp/external-input.txt ${workspace}/background.txt &`],
@@ -1573,6 +1575,21 @@ test("pending authority fails closed on symlinked shell and direct-edit destinat
   )
   await assert.rejects(
     () => before(hooks, "parent-alias-targets", "direct-edit-link", "write", { filePath: targetLink, content: "changed\n" }),
+    /exact-head admission is pending/,
+  )
+  for (const [callID, command] of [
+    ["sed-symlink-target", `sed -i s/source/changed/ ${targetLink}`],
+    ["perl-symlink-target", `perl -pi -e s/source/changed/ ${targetLink}`],
+    ["ruff-symlink-target", `ruff format ${targetLink}`],
+  ]) {
+    await assert.rejects(
+      () => before(hooks, "parent-alias-targets", callID, "bash", { command, workdir: external }),
+      /exact-head admission is pending/,
+      command,
+    )
+  }
+  await assert.rejects(
+    () => before(hooks, "parent-alias-targets", "dependency-symlink-workdir", "bash", { command: "npm install", workdir: directoryLink }),
     /exact-head admission is pending/,
   )
   const hardLinkTarget = join(external, "hard-link-target")
