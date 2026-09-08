@@ -163,7 +163,9 @@ test("privilege, every numeric UID-zero spelling, image, restart, resource, and 
   }
   await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, Privileged: true } })), /must not be privileged/i)
   await blocked(() => assess(config(), inspect({ Image: `sha256:${"d".repeat(64)}` })), /image ID/i)
-  await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, RestartPolicy: { Name: "no", MaximumRetryCount: 0 } })), /restart policy/i)
+  const restartDrift = inspect()
+  restartDrift.HostConfig = { ...restartDrift.HostConfig, RestartPolicy: { Name: "no", MaximumRetryCount: 0 } }
+  await blocked(() => assess(config(), restartDrift), /restart policy/i)
   await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, Memory: 1024 } })), /resource limits/i)
   await blocked(() => assess(config(), inspect({ State: { Running: true, Status: "running", Health: { Status: "unhealthy" } } })), /not healthy/i)
 })
