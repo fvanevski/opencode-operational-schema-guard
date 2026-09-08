@@ -1592,6 +1592,10 @@ test("pending authority fails closed on symlinked shell and direct-edit destinat
     () => before(hooks, "parent-alias-targets", "dependency-symlink-workdir", "bash", { command: "npm install", workdir: directoryLink }),
     /exact-head admission is pending/,
   )
+  await assert.rejects(
+    () => before(hooks, "parent-alias-targets", "git-symlink-workdir", "bash", { command: "git reset --hard HEAD", workdir: directoryLink }),
+    /exact-head admission is pending/,
+  )
   const hardLinkTarget = join(external, "hard-link-target")
   await link(workspaceTarget, hardLinkTarget)
   await assert.rejects(
