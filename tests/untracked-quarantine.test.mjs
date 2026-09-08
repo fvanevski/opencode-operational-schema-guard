@@ -338,6 +338,38 @@ test("interrupted removal resumes from the verified receipt and remaining source
   assert.equal(git(root, "status", "--porcelain=v1", "--untracked-files=all"), "")
 })
 
+test("receipt-backed resume rejects a caller-controlled capture root before moving remaining source", async () => {
+  const root = await repo()
+  await writeFile(join(root, "first.txt"), "first\n")
+  await writeFile(join(root, "second.txt"), "second\n")
+  const id = operationID("capture-root-tamper")
+  const inspected = await runUntrackedQuarantine(inspectSpec(root, ["first.txt", "second.txt"], id))
+  const spec = {
+    ...inspectSpec(root, ["first.txt", "second.txt"], id),
+    action: "quarantine",
+    expected_workspace_sha256: inspected.workspace_sha256,
+    expected_status_sha256: inspected.status_sha256,
+    expected_paths_sha256: inspected.paths_sha256,
+    expected_inventory_sha256: inspected.inventory_sha256,
+  }
+  await assert.rejects(() => runUntrackedQuarantine(spec, {
+    afterRemove: ({ index }) => {
+      if (index === 0) throw new Error("simulated process interruption")
+    },
+  }), /simulated process interruption/)
+
+  const path = receiptPath(id)
+  const receipt = JSON.parse(await readFile(path, "utf8"))
+  receipt.quarantine.capture_root = join(tmpdir(), `caller-selected-${randomUUID()}`)
+  await chmod(path, 0o600)
+  await writeFile(path, `${JSON.stringify(receipt)}\n`)
+  await chmod(path, 0o400)
+
+  await expectBlocked(() => runUntrackedQuarantine(spec), /capture root does not match the deterministic helper-selected location/i)
+  await assert.rejects(() => readFile(join(root, "first.txt")), /ENOENT/)
+  assert.equal(await readFile(join(root, "second.txt"), "utf8"), "second\n")
+})
+
 test("restore preserves unrelated intervening dirty state while reproducing the quarantined path exactly", async () => {
   const root = await repo()
   await writeFile(join(root, "keep.txt"), "original\n")
