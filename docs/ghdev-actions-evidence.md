@@ -20,7 +20,7 @@ The trusted profile lives at `evidence/profiles/repository-final-v1.json`. A PR 
 
 ## Executor isolation
 
-The executor routes only to `[self-hosted, Linux, X64, ghdev-verify]`. The first deployment must register that runner at repository scope inside a GitHub-supported Ubuntu or Debian userspace/container on the workstation; raw Garuda/Arch is not the declared runner environment.
+The executor routes only to `[self-hosted, Linux, X64, ghdev-verify]`. The runner is registered at repository scope inside a GitHub-supported Ubuntu or Debian userspace/container on the workstation; raw Garuda/Arch is not the declared runner environment. For this single-workstation producer, the supported steady-state deployment is a continuously connected persistent listener container. It is configured once, remains registered across jobs/reboots, and is kept running by Docker `unless-stopped`; Central dispatch must not require a per-run local launch or token-injection rendezvous.
 
 The runner container/VM is an infrastructure trust boundary and must have no host Docker socket, `sudo`, canonical developer repository mount, OpenCode state, SSH keys, browser/session material, OpenAI/Hugging Face credentials, or unrelated host secrets. Do not mount the user's normal home directory.
 
@@ -45,34 +45,46 @@ Create `/etc/ghdev-runner-image.json` inside the supported Linux runner image be
 
 ```json
 {
-  "schema_version": "ghdev-runner-image-v2",
-  "image_id": "opencode-operational-schema-guard-ghdev-verify-v2",
+  "schema_version": "ghdev-runner-image-v3",
+  "image_id": "opencode-operational-schema-guard-ghdev-verify-v3",
   "os_id": "ubuntu",
   "os_version_id": "24.04",
   "base_image_digest": "sha256:<64-lowercase-hex-image-digest>",
   "actions_runner_version": "<installed-runner-version>",
   "node_major": 22,
   "python_major": 3,
-  "sandbox": "bubblewrap-no-network-v1"
+  "sandbox": "bubblewrap-no-network-v1",
+  "listener_mode": "persistent-listener-v1",
+  "runner_updates": "disabled"
 }
 ```
 
-`os_id` may be `ubuntu` or `debian`. The digest and runner version are provenance, not placeholders: record the exact image digest and installed Actions runner version actually used. Marker v1 and profile v1 receipts are not equivalent to the current environment contract.
+`os_id` may be `ubuntu` or `debian`. The digest and runner version are provenance, not placeholders: record the exact image digest and installed Actions runner version actually used. Marker v3 additionally binds the always-ready persistent-listener lifecycle and the requirement that runner self-update is disabled. Older marker/profile generations are not equivalent to the current environment contract.
 
 Because this is a **public user-owned repository**, GitHub's general self-hosted-runner warning is directly relevant: public-fork workflow code must not be allowed to reach the runner automatically. Before registering the first runner, set the repository's fork-PR workflow approval policy to require maintainer approval for **all external contributors**, verify that setting, and do not manually approve an external workflow that targets the self-hosted label unless its code has been explicitly adjudicated. This repository cannot rely on organization runner-group workflow allowlisting because the owner is a user account. The controller's same-repository PR check is still mandatory; the repository setting is an additional scheduler-level defense, not a substitute.
 
-Repository registration is operator-owned because GitHub runner registration tokens are short-lived credentials and must never be committed. Preferred deployment is an ephemeral repository-scoped runner/container:
+Repository registration is operator-owned because GitHub runner registration tokens are short-lived credentials and must never be committed. The one-time bootstrap for the always-ready listener is:
 
 1. build/start a dedicated Ubuntu/Debian runner image with system Node 22, npm, Git, Python 3, Bubblewrap (including `--json-status-fd` support), and the marker above;
 2. drop all unnecessary Linux capabilities, enable `no-new-privileges`, keep the root filesystem read-only, expose no privileged host mounts, and retain the narrow custom seccomp policy that permits Bubblewrap's required `unshare(CLONE_NEWUSER)` without granting `CAP_SYS_ADMIN`;
-3. for the dedicated Docker runner container, use `--security-opt systempaths=unconfined` so Docker does not mask/read-only-submount parent `/proc` paths that make the nested fresh procfs fail with `VFS: Mount too revealing`; verify the effective container has `MaskedPaths=[]` and `ReadonlyPaths=[]` while retaining non-root UID, `cap-drop=ALL`, `no-new-privileges`, custom seccomp, read-only rootfs, no host mounts, and no Docker socket;
-4. never replace the narrow posture with `seccomp=unconfined`, `--privileged`, `--cap-add=SYS_ADMIN`, host PID/network/IPC namespaces, or host repository/home mounts;
-5. run the dedicated runner container/VM with explicit CPU, memory, PID/process-count, and writable-filesystem limits appropriate to this repository so candidate code cannot turn host-wide resource exhaustion into an implicit privilege boundary;
-6. register against this repository using GitHub's current one-time registration token and the custom label `ghdev-verify` (default `self-hosted`, `Linux`, and `X64` labels remain required);
-7. prefer `--ephemeral` registration so one container handles one job; if a persistent runner is temporarily used, the workflow's never-reused run/attempt workspace remains mandatory and prior workspace state is never evidence authority; and
-8. before registration, validate the exact production Bubblewrap topology plus actual `npm run check` and `npm test` under the same image/seccomp/system-path posture. Both repository-final commands must pass, and the Bubblewrap user/PID/network namespaces, fresh `/proc`, read-only candidate mount, environment allowlist, `/dev`, tmpfs `/tmp`, startup record, and exit record must remain proven.
+3. for the dedicated Docker runner container, use `--security-opt systempaths=unconfined` so Docker does not mask/read-only-submount parent `/proc` paths that make the nested fresh procfs fail with `VFS: Mount too revealing`; verify the effective container has `MaskedPaths=[]` and `ReadonlyPaths=[]` while retaining non-root UID, `cap-drop=ALL`, `no-new-privileges`, custom seccomp, read-only rootfs, no host bind mounts, and no Docker socket;
+4. never replace the narrow posture with `seccomp=unconfined`, `--privileged`, `--cap-add=SYS_ADMIN`, host PID/network/IPC namespaces, host devices, or host repository/home mounts;
+5. run the dedicated runner container with exact CPU, memory, PID/process-count, named-volume, tmpfs, healthcheck, and network limits recorded in `/etc/ghdev/runner-readiness.json`; every allowed persistent volume must be an ordinary Docker `local`/`local` named volume with no driver `Options` (local-driver bind backing is forbidden), and the host seccomp file must already contain its final frozen bytes **before** the container is created;
+6. register against this repository once using GitHub's current one-time registration token and the custom label `ghdev-verify` (default `self-hosted`, `Linux`, and `X64` labels remain required), using `config.sh --disableupdate` and **not** `--ephemeral`; the persisted `.runner` `AgentId`/`AgentName` and GitHub's repository runners API must subsequently identify the same runner with exactly those four server-side labels;
+7. remove the one-time registration token from the host immediately after registration, persist only the runner's repository-scoped registration state in the dedicated named volume(s), and never expose that state inside the Bubblewrap candidate sandbox;
+8. configure the container with Docker restart policy `unless-stopped`, ensure Docker itself starts at host boot, and run `scripts/ghdev-runner-readiness.mjs --config /etc/ghdev/runner-readiness.json` after bootstrap/recreation to prove the exact hardened posture;
+9. before promotion, validate the exact production Bubblewrap topology plus actual `npm run check` and `npm test` under the same image/seccomp/system-path posture. Both repository-final commands must pass, and the Bubblewrap user/PID/network namespaces, fresh `/proc`, read-only candidate mount, environment allowlist, `/dev`, tmpfs `/tmp`, startup record, and exit record must remain proven; and
+10. prove zero-touch operation by dispatching from Central while no local interactive shell participates, then restart the runner container (or Docker service) and repeat the dispatch without re-registration/token injection.
 
-Do not store registration tokens, runner credentials, seccomp policy contents, or host secrets in Actions artifacts, receipts, or project KB. The locally frozen seccomp file and its SHA-256 are host infrastructure evidence; Central should bind the exact hash during runner bootstrap without treating the host-owned policy as candidate repository source.
+The persistent outer runner is **not** evidence authority for prior-job workspace state. Each Actions run still creates a run/attempt-unique workspace, performs exact-head checkout after remote recheck, executes candidate commands only inside Bubblewrap, and removes the candidate/run scratch before PASS. Persistent listener state therefore replaces only the manual scheduler rendezvous, not per-run source/isolation cleanup.
+
+Do not store registration tokens, runner credentials, seccomp policy contents, or host secrets in Actions artifacts, receipts, repository source, or project KB. The one-time registration token must not remain in Docker environment metadata after registration. The locally frozen seccomp file and its SHA-256 are host infrastructure evidence; Central should bind the exact hash during runner bootstrap without treating the host-owned policy as candidate repository source.
+
+### Persistent-listener readiness contract
+
+`/etc/ghdev/runner-readiness.json` is host-owned, contains no credentials, and uses schema `ghdev-runner-readiness-v1`. It binds the repository, container name, exact Docker image ID, exact GitHub routing labels, named/bridge (never host/none/other-container-shared) Docker network, exact healthcheck vector, frozen seccomp path/hash, CPU/memory/PID limits, allowed named volumes/tmpfs, exact non-secret `.runner` settings path, and exact Runner.Listener path/version/SHA-256. The readiness CLI independently reads the current seccomp file plus nanosecond mtime/ctime, `docker inspect` output and container creation time, each named volume's Docker driver/scope/options, the container's non-secret `.runner` settings, `Runner.Listener --version` and SHA-256, and the authenticated GitHub repository runners API. It fails closed unless all of the following remain true: persisted `DisableUpdate=true`, non-ephemeral exact-repository registration; `.runner` AgentId/AgentName uniquely match a GitHub-side runner that is `online`, idle, and has exactly `self-hosted,Linux,X64,ghdev-verify`; exact runner version/binary; explicit non-root UID (including rejection of alternate numeric spellings of UID 0); `Privileged=false`; read-only rootfs; `CapDrop=ALL` and no added capabilities; `no-new-privileges`; exact seccomp whose current mtime and ctime both predate container creation; `systempaths=unconfined` with empty Docker masked/read-only path lists; no host namespace/device/bind mounts; ordinary local named volumes with no driver options or bind backing; exact tmpfs/resource set; `unless-stopped`; exact persistent-listener/update-disabled Docker labels; no credential-like static environment variables; exact healthcheck; and running/healthy state. The readiness command therefore requires local authenticated `gh` read access in addition to Docker inspection; scheduler readiness is not inferred from container metadata alone.
+
+A readiness PASS is host infrastructure evidence only. It does not substitute for the workflow's exact-head execution receipt. Conversely, the workflow receipt does not prove that Docker will restart the listener after a future host reboot; both are required when accepting or diagnosing the persistent deployment.
 
 ## GitHub Actions JavaScript runtime
 
@@ -89,16 +101,16 @@ All repository references use full 40-hex release commit SHAs rather than mutabl
 
 ## Profile and execution semantics
 
-`repository-final-v1` profile version 2 runs, in order and at most once each:
+`repository-final-v1` profile version 3 runs, in order and at most once each:
 
 ```text
 npm run check
 npm test
 ```
 
-The controller revalidates canonical PR identity on the self-hosted runner immediately before command execution. The candidate checkout must prove `HEAD == expected_head_sha`. Before the first command, the executor must have admitted the v2 image marker and complete Git/Node/npm/Python/Bubblewrap provenance described above. Each command is launched only through Bubblewrap. A command is considered started only after the trusted Bubblewrap JSON status channel supplies a valid `child-pid`. A pre-child Bubblewrap failure, malformed/missing startup evidence, or inconsistent Bubblewrap exit evidence produces `BLOCKED`; only a proven-started command with consistent numeric nonzero child/process exit evidence produces ordinary `FAIL`. A supervising process termination without usable numeric exit remains `BLOCKED` rather than being normalized into a candidate failure.
+The controller revalidates canonical PR identity on the self-hosted runner immediately before command execution. The candidate checkout must prove `HEAD == expected_head_sha`. Before the first command, the executor must have admitted the v3 image marker, complete Git/Node/npm/Python/Bubblewrap provenance, and the live `/runner/.runner` persistent registration state. It requires actual `DisableUpdate=true`, non-ephemeral exact-repository registration, a positive AgentId, AgentName equal to the Actions-assigned `RUNNER_NAME`, and the actual `/runner/bin/Runner.Listener` version matching the image marker. Each command is launched only through Bubblewrap. A command is considered started only after the trusted Bubblewrap JSON status channel supplies a valid `child-pid`. A pre-child Bubblewrap failure, malformed/missing startup evidence, or inconsistent Bubblewrap exit evidence produces `BLOCKED`; only a proven-started command with consistent numeric nonzero child/process exit evidence produces ordinary `FAIL`. A supervising process termination without usable numeric exit remains `BLOCKED` rather than being normalized into a candidate failure.
 
-The repository is mounted read-only during candidate execution, and after the commands the trusted executor independently proves exact HEAD plus `git status --porcelain=v1 --untracked-files=all` cleanliness. The candidate checkout is then removed; removal is part of PASS evidence. After the execution handoff artifact is uploaded, the workflow separately removes both its trusted-control run root and execution scratch directory and fails closed if either remains. The profile fingerprints `.npmrc`, `npm-shrinkwrap.json`, `package-lock.json`, `package.json`, and `scripts/test-plugin.mjs` as dependency/test-configuration provenance; missing optional files are represented explicitly as `MISSING`. Because the launcher-bearing files are also trusted-control paths, a candidate that changes them is not self-certifiable. `npm test` TAP totals are required for PASS when the profile declares the `node-tap` collector.
+The repository is mounted read-only during candidate execution, and after the commands the trusted executor independently proves exact HEAD plus `git status --porcelain=v1 --untracked-files=all` cleanliness. It also re-reads the live `.runner` settings and Runner.Listener after candidate execution and requires the listener mode, update policy, AgentId/name, settings SHA-256, listener version, and listener SHA-256 to be unchanged; drift yields `BLOCKED/FINAL_RUNNER_IDENTITY_ERROR`. The candidate checkout is then removed; removal is part of PASS evidence. After the execution handoff artifact is uploaded, the workflow separately removes both its trusted-control run root and execution scratch directory and fails closed if either remains. The profile fingerprints `.npmrc`, `npm-shrinkwrap.json`, `package-lock.json`, `package.json`, and `scripts/test-plugin.mjs` as dependency/test-configuration provenance; missing optional files are represented explicitly as `MISSING`. Because the launcher-bearing files are also trusted-control paths, a candidate that changes them is not self-certifiable. `npm test` TAP totals are required for PASS when the profile declares the `node-tap` collector.
 
 The publisher re-resolves the PR after execution. Any base/head movement converts the receipt to `STALE`, regardless of command exits. PASS therefore requires exact base/head identity both before and after execution.
 
@@ -112,6 +124,7 @@ The final artifact contains `receipt.json` with schema `ghdev-actions-evidence-v
 - profile ID/version and canonical command fingerprint;
 - candidate dependency/config fingerprints;
 - runner class/labels and actual supported-Linux userspace/image provenance;
+- live persistent listener mode/update policy, `.runner` settings SHA-256, Runner.Listener SHA-256, AgentId/name, and final live-runner identity-continuity result;
 - Actions runner, Git, Node, npm, Python, and Bubblewrap versions plus Git/Node/npm/Python/Bubblewrap/OS SHA-256 fingerprints;
 - required/run command counts and per-command exits;
 - TAP test totals when available/required;
@@ -127,7 +140,7 @@ Publication is intentionally ordered **receipt artifact first, status second**. 
 
 ## Evidence equivalence boundary
 
-A current PASS may satisfy only `actions-repository-deterministic` Verify when repository/head, controller SHA, profile/command fingerprint, candidate config fingerprints, required runner/environment scope, counts, and immutable run/artifact identity all match the consuming gate. For profile version 2 this includes the v2 image marker and complete Git/Node/npm/Python/Bubblewrap provenance; a profile-v1 or marker-v1 receipt is not environment-equivalent.
+A current PASS may satisfy only `actions-repository-deterministic` Verify when repository/head, controller SHA, profile/command fingerprint, candidate config fingerprints, required runner/environment scope, counts, and immutable run/artifact identity all match the consuming gate. For profile version 3 this includes the v3 image marker, live `persistent-listener-v1` registration with `DisableUpdate=true`, exact `.runner`/Runner.Listener fingerprints and Agent identity held stable through the execution, and complete Git/Node/npm/Python/Bubblewrap provenance; any older profile/marker receipt is not environment-equivalent.
 
 It does **not** satisfy semantic review, local Fresh-review, typed operational-schema host assessment, GPU/service/runtime/filesystem/process evidence outside this profile, or merged-main evidence for another SHA. The receipt therefore records both semantic review and host-specific evidence as `NOT_EVALUATED`.
 
@@ -135,4 +148,4 @@ Conventional `CI / node-contract` remains useful CI, but it is not automatically
 
 ## Bootstrap rule
 
-The first PR that introduces or changes this workflow/profile/environment contract cannot use its candidate copy as trust evidence. Validate that PR through the authoritative pre-Slice-K route. After merge, bind the exact new trusted `main` commit, rebuild the runner image with the v2 marker and Python 3, re-prove the accepted narrow seccomp plus `systempaths=unconfined` Docker posture, and run the exact repository-final profile locally inside the production Bubblewrap topology before registering one new ephemeral runner. Then prove the merged controller against a fresh exact same-repository docs-only test PR head. Only after Central can dispatch the trusted-main workflow, read the run, read/validate the artifact, verify the complete v2 environment provenance, and observe `local-host-verify` on that exact candidate SHA is this producer promoted to ordinary final-Verify authority.
+The first PR that introduces or changes this workflow/profile/environment contract cannot use its candidate copy as trust evidence. Validate that PR through the authoritative pre-Slice-K route. After merge, bind the exact new trusted `main` commit, rebuild/relabel the runner image with the v3 marker and Python 3, re-prove the accepted narrow seccomp plus `systempaths=unconfined` Docker posture, and run the exact repository-final profile locally inside the production Bubblewrap topology. Configure/register the persistent listener once with `--disableupdate`, prove `ghdev-runner-readiness-v1` PASS, then prove the merged controller against a fresh exact same-repository docs-only test PR head with no local interactive activation. Repeat after a container/Docker restart without a new registration token. Only after Central can dispatch the trusted-main workflow, read the run, read/validate the artifact, verify the complete v3 environment provenance, and observe `local-host-verify` on that exact candidate SHA is this producer promoted to ordinary final-Verify authority.

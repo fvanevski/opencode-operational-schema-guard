@@ -1,7 +1,7 @@
 {
   "schema_version": "ghdev-actions-profile-v1",
   "profile_id": "repository-final-v1",
-  "profile_version": 2,
+  "profile_version": 3,
   "commands": [
     {
       "id": "npm-check",
@@ -25,11 +25,13 @@
     ".npmrc",
     "evidence/profiles/repository-final-v1.json",
     "lib/actions-evidence.mjs",
+    "lib/runner-readiness.mjs",
     "node_modules",
     "package.json",
     "scripts/ghdev-actions-controller.mjs",
     "scripts/ghdev-actions-executor.mjs",
     "scripts/ghdev-actions-publisher.mjs",
+    "scripts/ghdev-runner-readiness.mjs",
     "scripts/test-plugin.mjs"
   ],
   "trusted_control_prefixes": [
@@ -40,7 +42,9 @@
     "os": "Linux",
     "arch": "X64",
     "sandbox": "bubblewrap-no-network-v1",
-    "image_schema": "ghdev-runner-image-v2"
+    "image_schema": "ghdev-runner-image-v3",
+    "listener_mode": "persistent-listener-v1",
+    "runner_updates": "disabled"
   },
   "evidence_classes": ["actions-repository-deterministic"],
   "not_equivalent_to": [

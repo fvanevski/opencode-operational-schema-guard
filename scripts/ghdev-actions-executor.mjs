@@ -36,6 +36,9 @@ function exactCommandOutput(argv) {
 
 const COMMAND_TAIL_BYTES = 1024 * 1024
 const SANDBOX_STATUS_BYTES = 64 * 1024
+const LIVE_RUNNER_SETTINGS_PATH = "/runner/.runner"
+const LIVE_RUNNER_LISTENER_PATH = "/runner/bin/Runner.Listener"
+const RUNNER_SETTINGS_BYTES = 64 * 1024
 
 function readTail(path, maxBytes = COMMAND_TAIL_BYTES) {
   const size = statSync(path).size
@@ -105,6 +108,35 @@ function boundedVersion(value, field) {
   return value
 }
 
+async function liveRunnerProvenance(repository) {
+  const settingsBytes = await readFile(LIVE_RUNNER_SETTINGS_PATH)
+  if (settingsBytes.length < 1 || settingsBytes.length > RUNNER_SETTINGS_BYTES) throw new Error("live .runner settings are not bounded")
+  let settings
+  try {
+    settings = JSON.parse(settingsBytes.toString("utf8"))
+  } catch (error) {
+    throw new Error(`live .runner settings are invalid JSON: ${error.message}`)
+  }
+  if (!settings || typeof settings !== "object" || Array.isArray(settings)) throw new Error("live .runner settings must be an object")
+  if (settings.DisableUpdate !== true) throw new Error("live .runner settings do not prove DisableUpdate=true")
+  if (settings.Ephemeral === true) throw new Error("live .runner settings are ephemeral")
+  if (typeof settings.GitHubUrl !== "string" || settings.GitHubUrl.replace(/\/$/, "") !== `https://github.com/${repository}`) throw new Error("live .runner GitHubUrl does not match repository")
+  if (!Number.isSafeInteger(settings.AgentId) || settings.AgentId < 1) throw new Error("live .runner AgentId is invalid")
+  if (typeof settings.AgentName !== "string" || settings.AgentName.length < 1 || settings.AgentName.length > 256) throw new Error("live .runner AgentName is invalid")
+  if (settings.AgentName !== process.env.RUNNER_NAME) throw new Error("live .runner AgentName does not match assigned RUNNER_NAME")
+  const listenerVersion = boundedVersion(exactCommandOutput([LIVE_RUNNER_LISTENER_PATH, "--version"]), "actions runner")
+  const listenerBytes = await readFile(LIVE_RUNNER_LISTENER_PATH)
+  return {
+    listener_mode: "persistent-listener-v1",
+    runner_updates: "disabled",
+    actions_runner_version: listenerVersion,
+    runner_settings_sha256: sha256Hex(settingsBytes),
+    runner_listener_sha256: sha256Hex(listenerBytes),
+    runner_agent_id: settings.AgentId,
+    runner_name: settings.AgentName,
+  }
+}
+
 function addRootMount(args, path) {
   try {
     const stat = lstatSync(path)
@@ -163,6 +195,8 @@ function validateImageMarker(marker) {
   if (!Number.isSafeInteger(marker.node_major) || marker.node_major !== 22) throw new Error("runner image marker node_major must be 22")
   if (!Number.isSafeInteger(marker.python_major) || marker.python_major !== 3) throw new Error("runner image marker python_major must be 3")
   if (marker.sandbox !== "bubblewrap-no-network-v1") throw new Error("runner image marker sandbox mismatch")
+  if (marker.listener_mode !== "persistent-listener-v1") throw new Error("runner image marker listener_mode mismatch")
+  if (marker.runner_updates !== "disabled") throw new Error("runner image marker runner_updates mismatch")
   if (typeof marker.image_id !== "string" || marker.image_id.length < 1 || marker.image_id.length > 128) throw new Error("runner image marker image_id invalid")
   if (typeof marker.base_image_digest !== "string" || !/^sha256:[0-9a-f]{64}$/.test(marker.base_image_digest)) throw new Error("runner image marker base_image_digest must be an exact sha256 digest")
   if (typeof marker.actions_runner_version !== "string" || marker.actions_runner_version.length < 1 || marker.actions_runner_version.length > 64) throw new Error("runner image marker actions_runner_version missing")
@@ -187,7 +221,14 @@ function emptyEnvironment(profile) {
     image_schema: profile.runner.image_schema,
     image_id: null,
     base_image_digest: null,
+    listener_mode: null,
+    runner_updates: null,
     actions_runner_version: null,
+    runner_settings_sha256: null,
+    runner_listener_sha256: null,
+    runner_agent_id: null,
+    runner_name: null,
+    runner_identity_clean_final: false,
     git_version: null,
     node_version: null,
     npm_version: null,
@@ -293,13 +334,23 @@ async function main() {
     if (osReleaseBytes.length > 32 * 1024) throw new Error("/etc/os-release exceeds bounded size")
     const osRelease = parseOsRelease(osReleaseBytes.toString("utf8"))
     if (osRelease.ID !== marker.os_id || osRelease.VERSION_ID !== marker.os_version_id) throw new Error(`runner OS identity ${osRelease.ID ?? "unknown"}/${osRelease.VERSION_ID ?? "unknown"} does not match image marker`)
+    const liveRunnerInitial = await liveRunnerProvenance(repository)
+    if (liveRunnerInitial.listener_mode !== profile.runner.listener_mode || liveRunnerInitial.runner_updates !== profile.runner.runner_updates) throw new Error("live runner lifecycle does not match profile")
+    if (liveRunnerInitial.actions_runner_version !== marker.actions_runner_version) throw new Error("live Runner.Listener version does not match image marker")
     record.candidate_fingerprints = await fingerprintFiles(candidatePath, profile.candidate_fingerprint_paths)
     record.environment = {
       image_fingerprint: sha256Hex(markerBytes),
       image_schema: marker.schema_version,
       image_id: marker.image_id,
       base_image_digest: marker.base_image_digest,
-      actions_runner_version: marker.actions_runner_version,
+      listener_mode: liveRunnerInitial.listener_mode,
+      runner_updates: liveRunnerInitial.runner_updates,
+      actions_runner_version: liveRunnerInitial.actions_runner_version,
+      runner_settings_sha256: liveRunnerInitial.runner_settings_sha256,
+      runner_listener_sha256: liveRunnerInitial.runner_listener_sha256,
+      runner_agent_id: liveRunnerInitial.runner_agent_id,
+      runner_name: liveRunnerInitial.runner_name,
+      runner_identity_clean_final: false,
       git_version: gitVersion,
       node_version: nodeVersion,
       npm_version: npmVersion,
@@ -432,6 +483,28 @@ async function main() {
     record.result = "BLOCKED"
     record.block_reason = "FINAL_SOURCE_IDENTITY_ERROR"
     process.stderr.write(`GHDEV_ACTIONS_EXECUTOR: BLOCKED; final source proof failed: ${error?.message ?? String(error)}\n`)
+  }
+
+  try {
+    if (record.environment.runner_settings_sha256 !== null) {
+      const liveRunnerFinal = await liveRunnerProvenance(repository)
+      record.environment.runner_identity_clean_final = liveRunnerFinal.listener_mode === record.environment.listener_mode
+        && liveRunnerFinal.runner_updates === record.environment.runner_updates
+        && liveRunnerFinal.actions_runner_version === record.environment.actions_runner_version
+        && liveRunnerFinal.runner_settings_sha256 === record.environment.runner_settings_sha256
+        && liveRunnerFinal.runner_listener_sha256 === record.environment.runner_listener_sha256
+        && liveRunnerFinal.runner_agent_id === record.environment.runner_agent_id
+        && liveRunnerFinal.runner_name === record.environment.runner_name
+      if (!record.environment.runner_identity_clean_final) {
+        record.result = "BLOCKED"
+        record.block_reason = "FINAL_RUNNER_IDENTITY_ERROR"
+      }
+    }
+  } catch (error) {
+    record.environment.runner_identity_clean_final = false
+    record.result = "BLOCKED"
+    record.block_reason = "FINAL_RUNNER_IDENTITY_ERROR"
+    process.stderr.write(`GHDEV_ACTIONS_EXECUTOR: BLOCKED; final runner proof failed: ${error?.message ?? String(error)}\n`)
   }
 
   try {

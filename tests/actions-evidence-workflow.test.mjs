@@ -1,6 +1,7 @@
 import assert from "node:assert/strict"
 import { readFile } from "node:fs/promises"
 import test from "node:test"
+import "./runner-readiness.test.mjs"
 
 const workflow = await readFile(new URL("../.github/workflows/ghdev-verify.yml", import.meta.url), "utf8")
 const ci = await readFile(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8")
@@ -117,6 +118,19 @@ test("ordinary CI uses the same Node-24-native checkout/setup-node pins without 
   for (const retired of RETIRED_NODE20_PINS) assert.doesNotMatch(ci, new RegExp(retired))
   assert.match(ci, /node-version: "22"/)
   assert.match(ci, /package-manager-cache: false/)
+})
+
+test("executor receipts bind to live persistent runner registration state rather than marker declarations", () => {
+  assert.ok(executor.includes('const LIVE_RUNNER_SETTINGS_PATH = "/runner/.runner"'))
+  assert.ok(executor.includes('const LIVE_RUNNER_LISTENER_PATH = "/runner/bin/Runner.Listener"'))
+  assert.match(executor, /settings\.DisableUpdate !== true/)
+  assert.match(executor, /settings\.Ephemeral === true/)
+  assert.match(executor, /settings\.AgentName !== process\.env\.RUNNER_NAME/)
+  assert.match(executor, /runner_settings_sha256: sha256Hex\(settingsBytes\)/)
+  assert.match(executor, /runner_listener_sha256: sha256Hex\(listenerBytes\)/)
+  assert.match(executor, /runner_identity_clean_final/)
+  assert.doesNotMatch(executor, /listener_mode: marker\.listener_mode/)
+  assert.doesNotMatch(executor, /runner_updates: marker\.runner_updates/)
 })
 
 test("executor preflights and attests Python and Git before any profile command", () => {
