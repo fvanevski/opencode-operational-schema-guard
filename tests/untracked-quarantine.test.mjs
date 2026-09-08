@@ -5,6 +5,7 @@ import { chmod, mkdir, mkdtemp, readFile, readlink, symlink, writeFile } from "n
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import test from "node:test"
+import { fileURLToPath } from "node:url"
 import { createOperationGuard } from "../lib/operation-guard.mjs"
 import {
   QuarantineBlockedError,
@@ -15,6 +16,7 @@ import {
 } from "../lib/untracked-quarantine.mjs"
 
 const HELPER = "/home/filip/.config/opencode/plugins/operational-schema-v5/scripts/untracked-quarantine.mjs"
+const REPOSITORY_HELPER = fileURLToPath(new URL("../scripts/untracked-quarantine.mjs", import.meta.url))
 
 function git(root, ...args) {
   const result = spawnSync("git", ["-C", root, ...args], { encoding: "utf8" })
@@ -98,6 +100,23 @@ async function continuity(hooks, sessionID) {
   await hooks["experimental.session.compacting"]({ sessionID }, output)
   return output.context.join("\n")
 }
+
+test("public helper exposes the exact typed PASS/BLOCKED contract", async () => {
+  const root = await repo()
+  await writeFile(join(root, "public.txt"), "public\n")
+  await mkdir(UNTRACKED_QUARANTINE_SPEC_ROOT, { recursive: true })
+  const id = operationID("public-helper")
+  const specPath = join(UNTRACKED_QUARANTINE_SPEC_ROOT, `${id}.json`)
+  await writeFile(specPath, `${JSON.stringify(inspectSpec(root, ["public.txt"], id))}\n`)
+
+  const success = spawnSync(process.execPath, [REPOSITORY_HELPER, "--spec", specPath], { encoding: "utf8" })
+  assert.equal(success.status, 0, success.stderr)
+  assert.match(success.stdout, /^OPERATIONAL_UNTRACKED_QUARANTINE: PASS;[^\n]+\nUNTRACKED_QUARANTINE_RESULT=PASS\n$/)
+
+  const malformed = spawnSync(process.execPath, [REPOSITORY_HELPER, "--spec", specPath, "--extra"], { encoding: "utf8" })
+  assert.equal(malformed.status, 2)
+  assert.match(malformed.stderr, /UNTRACKED_QUARANTINE_RESULT=BLOCKED/)
+})
 
 test("typed quarantine removes only two exact untracked paths and restore reproduces them byte-for-byte", async () => {
   const root = await repo()

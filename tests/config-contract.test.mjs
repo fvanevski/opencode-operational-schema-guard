@@ -197,6 +197,8 @@ test("last-match ordering is enforced for every new Verify and Explore evidence 
 test("README generated policy block is exactly sourced from policy-spec", async () => {
   const readme = await readFile(new URL("../README.md", import.meta.url), "utf8")
   assert.ok(readme.includes(README_POLICY_BLOCK))
+  assert.match(README_POLICY_BLOCK, /untracked-quarantine\.mjs --spec \/tmp\/opencode\/verify\/untracked-quarantine\/specs\/<file>\.json/)
+  assert.match(BUILD_AGENT_PROMPT, /untracked-quarantine\.mjs --spec \/tmp\/opencode\/verify\/untracked-quarantine\/specs\/<file>\.json/)
 })
 
 test("an invalid candidate cannot alter the target or create a backup", async () => {
