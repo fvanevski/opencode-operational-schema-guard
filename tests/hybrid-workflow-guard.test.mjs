@@ -101,9 +101,11 @@ function actionsExecution() {
     runner_labels: ACTIONS_PROFILE.runner.labels,
     environment: {
       image_fingerprint: "f".repeat(64),
-      image_schema: "ghdev-runner-image-v2",
+      image_schema: "ghdev-runner-image-v3",
       image_id: "fixture",
       base_image_digest: `sha256:${"1".repeat(64)}`,
+      listener_mode: "persistent-listener-v1",
+      runner_updates: "disabled",
       actions_runner_version: "2.337.0",
       git_version: "git version 2.43.0",
       node_version: "v22.23.2",
