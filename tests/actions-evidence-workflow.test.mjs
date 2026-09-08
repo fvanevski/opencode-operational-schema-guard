@@ -121,8 +121,8 @@ test("ordinary CI uses the same Node-24-native checkout/setup-node pins without 
 })
 
 test("executor receipts bind to live persistent runner registration state rather than marker declarations", () => {
-  assert.match(executor, /LIVE_RUNNER_SETTINGS_PATH = "\\/runner\\/\\.runner"/)
-  assert.match(executor, /LIVE_RUNNER_LISTENER_PATH = "\\/runner\\/bin\\/Runner\\.Listener"/)
+  assert.ok(executor.includes('const LIVE_RUNNER_SETTINGS_PATH = "/runner/.runner"'))
+  assert.ok(executor.includes('const LIVE_RUNNER_LISTENER_PATH = "/runner/bin/Runner.Listener"'))
   assert.match(executor, /settings\.DisableUpdate !== true/)
   assert.match(executor, /settings\.Ephemeral === true/)
   assert.match(executor, /settings\.AgentName !== process\.env\.RUNNER_NAME/)
