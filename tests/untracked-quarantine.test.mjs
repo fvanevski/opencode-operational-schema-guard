@@ -1,7 +1,7 @@
 import assert from "node:assert/strict"
 import { spawnSync } from "node:child_process"
 import { createHash, randomUUID } from "node:crypto"
-import { chmod, mkdir, mkdtemp, readFile, readlink, symlink, writeFile } from "node:fs/promises"
+import { chmod, mkdir, mkdtemp, readFile, readlink, rm, symlink, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import test from "node:test"
@@ -208,12 +208,40 @@ test("tracked, staged, conflicted, ignored-only, escaping, overlapping, and spec
   await expectBlocked(() => runUntrackedQuarantine(inspectSpec(root, ["special"])), /special filesystem object/i)
 })
 
-test("non-UTF-8 descendant paths fail closed without lossy decoding", async () => {
+test("non-UTF-8 and backslash descendant paths fail closed before preservation can become unreadable", async () => {
   const root = await repo()
   await mkdir(join(root, "weird"))
   const rawPath = Buffer.concat([Buffer.from(`${root}/weird/`), Buffer.from([0xff, 0xfe])])
   await writeFile(rawPath, "opaque\n")
   await expectBlocked(() => runUntrackedQuarantine(inspectSpec(root, ["weird"])), /non-UTF-8 path bytes/)
+
+  const backslashRoot = await repo()
+  await mkdir(join(backslashRoot, "weird"))
+  await writeFile(join(backslashRoot, "weird", "a\\b"), "preserve\n")
+  await expectBlocked(() => runUntrackedQuarantine(inspectSpec(backslashRoot, ["weird"])), /ambiguous or unsupported directory entry/i)
+  assert.equal(await readFile(join(backslashRoot, "weird", "a\\b"), "utf8"), "preserve\n")
+})
+
+test("receipt serialization limit blocks before any workspace source is captured", async () => {
+  const root = await repo()
+  const segments = Array.from({ length: 15 }, (_, index) => `${String(index).padStart(2, "0")}-${"x".repeat(235)}`)
+  const requested = segments.join("/")
+  const directory = join(root, ...segments)
+  await mkdir(directory, { recursive: true })
+  const writes = []
+  for (let index = 0; index < 1200; index += 1) writes.push(writeFile(join(directory, `f-${String(index).padStart(4, "0")}.txt`), "x"))
+  await Promise.all(writes)
+  const id = operationID("oversized-receipt")
+  const inspected = await runUntrackedQuarantine(inspectSpec(root, [requested], id))
+  await expectBlocked(() => runUntrackedQuarantine({
+    ...inspectSpec(root, [requested], id),
+    action: "quarantine",
+    expected_workspace_sha256: inspected.workspace_sha256,
+    expected_status_sha256: inspected.status_sha256,
+    expected_paths_sha256: inspected.paths_sha256,
+    expected_inventory_sha256: inspected.inventory_sha256,
+  }), /serialized receipt exceeds/i)
+  assert.equal(await readFile(join(directory, "f-0000.txt"), "utf8"), "x")
 })
 
 test("dirty-state fingerprint drift and pre-existing mismatched quarantine data block with originals intact", async () => {
@@ -299,6 +327,23 @@ test("restore preserves unrelated intervening dirty state while reproducing the 
   assert.equal(git(root, "diff", "--binary"), beforeTracked)
 })
 
+test("descriptor-anchored restore rejects substituted workspace ancestors without escaped writes", async () => {
+  const root = await repo()
+  await mkdir(join(root, "parent"))
+  await writeFile(join(root, "parent", "keep.txt"), "original\n")
+  const { quarantined, id } = await inspectAndQuarantine(root, ["parent/keep.txt"])
+  const outside = await mkdtemp(join(tmpdir(), "untracked-quarantine-outside-"))
+  await rm(join(root, "parent"), { recursive: true, force: true })
+  await symlink(outside, join(root, "parent"))
+  await expectBlocked(() => runUntrackedQuarantine({
+    ...inspectSpec(root, ["parent/keep.txt"], id),
+    action: "restore",
+    receipt_path: receiptPath(id),
+    expected_receipt_sha256: quarantined.receipt_sha256,
+  }), /descriptor-anchored restore|filesystem helper/i)
+  await assert.rejects(() => readFile(join(outside, "keep.txt")), /ENOENT/)
+})
+
 test("receipt mismatch and restore overwrite both fail closed while quarantine evidence is retained", async () => {
   const root = await repo()
   await writeFile(join(root, "keep.txt"), "original\n")
@@ -361,9 +406,23 @@ test("pending exact-head guard admits only the exact typed helper and preserves 
 
   await assert.doesNotReject(() => before(hooks, session, "external-copy", "cp /tmp/source.dat /tmp/destination.dat"))
   await assert.doesNotReject(() => before(hooks, session, "external-move", "mv /tmp/source.dat /tmp/destination.dat"))
-  for (const [index, external] of ["cp source.dat destination.dat", "mv source.dat destination.dat"].entries()) {
+  for (const [index, external] of [
+    "cp source.dat destination.dat",
+    "mv source.dat destination.dat",
+    "cp --target-directory=/tmp source.dat",
+    "mv -t/tmp source.dat",
+  ].entries()) {
     const output = { args: { command: external, workdir: tmpdir() } }
     await assert.doesNotReject(() => hooks["tool.execute.before"]({ sessionID: session, callID: `external-relative-${index}`, tool: "bash" }, output), external)
+  }
+  for (const [index, unsafe] of [
+    `cp --target-directory=${root} /tmp/source-${id}`,
+    `cp --target-directory ${root} /tmp/source-${id}`,
+    `mv -t${root} /tmp/source-${id}`,
+    `mv -t ${root} /tmp/source-${id}`,
+  ].entries()) {
+    const output = { args: { command: unsafe, workdir: tmpdir() } }
+    await assert.rejects(() => hooks["tool.execute.before"]({ sessionID: session, callID: `target-directory-${index}`, tool: "bash" }, output), /exact-head admission is pending|pending exact-head|exact-head target/i, unsafe)
   }
   for (const [index, unsafe] of [
     `cp ${join(root, "untracked.txt")} /tmp/untracked-copy-${id}`,
@@ -420,6 +479,8 @@ test("pending exact-head guard admits only the exact typed helper and preserves 
   }
   await writeFile(restorePath, `${JSON.stringify(restoreSpec)}\n`)
   const restoreCommand = `${HELPER} --spec ${restorePath}`
+  await assert.doesNotReject(() => before(restarted, restartedSession, "typed-restore-forged", restoreCommand))
+  await assert.rejects(() => after(restarted, restartedSession, "typed-restore-forged", restoreCommand, "UNTRACKED_QUARANTINE_RESULT=PASS", 0), /restore completion readback failed|restored paths do not match/i)
   await assert.doesNotReject(() => before(restarted, restartedSession, "typed-restore", restoreCommand))
   await runUntrackedQuarantine(restoreSpec)
   await after(restarted, restartedSession, "typed-restore", restoreCommand, "UNTRACKED_QUARANTINE_RESULT=PASS", 0)
