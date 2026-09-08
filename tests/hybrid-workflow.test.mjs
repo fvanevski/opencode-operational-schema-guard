@@ -172,8 +172,65 @@ test("planner output is deterministic and partitions a representative large revi
   assert.equal(sha256Hex(first.partitions[0].packet), first.partitions[0].packet_sha256)
 })
 
+test("unbound-workspace planning is Explore-only, non-evidence, and partitions thirteen targets without a fake SHA", () => {
+  const targets = Array.from({ length: 13 }, (_, index) => ({
+    path: `lib/unbound-${index}.mjs`,
+    kind: "production",
+    file_bytes: 1000,
+    diff_bytes: 0,
+    hunks: 0,
+  }))
+  const result = planChildWork(planInput({
+    role: "explore",
+    authority: { class: "unbound-workspace" },
+    gate_class: "focused-development",
+    objective: "Inspect only the thirteen explicitly listed targets.",
+    questions: ["What ownership relationships do these targets expose?"],
+    stop_condition: "Stop when all thirteen targets are addressed.",
+    targets,
+  }))
+  assert.equal(result.status, "PARTITION_REQUIRED")
+  assert.equal(result.coverage.unique_complete, true)
+  assert.equal(result.coverage.planned_targets, 13)
+  assert.ok(result.partitions.every((partition) => partition.target_paths.length <= 8))
+  assert.doesNotMatch(JSON.stringify(result), /"head_sha"/)
+
+  assert.throws(() => planChildWork(planInput({
+    authority: { class: "unbound-workspace" },
+  })), /only for non-evidence focused-development Explore planning/)
+  assert.throws(() => planChildWork(planInput({
+    role: "verify",
+    authority: { class: "unbound-workspace" },
+    gate_class: "focused-development",
+  })), /only for non-evidence focused-development Explore planning/)
+  assert.throws(() => planChildWork(planInput({
+    role: "explore",
+    authority: { class: "unbound-workspace" },
+    gate_class: "repository-final",
+  })), /only for non-evidence focused-development Explore planning/)
+})
+
+test("unbound Explore planner fails closed when one bounded packet cannot fit", () => {
+  const result = planChildWork(planInput({
+    role: "explore",
+    authority: { class: "unbound-workspace" },
+    gate_class: "focused-development",
+    objective: "Inspect one explicit target.",
+    questions: ["What does it own?"],
+    stop_condition: "Stop after the target is addressed.",
+    targets: [{ path: "lib/one.mjs", kind: "production", file_bytes: 1000, diff_bytes: 0, hunks: 0 }],
+  }), { taskPromptChars: { explore: 80 } })
+  assert.equal(result.status, "UNREPRESENTABLE")
+  assert.equal(result.reason, "single-target-packet-exceeds-prompt-limit")
+})
+
 test("planner returns UNREPRESENTABLE instead of silently dropping excess questions", () => {
-  const result = planChildWork(planInput({ questions: ["q1", "q2", "q3", "q4"] }))
+  const result = planChildWork(planInput({
+    role: "explore",
+    authority: { class: "unbound-workspace" },
+    gate_class: "focused-development",
+    questions: ["q1", "q2", "q3", "q4"],
+  }))
   assert.equal(result.status, "UNREPRESENTABLE")
   assert.equal(result.reason, "question-count-exceeds-three")
 })
