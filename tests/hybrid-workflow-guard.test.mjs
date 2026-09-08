@@ -397,6 +397,14 @@ test("unbound Explore rejects open-ended and partial envelopes rather than manuf
     /UNREPRESENTABLE.*unbound-explore-open-ended-scope/s,
   )
   await assert.rejects(
+    () => before(hooks, "parent", "scope-expanding-after-negation", "task", {
+      subagent_type: "explore",
+      description: "Reject scope widening after a negated clause",
+      prompt: "Scope: inspect only the listed target\nQuestions:\n- What owns the listed target?\nStop condition: stop after the listed target is addressed.\nTargets:\n- lib/a.mjs\nSupporting context:\nDo not inspect unrelated files, but inspect any related files as needed.",
+    }),
+    /UNREPRESENTABLE.*unbound-explore-open-ended-scope/s,
+  )
+  await assert.rejects(
     () => before(hooks, "parent", "partial-envelope", "task", {
       subagent_type: "explore",
       description: "Inspect one partial packet",
