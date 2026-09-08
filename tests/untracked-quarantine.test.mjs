@@ -3,7 +3,7 @@ import { spawnSync } from "node:child_process"
 import { createHash, randomUUID } from "node:crypto"
 import { chmod, mkdir, mkdtemp, readFile, readlink, rm, symlink, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
-import { join } from "node:path"
+import { dirname, join } from "node:path"
 import test from "node:test"
 import { fileURLToPath } from "node:url"
 import { createOperationGuard } from "../lib/operation-guard.mjs"
@@ -17,6 +17,7 @@ import {
 
 const HELPER = "/home/filip/.config/opencode/plugins/operational-schema-v5/scripts/untracked-quarantine.mjs"
 const REPOSITORY_HELPER = fileURLToPath(new URL("../scripts/untracked-quarantine.mjs", import.meta.url))
+const REPOSITORY_FS_HELPER = fileURLToPath(new URL("../scripts/untracked-quarantine-fs.py", import.meta.url))
 
 function git(root, ...args) {
   const result = spawnSync("git", ["-C", root, ...args], { encoding: "utf8" })
@@ -116,6 +117,35 @@ test("public helper exposes the exact typed PASS/BLOCKED contract", async () => 
   const malformed = spawnSync(process.execPath, [REPOSITORY_HELPER, "--spec", specPath, "--extra"], { encoding: "utf8" })
   assert.equal(malformed.status, 2)
   assert.match(malformed.stderr, /UNTRACKED_QUARANTINE_RESULT=BLOCKED/)
+})
+
+test("descriptor capture root is disjoint even when the preferred operation root is inside the workspace", async () => {
+  const root = await repo()
+  const operationRoot = join(root, "control", "operation")
+  await mkdir(operationRoot, { recursive: true })
+  const rootInfo = await (await import("node:fs/promises")).stat(root)
+  const gitDir = join(root, ".git")
+  const request = {
+    schema_version: "opencode-untracked-quarantine-fs-v1",
+    action: "prepare",
+    operation_id: operationID("disjoint-capture"),
+    workspace_root: root,
+    workspace_dev: String(rootInfo.dev),
+    workspace_ino: String(rootInfo.ino),
+    git_dir: gitDir,
+    operation_root: operationRoot,
+  }
+  const prepared = spawnSync("/usr/bin/python3", [REPOSITORY_FS_HELPER], {
+    input: `${JSON.stringify(request)}\n`,
+    encoding: "utf8",
+  })
+  assert.equal(prepared.status, 0, prepared.stdout + prepared.stderr)
+  const result = JSON.parse(prepared.stdout)
+  assert.equal(result.result, "PASS")
+  assert.equal(result.action, "prepare")
+  assert.equal(result.capture_root.startsWith(`${root}/`), false)
+  assert.equal(root.startsWith(`${result.capture_root}/`), false)
+  await rm(dirname(result.capture_root), { recursive: true, force: true })
 })
 
 test("typed quarantine removes only two exact untracked paths and restore reproduces them byte-for-byte", async () => {

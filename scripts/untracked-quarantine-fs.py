@@ -218,12 +218,23 @@ def validate_workspace_fd(fd, request):
     return info
 
 
+def capture_is_disjoint(path, workspace_root):
+    candidate = os.path.abspath(path)
+    workspace = os.path.abspath(workspace_root)
+    try:
+        common = os.path.commonpath([candidate, workspace])
+    except ValueError:
+        return True
+    return common not in {candidate, workspace}
+
+
 def capture_candidate(request, workspace_info):
     operation_root = request.get("operation_root")
     operation_fd = open_abs_dir(operation_root)
     try:
-        if os.fstat(operation_fd).st_dev == workspace_info.st_dev:
-            return os.path.join(operation_root, "capture")
+        operation_candidate = os.path.join(operation_root, "capture")
+        if os.fstat(operation_fd).st_dev == workspace_info.st_dev and capture_is_disjoint(operation_candidate, request.get("workspace_root")):
+            return operation_candidate
     finally:
         os.close(operation_fd)
     workspace_root = request.get("workspace_root")
@@ -232,14 +243,18 @@ def capture_candidate(request, workspace_info):
     try:
         if os.fstat(parent_fd).st_dev == workspace_info.st_dev:
             key = hashlib.sha256(workspace_root.encode("utf-8")).hexdigest()[:16]
-            return os.path.join(parent, f".opencode-untracked-quarantine-{key}", request["operation_id"])
+            parent_candidate = os.path.join(parent, f".opencode-untracked-quarantine-{key}", request["operation_id"])
+            if capture_is_disjoint(parent_candidate, workspace_root):
+                return parent_candidate
     finally:
         os.close(parent_fd)
     git_dir = request.get("git_dir")
     git_fd = open_abs_dir(git_dir)
     try:
         if os.fstat(git_fd).st_dev == workspace_info.st_dev:
-            return os.path.join(git_dir, "opencode-untracked-quarantine-capture", request["operation_id"])
+            git_candidate = os.path.join(git_dir, "opencode-untracked-quarantine-capture", request["operation_id"])
+            if capture_is_disjoint(git_candidate, workspace_root):
+                return git_candidate
     finally:
         os.close(git_fd)
     blocked("no hardened out-of-workspace capture root exists on the workspace filesystem")
@@ -262,7 +277,10 @@ def prepare_capture(request):
 
 
 def open_capture(request, workspace_info):
-    fd = ensure_abs_dir(request.get("capture_root"))
+    capture_root = request.get("capture_root")
+    if not capture_is_disjoint(capture_root, request.get("workspace_root")):
+        blocked("capture root overlaps the governed workspace")
+    fd = ensure_abs_dir(capture_root)
     if os.fstat(fd).st_dev != workspace_info.st_dev:
         os.close(fd)
         blocked("capture root is not on the workspace filesystem")
