@@ -2480,7 +2480,7 @@ test("strict admission mismatch survives a plugin restart", async () => {
 
   const second = createOperationGuard({ directory: "/tmp/project-authority", env: {}, stateDirectory })
   await register(second, "parent-b", "build")
-  await assert.rejects(() => before(second, "parent-b", "merge", "bash", { command: `git merge --ff-only ${expected}` }), /strict-start.*new user authority/)
+  await assert.rejects(() => before(second, "parent-b", "merge", "bash", { command: `git merge --ff-only ${expected}` }), /strict-start.*new user starting-revision authority/i)
 })
 
 test("corrupt persisted workspace state fails closed instead of disabling the harness", async () => {
