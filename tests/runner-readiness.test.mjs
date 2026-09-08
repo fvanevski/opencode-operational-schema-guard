@@ -183,8 +183,10 @@ test("privilege, every numeric UID-zero spelling, image, restart, resource, and 
 })
 
 test("effective systempaths, namespaces, devices, named volumes, and tmpfs mount census are enforced", async () => {
-  await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, MaskedPaths: ["/proc/acpi"] } })), /masked\/read-only path lists/i)
-  await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, ReadonlyPaths: ["/proc/sys"] } })), /masked\/read-only path lists/i)
+  await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, MaskedPaths: ["/proc/acpi"] } })), /empty Docker masked\/read-only path lists/i)
+  await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, ReadonlyPaths: ["/proc/sys"] } })), /empty Docker masked\/read-only path lists/i)
+  await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, MaskedPaths: null } })), /explicit empty Docker masked\/read-only path lists/i)
+  await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, ReadonlyPaths: undefined } })), /explicit empty Docker masked\/read-only path lists/i)
   await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, PidMode: "host" } })), /PidMode/i)
   await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, DeviceRequests: [{ Driver: "nvidia" }] } })), /host devices/i)
   await blocked(() => assess(config(), inspect({ Mounts: inspect().Mounts.filter((mount) => mount.Type !== "volume") })), /named-volume set/i)
@@ -208,6 +210,25 @@ test("Docker-persisted security options require NNP plus the exact custom seccom
   await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, SecurityOpt: ["no-new-privileges:true", "seccomp={not-json"] } })), /not valid inline JSON/i)
   await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, SecurityOpt: ["no-new-privileges:true", `seccomp=${JSON.stringify({ ...seccompProfile, defaultAction: "SCMP_ACT_ALLOW" })}`] } })), /differs from frozen host profile/i)
   await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, SecurityOpt: ["no-new-privileges:true", `seccomp=${seccompInline}`, "apparmor=unconfined"] } })), /unexpected SecurityOpt/i)
+})
+
+test("seccomp comparison preserves 64-bit JSON integer distinctions", async (t) => {
+  const directory = await mkdtemp(join(tmpdir(), "ghdev-runner-readiness-64bit-"))
+  t.after(() => rm(directory, { recursive: true, force: true }))
+  const path = join(directory, "seccomp.json")
+  const hostProfile = `{"defaultAction":"SCMP_ACT_ERRNO","syscalls":[{"names":["clone"],"action":"SCMP_ACT_ALLOW","args":[{"index":0,"value":9007199254740993,"op":"SCMP_CMP_EQ"}]}]}`
+  await writeFile(path, hostProfile)
+  const hostHash = createHash("sha256").update(hostProfile).digest("hex")
+  const config64 = config({ seccomp: { path, sha256: hostHash } })
+  const proof64 = await verifySeccompProfile(config64)
+
+  const matching = inspect()
+  matching.HostConfig = { ...matching.HostConfig, SecurityOpt: ["no-new-privileges:true", `seccomp=${hostProfile}`] }
+  assert.equal(assessRunnerContainer(config64, matching, { volumeInspects: volumes(), seccompProof: proof64 }).result, "PASS")
+
+  const different = inspect()
+  different.HostConfig = { ...different.HostConfig, SecurityOpt: ["no-new-privileges:true", `seccomp=${hostProfile.replace("9007199254740993", "9007199254740992")}`] }
+  await blocked(() => assessRunnerContainer(config64, different, { volumeInspects: volumes(), seccompProof: proof64 }), /differs from frozen host profile/i)
 })
 
 test("named volumes reject local-driver bind backing, non-local drivers, and missing writable runner-state coverage", async () => {
