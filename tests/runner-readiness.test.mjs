@@ -82,6 +82,7 @@ function inspect(overrides = {}) {
     Mounts: [
       { Type: "volume", Name: "ghdev-runner-state", Destination: "/runner", RW: true },
       { Type: "volume", Name: "ghdev-runner-work", Destination: "/runner/_work", RW: true },
+      { Type: "tmpfs", Destination: "/tmp", RW: true },
     ],
     State: { Running: true, Status: "running", Health: { Status: "healthy" } },
     ...overrides,
@@ -158,7 +159,7 @@ test("credential-like static environment and host binds fail closed", async () =
 })
 
 test("privilege, every numeric UID-zero spelling, image, restart, resource, and health drift fail closed", async () => {
-  for (const user of ["0:1000", "00:1000", "0000", "root:1000", "ROOT:1000"]) {
+  for (const user of ["0:1000", "00:1000", "0000", "+0:1000", "-0:1000", "root:1000", "ROOT:1000"]) {
     await blocked(() => assess(config(), inspect({ Config: { ...inspect().Config, User: user } })), /non-root user/i)
   }
   await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, Privileged: true } })), /must not be privileged/i)
@@ -170,16 +171,20 @@ test("privilege, every numeric UID-zero spelling, image, restart, resource, and 
   await blocked(() => assess(config(), inspect({ State: { Running: true, Status: "running", Health: { Status: "unhealthy" } } })), /not healthy/i)
 })
 
-test("systempaths, namespaces, devices, and exact volume set are enforced", async () => {
+test("systempaths, namespaces, devices, named volumes, and tmpfs mount census are enforced", async () => {
   await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, SecurityOpt: ["no-new-privileges:true", "seccomp=/etc/ghdev/runner-seccomp.json"] } })), /SecurityOpt/i)
   await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, PidMode: "host" } })), /PidMode/i)
   await blocked(() => assess(config(), inspect({ HostConfig: { ...inspect().HostConfig, DeviceRequests: [{ Driver: "nvidia" }] } })), /host devices/i)
-  await blocked(() => assess(config(), inspect({ Mounts: [] })), /named-volume set/i)
+  await blocked(() => assess(config(), inspect({ Mounts: inspect().Mounts.filter((mount) => mount.Type !== "volume") })), /named-volume set/i)
+  await blocked(() => assess(config(), inspect({ Mounts: inspect().Mounts.filter((mount) => mount.Type !== "tmpfs") })), /tmpfs mount set/i)
+  await blocked(() => assess(config(), inspect({ Mounts: [...inspect().Mounts, { Type: "bind", Source: "/host", Destination: "/unexpected", RW: false }] })), /unexpected mount type/i)
 })
 
-test("named volumes reject local-driver bind backing and non-local drivers", async () => {
+test("named volumes reject local-driver bind backing, non-local drivers, and missing writable runner-state coverage", async () => {
   await blocked(() => assessRunnerContainer(config(), inspect(), { volumeInspects: volumes({ "ghdev-runner-state": { Options: { type: "none", o: "bind", device: "/home/user" } } }), seccompProof: seccompProof() }), /must not use local-driver options/i)
   await blocked(() => assessRunnerContainer(config(), inspect(), { volumeInspects: volumes({ "ghdev-runner-work": { Driver: "custom" } }), seccompProof: seccompProof() }), /local Docker driver/i)
+  await blocked(() => validateRunnerReadinessConfig(config({ allowed_named_volumes: [{ name: "unrelated", destination: "/data", read_only: false }] })), /writable named-volume coverage.*\/runner\/\.runner/i)
+  await blocked(() => validateRunnerReadinessConfig(config({ allowed_named_volumes: [{ name: "state-ro", destination: "/runner", read_only: true }, { name: "work", destination: "/runner/_work", read_only: false }] })), /writable named-volume coverage.*\/runner\/\.runner/i)
 })
 
 test("seccomp bytes must be unchanged since before container creation", async () => {
