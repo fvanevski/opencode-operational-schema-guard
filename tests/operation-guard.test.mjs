@@ -1575,6 +1575,18 @@ test("pending authority fails closed on symlinked shell and direct-edit destinat
     () => before(hooks, "parent-alias-targets", "direct-edit-link", "write", { filePath: targetLink, content: "changed\n" }),
     /exact-head admission is pending/,
   )
+
+  const protectedRoot = await mkdtemp(join(tmpdir(), "opencode-issue27-protected-"))
+  const protectedFile = join(protectedRoot, "guard-state.json")
+  const protectedAlias = join(external, "protected-alias.json")
+  await writeFile(protectedFile, "protected\n")
+  await symlink(protectedFile, protectedAlias)
+  const protectedHooks = createOperationGuard({ directory: workspace, env: {}, protectedMutationRoots: [protectedRoot] })
+  await message(protectedHooks, "parent-protected-alias", "build", `REQUIRED EXACT HEAD: ${target}`)
+  await assert.rejects(
+    () => before(protectedHooks, "parent-protected-alias", "protected-source-alias", "bash", { command: `cp ${protectedAlias} ${external}/protected-copy.json` }),
+    /guard-owned persisted state and recovery material/,
+  )
 })
 
 test("redirection ownership distinguishes descriptor duplication from combined file redirection", async () => {
