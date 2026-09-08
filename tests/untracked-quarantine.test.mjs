@@ -1,10 +1,10 @@
 import assert from "node:assert/strict"
 import { spawnSync } from "node:child_process"
-import { chmod, mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises"
+import { createHash, randomUUID } from "node:crypto"
+import { chmod, mkdir, mkdtemp, readFile, readlink, symlink, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import test from "node:test"
-import { randomUUID } from "node:crypto"
 import { createOperationGuard } from "../lib/operation-guard.mjs"
 import {
   QuarantineBlockedError,
@@ -41,13 +41,13 @@ function authority() {
   return { mode: "target", binding: "a".repeat(40) }
 }
 
-function inspectSpec(root, paths, id = operationID()) {
+function inspectSpec(root, paths, id = operationID(), auth = authority()) {
   return {
     schema_version: UNTRACKED_QUARANTINE_SCHEMA,
     action: "inspect",
     operation_id: id,
     workspace_root: root,
-    authority: authority(),
+    authority: auth,
     paths,
   }
 }
@@ -122,6 +122,25 @@ test("typed quarantine removes only two exact untracked paths and restore reprod
   assert.equal(await readFile(join(root, "outer", "nested", "beta.txt"), "utf8"), "beta\n")
   assert.equal((await (await import("node:fs/promises")).stat(join(root, "outer", "nested", "beta.txt"))).mode & 0o777, 0o640)
   assert.match(git(root, "status", "--porcelain=v1", "--untracked-files=all"), /\?\? alpha\.txt[\s\S]*\?\? outer\/nested\/beta\.txt/)
+})
+
+test("supported symlink material round-trips without dereferencing the link target", async () => {
+  const root = await repo()
+  await writeFile(join(root, "target.txt"), "target\n")
+  await symlink("target.txt", join(root, "link.txt"))
+  const { quarantined, id } = await inspectAndQuarantine(root, ["link.txt"])
+  await assert.rejects(() => readlink(join(root, "link.txt")), /ENOENT/)
+  assert.equal(await readFile(join(root, "target.txt"), "utf8"), "target\n")
+
+  const restored = await runUntrackedQuarantine({
+    ...inspectSpec(root, ["link.txt"], id),
+    action: "restore",
+    receipt_path: receiptPath(id),
+    expected_receipt_sha256: quarantined.receipt_sha256,
+  })
+  assert.equal(restored.result, "PASS")
+  assert.equal(await readlink(join(root, "link.txt")), "target.txt")
+  assert.equal(await readFile(join(root, "target.txt"), "utf8"), "target\n")
 })
 
 test("tracked, staged, conflicted, ignored-only, escaping, overlapping, and special paths block before source removal", async () => {
@@ -242,6 +261,21 @@ test("interrupted removal resumes from the verified receipt and remaining source
   assert.equal(git(root, "status", "--porcelain=v1", "--untracked-files=all"), "")
 })
 
+test("restore blocks before writing when the exact post-quarantine dirty state has drifted", async () => {
+  const root = await repo()
+  await writeFile(join(root, "keep.txt"), "original\n")
+  const { quarantined, id } = await inspectAndQuarantine(root, ["keep.txt"])
+  await writeFile(join(root, "unrelated.txt"), "drift\n")
+  await expectBlocked(() => runUntrackedQuarantine({
+    ...inspectSpec(root, ["keep.txt"], id),
+    action: "restore",
+    receipt_path: receiptPath(id),
+    expected_receipt_sha256: quarantined.receipt_sha256,
+  }), /pre-restore dirty-state fingerprint/i)
+  await assert.rejects(() => readFile(join(root, "keep.txt")), /ENOENT/)
+  assert.equal(await readFile(join(root, "unrelated.txt"), "utf8"), "drift\n")
+})
+
 test("receipt mismatch and restore overwrite both fail closed while quarantine evidence is retained", async () => {
   const root = await repo()
   await writeFile(join(root, "keep.txt"), "original\n")
@@ -286,6 +320,7 @@ test("pending exact-head guard admits only the exact typed helper and preserves 
   const command = `${HELPER} --spec ${specPath}`
   await assert.doesNotReject(() => before(hooks, session, "typed-helper", command))
   await after(hooks, session, "typed-helper", command, "UNTRACKED_QUARANTINE_RESULT=PASS", 0)
+  await assert.rejects(() => before(hooks, session, "typed-helper-reuse", command), /operation_id.*already authenticated|cannot be reused/i)
   const afterState = await continuity(hooks, session)
   assert.match(afterState, new RegExp(`Authority: ${target}`))
   assert.match(afterState, /mode: target/)
@@ -303,6 +338,14 @@ test("pending exact-head guard admits only the exact typed helper and preserves 
 
   await assert.doesNotReject(() => before(hooks, session, "external-copy", "cp /tmp/source.dat /tmp/destination.dat"))
   await assert.doesNotReject(() => before(hooks, session, "external-move", "mv /tmp/source.dat /tmp/destination.dat"))
+  for (const [index, unsafe] of [
+    `cp ${join(root, "untracked.txt")} /tmp/untracked-copy-${id}`,
+    `mv ${join(root, "untracked.txt")} /tmp/untracked-move-${id}`,
+    `rm ${join(root, "untracked.txt")}`,
+  ].entries()) {
+    const output = { args: { command: unsafe, workdir: tmpdir() } }
+    await assert.rejects(() => hooks["tool.execute.before"]({ sessionID: session, callID: `external-workdir-${index}`, tool: "bash" }, output), /exact-head admission is pending|pending exact-head|exact-head target/i, unsafe)
+  }
 
   await assert.rejects(() => before(hooks, session, "malformed-helper", `${HELPER} --spec ${specPath} --extra`), /untracked-quarantine.*exactly|typed untracked/i)
 
@@ -357,4 +400,75 @@ test("pending exact-head guard admits only the exact typed helper and preserves 
   const restoredState = await continuity(restarted, restartedSession)
   assert.match(restoredState, new RegExp(`Authority: ${target}`))
   assert.match(restoredState, /Edit generation: 0; Fresh-review generation: 0; Verify generation: 0/)
+})
+
+test("strict-start pending and mismatch admit inspection, while verified authority rejects it", async () => {
+  const root = await repo()
+  const actualHead = git(root, "rev-parse", "HEAD")
+  const requiredHead = actualHead === "b".repeat(40) ? "c".repeat(40) : "b".repeat(40)
+  const strictAuthority = { mode: "strict-start", binding: requiredHead }
+  await writeFile(join(root, "pending.txt"), "pending\n")
+  const stateDirectory = await mkdtemp(join(tmpdir(), "untracked-quarantine-strict-state-"))
+  const hooks = createOperationGuard({ directory: root, env: {}, stateDirectory })
+  const session = "strict-start-quarantine"
+  await register(hooks, session)
+  await message(hooks, session, `REQUIRED STARTING HEAD: ${requiredHead}`)
+  await mkdir(UNTRACKED_QUARANTINE_SPEC_ROOT, { recursive: true })
+
+  const pendingID = operationID("strict-pending")
+  const pendingPath = join(UNTRACKED_QUARANTINE_SPEC_ROOT, `${pendingID}.json`)
+  await writeFile(pendingPath, `${JSON.stringify(inspectSpec(root, ["pending.txt"], pendingID, strictAuthority))}\n`)
+  const pendingCommand = `${HELPER} --spec ${pendingPath}`
+  await assert.doesNotReject(() => before(hooks, session, "strict-pending", pendingCommand))
+  await after(hooks, session, "strict-pending", pendingCommand, "UNTRACKED_QUARANTINE_RESULT=PASS", 0)
+
+  await assert.doesNotReject(() => before(hooks, session, "strict-proof", "git rev-parse HEAD"))
+  await after(hooks, session, "strict-proof", "git rev-parse HEAD", actualHead, 0)
+  await writeFile(join(root, "mismatch.txt"), "mismatch\n")
+  const mismatchID = operationID("strict-mismatch")
+  const mismatchPath = join(UNTRACKED_QUARANTINE_SPEC_ROOT, `${mismatchID}.json`)
+  await writeFile(mismatchPath, `${JSON.stringify(inspectSpec(root, ["mismatch.txt"], mismatchID, strictAuthority))}\n`)
+  await assert.doesNotReject(() => before(hooks, session, "strict-mismatch", `${HELPER} --spec ${mismatchPath}`))
+
+  const verifiedStateDirectory = await mkdtemp(join(tmpdir(), "untracked-quarantine-verified-state-"))
+  const verified = createOperationGuard({ directory: root, env: {}, stateDirectory: verifiedStateDirectory })
+  const verifiedSession = "strict-start-verified"
+  await register(verified, verifiedSession)
+  await message(verified, verifiedSession, `REQUIRED STARTING HEAD: ${actualHead}`)
+  await assert.doesNotReject(() => before(verified, verifiedSession, "verified-proof", "git rev-parse HEAD"))
+  await after(verified, verifiedSession, "verified-proof", "git rev-parse HEAD", actualHead, 0)
+  await writeFile(join(root, "verified.txt"), "verified\n")
+  const verifiedID = operationID("strict-verified")
+  const verifiedPath = join(UNTRACKED_QUARANTINE_SPEC_ROOT, `${verifiedID}.json`)
+  await writeFile(verifiedPath, `${JSON.stringify(inspectSpec(root, ["verified.txt"], verifiedID, { mode: "strict-start", binding: actualHead }))}\n`)
+  await assert.rejects(() => before(verified, verifiedSession, "strict-verified", `${HELPER} --spec ${verifiedPath}`), /only for the exact persisted pending or mismatched authority/i)
+})
+
+test("corrupt persisted quarantine ledger fails closed across a fresh guard process", async () => {
+  const root = await repo()
+  await writeFile(join(root, "keep.txt"), "keep\n")
+  const stateDirectory = await mkdtemp(join(tmpdir(), "untracked-quarantine-corrupt-state-"))
+  const hooks = createOperationGuard({ directory: root, env: {}, stateDirectory })
+  const session = "quarantine-ledger-corrupt"
+  await register(hooks, session)
+  const target = authority().binding
+  await message(hooks, session, `REQUIRED EXACT HEAD: ${target}`)
+  await mkdir(UNTRACKED_QUARANTINE_SPEC_ROOT, { recursive: true })
+  const id = operationID("ledger-corrupt")
+  const specPath = join(UNTRACKED_QUARANTINE_SPEC_ROOT, `${id}.json`)
+  await writeFile(specPath, `${JSON.stringify(inspectSpec(root, ["keep.txt"], id))}\n`)
+  const command = `${HELPER} --spec ${specPath}`
+  await assert.doesNotReject(() => before(hooks, session, "ledger-inspect", command))
+  await after(hooks, session, "ledger-inspect", command, "UNTRACKED_QUARANTINE_RESULT=PASS", 0)
+  await hooks.dispose()
+
+  const stateKey = createHash("sha256").update(root).digest("hex")
+  await writeFile(join(stateDirectory, `${stateKey}.untracked-quarantine.json`), "{}\n")
+  const restarted = createOperationGuard({ directory: root, env: {}, stateDirectory })
+  const restartedSession = "quarantine-ledger-corrupt-restarted"
+  await register(restarted, restartedSession)
+  const nextID = operationID("ledger-after-corrupt")
+  const nextPath = join(UNTRACKED_QUARANTINE_SPEC_ROOT, `${nextID}.json`)
+  await writeFile(nextPath, `${JSON.stringify(inspectSpec(root, ["keep.txt"], nextID))}\n`)
+  await assert.rejects(() => before(restarted, restartedSession, "ledger-corrupt-block", `${HELPER} --spec ${nextPath}`), /persisted untracked-quarantine ledger is invalid/i)
 })
