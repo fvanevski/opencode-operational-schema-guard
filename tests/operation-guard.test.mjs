@@ -1,7 +1,7 @@
 import assert from "node:assert/strict"
 import { spawnSync } from "node:child_process"
 import { createHash } from "node:crypto"
-import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises"
+import { mkdir, mkdtemp, readFile, symlink, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import test from "node:test"
@@ -1492,6 +1492,7 @@ test("destination-aware shell ownership admits read-only workspace sources while
     `cp ${source} ${external}/copy.txt`,
     `cp ${source} ${external}/`,
     `cp "${source}" "${external}/quoted copy.txt"`,
+    `cp "${workspace}/src/*.txt" ${external}/literal-wildcard.txt`,
     `cp ./src/../src/input.txt ${external}/canonical-relative.txt`,
     `cp -vt${external} ${source}`,
     `cp --target-directory=${external} ${source}`,
@@ -1528,14 +1529,74 @@ test("destination-aware shell ownership admits read-only workspace sources while
     workdir: external,
   }), /exact-head admission is pending/)
 
-  await assert.rejects(
-    () => before(hooks, "parent-destination-aware", "ambiguous-rsync", "bash", { command: `rsync -a ${source} ${external}/ --unsupported-option maybe` }),
-    /exact-head admission is pending/,
-  )
+  for (const [callID, command] of [
+    ["ambiguous-rsync", `rsync -a ${source} ${external}/ --unsupported-option maybe`],
+    ["dynamic-source", `cp $(printf '%s' ${source}) ${external}/dynamic.txt`],
+    ["glob-source", `cp ${workspace}/src/*.txt ${external}/globbed.txt`],
+    ["background-write", `cp /tmp/external-input.txt ${workspace}/background.txt &`],
+  ]) {
+    await assert.rejects(
+      () => before(hooks, "parent-destination-aware", callID, "bash", { command, workdir: callID === "background-write" ? external : undefined }),
+      /exact-head admission is pending/,
+      command,
+    )
+  }
 
   const compacting = { context: [] }
   await hooks["experimental.session.compacting"]({ sessionID: "parent-destination-aware" }, compacting)
   assert.match(compacting.context.join("\n"), /Edit generation: 0; Fresh-review generation: 0; Verify generation: 0/)
+})
+
+test("pending authority fails closed on symlinked shell and direct-edit destinations that can alias the workspace", async () => {
+  const workspace = await mkdtemp(join(tmpdir(), "opencode-issue27-alias-workspace-"))
+  const external = await mkdtemp(join(tmpdir(), "opencode-issue27-alias-external-"))
+  const source = join(workspace, "source.txt")
+  const workspaceTarget = join(workspace, "tracked.txt")
+  const targetLink = join(external, "target-link")
+  const directoryLink = join(external, "workspace-link")
+  await writeFile(source, "source\n")
+  await writeFile(workspaceTarget, "tracked\n")
+  await symlink(workspaceTarget, targetLink)
+  await symlink(workspace, directoryLink, "dir")
+
+  const hooks = createOperationGuard({ directory: workspace, env: {} })
+  const target = "8".repeat(40)
+  await message(hooks, "parent-alias-targets", "build", `REQUIRED EXACT HEAD: ${target}`)
+
+  await assert.rejects(
+    () => before(hooks, "parent-alias-targets", "shell-leaf-link", "bash", { command: `cp ${source} ${targetLink}`, workdir: external }),
+    /exact-head admission is pending/,
+  )
+  await assert.rejects(
+    () => before(hooks, "parent-alias-targets", "shell-ancestor-link", "bash", { command: `cp ${source} ${directoryLink}/nested.txt`, workdir: external }),
+    /exact-head admission is pending/,
+  )
+  await assert.rejects(
+    () => before(hooks, "parent-alias-targets", "direct-edit-link", "write", { filePath: targetLink, content: "changed\n" }),
+    /exact-head admission is pending/,
+  )
+})
+
+test("redirection ownership distinguishes descriptor duplication from combined file redirection", async () => {
+  const workspace = "/tmp/project-redirection-targets"
+  const external = "/tmp/opencode/functional/issue27-redirection"
+  const hooks = createOperationGuard({ directory: workspace, env: {} })
+  const target = "7".repeat(40)
+  await message(hooks, "parent-redirection-targets", "build", `REQUIRED EXACT HEAD: ${target}`)
+
+  await assert.doesNotReject(() => before(hooks, "parent-redirection-targets", "descriptor-plus-external", "bash", {
+    command: `cat ${workspace}/read-only.txt 2>&1 > ${external}/stdout.log`,
+  }))
+  await assert.doesNotReject(() => before(hooks, "parent-redirection-targets", "combined-external", "bash", {
+    command: `cat ${workspace}/read-only.txt >& ${external}/combined.log`,
+  }))
+  await assert.rejects(() => before(hooks, "parent-redirection-targets", "combined-workspace", "bash", {
+    command: `printf changed >& ${workspace}/combined.log`,
+  }), /exact-head admission is pending/)
+  await assert.rejects(() => before(hooks, "parent-redirection-targets", "background-redirection", "bash", {
+    command: `printf changed > ${workspace}/background.log &`,
+    workdir: external,
+  }), /exact-head admission is pending/)
 })
 
 test("Session-4-style pending-authority replay admits disposable functional harness staging only outside the workspace", async () => {
