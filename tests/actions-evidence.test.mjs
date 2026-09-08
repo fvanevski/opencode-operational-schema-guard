@@ -50,7 +50,7 @@ function execution(overrides = {}) {
     controller_workflow_ref: "refs/heads/main",
     controller_commit_sha: controller,
     profile_id: "repository-final-v1",
-    profile_version: 2,
+    profile_version: 3,
     command_fingerprint: commandFingerprint(profile),
     candidate_fingerprints: {
       ".npmrc": "MISSING",
@@ -63,9 +63,11 @@ function execution(overrides = {}) {
     runner_labels: ["self-hosted", "Linux", "X64", "ghdev-verify"],
     environment: {
       image_fingerprint: "f".repeat(64),
-      image_schema: "ghdev-runner-image-v2",
+      image_schema: "ghdev-runner-image-v3",
       image_id: "fixture",
       base_image_digest: `sha256:${"1".repeat(64)}`,
+      listener_mode: "persistent-listener-v1",
+      runner_updates: "disabled",
       actions_runner_version: "2.337.0",
       git_version: "git version 2.43.0",
       node_version: "v22.16.0",
@@ -108,9 +110,13 @@ test("dispatch input fails closed on malformed PR/SHA/profile/controller values"
 })
 
 test("repository-final profile requires the current runner image schema", () => {
-  assert.equal(profile.profile_version, 2)
-  assert.equal(profile.runner.image_schema, "ghdev-runner-image-v2")
-  assert.throws(() => validateProfile({ ...profile, runner: { ...profile.runner, image_schema: "ghdev-runner-image-v1" } }), /runner image schema/)
+  assert.equal(profile.profile_version, 3)
+  assert.equal(profile.runner.image_schema, "ghdev-runner-image-v3")
+  assert.equal(profile.runner.listener_mode, "persistent-listener-v1")
+  assert.equal(profile.runner.runner_updates, "disabled")
+  assert.throws(() => validateProfile({ ...profile, runner: { ...profile.runner, image_schema: "ghdev-runner-image-v2" } }), /runner image schema/)
+  assert.throws(() => validateProfile({ ...profile, runner: { ...profile.runner, listener_mode: "ephemeral" } }), /listener_mode/)
+  assert.throws(() => validateProfile({ ...profile, runner: { ...profile.runner, runner_updates: "automatic" } }), /runner_updates/)
 })
 
 test("same-repository exact PR identity is required and fork/head movement is rejected", () => {
@@ -153,6 +159,8 @@ test("started execution requires complete Git and Python provenance", () => {
   assert.throws(() => validateExecutionRecord(execution({ environment: { ...execution().environment, python_sha256: null } }), profile, dispatch), /python_sha256 missing/)
   assert.throws(() => validateExecutionRecord(execution({ environment: { ...execution().environment, git_version: null } }), profile, dispatch), /git_version provenance missing/)
   assert.throws(() => validateExecutionRecord(execution({ environment: { ...execution().environment, git_sha256: null } }), profile, dispatch), /git_sha256 missing/)
+  assert.throws(() => validateExecutionRecord(execution({ environment: { ...execution().environment, listener_mode: "ephemeral" } }), profile, dispatch), /listener mode mismatch/)
+  assert.throws(() => validateExecutionRecord(execution({ environment: { ...execution().environment, runner_updates: "automatic" } }), profile, dispatch), /runner update mode mismatch/)
 })
 
 test("signal termination is BLOCKED without fabricating a numeric exit", () => {
@@ -177,9 +185,11 @@ test("setup failures can produce a typed BLOCKED execution without fabricating e
     candidate_fingerprints: {},
     environment: {
       image_fingerprint: null,
-      image_schema: "ghdev-runner-image-v2",
+      image_schema: "ghdev-runner-image-v3",
       image_id: null,
       base_image_digest: null,
+      listener_mode: null,
+      runner_updates: null,
       actions_runner_version: null,
       git_version: null,
       node_version: null,

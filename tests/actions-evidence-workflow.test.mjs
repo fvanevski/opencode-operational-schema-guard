@@ -1,6 +1,7 @@
 import assert from "node:assert/strict"
 import { readFile } from "node:fs/promises"
 import test from "node:test"
+import "./runner-readiness.test.mjs"
 
 const workflow = await readFile(new URL("../.github/workflows/ghdev-verify.yml", import.meta.url), "utf8")
 const ci = await readFile(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8")

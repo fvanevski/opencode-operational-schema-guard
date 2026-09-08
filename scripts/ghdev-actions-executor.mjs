@@ -163,6 +163,8 @@ function validateImageMarker(marker) {
   if (!Number.isSafeInteger(marker.node_major) || marker.node_major !== 22) throw new Error("runner image marker node_major must be 22")
   if (!Number.isSafeInteger(marker.python_major) || marker.python_major !== 3) throw new Error("runner image marker python_major must be 3")
   if (marker.sandbox !== "bubblewrap-no-network-v1") throw new Error("runner image marker sandbox mismatch")
+  if (marker.listener_mode !== "persistent-listener-v1") throw new Error("runner image marker listener_mode mismatch")
+  if (marker.runner_updates !== "disabled") throw new Error("runner image marker runner_updates mismatch")
   if (typeof marker.image_id !== "string" || marker.image_id.length < 1 || marker.image_id.length > 128) throw new Error("runner image marker image_id invalid")
   if (typeof marker.base_image_digest !== "string" || !/^sha256:[0-9a-f]{64}$/.test(marker.base_image_digest)) throw new Error("runner image marker base_image_digest must be an exact sha256 digest")
   if (typeof marker.actions_runner_version !== "string" || marker.actions_runner_version.length < 1 || marker.actions_runner_version.length > 64) throw new Error("runner image marker actions_runner_version missing")
@@ -187,6 +189,8 @@ function emptyEnvironment(profile) {
     image_schema: profile.runner.image_schema,
     image_id: null,
     base_image_digest: null,
+    listener_mode: null,
+    runner_updates: null,
     actions_runner_version: null,
     git_version: null,
     node_version: null,
@@ -299,6 +303,8 @@ async function main() {
       image_schema: marker.schema_version,
       image_id: marker.image_id,
       base_image_digest: marker.base_image_digest,
+      listener_mode: marker.listener_mode,
+      runner_updates: marker.runner_updates,
       actions_runner_version: marker.actions_runner_version,
       git_version: gitVersion,
       node_version: nodeVersion,
