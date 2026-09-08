@@ -60,6 +60,7 @@ async function inspectAndQuarantine(root, paths, id = operationID()) {
     expected_workspace_sha256: inspected.workspace_sha256,
     expected_status_sha256: inspected.status_sha256,
     expected_paths_sha256: inspected.paths_sha256,
+    expected_inventory_sha256: inspected.inventory_sha256,
   })
   return { inspected, quarantined, id }
 }
@@ -189,6 +190,7 @@ test("dirty-state fingerprint drift and pre-existing mismatched quarantine data 
     expected_workspace_sha256: inspected.workspace_sha256,
     expected_status_sha256: inspected.status_sha256,
     expected_paths_sha256: inspected.paths_sha256,
+    expected_inventory_sha256: inspected.inventory_sha256,
   }), /dirty-state.*changed/i)
   assert.equal(await readFile(join(root, "first.txt"), "utf8"), "first\n")
 
@@ -205,8 +207,39 @@ test("dirty-state fingerprint drift and pre-existing mismatched quarantine data 
     expected_workspace_sha256: inspected2.workspace_sha256,
     expected_status_sha256: inspected2.status_sha256,
     expected_paths_sha256: inspected2.paths_sha256,
+    expected_inventory_sha256: inspected2.inventory_sha256,
   }), /existing quarantine data does not match/i)
   assert.equal(await readFile(join(root2, "first.txt"), "utf8"), "first\n")
+})
+
+test("interrupted removal resumes from the verified receipt and remaining source subset", async () => {
+  const root = await repo()
+  await writeFile(join(root, "first.txt"), "first\n")
+  await writeFile(join(root, "second.txt"), "second\n")
+  const id = operationID("resume")
+  const inspected = await runUntrackedQuarantine(inspectSpec(root, ["first.txt", "second.txt"], id))
+  const spec = {
+    ...inspectSpec(root, ["first.txt", "second.txt"], id),
+    action: "quarantine",
+    expected_workspace_sha256: inspected.workspace_sha256,
+    expected_status_sha256: inspected.status_sha256,
+    expected_paths_sha256: inspected.paths_sha256,
+    expected_inventory_sha256: inspected.inventory_sha256,
+  }
+  await assert.rejects(() => runUntrackedQuarantine(spec, {
+    afterRemove: ({ index }) => {
+      if (index === 0) throw new Error("simulated process interruption")
+    },
+  }), /simulated process interruption/)
+  await assert.rejects(() => readFile(join(root, "first.txt")), /ENOENT/)
+  assert.equal(await readFile(join(root, "second.txt"), "utf8"), "second\n")
+  assert.equal(await readFile(receiptPath(id), "utf8").then(() => true), true)
+
+  const resumed = await runUntrackedQuarantine(spec)
+  assert.equal(resumed.result, "PASS")
+  assert.equal(resumed.action, "quarantine")
+  assert.equal(resumed.inventory_sha256, inspected.inventory_sha256)
+  assert.equal(git(root, "status", "--porcelain=v1", "--untracked-files=all"), "")
 })
 
 test("receipt mismatch and restore overwrite both fail closed while quarantine evidence is retained", async () => {
