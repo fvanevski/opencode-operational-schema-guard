@@ -4,6 +4,7 @@ import {
   assessRunnerContainer,
   RunnerReadinessBlockedError,
   validateRunnerReadinessConfig,
+  validateRunnerSettings,
 } from "../lib/runner-readiness.mjs"
 
 const image = `sha256:${"a".repeat(64)}`
@@ -17,6 +18,10 @@ function config(overrides = {}) {
     expected_image_id: image,
     github_runner_labels: ["self-hosted", "Linux", "X64", "ghdev-verify"],
     network_mode: "bridge",
+    runner_settings_path: "/opt/actions-runner/.runner",
+    runner_listener_path: "/opt/actions-runner/bin/Runner.Listener",
+    runner_listener_sha256: "c".repeat(64),
+    runner_version: "2.337.0",
     healthcheck_test: ["CMD-SHELL", "pgrep -u 1000 -f 'Runner.Listener' >/dev/null"],
     seccomp: { path: "/etc/ghdev/runner-seccomp.json", sha256: seccomp },
     resources: { memory_bytes: 4294967296, nano_cpus: 4000000000, pids_limit: 1024 },
@@ -89,6 +94,7 @@ async function blocked(fn, pattern) {
 
 test("persistent hardened listener fixture is admitted", () => {
   assert.equal(validateRunnerReadinessConfig(config()).schema_version, "ghdev-runner-readiness-v1")
+  assert.doesNotThrow(() => validateRunnerSettings(config(), { DisableUpdate: true, Ephemeral: false, GitHubUrl: "https://github.com/fvanevski/opencode-operational-schema-guard", AgentName: "ghdev-verify-runner", WorkFolder: "_work" }))
   const result = assessRunnerContainer(config(), inspect())
   assert.equal(result.result, "PASS")
   assert.equal(result.running, true)
@@ -117,7 +123,16 @@ test("systempaths, seccomp, namespaces, devices, and exact volume set are enforc
   await blocked(() => assessRunnerContainer(config(), inspect({ Mounts: [] })), /named-volume set/i)
 })
 
-test("config requires exact GitHub routing labels and normalized absolute seccomp path", async () => {
+test("config requires exact GitHub routing labels, isolated network mode, and normalized absolute paths", async () => {
   await blocked(() => validateRunnerReadinessConfig(config({ github_runner_labels: ["self-hosted", "ghdev-verify"] })), /github_runner_labels/i)
+  await blocked(() => validateRunnerReadinessConfig(config({ network_mode: "container:other" })), /cannot share another container namespace/i)
   await blocked(() => validateRunnerReadinessConfig(config({ seccomp: { path: "/etc/ghdev/../bad.json", sha256: seccomp } })), /normalized absolute path/i)
+})
+
+test("runner registration settings prove persistent update-disabled repository binding", async () => {
+  const valid = { DisableUpdate: true, Ephemeral: false, GitHubUrl: "https://github.com/fvanevski/opencode-operational-schema-guard", AgentName: "ghdev-verify-runner", WorkFolder: "_work" }
+  assert.doesNotThrow(() => validateRunnerSettings(config(), valid))
+  await blocked(() => validateRunnerSettings(config(), { ...valid, DisableUpdate: false }), /DisableUpdate=true/i)
+  await blocked(() => validateRunnerSettings(config(), { ...valid, Ephemeral: true }), /must not be ephemeral/i)
+  await blocked(() => validateRunnerSettings(config(), { ...valid, GitHubUrl: "https://github.com/other/repo" }), /GitHubUrl/i)
 })
