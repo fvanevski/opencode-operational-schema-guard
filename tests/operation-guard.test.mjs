@@ -399,26 +399,14 @@ test("explicit Targets isolate target accounting from prose paths and aliases", 
   assert.throws(() => validateTaskPacket(taskArgs({ prompt: tooMany })), /names 9 filesystem targets/)
 })
 
-test("explicit multi-path bullets count every resolved path for Fresh-review and Verify ceilings", () => {
-  const freshTargets = [
-    "README.md and index.mjs",
-    ...Array.from({ length: 9 }, (_, index) => `lib/review-${index}.mjs`),
-  ]
-  const freshPrompt = `Scope: bounded changed-file review\nTargets:\n${freshTargets.map((target) => `- ${target}`).join("\n")}\nQuestions:\n- Is the bounded change safe?\nStop condition: every admitted target is reviewed.`
-  assert.throws(
-    () => validateTaskPacket(taskArgs({ subagent_type: "fresh-review", prompt: freshPrompt })),
-    /names 11 filesystem targets; limit is 10/,
-  )
-
-  const verifyTargets = [
-    "README.md and index.mjs",
-    ...Array.from({ length: 23 }, (_, index) => `tests/verify-${index}.mjs`),
-  ]
-  const verifyPrompt = `Scope: bounded verification targets\nTargets:\n${verifyTargets.map((target) => `- ${target}`).join("\n")}\nQuestions:\n- Do the requested gates cover every listed target?\nStop condition: every target is accounted for.`
-  assert.throws(
-    () => validateTaskPacket(taskArgs({ subagent_type: "verify", prompt: verifyPrompt })),
-    /names 25 filesystem targets; limit is 24/,
-  )
+test("explicit multi-path bullets fail closed for Fresh-review and Verify instead of undercounting coverage", () => {
+  for (const type of ["fresh-review", "verify"]) {
+    const prompt = `Scope: bounded explicit targets\nTargets:\n- README.md and index.mjs\nQuestions:\n- Is every named target covered?\nStop condition: every target is accounted for.`
+    assert.throws(
+      () => validateTaskPacket(taskArgs({ subagent_type: type, prompt })),
+      new RegExp(`${type} target bullet 1 resolves to 2 filesystem targets; each explicit Targets bullet must name at most one path`),
+    )
+  }
 })
 
 test("Verify manifest preflight rejects wrapper-managed env prefixes", async () => {
