@@ -10,7 +10,7 @@ import {
   validateDispatchInput,
   validateProfile,
 } from "../lib/actions-evidence.mjs"
-import { createOperationGuard } from "../lib/operation-guard.mjs"
+import { createOperationGuard, validateTaskPacket } from "../lib/operation-guard.mjs"
 
 const HEAD = "a".repeat(40)
 const BASE = "b".repeat(40)
@@ -286,6 +286,172 @@ test("unbound Explore partitions thirteen finite targets before target-limit rej
       }),
       /PARTITION_REQUIRED/,
     )
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+})
+
+test("live Issue 29 packet partitions root-relative and nested targets before generic rejection", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "issue29-live-root-targets-"))
+  try {
+    for (const root of ["lib", "scripts", "tests"]) await mkdir(join(directory, root), { recursive: true })
+    const targets = [
+      "README.md",
+      "index.mjs",
+      "lib/config-contract.mjs",
+      "lib/context-policy.mjs",
+      "lib/hybrid-workflow.mjs",
+      "lib/operation-guard-core.mjs",
+      "lib/operation-guard.mjs",
+      "lib/policy-spec.mjs",
+      "scripts/plan-child-work.mjs",
+      "scripts/validate-config.mjs",
+      "tests/hybrid-workflow-guard.test.mjs",
+      "tests/hybrid-workflow.test.mjs",
+      "tests/operation-guard.test.mjs",
+    ]
+    for (const relative of targets) await writeFile(join(directory, relative), `fixture for ${relative}\n`)
+    const prompt = `Scope: Inspect only the 13 explicitly listed files below to identify where the deployed operational-schema plugin defines Explore child planning, Explore execution guidance, and runtime enforcement. Do not expand beyond these targets.\n\nQuestions:\n- Which listed files define or invoke deterministic Explore child planning/partitioning?\n- Which listed files define the child guidance for filesystem discovery and the runtime correction path for unsupported discovery?\n- For each listed target, state whether it materially participates in those behaviors or is only supporting/test/documentation context.\n\nTargets:\n${targets.map((target) => `- ${target}`).join("\n")}\n\nStop condition: Stop once every listed target has been accounted for and the three questions are answered. Do not inspect unrelated files.`
+    const hooks = createOperationGuard({ directory, env: {} })
+    await register(hooks, "parent", "build")
+    let error
+    try {
+      await before(hooks, "parent", "live-root-targets", "task", {
+        subagent_type: "explore",
+        description: "Inspect thirteen bounded live acceptance targets",
+        prompt,
+      })
+    } catch (caught) {
+      error = caught
+    }
+    assert.ok(error)
+    const match = error.message.match(/deterministic planner returned PARTITION_REQUIRED: (\{.*\}) OPERATIONAL_PACKET_ACTION:/s)
+    assert.ok(match, error.message)
+    const details = JSON.parse(match[1])
+    assert.equal(details.coverage.required_targets, 13)
+    assert.equal(details.coverage.planned_targets, 13)
+    assert.equal(details.coverage.unique_complete, true)
+    assert.ok(details.partitions.length >= 2)
+    assert.ok(details.partitions.every((partition) => partition.target_paths.length <= 8))
+    assert.doesNotMatch(error.message, /"head_sha"/)
+    assert.deepEqual(new Set(details.partitions.flatMap((partition) => partition.target_paths)), new Set(targets))
+    for (const partition of details.partitions) {
+      for (const target of partition.target_paths) assert.match(partition.packet, new RegExp(`^- ${target.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "m"))
+      const preflight = await before(hooks, "parent", `live-canonical-${partition.index}`, "task", {
+        subagent_type: "explore",
+        description: "Inspect one canonical live acceptance partition",
+        prompt: partition.packet,
+      })
+      assert.ok(preflight.args.prompt.includes("Prefer built-in read/grep/glob for discovery"))
+    }
+
+    const exactHooks = createOperationGuard({ directory, env: {} })
+    await message(exactHooks, "parent", "build", `HEAD_SHA: ${HEAD}`)
+    await assert.rejects(
+      () => before(exactHooks, "parent", "live-root-targets-exact", "task", {
+        subagent_type: "explore",
+        description: "Inspect thirteen bounded exact-authority targets",
+        prompt,
+      }),
+      /deterministic planner returned PARTITION_REQUIRED.*planned_targets.*13/s,
+    )
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+})
+
+test("explicit target counting stays independent of unrelated host-root entries", () => {
+  assert.throws(() => validateTaskPacket({
+    subagent_type: "explore",
+    description: "Count opaque explicit targets without host-root lookup",
+    prompt: `Scope: inspect nine bounded opaque targets\nQuestions:\n- What do the targets represent?\nStop condition: every target entry is addressed.\nTargets:\n${Array.from({ length: 9 }, () => "- tmp").join("\n")}`,
+  }), /names 9 filesystem targets; limit is 8/)
+})
+
+test("explicit root-target planning does not reinterpret dot traversal tokens as bounded filesystem targets", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "issue29-root-dot-targets-"))
+  try {
+    const hooks = createOperationGuard({ directory, env: {} })
+    await register(hooks, "parent", "build")
+    await assert.doesNotReject(() => before(hooks, "parent", "dot-target", "task", {
+      subagent_type: "explore",
+      description: "Preserve legacy opaque target handling",
+      prompt: "Scope: inspect one explicit bounded target\nQuestions:\n- What does the target represent?\nStop condition: the target is addressed.\nTargets:\n- .",
+    }))
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+})
+
+test("unbound Explore rejects root-level multi-path target bullets rather than undercounting them", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "issue29-unbound-root-multipath-"))
+  try {
+    await mkdir(join(directory, "lib"), { recursive: true })
+    await writeFile(join(directory, "README.md"), "readme\n")
+    await writeFile(join(directory, "index.mjs"), "export {}\n")
+    await writeFile(join(directory, "lib/a.mjs"), "export const a = 1\n")
+    await writeFile(join(directory, "lib/b.mjs"), "export const b = 2\n")
+    const hooks = createOperationGuard({ directory, env: {} })
+    await register(hooks, "parent", "build")
+    const targetBullets = [
+      "README.md and index.mjs",
+      "README.md index.mjs",
+      "README.md;index.mjs",
+      "README.md:index.mjs",
+      "README.md+index.mjs",
+      "README.md|index.mjs",
+      "README.md&index.mjs",
+      "README.md+lib/a.mjs",
+      "lib/a.mjs|README.md",
+      "lib/a.mjs&lib/b.mjs",
+      "lib/a.mjs:index.mjs",
+    ]
+    for (const [index, targetBullet] of targetBullets.entries()) {
+      await assert.rejects(
+        () => before(hooks, "parent", `root-multi-path-target-${index}`, "task", {
+          subagent_type: "explore",
+          description: "Reject paired root-level targets in one bullet",
+          prompt: `Scope: inspect only the explicitly paired root targets\nQuestions:\n- What do the targets contain?\nStop condition: both targets are addressed.\nTargets:\n- ${targetBullet}`,
+        }),
+        /UNREPRESENTABLE.*unbound-explore-target-bullet-must-resolve-to-one-path/s,
+      )
+    }
+
+    const exactHooks = createOperationGuard({ directory, env: {} })
+    await message(exactHooks, "parent", "build", `HEAD_SHA: ${HEAD}`)
+    for (const [index, targetBullet] of targetBullets.entries()) {
+      await assert.rejects(
+        () => before(exactHooks, "parent", `exact-root-multi-path-target-${index}`, "task", {
+          subagent_type: "explore",
+          description: "Reject paired exact-authority root targets in one bullet",
+          prompt: `Scope: inspect only the explicitly paired root targets\nQuestions:\n- What do the targets contain?\nStop condition: both targets are addressed.\nTargets:\n- ${targetBullet}`,
+        }),
+        /explore target bullet 1 resolves to 2 filesystem targets; each explicit Targets bullet must name at most one path/,
+      )
+    }
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+})
+
+test("exact Fresh-review and Verify fail closed on multiple existing extensionless root targets", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "issue29-extensionless-root-count-"))
+  try {
+    await writeFile(join(directory, "Makefile"), "all:\n\t@true\n")
+    await writeFile(join(directory, "Dockerfile"), "FROM scratch\n")
+    const hooks = createOperationGuard({ directory, env: {} })
+    await message(hooks, "parent", "build", `HEAD_SHA: ${HEAD}`)
+
+    for (const type of ["fresh-review", "verify"]) {
+      await assert.rejects(
+        () => before(hooks, "parent", `extensionless-${type}-multi-path`, "task", {
+          subagent_type: type,
+          description: "Reject ambiguous extensionless root targets",
+          prompt: `Scope: inspect the bounded listed targets\nQuestions:\n- Are all listed targets covered?\nStop condition: every listed target is accounted for.\nTargets:\n- Makefile and Dockerfile`,
+        }),
+        new RegExp(`${type} target bullet 1 resolves to 2 filesystem targets; each explicit Targets bullet must name at most one path`),
+      )
+    }
   } finally {
     await rm(directory, { recursive: true, force: true })
   }

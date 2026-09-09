@@ -341,6 +341,7 @@ test("Verify accepts a bounded 24-target packet and rejects a 25th target", () =
 test("path extraction strips prose punctuation and ignores slash-separated non-path labels", () => {
   const paths = extractPaths("Read /tmp/opencode/verify/i307/commands.md. Do not use --start/--down-after; report passed/failed/skipped.", "/")
   assert.deepEqual([...paths], ["/tmp/opencode/verify/i307/commands.md"])
+  assert.deepEqual([...extractPaths("README.md index.mjs package.json", "/repo")], [])
 
   const prompt = `Scope: integration gates\nQuestions:\n- Do ${Array.from({ length: 13 }, (_, index) => `tests/integration/f${index}.py`).join(" ")} pass/failed/skipped?\nStop condition: report failures/skips without --start/--down-after.`
   assert.doesNotThrow(() => validateTaskPacket(taskArgs({ subagent_type: "verify", prompt })))
@@ -396,6 +397,47 @@ test("explicit Targets isolate target accounting from prose paths and aliases", 
   assert.doesNotThrow(() => validateTaskPacket(taskArgs({ prompt })))
   const tooMany = `Scope: broad mapping\nTargets:\n${Array.from({ length: 9 }, (_, index) => `- src/f${index}.py`).join("\n")}\nQuestions:\n- Trace ownership.\nStop condition: all targets are resolved.`
   assert.throws(() => validateTaskPacket(taskArgs({ prompt: tooMany })), /names 9 filesystem targets/)
+})
+
+test("explicit multi-path bullets fail closed for Fresh-review and Verify instead of undercounting coverage", () => {
+  const targetBullets = [
+    "README.md and index.mjs",
+    "README.md:index.mjs",
+    "README.md+index.mjs",
+    "README.md|index.mjs",
+    "README.md&index.mjs",
+    "README.md+lib/a.mjs",
+    "lib/a.mjs|README.md",
+    "lib/a.mjs&lib/b.mjs",
+    "lib/a.mjs:index.mjs",
+  ]
+  for (const type of ["fresh-review", "verify"]) {
+    for (const targetBullet of targetBullets) {
+      const prompt = `Scope: bounded explicit targets\nTargets:\n- ${targetBullet}\nQuestions:\n- Is every named target covered?\nStop condition: every target is accounted for.`
+      assert.throws(
+        () => validateTaskPacket(taskArgs({ subagent_type: type, prompt })),
+        new RegExp(`${type} target bullet 1 resolves to 2 filesystem targets; each explicit Targets bullet must name at most one path`),
+        targetBullet,
+      )
+    }
+  }
+})
+
+test("explicit target accounting excludes complete URL spans from local filesystem targets", () => {
+  const targetBullets = [
+    "https://example.test/?from=README.md&to=index.mjs",
+    "https://example.test/#README.md+index.mjs",
+    "https://example.test/lib/a.mjs?from=README.md&to=index.mjs",
+  ]
+  for (const type of ["explore", "fresh-review", "verify"]) {
+    for (const targetBullet of targetBullets) {
+      const prompt = `Scope: inspect one bounded explicit reference\nTargets:\n- ${targetBullet}\nQuestions:\n- What does this reference identify?\nStop condition: the explicit reference is accounted for.`
+      assert.doesNotThrow(
+        () => validateTaskPacket(taskArgs({ subagent_type: type, prompt })),
+        targetBullet,
+      )
+    }
+  }
 })
 
 test("Verify manifest preflight rejects wrapper-managed env prefixes", async () => {
