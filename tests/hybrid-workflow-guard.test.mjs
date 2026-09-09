@@ -405,6 +405,39 @@ test("unbound Explore rejects root-level multi-path target bullets rather than u
   }
 })
 
+test("exact Fresh-review and Verify count existing extensionless root files before admission", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "issue29-extensionless-root-count-"))
+  try {
+    await mkdir(join(directory, "lib"), { recursive: true })
+    await writeFile(join(directory, "Makefile"), "all:\n\t@true\n")
+    await writeFile(join(directory, "Dockerfile"), "FROM scratch\n")
+    const hooks = createOperationGuard({ directory, env: {} })
+    await message(hooks, "parent", "build", `HEAD_SHA: ${HEAD}`)
+
+    const freshTargets = ["Makefile and Dockerfile", ...Array.from({ length: 9 }, (_, index) => `lib/review-${index}.mjs`)]
+    await assert.rejects(
+      () => before(hooks, "parent", "extensionless-fresh-overflow", "task", {
+        subagent_type: "fresh-review",
+        description: "Review bounded extensionless root targets",
+        prompt: `Scope: review the bounded listed targets\nQuestions:\n- Is the bounded change safe?\nStop condition: every listed target is reviewed.\nTargets:\n${freshTargets.map((target) => `- ${target}`).join("\n")}`,
+      }),
+      /names 11 filesystem targets; limit is 10/,
+    )
+
+    const verifyTargets = ["Makefile and Dockerfile", ...Array.from({ length: 23 }, (_, index) => `lib/verify-${index}.mjs`)]
+    await assert.rejects(
+      () => before(hooks, "parent", "extensionless-verify-overflow", "task", {
+        subagent_type: "verify",
+        description: "Verify bounded extensionless root targets",
+        prompt: `Scope: verify the bounded listed targets\nQuestions:\n- Are all listed targets covered?\nStop condition: every listed target is accounted for.\nTargets:\n${verifyTargets.map((target) => `- ${target}`).join("\n")}`,
+      }),
+      /names 25 filesystem targets; limit is 24/,
+    )
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+})
+
 test("unbound Explore rejects multi-path target bullets instead of falling back with an undercounted target ceiling", async () => {
   const directory = await mkdtemp(join(tmpdir(), "issue29-unbound-multipath-"))
   try {
