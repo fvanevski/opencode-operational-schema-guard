@@ -400,12 +400,22 @@ test("explicit Targets isolate target accounting from prose paths and aliases", 
 })
 
 test("explicit multi-path bullets fail closed for Fresh-review and Verify instead of undercounting coverage", () => {
+  const targetBullets = [
+    "README.md and index.mjs",
+    "README.md:index.mjs",
+    "README.md+index.mjs",
+    "README.md|index.mjs",
+    "README.md&index.mjs",
+  ]
   for (const type of ["fresh-review", "verify"]) {
-    const prompt = `Scope: bounded explicit targets\nTargets:\n- README.md and index.mjs\nQuestions:\n- Is every named target covered?\nStop condition: every target is accounted for.`
-    assert.throws(
-      () => validateTaskPacket(taskArgs({ subagent_type: type, prompt })),
-      new RegExp(`${type} target bullet 1 resolves to 2 filesystem targets; each explicit Targets bullet must name at most one path`),
-    )
+    for (const targetBullet of targetBullets) {
+      const prompt = `Scope: bounded explicit targets\nTargets:\n- ${targetBullet}\nQuestions:\n- Is every named target covered?\nStop condition: every target is accounted for.`
+      assert.throws(
+        () => validateTaskPacket(taskArgs({ subagent_type: type, prompt })),
+        new RegExp(`${type} target bullet 1 resolves to 2 filesystem targets; each explicit Targets bullet must name at most one path`),
+        targetBullet,
+      )
+    }
   }
 })
 

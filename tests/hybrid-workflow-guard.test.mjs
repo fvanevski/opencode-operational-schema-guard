@@ -390,7 +390,16 @@ test("unbound Explore rejects root-level multi-path target bullets rather than u
     await writeFile(join(directory, "index.mjs"), "export {}\n")
     const hooks = createOperationGuard({ directory, env: {} })
     await register(hooks, "parent", "build")
-    for (const [index, targetBullet] of ["README.md and index.mjs", "README.md index.mjs", "README.md; index.mjs"].entries()) {
+    const targetBullets = [
+      "README.md and index.mjs",
+      "README.md index.mjs",
+      "README.md;index.mjs",
+      "README.md:index.mjs",
+      "README.md+index.mjs",
+      "README.md|index.mjs",
+      "README.md&index.mjs",
+    ]
+    for (const [index, targetBullet] of targetBullets.entries()) {
       await assert.rejects(
         () => before(hooks, "parent", `root-multi-path-target-${index}`, "task", {
           subagent_type: "explore",
@@ -398,6 +407,19 @@ test("unbound Explore rejects root-level multi-path target bullets rather than u
           prompt: `Scope: inspect only the explicitly paired root targets\nQuestions:\n- What do the targets contain?\nStop condition: both targets are addressed.\nTargets:\n- ${targetBullet}`,
         }),
         /UNREPRESENTABLE.*unbound-explore-target-bullet-must-resolve-to-one-path/s,
+      )
+    }
+
+    const exactHooks = createOperationGuard({ directory, env: {} })
+    await message(exactHooks, "parent", "build", `HEAD_SHA: ${HEAD}`)
+    for (const [index, targetBullet] of targetBullets.entries()) {
+      await assert.rejects(
+        () => before(exactHooks, "parent", `exact-root-multi-path-target-${index}`, "task", {
+          subagent_type: "explore",
+          description: "Reject paired exact-authority root targets in one bullet",
+          prompt: `Scope: inspect only the explicitly paired root targets\nQuestions:\n- What do the targets contain?\nStop condition: both targets are addressed.\nTargets:\n- ${targetBullet}`,
+        }),
+        /explore target bullet 1 resolves to 2 filesystem targets; each explicit Targets bullet must name at most one path/,
       )
     }
   } finally {
