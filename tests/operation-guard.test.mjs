@@ -406,6 +406,10 @@ test("explicit multi-path bullets fail closed for Fresh-review and Verify instea
     "README.md+index.mjs",
     "README.md|index.mjs",
     "README.md&index.mjs",
+    "README.md+lib/a.mjs",
+    "lib/a.mjs|README.md",
+    "lib/a.mjs&lib/b.mjs",
+    "lib/a.mjs:index.mjs",
   ]
   for (const type of ["fresh-review", "verify"]) {
     for (const targetBullet of targetBullets) {
@@ -413,6 +417,23 @@ test("explicit multi-path bullets fail closed for Fresh-review and Verify instea
       assert.throws(
         () => validateTaskPacket(taskArgs({ subagent_type: type, prompt })),
         new RegExp(`${type} target bullet 1 resolves to 2 filesystem targets; each explicit Targets bullet must name at most one path`),
+        targetBullet,
+      )
+    }
+  }
+})
+
+test("explicit target accounting excludes complete URL spans from local filesystem targets", () => {
+  const targetBullets = [
+    "https://example.test/?from=README.md&to=index.mjs",
+    "https://example.test/#README.md+index.mjs",
+    "https://example.test/lib/a.mjs?from=README.md&to=index.mjs",
+  ]
+  for (const type of ["explore", "fresh-review", "verify"]) {
+    for (const targetBullet of targetBullets) {
+      const prompt = `Scope: inspect one bounded explicit reference\nTargets:\n- ${targetBullet}\nQuestions:\n- What does this reference identify?\nStop condition: the explicit reference is accounted for.`
+      assert.doesNotThrow(
+        () => validateTaskPacket(taskArgs({ subagent_type: type, prompt })),
         targetBullet,
       )
     }

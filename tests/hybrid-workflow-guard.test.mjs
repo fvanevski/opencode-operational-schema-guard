@@ -386,8 +386,11 @@ test("explicit root-target planning does not reinterpret dot traversal tokens as
 test("unbound Explore rejects root-level multi-path target bullets rather than undercounting them", async () => {
   const directory = await mkdtemp(join(tmpdir(), "issue29-unbound-root-multipath-"))
   try {
+    await mkdir(join(directory, "lib"), { recursive: true })
     await writeFile(join(directory, "README.md"), "readme\n")
     await writeFile(join(directory, "index.mjs"), "export {}\n")
+    await writeFile(join(directory, "lib/a.mjs"), "export const a = 1\n")
+    await writeFile(join(directory, "lib/b.mjs"), "export const b = 2\n")
     const hooks = createOperationGuard({ directory, env: {} })
     await register(hooks, "parent", "build")
     const targetBullets = [
@@ -398,6 +401,10 @@ test("unbound Explore rejects root-level multi-path target bullets rather than u
       "README.md+index.mjs",
       "README.md|index.mjs",
       "README.md&index.mjs",
+      "README.md+lib/a.mjs",
+      "lib/a.mjs|README.md",
+      "lib/a.mjs&lib/b.mjs",
+      "lib/a.mjs:index.mjs",
     ]
     for (const [index, targetBullet] of targetBullets.entries()) {
       await assert.rejects(
