@@ -612,6 +612,42 @@ test("pending exact-head guard admits typed quarantine and read-only outward sta
   assert.match(restoredState, /Edit generation: 0; Fresh-review generation: 0; Verify generation: 0/)
 })
 
+test("strict-start same-SHA reauthorization invalidates in-flight quarantine authentication across guard instances", async () => {
+  const root = await repo()
+  const actualHead = git(root, "rev-parse", "HEAD")
+  const requiredHead = actualHead === "b".repeat(40) ? "c".repeat(40) : "b".repeat(40)
+  const strictAuthority = { mode: "strict-start", binding: requiredHead }
+  await writeFile(join(root, "stale.txt"), "stale\n")
+  const stateDirectory = await mkdtemp(join(tmpdir(), "untracked-quarantine-epoch-state-"))
+  const first = createOperationGuard({ directory: root, env: {}, stateDirectory })
+  const firstSession = "strict-start-epoch-first"
+  await register(first, firstSession)
+  await message(first, firstSession, `REQUIRED STARTING HEAD: ${requiredHead}`)
+  await before(first, firstSession, "mismatch-proof", "git rev-parse HEAD")
+  await after(first, firstSession, "mismatch-proof", "git rev-parse HEAD", actualHead, 0)
+
+  await mkdir(UNTRACKED_QUARANTINE_SPEC_ROOT, { recursive: true })
+  const id = operationID("strict-epoch")
+  const specPath = join(UNTRACKED_QUARANTINE_SPEC_ROOT, `${id}.json`)
+  await writeFile(specPath, `${JSON.stringify(inspectSpec(root, ["stale.txt"], id, strictAuthority))}\n`)
+  const command = `${HELPER} --spec ${specPath}`
+  await assert.doesNotReject(() => before(first, firstSession, "stale-inspect", command))
+
+  const second = createOperationGuard({ directory: root, env: {}, stateDirectory })
+  const secondSession = "strict-start-epoch-second"
+  await register(second, secondSession)
+  await message(second, secondSession, `REQUIRED STARTING HEAD SHA: ${requiredHead}`)
+
+  await assert.rejects(
+    () => after(first, firstSession, "stale-inspect", command, "UNTRACKED_QUARANTINE_RESULT=PASS", 0),
+    /untracked-quarantine completion is stale because authority epoch changed from 1 to 2/i,
+  )
+
+  await assert.doesNotReject(() => before(second, secondSession, "fresh-inspect", command))
+  await after(second, secondSession, "fresh-inspect", command, "UNTRACKED_QUARANTINE_RESULT=PASS", 0)
+  await assert.rejects(() => before(second, secondSession, "fresh-inspect-reuse", command), /operation_id.*already authenticated|cannot be reused/i)
+})
+
 test("strict-start pending and mismatch admit inspection, while verified authority rejects it", async () => {
   const root = await repo()
   const actualHead = git(root, "rev-parse", "HEAD")

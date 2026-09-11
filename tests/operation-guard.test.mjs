@@ -1989,6 +1989,100 @@ test("strict starting-head admission blocks reconciliation after a proved mismat
   assert.doesNotMatch(notice, /TARGET RECOVERY|git switch --detach/)
 })
 
+test("fresh same-SHA strict-start declaration after mismatch opens a new authority epoch", async () => {
+  const hooks = createOperationGuard({ directory: "/tmp/project-strict-retry", env: {} })
+  const expected = "a".repeat(40)
+  const observed = "b".repeat(40)
+  const proofArgs = { command: "git rev-parse HEAD" }
+
+  await message(hooks, "parent-strict-retry", "build", `REQUIRED STARTING HEAD: ${expected}`)
+  await before(hooks, "parent-strict-retry", "mismatch-proof", "bash", proofArgs)
+  await before(hooks, "parent-strict-retry", "old-inflight-proof", "bash", proofArgs)
+  await after(hooks, "parent-strict-retry", "mismatch-proof", "bash", proofArgs, { output: `${observed}\n`, metadata: { exit: 0 } })
+
+  await message(hooks, "parent-strict-retry", "build", `REQUIRED STARTING HEAD: ${expected}`)
+  const pending = { context: [] }
+  await hooks["experimental.session.compacting"]({ sessionID: "parent-strict-retry" }, pending)
+  assert.match(pending.context.join("\n"), /Authority admission: pending; mode: strict-start/)
+
+  const stale = await after(hooks, "parent-strict-retry", "old-inflight-proof", "bash", proofArgs, { output: `${expected}\n`, metadata: { exit: 0 } })
+  assert.match(stale.output, /OPERATIONAL_AUTHORITY_PROOF: STALE.*admitted_epoch=1.*current_epoch=2.*current_status=pending/s)
+  const stillPending = { context: [] }
+  await hooks["experimental.session.compacting"]({ sessionID: "parent-strict-retry" }, stillPending)
+  assert.match(stillPending.context.join("\n"), /Authority admission: pending; mode: strict-start/)
+
+  await before(hooks, "parent-strict-retry", "fresh-proof", "bash", proofArgs)
+  const verified = await after(hooks, "parent-strict-retry", "fresh-proof", "bash", proofArgs, { output: `${expected}\n`, metadata: { exit: 0 } })
+  assert.equal(verified.metadata.operationalSchema.authorityBinding, expected)
+  assert.equal(verified.metadata.operationalSchema.authorityMode, "strict-start")
+  assert.equal(verified.metadata.operationalSchema.authorityStatus, "verified")
+})
+
+test("different-SHA strict-start declaration after mismatch still opens fresh pending authority", async () => {
+  const hooks = createOperationGuard({ directory: "/tmp/project-strict-rebind", env: {} })
+  const first = "a".repeat(40)
+  const observed = "b".repeat(40)
+  const second = "c".repeat(40)
+  const proofArgs = { command: "git rev-parse HEAD" }
+
+  await message(hooks, "parent-strict-rebind", "build", `REQUIRED STARTING HEAD: ${first}`)
+  await before(hooks, "parent-strict-rebind", "mismatch-proof", "bash", proofArgs)
+  await after(hooks, "parent-strict-rebind", "mismatch-proof", "bash", proofArgs, { output: `${observed}\n`, metadata: { exit: 0 } })
+  await message(hooks, "parent-strict-rebind", "build", `REQUIRED STARTING HEAD SHA: ${second}`)
+
+  const pending = { context: [] }
+  await hooks["experimental.session.compacting"]({ sessionID: "parent-strict-rebind" }, pending)
+  assert.match(pending.context.join("\n"), new RegExp(`Authority: ${second}`))
+  assert.match(pending.context.join("\n"), /Authority admission: pending; mode: strict-start/)
+
+  await before(hooks, "parent-strict-rebind", "fresh-proof", "bash", proofArgs)
+  const verified = await after(hooks, "parent-strict-rebind", "fresh-proof", "bash", proofArgs, { output: `${second}\n`, metadata: { exit: 0 } })
+  assert.equal(verified.metadata.operationalSchema.authorityBinding, second)
+  assert.equal(verified.metadata.operationalSchema.authorityMode, "strict-start")
+  assert.equal(verified.metadata.operationalSchema.authorityStatus, "verified")
+})
+
+test("same-SHA strict-start reauthorization records a fresh mismatch from the new proof", async () => {
+  const hooks = createOperationGuard({ directory: "/tmp/project-strict-remismatch", env: {} })
+  const expected = "a".repeat(40)
+  const firstObserved = "b".repeat(40)
+  const secondObserved = "c".repeat(40)
+  const proofArgs = { command: "git rev-parse HEAD" }
+
+  await message(hooks, "parent-strict-remismatch", "build", `REQUIRED STARTING HEAD: ${expected}`)
+  await before(hooks, "parent-strict-remismatch", "first-proof", "bash", proofArgs)
+  await after(hooks, "parent-strict-remismatch", "first-proof", "bash", proofArgs, { output: `${firstObserved}\n`, metadata: { exit: 0 } })
+
+  await message(hooks, "parent-strict-remismatch", "build", `REQUIRED STARTING HEAD SHA: ${expected}`)
+  await before(hooks, "parent-strict-remismatch", "second-proof", "bash", proofArgs)
+  const remismatch = await after(hooks, "parent-strict-remismatch", "second-proof", "bash", proofArgs, { output: `${secondObserved}\n`, metadata: { exit: 0 } })
+  assert.equal(remismatch.metadata.operationalSchema.authorityBinding, expected)
+  assert.equal(remismatch.metadata.operationalSchema.authorityMode, "strict-start")
+  assert.equal(remismatch.metadata.operationalSchema.authorityStatus, "mismatch")
+  assert.equal(remismatch.metadata.operationalSchema.observedHead, secondObserved)
+  assert.doesNotMatch(remismatch.output, new RegExp(firstObserved))
+
+  await assert.rejects(
+    () => before(hooks, "parent-strict-remismatch", "blocked-third-proof", "bash", proofArgs),
+    new RegExp(`NEW_STARTING_REVISION_AUTHORITY_REQUIRED.*observed=${secondObserved}`, "s"),
+  )
+})
+
+test("duplicate same-SHA strict-start declaration preserves already-verified admission", async () => {
+  const hooks = createOperationGuard({ directory: "/tmp/project-strict-verified-duplicate", env: {} })
+  const expected = "a".repeat(40)
+  const proofArgs = { command: "git rev-parse HEAD" }
+
+  await message(hooks, "parent-strict-verified-duplicate", "build", `REQUIRED STARTING HEAD: ${expected}`)
+  await before(hooks, "parent-strict-verified-duplicate", "proof", "bash", proofArgs)
+  await after(hooks, "parent-strict-verified-duplicate", "proof", "bash", proofArgs, { output: `${expected}\n`, metadata: { exit: 0 } })
+
+  await message(hooks, "parent-strict-verified-duplicate", "build", `REQUIRED STARTING HEAD SHA: ${expected}`)
+  const context = { context: [] }
+  await hooks["experimental.session.compacting"]({ sessionID: "parent-strict-verified-duplicate" }, context)
+  assert.match(context.context.join("\n"), /Authority admission: verified; mode: strict-start/)
+})
+
 test("strict starting-head SHA aliases bind exact 40-hex tokens and tolerate trailing punctuation", async () => {
   const expected = "a".repeat(40)
   for (const [index, declaration] of [
@@ -2651,19 +2745,30 @@ test("visible text or tool output does not trigger reasoning-only length recover
   }
 })
 
-test("strict admission mismatch survives a plugin restart", async () => {
+test("strict admission mismatch survives a plugin restart until a fresh explicit declaration", async () => {
   const stateDirectory = await mkdtemp(join(tmpdir(), "opencode-authority-state-"))
   const expected = "d".repeat(40)
   const observed = "e".repeat(40)
+  const proofArgs = { command: "git rev-parse HEAD" }
   const first = createOperationGuard({ directory: "/tmp/project-authority", env: {}, stateDirectory })
   await message(first, "parent-a", "build", `EXPECTED_START_HEAD=${expected}`)
-  await before(first, "parent-a", "proof", "bash", { command: "git rev-parse HEAD" })
-  await after(first, "parent-a", "proof", "bash", { command: "git rev-parse HEAD" }, { output: `${observed}\n`, metadata: { exit: 0 } })
+  await before(first, "parent-a", "proof", "bash", proofArgs)
+  await after(first, "parent-a", "proof", "bash", proofArgs, { output: `${observed}\n`, metadata: { exit: 0 } })
 
   const second = createOperationGuard({ directory: "/tmp/project-authority", env: {}, stateDirectory })
   await register(second, "parent-b", "build")
-  await assert.rejects(() => before(second, "parent-b", "retry-proof", "bash", { command: "git rev-parse HEAD" }), /NEW_STARTING_REVISION_AUTHORITY_REQUIRED/)
+  await assert.rejects(() => before(second, "parent-b", "retry-proof", "bash", proofArgs), /NEW_STARTING_REVISION_AUTHORITY_REQUIRED/)
   await assert.rejects(() => before(second, "parent-b", "merge", "bash", { command: `git merge --ff-only ${expected}` }), /strict-start.*new user starting-revision authority/i)
+
+  await message(second, "parent-b", "build", `EXPECTED_START_HEAD=${expected}`)
+  const pending = { context: [] }
+  await second["experimental.session.compacting"]({ sessionID: "parent-b" }, pending)
+  assert.match(pending.context.join("\n"), /Authority admission: pending; mode: strict-start/)
+  await before(second, "parent-b", "fresh-proof", "bash", proofArgs)
+  const verified = await after(second, "parent-b", "fresh-proof", "bash", proofArgs, { output: `${expected}\n`, metadata: { exit: 0 } })
+  assert.equal(verified.metadata.operationalSchema.authorityBinding, expected)
+  assert.equal(verified.metadata.operationalSchema.authorityMode, "strict-start")
+  assert.equal(verified.metadata.operationalSchema.authorityStatus, "verified")
 })
 
 test("corrupt persisted workspace state fails closed instead of disabling the harness", async () => {
