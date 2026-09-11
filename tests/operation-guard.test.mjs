@@ -2042,6 +2042,47 @@ test("different-SHA strict-start declaration after mismatch still opens fresh pe
   assert.equal(verified.metadata.operationalSchema.authorityStatus, "verified")
 })
 
+test("same-SHA strict-start reauthorization records a fresh mismatch from the new proof", async () => {
+  const hooks = createOperationGuard({ directory: "/tmp/project-strict-remismatch", env: {} })
+  const expected = "a".repeat(40)
+  const firstObserved = "b".repeat(40)
+  const secondObserved = "c".repeat(40)
+  const proofArgs = { command: "git rev-parse HEAD" }
+
+  await message(hooks, "parent-strict-remismatch", "build", `REQUIRED STARTING HEAD: ${expected}`)
+  await before(hooks, "parent-strict-remismatch", "first-proof", "bash", proofArgs)
+  await after(hooks, "parent-strict-remismatch", "first-proof", "bash", proofArgs, { output: `${firstObserved}\n`, metadata: { exit: 0 } })
+
+  await message(hooks, "parent-strict-remismatch", "build", `REQUIRED STARTING HEAD SHA: ${expected}`)
+  await before(hooks, "parent-strict-remismatch", "second-proof", "bash", proofArgs)
+  const remismatch = await after(hooks, "parent-strict-remismatch", "second-proof", "bash", proofArgs, { output: `${secondObserved}\n`, metadata: { exit: 0 } })
+  assert.equal(remismatch.metadata.operationalSchema.authorityBinding, expected)
+  assert.equal(remismatch.metadata.operationalSchema.authorityMode, "strict-start")
+  assert.equal(remismatch.metadata.operationalSchema.authorityStatus, "mismatch")
+  assert.equal(remismatch.metadata.operationalSchema.observedHead, secondObserved)
+  assert.doesNotMatch(remismatch.output, new RegExp(firstObserved))
+
+  await assert.rejects(
+    () => before(hooks, "parent-strict-remismatch", "blocked-third-proof", "bash", proofArgs),
+    new RegExp(`NEW_STARTING_REVISION_AUTHORITY_REQUIRED.*observed=${secondObserved}`, "s"),
+  )
+})
+
+test("duplicate same-SHA strict-start declaration preserves already-verified admission", async () => {
+  const hooks = createOperationGuard({ directory: "/tmp/project-strict-verified-duplicate", env: {} })
+  const expected = "a".repeat(40)
+  const proofArgs = { command: "git rev-parse HEAD" }
+
+  await message(hooks, "parent-strict-verified-duplicate", "build", `REQUIRED STARTING HEAD: ${expected}`)
+  await before(hooks, "parent-strict-verified-duplicate", "proof", "bash", proofArgs)
+  await after(hooks, "parent-strict-verified-duplicate", "proof", "bash", proofArgs, { output: `${expected}\n`, metadata: { exit: 0 } })
+
+  await message(hooks, "parent-strict-verified-duplicate", "build", `REQUIRED STARTING HEAD SHA: ${expected}`)
+  const context = { context: [] }
+  await hooks["experimental.session.compacting"]({ sessionID: "parent-strict-verified-duplicate" }, context)
+  assert.match(context.context.join("\n"), /Authority admission: verified; mode: strict-start/)
+})
+
 test("strict starting-head SHA aliases bind exact 40-hex tokens and tolerate trailing punctuation", async () => {
   const expected = "a".repeat(40)
   for (const [index, declaration] of [
