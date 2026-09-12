@@ -6,6 +6,7 @@ import { spawnSync } from "node:child_process"
 import test from "node:test"
 import { installConfigAtomically, parseAndValidateConfig } from "../lib/config-contract.mjs"
 import { BUILD_AGENT_PROMPT, EVIDENCE_ASSESSMENT_RULE, EXPLORE_AGENT_PROMPT, README_POLICY_BLOCK, REMEDIATION_AUDIT_RULE, VERIFY_AGENT_PROMPT } from "../lib/policy-spec.mjs"
+import "./live-plugin-install.test.mjs"
 
 function validConfig(context = 204800) {
   const models = Object.fromEntries(["chat", "chat-fast", "chat-review", "chat-audit"].map((name) => [name, { limit: { context, input: 180000, output: 8192 } }]))
