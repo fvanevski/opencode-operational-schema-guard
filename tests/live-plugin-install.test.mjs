@@ -320,6 +320,7 @@ test("prepare rejects a plan path outside the control root", async () => {
 test("plan destination collision is exclusive and non-mutating", async () => {
   const f = await fixture()
   try {
+    await mkdir(dirname(f.plan), { recursive: true })
     await writeFile(f.plan, "sentinel\n")
     const result = invoke(prepareArgs(f))
     blocked(result, "DESTINATION_EXISTS")
