@@ -860,7 +860,7 @@ async function promote(options) {
   let mutationStarted = false
   try {
     const lockPath = join(liveParent, `.${basename(liveRoot)}.install.lock`)
-    const lock = await acquireLock(lockPath)
+    const lock = await acquireLock(lockPath, { reclaimStale: true })
     let superseded = null
     let backupSource = null
     let configBackup = null
@@ -1168,7 +1168,12 @@ async function recover(options) {
   await assertExecutionCheckout(repoRoot, mergedSha)
   const mergedTree = resolveCommitTree(repoRoot, mergedSha, "merged commit")
   const expectedLiveTree = resolveCommitTree(repoRoot, expectedLiveSha, "expected live commit")
-  if (mergedTree !== pending.merged_tree || expectedLiveTree !== pending.recovery.expected_live_tree) {
+  if (
+    mergedTree !== pending.merged_tree ||
+    mergedTree !== pending.recovery.expected_merged_tree ||
+    expectedLiveSha !== pending.prior_live_commit ||
+    expectedLiveTree !== pending.recovery.expected_live_tree
+  ) {
     block("PRECONDITION_DRIFT", "recovery Git identities no longer agree with the armed journal")
   }
 
