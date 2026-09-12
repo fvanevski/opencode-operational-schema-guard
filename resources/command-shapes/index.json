@@ -6,7 +6,7 @@
       "PROVE_TARGET_HEAD": "exact-target-admission",
       "ADMIT_EXACT_TARGET": "exact-target-admission",
       "SPLIT_TARGET_ADMISSION": "exact-target-admission",
-      "SET_WORKDIR_AND_PROVE_HEAD": "exact-target-admission",
+      "SET_WORKDIR_AND_PROVE_HEAD": "set-workdir-and-prove-head",
       "TARGET_PROOF_WORKDIR_NOT_ADMITTED": "exact-target-admission",
       "PROVE_STRICT_START_HEAD": "strict-start-proof"
     }
@@ -18,7 +18,6 @@
         "PROVE_TARGET_HEAD": "exact-target-disposable-worktree",
         "ADMIT_EXACT_TARGET": "exact-target-disposable-worktree",
         "SPLIT_TARGET_ADMISSION": "exact-target-disposable-worktree",
-        "SET_WORKDIR_AND_PROVE_HEAD": "exact-target-disposable-worktree",
         "TARGET_PROOF_WORKDIR_NOT_ADMITTED": "exact-target-disposable-worktree"
       }
     }

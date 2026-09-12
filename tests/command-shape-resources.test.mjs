@@ -84,6 +84,9 @@ test("mapped correction without a repository override falls back to global and u
   const globalOnly = await resolveCommandShapeResource({ correction: "PROVE_STRICT_START_HEAD", directory: repository, pluginRoot })
   assert.equal(globalOnly?.repository, "global")
   assert.equal(globalOnly?.section, "strict-start-proof")
+  const sharedWorkdir = await resolveCommandShapeResource({ correction: "SET_WORKDIR_AND_PROVE_HEAD", directory: repository, pluginRoot })
+  assert.equal(sharedWorkdir?.repository, "global")
+  assert.equal(sharedWorkdir?.section, "set-workdir-and-prove-head")
 
   const original = "Operational schema guard: OPERATIONAL_CORRECTION: UNMAPPED_EXAMPLE; unchanged=true."
   assert.equal(await appendCommandShapeResource(original, { directory: repository, pluginRoot }), original)

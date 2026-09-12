@@ -27,6 +27,17 @@ git rev-parse HEAD
 
 Do not prepend cleanup, append proof/status commands, add `&&`/`;`/pipes/redirections/substitutions, or replace the tool `workdir` with `cd ... &&`. Do not prove a known owner/base checkout against the target merely because a separate target worktree is intended.
 
+<!-- command-shape-section:set-workdir-and-prove-head -->
+## Set workdir and prove HEAD
+
+This correction is shared by multiple authority modes. Preserve the mode and required workspace named by the live correction; set the tool `workdir` to that workspace and issue one separate bare proof:
+
+```text
+git rev-parse HEAD
+```
+
+Do not infer target mode from this resource, and do not replace the tool-level `workdir` with `cd ... && git rev-parse HEAD`.
+
 <!-- command-shape-section:strict-start-proof -->
 ## Strict-start proof
 
@@ -37,3 +48,5 @@ git rev-parse HEAD
 ```
 
 A mismatch is not a prompt to reshape, reset, switch, or retry the proof. Follow the live correction and authority lifecycle.
+
+After any block, follow the emitted correction first, read an optional resource second, retry the corrected shape at most once when the correction permits it, and classify a repeated mismatch as drift/runtime/interface evidence. Inspect guard implementation source only when the task is explicitly debugging the plugin itself.
