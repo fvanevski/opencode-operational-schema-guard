@@ -2133,6 +2133,9 @@ test("authority metadata and prose collisions leave binding and authority epoch 
     `HEAD_SHA=${metadata} appears only in prose on this line.`,
     `REQUIRED EXACT HEAD: ${metadata} is only an example.`,
     `HEAD_SHA\n${metadata}`,
+    `REQUIRED\nSTARTING\nHEAD: ${metadata}`,
+    `EXPECTED\nBRANCH\nHEAD: ${metadata}`,
+    `HEAD_SHA${metadata}`,
   ]
 
   for (const [index, inertText] of inertCases.entries()) {
@@ -2199,6 +2202,7 @@ test("all intentional authority aliases retain their strict-start or target sema
     [`EXPECTED_START_HEAD_SHA=${expected}`, "strict-start"],
     [`REQUIRED_START_HEAD_SHA=${expected}`, "strict-start"],
     [`REQUIRED STARTING HEAD: ${expected}`, "strict-start"],
+    [`REQUIRED STARTING HEAD ${expected}`, "strict-start"],
     [`REQUIRED STARTING HEAD SHA: ${expected}`, "strict-start"],
     [`EXPECTED STARTING HEAD: ${expected}`, "strict-start"],
     [`EXPECTED STARTING HEAD SHA: ${expected}`, "strict-start"],
