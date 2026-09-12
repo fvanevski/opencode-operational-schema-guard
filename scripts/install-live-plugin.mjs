@@ -714,11 +714,16 @@ async function promote(options) {
   const liveRoot = absolutePath(plan.activation_pair?.live_root, "plan.activation_pair.live_root")
   const liveConfig = absolutePath(plan.activation_pair?.live_config, "plan.activation_pair.live_config")
   const liveParent = dirname(liveRoot)
+  const workRoot = absolutePath(plan.work_root, "plan.work_root")
   const scratchRoot = absolutePath(plan.scratch_root, "plan.scratch_root")
   const controlRoot = absolutePath(plan.control_root, "plan.control_root")
-  await mkdir(scratchRoot, { recursive: true })
   const canonicalControlRoot = await ensureSafeControlRoot(controlRoot, liveParent)
   if (canonicalControlRoot !== controlRoot) block("PRECONDITION_DRIFT", "control-root identity changed after prepare")
+  if (!pathWithin(controlRoot, workRoot) || !pathWithin(workRoot, stageRoot) || !pathWithin(workRoot, scratchRoot)) {
+    block("PRECONDITION_DRIFT", "prepared work/stage/scratch paths escaped their control-root hierarchy")
+  }
+  await pathIdentity(workRoot, "directory")
+  await pathIdentity(scratchRoot, "directory")
   if (!pathWithin(controlRoot, receiptPath)) block("UNSAFE_RECEIPT_PATH", "receipt must be created inside the installer control root")
 
   const pendingReceipt = {
@@ -986,13 +991,12 @@ async function promote(options) {
         "BLOCK_REASON=none",
         "",
       ]
+      const receiptSha256 = await replaceReservedJson(receiptPath, pendingReceiptSha256, finalReceipt)
+      receiptCommitted = true
+      process.stdout.write([finalOutput[0], `RECEIPT=${receiptPath}`, `RECEIPT_SHA256=${receiptSha256}`, ...finalOutput.slice(1)].join("\n"))
     } finally {
       await releaseLock(lockPath, lock)
     }
-
-    const receiptSha256 = await replaceReservedJson(receiptPath, pendingReceiptSha256, finalReceipt)
-    receiptCommitted = true
-    process.stdout.write([finalOutput[0], `RECEIPT=${receiptPath}`, `RECEIPT_SHA256=${receiptSha256}`, ...finalOutput.slice(1)].join("\n"))
   } finally {
     if (!receiptCommitted && !mutationStarted) {
       await unlink(receiptPath).catch(() => {})
