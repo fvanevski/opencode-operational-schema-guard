@@ -859,4 +859,219 @@ async function promote(options) {
       })
 
       await copyFile(liveConfig, configBackup, COPYFILE_EXCL)
-/*__GHDEV_INSTALLER_REMAINDER__*/
+      await fsyncFile(configBackup)
+      await fsyncDirectory(dirname(configBackup))
+      const configBackupSha256 = await sha256File(configBackup)
+      if (configBackupSha256 !== configBefore) {
+        block("ROLLBACK_CONFIG_COPY_MISMATCH", "rollback config backup differs from the pre-promotion config")
+      }
+
+      await copyTreeExact(stageRoot, incoming)
+      await fsyncTree(incoming)
+      const incomingIdentity = await pathIdentity(incoming, "directory")
+      if (incomingIdentity.dev !== currentParentIdentity.dev) {
+        block("CROSS_FILESYSTEM_PROMOTION_REJECTED", "incoming source is not on the live-root filesystem")
+      }
+      const incomingCheck = await validateTreeAgainstCommit({
+        repoRoot,
+        root: incoming,
+        commitSha: mergedSha,
+        expectedTree: mergedTree,
+        scratchRoot,
+        label: "incoming source",
+      })
+      if (incomingCheck.manifestSha256 !== stage.manifestSha256) {
+        block("INCOMING_COPY_MISMATCH", "incoming source manifest differs from the prepared stage")
+      }
+
+      await rename(liveRoot, superseded)
+      await fsyncDirectory(liveParent)
+      try {
+        await rename(incoming, liveRoot)
+        await fsyncDirectory(liveParent)
+      } catch (error) {
+        await rename(superseded, liveRoot).catch((rollbackError) => {
+          block("ROLLBACK_FAILED", `candidate rename failed (${error.message}); restoring prior live source also failed (${rollbackError.message})`, {
+            superseded,
+            incoming,
+          })
+        })
+        await fsyncDirectory(liveParent)
+        block("PROMOTION_RENAME_FAILED", `candidate rename failed; prior live source restored: ${error.message}`, { incoming })
+      }
+
+      let installed
+      let configAfter
+      let installedConfigValidation
+      try {
+        installed = await validateTreeAgainstCommit({
+          repoRoot,
+          root: liveRoot,
+          commitSha: mergedSha,
+          expectedTree: mergedTree,
+          scratchRoot,
+          label: "installed live source",
+        })
+        if (installed.manifestSha256 !== stage.manifestSha256) {
+          block("POST_PROMOTION_TREE_MISMATCH", "installed source manifest differs from the prepared stage")
+        }
+        configAfter = await sha256File(liveConfig)
+        if (configAfter !== configBefore) {
+          block("POST_PROMOTION_CONFIG_DRIFT", "live config changed during a source-only deployment")
+        }
+        installedConfigValidation = await validateConfigWithSource(liveRoot, liveConfig)
+        const installedPackage = await readPackageMarker(liveRoot)
+        if (
+          installedPackage.name !== plan.source_stage.package.name ||
+          installedPackage.version !== plan.source_stage.package.version
+        ) {
+          block("POST_PROMOTION_PACKAGE_MARKER_MISMATCH", "installed package marker differs from the prepared stage")
+        }
+      } catch (error) {
+        const rollback = await rollbackSwap({
+          liveRoot,
+          liveParent,
+          superseded,
+          failedRoot,
+          repoRoot,
+          expectedLiveSha,
+          expectedLiveTree,
+          scratchRoot,
+          liveConfig,
+          expectedConfigSha256: configBefore,
+        })
+        throw new InstallError(
+          "POST_PROMOTION_VALIDATION_FAILED_ROLLED_BACK",
+          `post-promotion validation failed and the prior source was restored: ${error.message}`,
+          { original_code: error.code ?? null, rollback, backup_source: backupSource, config_backup: configBackup },
+        )
+      }
+
+      const receipt = {
+        schema_version: RECEIPT_SCHEMA,
+        result: "PASS",
+        created_at: new Date().toISOString(),
+        plan: { path: planPath, sha256: observedPlanSha256, schema_version: plan.schema_version },
+        repository_root: repoRoot,
+        reviewed_commit: reviewedSha,
+        reviewed_tree: reviewedTree,
+        merged_commit: mergedSha,
+        merged_tree: mergedTree,
+        reviewed_tree_equals_merged_tree: true,
+        source_stage: {
+          root: stageRoot,
+          tree: stage.tree,
+          manifest_sha256: stage.manifestSha256,
+          entry_count: stage.entryCount,
+        },
+        prior_live: {
+          commit: expectedLiveSha,
+          tree: priorLive.tree,
+          manifest_sha256: priorLive.manifestSha256,
+          authenticated: true,
+        },
+        activation_pair: {
+          live_root: liveRoot,
+          live_config: liveConfig,
+          config_change_required: false,
+          pre_promotion_config_sha256: configBefore,
+          post_promotion_config_sha256: configAfter,
+          config_byte_preserved: configAfter === configBefore,
+          config_validation: installedConfigValidation,
+        },
+        validation: plan.validation,
+        validation_summary: plan.validation_summary,
+        installed: {
+          tree: installed.tree,
+          manifest_sha256: installed.manifestSha256,
+          entry_count: installed.entryCount,
+          tree_matches_stage: installed.tree === stage.tree && installed.manifestSha256 === stage.manifestSha256,
+          tree_matches_merged_main: installed.tree === mergedTree,
+          deployment_residue_check: "PASS",
+        },
+        rollback: {
+          source_backup: backupSource,
+          source_backup_tree: backup.tree,
+          superseded_source: superseded,
+          config_backup: configBackup,
+          config_backup_sha256: configBackupSha256,
+          retained: true,
+        },
+        fresh_process_acceptance: "NOT_RUN",
+        issue_closure_ready: false,
+      }
+      finalReceipt = receipt
+      finalOutput = [
+        "OPERATIONAL_LIVE_PLUGIN_DEPLOYMENT_RESULT=PASS",
+        `REVIEWED_PR_COMMIT_IDENTITY=${reviewedSha}`,
+        `REVIEWED_PR_TREE_IDENTITY=${reviewedTree}`,
+        `MERGED_MAIN_COMMIT_IDENTITY=${mergedSha}`,
+        `MERGED_MAIN_TREE_IDENTITY=${mergedTree}`,
+        "REVIEWED_TREE_EQUALS_MERGED_TREE=yes",
+        `SOURCE_STAGE_COMMIT_IDENTITY=${mergedSha}`,
+        `SOURCE_STAGE_TREE_IDENTITY=${stage.tree}`,
+        "STAGED_TREE_MATCHES_MERGED_MAIN=yes",
+        `PRIOR_LIVE_SOURCE_IDENTITY=${expectedLiveSha}`,
+        `PRIOR_LIVE_TREE_IDENTITY=${priorLive.tree}`,
+        "PRIOR_LIVE_TREE_AUTHENTICATED=yes",
+        `LIVE_ROOT=${liveRoot}`,
+        "CONFIG_CHANGE_REQUIRED=no",
+        `PRE_PROMOTION_CONFIG_SHA256=${configBefore}`,
+        `POST_PROMOTION_CONFIG_SHA256=${configAfter}`,
+        "CONFIG_BYTE_PRESERVED=yes",
+        "CONFIG_VALIDATION_RESULT=PASS",
+        `STAGED_NPM_CHECK=${plan.validation_summary.npm_check}`,
+        `STAGED_NPM_TEST=${plan.validation_summary.npm_test}`,
+        `STAGED_NPM_TEST_COUNT=${plan.validation_summary.test_count ?? "UNVERIFIED"}`,
+        `STAGED_NPM_TEST_PASS=${plan.validation_summary.test_pass ?? "UNVERIFIED"}`,
+        "INSTALLED_TREE_MATCHES_STAGE=yes",
+        "INSTALLED_TREE_MATCHES_MERGED_MAIN=yes",
+        "DEPLOYMENT_RESIDUE_CHECK=PASS",
+        `ROLLBACK_SOURCE=${backupSource};${superseded}`,
+        `ROLLBACK_CONFIG=${configBackup}`,
+        "ROLLBACK_RETAINED=yes",
+        "FRESH_PROCESS_ACCEPTANCE=NOT_RUN",
+        "ISSUE_CLOSURE_READY=no",
+        "BLOCK_REASON=none",
+        "",
+      ]
+    } finally {
+      await releaseLock(lockPath, lock)
+    }
+
+    const receiptSha256 = await writeReservedJson(receiptPath, receiptHandle, finalReceipt)
+    receiptHandle = undefined
+    receiptCommitted = true
+    process.stdout.write([finalOutput[0], `RECEIPT=${receiptPath}`, `RECEIPT_SHA256=${receiptSha256}`, ...finalOutput.slice(1)].join("\n"))
+  } finally {
+    if (!receiptCommitted) {
+      if (receiptHandle) await receiptHandle.close().catch(() => {})
+      await unlink(receiptPath).catch(() => {})
+      await fsyncDirectory(dirname(receiptPath)).catch(() => {})
+    }
+  }
+}
+
+async function main() {
+  const { mode, options } = parseOptions(process.argv.slice(2))
+  if (mode === "prepare") await prepare(options)
+  else await promote(options)
+}
+
+main().catch((error) => {
+  const code = error instanceof InstallError ? error.code : "UNEXPECTED_ERROR"
+  const message = error?.message ?? String(error)
+  const details = error instanceof InstallError ? error.details : {}
+  process.stderr.write(
+    `${JSON.stringify({
+      schema_version: "opencode-live-plugin-install-error-v1",
+      result: "BLOCKED",
+      code,
+      message,
+      details,
+    })}\n`,
+  )
+  process.stderr.write(`OPERATIONAL_LIVE_PLUGIN_RESULT=BLOCKED\nBLOCK_REASON=${code}\n`)
+  process.exitCode = 1
+})
+
