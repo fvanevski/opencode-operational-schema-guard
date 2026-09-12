@@ -416,127 +416,49 @@ async function materializeCommit({ repoRoot, commitSha, expectedTree, target, sc
   })
 }
 
-function deterministicValidationEnv(defaultBranch) {
-  return {
-    ...process.env,
-    GIT_CONFIG_COUNT: "1",
-    GIT_CONFIG_KEY_0: "init.defaultBranch",
-    GIT_CONFIG_VALUE_0: defaultBranch,
+async function validateLiveConfig(liveConfig) {
+  const text = await readFile(liveConfig, "utf8")
+  try {
+    parseAndValidateConfig(text)
+  } catch (error) {
+    block("CONFIG_MIGRATION_REQUIRED", `current live config is incompatible with the merged source contract: ${error.message}`)
   }
+  const after = await readFile(liveConfig, "utf8")
+  if (after !== text) block("CONFIG_VALIDATOR_MUTATION", "live config changed while validating its in-process contract")
+  return { result: "PASS", sha256: sha256Bytes(Buffer.from(text)) }
 }
 
-function parseNodeTapTotals(text) {
-  const fields = {}
-  for (const name of ["tests", "pass", "fail", "skipped"]) {
-    const match = new RegExp(`^# ${name} (\\d+)\\s*$`, "m").exec(text)
-    if (match) fields[name] = Number(match[1])
-  }
-  if (!Number.isInteger(fields.tests) || !Number.isInteger(fields.pass) || !Number.isInteger(fields.fail)) {
-    block("TEST_TOTALS_MISSING", "node-tap totals were requested but could not be parsed")
-  }
-  fields.skipped ??= 0
-  return fields
+function pathWithin(parent, child) {
+  const rel = relative(parent, child)
+  return rel === "" || (rel !== ".." && !rel.startsWith(`..${sep}`) && !isAbsolute(rel))
 }
 
-async function runValidationProfile(stageRoot, workRoot, profileRelativePath, defaultBranch) {
-  const profilePath = join(stageRoot, profileRelativePath)
-  const profile = await readJson(profilePath)
-  if (profile.schema_version !== "ghdev-actions-profile-v1" || !Array.isArray(profile.commands) || profile.commands.length === 0) {
-    block("INVALID_VALIDATION_PROFILE", `${profilePath} is not a supported repository-final profile`)
+async function ensureSafeControlRoot(requestedRoot, liveParent) {
+  const tempRoot = resolve(tmpdir())
+  const target = resolve(requestedRoot)
+  if (target === tempRoot || !pathWithin(tempRoot, target)) {
+    block("UNSAFE_CONTROL_ROOT", `installer control root must be a strict descendant of ${tempRoot}`)
   }
-  const logRoot = join(workRoot, "validation-logs")
-  await mkdir(logRoot, { recursive: true })
-  const results = []
-  for (const command of profile.commands) {
-    if (!command?.id || !Array.isArray(command.argv) || command.argv.length === 0 || command.argv.some((part) => typeof part !== "string")) {
-      block("INVALID_VALIDATION_PROFILE", `invalid command in ${profilePath}`)
-    }
-    const [file, ...args] = command.argv
-    const result = run(file, args, {
-      cwd: stageRoot,
-      env: deterministicValidationEnv(defaultBranch),
-      allowFailure: true,
+  let current = tempRoot
+  for (const part of relative(tempRoot, target).split(sep).filter(Boolean)) {
+    current = join(current, part)
+    const info = await lstat(current).catch((error) => {
+      if (error?.code !== "ENOENT") throw error
+      return null
     })
-    const stdoutPath = join(logRoot, `${command.id}.stdout.log`)
-    const stderrPath = join(logRoot, `${command.id}.stderr.log`)
-    await writeFile(stdoutPath, result.stdout, "utf8")
-    await writeFile(stderrPath, result.stderr, "utf8")
-    if (result.status !== 0) {
-      block("STAGED_VALIDATION_FAILED", `${command.id} exited ${result.status}`, {
-        command: command.argv,
-        stdout_log: stdoutPath,
-        stderr_log: stderrPath,
-        stdout_tail: String(result.stdout).slice(-8000),
-        stderr_tail: String(result.stderr).slice(-8000),
-      })
+    if (info) {
+      if (info.isSymbolicLink()) block("SYMLINK_BOUNDARY_REJECTED", `control-root component must not be a symlink: ${current}`)
+      if (!info.isDirectory()) block("PATH_TYPE_MISMATCH", `control-root component must be a directory: ${current}`)
+    } else {
+      await mkdir(current, { mode: 0o700 })
     }
-    const record = {
-      id: command.id,
-      argv: command.argv,
-      exit: result.status,
-      signal: result.signal,
-      stdout_sha256: sha256Bytes(Buffer.from(result.stdout)),
-      stderr_sha256: sha256Bytes(Buffer.from(result.stderr)),
-      stdout_log: stdoutPath,
-      stderr_log: stderrPath,
-    }
-    if (command.collect_test_totals === "node-tap") {
-      const totals = parseNodeTapTotals(`${result.stdout}\n${result.stderr}`)
-      Object.assign(record, {
-        test_count: totals.tests,
-        test_pass: totals.pass,
-        test_fail: totals.fail,
-        test_skip: totals.skipped,
-      })
-      if (totals.fail !== 0 || totals.pass + totals.skipped !== totals.tests) {
-        block("STAGED_TEST_TOTALS_FAILED", `${command.id} reported non-passing totals`, totals)
-      }
-    }
-    results.push(record)
   }
-  return {
-    profile_id: profile.profile_id ?? null,
-    profile_version: profile.profile_version ?? null,
-    profile_path: profileRelativePath,
-    environment_overrides: { "init.defaultBranch": defaultBranch },
-    commands: results,
+  const controlRoot = await realpath(target)
+  const liveParentReal = await realpath(liveParent)
+  if (pathWithin(liveParentReal, controlRoot) || pathWithin(controlRoot, liveParentReal)) {
+    block("UNSAFE_CONTROL_ROOT", "installer control root must not overlap the live-plugin parent")
   }
-}
-
-function summarizeValidation(validation) {
-  const test = validation.commands.find((command) => Number.isInteger(command.test_count))
-  return {
-    npm_check: validation.commands.some((command) => command.id === "npm-check" && command.exit === 0) ? "PASS" : "UNVERIFIED",
-    npm_test: test?.exit === 0 ? "PASS" : "UNVERIFIED",
-    test_count: test?.test_count ?? null,
-    test_pass: test?.test_pass ?? null,
-  }
-}
-
-async function validateConfigWithSource(sourceRoot, liveConfig) {
-  const validator = join(sourceRoot, "scripts", "validate-config.mjs")
-  await pathIdentity(validator, "file")
-  const result = run(process.execPath, [validator, "--candidate", liveConfig], {
-    cwd: sourceRoot,
-    allowFailure: true,
-  })
-  if (result.status !== 0) {
-    block("CONFIG_MIGRATION_REQUIRED", "staged source does not validate the current live config unchanged", {
-      stdout: result.stdout,
-      stderr: result.stderr,
-    })
-  }
-  if (!String(result.stdout).includes("OPERATIONAL_CONFIG_RESULT: PASS")) {
-    block("CONFIG_VALIDATION_AMBIGUOUS", "config validator exited zero without the expected PASS marker", {
-      stdout: result.stdout,
-      stderr: result.stderr,
-    })
-  }
-  return {
-    result: "PASS",
-    stdout_sha256: sha256Bytes(Buffer.from(result.stdout)),
-    stderr_sha256: sha256Bytes(Buffer.from(result.stderr)),
-  }
+  return controlRoot
 }
 
 async function readPackageMarker(root) {
