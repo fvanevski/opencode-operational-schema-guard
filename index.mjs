@@ -91,8 +91,8 @@ export async function OperationalSchemaGuardPlugin({ client, directory, stateDir
   async function authoritativeSessionDirectory(sessionID) {
     if (!sessionID || !client?.session?.get) return undefined
     const requests = [
-      { path: { id: sessionID } },
       { sessionID },
+      { path: { id: sessionID } },
     ]
     for (const request of requests) {
       try {
