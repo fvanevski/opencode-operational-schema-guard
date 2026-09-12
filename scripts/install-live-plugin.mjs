@@ -644,4 +644,219 @@ async function prepare(options) {
       `PRIOR_LIVE_SOURCE_IDENTITY=${expectedLiveSha}`,
       `PRIOR_LIVE_TREE_IDENTITY=${priorLive.tree}`,
       `PRE_PROMOTION_CONFIG_SHA256=${liveConfigSha256}`,
+      "CONFIG_CHANGE_REQUIRED=no",
+      "FRESH_PROCESS_ACCEPTANCE=NOT_RUN",
+      "ISSUE_CLOSURE_READY=no",
+      "",
+    ].join("\n"),
+  )
+}
+
+async function acquireLock(lockPath) {
+  const nonce = randomUUID()
+  const body = JSON.stringify({ pid: process.pid, nonce, created_at: new Date().toISOString() })
+  const handle = await open(lockPath, "wx", 0o600).catch((error) => {
+    block("INSTALL_LOCKED", `cannot acquire ${lockPath}: ${error.message}`)
+  })
+  try {
+    await handle.writeFile(`${body}\n`, "utf8")
+    await handle.sync()
+  } finally {
+    await handle.close()
+  }
+  await fsyncDirectory(dirname(lockPath))
+  return { nonce, body: `${body}\n` }
+}
+
+async function releaseLock(lockPath, lock) {
+  try {
+    const current = await readFile(lockPath, "utf8")
+    if (current !== lock.body) block("LOCK_IDENTITY_DRIFT", `installer lock changed unexpectedly: ${lockPath}`)
+    await unlink(lockPath)
+    await fsyncDirectory(dirname(lockPath))
+  } catch (error) {
+    if (error instanceof InstallError) throw error
+    if (error?.code !== "ENOENT") throw error
+  }
+}
+
+function utcStamp() {
+  return new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z")
+}
+
+async function copyTreeExact(source, destination) {
+  await cp(source, destination, {
+    recursive: true,
+    force: false,
+    errorOnExist: true,
+    dereference: false,
+    preserveTimestamps: true,
+  })
+}
+
+async function fsyncTree(root) {
+  const info = await lstat(root)
+  if (!info.isDirectory()) block("PATH_TYPE_MISMATCH", `${root} must be a directory`)
+  const directory = await opendir(root)
+  const children = []
+  for await (const entry of directory) children.push(entry.name)
+  children.sort((a, b) => Buffer.from(a).compare(Buffer.from(b)))
+  for (const name of children) {
+    const path = join(root, name)
+    const child = await lstat(path)
+    if (child.isDirectory()) {
+      await fsyncTree(path)
+    } else if (child.isFile()) {
+      await fsyncFile(path)
+    } else if (!child.isSymbolicLink()) {
+      block("SPECIAL_FILE_REJECTED", `unsupported filesystem object during fsync: ${path}`)
+    }
+  }
+  await fsyncDirectory(root)
+}
+
+async function rollbackSwap({ liveRoot, liveParent, superseded, failedRoot, repoRoot, expectedLiveSha, expectedLiveTree, scratchRoot, liveConfig, expectedConfigSha256 }) {
+  let candidateMoved = false
+  try {
+    const current = await lstat(liveRoot).catch(() => null)
+    if (current) {
+      await rename(liveRoot, failedRoot)
+      candidateMoved = true
+    }
+    await rename(superseded, liveRoot)
+    await fsyncDirectory(liveParent)
+    const restored = await validateTreeAgainstCommit({
+      repoRoot,
+      root: liveRoot,
+      commitSha: expectedLiveSha,
+      expectedTree: expectedLiveTree,
+      scratchRoot,
+      label: "rolled-back live source",
+    })
+    const configSha = await sha256File(liveConfig)
+    if (configSha !== expectedConfigSha256) {
+      block("ROLLBACK_CONFIG_IDENTITY_MISMATCH", `config changed during rollback: ${configSha}`)
+    }
+    return { restored_tree: restored.tree, failed_candidate: candidateMoved ? failedRoot : null }
+  } catch (error) {
+    block("ROLLBACK_FAILED", `automatic rollback failed: ${error.message}`, {
+      superseded,
+      failed_root: candidateMoved ? failedRoot : null,
+    })
+  }
+}
+
+async function promote(options) {
+  const planPath = absolutePath(required(options, "--plan"), "--plan")
+  const expectedPlanSha256 = exactSha256(required(options, "--expected-plan-sha256"), "--expected-plan-sha256")
+  const receiptPath = absolutePath(required(options, "--receipt"), "--receipt")
+  const observedPlanSha256 = await sha256File(planPath)
+  if (observedPlanSha256 !== expectedPlanSha256) {
+    block("PLAN_DIGEST_MISMATCH", `plan digest ${observedPlanSha256} != expected ${expectedPlanSha256}`)
+  }
+  const plan = await readJson(planPath)
+  if (plan.schema_version !== PLAN_SCHEMA || plan.result !== "PREPARED") {
+    block("INVALID_PLAN", `${planPath} is not a prepared ${PLAN_SCHEMA} plan`)
+  }
+
+  const repoRoot = await ensureRepoRoot(plan.repository_root)
+  const mergedSha = exactSha(plan.merged_commit, "plan.merged_commit")
+  const reviewedSha = exactSha(plan.reviewed_commit, "plan.reviewed_commit")
+  const expectedLiveSha = exactSha(plan.expected_live?.commit, "plan.expected_live.commit")
+  const mergedTree = resolveCommitTree(repoRoot, mergedSha, "merged commit")
+  const reviewedTree = resolveCommitTree(repoRoot, reviewedSha, "reviewed commit")
+  const expectedLiveTree = resolveCommitTree(repoRoot, expectedLiveSha, "expected live commit")
+  if (mergedTree !== plan.merged_tree || reviewedTree !== plan.reviewed_tree || mergedTree !== reviewedTree) {
+    block("PRECONDITION_DRIFT", "prepared reviewed/merged Git identities no longer agree with the plan")
+  }
+  if (expectedLiveTree !== plan.expected_live.tree) {
+    block("PRECONDITION_DRIFT", "expected prior-live Git tree no longer agrees with the plan")
+  }
+
+  const stageRoot = absolutePath(plan.source_stage?.root, "plan.source_stage.root")
+  const liveRoot = absolutePath(plan.activation_pair?.live_root, "plan.activation_pair.live_root")
+  const liveConfig = absolutePath(plan.activation_pair?.live_config, "plan.activation_pair.live_config")
+  const liveParent = dirname(liveRoot)
+  const scratchRoot = absolutePath(plan.scratch_root, "plan.scratch_root")
+  await mkdir(scratchRoot, { recursive: true })
+
+  const relativeReceiptToLive = relative(liveRoot, receiptPath)
+  if (relativeReceiptToLive === "" || (!relativeReceiptToLive.startsWith(`..${sep}`) && relativeReceiptToLive !== ".." && !isAbsolute(relativeReceiptToLive))) {
+    block("UNSAFE_RECEIPT_PATH", "receipt must not be created inside the live plugin root")
+  }
+
+  let receiptHandle = await openExclusiveDestination(receiptPath)
+  let receiptCommitted = false
+  try {
+    const lockPath = join(liveParent, `.${basename(liveRoot)}.install.lock`)
+    const lock = await acquireLock(lockPath)
+    let superseded = null
+    let backupSource = null
+    let configBackup = null
+    let failedRoot = null
+    let finalReceipt = null
+    let finalOutput = null
+    try {
+      const currentLiveIdentity = await pathIdentity(liveRoot, "directory")
+      const currentParentIdentity = await pathIdentity(liveParent, "directory")
+      const currentConfigIdentity = await pathIdentity(liveConfig, "file")
+      if (!sameIdentity(currentLiveIdentity, plan.activation_pair.live_root_identity)) {
+        block("PRECONDITION_DRIFT", "live source inode/device/mode changed after prepare")
+      }
+      if (!sameIdentity(currentParentIdentity, plan.activation_pair.live_parent_identity)) {
+        block("PRECONDITION_DRIFT", "live source parent inode/device/mode changed after prepare")
+      }
+      if (!sameIdentity(currentConfigIdentity, plan.activation_pair.live_config_identity)) {
+        block("PRECONDITION_DRIFT", "live config inode/device/mode changed after prepare")
+      }
+
+      const stage = await validateTreeAgainstCommit({
+        repoRoot,
+        root: stageRoot,
+        commitSha: mergedSha,
+        expectedTree: mergedTree,
+        scratchRoot,
+        label: "prepared stage",
+      })
+      if (stage.manifestSha256 !== plan.source_stage.manifest_sha256) {
+        block("PRECONDITION_DRIFT", "prepared stage manifest changed after prepare")
+      }
+      const priorLive = await validateTreeAgainstCommit({
+        repoRoot,
+        root: liveRoot,
+        commitSha: expectedLiveSha,
+        expectedTree: expectedLiveTree,
+        scratchRoot,
+        label: "pre-promotion live source",
+      })
+      if (priorLive.manifestSha256 !== plan.expected_live.observed_manifest_sha256) {
+        block("PRECONDITION_DRIFT", "live source manifest changed after prepare")
+      }
+      const configBefore = await sha256File(liveConfig)
+      if (configBefore !== plan.activation_pair.pre_promotion_config_sha256) {
+        block("PRECONDITION_DRIFT", "live config bytes changed after prepare")
+      }
+      await validateConfigWithSource(stageRoot, liveConfig)
+
+      const stamp = utcStamp()
+      const nonce = randomUUID().replaceAll("-", "").slice(0, 12)
+      const base = basename(liveRoot)
+      backupSource = join(liveParent, `${base}.backup-${stamp}-${mergedSha.slice(0, 8)}-${nonce}`)
+      superseded = join(liveParent, `${base}.superseded-${stamp}-${mergedSha.slice(0, 8)}-${nonce}`)
+      const incoming = join(liveParent, `.${base}.incoming-${stamp}-${mergedSha.slice(0, 8)}-${nonce}`)
+      failedRoot = join(liveParent, `${base}.failed-${stamp}-${mergedSha.slice(0, 8)}-${nonce}`)
+      configBackup = join(dirname(liveConfig), `${basename(liveConfig)}.backup-live-plugin-${stamp}-${mergedSha.slice(0, 8)}-${nonce}`)
+
+      await copyTreeExact(liveRoot, backupSource)
+      await fsyncTree(backupSource)
+      const backup = await validateTreeAgainstCommit({
+        repoRoot,
+        root: backupSource,
+        commitSha: expectedLiveSha,
+        expectedTree: expectedLiveTree,
+        scratchRoot,
+        label: "rollback source backup",
+      })
+
+      await copyFile(liveConfig, configBackup, COPYFILE_EXCL)
 /*__GHDEV_INSTALLER_REMAINDER__*/
