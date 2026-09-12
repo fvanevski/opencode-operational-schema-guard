@@ -598,7 +598,6 @@ async function readPackageMarker(root) {
 async function prepare(options) {
   const testMode = yesNoOption(options, "--test-mode")
   const repoRoot = await ensureRepoRoot(absolutePath(required(options, "--repo"), "--repo"))
-  if (!testMode) assertPersistentProductionPath(repoRoot, "installer repository checkout")
   const mergedSha = exactSha(required(options, "--merged-sha"), "--merged-sha")
   const reviewedSha = exactSha(required(options, "--reviewed-sha"), "--reviewed-sha")
   const expectedLiveSha = exactSha(required(options, "--expected-live-sha"), "--expected-live-sha")
@@ -608,6 +607,7 @@ async function prepare(options) {
   const liveConfig = absolutePath(option(options, "--live-config", DEFAULT_LIVE_CONFIG), "--live-config")
   const requestedWorkRoot = absolutePath(option(options, "--work-root", DEFAULT_WORK_ROOT), "--work-root")
   assertLivePathContract(liveRoot, liveConfig, testMode)
+  if (!testMode) assertPersistentProductionPath(repoRoot, "installer repository checkout")
   if (!testMode && requestedWorkRoot !== DEFAULT_WORK_ROOT) {
     block("NONDEFAULT_CONTROL_ROOT_REJECTED", `production control state must use ${DEFAULT_WORK_ROOT}`)
   }
