@@ -934,8 +934,7 @@ async function promote(options) {
           config_byte_preserved: configAfter === configBefore,
           config_validation: installedConfigValidation,
         },
-        validation: plan.validation,
-        validation_summary: plan.validation_summary,
+        repository_validation: plan.repository_validation,
         installed: {
           tree: installed.tree,
           manifest_sha256: installed.manifestSha256,
@@ -975,10 +974,7 @@ async function promote(options) {
         `POST_PROMOTION_CONFIG_SHA256=${configAfter}`,
         "CONFIG_BYTE_PRESERVED=yes",
         "CONFIG_VALIDATION_RESULT=PASS",
-        `STAGED_NPM_CHECK=${plan.validation_summary.npm_check}`,
-        `STAGED_NPM_TEST=${plan.validation_summary.npm_test}`,
-        `STAGED_NPM_TEST_COUNT=${plan.validation_summary.test_count ?? "UNVERIFIED"}`,
-        `STAGED_NPM_TEST_PASS=${plan.validation_summary.test_pass ?? "UNVERIFIED"}`,
+        "REPOSITORY_VALIDATION=EXTERNAL_TRUSTED_ACTIONS",
         "INSTALLED_TREE_MATCHES_STAGE=yes",
         "INSTALLED_TREE_MATCHES_MERGED_MAIN=yes",
         "DEPLOYMENT_RESIDUE_CHECK=PASS",
@@ -994,13 +990,11 @@ async function promote(options) {
       await releaseLock(lockPath, lock)
     }
 
-    const receiptSha256 = await writeReservedJson(receiptPath, receiptHandle, finalReceipt)
-    receiptHandle = undefined
+    const receiptSha256 = await replaceReservedJson(receiptPath, pendingReceiptSha256, finalReceipt)
     receiptCommitted = true
     process.stdout.write([finalOutput[0], `RECEIPT=${receiptPath}`, `RECEIPT_SHA256=${receiptSha256}`, ...finalOutput.slice(1)].join("\n"))
   } finally {
-    if (!receiptCommitted) {
-      if (receiptHandle) await receiptHandle.close().catch(() => {})
+    if (!receiptCommitted && !mutationStarted) {
       await unlink(receiptPath).catch(() => {})
       await fsyncDirectory(dirname(receiptPath)).catch(() => {})
     }
