@@ -321,6 +321,23 @@ test("prepare rejects non-canonical live paths outside explicit test mode", asyn
   }
 })
 
+test("prepare rejects an ephemeral production installer checkout", async () => {
+  const f = await fixture()
+  try {
+    const args = prepareArgs(f)
+    for (const name of ["--test-mode", "--live-root", "--live-config", "--work-root"]) {
+      const index = args.indexOf(name)
+      if (index >= 0) args.splice(index, 2)
+    }
+    const result = invoke(args)
+    blocked(result, "EPHEMERAL_PRODUCTION_PATH_REJECTED")
+    assert.equal(await exists(f.plan), false)
+    assert.equal(await readFile(join(f.live, "state.txt"), "utf8"), "prior\n")
+  } finally {
+    await cleanup(f)
+  }
+})
+
 test("prepare rejects an installer runtime outside the deployment-target checkout", async () => {
   const f = await fixture()
   try {
