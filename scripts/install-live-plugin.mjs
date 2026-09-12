@@ -65,9 +65,15 @@ function usage() {
     --expected-plan-sha256 64HEX \\
     --receipt ABSOLUTE_RECEIPT_JSON
 
+  install-live-plugin.mjs recover \\
+    --receipt ABSOLUTE_RECEIPT_JSON \\
+    --expected-plan-sha256 64HEX
+
 prepare never mutates the live installation or its parent. promote rechecks every
 prepared identity, creates verified rollback material, performs a same-filesystem
 directory swap, validates the installed activation pair, and emits a typed receipt.
+recover consumes an armed PROMOTION_PENDING journal and conservatively restores the
+prior authenticated live source after an interrupted swap.
 
 The installer never merges a PR, edits opencode.json, performs fresh-process
 acceptance, or closes an issue. If the staged source does not validate the current
@@ -81,7 +87,7 @@ function parseOptions(argv) {
     process.exit(0)
   }
   const mode = argv[0]
-  if (!["prepare", "promote"].includes(mode)) {
+  if (!["prepare", "promote", "recover"].includes(mode)) {
     block("USAGE", `unknown mode: ${mode}`)
   }
   const options = new Map()
@@ -479,6 +485,55 @@ async function ensureSafeControlRoot(requestedRoot, liveParent) {
   return controlRoot
 }
 
+async function assertExistingPathNoSymlinks(path, label) {
+  const tempRoot = resolve(tmpdir())
+  const target = resolve(path)
+  if (target === tempRoot || !pathWithin(tempRoot, target)) {
+    block("UNSAFE_CONTROL_PATH", `${label} must remain below ${tempRoot}`)
+  }
+  let current = tempRoot
+  for (const part of relative(tempRoot, target).split(sep).filter(Boolean)) {
+    current = join(current, part)
+    const info = await lstat(current).catch((error) => {
+      if (error?.code === "ENOENT") block("PATH_NOT_FOUND", `${label} path component does not exist: ${current}`)
+      throw error
+    })
+    if (info.isSymbolicLink()) block("SYMLINK_BOUNDARY_REJECTED", `${label} path component must not be a symlink: ${current}`)
+  }
+  return target
+}
+
+async function ensureSafeControlDestination(controlRoot, destination, code, label) {
+  const target = resolve(destination)
+  if (target === controlRoot || !pathWithin(controlRoot, target)) {
+    block(code, `${label} must be created inside the installer control root`)
+  }
+  let current = controlRoot
+  for (const part of relative(controlRoot, dirname(target)).split(sep).filter(Boolean)) {
+    current = join(current, part)
+    const info = await lstat(current).catch((error) => {
+      if (error?.code !== "ENOENT") throw error
+      return null
+    })
+    if (info) {
+      if (info.isSymbolicLink()) block("SYMLINK_BOUNDARY_REJECTED", `${label} parent must not be a symlink: ${current}`)
+      if (!info.isDirectory()) block("PATH_TYPE_MISMATCH", `${label} parent must be a directory: ${current}`)
+    } else {
+      await mkdir(current, { mode: 0o700 })
+    }
+  }
+  const parentReal = await realpath(dirname(target))
+  if (!pathWithin(controlRoot, parentReal) || parentReal !== dirname(target)) {
+    block(code, `${label} parent escaped the canonical installer control root`)
+  }
+  const destinationInfo = await lstat(target).catch((error) => {
+    if (error?.code === "ENOENT") return null
+    throw error
+  })
+  if (destinationInfo?.isSymbolicLink()) block("SYMLINK_BOUNDARY_REJECTED", `${label} destination must not be a symlink: ${target}`)
+  return target
+}
+
 async function readPackageMarker(root) {
   const packagePath = join(root, "package.json")
   const pkg = await readJson(packagePath)
@@ -519,7 +574,7 @@ async function prepare(options) {
   const liveConfigIdentity = await pathIdentity(liveConfig, "file")
   const liveConfigSha256 = await sha256File(liveConfig)
   const controlRoot = await ensureSafeControlRoot(requestedWorkRoot, liveParent)
-  if (!pathWithin(controlRoot, planPath)) block("UNSAFE_CONTROL_PATH", "plan must be created inside the installer control root")
+  await ensureSafeControlDestination(controlRoot, planPath, "UNSAFE_CONTROL_PATH", "plan")
 
   const workRoot = await mkdtemp(join(controlRoot, "prepare-"))
   const scratchRoot = join(workRoot, "scratch")
@@ -608,20 +663,62 @@ async function prepare(options) {
   )
 }
 
-async function acquireLock(lockPath) {
-  const nonce = randomUUID()
-  const body = JSON.stringify({ pid: process.pid, nonce, created_at: new Date().toISOString() })
-  const handle = await open(lockPath, "wx", 0o600).catch((error) => {
-    block("INSTALL_LOCKED", `cannot acquire ${lockPath}: ${error.message}`)
-  })
+function processIsAlive(pid) {
   try {
-    await handle.writeFile(`${body}\n`, "utf8")
-    await handle.sync()
-  } finally {
-    await handle.close()
+    process.kill(pid, 0)
+    return true
+  } catch (error) {
+    if (error?.code === "ESRCH") return false
+    return true
   }
+}
+
+async function acquireLock(lockPath, { reclaimStale = false } = {}) {
+  async function createLock() {
+    const nonce = randomUUID()
+    const body = JSON.stringify({ pid: process.pid, nonce, created_at: new Date().toISOString() })
+    const handle = await open(lockPath, "wx", 0o600)
+    try {
+      await handle.writeFile(`${body}\n`, "utf8")
+      await handle.sync()
+    } finally {
+      await handle.close()
+    }
+    await fsyncDirectory(dirname(lockPath))
+    return { nonce, body: `${body}\n` }
+  }
+
+  try {
+    return await createLock()
+  } catch (error) {
+    if (error?.code !== "EEXIST") throw error
+    if (!reclaimStale) block("INSTALL_LOCKED", `cannot acquire ${lockPath}: ${error.message}`)
+  }
+
+  const before = await lstat(lockPath, { bigint: true }).catch((error) => block("INSTALL_LOCKED", `cannot inspect existing lock ${lockPath}: ${error.message}`))
+  if (!before.isFile() || before.isSymbolicLink()) block("INSTALL_LOCKED", `existing installer lock is not a regular file: ${lockPath}`)
+  const existingText = await readFile(lockPath, "utf8")
+  let existing
+  try {
+    existing = JSON.parse(existingText)
+  } catch {
+    block("INSTALL_LOCKED", `existing installer lock is not a valid reclaimable lock record: ${lockPath}`)
+  }
+  if (!Number.isInteger(existing?.pid) || existing.pid <= 0 || processIsAlive(existing.pid)) {
+    block("INSTALL_LOCKED", `existing installer lock is active or cannot be proven stale: ${lockPath}`)
+  }
+  const after = await lstat(lockPath, { bigint: true }).catch((error) => block("INSTALL_LOCKED", `installer lock changed during stale-lock inspection: ${error.message}`))
+  const afterText = await readFile(lockPath, "utf8")
+  if (before.dev !== after.dev || before.ino !== after.ino || existingText !== afterText) {
+    block("INSTALL_LOCKED", `installer lock changed during stale-lock inspection: ${lockPath}`)
+  }
+  await unlink(lockPath)
   await fsyncDirectory(dirname(lockPath))
-  return { nonce, body: `${body}\n` }
+  try {
+    return await createLock()
+  } catch (error) {
+    block("INSTALL_LOCKED", `stale installer lock was removed but lock reacquisition failed: ${error.message}`)
+  }
 }
 
 async function releaseLock(lockPath, lock) {
@@ -706,6 +803,7 @@ async function promote(options) {
   const planPath = absolutePath(required(options, "--plan"), "--plan")
   const expectedPlanSha256 = exactSha256(required(options, "--expected-plan-sha256"), "--expected-plan-sha256")
   const receiptPath = absolutePath(required(options, "--receipt"), "--receipt")
+  await assertExistingPathNoSymlinks(planPath, "plan")
   const observedPlanSha256 = await sha256File(planPath)
   if (observedPlanSha256 !== expectedPlanSha256) {
     block("PLAN_DIGEST_MISMATCH", `plan digest ${observedPlanSha256} != expected ${expectedPlanSha256}`)
@@ -744,7 +842,8 @@ async function promote(options) {
   }
   await pathIdentity(workRoot, "directory")
   await pathIdentity(scratchRoot, "directory")
-  if (!pathWithin(controlRoot, receiptPath)) block("UNSAFE_RECEIPT_PATH", "receipt must be created inside the installer control root")
+  await ensureSafeControlDestination(controlRoot, planPath, "UNSAFE_CONTROL_PATH", "plan")
+  await ensureSafeControlDestination(controlRoot, receiptPath, "UNSAFE_RECEIPT_PATH", "receipt")
 
   const pendingReceipt = {
     schema_version: RECEIPT_SCHEMA,
@@ -756,7 +855,7 @@ async function promote(options) {
     prior_live_commit: expectedLiveSha,
     live_root: liveRoot,
   }
-  const pendingReceiptSha256 = await writeJsonExclusive(receiptPath, pendingReceipt)
+  let pendingReceiptSha256 = await writeJsonExclusive(receiptPath, pendingReceipt)
   let receiptCommitted = false
   let mutationStarted = false
   try {
@@ -862,6 +961,26 @@ async function promote(options) {
       if (incomingCheck.manifestSha256 !== stage.manifestSha256) {
         block("INCOMING_COPY_MISMATCH", "incoming source manifest differs from the prepared stage")
       }
+
+      const armedReceipt = {
+        ...pendingReceipt,
+        recovery: {
+          state: "ARMED",
+          control_root: controlRoot,
+          live_parent: liveParent,
+          lock_path: lockPath,
+          lock_nonce: lock.nonce,
+          source_backup: backupSource,
+          superseded_source: superseded,
+          incoming_source: incoming,
+          failed_candidate: failedRoot,
+          config_backup: configBackup,
+          expected_live_tree: expectedLiveTree,
+          expected_merged_tree: mergedTree,
+          pre_promotion_config_sha256: configBefore,
+        },
+      }
+      pendingReceiptSha256 = await replaceReservedJson(receiptPath, pendingReceiptSha256, armedReceipt)
 
       mutationStarted = true
       await rename(liveRoot, superseded)
@@ -1025,10 +1144,139 @@ async function promote(options) {
   }
 }
 
+async function recover(options) {
+  const receiptPath = absolutePath(required(options, "--receipt"), "--receipt")
+  const expectedPlanSha256 = exactSha256(required(options, "--expected-plan-sha256"), "--expected-plan-sha256")
+  await assertExistingPathNoSymlinks(receiptPath, "receipt")
+  const pendingReceiptSha256 = await sha256File(receiptPath)
+  const pending = await readJson(receiptPath)
+  if (pending.schema_version !== RECEIPT_SCHEMA || pending.result !== "PROMOTION_PENDING" || pending.recovery?.state !== "ARMED") {
+    block("RECOVERY_NOT_ARMED", `${receiptPath} is not an armed PROMOTION_PENDING journal`)
+  }
+  if (pending.plan?.sha256 !== expectedPlanSha256) block("PLAN_DIGEST_MISMATCH", "pending recovery journal does not match the expected plan digest")
+
+  const planPath = absolutePath(pending.plan?.path, "pending.plan.path")
+  await assertExistingPathNoSymlinks(planPath, "plan")
+  const observedPlanSha256 = await sha256File(planPath)
+  if (observedPlanSha256 !== expectedPlanSha256) block("PLAN_DIGEST_MISMATCH", "prepared plan changed before recovery")
+  const plan = await readJson(planPath)
+  if (plan.schema_version !== PLAN_SCHEMA || plan.result !== "PREPARED") block("INVALID_PLAN", `${planPath} is not a prepared ${PLAN_SCHEMA} plan`)
+
+  const repoRoot = await ensureRepoRoot(plan.repository_root)
+  const mergedSha = exactSha(plan.merged_commit, "plan.merged_commit")
+  const expectedLiveSha = exactSha(plan.expected_live?.commit, "plan.expected_live.commit")
+  await assertExecutionCheckout(repoRoot, mergedSha)
+  const mergedTree = resolveCommitTree(repoRoot, mergedSha, "merged commit")
+  const expectedLiveTree = resolveCommitTree(repoRoot, expectedLiveSha, "expected live commit")
+  if (mergedTree !== pending.merged_tree || expectedLiveTree !== pending.recovery.expected_live_tree) {
+    block("PRECONDITION_DRIFT", "recovery Git identities no longer agree with the armed journal")
+  }
+
+  const liveRoot = absolutePath(plan.activation_pair?.live_root, "plan.activation_pair.live_root")
+  const liveConfig = absolutePath(plan.activation_pair?.live_config, "plan.activation_pair.live_config")
+  const liveParent = dirname(liveRoot)
+  const controlRoot = absolutePath(plan.control_root, "plan.control_root")
+  const canonicalControlRoot = await ensureSafeControlRoot(controlRoot, liveParent)
+  if (canonicalControlRoot !== controlRoot) block("PRECONDITION_DRIFT", "control-root identity changed before recovery")
+  await ensureSafeControlDestination(controlRoot, receiptPath, "UNSAFE_RECEIPT_PATH", "receipt")
+  await ensureSafeControlDestination(controlRoot, planPath, "UNSAFE_CONTROL_PATH", "plan")
+
+  const recovery = pending.recovery
+  const lockPath = absolutePath(recovery.lock_path, "recovery.lock_path")
+  const superseded = absolutePath(recovery.superseded_source, "recovery.superseded_source")
+  const failedRoot = absolutePath(recovery.failed_candidate, "recovery.failed_candidate")
+  if (lockPath !== join(liveParent, `.${basename(liveRoot)}.install.lock`)) block("RECOVERY_PATH_MISMATCH", "armed recovery lock path does not match the live installation")
+  for (const [path, label] of [[superseded, "superseded source"], [failedRoot, "failed candidate"]]) {
+    if (dirname(path) !== liveParent) block("RECOVERY_PATH_MISMATCH", `${label} escaped the live-plugin parent`)
+  }
+  if (recovery.pre_promotion_config_sha256 !== plan.activation_pair.pre_promotion_config_sha256) {
+    block("PRECONDITION_DRIFT", "armed recovery config identity does not match the prepared plan")
+  }
+
+  const lock = await acquireLock(lockPath, { reclaimStale: true })
+  try {
+    const configSha = await sha256File(liveConfig)
+    if (configSha !== recovery.pre_promotion_config_sha256) block("RECOVERY_CONFIG_DRIFT", "live config changed since the interrupted promotion")
+
+    const liveInfo = await lstat(liveRoot).catch((error) => {
+      if (error?.code === "ENOENT") return null
+      throw error
+    })
+    const supersededInfo = await lstat(superseded).catch((error) => {
+      if (error?.code === "ENOENT") return null
+      throw error
+    })
+
+    let recoveryAction
+    if (supersededInfo) {
+      await validateTreeAgainstCommit({
+        repoRoot,
+        root: superseded,
+        commitSha: expectedLiveSha,
+        expectedTree: expectedLiveTree,
+        scratchRoot: plan.scratch_root,
+        label: "interrupted-promotion superseded source",
+      })
+      if (liveInfo) {
+        await assertAbsentPath(failedRoot, "failed candidate recovery destination")
+        await rename(liveRoot, failedRoot)
+        recoveryAction = "CANDIDATE_MOVED_AND_PRIOR_RESTORED"
+      } else {
+        recoveryAction = "MISSING_LIVE_ROOT_RESTORED"
+      }
+      await rename(superseded, liveRoot)
+      await fsyncDirectory(liveParent)
+    } else {
+      if (!liveInfo) block("RECOVERY_SOURCE_MISSING", "both canonical live root and superseded recovery source are absent")
+      recoveryAction = "PRIOR_ALREADY_CANONICAL"
+    }
+
+    const restored = await validateTreeAgainstCommit({
+      repoRoot,
+      root: liveRoot,
+      commitSha: expectedLiveSha,
+      expectedTree: expectedLiveTree,
+      scratchRoot: plan.scratch_root,
+      label: "recovered live source",
+    })
+    const configAfter = await sha256File(liveConfig)
+    if (configAfter !== recovery.pre_promotion_config_sha256) block("RECOVERY_CONFIG_DRIFT", "live config changed during recovery")
+
+    const recoveredReceipt = {
+      ...pending,
+      result: "RECOVERED",
+      recovered_at: new Date().toISOString(),
+      recovery: {
+        ...recovery,
+        state: "ROLLED_BACK",
+        action: recoveryAction,
+        restored_tree: restored.tree,
+        config_sha256: configAfter,
+      },
+      fresh_process_acceptance: "NOT_RUN",
+      issue_closure_ready: false,
+    }
+    const receiptSha256 = await replaceReservedJson(receiptPath, pendingReceiptSha256, recoveredReceipt)
+    process.stdout.write([
+      "OPERATIONAL_LIVE_PLUGIN_RECOVERY_RESULT=PASS",
+      `RECEIPT=${receiptPath}`,
+      `RECEIPT_SHA256=${receiptSha256}`,
+      `RESTORED_LIVE_COMMIT_IDENTITY=${expectedLiveSha}`,
+      `RESTORED_LIVE_TREE_IDENTITY=${restored.tree}`,
+      `RECOVERY_ACTION=${recoveryAction}`,
+      "RETRY_REQUIRES_NEW_PREPARE=yes",
+      "",
+    ].join("\n"))
+  } finally {
+    await releaseLock(lockPath, lock)
+  }
+}
+
 async function main() {
   const { mode, options } = parseOptions(process.argv.slice(2))
   if (mode === "prepare") await prepare(options)
-  else await promote(options)
+  else if (mode === "promote") await promote(options)
+  else await recover(options)
 }
 
 main().catch((error) => {
