@@ -110,4 +110,117 @@ async function fixture({ mergedTreeMismatch = false, priorLiveDrift = false, fai
   must(git(repo, ["commit", "-qm", "prior"]), "git commit prior")
   const prior = must(git(repo, ["rev-parse", "HEAD"]), "prior sha")
   await archiveCommit(repo, prior, live)
+  await writeFile(config, '{"fixture":true}\n')
+  if (priorLiveDrift) await writeFile(join(live, "state.txt"), "drifted prior\n")
+
+  await writeFile(join(repo, "state.txt"), "reviewed\n")
+  must(git(repo, ["add", "state.txt"]), "git add reviewed")
+  must(git(repo, ["commit", "-qm", "reviewed"]), "git commit reviewed")
+  const reviewed = must(git(repo, ["rev-parse", "HEAD"]), "reviewed sha")
+
+  if (mergedTreeMismatch) {
+    await writeFile(join(repo, "state.txt"), "different merged tree\n")
+    must(git(repo, ["add", "state.txt"]), "git add mismatched merged")
+    must(git(repo, ["commit", "-qm", "merged mismatch"]), "git commit mismatched merged")
+  } else {
+    must(git(repo, ["commit", "--allow-empty", "-qm", "merged rewrite"]), "git commit merged rewrite")
+  }
+  const merged = must(git(repo, ["rev-parse", "HEAD"]), "merged sha")
+
+  return { root, repo, live, config, work, plan, receipt, prior, reviewed, merged }
+}
+
+function invoke(args, env = {}) {
+  return run(process.execPath, [installer, ...args], {
+    env: {
+      ...process.env,
+      ...env,
+      GIT_CONFIG_COUNT: "1",
+      GIT_CONFIG_KEY_0: "init.defaultBranch",
+      GIT_CONFIG_VALUE_0: "main",
+    },
+  })
+}
+
+function prepareArgs(f) {
+  return [
+    "prepare",
+    "--repo", f.repo,
+    "--merged-sha", f.merged,
+    "--reviewed-sha", f.reviewed,
+    "--expected-live-sha", f.prior,
+    "--plan", f.plan,
+    "--live-root", f.live,
+    "--live-config", f.config,
+    "--work-root", f.work,
+  ]
+}
+
+async function prepared(f) {
+  const result = invoke(prepareArgs(f))
+  const output = must(result, "installer prepare")
+  const digest = /^PLAN_SHA256=([0-9a-f]{64})$/m.exec(output)?.[1]
+  assert.ok(digest, output)
+  return { digest, plan: JSON.parse(await readFile(f.plan, "utf8")), output }
+}
+
+function promoteArgs(f, digest) {
+  return ["promote", "--plan", f.plan, "--expected-plan-sha256", digest, "--receipt", f.receipt]
+}
+
+async function cleanup(f) {
+  await rm(f.root, { recursive: true, force: true })
+}
+
+test("prepare and promote exact merged source with typed receipt and rollback material", async () => {
+  const f = await fixture()
+  try {
+    const { digest } = await prepared(f)
+    const result = invoke(promoteArgs(f, digest))
+    const output = must(result, "installer promote")
+    assert.match(output, /OPERATIONAL_LIVE_PLUGIN_DEPLOYMENT_RESULT=PASS/)
+    assert.equal(await readFile(join(f.live, "state.txt"), "utf8"), "reviewed\n")
+    assert.equal(await readFile(f.config, "utf8"), '{"fixture":true}\n')
+    const receipt = JSON.parse(await readFile(f.receipt, "utf8"))
+    assert.equal(receipt.result, "PASS")
+    assert.equal(receipt.reviewed_commit, f.reviewed)
+    assert.equal(receipt.merged_commit, f.merged)
+    assert.equal(receipt.reviewed_tree_equals_merged_tree, true)
+    assert.equal(receipt.installed.tree_matches_stage, true)
+    assert.equal(receipt.installed.tree_matches_merged_main, true)
+    assert.equal(receipt.activation_pair.config_byte_preserved, true)
+    assert.equal(receipt.rollback.retained, true)
+    assert.equal(await readFile(join(receipt.rollback.source_backup, "state.txt"), "utf8"), "prior\n")
+    assert.equal(await readFile(receipt.rollback.config_backup, "utf8"), '{"fixture":true}\n')
+    assert.equal(receipt.validation.environment_overrides["init.defaultBranch"], "master")
+  } finally {
+    await cleanup(f)
+  }
+})
+
+test("prepare rejects reviewed and merged commits with different trees", async () => {
+  const f = await fixture({ mergedTreeMismatch: true })
+  try {
+    const result = invoke(prepareArgs(f))
+    blocked(result, "MERGED_TREE_IDENTITY_MISMATCH")
+    assert.equal(await exists(f.plan), false)
+    assert.equal(await readFile(join(f.live, "state.txt"), "utf8"), "prior\n")
+  } finally {
+    await cleanup(f)
+  }
+})
+
+test("prepare rejects unauthenticated prior live tree", async () => {
+  const f = await fixture({ priorLiveDrift: true })
+  try {
+    const result = invoke(prepareArgs(f))
+    blocked(result, "TREE_IDENTITY_MISMATCH")
+    assert.equal(await exists(f.plan), false)
+  } finally {
+    await cleanup(f)
+  }
+})
+
+test("plan destination collision is exclusive and non-mutating", async () => {
+  const f = await fixture()
 /*__GHDEV_INSTALLER_TEST_REMAINDER__*/
