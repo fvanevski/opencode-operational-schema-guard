@@ -3051,19 +3051,39 @@ test("mapped command-shape correction preserves payload and emits the Firecrawl 
   assert.match(annotated, /section=exact-target-disposable-worktree$/m)
 })
 
-test("command-shape routing falls back globally for unknown, missing, and ambiguous repository identity", async () => {
+test("command-shape routing prefers canonical origin and falls back safely when repository identity is unavailable", async () => {
   const pluginRoot = process.cwd()
   const noRemote = await commandShapeRepository()
   const unknown = await commandShapeRepository("https://github.com/example/other.git")
-  const ambiguous = await commandShapeRepository("https://github.com/fvanevski/firecrawl_skill.git")
-  runGit(ambiguous, ["remote", "add", "upstream", "https://github.com/example/other.git"])
 
-  for (const repository of [noRemote, unknown, ambiguous]) {
+  for (const repository of [noRemote, unknown]) {
     const resource = await resolveCommandShapeResource({ correction: "PROVE_TARGET_HEAD", directory: repository, pluginRoot })
     assert.equal(resource?.repository, "global")
     assert.equal(resource?.section, "exact-target-admission")
     assert.equal(resource?.path, join(pluginRoot, "resources", "command-shapes", "global.md"))
   }
+
+  const canonicalOrigin = await commandShapeRepository("https://github.com/fvanevski/firecrawl_skill.git")
+  runGit(canonicalOrigin, ["remote", "add", "upstream", "https://github.com/example/other.git"])
+  let resource = await resolveCommandShapeResource({ correction: "PROVE_TARGET_HEAD", directory: canonicalOrigin, pluginRoot })
+  assert.equal(resolveRepositoryIdentity(canonicalOrigin), "fvanevski/firecrawl_skill")
+  assert.equal(resource?.repository, "fvanevski/firecrawl_skill")
+  assert.equal(resource?.section, "exact-target-disposable-worktree")
+
+  const noOriginConflict = await commandShapeRepository()
+  runGit(noOriginConflict, ["remote", "add", "fork-a", "https://github.com/fvanevski/firecrawl_skill.git"])
+  runGit(noOriginConflict, ["remote", "add", "fork-b", "https://github.com/example/other.git"])
+  resource = await resolveCommandShapeResource({ correction: "PROVE_TARGET_HEAD", directory: noOriginConflict, pluginRoot })
+  assert.equal(resolveRepositoryIdentity(noOriginConflict), undefined)
+  assert.equal(resource?.repository, "global")
+  assert.equal(resource?.section, "exact-target-admission")
+
+  const ambiguousOrigin = await commandShapeRepository("https://github.com/fvanevski/firecrawl_skill.git")
+  runGit(ambiguousOrigin, ["remote", "set-url", "--push", "origin", "https://github.com/example/other.git"])
+  resource = await resolveCommandShapeResource({ correction: "PROVE_TARGET_HEAD", directory: ambiguousOrigin, pluginRoot })
+  assert.equal(resolveRepositoryIdentity(ambiguousOrigin), undefined)
+  assert.equal(resource?.repository, "global")
+  assert.equal(resource?.section, "exact-target-admission")
 })
 
 test("command-shape routing uses global-only mappings and leaves unmapped corrections unchanged", async () => {
