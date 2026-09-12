@@ -5,8 +5,72 @@ import { chmod, mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/pr
 import { tmpdir } from "node:os"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
+import { BUILD_AGENT_PROMPT, EVIDENCE_ASSESSMENT_RULE, EXPLORE_AGENT_PROMPT, REMEDIATION_AUDIT_RULE, VERIFY_AGENT_PROMPT } from "../lib/policy-spec.mjs"
 
 const installer = resolve(dirname(fileURLToPath(import.meta.url)), "../scripts/install-live-plugin.mjs")
+
+function validLiveConfig(context = 204800) {
+  const models = Object.fromEntries(["chat", "chat-fast", "chat-review", "chat-audit"].map((name) => [name, { limit: { context, input: 180000, output: 8192 } }]))
+  return {
+    model: "local/chat",
+    compaction: { auto: true, prune: true, reserved: 20000 },
+    plugin: [
+      "file:///home/filip/.config/opencode/plugins/operational-schema-v5/index.mjs",
+      "file:///home/filip/.config/opencode/plugins/system-message-compat-v1/index.mjs",
+    ],
+    provider: { local: { models } },
+    agent: {
+      build: { prompt: BUILD_AGENT_PROMPT, permission: { edit: { "*": "allow", "/home/filip/.config/opencode/opencode.json": "deny" } } },
+      explore: {
+        prompt: EXPLORE_AGENT_PROMPT,
+        permission: {
+          external_directory: { "*": "deny", "/tmp/opencode/review/worktrees/**": "allow", "/tmp/opencode/verify/**": "allow", "/home/filip/.local/share/opencode/tool-output/**": "allow" },
+          bash: {
+            "*": "deny",
+            "git rev-parse *": "allow", "rtk git rev-parse *": "allow",
+            "git log *": "allow", "rtk git log *": "allow",
+            "git diff *": "allow", "rtk git diff *": "allow",
+            "git merge-base *": "allow", "rtk git merge-base *": "allow",
+            "git branch --show-current": "allow", "rtk git branch --show-current": "allow",
+            [EVIDENCE_ASSESSMENT_RULE]: "allow", [`rtk ${EVIDENCE_ASSESSMENT_RULE}`]: "allow",
+            [REMEDIATION_AUDIT_RULE]: "allow", [`rtk ${REMEDIATION_AUDIT_RULE}`]: "allow",
+          },
+        },
+      },
+      verify: {
+        prompt: VERIFY_AGENT_PROMPT,
+        permission: {
+          external_directory: { "*": "deny", "/tmp/opencode/verify/**": "allow", "/home/filip/.local/share/opencode/tool-output/**": "allow" },
+          bash: {
+            "*": "deny",
+            "git ls-files *": "allow", "rtk git ls-files *": "allow",
+            "/home/filip/.config/opencode/plugins/operational-schema-v5/scripts/verify-disposable.mjs *": "allow",
+            "rtk /home/filip/.config/opencode/plugins/operational-schema-v5/scripts/verify-disposable.mjs *": "allow",
+            "/home/filip/.config/opencode/plugins/operational-schema-v5/scripts/verify-manifest.mjs --manifest /tmp/opencode/verify/manifests/*.json": "allow",
+            "rtk /home/filip/.config/opencode/plugins/operational-schema-v5/scripts/verify-manifest.mjs --manifest /tmp/opencode/verify/manifests/*.json": "allow",
+            "/home/filip/.config/opencode/plugins/operational-schema-v5/scripts/local-agent-assessment.mjs --spec /tmp/opencode/verify/assessments/*.json": "allow",
+            "rtk /home/filip/.config/opencode/plugins/operational-schema-v5/scripts/local-agent-assessment.mjs --spec /tmp/opencode/verify/assessments/*.json": "allow",
+            [EVIDENCE_ASSESSMENT_RULE]: "allow", [`rtk ${EVIDENCE_ASSESSMENT_RULE}`]: "allow",
+            [REMEDIATION_AUDIT_RULE]: "allow", [`rtk ${REMEDIATION_AUDIT_RULE}`]: "allow",
+            ".venv*/bin/ruff check *": "allow",
+            "PYTHONDONTWRITEBYTECODE=1 .venv*/bin/ruff check *": "allow",
+            ".venv*/bin/ruff check *--fix*": "deny",
+            "PYTHONDONTWRITEBYTECODE=1 .venv*/bin/ruff check *--fix*": "deny",
+            ".venv*/bin/ruff format --check *": "allow",
+            ".venv*/bin/pyrefly check *": "allow",
+            ".venv*/bin/pytest *": "allow",
+            "PYTHONDONTWRITEBYTECODE=1 .venv*/bin/pytest *": "allow",
+            ".venv*/bin/mypy *": "allow",
+          },
+        },
+      },
+      "fresh-review": {
+        prompt: "Review the bounded diff. End with OPERATIONAL_REVIEW: CLEAN|FINDINGS|BLOCKED; TARGETS_REVIEWED: <n>; TARGETS_REQUIRED: <n>.",
+        permission: { external_directory: { "*": "deny", "/tmp/opencode/review/worktrees/**": "allow" }, bash: { "*": "deny" } },
+      },
+    },
+  }
+}
 const CLEAN_GIT_ENV = {
   ...process.env,
   GIT_CONFIG_NOSYSTEM: "1",
@@ -66,12 +130,12 @@ async function writeFixtureSource(repo, { failInstalledValidation = false } = {}
   await chmod(join(repo, "scripts", "validate-config.mjs"), 0o755)
   await writeFile(
     join(repo, "scripts", "fixture-check.mjs"),
-    `#!/usr/bin/env node\nimport { spawnSync } from "node:child_process"\nconst r = spawnSync("git", ["config", "--get", "init.defaultBranch"], { encoding: "utf8" })\nif (r.status !== 0 || r.stdout.trim() !== "master") {\n  process.stderr.write(\`unexpected init.defaultBranch=\${r.stdout.trim()}\\n\`)\n  process.exit(1)\n}\n`,
+    `#!/usr/bin/env node\nprocess.stderr.write("staged profile command must not execute\\n")\nprocess.exit(99)\n`,
   )
   await chmod(join(repo, "scripts", "fixture-check.mjs"), 0o755)
   await writeFile(
     join(repo, "scripts", "fixture-test.mjs"),
-    `#!/usr/bin/env node\nprocess.stdout.write("TAP version 13\\n1..1\\nok 1 - fixture\\n# tests 1\\n# pass 1\\n# fail 0\\n# skipped 0\\n")\n`,
+    `#!/usr/bin/env node\nprocess.stderr.write("staged profile test must not execute\\n")\nprocess.exit(99)\n`,
   )
   await chmod(join(repo, "scripts", "fixture-test.mjs"), 0o755)
   await writeFile(
@@ -95,11 +159,11 @@ async function writeFixtureSource(repo, { failInstalledValidation = false } = {}
 async function fixture({ mergedTreeMismatch = false, priorLiveDrift = false, failInstalledValidation = false } = {}) {
   const root = await mkdtemp(join(tmpdir(), "live-plugin-install-test-"))
   const repo = join(root, "repo")
-  const live = join(root, "live")
+  const live = join(root, "plugins", "live")
   const config = join(root, "opencode.json")
-  const work = join(root, "work")
-  const plan = join(root, "plan.json")
-  const receipt = join(root, "receipt.json")
+  const work = join(root, "control")
+  const plan = join(work, "plan.json")
+  const receipt = join(work, "receipt.json")
   await mkdir(repo)
   must(git(repo, ["init", "-q"]), "git init")
   must(git(repo, ["config", "user.name", "GHDEV Fixture"]), "git user.name")
@@ -110,7 +174,8 @@ async function fixture({ mergedTreeMismatch = false, priorLiveDrift = false, fai
   must(git(repo, ["commit", "-qm", "prior"]), "git commit prior")
   const prior = must(git(repo, ["rev-parse", "HEAD"]), "prior sha")
   await archiveCommit(repo, prior, live)
-  await writeFile(config, '{"fixture":true}\n')
+  const configText = `${JSON.stringify(validLiveConfig(), null, 2)}\n`
+  await writeFile(config, configText)
   if (priorLiveDrift) await writeFile(join(live, "state.txt"), "drifted prior\n")
 
   await writeFile(join(repo, "state.txt"), "reviewed\n")
@@ -127,7 +192,7 @@ async function fixture({ mergedTreeMismatch = false, priorLiveDrift = false, fai
   }
   const merged = must(git(repo, ["rev-parse", "HEAD"]), "merged sha")
 
-  return { root, repo, live, config, work, plan, receipt, prior, reviewed, merged }
+  return { root, repo, live, config, configText, work, plan, receipt, prior, reviewed, merged }
 }
 
 function invoke(args, env = {}) {
