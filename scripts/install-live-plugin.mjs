@@ -467,6 +467,27 @@ function pathWithin(parent, child) {
   return rel === "" || (rel !== ".." && !rel.startsWith(`..${sep}`) && !isAbsolute(rel))
 }
 
+function isEphemeralPath(path) {
+  const target = resolve(path)
+  return [resolve(tmpdir()), resolve("/run"), resolve("/dev/shm")].some((root) => pathWithin(root, target))
+}
+
+function assertPersistentProductionPath(path, label) {
+  if (isEphemeralPath(path)) {
+    block("EPHEMERAL_PRODUCTION_PATH_REJECTED", `${label} must survive host reboot for production deployment/recovery`)
+  }
+}
+
+function assertControlRootBinding(controlRoot, testMode, persistence) {
+  if (!testMode) {
+    if (controlRoot !== DEFAULT_WORK_ROOT || persistence !== "PERSISTENT_REQUIRED") {
+      block("CONTROL_ROOT_BINDING_MISMATCH", "production control state must use the canonical persistent state root")
+    }
+    return
+  }
+  if (persistence !== "EPHEMERAL_TEST_ONLY") block("CONTROL_ROOT_BINDING_MISMATCH", "test-mode control state must be explicitly marked ephemeral test-only")
+}
+
 function assertLivePathContract(liveRoot, liveConfig, testMode) {
   const tempRoot = resolve(tmpdir())
   if (!testMode) {
@@ -484,8 +505,7 @@ async function ensureSafeControlRoot(requestedRoot, liveParent, { allowEphemeral
   const target = resolve(requestedRoot)
   const filesystemRoot = parse(target).root
   if (target === filesystemRoot) block("UNSAFE_CONTROL_ROOT", "installer control root must not be a filesystem root")
-  const ephemeralRoots = [resolve(tmpdir()), resolve("/run"), resolve("/dev/shm")]
-  if (!allowEphemeral && ephemeralRoots.some((root) => target === root || pathWithin(root, target))) {
+  if (!allowEphemeral && isEphemeralPath(target)) {
     block("EPHEMERAL_CONTROL_ROOT_REJECTED", "production recovery state must use persistent storage, not an ephemeral runtime/tmpfs root")
   }
 
@@ -576,17 +596,21 @@ async function readPackageMarker(root) {
 }
 
 async function prepare(options) {
+  const testMode = yesNoOption(options, "--test-mode")
   const repoRoot = await ensureRepoRoot(absolutePath(required(options, "--repo"), "--repo"))
+  if (!testMode) assertPersistentProductionPath(repoRoot, "installer repository checkout")
   const mergedSha = exactSha(required(options, "--merged-sha"), "--merged-sha")
   const reviewedSha = exactSha(required(options, "--reviewed-sha"), "--reviewed-sha")
   const expectedLiveSha = exactSha(required(options, "--expected-live-sha"), "--expected-live-sha")
   await assertExecutionCheckout(repoRoot, mergedSha)
   const planPath = absolutePath(required(options, "--plan"), "--plan")
-  const testMode = yesNoOption(options, "--test-mode")
   const liveRoot = absolutePath(option(options, "--live-root", DEFAULT_LIVE_ROOT), "--live-root")
   const liveConfig = absolutePath(option(options, "--live-config", DEFAULT_LIVE_CONFIG), "--live-config")
   const requestedWorkRoot = absolutePath(option(options, "--work-root", DEFAULT_WORK_ROOT), "--work-root")
   assertLivePathContract(liveRoot, liveConfig, testMode)
+  if (!testMode && requestedWorkRoot !== DEFAULT_WORK_ROOT) {
+    block("NONDEFAULT_CONTROL_ROOT_REJECTED", `production control state must use ${DEFAULT_WORK_ROOT}`)
+  }
 
   const mergedTree = resolveCommitTree(repoRoot, mergedSha, "merged commit")
   const reviewedTree = resolveCommitTree(repoRoot, reviewedSha, "reviewed commit")
@@ -851,7 +875,10 @@ async function promote(options) {
     block("INVALID_PLAN", `${planPath} is not a prepared ${PLAN_SCHEMA} plan`)
   }
 
+  const testMode = plan.test_mode === true
+  if (typeof plan.test_mode !== "boolean") block("INVALID_PLAN", "prepared plan is missing its test-mode binding")
   const repoRoot = await ensureRepoRoot(plan.repository_root)
+  if (!testMode) assertPersistentProductionPath(repoRoot, "installer repository checkout")
   const mergedSha = exactSha(plan.merged_commit, "plan.merged_commit")
   const reviewedSha = exactSha(plan.reviewed_commit, "plan.reviewed_commit")
   const expectedLiveSha = exactSha(plan.expected_live?.commit, "plan.expected_live.commit")
@@ -867,8 +894,6 @@ async function promote(options) {
   }
 
   const stageRoot = absolutePath(plan.source_stage?.root, "plan.source_stage.root")
-  const testMode = plan.test_mode === true
-  if (typeof plan.test_mode !== "boolean") block("INVALID_PLAN", "prepared plan is missing its test-mode binding")
   const liveRoot = absolutePath(plan.activation_pair?.live_root, "plan.activation_pair.live_root")
   const liveConfig = absolutePath(plan.activation_pair?.live_config, "plan.activation_pair.live_config")
   assertLivePathContract(liveRoot, liveConfig, testMode)
@@ -876,6 +901,7 @@ async function promote(options) {
   const workRoot = absolutePath(plan.work_root, "plan.work_root")
   const scratchRoot = absolutePath(plan.scratch_root, "plan.scratch_root")
   const controlRoot = absolutePath(plan.control_root, "plan.control_root")
+  assertControlRootBinding(controlRoot, testMode, plan.control_root_persistence)
   const canonicalControlRoot = await ensureSafeControlRoot(controlRoot, liveParent, { allowEphemeral: testMode })
   if (canonicalControlRoot !== controlRoot) block("PRECONDITION_DRIFT", "control-root identity changed after prepare")
   if (!pathWithin(controlRoot, workRoot) || !pathWithin(workRoot, stageRoot) || !pathWithin(workRoot, scratchRoot)) {
@@ -1205,7 +1231,10 @@ async function recover(options) {
   const plan = await readJson(planPath)
   if (plan.schema_version !== PLAN_SCHEMA || plan.result !== "PREPARED") block("INVALID_PLAN", `${planPath} is not a prepared ${PLAN_SCHEMA} plan`)
 
+  const testMode = plan.test_mode === true
+  if (typeof plan.test_mode !== "boolean") block("INVALID_PLAN", "prepared plan is missing its test-mode binding")
   const repoRoot = await ensureRepoRoot(plan.repository_root)
+  if (!testMode) assertPersistentProductionPath(repoRoot, "installer repository checkout")
   const mergedSha = exactSha(plan.merged_commit, "plan.merged_commit")
   const expectedLiveSha = exactSha(plan.expected_live?.commit, "plan.expected_live.commit")
   await assertExecutionCheckout(repoRoot, mergedSha)
@@ -1220,13 +1249,12 @@ async function recover(options) {
     block("PRECONDITION_DRIFT", "recovery Git identities no longer agree with the armed journal")
   }
 
-  const testMode = plan.test_mode === true
-  if (typeof plan.test_mode !== "boolean") block("INVALID_PLAN", "prepared plan is missing its test-mode binding")
   const liveRoot = absolutePath(plan.activation_pair?.live_root, "plan.activation_pair.live_root")
   const liveConfig = absolutePath(plan.activation_pair?.live_config, "plan.activation_pair.live_config")
   assertLivePathContract(liveRoot, liveConfig, testMode)
   const liveParent = dirname(liveRoot)
   const controlRoot = absolutePath(plan.control_root, "plan.control_root")
+  assertControlRootBinding(controlRoot, testMode, plan.control_root_persistence)
   const canonicalControlRoot = await ensureSafeControlRoot(controlRoot, liveParent, { allowEphemeral: testMode })
   if (canonicalControlRoot !== controlRoot) block("PRECONDITION_DRIFT", "control-root identity changed before recovery")
   await ensureSafeControlDestination(controlRoot, receiptPath, "UNSAFE_RECEIPT_PATH", "receipt")
