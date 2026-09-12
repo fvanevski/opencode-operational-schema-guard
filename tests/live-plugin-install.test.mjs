@@ -1,7 +1,7 @@
 import test from "node:test"
 import assert from "node:assert/strict"
 import { spawn, spawnSync } from "node:child_process"
-import { chmod, mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises"
+import { chmod, mkdir, mkdtemp, readFile, rename, rm, stat, symlink, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
@@ -210,16 +210,20 @@ async function fixture({ mergedTreeMismatch = false, priorLiveDrift = false, fai
 }
 
 const fixtureRepoByPlan = new Map()
+const fixtureRepoByReceipt = new Map()
 
 function invoke(args, env = {}) {
   const repoIndex = args.indexOf("--repo")
   const planIndex = args.indexOf("--plan")
+  const receiptIndex = args.indexOf("--receipt")
   let repo
   if (repoIndex >= 0) {
     repo = args[repoIndex + 1]
     if (planIndex >= 0) fixtureRepoByPlan.set(args[planIndex + 1], repo)
   } else if (planIndex >= 0) {
     repo = fixtureRepoByPlan.get(args[planIndex + 1])
+  } else if (receiptIndex >= 0) {
+    repo = fixtureRepoByReceipt.get(args[receiptIndex + 1])
   }
   assert.ok(repo, `fixture repository is unavailable for invocation: ${args.join(" ")}`)
   return run(process.execPath, [join(repo, "scripts", "install-live-plugin.mjs"), ...args], {
@@ -258,6 +262,11 @@ async function prepared(f) {
 
 function promoteArgs(f, digest) {
   return ["promote", "--plan", f.plan, "--expected-plan-sha256", digest, "--receipt", f.receipt]
+}
+
+function recoverArgs(f, digest) {
+  fixtureRepoByReceipt.set(f.receipt, f.repo)
+  return ["recover", "--receipt", f.receipt, "--expected-plan-sha256", digest]
 }
 
 async function cleanup(f) {
@@ -376,6 +385,23 @@ test("prepare rejects a plan path outside the control root", async () => {
   }
 })
 
+test("prepare rejects symlinked plan destination ancestors", async () => {
+  const f = await fixture()
+  try {
+    await mkdir(f.work, { recursive: true })
+    const outside = join(f.root, "outside-plan-root")
+    await mkdir(outside)
+    await symlink(outside, join(f.work, "escape"))
+    f.plan = join(f.work, "escape", "plan.json")
+    const result = invoke(prepareArgs(f))
+    blocked(result, "SYMLINK_BOUNDARY_REJECTED")
+    assert.equal(await exists(join(outside, "plan.json")), false)
+    assert.equal(await readFile(join(f.live, "state.txt"), "utf8"), "prior\n")
+  } finally {
+    await cleanup(f)
+  }
+})
+
 test("plan destination collision is exclusive and non-mutating", async () => {
   const f = await fixture()
   try {
@@ -460,6 +486,23 @@ test("promote rejects a receipt path outside the prepared control root", async (
   }
 })
 
+test("promote rejects symlinked receipt destination ancestors", async () => {
+  const f = await fixture()
+  try {
+    const { digest } = await prepared(f)
+    const outside = join(f.root, "outside-receipt-root")
+    await mkdir(outside)
+    await symlink(outside, join(f.work, "receipt-escape"))
+    f.receipt = join(f.work, "receipt-escape", "receipt.json")
+    const result = invoke(promoteArgs(f, digest))
+    blocked(result, "SYMLINK_BOUNDARY_REJECTED")
+    assert.equal(await exists(join(outside, "receipt.json")), false)
+    assert.equal(await readFile(join(f.live, "state.txt"), "utf8"), "prior\n")
+  } finally {
+    await cleanup(f)
+  }
+})
+
 test("receipt destination collision blocks before lock or live mutation", async () => {
   const f = await fixture()
   try {
@@ -484,6 +527,58 @@ test("installation lock collision blocks and removes the reserved receipt", asyn
     blocked(result, "INSTALL_LOCKED")
     assert.equal(await exists(f.receipt), false)
     assert.equal(await readFile(join(f.live, "state.txt"), "utf8"), "prior\n")
+  } finally {
+    await cleanup(f)
+  }
+})
+
+test("recover restores a missing canonical live root from an armed crash journal", async () => {
+  const f = await fixture()
+  try {
+    const { digest, plan } = await prepared(f)
+    const liveParent = dirname(f.live)
+    const superseded = join(liveParent, "live.superseded-crash-test")
+    const failedRoot = join(liveParent, "live.failed-crash-test")
+    const incoming = join(liveParent, ".live.incoming-crash-test")
+    const backup = join(liveParent, "live.backup-crash-test")
+    const configBackup = join(dirname(f.config), "opencode.json.backup-crash-test")
+    const lockPath = join(liveParent, ".live.install.lock")
+    await rename(f.live, superseded)
+    await writeFile(lockPath, `${JSON.stringify({ pid: 999999999, nonce: "stale", created_at: new Date().toISOString() })}\n`)
+    const pending = {
+      schema_version: "opencode-live-plugin-deployment-v1",
+      result: "PROMOTION_PENDING",
+      created_at: new Date().toISOString(),
+      plan: { path: f.plan, sha256: digest, schema_version: plan.schema_version },
+      merged_commit: f.merged,
+      merged_tree: plan.merged_tree,
+      prior_live_commit: f.prior,
+      live_root: f.live,
+      recovery: {
+        state: "ARMED",
+        control_root: f.work,
+        live_parent: liveParent,
+        lock_path: lockPath,
+        lock_nonce: "stale",
+        source_backup: backup,
+        superseded_source: superseded,
+        incoming_source: incoming,
+        failed_candidate: failedRoot,
+        config_backup: configBackup,
+        expected_live_tree: plan.expected_live.tree,
+        expected_merged_tree: plan.merged_tree,
+        pre_promotion_config_sha256: plan.activation_pair.pre_promotion_config_sha256,
+      },
+    }
+    await writeFile(f.receipt, `${JSON.stringify(pending, null, 2)}\n`)
+    const output = must(invoke(recoverArgs(f, digest)), "installer recover")
+    assert.match(output, /OPERATIONAL_LIVE_PLUGIN_RECOVERY_RESULT=PASS/)
+    assert.equal(await readFile(join(f.live, "state.txt"), "utf8"), "prior\n")
+    const recovered = JSON.parse(await readFile(f.receipt, "utf8"))
+    assert.equal(recovered.result, "RECOVERED")
+    assert.equal(recovered.recovery.state, "ROLLED_BACK")
+    assert.equal(recovered.recovery.action, "MISSING_LIVE_ROOT_RESTORED")
+    assert.equal(await exists(lockPath), false)
   } finally {
     await cleanup(f)
   }
