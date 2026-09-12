@@ -321,12 +321,13 @@ test("plugin routes resource identity and exact-target admission through the aut
 
   const proof = { command: "git rev-parse HEAD", workdir: worktree }
   await assert.doesNotReject(() => hooks["tool.execute.before"]({ sessionID: "firecrawl-session", callID: "proof", tool: "bash" }, { args: proof }))
-  const proven = await hooks["tool.execute.after"](
+  const proofOutput = { title: "", output: `${target}\n`, metadata: { exit: 0 } }
+  await hooks["tool.execute.after"](
     { sessionID: "firecrawl-session", callID: "proof", tool: "bash", args: proof },
-    { title: "", output: `${target}\n`, metadata: { exit: 0 } },
+    proofOutput,
   )
-  assert.equal(proven.metadata.operationalSchema.authorityStatus, "verified")
-  assert.equal(proven.metadata.operationalSchema.observedHead, target)
+  assert.equal(proofOutput.metadata.operationalSchema.authorityStatus, "verified")
+  assert.equal(proofOutput.metadata.operationalSchema.observedHead, target)
 
   runGit(firecrawl, ["worktree", "remove", "--force", worktree])
   await hooks.dispose()
