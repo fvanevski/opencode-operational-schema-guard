@@ -2118,6 +2118,46 @@ test("strict starting-head SHA aliases bind exact 40-hex tokens and tolerate tra
   }
 })
 
+test("authority metadata and prose collisions leave binding and authority epoch unchanged", async () => {
+  const expected = "8".repeat(40)
+  const metadata = "9".repeat(40)
+  const inertCases = [
+    `REVIEWED_PR_HEAD_SHA=${metadata}`,
+    `SOURCE_STAGE_HEAD_SHA=${metadata}`,
+    `CONTROL_HEAD_SHA=${metadata}`,
+    `NOT_HEAD_SHA=${metadata}`,
+    `XPR_HEAD_SHA=${metadata}`,
+    `metadata: REVIEWED_PR_HEAD_SHA=${metadata}`,
+    `This prose mentions HEAD_SHA=${metadata} only as an example.`,
+    `metadata: HEAD_SHA=${metadata}`,
+  ]
+
+  for (const [index, inertText] of inertCases.entries()) {
+    const unbound = createOperationGuard({ directory: `/tmp/project-authority-inert-unbound-${index}`, env: {} })
+    const unboundSession = `authority-inert-unbound-${index}`
+    await message(unbound, unboundSession, "build", inertText)
+    const unboundContext = { context: [] }
+    await unbound["experimental.session.compacting"]({ sessionID: unboundSession }, unboundContext)
+    assert.match(unboundContext.context.join("\n"), /Authority: unbound/, inertText)
+
+    const bound = createOperationGuard({ directory: `/tmp/project-authority-inert-bound-${index}`, env: {} })
+    const boundSession = `authority-inert-bound-${index}`
+    await message(bound, boundSession, "build", `REQUIRED STARTING HEAD: ${expected}`)
+    const proofArgs = { command: "git rev-parse HEAD" }
+    await before(bound, boundSession, "proof", "bash", proofArgs)
+    await message(bound, boundSession, "build", inertText)
+    const pendingContext = { context: [] }
+    await bound["experimental.session.compacting"]({ sessionID: boundSession }, pendingContext)
+    assert.match(pendingContext.context.join("\n"), new RegExp(`Authority: ${expected}`), inertText)
+    assert.match(pendingContext.context.join("\n"), /Authority admission: pending; mode: strict-start/, inertText)
+    const proof = await after(bound, boundSession, "proof", "bash", proofArgs, { output: `${expected}\n`, metadata: { exit: 0 } })
+    assert.doesNotMatch(proof.output, /OPERATIONAL_AUTHORITY_PROOF: STALE/, inertText)
+    assert.equal(proof.metadata.operationalSchema.authorityBinding, expected, inertText)
+    assert.equal(proof.metadata.operationalSchema.authorityMode, "strict-start", inertText)
+    assert.equal(proof.metadata.operationalSchema.authorityStatus, "verified", inertText)
+  }
+})
+
 test("authority metadata suffix collisions remain inert regardless of declaration order", async () => {
   const expected = "a".repeat(40)
   const metadata = "b".repeat(40)
