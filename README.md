@@ -267,3 +267,29 @@ The Verify packet names it on a standalone `Manifest:` line and runs:
 Use `/tmp/opencode/verify/materials/**` for non-command inputs, `/tmp/opencode/verify/manifests/**` for typed Verify command plans, `/tmp/opencode/verify/assessments/**` for typed repository-assessment specs, `/tmp/opencode/verify/evidence/**` for canonical assessment outputs, `/tmp/opencode/verify/worktrees/**` for gateway-owned candidate worktrees, `/tmp/opencode/verify/repository-owned/<assessment-id>/**` for the one descriptor-bound mutable runtime assigned to that repository-owned assessment, and `/tmp/opencode/review/worktrees/**` for Explore/Fresh-review worktrees. `/tmp/opencode/control-worktrees/**` and `/tmp/opencode/assessment-reservations/**` are internal repository-owned gateway namespaces for exact-authority control snapshots and assessment-ID reservations; callers and repository runners must not stage, mutate, or reuse content there. Arbitrary `/tmp` access remains denied.
 
 Upgrade a staged v5.20-style configuration with `scripts/migrate-v521-config.mjs --input <existing.json> --output <new.json>`, validate the candidate with `scripts/validate-config.mjs`, and install it only through `scripts/install-live-config.mjs`. The migration removes retired Firecrawl-specific core permissions, replaces the legacy assessment `--sha/--assessment-id` route with the typed `--spec` gateway, and generalizes repository-local Python validation permissions to `.venv*/bin/...`.
+
+## Command-shape recovery resources
+
+Operational corrections may now append one bounded machine-parseable advisory pointer:
+
+```text
+OPERATIONAL_RESOURCE: kind=command-shape; repository=<owner/repo|global>; correction=<CODE>; path="<installed-plugin-root>/resources/command-shapes/<file>.md"; section=<section>
+```
+
+The existing `OPERATIONAL_CORRECTION` payload remains authoritative and unchanged. Resources are version-controlled under `resources/command-shapes/`, indexed by `index.json`, resolved from local Git remote metadata only, and loaded relative to the installed plugin root rather than a fixed home-directory path. Missing, malformed, stale, ambiguous, or path-escaping resource data fails open to the existing correction behavior; it never admits a command, changes authority state, auto-retries, or alters review/Verify/publication policy.
+
+The installed layout is intentionally small:
+
+```text
+resources/command-shapes/
+  index.json
+  global.md
+  repositories/
+    fvanevski__firecrawl_skill.md
+```
+
+To add another repository cookbook, create one bounded Markdown resource under `repositories/` using symbolic placeholders rather than live identities or secrets, add stable `<!-- command-shape-section:<name> -->` markers, and register the canonical lower-case `owner/repo` key plus only the correction-code overrides that actually need repository context in `index.json`. Leave shared/mode-neutral corrections on the global mapping. The resource loader derives repository identity from local Git remote metadata, validates every indexed path under the installed command-shape root, and falls back to a global recipe or the original correction when identity or resource data is unavailable.
+
+Validate a new cookbook with deterministic tests for the supported remote spellings, repository/global fallback, unmapped correction preservation, malformed/stale/traversal/symlink rejection, plugin-root relocation, placeholder/secret hygiene, and at least one representative guard rejection that emits the intended pointer. Then run the repository's normal `npm run check`, complete `npm test`, and exact-head trusted repository-final Verify before publication. Cookbook examples remain advisory test fixtures; they never replace the live guard as admission authority.
+
+Recovery order for an agent is: follow the correction, read the optional pointed resource/section, retry the corrected shape at most once when the correction permits it, then classify any repeated mismatch as drift/runtime/interface evidence. Inspect plugin implementation source only when the task is explicitly debugging the plugin itself. Project-level mini cookbooks remain separate from these plugin-shipped low-level recovery resources.
