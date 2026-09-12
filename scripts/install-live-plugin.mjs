@@ -478,10 +478,7 @@ async function prepare(options) {
   const planPath = absolutePath(required(options, "--plan"), "--plan")
   const liveRoot = absolutePath(option(options, "--live-root", DEFAULT_LIVE_ROOT), "--live-root")
   const liveConfig = absolutePath(option(options, "--live-config", DEFAULT_LIVE_CONFIG), "--live-config")
-  const workRootBase = absolutePath(option(options, "--work-root", DEFAULT_WORK_ROOT), "--work-root")
-  const profilePath = safeRelativeRepoPath(option(options, "--profile", DEFAULT_PROFILE), "--profile")
-  const testInitBranch = option(options, "--test-init-default-branch", DEFAULT_TEST_INIT_BRANCH)
-  if (!/^[A-Za-z0-9._/-]+$/.test(testInitBranch)) block("USAGE", "--test-init-default-branch contains unsupported characters")
+  const requestedWorkRoot = absolutePath(option(options, "--work-root", DEFAULT_WORK_ROOT), "--work-root")
 
   const mergedTree = resolveCommitTree(repoRoot, mergedSha, "merged commit")
   const reviewedTree = resolveCommitTree(repoRoot, reviewedSha, "reviewed commit")
@@ -502,9 +499,10 @@ async function prepare(options) {
   const liveParentIdentity = await pathIdentity(liveParent, "directory")
   const liveConfigIdentity = await pathIdentity(liveConfig, "file")
   const liveConfigSha256 = await sha256File(liveConfig)
+  const controlRoot = await ensureSafeControlRoot(requestedWorkRoot, liveParent)
+  if (!pathWithin(controlRoot, planPath)) block("UNSAFE_CONTROL_PATH", "plan must be created inside the installer control root")
 
-  await mkdir(workRootBase, { recursive: true })
-  const workRoot = await mkdtemp(join(workRootBase, "prepare-"))
+  const workRoot = await mkdtemp(join(controlRoot, "prepare-"))
   const scratchRoot = join(workRoot, "scratch")
   await mkdir(scratchRoot)
   const stageRoot = join(workRoot, "merged-source")
@@ -516,7 +514,6 @@ async function prepare(options) {
     scratchRoot,
   })
   const packageMarker = await readPackageMarker(stageRoot)
-  const validation = await runValidationProfile(stageRoot, workRoot, profilePath, testInitBranch)
 
   const priorLive = await validateTreeAgainstCommit({
     repoRoot,
@@ -526,7 +523,7 @@ async function prepare(options) {
     scratchRoot,
     label: "current live source",
   })
-  const configValidation = await validateConfigWithSource(stageRoot, liveConfig)
+  const configValidation = await validateLiveConfig(liveConfig)
 
   const plan = {
     schema_version: PLAN_SCHEMA,
@@ -563,8 +560,8 @@ async function prepare(options) {
       config_change_required: false,
       config_validation: configValidation,
     },
-    validation,
-    validation_summary: summarizeValidation(validation),
+    repository_validation: { authority: "trusted-actions-external", result: "NOT_EVALUATED_BY_INSTALLER" },
+    control_root: controlRoot,
     work_root: workRoot,
     scratch_root: scratchRoot,
     fresh_process_acceptance: "NOT_RUN",
