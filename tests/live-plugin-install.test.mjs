@@ -406,7 +406,7 @@ test("prepare rejects a plan path outside the control root", async () => {
 test("prepare rejects symlinked plan destination ancestors", async () => {
   const f = await fixture()
   try {
-    await mkdir(f.work, { recursive: true })
+    await mkdir(f.work, { recursive: true, mode: 0o700 })
     const outside = join(f.root, "outside-plan-root")
     await mkdir(outside)
     await symlink(outside, join(f.work, "escape"))
@@ -423,7 +423,7 @@ test("prepare rejects symlinked plan destination ancestors", async () => {
 test("plan destination collision is exclusive and non-mutating", async () => {
   const f = await fixture()
   try {
-    await mkdir(dirname(f.plan), { recursive: true })
+    await mkdir(dirname(f.plan), { recursive: true, mode: 0o700 })
     await writeFile(f.plan, "sentinel\n")
     const result = invoke(prepareArgs(f))
     blocked(result, "DESTINATION_EXISTS")
