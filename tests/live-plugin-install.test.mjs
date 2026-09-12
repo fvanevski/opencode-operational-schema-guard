@@ -223,4 +223,116 @@ test("prepare rejects unauthenticated prior live tree", async () => {
 
 test("plan destination collision is exclusive and non-mutating", async () => {
   const f = await fixture()
-/*__GHDEV_INSTALLER_TEST_REMAINDER__*/
+  try {
+    await writeFile(f.plan, "sentinel\n")
+    const result = invoke(prepareArgs(f))
+    blocked(result, "DESTINATION_EXISTS")
+    assert.equal(await readFile(f.plan, "utf8"), "sentinel\n")
+    assert.equal(await readFile(join(f.live, "state.txt"), "utf8"), "prior\n")
+  } finally {
+    await cleanup(f)
+  }
+})
+
+test("promote rejects plan digest tampering before live mutation", async () => {
+  const f = await fixture()
+  try {
+    const { digest } = await prepared(f)
+    await writeFile(f.plan, `${await readFile(f.plan, "utf8")}\n`)
+    const result = invoke(promoteArgs(f, digest))
+    blocked(result, "PLAN_DIGEST_MISMATCH")
+    assert.equal(await exists(f.receipt), false)
+    assert.equal(await readFile(join(f.live, "state.txt"), "utf8"), "prior\n")
+  } finally {
+    await cleanup(f)
+  }
+})
+
+test("promote rejects prepared-stage drift before live mutation", async () => {
+  const f = await fixture()
+  try {
+    const { digest, plan } = await prepared(f)
+    await writeFile(join(plan.source_stage.root, "state.txt"), "stage drift\n")
+    const result = invoke(promoteArgs(f, digest))
+    blocked(result, "TREE_IDENTITY_MISMATCH")
+    assert.equal(await exists(f.receipt), false)
+    assert.equal(await readFile(join(f.live, "state.txt"), "utf8"), "prior\n")
+  } finally {
+    await cleanup(f)
+  }
+})
+
+test("promote rejects live-tree drift between prepare and promote", async () => {
+  const f = await fixture()
+  try {
+    const { digest } = await prepared(f)
+    await writeFile(join(f.live, "state.txt"), "live drift\n")
+    const result = invoke(promoteArgs(f, digest))
+    blocked(result, "TREE_IDENTITY_MISMATCH")
+    assert.equal(await exists(f.receipt), false)
+    assert.equal(await readFile(join(f.live, "state.txt"), "utf8"), "live drift\n")
+  } finally {
+    await cleanup(f)
+  }
+})
+
+test("promote rejects live-config drift between prepare and promote", async () => {
+  const f = await fixture()
+  try {
+    const { digest } = await prepared(f)
+    await writeFile(f.config, '{"fixture":false}\n')
+    const result = invoke(promoteArgs(f, digest))
+    blocked(result, "PRECONDITION_DRIFT")
+    assert.equal(await exists(f.receipt), false)
+    assert.equal(await readFile(join(f.live, "state.txt"), "utf8"), "prior\n")
+  } finally {
+    await cleanup(f)
+  }
+})
+
+test("receipt destination collision blocks before lock or live mutation", async () => {
+  const f = await fixture()
+  try {
+    const { digest } = await prepared(f)
+    await writeFile(f.receipt, "sentinel\n")
+    const result = invoke(promoteArgs(f, digest))
+    blocked(result, "DESTINATION_EXISTS")
+    assert.equal(await readFile(f.receipt, "utf8"), "sentinel\n")
+    assert.equal(await readFile(join(f.live, "state.txt"), "utf8"), "prior\n")
+  } finally {
+    await cleanup(f)
+  }
+})
+
+test("installation lock collision blocks and removes the reserved receipt", async () => {
+  const f = await fixture()
+  try {
+    const { digest } = await prepared(f)
+    const lock = join(dirname(f.live), `.${f.live.split("/").at(-1)}.install.lock`)
+    await writeFile(lock, "held\n")
+    const result = invoke(promoteArgs(f, digest))
+    blocked(result, "INSTALL_LOCKED")
+    assert.equal(await exists(f.receipt), false)
+    assert.equal(await readFile(join(f.live, "state.txt"), "utf8"), "prior\n")
+  } finally {
+    await cleanup(f)
+  }
+})
+
+test("post-promotion validation failure restores prior live source", async () => {
+  const f = await fixture({ failInstalledValidation: true })
+  try {
+    const { digest } = await prepared(f)
+    const result = invoke(promoteArgs(f, digest), {
+      FIXTURE_FAIL_INSTALLED_VALIDATION: "1",
+      FIXTURE_LIVE_ROOT: f.live,
+    })
+    blocked(result, "POST_PROMOTION_VALIDATION_FAILED_ROLLED_BACK")
+    assert.equal(await exists(f.receipt), false)
+    assert.equal(await readFile(join(f.live, "state.txt"), "utf8"), "prior\n")
+    assert.equal(await readFile(f.config, "utf8"), '{"fixture":true}\n')
+  } finally {
+    await cleanup(f)
+  }
+})
+
