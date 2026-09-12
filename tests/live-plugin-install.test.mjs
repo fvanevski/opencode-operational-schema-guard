@@ -296,6 +296,8 @@ test("prepare and promote exact merged source with typed receipt and rollback ma
     assert.equal(receipt.installed.tree_matches_merged_main, true)
     assert.equal(receipt.activation_pair.config_byte_preserved, true)
     assert.equal(receipt.test_mode, true)
+    assert.equal(receipt.deployment_scope, "TEST_ONLY")
+    assert.equal(receipt.production_activation_pair_certified, false)
     assert.equal(receipt.control_root_persistence, "EPHEMERAL_TEST_ONLY")
     assert.equal(receipt.rollback.retained, true)
     assert.equal(await readFile(join(receipt.rollback.source_backup, "state.txt"), "utf8"), "prior\n")

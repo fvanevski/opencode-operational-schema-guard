@@ -56,8 +56,8 @@ function usage() {
     --reviewed-sha 40HEX \\
     --expected-live-sha 40HEX \\
     --plan ABSOLUTE_PLAN_JSON \\
-    [--work-root ABSOLUTE_PATH] \\
-    [--test-mode yes --live-root TEMP_PATH --live-config TEMP_PATH]
+    [--work-root CANONICAL_PERSISTENT_STATE_ROOT] \\
+    [--test-mode yes --live-root TEMP_PATH --live-config TEMP_PATH --work-root TEMP_PATH]
 
   install-live-plugin.mjs promote \\
     --plan ABSOLUTE_PLAN_JSON \\
@@ -694,6 +694,8 @@ async function prepare(options) {
     },
     repository_validation: { authority: "trusted-actions-external", result: "NOT_EVALUATED_BY_INSTALLER" },
     test_mode: testMode,
+    deployment_scope: testMode ? "TEST_ONLY" : "PRODUCTION",
+    production_activation_pair_certified: !testMode,
     control_root_persistence: testMode ? "EPHEMERAL_TEST_ONLY" : "PERSISTENT_REQUIRED",
     control_root: controlRoot,
     work_root: workRoot,
@@ -717,6 +719,8 @@ async function prepare(options) {
       `PRE_PROMOTION_CONFIG_SHA256=${liveConfigSha256}`,
       `CONTROL_ROOT=${controlRoot}`,
       `TEST_MODE=${testMode ? "yes" : "no"}`,
+      `DEPLOYMENT_SCOPE=${testMode ? "TEST_ONLY" : "PRODUCTION"}`,
+      `PRODUCTION_ACTIVATION_PAIR_CERTIFIED=${testMode ? "no" : "yes"}`,
       "CONFIG_CHANGE_REQUIRED=no",
       "FRESH_PROCESS_ACCEPTANCE=NOT_RUN",
       "ISSUE_CLOSURE_READY=no",
@@ -1147,6 +1151,8 @@ async function promote(options) {
         },
         repository_validation: plan.repository_validation,
         test_mode: testMode,
+        deployment_scope: testMode ? "TEST_ONLY" : "PRODUCTION",
+        production_activation_pair_certified: !testMode,
         control_root_persistence: plan.control_root_persistence,
         installed: {
           tree: installed.tree,
@@ -1188,6 +1194,8 @@ async function promote(options) {
         "CONFIG_BYTE_PRESERVED=yes",
         "CONFIG_VALIDATION_RESULT=PASS",
         "REPOSITORY_VALIDATION=EXTERNAL_TRUSTED_ACTIONS",
+        `DEPLOYMENT_SCOPE=${testMode ? "TEST_ONLY" : "PRODUCTION"}`,
+        `PRODUCTION_ACTIVATION_PAIR_CERTIFIED=${testMode ? "no" : "yes"}`,
         "INSTALLED_TREE_MATCHES_STAGE=yes",
         "INSTALLED_TREE_MATCHES_MERGED_MAIN=yes",
         "DEPLOYMENT_RESIDUE_CHECK=PASS",
