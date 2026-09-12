@@ -2118,6 +2118,149 @@ test("strict starting-head SHA aliases bind exact 40-hex tokens and tolerate tra
   }
 })
 
+test("authority metadata and prose collisions leave binding and authority epoch unchanged", async () => {
+  const expected = "8".repeat(40)
+  const metadata = "9".repeat(40)
+  const inertCases = [
+    `REVIEWED_PR_HEAD_SHA=${metadata}`,
+    `SOURCE_STAGE_HEAD_SHA=${metadata}`,
+    `CONTROL_HEAD_SHA=${metadata}`,
+    `NOT_HEAD_SHA=${metadata}`,
+    `XPR_HEAD_SHA=${metadata}`,
+    `metadata: REVIEWED_PR_HEAD_SHA=${metadata}`,
+    `This prose mentions HEAD_SHA=${metadata} only as an example.`,
+    `metadata: HEAD_SHA=${metadata}`,
+    `HEAD_SHA=${metadata} appears only in prose on this line.`,
+    `REQUIRED EXACT HEAD: ${metadata} is only an example.`,
+    `HEAD_SHA\n${metadata}`,
+    `REQUIRED\nSTARTING\nHEAD: ${metadata}`,
+    `EXPECTED\nBRANCH\nHEAD: ${metadata}`,
+    `HEAD_SHA${metadata}`,
+  ]
+
+  for (const [index, inertText] of inertCases.entries()) {
+    const unbound = createOperationGuard({ directory: `/tmp/project-authority-inert-unbound-${index}`, env: {} })
+    const unboundSession = `authority-inert-unbound-${index}`
+    await message(unbound, unboundSession, "build", inertText)
+    const unboundContext = { context: [] }
+    await unbound["experimental.session.compacting"]({ sessionID: unboundSession }, unboundContext)
+    assert.match(unboundContext.context.join("\n"), /Authority: unbound/, inertText)
+
+    const bound = createOperationGuard({ directory: `/tmp/project-authority-inert-bound-${index}`, env: {} })
+    const boundSession = `authority-inert-bound-${index}`
+    await message(bound, boundSession, "build", `REQUIRED STARTING HEAD: ${expected}`)
+    const proofArgs = { command: "git rev-parse HEAD" }
+    await before(bound, boundSession, "proof", "bash", proofArgs)
+    await message(bound, boundSession, "build", inertText)
+    const pendingContext = { context: [] }
+    await bound["experimental.session.compacting"]({ sessionID: boundSession }, pendingContext)
+    assert.match(pendingContext.context.join("\n"), new RegExp(`Authority: ${expected}`), inertText)
+    assert.match(pendingContext.context.join("\n"), /Authority admission: pending; mode: strict-start/, inertText)
+    const proof = await after(bound, boundSession, "proof", "bash", proofArgs, { output: `${expected}\n`, metadata: { exit: 0 } })
+    assert.doesNotMatch(proof.output, /OPERATIONAL_AUTHORITY_PROOF: STALE/, inertText)
+    assert.equal(proof.metadata.operationalSchema.authorityBinding, expected, inertText)
+    assert.equal(proof.metadata.operationalSchema.authorityMode, "strict-start", inertText)
+    assert.equal(proof.metadata.operationalSchema.authorityStatus, "verified", inertText)
+  }
+})
+
+test("authority metadata suffix collisions remain inert regardless of declaration order", async () => {
+  const expected = "a".repeat(40)
+  const metadata = "b".repeat(40)
+  const provenance = [
+    `REVIEWED_PR_HEAD_SHA=${metadata}`,
+    `TARGET_HEAD_SHA=${metadata}`,
+    `SOURCE_STAGE_HEAD_SHA=${metadata}`,
+  ].join("\n")
+  const declaration = `REQUIRED STARTING HEAD: ${expected}`
+
+  for (const [index, text] of [
+    `${declaration}\n${provenance}`,
+    `${provenance}\n${declaration}`,
+  ].entries()) {
+    const hooks = createOperationGuard({ directory: `/tmp/project-authority-boundary-${index}`, env: {} })
+    const sessionID = `authority-boundary-${index}`
+    await message(hooks, sessionID, "build", text)
+    await before(hooks, sessionID, "proof", "bash", { command: "git rev-parse HEAD" })
+    const proof = await after(hooks, sessionID, "proof", "bash", { command: "git rev-parse HEAD" }, { output: `${expected}\n`, metadata: { exit: 0 } })
+    assert.equal(proof.metadata.operationalSchema.authorityBinding, expected)
+    assert.equal(proof.metadata.operationalSchema.authorityMode, "strict-start")
+    assert.equal(proof.metadata.operationalSchema.authorityStatus, "verified")
+  }
+
+  const metadataOnly = createOperationGuard({ directory: "/tmp/project-authority-metadata-only", env: {} })
+  await message(metadataOnly, "authority-metadata-only", "build", provenance)
+  const context = { context: [] }
+  await metadataOnly["experimental.session.compacting"]({ sessionID: "authority-metadata-only" }, context)
+  assert.match(context.context.join("\n"), /Authority: unbound/)
+})
+
+test("all intentional authority aliases retain their strict-start or target semantics", async () => {
+  const expected = "c".repeat(40)
+  const cases = [
+    [`EXPECTED_START_HEAD=${expected}`, "strict-start"],
+    [`EXPECTED_START_HEAD_SHA=${expected}`, "strict-start"],
+    [`REQUIRED_START_HEAD_SHA=${expected}`, "strict-start"],
+    [`REQUIRED STARTING HEAD: ${expected}`, "strict-start"],
+    [`REQUIRED STARTING HEAD ${expected}`, "strict-start"],
+    [`\`REQUIRED STARTING HEAD: ${expected}\``, "strict-start"],
+    [`- REQUIRED STARTING HEAD: ${expected}`, "strict-start"],
+    [`> REQUIRED STARTING HEAD: ${expected}`, "strict-start"],
+    [`REQUIRED STARTING HEAD SHA: ${expected}`, "strict-start"],
+    [`EXPECTED STARTING HEAD: ${expected}`, "strict-start"],
+    [`EXPECTED STARTING HEAD SHA: ${expected}`, "strict-start"],
+    [`HEAD_SHA=${expected}`, "target"],
+    [`HEAD_SHA ${expected}`, "target"],
+    [`"HEAD_SHA=${expected}"`, "target"],
+    [`(HEAD_SHA=${expected})`, "target"],
+    [`EXPECTED_HEAD_SHA=${expected}`, "target"],
+    [`AUTHORITATIVE_HEAD_SHA=${expected}`, "target"],
+    [`FINAL_HEAD_SHA=${expected}`, "target"],
+    [`PR_HEAD_SHA=${expected}`, "target"],
+    [`CANDIDATE_SHA=${expected}`, "target"],
+    [`REQUIRED HEAD: ${expected}`, "target"],
+    [`REQUIRED EXACT HEAD: ${expected}`, "target"],
+    [`EXPECTED HEAD: ${expected}`, "target"],
+    [`EXPECTED BRANCH HEAD: ${expected}`, "target"],
+    [`REQUIRED PR HEAD: ${expected}`, "target"],
+  ]
+
+  for (const [index, [declaration, expectedMode]] of cases.entries()) {
+    const hooks = createOperationGuard({ directory: `/tmp/project-authority-alias-${index}`, env: {} })
+    const sessionID = `authority-alias-${index}`
+    await message(hooks, sessionID, "build", declaration)
+    await before(hooks, sessionID, "proof", "bash", { command: "git rev-parse HEAD" })
+    const proof = await after(hooks, sessionID, "proof", "bash", { command: "git rev-parse HEAD" }, { output: `${expected}\n`, metadata: { exit: 0 } })
+    assert.equal(proof.metadata.operationalSchema.authorityBinding, expected, declaration)
+    assert.equal(proof.metadata.operationalSchema.authorityMode, expectedMode, declaration)
+    assert.equal(proof.metadata.operationalSchema.authorityStatus, "verified", declaration)
+  }
+})
+
+test("conflicting explicit authority declarations fail closed without binding state", async () => {
+  const first = "d".repeat(40)
+  const second = "e".repeat(40)
+  for (const [index, declarations] of [
+    `REQUIRED EXACT HEAD: ${first}\nHEAD_SHA=${second}`,
+    `REQUIRED STARTING HEAD: ${first}\nREQUIRED EXACT HEAD: ${first}`,
+  ].entries()) {
+    const hooks = createOperationGuard({ directory: `/tmp/project-authority-conflict-${index}`, env: {} })
+    const sessionID = `authority-conflict-${index}`
+    await assert.rejects(() => message(hooks, sessionID, "build", declarations), /conflicting authority declarations/)
+    const context = { context: [] }
+    await hooks["experimental.session.compacting"]({ sessionID }, context)
+    assert.match(context.context.join("\n"), /Authority: unbound/)
+  }
+
+  const equivalent = createOperationGuard({ directory: "/tmp/project-authority-equivalent", env: {} })
+  await message(equivalent, "authority-equivalent", "build", `HEAD_SHA=${first}\nEXPECTED_HEAD_SHA=${first}`)
+  await before(equivalent, "authority-equivalent", "proof", "bash", { command: "git rev-parse HEAD" })
+  const proof = await after(equivalent, "authority-equivalent", "proof", "bash", { command: "git rev-parse HEAD" }, { output: `${first}\n`, metadata: { exit: 0 } })
+  assert.equal(proof.metadata.operationalSchema.authorityBinding, first)
+  assert.equal(proof.metadata.operationalSchema.authorityMode, "target")
+  assert.equal(proof.metadata.operationalSchema.authorityStatus, "verified")
+})
+
 test("pending authority compound HEAD proofs fail closed with deterministic correction paths and no state transition", async () => {
   const strictTarget = "a".repeat(40)
   const strict = createOperationGuard({ directory: "/tmp/project-issue28-strict", env: {} })
