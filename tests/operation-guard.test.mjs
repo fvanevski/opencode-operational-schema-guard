@@ -2130,6 +2130,9 @@ test("authority metadata and prose collisions leave binding and authority epoch 
     `metadata: REVIEWED_PR_HEAD_SHA=${metadata}`,
     `This prose mentions HEAD_SHA=${metadata} only as an example.`,
     `metadata: HEAD_SHA=${metadata}`,
+    `HEAD_SHA=${metadata} appears only in prose on this line.`,
+    `REQUIRED EXACT HEAD: ${metadata} is only an example.`,
+    `HEAD_SHA\n${metadata}`,
   ]
 
   for (const [index, inertText] of inertCases.entries()) {
