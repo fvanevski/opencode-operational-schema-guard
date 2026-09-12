@@ -214,4 +214,219 @@ async function writeJsonExclusive(path, value) {
   }
   await fsyncDirectory(dirname(path))
   return sha256Bytes(Buffer.from(payload))
+}
+
+async function writeReservedJson(path, handle, value) {
+  const payload = `${JSON.stringify(value, null, 2)}\n`
+  await handle.truncate(0)
+  await handle.writeFile(payload, "utf8")
+  await handle.sync()
+  await handle.close()
+  await fsyncDirectory(dirname(path))
+  return sha256Bytes(Buffer.from(payload))
+}
+
+async function readJson(path) {
+  try {
+    return JSON.parse(await readFile(path, "utf8"))
+  } catch (error) {
+    block("INVALID_JSON", `cannot read valid JSON from ${path}: ${error.message}`)
+  }
+}
+
+async function pathIdentity(path, expectedType = "directory") {
+  const info = await lstat(path, { bigint: true }).catch((error) => {
+    block("PATH_NOT_FOUND", `${path}: ${error.message}`)
+  })
+  if (info.isSymbolicLink()) block("SYMLINK_BOUNDARY_REJECTED", `${path} must not be a symbolic link`)
+  if (expectedType === "directory" && !info.isDirectory()) block("PATH_TYPE_MISMATCH", `${path} must be a directory`)
+  if (expectedType === "file" && !info.isFile()) block("PATH_TYPE_MISMATCH", `${path} must be a regular file`)
+  return {
+    dev: String(info.dev),
+    ino: String(info.ino),
+    mode: Number(info.mode & 0o7777n),
+    size: String(info.size),
+  }
+}
+
+function sameIdentity(a, b) {
+  return a.dev === b.dev && a.ino === b.ino && a.mode === b.mode
+}
+
+async function ensureRepoRoot(repoRoot) {
+  const real = await realpath(repoRoot).catch((error) => block("REPO_NOT_FOUND", error.message))
+  await pathIdentity(real, "directory")
+  const inside = git(real, ["rev-parse", "--is-inside-work-tree"]).stdout.trim()
+  if (inside !== "true") block("NOT_A_GIT_WORKTREE", `${real} is not a Git worktree`)
+  return real
+}
+
+function resolveCommitTree(repoRoot, sha, label) {
+  const type = git(repoRoot, ["cat-file", "-t", sha]).stdout.trim()
+  if (type !== "commit") block("COMMIT_NOT_FOUND", `${label} ${sha} is not an available commit object`)
+  const tree = git(repoRoot, ["rev-parse", `${sha}^{tree}`]).stdout.trim().toLowerCase()
+  if (!SHA40.test(tree)) block("INVALID_TREE_IDENTITY", `${label} tree identity is malformed: ${tree}`)
+  return tree
+}
+
+function gitDirectorySet(repoRoot, sha) {
+  const result = git(repoRoot, ["ls-tree", "-rz", "-t", "--full-tree", sha])
+  const dirs = new Set()
+  for (const entry of String(result.stdout).split("\0")) {
+    if (!entry) continue
+    const tab = entry.indexOf("\t")
+    if (tab < 0) block("LS_TREE_PARSE_FAILED", `malformed ls-tree entry for ${sha}`)
+    const meta = entry.slice(0, tab).split(" ")
+    const path = entry.slice(tab + 1)
+    if (meta[1] === "tree") dirs.add(path)
+  }
+  return dirs
+}
+
+async function walkInventory(root) {
+  const entries = []
+  const dirs = new Set()
+  async function visit(current, prefix) {
+    const directory = await opendir(current)
+    const names = []
+    for await (const dirent of directory) names.push(dirent.name)
+    names.sort((a, b) => Buffer.from(a).compare(Buffer.from(b)))
+    for (const name of names) {
+      if (FORBIDDEN_BASENAMES.has(name) || FORBIDDEN_SUFFIXES.some((suffix) => name.endsWith(suffix))) {
+        block("DEPLOYMENT_RESIDUE", `forbidden deployment residue: ${prefix ? `${prefix}/` : ""}${name}`)
+      }
+      const path = join(current, name)
+      const rel = prefix ? `${prefix}/${name}` : name
+      const info = await lstat(path)
+      if (info.isDirectory()) {
+        dirs.add(rel)
+        entries.push({ path: rel, type: "directory", mode: info.mode & 0o7777 })
+        await visit(path, rel)
+      } else if (info.isFile()) {
+        const bytes = await readFile(path)
+        entries.push({
+          path: rel,
+          type: "file",
+          mode: info.mode & 0o111 ? "100755" : "100644",
+          size: info.size,
+          sha256: sha256Bytes(bytes),
+        })
+      } else if (info.isSymbolicLink()) {
+        const target = await readlink(path)
+        entries.push({
+          path: rel,
+          type: "symlink",
+          mode: "120000",
+          target,
+          sha256: sha256Bytes(Buffer.from(target)),
+        })
+      } else {
+        block("SPECIAL_FILE_REJECTED", `unsupported filesystem object at ${rel}`)
+      }
+    }
+  }
+  await visit(root, "")
+  return {
+    entries,
+    dirs,
+    manifestSha256: sha256Bytes(Buffer.from(`${entries.map((entry) => JSON.stringify(entry)).join("\n")}\n`)),
+  }
+}
+
+function setEquals(left, right) {
+  if (left.size !== right.size) return false
+  for (const value of left) if (!right.has(value)) return false
+  return true
+}
+
+async function computeGitTree(root, scratchRoot) {
+  const scratch = await mkdtemp(join(scratchRoot, "treehash-"))
+  const gitDir = join(scratch, "git")
+  try {
+    run("git", ["init", "--bare", "-q", gitDir])
+    const env = {
+      ...process.env,
+      GIT_DIR: gitDir,
+      GIT_WORK_TREE: root,
+      GIT_INDEX_FILE: join(gitDir, "index"),
+      GIT_CONFIG_NOSYSTEM: "1",
+      GIT_CONFIG_GLOBAL: "/dev/null",
+    }
+    run("git", ["-c", "core.autocrlf=false", "-c", "core.filemode=true", "-c", "core.symlinks=true", "read-tree", "--empty"], { cwd: root, env })
+    run("git", ["-c", "core.autocrlf=false", "-c", "core.filemode=true", "-c", "core.symlinks=true", "add", "--all", "--force", "--", "."], { cwd: root, env })
+    const tree = run("git", ["-c", "core.autocrlf=false", "-c", "core.filemode=true", "-c", "core.symlinks=true", "write-tree"], { cwd: root, env }).stdout.trim().toLowerCase()
+    if (!SHA40.test(tree)) block("TREE_HASH_FAILED", `malformed computed tree identity: ${tree}`)
+    return tree
+  } finally {
+    await rm(scratch, { recursive: true, force: true })
+  }
+}
+
+async function validateTreeAgainstCommit({ repoRoot, root, commitSha, expectedTree, scratchRoot, label }) {
+  await pathIdentity(root, "directory")
+  const inventory = await walkInventory(root)
+  const expectedDirs = gitDirectorySet(repoRoot, commitSha)
+  if (!setEquals(inventory.dirs, expectedDirs)) {
+    const extra = [...inventory.dirs].filter((path) => !expectedDirs.has(path)).slice(0, 20)
+    const missing = [...expectedDirs].filter((path) => !inventory.dirs.has(path)).slice(0, 20)
+    block("TREE_DIRECTORY_DRIFT", `${label} directory inventory differs from ${commitSha}`, { extra, missing })
+  }
+  const tree = await computeGitTree(root, scratchRoot)
+  if (tree !== expectedTree) {
+    block("TREE_IDENTITY_MISMATCH", `${label} tree ${tree} != expected ${expectedTree}`, { observed: tree, expected: expectedTree })
+  }
+  return { tree, manifestSha256: inventory.manifestSha256, entryCount: inventory.entries.length }
+}
+
+async function materializeCommit({ repoRoot, commitSha, expectedTree, target, scratchRoot }) {
+  await mkdir(dirname(target), { recursive: true })
+  await mkdir(target)
+  const tarPath = `${target}.tar`
+  try {
+    git(repoRoot, ["archive", "--format=tar", `--output=${tarPath}`, commitSha])
+    run("tar", ["-xf", tarPath, "-C", target])
+  } finally {
+    await unlink(tarPath).catch(() => {})
+  }
+  return validateTreeAgainstCommit({
+    repoRoot,
+    root: target,
+    commitSha,
+    expectedTree,
+    scratchRoot,
+    label: "staged source",
+  })
+}
+
+function deterministicValidationEnv(defaultBranch) {
+  return {
+    ...process.env,
+    GIT_CONFIG_COUNT: "1",
+    GIT_CONFIG_KEY_0: "init.defaultBranch",
+    GIT_CONFIG_VALUE_0: defaultBranch,
+  }
+}
+
+function parseNodeTapTotals(text) {
+  const fields = {}
+  for (const name of ["tests", "pass", "fail", "skipped"]) {
+    const match = new RegExp(`^# ${name} (\\d+)\\s*$`, "m").exec(text)
+    if (match) fields[name] = Number(match[1])
+  }
+  if (!Number.isInteger(fields.tests) || !Number.isInteger(fields.pass) || !Number.isInteger(fields.fail)) {
+    block("TEST_TOTALS_MISSING", "node-tap totals were requested but could not be parsed")
+  }
+  fields.skipped ??= 0
+  return fields
+}
+
+async function runValidationProfile(stageRoot, workRoot, profileRelativePath, defaultBranch) {
+  const profilePath = join(stageRoot, profileRelativePath)
+  const profile = await readJson(profilePath)
+  if (profile.schema_version !== "ghdev-actions-profile-v1" || !Array.isArray(profile.commands) || profile.commands.length === 0) {
+    block("INVALID_VALIDATION_PROFILE", `${profilePath} is not a supported repository-final profile`)
+  }
+  const logRoot = join(workRoot, "validation-logs")
+  await mkdir(logRoot, { recursive: true })
+  const results = []
 /*__GHDEV_INSTALLER_REMAINDER__*/
