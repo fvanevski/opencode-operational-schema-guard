@@ -3090,6 +3090,17 @@ test("missing or malformed command-shape index data never changes correction han
   await mkdir(join(malformedRoot, "resources", "command-shapes"), { recursive: true })
   await writeFile(join(malformedRoot, "resources", "command-shapes", "index.json"), "{not-json\n")
   assert.equal(await appendCommandShapeResource(original, { directory: repository, pluginRoot: malformedRoot }), original)
+
+  const hooks = createOperationGuard({ directory: repository, env: {}, pluginRoot: malformedRoot })
+  const target = "c".repeat(40)
+  const disposable = join(tmpdir(), "opencode-command-shape-malformed-target")
+  await message(hooks, "malformed-resource-guard", "build", `REQUIRED EXACT HEAD: ${target}`)
+  const rejection = await rejectedCommandShapeMessage(() => hooks["tool.execute.before"](
+    { sessionID: "malformed-resource-guard", callID: "compound-target", tool: "bash" },
+    { args: { command: `git worktree add --detach ${disposable} ${target} && git rev-parse HEAD` } },
+  ))
+  assert.match(rejection, /OPERATIONAL_CORRECTION: SPLIT_TARGET_ADMISSION/)
+  assert.doesNotMatch(rejection, /OPERATIONAL_RESOURCE:/)
 })
 
 test("command-shape repository resource failures fall back globally while traversal and stale sections are rejected", async () => {
@@ -3114,6 +3125,13 @@ test("command-shape repository resource failures fall back globally while traver
   assert.equal(resource?.section, "global-target")
 
   index.repositories["fvanevski/firecrawl_skill"].path = "repositories/stale.md"
+  await writeFile(join(resourceRoot, "index.json"), `${JSON.stringify(index, null, 2)}\n`)
+  resource = await resolveCommandShapeResource({ correction: "PROVE_TARGET_HEAD", directory: repository, pluginRoot: root })
+  assert.equal(resource?.repository, "global")
+  assert.equal(resource?.section, "global-target")
+
+  await symlink(join(root, "escape.md"), join(resourceRoot, "repositories", "escape-link.md"))
+  index.repositories["fvanevski/firecrawl_skill"].path = "repositories/escape-link.md"
   await writeFile(join(resourceRoot, "index.json"), `${JSON.stringify(index, null, 2)}\n`)
   resource = await resolveCommandShapeResource({ correction: "PROVE_TARGET_HEAD", directory: repository, pluginRoot: root })
   assert.equal(resource?.repository, "global")
