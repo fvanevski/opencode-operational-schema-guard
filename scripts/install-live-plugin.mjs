@@ -21,6 +21,7 @@ import {
   writeFile,
 } from "node:fs/promises"
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path"
+import { fileURLToPath } from "node:url"
 import { parseAndValidateConfig } from "../lib/config-contract.mjs"
 
 const PLAN_SCHEMA = "opencode-live-plugin-install-plan-v1"
@@ -279,6 +280,23 @@ async function ensureRepoRoot(repoRoot) {
   return real
 }
 
+async function assertExecutionCheckout(repoRoot, mergedSha) {
+  const head = git(repoRoot, ["rev-parse", "HEAD"]).stdout.trim().toLowerCase()
+  if (head !== mergedSha) {
+    block("INSTALLER_RUNTIME_HEAD_MISMATCH", `executing checkout HEAD ${head} != deployment target ${mergedSha}`)
+  }
+  const dirty = git(repoRoot, ["status", "--porcelain=v1", "--untracked-files=all"]).stdout.trim()
+  if (dirty) block("INSTALLER_RUNTIME_DIRTY", "executing checkout must be clean before live installation", { status: dirty })
+  const executedInstaller = await realpath(fileURLToPath(import.meta.url))
+  const expectedInstaller = await realpath(join(repoRoot, "scripts", "install-live-plugin.mjs")).catch((error) => {
+    block("INSTALLER_RUNTIME_PATH_MISMATCH", `deployment target does not contain the executing installer path: ${error.message}`)
+  })
+  if (executedInstaller !== expectedInstaller) {
+    block("INSTALLER_RUNTIME_PATH_MISMATCH", `executing installer ${executedInstaller} != deployment-target installer ${expectedInstaller}`)
+  }
+  return { head, installer: executedInstaller }
+}
+
 function resolveCommitTree(repoRoot, sha, label) {
   const type = git(repoRoot, ["cat-file", "-t", sha]).stdout.trim()
   if (type !== "commit") block("COMMIT_NOT_FOUND", `${label} ${sha} is not an available commit object`)
@@ -475,6 +493,7 @@ async function prepare(options) {
   const mergedSha = exactSha(required(options, "--merged-sha"), "--merged-sha")
   const reviewedSha = exactSha(required(options, "--reviewed-sha"), "--reviewed-sha")
   const expectedLiveSha = exactSha(required(options, "--expected-live-sha"), "--expected-live-sha")
+  await assertExecutionCheckout(repoRoot, mergedSha)
   const planPath = absolutePath(required(options, "--plan"), "--plan")
   const liveRoot = absolutePath(option(options, "--live-root", DEFAULT_LIVE_ROOT), "--live-root")
   const liveConfig = absolutePath(option(options, "--live-config", DEFAULT_LIVE_CONFIG), "--live-config")
@@ -700,6 +719,7 @@ async function promote(options) {
   const mergedSha = exactSha(plan.merged_commit, "plan.merged_commit")
   const reviewedSha = exactSha(plan.reviewed_commit, "plan.reviewed_commit")
   const expectedLiveSha = exactSha(plan.expected_live?.commit, "plan.expected_live.commit")
+  await assertExecutionCheckout(repoRoot, mergedSha)
   const mergedTree = resolveCommitTree(repoRoot, mergedSha, "merged commit")
   const reviewedTree = resolveCommitTree(repoRoot, reviewedSha, "reviewed commit")
   const expectedLiveTree = resolveCommitTree(repoRoot, expectedLiveSha, "expected live commit")
