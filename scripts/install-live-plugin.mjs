@@ -3,6 +3,7 @@
 import { COPYFILE_EXCL } from "node:constants"
 import { createHash, randomUUID } from "node:crypto"
 import { spawnSync } from "node:child_process"
+import { tmpdir } from "node:os"
 import {
   copyFile,
   cp,
@@ -20,14 +21,13 @@ import {
   writeFile,
 } from "node:fs/promises"
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path"
+import { parseAndValidateConfig } from "../lib/config-contract.mjs"
 
 const PLAN_SCHEMA = "opencode-live-plugin-install-plan-v1"
 const RECEIPT_SCHEMA = "opencode-live-plugin-deployment-v1"
 const DEFAULT_LIVE_ROOT = "/home/filip/.config/opencode/plugins/operational-schema-v5"
 const DEFAULT_LIVE_CONFIG = "/home/filip/.config/opencode/opencode.json"
 const DEFAULT_WORK_ROOT = "/tmp/opencode/live-plugin-install"
-const DEFAULT_PROFILE = "evidence/profiles/repository-final-v1.json"
-const DEFAULT_TEST_INIT_BRANCH = "master"
 const SHA40 = /^[0-9a-f]{40}$/
 const SHA256 = /^[0-9a-f]{64}$/
 const MAX_BUFFER = 64 * 1024 * 1024
@@ -57,9 +57,7 @@ function usage() {
     --plan ABSOLUTE_PLAN_JSON \\
     [--live-root ABSOLUTE_PATH] \\
     [--live-config ABSOLUTE_PATH] \\
-    [--work-root ABSOLUTE_PATH] \\
-    [--profile REPO_RELATIVE_PATH] \\
-    [--test-init-default-branch NAME]
+    [--work-root ABSOLUTE_PATH]
 
   install-live-plugin.mjs promote \\
     --plan ABSOLUTE_PLAN_JSON \\
@@ -216,14 +214,34 @@ async function writeJsonExclusive(path, value) {
   return sha256Bytes(Buffer.from(payload))
 }
 
-async function writeReservedJson(path, handle, value) {
+async function replaceReservedJson(path, expectedSha256, value) {
+  const observed = await sha256File(path)
+  if (observed !== expectedSha256) block("RECEIPT_RESERVATION_DRIFT", `reserved receipt changed before finalization: ${path}`)
   const payload = `${JSON.stringify(value, null, 2)}\n`
-  await handle.truncate(0)
-  await handle.writeFile(payload, "utf8")
-  await handle.sync()
-  await handle.close()
-  await fsyncDirectory(dirname(path))
+  const temporary = `${path}.tmp.${process.pid}.${randomUUID()}`
+  const handle = await open(temporary, "wx", 0o600)
+  try {
+    await handle.writeFile(payload, "utf8")
+    await handle.sync()
+  } finally {
+    await handle.close()
+  }
+  try {
+    await rename(temporary, path)
+    await fsyncDirectory(dirname(path))
+  } catch (error) {
+    await unlink(temporary).catch(() => {})
+    throw error
+  }
   return sha256Bytes(Buffer.from(payload))
+}
+
+async function assertAbsentPath(path, label) {
+  const existing = await lstat(path).catch((error) => {
+    if (error?.code === "ENOENT") return null
+    throw error
+  })
+  if (existing) block("DESTINATION_EXISTS", `${label} already exists: ${path}`)
 }
 
 async function readJson(path) {
