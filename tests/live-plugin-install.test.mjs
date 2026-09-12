@@ -249,6 +249,7 @@ function prepareArgs(f) {
     "--live-root", f.live,
     "--live-config", f.config,
     "--work-root", f.work,
+    "--test-mode", "yes",
   ]
 }
 
@@ -294,10 +295,27 @@ test("prepare and promote exact merged source with typed receipt and rollback ma
     assert.equal(receipt.installed.tree_matches_stage, true)
     assert.equal(receipt.installed.tree_matches_merged_main, true)
     assert.equal(receipt.activation_pair.config_byte_preserved, true)
+    assert.equal(receipt.test_mode, true)
+    assert.equal(receipt.control_root_persistence, "EPHEMERAL_TEST_ONLY")
     assert.equal(receipt.rollback.retained, true)
     assert.equal(await readFile(join(receipt.rollback.source_backup, "state.txt"), "utf8"), "prior\n")
     assert.equal(await readFile(receipt.rollback.config_backup, "utf8"), f.configText)
     assert.deepEqual(receipt.repository_validation, { authority: "trusted-actions-external", result: "NOT_EVALUATED_BY_INSTALLER" })
+  } finally {
+    await cleanup(f)
+  }
+})
+
+test("prepare rejects non-canonical live paths outside explicit test mode", async () => {
+  const f = await fixture()
+  try {
+    const args = prepareArgs(f)
+    const testMode = args.indexOf("--test-mode")
+    args.splice(testMode, 2)
+    const result = invoke(args)
+    blocked(result, "NONDEFAULT_LIVE_PATH_REJECTED")
+    assert.equal(await exists(f.plan), false)
+    assert.equal(await readFile(join(f.live, "state.txt"), "utf8"), "prior\n")
   } finally {
     await cleanup(f)
   }

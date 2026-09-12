@@ -3,7 +3,7 @@
 import { COPYFILE_EXCL } from "node:constants"
 import { createHash, randomUUID } from "node:crypto"
 import { spawnSync } from "node:child_process"
-import { tmpdir } from "node:os"
+import { homedir, tmpdir } from "node:os"
 import {
   copyFile,
   cp,
@@ -20,7 +20,7 @@ import {
   unlink,
   writeFile,
 } from "node:fs/promises"
-import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path"
+import { basename, dirname, isAbsolute, join, parse, relative, resolve, sep } from "node:path"
 import { fileURLToPath } from "node:url"
 import { parseAndValidateConfig } from "../lib/config-contract.mjs"
 
@@ -28,7 +28,7 @@ const PLAN_SCHEMA = "opencode-live-plugin-install-plan-v1"
 const RECEIPT_SCHEMA = "opencode-live-plugin-deployment-v1"
 const DEFAULT_LIVE_ROOT = "/home/filip/.config/opencode/plugins/operational-schema-v5"
 const DEFAULT_LIVE_CONFIG = "/home/filip/.config/opencode/opencode.json"
-const DEFAULT_WORK_ROOT = "/tmp/opencode/live-plugin-install"
+const DEFAULT_WORK_ROOT = join(homedir(), ".local", "state", "opencode", "live-plugin-install")
 const SHA40 = /^[0-9a-f]{40}$/
 const SHA256 = /^[0-9a-f]{64}$/
 const MAX_BUFFER = 64 * 1024 * 1024
@@ -56,9 +56,8 @@ function usage() {
     --reviewed-sha 40HEX \\
     --expected-live-sha 40HEX \\
     --plan ABSOLUTE_PLAN_JSON \\
-    [--live-root ABSOLUTE_PATH] \\
-    [--live-config ABSOLUTE_PATH] \\
-    [--work-root ABSOLUTE_PATH]
+    [--work-root ABSOLUTE_PATH] \\
+    [--test-mode yes --live-root TEMP_PATH --live-config TEMP_PATH]
 
   install-live-plugin.mjs promote \\
     --plan ABSOLUTE_PLAN_JSON \\
@@ -74,6 +73,11 @@ prepared identity, creates verified rollback material, performs a same-filesyste
 directory swap, validates the installed activation pair, and emits a typed receipt.
 recover consumes an armed PROMOTION_PENDING journal and conservatively restores the
 prior authenticated live source after an interrupted swap.
+
+Production mode uses the canonical live plugin/config paths and a protected persistent
+control root (default: ~/.local/state/opencode/live-plugin-install). Non-default live
+paths and ephemeral control roots are admitted only with explicit --test-mode yes and
+must remain beneath the host temporary directory.
 
 The installer never merges a PR, edits opencode.json, performs fresh-process
 acceptance, or closes an issue. If the staged source does not validate the current
@@ -111,6 +115,12 @@ function required(options, name) {
   const value = options.get(name)
   if (!value) block("USAGE", `missing required option ${name}`)
   return value
+}
+
+function yesNoOption(options, name, fallback = "no") {
+  const value = option(options, name, fallback)
+  if (value !== "yes" && value !== "no") block("USAGE", `${name} must be yes or no`)
+  return value === "yes"
 }
 
 function absolutePath(value, name) {
@@ -457,14 +467,30 @@ function pathWithin(parent, child) {
   return rel === "" || (rel !== ".." && !rel.startsWith(`..${sep}`) && !isAbsolute(rel))
 }
 
-async function ensureSafeControlRoot(requestedRoot, liveParent) {
+function assertLivePathContract(liveRoot, liveConfig, testMode) {
   const tempRoot = resolve(tmpdir())
-  const target = resolve(requestedRoot)
-  if (target === tempRoot || !pathWithin(tempRoot, target)) {
-    block("UNSAFE_CONTROL_ROOT", `installer control root must be a strict descendant of ${tempRoot}`)
+  if (!testMode) {
+    if (liveRoot !== DEFAULT_LIVE_ROOT || liveConfig !== DEFAULT_LIVE_CONFIG) {
+      block("NONDEFAULT_LIVE_PATH_REJECTED", "production installation requires the canonical live plugin and config paths")
+    }
+    return
   }
-  let current = tempRoot
-  for (const part of relative(tempRoot, target).split(sep).filter(Boolean)) {
+  if (!pathWithin(tempRoot, liveRoot) || !pathWithin(tempRoot, liveConfig)) {
+    block("UNSAFE_TEST_LIVE_PATH", `test-mode live paths must remain below ${tempRoot}`)
+  }
+}
+
+async function ensureSafeControlRoot(requestedRoot, liveParent, { allowEphemeral = false } = {}) {
+  const target = resolve(requestedRoot)
+  const filesystemRoot = parse(target).root
+  if (target === filesystemRoot) block("UNSAFE_CONTROL_ROOT", "installer control root must not be a filesystem root")
+  const ephemeralRoots = [resolve(tmpdir()), resolve("/run"), resolve("/dev/shm")]
+  if (!allowEphemeral && ephemeralRoots.some((root) => target === root || pathWithin(root, target))) {
+    block("EPHEMERAL_CONTROL_ROOT_REJECTED", "production recovery state must use persistent storage, not an ephemeral runtime/tmpfs root")
+  }
+
+  let current = filesystemRoot
+  for (const part of relative(filesystemRoot, target).split(sep).filter(Boolean)) {
     current = join(current, part)
     const info = await lstat(current).catch((error) => {
       if (error?.code !== "ENOENT") throw error
@@ -477,22 +503,28 @@ async function ensureSafeControlRoot(requestedRoot, liveParent) {
       await mkdir(current, { mode: 0o700 })
     }
   }
+
   const controlRoot = await realpath(target)
   const liveParentReal = await realpath(liveParent)
   if (pathWithin(liveParentReal, controlRoot) || pathWithin(controlRoot, liveParentReal)) {
     block("UNSAFE_CONTROL_ROOT", "installer control root must not overlap the live-plugin parent")
   }
+  const controlInfo = await lstat(controlRoot, { bigint: true })
+  if (typeof process.getuid === "function" && controlInfo.uid !== BigInt(process.getuid())) {
+    block("UNSAFE_CONTROL_ROOT_OWNER", "installer control root must be owned by the executing user")
+  }
+  if ((Number(controlInfo.mode & 0o777n) & 0o077) !== 0) {
+    block("UNSAFE_CONTROL_ROOT_PERMISSIONS", "installer control root must not grant group/other permissions")
+  }
   return controlRoot
 }
 
 async function assertExistingPathNoSymlinks(path, label) {
-  const tempRoot = resolve(tmpdir())
   const target = resolve(path)
-  if (target === tempRoot || !pathWithin(tempRoot, target)) {
-    block("UNSAFE_CONTROL_PATH", `${label} must remain below ${tempRoot}`)
-  }
-  let current = tempRoot
-  for (const part of relative(tempRoot, target).split(sep).filter(Boolean)) {
+  const filesystemRoot = parse(target).root
+  if (target === filesystemRoot) block("UNSAFE_CONTROL_PATH", `${label} must not be a filesystem root`)
+  let current = filesystemRoot
+  for (const part of relative(filesystemRoot, target).split(sep).filter(Boolean)) {
     current = join(current, part)
     const info = await lstat(current).catch((error) => {
       if (error?.code === "ENOENT") block("PATH_NOT_FOUND", `${label} path component does not exist: ${current}`)
@@ -550,9 +582,11 @@ async function prepare(options) {
   const expectedLiveSha = exactSha(required(options, "--expected-live-sha"), "--expected-live-sha")
   await assertExecutionCheckout(repoRoot, mergedSha)
   const planPath = absolutePath(required(options, "--plan"), "--plan")
+  const testMode = yesNoOption(options, "--test-mode")
   const liveRoot = absolutePath(option(options, "--live-root", DEFAULT_LIVE_ROOT), "--live-root")
   const liveConfig = absolutePath(option(options, "--live-config", DEFAULT_LIVE_CONFIG), "--live-config")
   const requestedWorkRoot = absolutePath(option(options, "--work-root", DEFAULT_WORK_ROOT), "--work-root")
+  assertLivePathContract(liveRoot, liveConfig, testMode)
 
   const mergedTree = resolveCommitTree(repoRoot, mergedSha, "merged commit")
   const reviewedTree = resolveCommitTree(repoRoot, reviewedSha, "reviewed commit")
@@ -573,7 +607,7 @@ async function prepare(options) {
   const liveParentIdentity = await pathIdentity(liveParent, "directory")
   const liveConfigIdentity = await pathIdentity(liveConfig, "file")
   const liveConfigSha256 = await sha256File(liveConfig)
-  const controlRoot = await ensureSafeControlRoot(requestedWorkRoot, liveParent)
+  const controlRoot = await ensureSafeControlRoot(requestedWorkRoot, liveParent, { allowEphemeral: testMode })
   await ensureSafeControlDestination(controlRoot, planPath, "UNSAFE_CONTROL_PATH", "plan")
 
   const workRoot = await mkdtemp(join(controlRoot, "prepare-"))
@@ -635,6 +669,8 @@ async function prepare(options) {
       config_validation: configValidation,
     },
     repository_validation: { authority: "trusted-actions-external", result: "NOT_EVALUATED_BY_INSTALLER" },
+    test_mode: testMode,
+    control_root_persistence: testMode ? "EPHEMERAL_TEST_ONLY" : "PERSISTENT_REQUIRED",
     control_root: controlRoot,
     work_root: workRoot,
     scratch_root: scratchRoot,
@@ -655,6 +691,8 @@ async function prepare(options) {
       `PRIOR_LIVE_SOURCE_IDENTITY=${expectedLiveSha}`,
       `PRIOR_LIVE_TREE_IDENTITY=${priorLive.tree}`,
       `PRE_PROMOTION_CONFIG_SHA256=${liveConfigSha256}`,
+      `CONTROL_ROOT=${controlRoot}`,
+      `TEST_MODE=${testMode ? "yes" : "no"}`,
       "CONFIG_CHANGE_REQUIRED=no",
       "FRESH_PROCESS_ACCEPTANCE=NOT_RUN",
       "ISSUE_CLOSURE_READY=no",
@@ -829,13 +867,16 @@ async function promote(options) {
   }
 
   const stageRoot = absolutePath(plan.source_stage?.root, "plan.source_stage.root")
+  const testMode = plan.test_mode === true
+  if (typeof plan.test_mode !== "boolean") block("INVALID_PLAN", "prepared plan is missing its test-mode binding")
   const liveRoot = absolutePath(plan.activation_pair?.live_root, "plan.activation_pair.live_root")
   const liveConfig = absolutePath(plan.activation_pair?.live_config, "plan.activation_pair.live_config")
+  assertLivePathContract(liveRoot, liveConfig, testMode)
   const liveParent = dirname(liveRoot)
   const workRoot = absolutePath(plan.work_root, "plan.work_root")
   const scratchRoot = absolutePath(plan.scratch_root, "plan.scratch_root")
   const controlRoot = absolutePath(plan.control_root, "plan.control_root")
-  const canonicalControlRoot = await ensureSafeControlRoot(controlRoot, liveParent)
+  const canonicalControlRoot = await ensureSafeControlRoot(controlRoot, liveParent, { allowEphemeral: testMode })
   if (canonicalControlRoot !== controlRoot) block("PRECONDITION_DRIFT", "control-root identity changed after prepare")
   if (!pathWithin(controlRoot, workRoot) || !pathWithin(workRoot, stageRoot) || !pathWithin(workRoot, scratchRoot)) {
     block("PRECONDITION_DRIFT", "prepared work/stage/scratch paths escaped their control-root hierarchy")
@@ -1079,6 +1120,8 @@ async function promote(options) {
           config_validation: installedConfigValidation,
         },
         repository_validation: plan.repository_validation,
+        test_mode: testMode,
+        control_root_persistence: plan.control_root_persistence,
         installed: {
           tree: installed.tree,
           manifest_sha256: installed.manifestSha256,
@@ -1177,11 +1220,14 @@ async function recover(options) {
     block("PRECONDITION_DRIFT", "recovery Git identities no longer agree with the armed journal")
   }
 
+  const testMode = plan.test_mode === true
+  if (typeof plan.test_mode !== "boolean") block("INVALID_PLAN", "prepared plan is missing its test-mode binding")
   const liveRoot = absolutePath(plan.activation_pair?.live_root, "plan.activation_pair.live_root")
   const liveConfig = absolutePath(plan.activation_pair?.live_config, "plan.activation_pair.live_config")
+  assertLivePathContract(liveRoot, liveConfig, testMode)
   const liveParent = dirname(liveRoot)
   const controlRoot = absolutePath(plan.control_root, "plan.control_root")
-  const canonicalControlRoot = await ensureSafeControlRoot(controlRoot, liveParent)
+  const canonicalControlRoot = await ensureSafeControlRoot(controlRoot, liveParent, { allowEphemeral: testMode })
   if (canonicalControlRoot !== controlRoot) block("PRECONDITION_DRIFT", "control-root identity changed before recovery")
   await ensureSafeControlDestination(controlRoot, receiptPath, "UNSAFE_RECEIPT_PATH", "receipt")
   await ensureSafeControlDestination(controlRoot, planPath, "UNSAFE_CONTROL_PATH", "plan")
