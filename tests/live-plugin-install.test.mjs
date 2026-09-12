@@ -249,7 +249,7 @@ test("prepare and promote exact merged source with typed receipt and rollback ma
     const output = must(result, "installer promote")
     assert.match(output, /OPERATIONAL_LIVE_PLUGIN_DEPLOYMENT_RESULT=PASS/)
     assert.equal(await readFile(join(f.live, "state.txt"), "utf8"), "reviewed\n")
-    assert.equal(await readFile(f.config, "utf8"), '{"fixture":true}\n')
+    assert.equal(await readFile(f.config, "utf8"), f.configText)
     const receipt = JSON.parse(await readFile(f.receipt, "utf8"))
     assert.equal(receipt.result, "PASS")
     assert.equal(receipt.reviewed_commit, f.reviewed)
@@ -260,8 +260,8 @@ test("prepare and promote exact merged source with typed receipt and rollback ma
     assert.equal(receipt.activation_pair.config_byte_preserved, true)
     assert.equal(receipt.rollback.retained, true)
     assert.equal(await readFile(join(receipt.rollback.source_backup, "state.txt"), "utf8"), "prior\n")
-    assert.equal(await readFile(receipt.rollback.config_backup, "utf8"), '{"fixture":true}\n')
-    assert.equal(receipt.validation.environment_overrides["init.defaultBranch"], "master")
+    assert.equal(await readFile(receipt.rollback.config_backup, "utf8"), f.configText)
+    assert.deepEqual(receipt.repository_validation, { authority: "trusted-actions-external", result: "NOT_EVALUATED_BY_INSTALLER" })
   } finally {
     await cleanup(f)
   }
@@ -285,6 +285,33 @@ test("prepare rejects unauthenticated prior live tree", async () => {
     const result = invoke(prepareArgs(f))
     blocked(result, "TREE_IDENTITY_MISMATCH")
     assert.equal(await exists(f.plan), false)
+  } finally {
+    await cleanup(f)
+  }
+})
+
+test("prepare rejects a control root that overlaps the live-plugin parent", async () => {
+  const f = await fixture()
+  try {
+    f.work = join(dirname(f.live), "control")
+    f.plan = join(f.work, "plan.json")
+    const result = invoke(prepareArgs(f))
+    blocked(result, "UNSAFE_CONTROL_ROOT")
+    assert.equal(await exists(f.plan), false)
+    assert.equal(await readFile(join(f.live, "state.txt"), "utf8"), "prior\n")
+  } finally {
+    await cleanup(f)
+  }
+})
+
+test("prepare rejects a plan path outside the control root", async () => {
+  const f = await fixture()
+  try {
+    f.plan = join(f.root, "outside-plan.json")
+    const result = invoke(prepareArgs(f))
+    blocked(result, "UNSAFE_CONTROL_PATH")
+    assert.equal(await exists(f.plan), false)
+    assert.equal(await readFile(join(f.live, "state.txt"), "utf8"), "prior\n")
   } finally {
     await cleanup(f)
   }
@@ -359,6 +386,20 @@ test("promote rejects live-config drift between prepare and promote", async () =
   }
 })
 
+test("promote rejects a receipt path outside the prepared control root", async () => {
+  const f = await fixture()
+  try {
+    const { digest } = await prepared(f)
+    f.receipt = join(f.root, "outside-receipt.json")
+    const result = invoke(promoteArgs(f, digest))
+    blocked(result, "UNSAFE_RECEIPT_PATH")
+    assert.equal(await exists(f.receipt), false)
+    assert.equal(await readFile(join(f.live, "state.txt"), "utf8"), "prior\n")
+  } finally {
+    await cleanup(f)
+  }
+})
+
 test("receipt destination collision blocks before lock or live mutation", async () => {
   const f = await fixture()
   try {
@@ -397,9 +438,13 @@ test("post-promotion validation failure restores prior live source", async () =>
       FIXTURE_LIVE_ROOT: f.live,
     })
     blocked(result, "POST_PROMOTION_VALIDATION_FAILED_ROLLED_BACK")
-    assert.equal(await exists(f.receipt), false)
+    assert.equal(await exists(f.receipt), true)
+    const pending = JSON.parse(await readFile(f.receipt, "utf8"))
+    assert.equal(pending.result, "PROMOTION_PENDING")
+    assert.equal(pending.merged_commit, f.merged)
+    assert.equal(pending.prior_live_commit, f.prior)
     assert.equal(await readFile(join(f.live, "state.txt"), "utf8"), "prior\n")
-    assert.equal(await readFile(f.config, "utf8"), '{"fixture":true}\n')
+    assert.equal(await readFile(f.config, "utf8"), f.configText)
   } finally {
     await cleanup(f)
   }
