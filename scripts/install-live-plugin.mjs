@@ -429,4 +429,219 @@ async function runValidationProfile(stageRoot, workRoot, profileRelativePath, de
   const logRoot = join(workRoot, "validation-logs")
   await mkdir(logRoot, { recursive: true })
   const results = []
+  for (const command of profile.commands) {
+    if (!command?.id || !Array.isArray(command.argv) || command.argv.length === 0 || command.argv.some((part) => typeof part !== "string")) {
+      block("INVALID_VALIDATION_PROFILE", `invalid command in ${profilePath}`)
+    }
+    const [file, ...args] = command.argv
+    const result = run(file, args, {
+      cwd: stageRoot,
+      env: deterministicValidationEnv(defaultBranch),
+      allowFailure: true,
+    })
+    const stdoutPath = join(logRoot, `${command.id}.stdout.log`)
+    const stderrPath = join(logRoot, `${command.id}.stderr.log`)
+    await writeFile(stdoutPath, result.stdout, "utf8")
+    await writeFile(stderrPath, result.stderr, "utf8")
+    if (result.status !== 0) {
+      block("STAGED_VALIDATION_FAILED", `${command.id} exited ${result.status}`, {
+        command: command.argv,
+        stdout_log: stdoutPath,
+        stderr_log: stderrPath,
+        stdout_tail: String(result.stdout).slice(-8000),
+        stderr_tail: String(result.stderr).slice(-8000),
+      })
+    }
+    const record = {
+      id: command.id,
+      argv: command.argv,
+      exit: result.status,
+      signal: result.signal,
+      stdout_sha256: sha256Bytes(Buffer.from(result.stdout)),
+      stderr_sha256: sha256Bytes(Buffer.from(result.stderr)),
+      stdout_log: stdoutPath,
+      stderr_log: stderrPath,
+    }
+    if (command.collect_test_totals === "node-tap") {
+      const totals = parseNodeTapTotals(`${result.stdout}\n${result.stderr}`)
+      Object.assign(record, {
+        test_count: totals.tests,
+        test_pass: totals.pass,
+        test_fail: totals.fail,
+        test_skip: totals.skipped,
+      })
+      if (totals.fail !== 0 || totals.pass + totals.skipped !== totals.tests) {
+        block("STAGED_TEST_TOTALS_FAILED", `${command.id} reported non-passing totals`, totals)
+      }
+    }
+    results.push(record)
+  }
+  return {
+    profile_id: profile.profile_id ?? null,
+    profile_version: profile.profile_version ?? null,
+    profile_path: profileRelativePath,
+    environment_overrides: { "init.defaultBranch": defaultBranch },
+    commands: results,
+  }
+}
+
+function summarizeValidation(validation) {
+  const test = validation.commands.find((command) => Number.isInteger(command.test_count))
+  return {
+    npm_check: validation.commands.some((command) => command.id === "npm-check" && command.exit === 0) ? "PASS" : "UNVERIFIED",
+    npm_test: test?.exit === 0 ? "PASS" : "UNVERIFIED",
+    test_count: test?.test_count ?? null,
+    test_pass: test?.test_pass ?? null,
+  }
+}
+
+async function validateConfigWithSource(sourceRoot, liveConfig) {
+  const validator = join(sourceRoot, "scripts", "validate-config.mjs")
+  await pathIdentity(validator, "file")
+  const result = run(process.execPath, [validator, "--candidate", liveConfig], {
+    cwd: sourceRoot,
+    allowFailure: true,
+  })
+  if (result.status !== 0) {
+    block("CONFIG_MIGRATION_REQUIRED", "staged source does not validate the current live config unchanged", {
+      stdout: result.stdout,
+      stderr: result.stderr,
+    })
+  }
+  if (!String(result.stdout).includes("OPERATIONAL_CONFIG_RESULT: PASS")) {
+    block("CONFIG_VALIDATION_AMBIGUOUS", "config validator exited zero without the expected PASS marker", {
+      stdout: result.stdout,
+      stderr: result.stderr,
+    })
+  }
+  return {
+    result: "PASS",
+    stdout_sha256: sha256Bytes(Buffer.from(result.stdout)),
+    stderr_sha256: sha256Bytes(Buffer.from(result.stderr)),
+  }
+}
+
+async function readPackageMarker(root) {
+  const packagePath = join(root, "package.json")
+  const pkg = await readJson(packagePath)
+  if (pkg.name !== "opencode-operational-schema-guard") {
+    block("PACKAGE_MARKER_MISMATCH", `${packagePath} has unexpected package name ${pkg.name}`)
+  }
+  return { name: pkg.name, version: pkg.version ?? null }
+}
+
+async function prepare(options) {
+  const repoRoot = await ensureRepoRoot(absolutePath(required(options, "--repo"), "--repo"))
+  const mergedSha = exactSha(required(options, "--merged-sha"), "--merged-sha")
+  const reviewedSha = exactSha(required(options, "--reviewed-sha"), "--reviewed-sha")
+  const expectedLiveSha = exactSha(required(options, "--expected-live-sha"), "--expected-live-sha")
+  const planPath = absolutePath(required(options, "--plan"), "--plan")
+  const liveRoot = absolutePath(option(options, "--live-root", DEFAULT_LIVE_ROOT), "--live-root")
+  const liveConfig = absolutePath(option(options, "--live-config", DEFAULT_LIVE_CONFIG), "--live-config")
+  const workRootBase = absolutePath(option(options, "--work-root", DEFAULT_WORK_ROOT), "--work-root")
+  const profilePath = safeRelativeRepoPath(option(options, "--profile", DEFAULT_PROFILE), "--profile")
+  const testInitBranch = option(options, "--test-init-default-branch", DEFAULT_TEST_INIT_BRANCH)
+  if (!/^[A-Za-z0-9._/-]+$/.test(testInitBranch)) block("USAGE", "--test-init-default-branch contains unsupported characters")
+
+  const mergedTree = resolveCommitTree(repoRoot, mergedSha, "merged commit")
+  const reviewedTree = resolveCommitTree(repoRoot, reviewedSha, "reviewed commit")
+  if (mergedTree !== reviewedTree) {
+    block("MERGED_TREE_IDENTITY_MISMATCH", "reviewed PR tree does not equal merged-main tree", {
+      reviewed_sha: reviewedSha,
+      reviewed_tree: reviewedTree,
+      merged_sha: mergedSha,
+      merged_tree: mergedTree,
+    })
+  }
+  const expectedLiveTree = resolveCommitTree(repoRoot, expectedLiveSha, "expected live commit")
+
+  await pathIdentity(liveRoot, "directory")
+  await pathIdentity(liveConfig, "file")
+  const liveParent = dirname(liveRoot)
+  const liveRootIdentity = await pathIdentity(liveRoot, "directory")
+  const liveParentIdentity = await pathIdentity(liveParent, "directory")
+  const liveConfigIdentity = await pathIdentity(liveConfig, "file")
+  const liveConfigSha256 = await sha256File(liveConfig)
+
+  await mkdir(workRootBase, { recursive: true })
+  const workRoot = await mkdtemp(join(workRootBase, "prepare-"))
+  const scratchRoot = join(workRoot, "scratch")
+  await mkdir(scratchRoot)
+  const stageRoot = join(workRoot, "merged-source")
+  const stage = await materializeCommit({
+    repoRoot,
+    commitSha: mergedSha,
+    expectedTree: mergedTree,
+    target: stageRoot,
+    scratchRoot,
+  })
+  const packageMarker = await readPackageMarker(stageRoot)
+  const validation = await runValidationProfile(stageRoot, workRoot, profilePath, testInitBranch)
+
+  const priorLive = await validateTreeAgainstCommit({
+    repoRoot,
+    root: liveRoot,
+    commitSha: expectedLiveSha,
+    expectedTree: expectedLiveTree,
+    scratchRoot,
+    label: "current live source",
+  })
+  const configValidation = await validateConfigWithSource(stageRoot, liveConfig)
+
+  const plan = {
+    schema_version: PLAN_SCHEMA,
+    result: "PREPARED",
+    created_at: new Date().toISOString(),
+    repository_root: repoRoot,
+    reviewed_commit: reviewedSha,
+    reviewed_tree: reviewedTree,
+    merged_commit: mergedSha,
+    merged_tree: mergedTree,
+    reviewed_tree_equals_merged_tree: true,
+    source_stage: {
+      root: stageRoot,
+      tree: stage.tree,
+      manifest_sha256: stage.manifestSha256,
+      entry_count: stage.entryCount,
+      package: packageMarker,
+    },
+    expected_live: {
+      commit: expectedLiveSha,
+      tree: expectedLiveTree,
+      observed_tree: priorLive.tree,
+      observed_manifest_sha256: priorLive.manifestSha256,
+      entry_count: priorLive.entryCount,
+      authenticated: true,
+    },
+    activation_pair: {
+      live_root: liveRoot,
+      live_config: liveConfig,
+      live_root_identity: liveRootIdentity,
+      live_parent_identity: liveParentIdentity,
+      live_config_identity: liveConfigIdentity,
+      pre_promotion_config_sha256: liveConfigSha256,
+      config_change_required: false,
+      config_validation: configValidation,
+    },
+    validation,
+    validation_summary: summarizeValidation(validation),
+    work_root: workRoot,
+    scratch_root: scratchRoot,
+    fresh_process_acceptance: "NOT_RUN",
+    issue_closure_ready: false,
+  }
+  const planSha256 = await writeJsonExclusive(planPath, plan)
+  process.stdout.write(
+    [
+      "OPERATIONAL_LIVE_PLUGIN_PREPARE_RESULT=PASS",
+      `PLAN=${planPath}`,
+      `PLAN_SHA256=${planSha256}`,
+      `REVIEWED_PR_COMMIT_IDENTITY=${reviewedSha}`,
+      `REVIEWED_PR_TREE_IDENTITY=${reviewedTree}`,
+      `MERGED_MAIN_COMMIT_IDENTITY=${mergedSha}`,
+      `MERGED_MAIN_TREE_IDENTITY=${mergedTree}`,
+      `SOURCE_STAGE_TREE_IDENTITY=${stage.tree}`,
+      `PRIOR_LIVE_SOURCE_IDENTITY=${expectedLiveSha}`,
+      `PRIOR_LIVE_TREE_IDENTITY=${priorLive.tree}`,
+      `PRE_PROMOTION_CONFIG_SHA256=${liveConfigSha256}`,
 /*__GHDEV_INSTALLER_REMAINDER__*/
