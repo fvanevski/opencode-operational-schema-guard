@@ -1,6 +1,6 @@
 import test from "node:test"
 import assert from "node:assert/strict"
-import { spawnSync } from "node:child_process"
+import { spawn, spawnSync } from "node:child_process"
 import { chmod, mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { dirname, join, resolve } from "node:path"
@@ -429,14 +429,33 @@ test("installation lock collision blocks and removes the reserved receipt", asyn
   }
 })
 
-test("post-promotion validation failure restores prior live source", async () => {
-  const f = await fixture({ failInstalledValidation: true })
+test("post-promotion installed-tree validation failure restores prior live source", async () => {
+  const f = await fixture()
+  let watcher
   try {
     const { digest } = await prepared(f)
-    const result = invoke(promoteArgs(f, digest), {
-      FIXTURE_FAIL_INSTALLED_VALIDATION: "1",
-      FIXTURE_LIVE_ROOT: f.live,
-    })
+    const priorIno = String((await stat(f.live)).ino)
+    const watcherCode = `
+      const fs = require("node:fs")
+      const [live, priorIno] = process.argv.slice(1)
+      const deadline = Date.now() + 10000
+      const timer = setInterval(() => {
+        try {
+          const ino = String(fs.lstatSync(live).ino)
+          if (ino !== priorIno) {
+            fs.appendFileSync(live + "/package.json", "\\n")
+            clearInterval(timer)
+            process.exit(0)
+          }
+        } catch {}
+        if (Date.now() > deadline) {
+          clearInterval(timer)
+          process.exit(3)
+        }
+      }, 1)
+    `
+    watcher = spawn(process.execPath, ["-e", watcherCode, f.live, priorIno], { stdio: "ignore" })
+    const result = invoke(promoteArgs(f, digest))
     blocked(result, "POST_PROMOTION_VALIDATION_FAILED_ROLLED_BACK")
     assert.equal(await exists(f.receipt), true)
     const pending = JSON.parse(await readFile(f.receipt, "utf8"))
@@ -446,6 +465,7 @@ test("post-promotion validation failure restores prior live source", async () =>
     assert.equal(await readFile(join(f.live, "state.txt"), "utf8"), "prior\n")
     assert.equal(await readFile(f.config, "utf8"), f.configText)
   } finally {
+    watcher?.kill()
     await cleanup(f)
   }
 })
