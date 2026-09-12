@@ -715,15 +715,25 @@ async function promote(options) {
   const liveConfig = absolutePath(plan.activation_pair?.live_config, "plan.activation_pair.live_config")
   const liveParent = dirname(liveRoot)
   const scratchRoot = absolutePath(plan.scratch_root, "plan.scratch_root")
+  const controlRoot = absolutePath(plan.control_root, "plan.control_root")
   await mkdir(scratchRoot, { recursive: true })
+  const canonicalControlRoot = await ensureSafeControlRoot(controlRoot, liveParent)
+  if (canonicalControlRoot !== controlRoot) block("PRECONDITION_DRIFT", "control-root identity changed after prepare")
+  if (!pathWithin(controlRoot, receiptPath)) block("UNSAFE_RECEIPT_PATH", "receipt must be created inside the installer control root")
 
-  const relativeReceiptToLive = relative(liveRoot, receiptPath)
-  if (relativeReceiptToLive === "" || (!relativeReceiptToLive.startsWith(`..${sep}`) && relativeReceiptToLive !== ".." && !isAbsolute(relativeReceiptToLive))) {
-    block("UNSAFE_RECEIPT_PATH", "receipt must not be created inside the live plugin root")
+  const pendingReceipt = {
+    schema_version: RECEIPT_SCHEMA,
+    result: "PROMOTION_PENDING",
+    created_at: new Date().toISOString(),
+    plan: { path: planPath, sha256: observedPlanSha256, schema_version: plan.schema_version },
+    merged_commit: mergedSha,
+    merged_tree: mergedTree,
+    prior_live_commit: expectedLiveSha,
+    live_root: liveRoot,
   }
-
-  let receiptHandle = await openExclusiveDestination(receiptPath)
+  const pendingReceiptSha256 = await writeJsonExclusive(receiptPath, pendingReceipt)
   let receiptCommitted = false
+  let mutationStarted = false
   try {
     const lockPath = join(liveParent, `.${basename(liveRoot)}.install.lock`)
     const lock = await acquireLock(lockPath)
@@ -773,7 +783,7 @@ async function promote(options) {
       if (configBefore !== plan.activation_pair.pre_promotion_config_sha256) {
         block("PRECONDITION_DRIFT", "live config bytes changed after prepare")
       }
-      await validateConfigWithSource(stageRoot, liveConfig)
+      await validateLiveConfig(liveConfig)
 
       const stamp = utcStamp()
       const nonce = randomUUID().replaceAll("-", "").slice(0, 12)
@@ -783,6 +793,13 @@ async function promote(options) {
       const incoming = join(liveParent, `.${base}.incoming-${stamp}-${mergedSha.slice(0, 8)}-${nonce}`)
       failedRoot = join(liveParent, `${base}.failed-${stamp}-${mergedSha.slice(0, 8)}-${nonce}`)
       configBackup = join(dirname(liveConfig), `${basename(liveConfig)}.backup-live-plugin-${stamp}-${mergedSha.slice(0, 8)}-${nonce}`)
+      for (const [path, label] of [
+        [backupSource, "rollback source backup"],
+        [superseded, "superseded source"],
+        [incoming, "incoming source"],
+        [failedRoot, "failed candidate"],
+        [configBackup, "rollback config backup"],
+      ]) await assertAbsentPath(path, label)
 
       await copyTreeExact(liveRoot, backupSource)
       await fsyncTree(backupSource)
@@ -821,6 +838,7 @@ async function promote(options) {
         block("INCOMING_COPY_MISMATCH", "incoming source manifest differs from the prepared stage")
       }
 
+      mutationStarted = true
       await rename(liveRoot, superseded)
       await fsyncDirectory(liveParent)
       try {
@@ -856,7 +874,7 @@ async function promote(options) {
         if (configAfter !== configBefore) {
           block("POST_PROMOTION_CONFIG_DRIFT", "live config changed during a source-only deployment")
         }
-        installedConfigValidation = await validateConfigWithSource(liveRoot, liveConfig)
+        installedConfigValidation = await validateLiveConfig(liveConfig)
         const installedPackage = await readPackageMarker(liveRoot)
         if (
           installedPackage.name !== plan.source_stage.package.name ||
