@@ -7,7 +7,14 @@ import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 import { BUILD_AGENT_PROMPT, EVIDENCE_ASSESSMENT_RULE, EXPLORE_AGENT_PROMPT, REMEDIATION_AUDIT_RULE, VERIFY_AGENT_PROMPT } from "../lib/policy-spec.mjs"
 
-const installer = resolve(dirname(fileURLToPath(import.meta.url)), "../scripts/install-live-plugin.mjs")
+const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
+const installer = resolve(repositoryRoot, "scripts/install-live-plugin.mjs")
+const RUNTIME_FILES = [
+  "scripts/install-live-plugin.mjs",
+  "lib/config-contract.mjs",
+  "lib/context-policy.mjs",
+  "lib/policy-spec.mjs",
+]
 
 function validLiveConfig(context = 204800) {
   const models = Object.fromEntries(["chat", "chat-fast", "chat-review", "chat-audit"].map((name) => [name, { limit: { context, input: 180000, output: 8192 } }]))
@@ -118,7 +125,14 @@ async function archiveCommit(repo, commit, target) {
 
 async function writeFixtureSource(repo, { failInstalledValidation = false } = {}) {
   await mkdir(join(repo, "scripts"), { recursive: true })
+  await mkdir(join(repo, "lib"), { recursive: true })
   await mkdir(join(repo, "evidence", "profiles"), { recursive: true })
+  for (const relativePath of RUNTIME_FILES) {
+    const destination = join(repo, relativePath)
+    await mkdir(dirname(destination), { recursive: true })
+    await writeFile(destination, await readFile(resolve(repositoryRoot, relativePath)))
+  }
+  await chmod(join(repo, "scripts", "install-live-plugin.mjs"), 0o755)
   await writeFile(
     join(repo, "package.json"),
     `${JSON.stringify({ name: "opencode-operational-schema-guard", version: "0.0.0-test", private: true, type: "module" }, null, 2)}\n`,
@@ -195,8 +209,21 @@ async function fixture({ mergedTreeMismatch = false, priorLiveDrift = false, fai
   return { root, repo, live, config, configText, work, plan, receipt, prior, reviewed, merged }
 }
 
+const fixtureRepoByPlan = new Map()
+
 function invoke(args, env = {}) {
-  return run(process.execPath, [installer, ...args], {
+  const repoIndex = args.indexOf("--repo")
+  const planIndex = args.indexOf("--plan")
+  let repo
+  if (repoIndex >= 0) {
+    repo = args[repoIndex + 1]
+    if (planIndex >= 0) fixtureRepoByPlan.set(args[planIndex + 1], repo)
+  } else if (planIndex >= 0) {
+    repo = fixtureRepoByPlan.get(args[planIndex + 1])
+  }
+  assert.ok(repo, `fixture repository is unavailable for invocation: ${args.join(" ")}`)
+  return run(process.execPath, [join(repo, "scripts", "install-live-plugin.mjs"), ...args], {
+    cwd: repo,
     env: {
       ...process.env,
       ...env,
@@ -262,6 +289,38 @@ test("prepare and promote exact merged source with typed receipt and rollback ma
     assert.equal(await readFile(join(receipt.rollback.source_backup, "state.txt"), "utf8"), "prior\n")
     assert.equal(await readFile(receipt.rollback.config_backup, "utf8"), f.configText)
     assert.deepEqual(receipt.repository_validation, { authority: "trusted-actions-external", result: "NOT_EVALUATED_BY_INSTALLER" })
+  } finally {
+    await cleanup(f)
+  }
+})
+
+test("prepare rejects an installer runtime outside the deployment-target checkout", async () => {
+  const f = await fixture()
+  try {
+    const result = run(process.execPath, [installer, ...prepareArgs(f)], {
+      env: {
+        ...process.env,
+        GIT_CONFIG_COUNT: "1",
+        GIT_CONFIG_KEY_0: "init.defaultBranch",
+        GIT_CONFIG_VALUE_0: "main",
+      },
+    })
+    blocked(result, "INSTALLER_RUNTIME_PATH_MISMATCH")
+    assert.equal(await exists(f.plan), false)
+    assert.equal(await readFile(join(f.live, "state.txt"), "utf8"), "prior\n")
+  } finally {
+    await cleanup(f)
+  }
+})
+
+test("prepare rejects a dirty deployment-target checkout", async () => {
+  const f = await fixture()
+  try {
+    await writeFile(join(f.repo, "state.txt"), "dirty runtime checkout\n")
+    const result = invoke(prepareArgs(f))
+    blocked(result, "INSTALLER_RUNTIME_DIRTY")
+    assert.equal(await exists(f.plan), false)
+    assert.equal(await readFile(join(f.live, "state.txt"), "utf8"), "prior\n")
   } finally {
     await cleanup(f)
   }
