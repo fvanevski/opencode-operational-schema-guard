@@ -1,5 +1,8 @@
+import { fileURLToPath } from "node:url"
 import { unwrapLiveConfig } from "./lib/context-policy.mjs"
 import { createOperationGuard, policyFromConfig, policyWithContextFailure } from "./lib/operation-guard.mjs"
+
+const PLUGIN_ROOT = fileURLToPath(new URL(".", import.meta.url))
 
 export async function OperationalSchemaGuardPlugin({ client, directory }) {
   let policy = null
@@ -42,6 +45,7 @@ export async function OperationalSchemaGuardPlugin({ client, directory }) {
     client,
     directory,
     policy: policyProxy,
+    pluginRoot: PLUGIN_ROOT,
     stateDirectory: "/home/filip/.local/share/opencode/operational-schema-v5/workspaces",
   })
 
