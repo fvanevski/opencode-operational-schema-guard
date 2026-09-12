@@ -1,4 +1,8 @@
 import assert from "node:assert/strict"
+import { spawnSync } from "node:child_process"
+import { mkdtemp } from "node:fs/promises"
+import { tmpdir } from "node:os"
+import { join } from "node:path"
 import test from "node:test"
 import { OperationalSchemaGuardPlugin } from "../index.mjs"
 import { derivePrimaryContextPolicy, unwrapLiveConfig, validateModelContextBudget } from "../lib/context-policy.mjs"
@@ -26,6 +30,32 @@ function liveConfig({ reserved = 40960 } = {}) {
       build: { model: "local/chat" },
       review: { model: "local/chat-review" },
       research: { model: "local/chat-audit" },
+    },
+  }
+}
+
+function runGit(cwd, args) {
+  const result = spawnSync("git", args, { cwd, encoding: "utf8" })
+  assert.equal(result.status, 0, result.stderr || `${args.join(" ")} failed`)
+  return String(result.stdout ?? "").trim()
+}
+
+async function sessionRepository(remote) {
+  const root = await mkdtemp(join(tmpdir(), "opencode-session-governed-repo-"))
+  runGit(root, ["init", "-q"])
+  runGit(root, ["-c", "user.name=GHDEV", "-c", "user.email=ghdev@example.invalid", "commit", "--allow-empty", "-qm", "base"])
+  if (remote) runGit(root, ["remote", "add", "origin", remote])
+  return root
+}
+
+function sessionAwareClient(config, directories) {
+  return {
+    config: { get: async () => ({ data: config }) },
+    session: {
+      get: async (request) => {
+        const id = request?.path?.id ?? request?.sessionID
+        return { data: { id, directory: directories.get(id) } }
+      },
     },
   }
 }
@@ -236,4 +266,118 @@ test("the message.updated event path shares the single lazy resolution and never
     /context policy initialization failed closed/,
     "EVENT_PATH_NO_UNRESOLVED_POLICY_CONSUMPTION: a tool remains rejected in the fail-closed state after an event",
   )
+})
+
+test("plugin routes resource identity and exact-target admission through the authoritative session directory", async () => {
+  const config = liveConfig()
+  const firecrawl = await sessionRepository("https://github.com/fvanevski/firecrawl_skill.git")
+  const unrelated = await sessionRepository("https://github.com/example/unrelated.git")
+  const target = runGit(firecrawl, ["rev-parse", "HEAD"])
+  const sessions = new Map([["firecrawl-session", firecrawl]])
+  const stateDirectory = await mkdtemp(join(tmpdir(), "opencode-session-governed-state-"))
+  const hooks = await OperationalSchemaGuardPlugin({
+    client: sessionAwareClient(config, sessions),
+    directory: unrelated,
+    stateDirectory,
+  })
+  await hooks.config(config)
+  await hooks["chat.message"](
+    { sessionID: "firecrawl-session", agent: "build" },
+    { message: {}, parts: [{ type: "text", text: `REQUIRED EXACT HEAD: ${target}` }] },
+  )
+
+  const worktreeRoot = await mkdtemp(join(tmpdir(), "opencode-session-governed-worktree-root-"))
+  const worktree = join(worktreeRoot, "candidate")
+  const compound = { command: `git worktree add --detach ${worktree} ${target} && git rev-parse HEAD`, workdir: firecrawl }
+  let rejection
+  try {
+    await hooks["tool.execute.before"]({ sessionID: "firecrawl-session", callID: "compound", tool: "bash" }, { args: compound })
+    assert.fail("compound target setup must reject")
+  } catch (error) {
+    rejection = String(error?.message ?? error)
+  }
+  assert.match(rejection, /OPERATIONAL_CORRECTION: SPLIT_TARGET_ADMISSION/)
+  assert.match(rejection, /OPERATIONAL_RESOURCE: kind=command-shape; repository=fvanevski\/firecrawl_skill/)
+  assert.match(rejection, /section=exact-target-disposable-worktree/)
+
+  const wrongWorkspace = { command: `git worktree add --detach ${worktree} ${target}`, workdir: unrelated }
+  let wrongWorkspaceRejection
+  try {
+    await hooks["tool.execute.before"]({ sessionID: "firecrawl-session", callID: "wrong-workspace", tool: "bash" }, { args: wrongWorkspace })
+    assert.fail("a per-call workdir must not redefine the governed repository")
+  } catch (error) {
+    wrongWorkspaceRejection = String(error?.message ?? error)
+  }
+  assert.match(wrongWorkspaceRejection, /OPERATIONAL_CORRECTION: ADMIT_EXACT_TARGET/)
+  assert.match(wrongWorkspaceRejection, /repository=fvanevski\/firecrawl_skill/)
+
+  const setup = { command: `git worktree add --detach ${worktree} ${target}`, workdir: firecrawl }
+  await assert.doesNotReject(() => hooks["tool.execute.before"]({ sessionID: "firecrawl-session", callID: "setup", tool: "bash" }, { args: setup }))
+  runGit(firecrawl, ["worktree", "add", "--detach", worktree, target])
+  await hooks["tool.execute.after"](
+    { sessionID: "firecrawl-session", callID: "setup", tool: "bash", args: setup },
+    { title: "", output: "prepared", metadata: { exit: 0 } },
+  )
+
+  const proof = { command: "git rev-parse HEAD", workdir: worktree }
+  await assert.doesNotReject(() => hooks["tool.execute.before"]({ sessionID: "firecrawl-session", callID: "proof", tool: "bash" }, { args: proof }))
+  const proven = await hooks["tool.execute.after"](
+    { sessionID: "firecrawl-session", callID: "proof", tool: "bash", args: proof },
+    { title: "", output: `${target}\n`, metadata: { exit: 0 } },
+  )
+  assert.equal(proven.metadata.operationalSchema.authorityStatus, "verified")
+  assert.equal(proven.metadata.operationalSchema.observedHead, target)
+
+  runGit(firecrawl, ["worktree", "remove", "--force", worktree])
+  await hooks.dispose()
+})
+
+test("different session directories isolate workspace authority and a directory change creates an explicit boundary", async () => {
+  const config = liveConfig()
+  const repoA = await sessionRepository()
+  const repoB = await sessionRepository()
+  const targetA = runGit(repoA, ["rev-parse", "HEAD"])
+  const sessions = new Map([
+    ["session-a", repoA],
+    ["session-b", repoB],
+  ])
+  const stateDirectory = await mkdtemp(join(tmpdir(), "opencode-session-isolation-state-"))
+  const hooks = await OperationalSchemaGuardPlugin({
+    client: sessionAwareClient(config, sessions),
+    directory: "/tmp/opencode-plugin-construction-fallback",
+    stateDirectory,
+  })
+  await hooks.config(config)
+
+  await hooks["chat.message"](
+    { sessionID: "session-a", agent: "build" },
+    { message: {}, parts: [{ type: "text", text: `REQUIRED EXACT HEAD: ${targetA}` }] },
+  )
+  await assert.rejects(
+    () => hooks["tool.execute.before"]({ sessionID: "session-a", callID: "a-edit", tool: "edit" }, { args: { filePath: "docs/a.md" } }),
+    /exact-head admission is pending/,
+  )
+  await hooks["chat.message"]({ sessionID: "session-b", agent: "build" }, { message: {}, parts: [] })
+  await assert.doesNotReject(
+    () => hooks["tool.execute.before"]({ sessionID: "session-b", callID: "b-edit", tool: "edit" }, { args: { filePath: "docs/b.md" } }),
+  )
+
+  const compactA = { context: [] }
+  await hooks["experimental.session.compacting"]({ sessionID: "session-a" }, compactA)
+  assert.match(compactA.context.join("\n"), new RegExp(`Workspace: ${repoA.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`))
+  const compactB = { context: [] }
+  await hooks["experimental.session.compacting"]({ sessionID: "session-b" }, compactB)
+  assert.match(compactB.context.join("\n"), new RegExp(`Workspace: ${repoB.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`))
+
+  sessions.set("session-a", repoB)
+  await hooks["chat.message"]({ sessionID: "session-a", agent: "build" }, { message: {}, parts: [] })
+  const transformed = { system: [] }
+  await hooks["experimental.chat.system.transform"]({ sessionID: "session-a", model: {} }, transformed)
+  assert.match(transformed.system.join("\n"), /authoritative governed directory changed/)
+  assert.match(transformed.system.join("\n"), new RegExp(repoB.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")))
+  await assert.doesNotReject(
+    () => hooks["tool.execute.before"]({ sessionID: "session-a", callID: "a-after-rebind", tool: "read" }, { args: { filePath: "README.md" } }),
+  )
+
+  await hooks.dispose()
 })
