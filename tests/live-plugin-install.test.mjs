@@ -172,6 +172,10 @@ async function cleanup(f) {
   await rm(f.root, { recursive: true, force: true })
 }
 
+test("installer script is syntactically valid", () => {
+  must(run(process.execPath, ["--check", installer]), "node --check installer")
+})
+
 test("prepare and promote exact merged source with typed receipt and rollback material", async () => {
   const f = await fixture()
   try {
