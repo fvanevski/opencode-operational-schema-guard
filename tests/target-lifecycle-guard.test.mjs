@@ -727,8 +727,13 @@ test("verified target still rejects malformed compound HEAD proofs and routes Fi
   await assert.doesNotReject(() => before(f.hooks, f.sessionID, "log-search", { command: "git log -S'git rev-parse HEAD' --oneline -1" }))
   await assert.doesNotReject(() => before(f.hooks, f.sessionID, "text-search", { command: "rg 'git rev-parse HEAD' ." }))
   await assert.doesNotReject(() => before(f.hooks, f.sessionID, "quoted-substitution-search", { command: "rg '$(git rev-parse HEAD)' ." }))
+  await assert.doesNotReject(() => before(f.hooks, f.sessionID, "quoted-process-substitution-search", { command: "rg '<(git rev-parse HEAD)' ." }))
   await assert.rejects(
     () => before(f.hooks, f.sessionID, "executable-substitution", { command: "printf '%s\\n' $(git rev-parse HEAD)" }),
+    /OPERATIONAL_CORRECTION: PROVE_TARGET_HEAD/,
+  )
+  await assert.rejects(
+    () => before(f.hooks, f.sessionID, "process-substitution", { command: "cat <(git rev-parse HEAD)" }),
     /OPERATIONAL_CORRECTION: PROVE_TARGET_HEAD/,
   )
 })
