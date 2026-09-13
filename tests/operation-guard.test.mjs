@@ -2533,6 +2533,8 @@ test("target worktree setup uses the repository workdir when the session directo
   const sessionDirectory = await mkdtemp(join(tmpdir(), "opencode-target-external-session-"))
   const sourceRepo = await mkdtemp(join(tmpdir(), "opencode-target-governed-repo-"))
   const unrelatedRepo = await mkdtemp(join(tmpdir(), "opencode-target-unrelated-repo-"))
+  runGit(sessionDirectory, ["init", "-q"])
+  runGit(sessionDirectory, ["-c", "user.name=GHDEV", "-c", "user.email=ghdev@example.invalid", "commit", "--allow-empty", "-qm", "launch-context"])
   runGit(sourceRepo, ["init", "-q"])
   runGit(sourceRepo, ["-c", "user.name=GHDEV", "-c", "user.email=ghdev@example.invalid", "commit", "--allow-empty", "-qm", "source-target"])
   runGit(unrelatedRepo, ["init", "-q"])
