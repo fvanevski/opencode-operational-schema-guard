@@ -772,6 +772,14 @@ test("verified target still rejects malformed compound HEAD proofs and routes Fi
     () => before(f.hooks, f.sessionID, "absolute-git-proof", { command: "/usr/bin/git rev-parse HEAD" }),
     /OPERATIONAL_CORRECTION: PROVE_TARGET_HEAD/,
   )
+  await assert.rejects(
+    () => before(f.hooks, f.sessionID, "git-c-proof", { command: `git -C ${f.directory} rev-parse HEAD` }),
+    /OPERATIONAL_CORRECTION: PROVE_TARGET_HEAD/,
+  )
+  await assert.rejects(
+    () => before(f.hooks, f.sessionID, "wrapped-git-c-proof", { command: `command -p /usr/bin/git -C ${f.directory} rev-parse HEAD` }),
+    /OPERATIONAL_CORRECTION: PROVE_TARGET_HEAD/,
+  )
   const wrappedOtherHead = f.target === "f".repeat(40) ? "e".repeat(40) : "f".repeat(40)
   await assert.rejects(
     () => before(f.hooks, f.sessionID, "shell-wrapper-checkout-proof", { command: `sh -c 'git switch --detach ${wrappedOtherHead} && git rev-parse HEAD'` }),
