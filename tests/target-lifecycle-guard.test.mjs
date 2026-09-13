@@ -758,6 +758,12 @@ test("verified target still rejects malformed compound HEAD proofs and routes Fi
   )
   await assert.doesNotReject(() => before(f.hooks, f.sessionID, "literal-proof-argument", { command: "printf '%s\\n' 'git rev-parse HEAD'" }))
   await assert.doesNotReject(() => before(f.hooks, f.sessionID, "array-literal", { command: "proof_words=(git rev-parse HEAD)" }))
+  await assert.doesNotReject(() => before(f.hooks, f.sessionID, "brace-arguments", { command: "printf '%s\\n' { git rev-parse HEAD }" }))
+  await assert.doesNotReject(() => before(f.hooks, f.sessionID, "quoted-heredoc", { command: "cat <<'EOF'\ngit rev-parse HEAD\n$(git rev-parse HEAD)\nEOF" }))
+  await assert.rejects(
+    () => before(f.hooks, f.sessionID, "expandable-heredoc-substitution", { command: "cat <<EOF\n$(git rev-parse HEAD)\nEOF" }),
+    /OPERATIONAL_CORRECTION: PROVE_TARGET_HEAD/,
+  )
 })
 
 test("duplicate same-target declarations preserve truthful pending and mismatch state without epoch churn", async (t) => {
