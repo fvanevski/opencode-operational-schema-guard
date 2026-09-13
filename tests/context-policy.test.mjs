@@ -368,6 +368,42 @@ test("plugin routes resource identity and exact-target admission through the aut
   await assert.rejects(() => access(verifiedCompoundPath), (error) => error?.code === "ENOENT")
   assert.ok(!runGit(unrelated, ["worktree", "list", "--porcelain"]).includes(verifiedCompoundPath))
 
+  const verifiedHeredocPath = join(worktreeRoot, "verified-interpreter-heredoc")
+  const verifiedHeredoc = {
+    command: `sh <<'GHDEV_TARGET'\ngit worktree add --detach ${verifiedHeredocPath} ${target}\nGHDEV_TARGET`,
+    workdir: unrelated,
+  }
+  let verifiedHeredocRejection
+  try {
+    await hooks["tool.execute.before"](
+      { sessionID: "firecrawl-session", callID: "verified-interpreter-heredoc", tool: "bash" },
+      { args: verifiedHeredoc },
+    )
+    assert.fail("verified target setup inside shell-interpreter heredoc must reject before execution")
+  } catch (error) {
+    verifiedHeredocRejection = String(error?.message ?? error)
+  }
+  assert.match(verifiedHeredocRejection, /OPERATIONAL_CORRECTION: ADMIT_EXACT_TARGET/)
+  assert.match(verifiedHeredocRejection, /repository=fvanevski\/firecrawl_skill/)
+  assert.match(verifiedHeredocRejection, /section=exact-target-disposable-worktree/)
+  await assert.rejects(() => access(verifiedHeredocPath), (error) => error?.code === "ENOENT")
+  assert.ok(!runGit(unrelated, ["worktree", "list", "--porcelain"]).includes(verifiedHeredocPath))
+
+  await assert.doesNotReject(
+    () => hooks["tool.execute.before"](
+      { sessionID: "firecrawl-session", callID: "verified-inert-heredoc", tool: "bash" },
+      { args: { command: `cat <<'GHDEV_DATA'\ngit worktree add --detach ${verifiedHeredocPath} ${target}\nGHDEV_DATA`, workdir: unrelated } },
+    ),
+  )
+
+  await assert.rejects(
+    () => hooks["tool.execute.before"](
+      { sessionID: "firecrawl-session", callID: "verified-heredoc-head-proof", tool: "bash" },
+      { args: { command: "sh <<'GHDEV_PROOF'\ngit rev-parse HEAD\nGHDEV_PROOF", workdir: worktree } },
+    ),
+    /OPERATIONAL_CORRECTION: PROVE_TARGET_HEAD/,
+  )
+
   await assert.rejects(
     () => hooks["tool.execute.before"](
       { sessionID: "firecrawl-session", callID: "verified-switch-short-detach", tool: "bash" },
