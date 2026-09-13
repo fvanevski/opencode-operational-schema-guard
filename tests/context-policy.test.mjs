@@ -396,6 +396,27 @@ test("plugin routes resource identity and exact-target admission through the aut
     ),
   )
 
+  await assert.doesNotReject(
+    () => hooks["tool.execute.before"](
+      { sessionID: "firecrawl-session", callID: "verified-inline-shell-readonly", tool: "bash" },
+      { args: { command: "sh -c 'git status --short'", workdir: unrelated } },
+    ),
+  )
+
+  for (const [callID, command] of [
+    ["verified-shell-here-string", "sh <<< 'git status --short'"],
+    ["verified-shell-pipe", "printf 'git status --short\\n' | sh"],
+    ["verified-shell-script", "sh ./opaque-agent-script.sh"],
+  ]) {
+    await assert.rejects(
+      () => hooks["tool.execute.before"](
+        { sessionID: "firecrawl-session", callID, tool: "bash" },
+        { args: { command, workdir: unrelated } },
+      ),
+      /OPERATIONAL_CORRECTION: ADMIT_EXACT_TARGET/,
+    )
+  }
+
   await assert.rejects(
     () => hooks["tool.execute.before"](
       { sessionID: "firecrawl-session", callID: "verified-heredoc-head-proof", tool: "bash" },
