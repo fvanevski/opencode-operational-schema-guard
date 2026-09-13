@@ -736,6 +736,28 @@ test("verified target still rejects malformed compound HEAD proofs and routes Fi
     () => before(f.hooks, f.sessionID, "process-substitution", { command: "cat <(git rev-parse HEAD)" }),
     /OPERATIONAL_CORRECTION: PROVE_TARGET_HEAD/,
   )
+  await assert.rejects(
+    () => before(f.hooks, f.sessionID, "subshell-proof", { command: "(git rev-parse HEAD)" }),
+    /OPERATIONAL_CORRECTION: PROVE_TARGET_HEAD/,
+  )
+  await assert.rejects(
+    () => before(f.hooks, f.sessionID, "group-proof", { command: "{ git rev-parse HEAD; }" }),
+    /OPERATIONAL_CORRECTION: PROVE_TARGET_HEAD/,
+  )
+  await assert.rejects(
+    () => before(f.hooks, f.sessionID, "if-proof", { command: "if git rev-parse HEAD; then true; fi" }),
+    /OPERATIONAL_CORRECTION: PROVE_TARGET_HEAD/,
+  )
+  await assert.rejects(
+    () => before(f.hooks, f.sessionID, "shell-wrapper-proof", { command: "sh -c 'git rev-parse HEAD'" }),
+    /OPERATIONAL_CORRECTION: PROVE_TARGET_HEAD/,
+  )
+  await assert.rejects(
+    () => before(f.hooks, f.sessionID, "eval-proof", { command: "eval 'git rev-parse HEAD'" }),
+    /OPERATIONAL_CORRECTION: PROVE_TARGET_HEAD/,
+  )
+  await assert.doesNotReject(() => before(f.hooks, f.sessionID, "literal-proof-argument", { command: "printf '%s\\n' 'git rev-parse HEAD'" }))
+  await assert.doesNotReject(() => before(f.hooks, f.sessionID, "array-literal", { command: "proof_words=(git rev-parse HEAD)" }))
 })
 
 test("duplicate same-target declarations preserve truthful pending and mismatch state without epoch churn", async (t) => {
