@@ -752,9 +752,33 @@ test("verified target still rejects malformed compound HEAD proofs and routes Fi
     () => before(f.hooks, f.sessionID, "shell-wrapper-proof", { command: "sh -c 'git rev-parse HEAD'" }),
     /OPERATIONAL_CORRECTION: PROVE_TARGET_HEAD/,
   )
+  await assert.rejects(
+    () => before(f.hooks, f.sessionID, "env-wrapper-proof", { command: "env -i git rev-parse HEAD" }),
+    /OPERATIONAL_CORRECTION: PROVE_TARGET_HEAD/,
+  )
+  await assert.rejects(
+    () => before(f.hooks, f.sessionID, "env-split-wrapper-proof", { command: "env -S 'git rev-parse HEAD'" }),
+    /OPERATIONAL_CORRECTION: PROVE_TARGET_HEAD/,
+  )
+  await assert.rejects(
+    () => before(f.hooks, f.sessionID, "command-wrapper-proof", { command: "command -p git rev-parse HEAD" }),
+    /OPERATIONAL_CORRECTION: PROVE_TARGET_HEAD/,
+  )
+  await assert.rejects(
+    () => before(f.hooks, f.sessionID, "exec-wrapper-proof", { command: "exec -a guard-proof /usr/bin/git rev-parse HEAD" }),
+    /OPERATIONAL_CORRECTION: PROVE_TARGET_HEAD/,
+  )
+  await assert.rejects(
+    () => before(f.hooks, f.sessionID, "absolute-git-proof", { command: "/usr/bin/git rev-parse HEAD" }),
+    /OPERATIONAL_CORRECTION: PROVE_TARGET_HEAD/,
+  )
   const wrappedOtherHead = f.target === "f".repeat(40) ? "e".repeat(40) : "f".repeat(40)
   await assert.rejects(
     () => before(f.hooks, f.sessionID, "shell-wrapper-checkout-proof", { command: `sh -c 'git switch --detach ${wrappedOtherHead} && git rev-parse HEAD'` }),
+    /OPERATIONAL_CORRECTION: PROVE_TARGET_HEAD/,
+  )
+  await assert.rejects(
+    () => before(f.hooks, f.sessionID, "absolute-shell-wrapper-checkout-proof", { command: `sh -c '/usr/bin/git switch --detach ${wrappedOtherHead} && /usr/bin/git rev-parse HEAD'` }),
     /OPERATIONAL_CORRECTION: PROVE_TARGET_HEAD/,
   )
   await assert.rejects(
@@ -762,6 +786,7 @@ test("verified target still rejects malformed compound HEAD proofs and routes Fi
     /OPERATIONAL_CORRECTION: PROVE_TARGET_HEAD/,
   )
   await assert.doesNotReject(() => before(f.hooks, f.sessionID, "literal-proof-argument", { command: "printf '%s\\n' 'git rev-parse HEAD'" }))
+  await assert.doesNotReject(() => before(f.hooks, f.sessionID, "wrapped-literal-proof-argument", { command: "env -i printf '%s\\n' 'git rev-parse HEAD'" }))
   await assert.doesNotReject(() => before(f.hooks, f.sessionID, "array-literal", { command: "proof_words=(git rev-parse HEAD)" }))
   await assert.doesNotReject(() => before(f.hooks, f.sessionID, "brace-arguments", { command: "printf '%s\\n' { git rev-parse HEAD }" }))
   await assert.doesNotReject(() => before(f.hooks, f.sessionID, "quoted-heredoc", { command: "cat <<'EOF'\ngit rev-parse HEAD\n$(git rev-parse HEAD)\nEOF" }))
@@ -796,6 +821,10 @@ test("duplicate same-target declarations preserve truthful pending and mismatch 
     () => before(pending.hooks, pending.sessionID, "pending-compound", { command: `git worktree add --detach ${join(pending.root, "pending-worktree")} ${pending.target} && git rev-parse HEAD` }),
     /OPERATIONAL_CORRECTION: SPLIT_TARGET_ADMISSION/,
   )
+  await assert.rejects(
+    () => before(pending.hooks, pending.sessionID, "pending-env-proof", { command: "env -i git rev-parse HEAD" }),
+    /OPERATIONAL_CORRECTION: PROVE_TARGET_HEAD/,
+  )
 
   const mismatch = await repositoryGuard(t, "duplicate-mismatch")
   const boundTarget = mismatch.target === "f".repeat(40) ? "e".repeat(40) : "f".repeat(40)
@@ -815,6 +844,10 @@ test("duplicate same-target declarations preserve truthful pending and mismatch 
   await assert.rejects(
     () => before(mismatch.hooks, mismatch.sessionID, "mismatch-compound", { command: `git worktree add --detach ${join(mismatch.root, "mismatch-worktree")} ${boundTarget} && git rev-parse HEAD` }),
     /OPERATIONAL_CORRECTION: SPLIT_TARGET_ADMISSION/,
+  )
+  await assert.rejects(
+    () => before(mismatch.hooks, mismatch.sessionID, "mismatch-command-proof", { command: "command -p /usr/bin/git rev-parse HEAD" }),
+    /OPERATIONAL_CORRECTION: PROVE_TARGET_HEAD/,
   )
 })
 
