@@ -2529,6 +2529,41 @@ test("target mismatch proof and rejected mutation provide one-step recovery feed
   )
 })
 
+test("target worktree setup uses the repository workdir when the session directory is outside the governed repository", async () => {
+  const sessionDirectory = await mkdtemp(join(tmpdir(), "opencode-target-external-session-"))
+  const sourceRepo = await mkdtemp(join(tmpdir(), "opencode-target-governed-repo-"))
+  const unrelatedRepo = await mkdtemp(join(tmpdir(), "opencode-target-unrelated-repo-"))
+  runGit(sourceRepo, ["init", "-q"])
+  runGit(sourceRepo, ["-c", "user.name=GHDEV", "-c", "user.email=ghdev@example.invalid", "commit", "--allow-empty", "-qm", "source-target"])
+  runGit(unrelatedRepo, ["init", "-q"])
+  runGit(unrelatedRepo, ["-c", "user.name=GHDEV", "-c", "user.email=ghdev@example.invalid", "commit", "--allow-empty", "-qm", "unrelated-target"])
+  const target = runGit(sourceRepo, ["rev-parse", "HEAD"])
+  const hooks = createOperationGuard({ directory: sessionDirectory, env: {} })
+  const sessionID = "external-session-target"
+  await message(hooks, sessionID, "build", `REQUIRED EXACT HEAD: ${target}`)
+
+  const worktreeRoot = await mkdtemp(join(tmpdir(), "opencode-target-external-worktree-root-"))
+  const path = join(worktreeRoot, "candidate")
+  await assert.rejects(
+    () => before(hooks, sessionID, "external-compound", "bash", { command: `git worktree add --detach ${path} ${target} && git rev-parse HEAD`, workdir: sourceRepo }),
+    /OPERATIONAL_CORRECTION: SPLIT_TARGET_ADMISSION/,
+  )
+  await assert.rejects(
+    () => before(hooks, sessionID, "wrong-repository", "bash", { command: `git worktree add --detach ${path} ${target}`, workdir: unrelatedRepo }),
+    /OPERATIONAL_CORRECTION: ADMIT_EXACT_TARGET/,
+  )
+
+  const add = { command: `git worktree add --detach ${path} ${target}`, workdir: sourceRepo }
+  await assert.doesNotReject(() => before(hooks, sessionID, "external-worktree-add", "bash", add))
+  runGit(sourceRepo, ["worktree", "add", "--detach", path, target])
+  await after(hooks, sessionID, "external-worktree-add", "bash", add, { output: "prepared", metadata: { exit: 0 } })
+  const proofArgs = { command: "git rev-parse HEAD", workdir: path }
+  await assert.doesNotReject(() => before(hooks, sessionID, "external-worktree-proof", "bash", proofArgs))
+  const proof = await after(hooks, sessionID, "external-worktree-proof", "bash", proofArgs, { output: `${runGit(path, ["rev-parse", "HEAD"])}\n`, metadata: { exit: 0 } })
+  assert.equal(proof.metadata.operationalSchema.authorityStatus, "verified")
+  assert.equal(proof.metadata.operationalSchema.observedHead, target)
+})
+
 test("target-mode compound worktree setup is rejected with the safe two-step sequence while the corrected sequence is admitted", async () => {
   const repo = await mkdtemp(join(tmpdir(), "opencode-target-worktree-repo-"))
   runGit(repo, ["init", "-q"])
