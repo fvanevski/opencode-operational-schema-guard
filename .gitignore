@@ -12,9 +12,10 @@ coverage/
 # OS detritus
 .DS_Store
 
-# --- Agent Instructions ---
+# --- Agent Instructions / Local Agent State ---
 opencode.json
 AGENTS.md
 QWEN.md
 CLAUDE.md
 .claude/
+.serena/
