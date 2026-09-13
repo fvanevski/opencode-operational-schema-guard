@@ -1,8 +1,9 @@
 import assert from "node:assert/strict"
+import { spawnSync } from "node:child_process"
 import { createHash } from "node:crypto"
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises"
+import { access, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
-import { join } from "node:path"
+import { join, resolve } from "node:path"
 import test, { after as afterAll } from "node:test"
 import { createOperationGuard } from "../lib/operation-guard.mjs"
 import { ASSESSMENT_RESULT_SCHEMA } from "../lib/repo-pr-assessment.mjs"
@@ -13,6 +14,45 @@ const EVIDENCE_ROOT = "/tmp/opencode/verify/evidence"
 const ASSESSMENT_RUNNER = "/home/filip/.config/opencode/plugins/operational-schema-v5/scripts/local-agent-assessment.mjs"
 const RECONCILIATION_RUNNER = "/home/filip/.config/opencode/plugins/operational-schema-v5/scripts/reconcile-owner-base.mjs"
 const generated = new Set()
+
+function git(directory, args) {
+  const result = spawnSync("git", args, {
+    cwd: directory,
+    encoding: "utf8",
+    timeout: 10_000,
+    env: { ...process.env, GIT_CONFIG_NOSYSTEM: "1", GIT_TERMINAL_PROMPT: "0" },
+  })
+  assert.equal(result.status, 0, String(result.stderr || result.stdout || `git ${args.join(" ")} failed`))
+  return String(result.stdout ?? "").trim()
+}
+
+async function authorityNotice(hooks, sessionID) {
+  const output = { system: ["base system"] }
+  await hooks["experimental.chat.system.transform"]({ sessionID }, output)
+  return output.system.join("\n")
+}
+
+async function persistedSafety(stateDirectory, directory) {
+  const key = createHash("sha256").update(resolve(directory)).digest("hex")
+  return JSON.parse(await readFile(join(resolve(stateDirectory), `${key}.json`), "utf8"))
+}
+
+async function repositoryGuard(t, label, { remote = "https://github.com/fvanevski/firecrawl_skill.git" } = {}) {
+  const root = await mkdtemp(join(tmpdir(), `target-authority-${label}-`))
+  const directory = join(root, "workspace")
+  const stateDirectory = join(root, "state")
+  await mkdir(directory, { recursive: true })
+  git(directory, ["init", "-q"])
+  git(directory, ["config", "user.name", "Issue 59 Test"])
+  git(directory, ["config", "user.email", "issue59@example.invalid"])
+  git(directory, ["commit", "--allow-empty", "-m", "fixture"])
+  git(directory, ["remote", "add", "origin", remote])
+  const target = git(directory, ["rev-parse", "HEAD"]).toLowerCase()
+  const hooks = createOperationGuard({ directory, env: {}, stateDirectory, pluginRoot: process.cwd() })
+  const sessionID = `session-${label}`
+  t.after(async () => rm(root, { recursive: true, force: true }))
+  return { root, directory, stateDirectory, target, hooks, sessionID }
+}
 
 afterAll(async () => {
   await Promise.all([...generated].map((path) => rm(path, { force: true })))
@@ -633,4 +673,109 @@ test("authenticated non-STALE terminal summary releases only its exact target", 
   }))
   assert.match(result.output, /ASSESSMENT_TERMINAL -> TARGET_RELEASED; result=FAIL/)
   assert.match(await compaction(f.hooks, f.sessionID), /Authority: unbound/)
+})
+
+test("verified target still rejects malformed compound HEAD proofs and routes Firecrawl recovery", async (t) => {
+  const f = await repositoryGuard(t, "verified-compound")
+  await message(f.hooks, f.sessionID, `REQUIRED EXACT HEAD: ${f.target}`)
+  const initialProof = { command: "git rev-parse HEAD" }
+  await before(f.hooks, f.sessionID, "initial-proof", initialProof)
+  const verified = await after(f.hooks, f.sessionID, "initial-proof", initialProof, { output: `${f.target}\n`, metadata: { exit: 0 } })
+  assert.match(verified.output, /OPERATIONAL_AUTHORITY: verified/)
+
+  const beforeDuplicate = await persistedSafety(f.stateDirectory, f.directory)
+  await message(f.hooks, f.sessionID, `REQUIRED EXACT HEAD: ${f.target}`)
+  const afterDuplicate = await persistedSafety(f.stateDirectory, f.directory)
+  assert.equal(afterDuplicate.authorityEpoch, beforeDuplicate.authorityEpoch)
+  assert.equal(afterDuplicate.authorityStatus, "verified")
+  const notice = await authorityNotice(f.hooks, f.sessionID)
+  assert.match(notice, new RegExp(`exact-head target ${f.target} remains verified`))
+  assert.doesNotMatch(notice, /is pending/)
+
+  const rejectedWorktree = join(f.root, "rejected-worktree")
+  const compoundSetup = { command: `git worktree add --detach ${rejectedWorktree} ${f.target} && git rev-parse HEAD` }
+  await assert.rejects(
+    () => before(f.hooks, f.sessionID, "compound-setup", compoundSetup),
+    (error) => {
+      assert.match(error.message, /OPERATIONAL_CORRECTION: SPLIT_TARGET_ADMISSION/)
+      assert.match(error.message, /OPERATIONAL_RESOURCE: kind=command-shape; repository=fvanevski\/firecrawl_skill; correction=SPLIT_TARGET_ADMISSION;/)
+      assert.match(error.message, /section=exact-target-disposable-worktree/)
+      return true
+    },
+  )
+  await assert.rejects(() => access(rejectedWorktree), { code: "ENOENT" })
+  assert.doesNotMatch(git(f.directory, ["worktree", "list", "--porcelain"]), new RegExp(rejectedWorktree.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")))
+
+  await assert.rejects(
+    () => before(f.hooks, f.sessionID, "compound-cd", { command: `cd ${f.directory} && git rev-parse HEAD` }),
+    /OPERATIONAL_CORRECTION: SET_WORKDIR_AND_PROVE_HEAD/,
+  )
+  await assert.rejects(
+    () => before(f.hooks, f.sessionID, "compound-pipe", { command: "git rev-parse HEAD | cat" }),
+    /OPERATIONAL_CORRECTION: PROVE_TARGET_HEAD/,
+  )
+
+  const staleProof = { command: "git rev-parse HEAD" }
+  await before(f.hooks, f.sessionID, "stale-proof", staleProof)
+  const stale = await after(f.hooks, f.sessionID, "stale-proof", staleProof, { output: `${f.target}\n`, metadata: { exit: 0 } })
+  assert.match(stale.output, /OPERATIONAL_AUTHORITY_PROOF: STALE/)
+  assert.match(stale.output, /current_status=verified/)
+  assert.equal((await persistedSafety(f.stateDirectory, f.directory)).authorityStatus, "verified")
+
+  await assert.doesNotReject(() => before(f.hooks, f.sessionID, "ordinary-read", { command: "git status --short" }))
+})
+
+test("duplicate same-target declarations preserve truthful pending and mismatch state without epoch churn", async (t) => {
+  const pending = await repositoryGuard(t, "duplicate-pending")
+  await message(pending.hooks, pending.sessionID, `REQUIRED EXACT HEAD: ${pending.target}`)
+  const pendingBefore = await persistedSafety(pending.stateDirectory, pending.directory)
+  await message(pending.hooks, pending.sessionID, `REQUIRED EXACT HEAD: ${pending.target}`)
+  const pendingAfter = await persistedSafety(pending.stateDirectory, pending.directory)
+  assert.equal(pendingAfter.authorityEpoch, pendingBefore.authorityEpoch)
+  assert.equal(pendingAfter.authorityStatus, "pending")
+  const pendingNotice = await authorityNotice(pending.hooks, pending.sessionID)
+  assert.match(pendingNotice, /is pending/)
+  assert.doesNotMatch(pendingNotice, /remains (?:verified|mismatched)/)
+  await assert.rejects(
+    () => before(pending.hooks, pending.sessionID, "pending-compound", { command: `git worktree add --detach ${join(pending.root, "pending-worktree")} ${pending.target} && git rev-parse HEAD` }),
+    /OPERATIONAL_CORRECTION: SPLIT_TARGET_ADMISSION/,
+  )
+
+  const mismatch = await repositoryGuard(t, "duplicate-mismatch")
+  const boundTarget = mismatch.target === "f".repeat(40) ? "e".repeat(40) : "f".repeat(40)
+  await message(mismatch.hooks, mismatch.sessionID, `REQUIRED EXACT HEAD: ${boundTarget}`)
+  const mismatchProof = { command: "git rev-parse HEAD" }
+  await before(mismatch.hooks, mismatch.sessionID, "mismatch-proof", mismatchProof)
+  const mismatchResult = await after(mismatch.hooks, mismatch.sessionID, "mismatch-proof", mismatchProof, { output: `${mismatch.target}\n`, metadata: { exit: 0 } })
+  assert.match(mismatchResult.output, /OPERATIONAL_AUTHORITY: mismatch/)
+  const mismatchBefore = await persistedSafety(mismatch.stateDirectory, mismatch.directory)
+  await message(mismatch.hooks, mismatch.sessionID, `REQUIRED EXACT HEAD: ${boundTarget}`)
+  const mismatchAfter = await persistedSafety(mismatch.stateDirectory, mismatch.directory)
+  assert.equal(mismatchAfter.authorityEpoch, mismatchBefore.authorityEpoch)
+  assert.equal(mismatchAfter.authorityStatus, "mismatch")
+  const mismatchNotice = await authorityNotice(mismatch.hooks, mismatch.sessionID)
+  assert.match(mismatchNotice, new RegExp(`exact-head target ${boundTarget} remains mismatched`))
+  assert.doesNotMatch(mismatchNotice, /is pending|remains verified/)
+  await assert.rejects(
+    () => before(mismatch.hooks, mismatch.sessionID, "mismatch-compound", { command: `git worktree add --detach ${join(mismatch.root, "mismatch-worktree")} ${boundTarget} && git rev-parse HEAD` }),
+    /OPERATIONAL_CORRECTION: SPLIT_TARGET_ADMISSION/,
+  )
+})
+
+test("verified strict-start authority also keeps one-bare-command HEAD proof enforcement", async (t) => {
+  const f = await repositoryGuard(t, "strict-start-compound")
+  await message(f.hooks, f.sessionID, `REQUIRED STARTING HEAD: ${f.target}`)
+  const initialProof = { command: "git rev-parse HEAD" }
+  await before(f.hooks, f.sessionID, "strict-proof", initialProof)
+  const verified = await after(f.hooks, f.sessionID, "strict-proof", initialProof, { output: `${f.target}\n`, metadata: { exit: 0 } })
+  assert.match(verified.output, /OPERATIONAL_AUTHORITY: verified/)
+  await assert.rejects(
+    () => before(f.hooks, f.sessionID, "strict-compound", { command: `cd ${f.directory} && git rev-parse HEAD` }),
+    /OPERATIONAL_CORRECTION: SET_WORKDIR_AND_PROVE_HEAD/,
+  )
+  const staleProof = { command: "git rev-parse HEAD" }
+  await before(f.hooks, f.sessionID, "strict-stale", staleProof)
+  const stale = await after(f.hooks, f.sessionID, "strict-stale", staleProof, { output: `${f.target}\n`, metadata: { exit: 0 } })
+  assert.match(stale.output, /OPERATIONAL_AUTHORITY_PROOF: STALE/)
+  assert.match(stale.output, /current_status=verified/)
 })
