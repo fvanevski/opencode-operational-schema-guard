@@ -760,8 +760,18 @@ test("verified target still rejects malformed compound HEAD proofs and routes Fi
   await assert.doesNotReject(() => before(f.hooks, f.sessionID, "array-literal", { command: "proof_words=(git rev-parse HEAD)" }))
   await assert.doesNotReject(() => before(f.hooks, f.sessionID, "brace-arguments", { command: "printf '%s\\n' { git rev-parse HEAD }" }))
   await assert.doesNotReject(() => before(f.hooks, f.sessionID, "quoted-heredoc", { command: "cat <<'EOF'\ngit rev-parse HEAD\n$(git rev-parse HEAD)\nEOF" }))
+  await assert.doesNotReject(() => before(f.hooks, f.sessionID, "commented-substitution", { command: "printf '%s\\n' ok # $(git rev-parse HEAD)" }))
+  await assert.doesNotReject(() => before(f.hooks, f.sessionID, "commented-proof-text", { command: "printf '%s\\n' ok # git rev-parse HEAD; git rev-parse HEAD" }))
   await assert.rejects(
     () => before(f.hooks, f.sessionID, "expandable-heredoc-substitution", { command: "cat <<EOF\n$(git rev-parse HEAD)\nEOF" }),
+    /OPERATIONAL_CORRECTION: PROVE_TARGET_HEAD/,
+  )
+  await assert.rejects(
+    () => before(f.hooks, f.sessionID, "proof-after-comment-line", { command: "printf '%s\\n' ok # comment\ngit rev-parse HEAD" }),
+    /OPERATIONAL_CORRECTION: PROVE_TARGET_HEAD/,
+  )
+  await assert.rejects(
+    () => before(f.hooks, f.sessionID, "fake-comment-heredoc", { command: "printf '%s\\n' ok # <<'EOF'\n$(git rev-parse HEAD)\nEOF" }),
     /OPERATIONAL_CORRECTION: PROVE_TARGET_HEAD/,
   )
 })
