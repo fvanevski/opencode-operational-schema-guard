@@ -1,6 +1,6 @@
 import assert from "node:assert/strict"
 import { spawnSync } from "node:child_process"
-import { mkdtemp } from "node:fs/promises"
+import { access, mkdtemp } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import test from "node:test"
@@ -273,6 +273,8 @@ test("plugin routes resource identity and exact-target admission through the aut
   const firecrawl = await sessionRepository("https://github.com/fvanevski/firecrawl_skill.git")
   const unrelated = await sessionRepository("https://github.com/example/unrelated.git")
   const target = runGit(firecrawl, ["rev-parse", "HEAD"])
+  runGit(unrelated, ["fetch", "-q", firecrawl, "HEAD"])
+  assert.equal(runGit(unrelated, ["cat-file", "-t", target]), "commit")
   const sessions = new Map([["firecrawl-session", firecrawl]])
   const stateDirectory = await mkdtemp(join(tmpdir(), "opencode-session-governed-state-"))
   const hooks = await OperationalSchemaGuardPlugin({
@@ -328,6 +330,80 @@ test("plugin routes resource identity and exact-target admission through the aut
   )
   assert.equal(proofOutput.metadata.operationalSchema.authorityStatus, "verified")
   assert.equal(proofOutput.metadata.operationalSchema.observedHead, target)
+
+  const verifiedWrongPath = join(worktreeRoot, "verified-wrong-repository")
+  const verifiedWrong = { command: `git worktree add --detach ${verifiedWrongPath} ${target}`, workdir: unrelated }
+  let verifiedWrongRejection
+  try {
+    await hooks["tool.execute.before"]({ sessionID: "firecrawl-session", callID: "verified-wrong-workspace", tool: "bash" }, { args: verifiedWrong })
+    assert.fail("verified target setup from a different repository must reject before Git execution")
+  } catch (error) {
+    verifiedWrongRejection = String(error?.message ?? error)
+  }
+  assert.match(verifiedWrongRejection, /OPERATIONAL_CORRECTION: ADMIT_EXACT_TARGET/)
+  assert.match(verifiedWrongRejection, /repository=fvanevski\/firecrawl_skill/)
+  assert.match(verifiedWrongRejection, /section=exact-target-disposable-worktree/)
+  await assert.rejects(() => access(verifiedWrongPath), (error) => error?.code === "ENOENT")
+  assert.ok(!runGit(unrelated, ["worktree", "list", "--porcelain"]).includes(verifiedWrongPath))
+
+  const verifiedForcedPath = join(worktreeRoot, "verified-force-option")
+  await assert.rejects(
+    () => hooks["tool.execute.before"](
+      { sessionID: "firecrawl-session", callID: "verified-force-option", tool: "bash" },
+      { args: { command: `git worktree add --force --detach ${verifiedForcedPath} ${target}`, workdir: unrelated } },
+    ),
+    /OPERATIONAL_CORRECTION: ADMIT_EXACT_TARGET/,
+  )
+  await assert.rejects(() => access(verifiedForcedPath), (error) => error?.code === "ENOENT")
+  assert.ok(!runGit(unrelated, ["worktree", "list", "--porcelain"]).includes(verifiedForcedPath))
+
+  const verifiedCompoundPath = join(worktreeRoot, "verified-compound-setup")
+  await assert.rejects(
+    () => hooks["tool.execute.before"](
+      { sessionID: "firecrawl-session", callID: "verified-compound-setup", tool: "bash" },
+      { args: { command: `git worktree add -q -d ${verifiedCompoundPath} ${target} && git status --short`, workdir: unrelated } },
+    ),
+    /OPERATIONAL_CORRECTION: ADMIT_EXACT_TARGET/,
+  )
+  await assert.rejects(() => access(verifiedCompoundPath), (error) => error?.code === "ENOENT")
+  assert.ok(!runGit(unrelated, ["worktree", "list", "--porcelain"]).includes(verifiedCompoundPath))
+
+  await assert.rejects(
+    () => hooks["tool.execute.before"](
+      { sessionID: "firecrawl-session", callID: "verified-switch-short-detach", tool: "bash" },
+      { args: { command: `git switch -d ${target}`, workdir: unrelated } },
+    ),
+    /OPERATIONAL_CORRECTION: ADMIT_EXACT_TARGET/,
+  )
+
+  const proofWorktreeSetupPath = join(worktreeRoot, "verified-proof-worktree-setup")
+  await assert.rejects(
+    () => hooks["tool.execute.before"](
+      { sessionID: "firecrawl-session", callID: "verified-proof-worktree-setup", tool: "bash" },
+      { args: { command: `git worktree add --detach ${proofWorktreeSetupPath} ${target}`, workdir: worktree } },
+    ),
+    /OPERATIONAL_CORRECTION: ADMIT_EXACT_TARGET/,
+  )
+  await assert.rejects(() => access(proofWorktreeSetupPath), (error) => error?.code === "ENOENT")
+
+  await assert.doesNotReject(
+    () => hooks["tool.execute.before"](
+      { sessionID: "firecrawl-session", callID: "verified-external-readonly", tool: "bash" },
+      { args: { command: "git status --short", workdir: unrelated } },
+    ),
+  )
+
+  const verifiedCanonicalPath = join(worktreeRoot, "verified-canonical")
+  const verifiedCanonical = { command: `git worktree add --detach ${verifiedCanonicalPath} ${target}`, workdir: firecrawl }
+  await assert.doesNotReject(
+    () => hooks["tool.execute.before"]({ sessionID: "firecrawl-session", callID: "verified-canonical", tool: "bash" }, { args: verifiedCanonical }),
+  )
+  runGit(firecrawl, ["worktree", "add", "--detach", verifiedCanonicalPath, target])
+  await hooks["tool.execute.after"](
+    { sessionID: "firecrawl-session", callID: "verified-canonical", tool: "bash", args: verifiedCanonical },
+    { title: "", output: "prepared", metadata: { exit: 0 } },
+  )
+  runGit(firecrawl, ["worktree", "remove", "--force", verifiedCanonicalPath])
 
   runGit(firecrawl, ["worktree", "remove", "--force", worktree])
   await hooks.dispose()
