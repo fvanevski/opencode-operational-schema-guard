@@ -273,6 +273,8 @@ test("plugin routes resource identity and exact-target admission through the aut
   const firecrawl = await sessionRepository("https://github.com/fvanevski/firecrawl_skill.git")
   const unrelated = await sessionRepository("https://github.com/example/unrelated.git")
   const target = runGit(firecrawl, ["rev-parse", "HEAD"])
+  runGit(unrelated, ["fetch", "-q", firecrawl, "HEAD"])
+  assert.equal(runGit(unrelated, ["cat-file", "-t", target]), "commit")
   const sessions = new Map([["firecrawl-session", firecrawl]])
   const stateDirectory = await mkdtemp(join(tmpdir(), "opencode-session-governed-state-"))
   const hooks = await OperationalSchemaGuardPlugin({
