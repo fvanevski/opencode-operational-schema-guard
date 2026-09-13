@@ -723,6 +723,9 @@ test("verified target still rejects malformed compound HEAD proofs and routes Fi
   assert.equal((await persistedSafety(f.stateDirectory, f.directory)).authorityStatus, "verified")
 
   await assert.doesNotReject(() => before(f.hooks, f.sessionID, "ordinary-read", { command: "git status --short" }))
+  await assert.doesNotReject(() => before(f.hooks, f.sessionID, "ancestor-read", { command: "git rev-parse HEAD~1" }))
+  await assert.doesNotReject(() => before(f.hooks, f.sessionID, "log-search", { command: "git log -S'git rev-parse HEAD' --oneline -1" }))
+  await assert.doesNotReject(() => before(f.hooks, f.sessionID, "text-search", { command: "rg 'git rev-parse HEAD' ." }))
 })
 
 test("duplicate same-target declarations preserve truthful pending and mismatch state without epoch churn", async (t) => {
