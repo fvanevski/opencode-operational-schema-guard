@@ -732,6 +732,11 @@ test("persisted valid lease for a different target cannot preserve verified auth
   assert.match(continuity, new RegExp(`Authority: ${otherTarget}`))
   assert.match(continuity, /Authority admission: pending; mode: target/)
   assert.match(continuity, new RegExp(`target_sha=${f.target}`))
+  assert.match(continuity, /status=invalidated/)
+  assert.match(continuity, /invalidation=authority-binding-mismatch/)
+  const invalidated = await persistedSafety(f.stateDirectory, f.directory)
+  assert.equal(invalidated.exactHeadLease.status, "invalidated")
+  assert.equal(invalidated.exactHeadLease.invalidation.reason, "authority-binding-mismatch")
   await restarted.dispose()
 })
 
@@ -1099,6 +1104,59 @@ test("valid lease rejects nested-shell target HEAD mutation before execution", a
     /valid exact-head lease permits a HEAD-changing Git transition only as one standalone invocation/s,
   )
   assert.equal(git(f.directory, ["rev-parse", "HEAD"]).toLowerCase(), f.target)
+})
+
+test("delegated child revalidates exact-head lease between governed tool calls", async (t) => {
+  const f = await repositoryGuard(t, "lease-child-tool-boundary")
+  await message(f.hooks, f.sessionID, `REQUIRED EXACT HEAD: ${f.target}`)
+  const proof = { command: "git rev-parse HEAD" }
+  await before(f.hooks, f.sessionID, "child-boundary-proof", proof)
+  await after(f.hooks, f.sessionID, "child-boundary-proof", proof, { output: `${f.target}\n`, metadata: { exit: 0 } })
+
+  const taskArgs = {
+    subagent_type: "verify",
+    description: "Verify exact-head lease boundary",
+    prompt: [
+      "Scope: Verify the bounded exact-head lease target.",
+      "Questions:",
+      "- Does governed verification remain bound to the admitted exact head?",
+      "Stop condition: Stop after the bounded authority verification.",
+      "Expected terminal: OPERATIONAL_RESULT: PASS|FAIL|BLOCKED; COMMANDS_RUN: <n>; COMMANDS_REQUIRED: <n>.",
+    ].join("\n"),
+  }
+  const taskLaunch = { args: taskArgs }
+  await f.hooks["tool.execute.before"]({ sessionID: f.sessionID, callID: "lease-verify-child", tool: "task" }, taskLaunch)
+
+  const childSessionID = "lease-verify-child-session"
+  await message(f.hooks, childSessionID, "child execution", "verify")
+  const firstChildCall = { command: "git status --short" }
+  await f.hooks["tool.execute.before"]({ sessionID: childSessionID, callID: "child-first", tool: "bash" }, { args: firstChildCall })
+  git(f.directory, ["commit", "--allow-empty", "-m", "move-during-child-tool"])
+  const childToolResult = { title: "", output: "", metadata: { exit: 0 } }
+  await f.hooks["tool.execute.after"]({ sessionID: childSessionID, callID: "child-first", tool: "bash", args: firstChildCall }, childToolResult)
+  assert.match(childToolResult.output, /OPERATIONAL_EXACT_HEAD_LEASE: .*status=invalidated.*invalidation=target-head-changed/)
+  assert.equal(childToolResult.metadata.operationalSchema.exactHeadLease.status, "invalidated")
+
+  await assert.rejects(
+    () => f.hooks["tool.execute.before"](
+      { sessionID: childSessionID, callID: "child-second", tool: "bash" },
+      { args: { command: "git status --short" } },
+    ),
+    /delegated child execution requires.*valid exact-head lease.*invalidated/s,
+  )
+
+  const childResult = {
+    title: "",
+    output: "OPERATIONAL_RESULT: PASS; COMMANDS_RUN: 1; COMMANDS_REQUIRED: 1",
+    metadata: { sessionId: childSessionID },
+  }
+  await f.hooks["tool.execute.after"]({ sessionID: f.sessionID, callID: "lease-verify-child", tool: "task", args: taskLaunch.args }, childResult)
+  assert.match(childResult.output, /DELEGATION RESULT STALE \(no-valid-lease\)/)
+  assert.equal(childResult.metadata.operationalSchema.complete, false)
+  const invalidated = await persistedSafety(f.stateDirectory, f.directory)
+  assert.equal(invalidated.authorityStatus, "pending")
+  assert.equal(invalidated.exactHeadLease.status, "invalidated")
+  assert.equal(invalidated.exactHeadLease.invalidation.reason, "target-head-changed")
 })
 
 test("delegated task completion is stale when exact-head lease invariants drift during the child run", async (t) => {
