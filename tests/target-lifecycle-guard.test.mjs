@@ -1068,6 +1068,21 @@ test("valid lease rejects a target HEAD-changing shell packet before any packet 
   assert.equal(state.exactHeadLease.status, "valid")
 })
 
+test("valid lease rejects nested-shell target HEAD mutation before execution", async (t) => {
+  const f = await repositoryGuard(t, "lease-preblock-nested-head-mutation")
+  await message(f.hooks, f.sessionID, `REQUIRED EXACT HEAD: ${f.target}`)
+  const proof = { command: "git rev-parse HEAD" }
+  await before(f.hooks, f.sessionID, "nested-head-mutation-proof", proof)
+  await after(f.hooks, f.sessionID, "nested-head-mutation-proof", proof, { output: `${f.target}\n`, metadata: { exit: 0 } })
+
+  const packet = { command: `bash -c 'git reset --hard ${"a".repeat(40)} && printf must-not-run'` }
+  await assert.rejects(
+    () => before(f.hooks, f.sessionID, "nested-head-changing-packet", packet),
+    /valid exact-head lease binds immutable target\/owner HEAD identity.*HEAD-changing Git command/s,
+  )
+  assert.equal(git(f.directory, ["rev-parse", "HEAD"]).toLowerCase(), f.target)
+})
+
 test("delegated task completion is stale when exact-head lease invariants drift during the child run", async (t) => {
   const f = await repositoryGuard(t, "lease-task-boundary")
   await message(f.hooks, f.sessionID, `REQUIRED EXACT HEAD: ${f.target}`)
