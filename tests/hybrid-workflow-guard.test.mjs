@@ -903,11 +903,12 @@ test("gate partition obligations survive plugin restart and preserve canonical m
     git(directory, "commit", "-qm", "base")
     const head = git(directory, "rev-parse", "HEAD")
 
+    const parent = "parent-restart"
     const hooks1 = createOperationGuard({ directory, env: {}, stateDirectory })
-    await admitExactTarget(hooks1, "parent-before-restart", head)
+    await admitExactTarget(hooks1, parent, head)
     let firstError
     try {
-      await before(hooks1, "parent-before-restart", "broad-restart-verify", "task", {
+      await before(hooks1, parent, "broad-restart-verify", "task", {
         subagent_type: "verify",
         description: "Verify all bounded restart targets",
         prompt: `Scope: verify all bounded restart targets\nQuestions:\n- Does the complete bounded gate pass?\nStop condition: all listed targets are covered.\nTargets:\n${targets.join("\n")}`,
@@ -924,22 +925,21 @@ test("gate partition obligations survive plugin restart and preserve canonical m
     hooks1.dispose()
 
     const hooks2 = createOperationGuard({ directory, env: {}, stateDirectory })
-    await register(hooks2, "parent-after-restart", "build")
-    await message(hooks2, "parent-after-restart", "build", `HEAD_SHA: ${head}`)
+    await register(hooks2, parent, "build")
     const compact = { context: [] }
-    await hooks2["experimental.session.compacting"]({ sessionID: "parent-after-restart" }, compact)
+    await hooks2["experimental.session.compacting"]({ sessionID: parent }, compact)
     assert.match(compact.context.join("\n"), /Outstanding deterministic partition obligations: 1/)
     assert.match(compact.context.join("\n"), /Verify generation: 0/)
 
     await assert.rejects(
-      () => before(hooks2, "parent-after-restart", "alternate-after-restart", "task", {
+      () => before(hooks2, parent, "alternate-after-restart", "task", {
         subagent_type: "verify",
         description: "Attempt alternate Verify packet after restart",
         prompt: "Scope: alternate Verify subset after restart\nQuestions:\n- Does this subset pass?\nStop condition: the subset result is reported.\nTargets:\n- lib/restart-gate-0.mjs",
       }),
       /outstanding deterministic verify partition obligation.*only its exact canonical packets.*evidence-elision routes cannot satisfy this gate/s,
     )
-    await assert.doesNotReject(() => before(hooks2, "parent-after-restart", "canonical-after-restart", "task", {
+    await assert.doesNotReject(() => before(hooks2, parent, "canonical-after-restart", "task", {
       subagent_type: "verify",
       description: "Run persisted canonical Verify partition",
       prompt: canonicalPacket,
