@@ -752,7 +752,8 @@ test("malformed persisted lease cannot preserve verified target authority", asyn
   const continuity = await compaction(restarted, `${f.sessionID}-malformed`)
   assert.match(continuity, /Authority admission: pending; mode: target/)
   assert.match(continuity, /Exact-head lease: none/)
-  assert.match(continuity, /workspace safety state could not be loaded/)
+  const warning = await authorityNotice(restarted, `${f.sessionID}-malformed`)
+  assert.match(warning, /workspace safety state could not be loaded/)
   await restarted.dispose()
 })
 
