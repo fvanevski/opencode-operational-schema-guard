@@ -675,7 +675,7 @@ test("authenticated non-STALE terminal summary releases only its exact target", 
   assert.match(await compaction(f.hooks, f.sessionID), /Authority: unbound/)
 })
 
-test("verified target still rejects malformed compound HEAD proofs and routes Firecrawl recovery", async (t) => {
+test("verified target lease keeps malformed proof rejection while redundant bare proof remains valid", async (t) => {
   const f = await repositoryGuard(t, "verified-compound")
   await message(f.hooks, f.sessionID, `REQUIRED EXACT HEAD: ${f.target}`)
   const initialProof = { command: "git rev-parse HEAD" }
@@ -718,8 +718,8 @@ test("verified target still rejects malformed compound HEAD proofs and routes Fi
   const staleProof = { command: "git rev-parse HEAD" }
   await before(f.hooks, f.sessionID, "stale-proof", staleProof)
   const stale = await after(f.hooks, f.sessionID, "stale-proof", staleProof, { output: `${f.target}\n`, metadata: { exit: 0 } })
-  assert.match(stale.output, /OPERATIONAL_AUTHORITY_PROOF: STALE/)
-  assert.match(stale.output, /current_status=verified/)
+  assert.doesNotMatch(stale.output, /OPERATIONAL_AUTHORITY_PROOF: STALE/)
+  assert.match(stale.output, /OPERATIONAL_EXACT_HEAD_LEASE: .*status=valid/)
   assert.equal((await persistedSafety(f.stateDirectory, f.directory)).authorityStatus, "verified")
 
   await assert.doesNotReject(() => before(f.hooks, f.sessionID, "ordinary-read", { command: "git status --short" }))
@@ -812,6 +812,113 @@ test("verified target still rejects malformed compound HEAD proofs and routes Fi
     () => before(f.hooks, f.sessionID, "fake-comment-heredoc", { command: "printf '%s\\n' ok # <<'EOF'\n$(git rev-parse HEAD)\nEOF" }),
     /OPERATIONAL_CORRECTION: PROVE_TARGET_HEAD/,
   )
+})
+
+test("task-scoped exact-head lease survives harmless epoch churn and invalidates before execution after target HEAD movement", async (t) => {
+  const f = await repositoryGuard(t, "lease-epoch-head")
+  await message(f.hooks, f.sessionID, `REQUIRED EXACT HEAD: ${f.target}`)
+  const proof = { command: "git rev-parse HEAD" }
+  await before(f.hooks, f.sessionID, "lease-proof", proof)
+  const issued = await after(f.hooks, f.sessionID, "lease-proof", proof, { output: `${f.target}\n`, metadata: { exit: 0 } })
+  assert.match(issued.output, /OPERATIONAL_EXACT_HEAD_LEASE: .*status=valid/)
+  const statePath = join(resolve(f.stateDirectory), `${createHash("sha256").update(resolve(f.directory)).digest("hex")}.json`)
+  const persisted = await persistedSafety(f.stateDirectory, f.directory)
+  assert.equal(persisted.version, 9)
+  assert.equal(persisted.exactHeadLease.status, "valid")
+  assert.equal(persisted.exactHeadLease.target.sha, f.target)
+  const leaseID = persisted.exactHeadLease.lease_id
+  persisted.authorityEpoch += 7
+  await f.hooks.dispose()
+  await writeFile(statePath, `${JSON.stringify(persisted, null, 2)}\n`)
+
+  const restarted = createOperationGuard({ directory: f.directory, env: {}, stateDirectory: f.stateDirectory, pluginRoot: process.cwd() })
+  await register(restarted, f.sessionID)
+  const continuity = await compaction(restarted, f.sessionID)
+  assert.match(continuity, new RegExp(`lease_id=${leaseID}; status=valid`))
+  const ordinary = { command: "git status --short && printf 'ok\\n'" }
+  await assert.doesNotReject(() => before(restarted, f.sessionID, "lease-ordinary", ordinary))
+  await after(restarted, f.sessionID, "lease-ordinary", ordinary, { output: "ok\n", metadata: { exit: 0 } })
+
+  const redundant = { command: "git rev-parse HEAD" }
+  await before(restarted, f.sessionID, "lease-redundant", redundant)
+  const repeated = await after(restarted, f.sessionID, "lease-redundant", redundant, { output: `${f.target}\n`, metadata: { exit: 0 } })
+  assert.doesNotMatch(repeated.output, /OPERATIONAL_AUTHORITY_PROOF: STALE/)
+  assert.match(repeated.output, new RegExp(`lease_id=${leaseID}; status=valid`))
+
+  git(f.directory, ["commit", "--allow-empty", "-m", "move-target"])
+  await assert.rejects(
+    () => before(restarted, f.sessionID, "after-target-move", { command: "git status --short" }),
+    /target-head-changed.*status=invalidated/s,
+  )
+  const invalidated = await persistedSafety(f.stateDirectory, f.directory)
+  assert.equal(invalidated.exactHeadLease.status, "invalidated")
+  assert.equal(invalidated.exactHeadLease.invalidation.reason, "target-head-changed")
+  assert.equal(invalidated.authorityStatus, "pending")
+  await restarted.dispose()
+})
+
+test("exact-head lease binds linked worktree, owner protection, and explicit task rebind", async (t) => {
+  const f = await repositoryGuard(t, "lease-linked-owner")
+  await message(f.hooks, f.sessionID, `REQUIRED EXACT HEAD: ${f.target}`)
+  const targetWorktree = join(f.root, "target-worktree")
+  const setup = { command: `git worktree add --detach ${targetWorktree} ${f.target}` }
+  await before(f.hooks, f.sessionID, "lease-worktree-setup", setup)
+  const setupOutput = git(f.directory, ["worktree", "add", "--detach", targetWorktree, f.target])
+  await after(f.hooks, f.sessionID, "lease-worktree-setup", setup, { output: `${setupOutput}\n`, metadata: { exit: 0 } })
+  const proof = { command: "git rev-parse HEAD", workdir: targetWorktree }
+  await before(f.hooks, f.sessionID, "lease-worktree-proof", proof)
+  const issued = await after(f.hooks, f.sessionID, "lease-worktree-proof", proof, { output: `${f.target}\n`, metadata: { exit: 0 } })
+  assert.match(issued.output, /OPERATIONAL_EXACT_HEAD_LEASE: .*status=valid/)
+  const initialLease = (await persistedSafety(f.stateDirectory, f.directory)).exactHeadLease
+  assert.equal(resolve(initialLease.target.worktree), resolve(targetWorktree))
+  assert.equal(initialLease.owner.protection, "owner-head-stable")
+
+  const reboundSession = `${f.sessionID}-rebound`
+  await message(f.hooks, reboundSession, `REQUIRED EXACT HEAD: ${f.target}`)
+  const rebound = await persistedSafety(f.stateDirectory, f.directory)
+  assert.equal(rebound.authorityStatus, "verified")
+  assert.equal(rebound.exactHeadLease.status, "valid")
+  assert.equal(rebound.exactHeadLease.task_id, reboundSession)
+  assert.notEqual(rebound.exactHeadLease.lease_id, initialLease.lease_id)
+  assert.equal(rebound.exactHeadLease.target.sha, f.target)
+  await assert.rejects(
+    () => before(f.hooks, f.sessionID, "old-task-command", { command: "git status --short", workdir: targetWorktree }),
+    /lease belongs to a different primary task/,
+  )
+  await assert.doesNotReject(() => before(f.hooks, reboundSession, "rebound-command", { command: "git status --short", workdir: targetWorktree }))
+
+  git(f.directory, ["commit", "--allow-empty", "-m", "move-owner"])
+  await assert.rejects(
+    () => before(f.hooks, reboundSession, "after-owner-move", { command: "git status --short", workdir: targetWorktree }),
+    /owner-head-changed.*status=invalidated/s,
+  )
+  const ownerInvalidated = await persistedSafety(f.stateDirectory, f.directory)
+  assert.equal(ownerInvalidated.exactHeadLease.invalidation.reason, "owner-head-changed")
+})
+
+test("replacing an admitted linked worktree invalidates its lease before further governed execution", async (t) => {
+  const f = await repositoryGuard(t, "lease-worktree-replace")
+  await message(f.hooks, f.sessionID, `REQUIRED EXACT HEAD: ${f.target}`)
+  const targetWorktree = join(f.root, "replaceable-worktree")
+  const setup = { command: `git worktree add --detach ${targetWorktree} ${f.target}` }
+  await before(f.hooks, f.sessionID, "replace-setup", setup)
+  const setupOutput = git(f.directory, ["worktree", "add", "--detach", targetWorktree, f.target])
+  await after(f.hooks, f.sessionID, "replace-setup", setup, { output: `${setupOutput}\n`, metadata: { exit: 0 } })
+  const proof = { command: "git rev-parse HEAD", workdir: targetWorktree }
+  await before(f.hooks, f.sessionID, "replace-proof", proof)
+  await after(f.hooks, f.sessionID, "replace-proof", proof, { output: `${f.target}\n`, metadata: { exit: 0 } })
+  const prior = (await persistedSafety(f.stateDirectory, f.directory)).exactHeadLease
+  assert.equal(prior.status, "valid")
+
+  git(f.directory, ["worktree", "remove", "--force", targetWorktree])
+  git(f.directory, ["worktree", "add", "--detach", targetWorktree, f.target])
+  await assert.rejects(
+    () => before(f.hooks, f.sessionID, "after-worktree-replace", { command: "git status --short", workdir: targetWorktree }),
+    /target-(?:git-dir|worktree)-(?:replaced|changed).*status=invalidated/s,
+  )
+  const invalidated = await persistedSafety(f.stateDirectory, f.directory)
+  assert.equal(invalidated.exactHeadLease.status, "invalidated")
+  assert.match(invalidated.exactHeadLease.invalidation.reason, /^target-(?:git-dir|worktree)-(?:replaced|changed)$/)
 })
 
 test("duplicate same-target declarations preserve truthful pending and mismatch state without epoch churn", async (t) => {
