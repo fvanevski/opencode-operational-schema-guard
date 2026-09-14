@@ -881,6 +881,8 @@ test("exact-head lease binds linked worktree, owner protection, and explicit tas
   assert.equal(rebound.exactHeadLease.task_id, reboundSession)
   assert.notEqual(rebound.exactHeadLease.lease_id, initialLease.lease_id)
   assert.equal(rebound.exactHeadLease.target.sha, f.target)
+  assert.deepEqual(rebound.exactHeadLease.transition, { reason: "task-rebind", previous_lease_id: initialLease.lease_id })
+  assert.match(await compaction(f.hooks, reboundSession), /transition=task-rebind; previous_lease_id=/)
   await assert.rejects(
     () => before(f.hooks, f.sessionID, "old-task-command", { command: "git status --short", workdir: targetWorktree }),
     /lease belongs to a different primary task/,
@@ -894,6 +896,31 @@ test("exact-head lease binds linked worktree, owner protection, and explicit tas
   )
   const ownerInvalidated = await persistedSafety(f.stateDirectory, f.directory)
   assert.equal(ownerInvalidated.exactHeadLease.invalidation.reason, "owner-head-changed")
+})
+
+test("lease validation also blocks a governed edit tool before execution after target HEAD movement", async (t) => {
+  const f = await repositoryGuard(t, "lease-edit-tool")
+  await message(f.hooks, f.sessionID, `REQUIRED EXACT HEAD: ${f.target}`)
+  const targetWorktree = join(f.root, "edit-target")
+  const setup = { command: `git worktree add --detach ${targetWorktree} ${f.target}` }
+  await before(f.hooks, f.sessionID, "edit-setup", setup)
+  const setupOutput = git(f.directory, ["worktree", "add", "--detach", targetWorktree, f.target])
+  await after(f.hooks, f.sessionID, "edit-setup", setup, { output: `${setupOutput}\n`, metadata: { exit: 0 } })
+  const proof = { command: "git rev-parse HEAD", workdir: targetWorktree }
+  await before(f.hooks, f.sessionID, "edit-proof", proof)
+  await after(f.hooks, f.sessionID, "edit-proof", proof, { output: `${f.target}\n`, metadata: { exit: 0 } })
+
+  git(targetWorktree, ["commit", "--allow-empty", "-m", "move-before-edit"])
+  await assert.rejects(
+    () => f.hooks["tool.execute.before"](
+      { sessionID: f.sessionID, callID: "edit-after-head-move", tool: "edit" },
+      { args: { filePath: join(targetWorktree, "tracked.txt"), oldString: "x", newString: "y" } },
+    ),
+    /target-head-changed.*status=invalidated/s,
+  )
+  const invalidated = await persistedSafety(f.stateDirectory, f.directory)
+  assert.equal(invalidated.exactHeadLease.status, "invalidated")
+  assert.equal(invalidated.exactHeadLease.invalidation.reason, "target-head-changed")
 })
 
 test("replacing an admitted linked worktree invalidates its lease before further governed execution", async (t) => {
