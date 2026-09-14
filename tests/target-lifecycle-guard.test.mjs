@@ -1060,12 +1060,30 @@ test("valid lease rejects a target HEAD-changing shell packet before any packet 
   const packet = { command: `git reset --hard ${"a".repeat(40)} && printf 'must-not-run\\n'` }
   await assert.rejects(
     () => before(f.hooks, f.sessionID, "head-changing-packet", packet),
-    /valid exact-head lease binds immutable target\/owner HEAD identity.*HEAD-changing Git command/s,
+    /valid exact-head lease permits a HEAD-changing Git transition only as one standalone invocation/s,
   )
   assert.equal(git(f.directory, ["rev-parse", "HEAD"]).toLowerCase(), f.target)
   const state = await persistedSafety(f.stateDirectory, f.directory)
   assert.equal(state.authorityStatus, "verified")
   assert.equal(state.exactHeadLease.status, "valid")
+})
+
+test("standalone target HEAD transition invalidates the old lease before any later governed execution", async (t) => {
+  const f = await repositoryGuard(t, "lease-standalone-head-transition")
+  await message(f.hooks, f.sessionID, `REQUIRED EXACT HEAD: ${f.target}`)
+  const proof = { command: "git rev-parse HEAD" }
+  await before(f.hooks, f.sessionID, "standalone-transition-proof", proof)
+  await after(f.hooks, f.sessionID, "standalone-transition-proof", proof, { output: `${f.target}\n`, metadata: { exit: 0 } })
+
+  const commit = { command: "git commit --allow-empty -m lease-transition" }
+  await assert.doesNotReject(() => before(f.hooks, f.sessionID, "standalone-transition", commit))
+  git(f.directory, ["commit", "--allow-empty", "-m", "lease-transition"])
+  const transitioned = await after(f.hooks, f.sessionID, "standalone-transition", commit, { output: "committed\n", metadata: { exit: 0 } })
+  assert.match(transitioned.output, /OPERATIONAL_EXACT_HEAD_LEASE: .*status=invalidated.*invalidation=target-head-changed/)
+  await assert.rejects(
+    () => before(f.hooks, f.sessionID, "post-transition-read", { command: "git status --short" }),
+    /lease is invalidated.*target execution remains fail-closed/s,
+  )
 })
 
 test("valid lease rejects nested-shell target HEAD mutation before execution", async (t) => {
@@ -1078,7 +1096,7 @@ test("valid lease rejects nested-shell target HEAD mutation before execution", a
   const packet = { command: `bash -c 'git reset --hard ${"a".repeat(40)} && printf must-not-run'` }
   await assert.rejects(
     () => before(f.hooks, f.sessionID, "nested-head-changing-packet", packet),
-    /valid exact-head lease binds immutable target\/owner HEAD identity.*HEAD-changing Git command/s,
+    /valid exact-head lease permits a HEAD-changing Git transition only as one standalone invocation/s,
   )
   assert.equal(git(f.directory, ["rev-parse", "HEAD"]).toLowerCase(), f.target)
 })
