@@ -772,6 +772,43 @@ test("canonical target proof fails closed when lease issuance invariants cannot 
   assert.equal(persisted.taskWorkspaceHeadStatus, "unknown")
 })
 
+test("new target authority invalidates the old lease but admits only canonical replacement setup and proof", async (t) => {
+  const f = await repositoryGuard(t, "lease-authority-rebind-setup")
+  git(f.directory, ["commit", "--allow-empty", "-m", "next-target"])
+  const nextTarget = git(f.directory, ["rev-parse", "HEAD"]).toLowerCase()
+  git(f.directory, ["switch", "--detach", f.target])
+
+  await message(f.hooks, f.sessionID, `REQUIRED EXACT HEAD: ${f.target}`)
+  const firstProof = { command: "git rev-parse HEAD" }
+  await before(f.hooks, f.sessionID, "first-proof", firstProof)
+  await after(f.hooks, f.sessionID, "first-proof", firstProof, { output: `${f.target}\n`, metadata: { exit: 0 } })
+  const firstLease = (await persistedSafety(f.stateDirectory, f.directory)).exactHeadLease
+  assert.equal(firstLease.status, "valid")
+
+  await message(f.hooks, f.sessionID, `REQUIRED EXACT HEAD: ${nextTarget}`)
+  const rebound = await persistedSafety(f.stateDirectory, f.directory)
+  assert.equal(rebound.authorityStatus, "pending")
+  assert.equal(rebound.exactHeadLease.status, "invalidated")
+  assert.equal(rebound.exactHeadLease.invalidation.reason, "authority-rebind")
+  await assert.rejects(
+    () => before(f.hooks, f.sessionID, "blocked-ordinary", { command: "git status --short" }),
+    /lease is invalidated.*fail-closed/s,
+  )
+
+  const setup = { command: `git switch --detach ${nextTarget}` }
+  await assert.doesNotReject(() => before(f.hooks, f.sessionID, "replacement-setup", setup))
+  git(f.directory, ["switch", "--detach", nextTarget])
+  await after(f.hooks, f.sessionID, "replacement-setup", setup, { output: "prepared\n", metadata: { exit: 0 } })
+  const replacementProof = { command: "git rev-parse HEAD" }
+  await before(f.hooks, f.sessionID, "replacement-proof", replacementProof)
+  const replaced = await after(f.hooks, f.sessionID, "replacement-proof", replacementProof, { output: `${nextTarget}\n`, metadata: { exit: 0 } })
+  assert.match(replaced.output, /OPERATIONAL_AUTHORITY: verified/)
+  assert.match(replaced.output, /OPERATIONAL_EXACT_HEAD_LEASE: .*status=valid/)
+  const secondLease = (await persistedSafety(f.stateDirectory, f.directory)).exactHeadLease
+  assert.equal(secondLease.target.sha, nextTarget)
+  assert.notEqual(secondLease.lease_id, firstLease.lease_id)
+})
+
 test("evidence primary receives exact-head lease and a new candidate SHA requires fresh admission", async (t) => {
   const f = await repositoryGuard(t, "lease-evidence-primary")
   await message(f.hooks, f.sessionID, `REQUIRED EXACT HEAD: ${f.target}`, "evidence")
