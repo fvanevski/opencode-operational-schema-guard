@@ -1,7 +1,7 @@
 import assert from "node:assert/strict"
 import { spawnSync } from "node:child_process"
 import { createHash } from "node:crypto"
-import { access, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises"
+import { access, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join, resolve } from "node:path"
 import test, { after as afterAll } from "node:test"
@@ -1104,6 +1104,25 @@ test("task rebind refuses to absorb owner checkout movement into a renewed lease
   assert.equal(state.exactHeadLease.status, "invalidated")
   assert.equal(state.exactHeadLease.invalidation.reason, "owner-head-changed")
   assert.notEqual(state.exactHeadLease.task_id, reboundSession)
+})
+
+test("lease validation resolves symlink workdir aliases before governed execution", async (t) => {
+  const f = await repositoryGuard(t, "lease-symlink-workdir")
+  await message(f.hooks, f.sessionID, `REQUIRED EXACT HEAD: ${f.target}`)
+  const proof = { command: "git rev-parse HEAD" }
+  await before(f.hooks, f.sessionID, "symlink-proof", proof)
+  await after(f.hooks, f.sessionID, "symlink-proof", proof, { output: `${f.target}\n`, metadata: { exit: 0 } })
+
+  const alias = join(f.root, "workspace-alias")
+  await symlink(f.directory, alias, "dir")
+  git(f.directory, ["commit", "--allow-empty", "-m", "move-before-alias-command"])
+  await assert.rejects(
+    () => before(f.hooks, f.sessionID, "symlink-after-head-move", { command: "git status --short", workdir: alias }),
+    /target-head-changed.*status=invalidated/s,
+  )
+  const invalidated = await persistedSafety(f.stateDirectory, f.directory)
+  assert.equal(invalidated.exactHeadLease.status, "invalidated")
+  assert.equal(invalidated.exactHeadLease.invalidation.reason, "target-head-changed")
 })
 
 test("lease validation also blocks a governed edit tool before execution after target HEAD movement", async (t) => {
