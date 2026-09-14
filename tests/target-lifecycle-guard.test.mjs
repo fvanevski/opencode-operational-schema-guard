@@ -1086,7 +1086,7 @@ test("delegated task completion is stale when exact-head lease invariants drift 
       "Targets:",
       "- README.md",
       "Expected terminal: OPERATIONAL_EXPLORE: COMPLETE|PARTIAL|BLOCKED; TARGETS_INSPECTED: <n>; TARGETS_REQUIRED: <n>.",
-    ].join("\\n"),
+    ].join("\n"),
   }
   const taskLaunch = { args: taskArgs }
   await f.hooks["tool.execute.before"]({ sessionID: f.sessionID, callID: "lease-child", tool: "task" }, taskLaunch)
