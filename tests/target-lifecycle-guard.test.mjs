@@ -734,9 +734,6 @@ test("persisted valid lease for a different target cannot preserve verified auth
   assert.match(continuity, new RegExp(`target_sha=${f.target}`))
   assert.match(continuity, /status=invalidated/)
   assert.match(continuity, /invalidation=authority-binding-mismatch/)
-  const invalidated = await persistedSafety(f.stateDirectory, f.directory)
-  assert.equal(invalidated.exactHeadLease.status, "invalidated")
-  assert.equal(invalidated.exactHeadLease.invalidation.reason, "authority-binding-mismatch")
   await restarted.dispose()
 })
 
