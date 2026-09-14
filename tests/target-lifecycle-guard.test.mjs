@@ -693,11 +693,10 @@ test("persisted verified target without a valid lease requires canonical readmis
   const restarted = createOperationGuard({ directory: f.directory, env: {}, stateDirectory: f.stateDirectory, pluginRoot: process.cwd() })
   const sessionID = `${f.sessionID}-upgraded`
   await register(restarted, sessionID)
-  const pending = await persistedSafety(f.stateDirectory, f.directory)
-  assert.equal(pending.authorityMode, "target")
-  assert.equal(pending.authorityBinding, f.target)
-  assert.equal(pending.authorityStatus, "pending")
-  assert.equal(pending.exactHeadLease, undefined)
+  const continuity = await compaction(restarted, sessionID)
+  assert.match(continuity, new RegExp(`Authority: ${f.target}`))
+  assert.match(continuity, /Authority admission: pending; mode: target/)
+  assert.match(continuity, /Exact-head lease: none/)
 
   const freshProof = { command: "git rev-parse HEAD" }
   await before(restarted, sessionID, "legacy-fresh-proof", freshProof)
