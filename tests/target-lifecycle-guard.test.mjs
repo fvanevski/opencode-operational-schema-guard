@@ -857,6 +857,27 @@ test("task-scoped exact-head lease survives harmless epoch churn and invalidates
   await restarted.dispose()
 })
 
+test("persisted lease policy or guard-version drift invalidates target authority on reload", async (t) => {
+  const f = await repositoryGuard(t, "lease-policy-drift")
+  await message(f.hooks, f.sessionID, `REQUIRED EXACT HEAD: ${f.target}`)
+  const proof = { command: "git rev-parse HEAD" }
+  await before(f.hooks, f.sessionID, "policy-proof", proof)
+  await after(f.hooks, f.sessionID, "policy-proof", proof, { output: `${f.target}\n`, metadata: { exit: 0 } })
+  const statePath = join(resolve(f.stateDirectory), `${createHash("sha256").update(resolve(f.directory)).digest("hex")}.json`)
+  const persisted = await persistedSafety(f.stateDirectory, f.directory)
+  persisted.exactHeadLease.policy_version += 1
+  await f.hooks.dispose()
+  await writeFile(statePath, `${JSON.stringify(persisted, null, 2)}\n`)
+
+  const restarted = createOperationGuard({ directory: f.directory, env: {}, stateDirectory: f.stateDirectory, pluginRoot: process.cwd() })
+  await register(restarted, f.sessionID)
+  const continuity = await compaction(restarted, f.sessionID)
+  assert.match(continuity, /Authority admission: pending/)
+  assert.match(continuity, /status=invalidated/)
+  assert.match(continuity, /invalidation=lease-policy-version-changed/)
+  await restarted.dispose()
+})
+
 test("exact-head lease binds linked worktree, owner protection, and explicit task rebind", async (t) => {
   const f = await repositoryGuard(t, "lease-linked-owner")
   await message(f.hooks, f.sessionID, `REQUIRED EXACT HEAD: ${f.target}`)
@@ -896,6 +917,30 @@ test("exact-head lease binds linked worktree, owner protection, and explicit tas
   )
   const ownerInvalidated = await persistedSafety(f.stateDirectory, f.directory)
   assert.equal(ownerInvalidated.exactHeadLease.invalidation.reason, "owner-head-changed")
+})
+
+test("task rebind refuses to absorb owner checkout movement into a renewed lease", async (t) => {
+  const f = await repositoryGuard(t, "lease-rebind-owner-drift")
+  await message(f.hooks, f.sessionID, `REQUIRED EXACT HEAD: ${f.target}`)
+  const targetWorktree = join(f.root, "rebind-owner-target")
+  const setup = { command: `git worktree add --detach ${targetWorktree} ${f.target}` }
+  await before(f.hooks, f.sessionID, "rebind-owner-setup", setup)
+  const setupOutput = git(f.directory, ["worktree", "add", "--detach", targetWorktree, f.target])
+  await after(f.hooks, f.sessionID, "rebind-owner-setup", setup, { output: `${setupOutput}\n`, metadata: { exit: 0 } })
+  const proof = { command: "git rev-parse HEAD", workdir: targetWorktree }
+  await before(f.hooks, f.sessionID, "rebind-owner-proof", proof)
+  await after(f.hooks, f.sessionID, "rebind-owner-proof", proof, { output: `${f.target}\n`, metadata: { exit: 0 } })
+  const originalLease = (await persistedSafety(f.stateDirectory, f.directory)).exactHeadLease
+
+  git(f.directory, ["commit", "--allow-empty", "-m", "owner-moved-before-rebind"])
+  const reboundSession = `${f.sessionID}-rebind-blocked`
+  await message(f.hooks, reboundSession, `REQUIRED EXACT HEAD: ${f.target}`)
+  const state = await persistedSafety(f.stateDirectory, f.directory)
+  assert.equal(state.authorityStatus, "pending")
+  assert.equal(state.exactHeadLease.lease_id, originalLease.lease_id)
+  assert.equal(state.exactHeadLease.status, "invalidated")
+  assert.equal(state.exactHeadLease.invalidation.reason, "owner-head-changed")
+  assert.notEqual(state.exactHeadLease.task_id, reboundSession)
 })
 
 test("lease validation also blocks a governed edit tool before execution after target HEAD movement", async (t) => {
