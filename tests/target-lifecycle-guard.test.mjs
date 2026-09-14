@@ -675,6 +675,42 @@ test("authenticated non-STALE terminal summary releases only its exact target", 
   assert.match(await compaction(f.hooks, f.sessionID), /Authority: unbound/)
 })
 
+test("persisted verified target without a valid lease requires canonical readmission after upgrade", async (t) => {
+  const f = await repositoryGuard(t, "lease-legacy-readmission")
+  await message(f.hooks, f.sessionID, `REQUIRED EXACT HEAD: ${f.target}`)
+  const proof = { command: "git rev-parse HEAD" }
+  await before(f.hooks, f.sessionID, "legacy-initial-proof", proof)
+  await after(f.hooks, f.sessionID, "legacy-initial-proof", proof, { output: `${f.target}\n`, metadata: { exit: 0 } })
+  const statePath = join(resolve(f.stateDirectory), `${createHash("sha256").update(resolve(f.directory)).digest("hex")}.json`)
+  const legacy = await persistedSafety(f.stateDirectory, f.directory)
+  assert.equal(legacy.authorityStatus, "verified")
+  assert.equal(legacy.exactHeadLease.status, "valid")
+  legacy.version = 8
+  delete legacy.exactHeadLease
+  await f.hooks.dispose()
+  await writeFile(statePath, `${JSON.stringify(legacy, null, 2)}\n`)
+
+  const restarted = createOperationGuard({ directory: f.directory, env: {}, stateDirectory: f.stateDirectory, pluginRoot: process.cwd() })
+  const sessionID = `${f.sessionID}-upgraded`
+  await register(restarted, sessionID)
+  const pending = await persistedSafety(f.stateDirectory, f.directory)
+  assert.equal(pending.authorityMode, "target")
+  assert.equal(pending.authorityBinding, f.target)
+  assert.equal(pending.authorityStatus, "pending")
+  assert.equal(pending.exactHeadLease, undefined)
+
+  const freshProof = { command: "git rev-parse HEAD" }
+  await before(restarted, sessionID, "legacy-fresh-proof", freshProof)
+  const reissued = await after(restarted, sessionID, "legacy-fresh-proof", freshProof, { output: `${f.target}\n`, metadata: { exit: 0 } })
+  assert.match(reissued.output, /OPERATIONAL_AUTHORITY: verified/)
+  assert.match(reissued.output, /OPERATIONAL_EXACT_HEAD_LEASE: .*status=valid/)
+  const readmitted = await persistedSafety(f.stateDirectory, f.directory)
+  assert.equal(readmitted.authorityStatus, "verified")
+  assert.equal(readmitted.exactHeadLease.status, "valid")
+  assert.equal(readmitted.exactHeadLease.task_id, sessionID)
+  await restarted.dispose()
+})
+
 test("evidence primary receives exact-head lease and a new candidate SHA requires fresh admission", async (t) => {
   const f = await repositoryGuard(t, "lease-evidence-primary")
   await message(f.hooks, f.sessionID, `REQUIRED EXACT HEAD: ${f.target}`, "evidence")
