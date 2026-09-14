@@ -58,8 +58,8 @@ afterAll(async () => {
   await Promise.all([...generated].map((path) => rm(path, { force: true })))
 })
 
-async function message(hooks, sessionID, text) {
-  await hooks["chat.message"]({ sessionID, agent: "build" }, { message: {}, parts: [{ type: "text", text }] })
+async function message(hooks, sessionID, text, agent = "build") {
+  await hooks["chat.message"]({ sessionID, agent }, { message: {}, parts: [{ type: "text", text }] })
 }
 
 async function register(hooks, sessionID) {
@@ -673,6 +673,35 @@ test("authenticated non-STALE terminal summary releases only its exact target", 
   }))
   assert.match(result.output, /ASSESSMENT_TERMINAL -> TARGET_RELEASED; result=FAIL/)
   assert.match(await compaction(f.hooks, f.sessionID), /Authority: unbound/)
+})
+
+test("evidence primary receives exact-head lease and a new candidate SHA requires fresh admission", async (t) => {
+  const f = await repositoryGuard(t, "lease-evidence-primary")
+  await message(f.hooks, f.sessionID, `REQUIRED EXACT HEAD: ${f.target}`, "evidence")
+  const proof = { command: "git rev-parse HEAD" }
+  await before(f.hooks, f.sessionID, "evidence-proof", proof)
+  const issued = await after(f.hooks, f.sessionID, "evidence-proof", proof, { output: `${f.target}\n`, metadata: { exit: 0 } })
+  assert.match(issued.output, /OPERATIONAL_AUTHORITY: verified/)
+  assert.match(issued.output, /OPERATIONAL_EXACT_HEAD_LEASE: .*status=valid/)
+  await assert.doesNotReject(() => before(f.hooks, f.sessionID, "evidence-ordinary", { command: "git status --short" }))
+
+  git(f.directory, ["commit", "--allow-empty", "-m", "next-candidate"])
+  const nextTarget = git(f.directory, ["rev-parse", "HEAD"]).toLowerCase()
+  assert.notEqual(nextTarget, f.target)
+  await message(f.hooks, f.sessionID, `REQUIRED EXACT HEAD: ${nextTarget}`, "evidence")
+  const reboundPending = await persistedSafety(f.stateDirectory, f.directory)
+  assert.equal(reboundPending.authorityBinding, nextTarget)
+  assert.equal(reboundPending.authorityStatus, "pending")
+  assert.equal(reboundPending.exactHeadLease.status, "invalidated")
+  assert.equal(reboundPending.exactHeadLease.invalidation.reason, "authority-rebind")
+
+  await before(f.hooks, f.sessionID, "evidence-next-proof", proof)
+  const reissued = await after(f.hooks, f.sessionID, "evidence-next-proof", proof, { output: `${nextTarget}\n`, metadata: { exit: 0 } })
+  assert.match(reissued.output, /OPERATIONAL_AUTHORITY: verified/)
+  assert.match(reissued.output, new RegExp(`OPERATIONAL_EXACT_HEAD_LEASE: .*status=valid; repository=.*target_sha=${nextTarget}`))
+  const finalState = await persistedSafety(f.stateDirectory, f.directory)
+  assert.equal(finalState.exactHeadLease.status, "valid")
+  assert.equal(finalState.exactHeadLease.target.sha, nextTarget)
 })
 
 test("verified target lease keeps malformed proof rejection while redundant bare proof remains valid", async (t) => {
