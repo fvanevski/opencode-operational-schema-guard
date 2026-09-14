@@ -710,6 +710,67 @@ test("persisted verified target without a valid lease requires canonical readmis
   await restarted.dispose()
 })
 
+test("persisted valid lease for a different target cannot preserve verified authority", async (t) => {
+  const f = await repositoryGuard(t, "lease-cross-target-persisted")
+  await message(f.hooks, f.sessionID, `REQUIRED EXACT HEAD: ${f.target}`)
+  const proof = { command: "git rev-parse HEAD" }
+  await before(f.hooks, f.sessionID, "cross-target-proof", proof)
+  await after(f.hooks, f.sessionID, "cross-target-proof", proof, { output: `${f.target}\n`, metadata: { exit: 0 } })
+  const statePath = join(resolve(f.stateDirectory), `${createHash("sha256").update(resolve(f.directory)).digest("hex")}.json`)
+  const persisted = await persistedSafety(f.stateDirectory, f.directory)
+  const otherTarget = f.target === "f".repeat(40) ? "e".repeat(40) : "f".repeat(40)
+  persisted.authorityBinding = otherTarget
+  persisted.observedHead = otherTarget
+  persisted.admissionObservedHead = otherTarget
+  persisted.taskWorkspaceHead = otherTarget
+  await f.hooks.dispose()
+  await writeFile(statePath, `${JSON.stringify(persisted, null, 2)}\n`)
+
+  const restarted = createOperationGuard({ directory: f.directory, env: {}, stateDirectory: f.stateDirectory, pluginRoot: process.cwd() })
+  await register(restarted, `${f.sessionID}-cross-target`)
+  const continuity = await compaction(restarted, `${f.sessionID}-cross-target`)
+  assert.match(continuity, new RegExp(`Authority: ${otherTarget}`))
+  assert.match(continuity, /Authority admission: pending; mode: target/)
+  assert.match(continuity, new RegExp(`target_sha=${f.target}`))
+  await restarted.dispose()
+})
+
+test("malformed persisted lease cannot preserve verified target authority", async (t) => {
+  const f = await repositoryGuard(t, "lease-malformed-persisted")
+  await message(f.hooks, f.sessionID, `REQUIRED EXACT HEAD: ${f.target}`)
+  const proof = { command: "git rev-parse HEAD" }
+  await before(f.hooks, f.sessionID, "malformed-proof", proof)
+  await after(f.hooks, f.sessionID, "malformed-proof", proof, { output: `${f.target}\n`, metadata: { exit: 0 } })
+  const statePath = join(resolve(f.stateDirectory), `${createHash("sha256").update(resolve(f.directory)).digest("hex")}.json`)
+  const persisted = await persistedSafety(f.stateDirectory, f.directory)
+  persisted.exactHeadLease.lease_id = "malformed"
+  await f.hooks.dispose()
+  await writeFile(statePath, `${JSON.stringify(persisted, null, 2)}\n`)
+
+  const restarted = createOperationGuard({ directory: f.directory, env: {}, stateDirectory: f.stateDirectory, pluginRoot: process.cwd() })
+  await register(restarted, `${f.sessionID}-malformed`)
+  const continuity = await compaction(restarted, `${f.sessionID}-malformed`)
+  assert.match(continuity, /Authority admission: pending; mode: target/)
+  assert.match(continuity, /Exact-head lease: none/)
+  assert.match(continuity, /workspace safety state could not be loaded/)
+  await restarted.dispose()
+})
+
+test("canonical target proof fails closed when lease issuance invariants cannot be established", async (t) => {
+  const f = await repositoryGuard(t, "lease-issuance-failure")
+  await message(f.hooks, f.sessionID, `REQUIRED EXACT HEAD: ${f.target}`)
+  const proof = { command: "git rev-parse HEAD" }
+  await before(f.hooks, f.sessionID, "issuance-proof", proof)
+  await rm(join(f.directory, ".git"), { recursive: true, force: true })
+  const result = await after(f.hooks, f.sessionID, "issuance-proof", proof, { output: `${f.target}\n`, metadata: { exit: 0 } })
+  assert.match(result.output, /OPERATIONAL_AUTHORITY: pending/)
+  assert.match(result.output, /OPERATIONAL_EXACT_HEAD_LEASE: status=unavailable; invalidation=issuance-invariants-unresolved/)
+  const persisted = await persistedSafety(f.stateDirectory, f.directory)
+  assert.equal(persisted.authorityStatus, "pending")
+  assert.equal(persisted.exactHeadLease, undefined)
+  assert.equal(persisted.taskWorkspaceHeadStatus, "unknown")
+})
+
 test("evidence primary receives exact-head lease and a new candidate SHA requires fresh admission", async (t) => {
   const f = await repositoryGuard(t, "lease-evidence-primary")
   await message(f.hooks, f.sessionID, `REQUIRED EXACT HEAD: ${f.target}`, "evidence")
