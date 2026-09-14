@@ -58,6 +58,13 @@ function runGit(cwd, args) {
   return String(result.stdout ?? "").trim()
 }
 
+async function exactTargetRepository(label) {
+  const directory = await mkdtemp(join(tmpdir(), `opencode-${label}-`))
+  runGit(directory, ["init", "-q"])
+  runGit(directory, ["-c", "user.name=GHDEV", "-c", "user.email=ghdev@example.invalid", "commit", "--allow-empty", "-qm", "base"])
+  return { directory, head: runGit(directory, ["rev-parse", "HEAD"]) }
+}
+
 async function taskFailureEvent(hooks, sessionID, callID, error, messageID = `msg-${callID}`) {
   await hooks.event({ event: { type: "message.part.updated", properties: { part: {
     sessionID,
@@ -1779,7 +1786,7 @@ test("mutating Git global path options classify their actual workspace write tar
   const external = "/tmp/issue27-external-git"
   const hooks = createOperationGuard({ directory: workspace, env: {} })
   const target = "e".repeat(40)
-  await message(hooks, "parent-git-targets", "build", `REQUIRED EXACT HEAD: ${target}`)
+  await message(hooks, "parent-git-targets", "build", `REQUIRED STARTING HEAD: ${target}`)
   await before(hooks, "parent-git-targets", "proof", "bash", { command: "git rev-parse HEAD" })
   await after(hooks, "parent-git-targets", "proof", "bash", { command: "git rev-parse HEAD" }, { output: `${target}\n`, metadata: { exit: 0 } })
 
@@ -1792,7 +1799,7 @@ test("mutating Git global path options classify their actual workspace write tar
   assert.match(workspaceState.context.join("\n"), /Edit generation: 1; Fresh-review generation: 0; Verify generation: 0/)
 
   const externalHooks = createOperationGuard({ directory: workspace, env: {} })
-  await message(externalHooks, "parent-external-git", "build", `REQUIRED EXACT HEAD: ${target}`)
+  await message(externalHooks, "parent-external-git", "build", `REQUIRED STARTING HEAD: ${target}`)
   await before(externalHooks, "parent-external-git", "proof", "bash", { command: "git rev-parse HEAD" })
   await after(externalHooks, "parent-external-git", "proof", "bash", { command: "git rev-parse HEAD" }, { output: `${target}\n`, metadata: { exit: 0 } })
   await assert.doesNotReject(() => before(externalHooks, "parent-external-git", "external-git", "bash", {
@@ -1924,7 +1931,7 @@ test("Task provenance separates historical admission from the currently proven w
   const hooks = createOperationGuard({ directory: "/tmp/project", env: {} })
   const admitted = "a".repeat(40)
   const committed = "b".repeat(40)
-  await message(hooks, "parent-provenance", "build", `REQUIRED EXACT HEAD: ${admitted}`)
+  await message(hooks, "parent-provenance", "build", `REQUIRED STARTING HEAD: ${admitted}`)
   const proofArgs = { command: "git rev-parse HEAD" }
   await before(hooks, "parent-provenance", "proof-a", "bash", proofArgs)
   await after(hooks, "parent-provenance", "proof-a", "bash", proofArgs, { output: `${admitted}\n`, metadata: { exit: 0 } })
@@ -2196,42 +2203,45 @@ test("authority metadata suffix collisions remain inert regardless of declaratio
 })
 
 test("all intentional authority aliases retain their strict-start or target semantics", async () => {
-  const expected = "c".repeat(40)
+  const strictExpected = "c".repeat(40)
+  const targetRepository = await exactTargetRepository("authority-alias-target")
+  const targetExpected = targetRepository.head
   const cases = [
-    [`EXPECTED_START_HEAD=${expected}`, "strict-start"],
-    [`EXPECTED_START_HEAD_SHA=${expected}`, "strict-start"],
-    [`REQUIRED_START_HEAD_SHA=${expected}`, "strict-start"],
-    [`REQUIRED STARTING HEAD: ${expected}`, "strict-start"],
-    [`REQUIRED STARTING HEAD ${expected}`, "strict-start"],
-    [`\`REQUIRED STARTING HEAD: ${expected}\``, "strict-start"],
-    [`- REQUIRED STARTING HEAD: ${expected}`, "strict-start"],
-    [`> REQUIRED STARTING HEAD: ${expected}`, "strict-start"],
-    [`REQUIRED STARTING HEAD SHA: ${expected}`, "strict-start"],
-    [`EXPECTED STARTING HEAD: ${expected}`, "strict-start"],
-    [`EXPECTED STARTING HEAD SHA: ${expected}`, "strict-start"],
-    [`HEAD_SHA=${expected}`, "target"],
-    [`HEAD_SHA ${expected}`, "target"],
-    [`"HEAD_SHA=${expected}"`, "target"],
-    [`(HEAD_SHA=${expected})`, "target"],
-    [`EXPECTED_HEAD_SHA=${expected}`, "target"],
-    [`AUTHORITATIVE_HEAD_SHA=${expected}`, "target"],
-    [`FINAL_HEAD_SHA=${expected}`, "target"],
-    [`PR_HEAD_SHA=${expected}`, "target"],
-    [`CANDIDATE_SHA=${expected}`, "target"],
-    [`REQUIRED HEAD: ${expected}`, "target"],
-    [`REQUIRED EXACT HEAD: ${expected}`, "target"],
-    [`EXPECTED HEAD: ${expected}`, "target"],
-    [`EXPECTED BRANCH HEAD: ${expected}`, "target"],
-    [`REQUIRED PR HEAD: ${expected}`, "target"],
+    [`EXPECTED_START_HEAD=${strictExpected}`, "strict-start", strictExpected],
+    [`EXPECTED_START_HEAD_SHA=${strictExpected}`, "strict-start", strictExpected],
+    [`REQUIRED_START_HEAD_SHA=${strictExpected}`, "strict-start", strictExpected],
+    [`REQUIRED STARTING HEAD: ${strictExpected}`, "strict-start", strictExpected],
+    [`REQUIRED STARTING HEAD ${strictExpected}`, "strict-start", strictExpected],
+    [`\`REQUIRED STARTING HEAD: ${strictExpected}\``, "strict-start", strictExpected],
+    [`- REQUIRED STARTING HEAD: ${strictExpected}`, "strict-start", strictExpected],
+    [`> REQUIRED STARTING HEAD: ${strictExpected}`, "strict-start", strictExpected],
+    [`REQUIRED STARTING HEAD SHA: ${strictExpected}`, "strict-start", strictExpected],
+    [`EXPECTED STARTING HEAD: ${strictExpected}`, "strict-start", strictExpected],
+    [`EXPECTED STARTING HEAD SHA: ${strictExpected}`, "strict-start", strictExpected],
+    [`HEAD_SHA=${targetExpected}`, "target", targetExpected],
+    [`HEAD_SHA ${targetExpected}`, "target", targetExpected],
+    [`"HEAD_SHA=${targetExpected}"`, "target", targetExpected],
+    [`(HEAD_SHA=${targetExpected})`, "target", targetExpected],
+    [`EXPECTED_HEAD_SHA=${targetExpected}`, "target", targetExpected],
+    [`AUTHORITATIVE_HEAD_SHA=${targetExpected}`, "target", targetExpected],
+    [`FINAL_HEAD_SHA=${targetExpected}`, "target", targetExpected],
+    [`PR_HEAD_SHA=${targetExpected}`, "target", targetExpected],
+    [`CANDIDATE_SHA=${targetExpected}`, "target", targetExpected],
+    [`REQUIRED HEAD: ${targetExpected}`, "target", targetExpected],
+    [`REQUIRED EXACT HEAD: ${targetExpected}`, "target", targetExpected],
+    [`EXPECTED HEAD: ${targetExpected}`, "target", targetExpected],
+    [`EXPECTED BRANCH HEAD: ${targetExpected}`, "target", targetExpected],
+    [`REQUIRED PR HEAD: ${targetExpected}`, "target", targetExpected],
   ]
 
-  for (const [index, [declaration, expectedMode]] of cases.entries()) {
-    const hooks = createOperationGuard({ directory: `/tmp/project-authority-alias-${index}`, env: {} })
+  for (const [index, [declaration, expectedMode, expectedBinding]] of cases.entries()) {
+    const directory = expectedMode === "target" ? targetRepository.directory : `/tmp/project-authority-alias-${index}`
+    const hooks = createOperationGuard({ directory, env: {} })
     const sessionID = `authority-alias-${index}`
     await message(hooks, sessionID, "build", declaration)
     await before(hooks, sessionID, "proof", "bash", { command: "git rev-parse HEAD" })
-    const proof = await after(hooks, sessionID, "proof", "bash", { command: "git rev-parse HEAD" }, { output: `${expected}\n`, metadata: { exit: 0 } })
-    assert.equal(proof.metadata.operationalSchema.authorityBinding, expected, declaration)
+    const proof = await after(hooks, sessionID, "proof", "bash", { command: "git rev-parse HEAD" }, { output: `${expectedBinding}\n`, metadata: { exit: 0 } })
+    assert.equal(proof.metadata.operationalSchema.authorityBinding, expectedBinding, declaration)
     assert.equal(proof.metadata.operationalSchema.authorityMode, expectedMode, declaration)
     assert.equal(proof.metadata.operationalSchema.authorityStatus, "verified", declaration)
   }
@@ -2252,11 +2262,13 @@ test("conflicting explicit authority declarations fail closed without binding st
     assert.match(context.context.join("\n"), /Authority: unbound/)
   }
 
-  const equivalent = createOperationGuard({ directory: "/tmp/project-authority-equivalent", env: {} })
-  await message(equivalent, "authority-equivalent", "build", `HEAD_SHA=${first}\nEXPECTED_HEAD_SHA=${first}`)
+  const equivalentRepository = await exactTargetRepository("authority-equivalent")
+  const equivalentTarget = equivalentRepository.head
+  const equivalent = createOperationGuard({ directory: equivalentRepository.directory, env: {} })
+  await message(equivalent, "authority-equivalent", "build", `HEAD_SHA=${equivalentTarget}\nEXPECTED_HEAD_SHA=${equivalentTarget}`)
   await before(equivalent, "authority-equivalent", "proof", "bash", { command: "git rev-parse HEAD" })
-  const proof = await after(equivalent, "authority-equivalent", "proof", "bash", { command: "git rev-parse HEAD" }, { output: `${first}\n`, metadata: { exit: 0 } })
-  assert.equal(proof.metadata.operationalSchema.authorityBinding, first)
+  const proof = await after(equivalent, "authority-equivalent", "proof", "bash", { command: "git rev-parse HEAD" }, { output: `${equivalentTarget}\n`, metadata: { exit: 0 } })
+  assert.equal(proof.metadata.operationalSchema.authorityBinding, equivalentTarget)
   assert.equal(proof.metadata.operationalSchema.authorityMode, "target")
   assert.equal(proof.metadata.operationalSchema.authorityStatus, "verified")
 })
@@ -2320,8 +2332,9 @@ test("strict-start and target current-workspace bare proofs admit work without r
   assert.equal(strictProof.metadata.operationalSchema.authorityStatus, "verified")
   await assert.doesNotReject(() => before(strict, "issue28-strict-proof", "edit", "edit", { filePath: "src/a.py" }))
 
-  const target = "d".repeat(40)
-  const targetHooks = createOperationGuard({ directory: "/tmp/project-issue28-target-proof", env: {} })
+  const targetRepository = await exactTargetRepository("issue28-target-proof")
+  const target = targetRepository.head
+  const targetHooks = createOperationGuard({ directory: targetRepository.directory, env: {} })
   await message(targetHooks, "issue28-target-proof", "build", `REQUIRED EXACT HEAD: ${target}`)
   const targetProofArgs = { command: "git rev-parse HEAD" }
   await before(targetHooks, "issue28-target-proof", "proof", "bash", targetProofArgs)
@@ -2473,8 +2486,9 @@ test("authority proof admission binds workdir and completion to the exact author
 })
 
 test("exact-head target admission permits only an exact detached transition before proof", async () => {
-  const hooks = createOperationGuard({ directory: "/tmp/project", env: {} })
-  const target = "c".repeat(40)
+  const targetRepository = await exactTargetRepository("exact-target-current-workspace")
+  const hooks = createOperationGuard({ directory: targetRepository.directory, env: {} })
+  const target = targetRepository.head
   await message(hooks, "parent", "build", `REQUIRED EXACT HEAD: ${target}`)
   await assert.rejects(() => before(hooks, "parent", "wrong-merge", "bash", { command: `git merge --ff-only ${target}` }), new RegExp(`local-agent-assessment\\.mjs --spec.*git worktree add --detach <absolute-disposable-path> ${target}`, "s"))
   const compound = `git checkout --quiet --detach ${target} && git rev-parse HEAD`
@@ -2554,9 +2568,10 @@ test("target-mode compound worktree setup is rejected with the safe two-step seq
 })
 
 test("explicit strict-start authority supersedes prior target publication gates only after the new declaration", async () => {
-  const hooks = createOperationGuard({ directory: "/tmp/project-explicit-authority-change", env: {} })
-  const first = "a".repeat(40)
-  const second = "b".repeat(40)
+  const targetRepository = await exactTargetRepository("explicit-authority-change")
+  const hooks = createOperationGuard({ directory: targetRepository.directory, env: {} })
+  const first = targetRepository.head
+  const second = first === "b".repeat(40) ? "c".repeat(40) : "b".repeat(40)
   await message(hooks, "parent-explicit-change", "build", `REQUIRED EXACT HEAD: ${first}`)
   const proofArgs = { command: "git rev-parse HEAD" }
   await before(hooks, "parent-explicit-change", "proof-first", "bash", proofArgs)
@@ -2585,9 +2600,10 @@ test("explicit strict-start authority supersedes prior target publication gates 
 })
 
 test("new binding after terminal target release starts a fresh authority epoch", async () => {
-  const hooks = createOperationGuard({ directory: "/tmp/project-authority-release-rebind", env: {} })
-  const first = "a".repeat(40)
-  const second = "b".repeat(40)
+  const targetRepository = await exactTargetRepository("authority-release-rebind")
+  const hooks = createOperationGuard({ directory: targetRepository.directory, env: {} })
+  const first = targetRepository.head
+  const second = first === "b".repeat(40) ? "c".repeat(40) : "b".repeat(40)
   const oldParent = "parent-released-authority"
   const newParent = "parent-new-after-release"
   const proofArgs = { command: "git rev-parse HEAD" }
@@ -2683,9 +2699,10 @@ test("same-SHA strict-start to target mode transition starts a fresh delegation 
 })
 
 test("explicit authority change invalidates in-flight old-head child results before they can re-establish gates", async () => {
-  const hooks = createOperationGuard({ directory: "/tmp/project-authority-inflight", env: {} })
-  const first = "a".repeat(40)
-  const second = "b".repeat(40)
+  const targetRepository = await exactTargetRepository("authority-inflight")
+  const hooks = createOperationGuard({ directory: targetRepository.directory, env: {} })
+  const first = targetRepository.head
+  const second = first === "b".repeat(40) ? "c".repeat(40) : "b".repeat(40)
   await message(hooks, "parent-inflight", "build", `REQUIRED EXACT HEAD: ${first}`)
   const proofArgs = { command: "git rev-parse HEAD" }
   await before(hooks, "parent-inflight", "proof-first", "bash", proofArgs)
@@ -2722,9 +2739,10 @@ test("explicit authority change invalidates in-flight old-head child results bef
 })
 
 test("authority change in another primary session invalidates old-head pending and resumable delegation workspace-wide", async () => {
-  const hooks = createOperationGuard({ directory: "/tmp/project-authority-cross-session", env: {} })
-  const first = "a".repeat(40)
-  const second = "b".repeat(40)
+  const targetRepository = await exactTargetRepository("authority-cross-session")
+  const hooks = createOperationGuard({ directory: targetRepository.directory, env: {} })
+  const first = targetRepository.head
+  const second = first === "b".repeat(40) ? "c".repeat(40) : "b".repeat(40)
   const oldParent = "parent-old-authority"
   const newParent = "parent-new-authority"
   const proofArgs = { command: "git rev-parse HEAD" }
@@ -2927,9 +2945,12 @@ test("corrupt persisted workspace state fails closed instead of disabling the ha
 })
 
 test("an exact-head authority change supersedes prior review and verification gates", async () => {
-  const hooks = createOperationGuard({ directory: "/tmp/project", env: {} })
-  const first = "a".repeat(40)
-  const second = "b".repeat(40)
+  const targetRepository = await exactTargetRepository("authority-change")
+  const first = targetRepository.head
+  runGit(targetRepository.directory, ["-c", "user.name=GHDEV", "-c", "user.email=ghdev@example.invalid", "commit", "--allow-empty", "-qm", "second"])
+  const second = runGit(targetRepository.directory, ["rev-parse", "HEAD"])
+  runGit(targetRepository.directory, ["switch", "--detach", first])
+  const hooks = createOperationGuard({ directory: targetRepository.directory, env: {} })
   await message(hooks, "parent", "build", `EXPECTED_HEAD_SHA=${first}`)
   await before(hooks, "parent", "first-proof", "bash", { command: "git rev-parse HEAD" })
   await after(hooks, "parent", "first-proof", "bash", { command: "git rev-parse HEAD" }, { output: `${first}\n`, metadata: { exit: 0 } })
@@ -2952,6 +2973,10 @@ test("an exact-head authority change supersedes prior review and verification ga
 
   await message(hooks, "parent", "build", `HEAD_SHA=${second}`)
   assert.match(await system(hooks, "parent"), new RegExp(`authority changed from ${first} to ${second}.*superseded`))
+  const secondSetup = { command: `git switch --detach ${second}` }
+  await before(hooks, "parent", "second-setup", "bash", secondSetup)
+  runGit(targetRepository.directory, ["switch", "--detach", second])
+  await after(hooks, "parent", "second-setup", "bash", secondSetup, { output: "prepared", metadata: { exit: 0 } })
   await before(hooks, "parent", "second-proof", "bash", { command: "git rev-parse HEAD" })
   await after(hooks, "parent", "second-proof", "bash", { command: "git rev-parse HEAD" }, { output: `${second}\n`, metadata: { exit: 0 } })
   await assert.rejects(() => before(hooks, "parent", "commit-after-change", "bash", { command: "git commit -m test" }), /fresh-review/)
