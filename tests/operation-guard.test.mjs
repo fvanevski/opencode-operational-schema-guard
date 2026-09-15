@@ -76,6 +76,17 @@ async function taskFailureEvent(hooks, sessionID, callID, error, messageID = `ms
   } } } })
 }
 
+async function requestedToolEvent(hooks, sessionID, callID, tool, args, status = "running") {
+  await hooks.event({ event: { type: "message.part.updated", properties: { part: {
+    sessionID,
+    messageID: `msg-${callID}`,
+    callID,
+    type: "tool",
+    tool,
+    state: { status, input: args, ...(status === "pending" ? { raw: JSON.stringify(args) } : { time: { start: 1 } }) },
+  } } } })
+}
+
 function exploreComplete(text, inspected = 1, required = inspected) {
   return `${text}\nOPERATIONAL_EXPLORE: COMPLETE; TARGETS_INSPECTED: ${inspected}; TARGETS_REQUIRED: ${required}`
 }
@@ -3371,4 +3382,145 @@ test("Issue-368 command-shape replay exposes readable canonical target setup gui
   assert.match(cookbook, /workdir=\$OWNER_REPO\ngit worktree add --detach <ABSOLUTE_DISPOSABLE_PATH> <TARGET_SHA>/)
   assert.match(cookbook, /workdir=<ABSOLUTE_DISPOSABLE_PATH>\ngit rev-parse HEAD/)
   assert.match(cookbook, /Do not grep guard implementation source merely to infer a published invocation shape/)
+})
+
+test("registered literal command fidelity rejects agent-authored rewrites before execution and leaves unrelated commands unchanged", async () => {
+  const hooks = createOperationGuard({ directory: "/tmp/project", env: {} })
+  await message(hooks, "literal-fidelity", "build", "LITERAL COMMAND: git status --short")
+
+  await requestedToolEvent(hooks, "literal-fidelity", "exact", "bash", { command: "git status --short" })
+  await assert.doesNotReject(() => before(hooks, "literal-fidelity", "exact", "bash", { command: "git status --short" }))
+  await after(hooks, "literal-fidelity", "exact", "bash", { command: "git status --short" }, { metadata: { exit: 0 } })
+
+  for (const [callID, command, mismatch] of [
+    ["rtk", "rtk git status --short", "agent-wrapper-prefix"],
+    ["other-wrapper", "command git status --short", "prefix-or-wrapper"],
+    ["compound", "git status --short && echo changed", "compound-or-shell-operator"],
+    ["pipe", "git status --short | cat", "compound-or-shell-operator"],
+    ["redirect", "git status --short > /tmp/status.txt", "compound-or-shell-operator"],
+    ["env-prefix", "MODE=test git status --short", "prefix-or-wrapper"],
+    ["cwd-prefix", "cd /tmp && git status --short", "compound-or-shell-operator"],
+    ["suffix", "git status --short --branch", "suffix-or-argument-append"],
+    ["argument", "git status --porcelain", "argument-or-order-mismatch"],
+  ]) {
+    await requestedToolEvent(hooks, "literal-fidelity", callID, "bash", { command })
+    const rejection = await rejectedCommandShapeMessage(() => before(hooks, "literal-fidelity", callID, "bash", { command }))
+    assert.match(rejection, /OPERATIONAL_COMMAND_FIDELITY: REJECTED/)
+    assert.match(rejection, new RegExp(`mismatch_class=${mismatch}`))
+    assert.match(rejection, /event_kind=pre_execution_rejection; execution_effect=not_executed; COMMANDS_MATCH_HANDOFF=no/)
+  }
+
+  for (const [callID, command] of [
+    ["git-global-options", "git -c color.ui=false -c core.quotePath=true status --short"],
+    ["dynamic-subcommand", "git \"$(printf status)\" --short"],
+    ["dynamic-executable", "$(printf git) status --porcelain"],
+    ["opaque-dynamic-executable", "$(printf g%s it) status --porcelain"],
+    ["parameter-executable", "$VCS status --porcelain"],
+    ["shell-interpreter", "sh -c 'git status --porcelain'"],
+  ]) {
+    await requestedToolEvent(hooks, "literal-fidelity", callID, "bash", { command })
+    const rejection = await rejectedCommandShapeMessage(() => before(hooks, "literal-fidelity", callID, "bash", { command }))
+    assert.match(rejection, /OPERATIONAL_COMMAND_FIDELITY: REJECTED/)
+    assert.match(rejection, /event_kind=pre_execution_rejection; execution_effect=not_executed; COMMANDS_MATCH_HANDOFF=no/)
+  }
+
+  for (const [callID, command] of [
+    ["unrelated", "git diff --check"],
+    ["unrelated-nested-word", "git log \"$(printf status)\""],
+    ["unrelated-quoted-literal-data", "printf '%s\\n' 'git status --short'"],
+  ]) {
+    await requestedToolEvent(hooks, "literal-fidelity", callID, "bash", { command })
+    await assert.doesNotReject(() => before(hooks, "literal-fidelity", callID, "bash", { command }))
+    await after(hooks, "literal-fidelity", callID, "bash", { command }, { metadata: { exit: 0 } })
+  }
+
+  const notice = await system(hooks, "literal-fidelity")
+  assert.match(notice, /COMMAND_SHAPE_FRICTION_EVENT:/)
+  assert.match(notice, /event_kind=pre_execution_rejection/)
+  assert.match(notice, /execution_effect=not_executed/)
+  assert.match(notice, /COMMANDS_MATCH_HANDOFF=no/)
+})
+
+test("registered literal command fidelity rejects generic same-family mutations without token-distance escapes", async () => {
+  const hooks = createOperationGuard({ directory: "/tmp/project", env: {} })
+  await message(hooks, "generic-literal-fidelity", "build", "LITERAL COMMAND: python3 --version")
+
+  const mutated = "python3 -B -E -I -s -S --version"
+  await requestedToolEvent(hooks, "generic-literal-fidelity", "generic-distance", "bash", { command: mutated })
+  const rejection = await rejectedCommandShapeMessage(() => before(hooks, "generic-literal-fidelity", "generic-distance", "bash", { command: mutated }))
+  assert.match(rejection, /OPERATIONAL_COMMAND_FIDELITY: REJECTED/)
+  assert.match(rejection, /execution_effect=not_executed/)
+
+  const inertData = "python3 -c 'print(\"--version\")'"
+  await requestedToolEvent(hooks, "generic-literal-fidelity", "generic-data", "bash", { command: inertData })
+  await assert.doesNotReject(() => before(hooks, "generic-literal-fidelity", "generic-data", "bash", { command: inertData }))
+  await after(hooks, "generic-literal-fidelity", "generic-data", "bash", { command: inertData }, { metadata: { exit: 0 } })
+})
+
+test("registered literal command fidelity refreshes streamed ToolPart input through pre-execution admission", async () => {
+  const hooks = createOperationGuard({ directory: "/tmp/project", env: {} })
+  await message(hooks, "streamed-literal-input", "build", "LITERAL COMMAND: git status --short")
+  await requestedToolEvent(hooks, "streamed-literal-input", "streamed", "bash", { command: "g" }, "pending")
+  await requestedToolEvent(hooks, "streamed-literal-input", "streamed", "bash", { command: "git status --short" }, "running")
+
+  await assert.doesNotReject(() => before(hooks, "streamed-literal-input", "streamed", "bash", { command: "git status --short" }))
+  await after(hooks, "streamed-literal-input", "streamed", "bash", { command: "git status --short" }, { metadata: { exit: 0 } })
+})
+
+test("registered literal command fidelity attributes only captured exact-request RTK mutation as trusted harness rewrite", async () => {
+  const hooks = createOperationGuard({ directory: "/tmp/project", env: {} })
+  await message(hooks, "trusted-literal-rewrite", "evidence", "LITERAL COMMAND: git status --short")
+  await requestedToolEvent(hooks, "trusted-literal-rewrite", "trusted-rtk", "bash", { command: "git status --short" }, "pending")
+
+  const effective = await before(hooks, "trusted-literal-rewrite", "trusted-rtk", "bash", { command: "rtk git status --short" })
+  assert.equal(effective.args.command, "rtk git status --short")
+  await after(hooks, "trusted-literal-rewrite", "trusted-rtk", "bash", { command: "rtk git status --short" }, { metadata: { exit: 0 } })
+  const trustedNotice = await system(hooks, "trusted-literal-rewrite")
+  assert.match(trustedNotice, /rewrite_provenance=rtk_opencode_hook/)
+  assert.match(trustedNotice, /event_kind=harness_rewrite/)
+  assert.match(trustedNotice, /execution_effect=executed_succeeded/)
+  assert.match(trustedNotice, /COMMANDS_MATCH_HANDOFF=yes/)
+
+  await requestedToolEvent(hooks, "trusted-literal-rewrite", "unknown-rewrite", "bash", { command: "git status --short" })
+  const rejection = await rejectedCommandShapeMessage(() => before(hooks, "trusted-literal-rewrite", "unknown-rewrite", "bash", { command: "env MODE=test git status --short" }))
+  assert.match(rejection, /mismatch_class=untrusted-effective-rewrite/)
+  assert.match(rejection, /rewrite_provenance=unknown/)
+  assert.match(rejection, /execution_effect=not_executed/)
+
+  const missingRequested = await rejectedCommandShapeMessage(() => before(hooks, "trusted-literal-rewrite", "missing-request", "bash", { command: "git status --short" }))
+  assert.match(missingRequested, /mismatch_class=requested-shape-unavailable/)
+  assert.match(missingRequested, /requested_shape="<unavailable>"/)
+  assert.match(missingRequested, /rewrite_provenance=unknown/)
+  assert.match(missingRequested, /execution_effect=not_executed/)
+})
+
+test("literal command registrations are bounded and invalidated by authority/session boundaries", async () => {
+  const hooks = createOperationGuard({ directory: "/tmp/project", env: {} })
+  assert.equal(DEFAULT_POLICY.literalCommandFidelity.maxCommands, 16)
+  assert.equal(DEFAULT_POLICY.literalCommandFidelity.maxCommandChars, 1024)
+  assert.equal(DEFAULT_POLICY.literalCommandFidelity.maxTotalChars, 8192)
+
+  await assert.rejects(
+    () => message(hooks, "literal-bounds", "build", `LITERAL COMMAND: ${"x".repeat(1025)}`),
+    /1024-character per-command bound/,
+  )
+
+  await message(hooks, "literal-boundary", "build", "LITERAL COMMAND: git status --short")
+  await requestedToolEvent(hooks, "literal-boundary", "before-boundary", "bash", { command: "rtk git status --short" })
+  await assert.rejects(() => before(hooks, "literal-boundary", "before-boundary", "bash", { command: "rtk git status --short" }), /OPERATIONAL_COMMAND_FIDELITY/)
+
+  const firstAuthority = "a".repeat(40)
+  await message(hooks, "literal-boundary", "build", `REQUIRED STARTING HEAD: ${firstAuthority}`)
+  await requestedToolEvent(hooks, "literal-boundary", "after-authority", "bash", { command: "rtk git status --short" })
+  await assert.doesNotReject(() => before(hooks, "literal-boundary", "after-authority", "bash", { command: "rtk git status --short" }))
+
+  await message(hooks, "literal-session-two", "build", "Continue ordinary work without a literal contract.")
+  await requestedToolEvent(hooks, "literal-session-two", "new-session", "bash", { command: "rtk git status --short" })
+  await assert.doesNotReject(() => before(hooks, "literal-session-two", "new-session", "bash", { command: "rtk git status --short" }))
+
+  await message(hooks, "literal-session-delete", "build", "LITERAL COMMAND: git status --short")
+  await hooks.event({ event: { type: "session.deleted", properties: { sessionID: "literal-session-delete" } } })
+  await message(hooks, "literal-session-delete", "build", "Recreated primary session without a literal contract.")
+  await requestedToolEvent(hooks, "literal-session-delete", "after-delete", "bash", { command: "rtk git status --short" })
+  await assert.doesNotReject(() => before(hooks, "literal-session-delete", "after-delete", "bash", { command: "rtk git status --short" }))
 })
