@@ -3440,6 +3440,12 @@ test("registered literal command fidelity attributes only captured exact-request
   assert.match(rejection, /mismatch_class=untrusted-effective-rewrite/)
   assert.match(rejection, /rewrite_provenance=unknown/)
   assert.match(rejection, /execution_effect=not_executed/)
+
+  const missingRequested = await rejectedCommandShapeMessage(() => before(hooks, "trusted-literal-rewrite", "missing-request", "bash", { command: "git status --short" }))
+  assert.match(missingRequested, /mismatch_class=requested-shape-unavailable/)
+  assert.match(missingRequested, /requested_shape="<unavailable>"/)
+  assert.match(missingRequested, /rewrite_provenance=unknown/)
+  assert.match(missingRequested, /execution_effect=not_executed/)
 })
 
 test("literal command registrations are bounded and invalidated by authority/session boundaries", async () => {
@@ -3465,4 +3471,10 @@ test("literal command registrations are bounded and invalidated by authority/ses
   await message(hooks, "literal-session-two", "build", "Continue ordinary work without a literal contract.")
   await requestedToolEvent(hooks, "literal-session-two", "new-session", "bash", { command: "rtk git status --short" })
   await assert.doesNotReject(() => before(hooks, "literal-session-two", "new-session", "bash", { command: "rtk git status --short" }))
+
+  await message(hooks, "literal-session-delete", "build", "LITERAL COMMAND: git status --short")
+  await hooks.event({ event: { type: "session.deleted", properties: { sessionID: "literal-session-delete" } } })
+  await message(hooks, "literal-session-delete", "build", "Recreated primary session without a literal contract.")
+  await requestedToolEvent(hooks, "literal-session-delete", "after-delete", "bash", { command: "rtk git status --short" })
+  await assert.doesNotReject(() => before(hooks, "literal-session-delete", "after-delete", "bash", { command: "rtk git status --short" }))
 })
