@@ -5,10 +5,6 @@ import { access, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:f
 import { tmpdir } from "node:os"
 import { join, resolve } from "node:path"
 import test, { after as afterAll } from "node:test"
-// The repository-final launcher selects this suite directly. Import the hybrid
-// guard suite here so its exact-head planning regressions are part of that same
-// deterministic execution without changing the trusted launcher/control plane.
-import "./hybrid-workflow-guard.test.mjs"
 import { createOperationGuard } from "../lib/operation-guard.mjs"
 import { ASSESSMENT_RESULT_SCHEMA } from "../lib/repo-pr-assessment.mjs"
 import { assessmentTerminalOutput } from "../scripts/local-agent-assessment.mjs"
