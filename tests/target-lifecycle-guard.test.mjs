@@ -1156,6 +1156,55 @@ test("delegated child revalidates exact-head lease between governed tool calls",
   assert.equal(invalidated.exactHeadLease.invalidation.reason, "target-head-changed")
 })
 
+test("completed child cannot attach its lease binding to a later delegation", async (t) => {
+  const f = await repositoryGuard(t, "lease-child-delegation-binding")
+  await message(f.hooks, f.sessionID, `REQUIRED EXACT HEAD: ${f.target}`)
+  const proof = { command: "git rev-parse HEAD" }
+  await before(f.hooks, f.sessionID, "child-binding-proof", proof)
+  await after(f.hooks, f.sessionID, "child-binding-proof", proof, { output: `${f.target}\n`, metadata: { exit: 0 } })
+
+  const taskArgs = (suffix) => ({
+    subagent_type: "verify",
+    description: `Verify exact-head child binding ${suffix}`,
+    prompt: [
+      `Scope: Verify bounded exact-head child binding ${suffix}.`,
+      "Questions:",
+      "- Does this child remain attached only to its admitted delegation?",
+      "Stop condition: Stop after the bounded delegation check.",
+      "Expected terminal: OPERATIONAL_RESULT: PASS|FAIL|BLOCKED; COMMANDS_RUN: <n>; COMMANDS_REQUIRED: <n>.",
+    ].join("\n"),
+  })
+
+  const firstTask = { args: taskArgs("one") }
+  await f.hooks["tool.execute.before"]({ sessionID: f.sessionID, callID: "binding-task-one", tool: "task" }, firstTask)
+  const childSessionID = "binding-child-session"
+  await message(f.hooks, childSessionID, "child execution", "verify")
+  const childCall = { command: "git status --short" }
+  await f.hooks["tool.execute.before"]({ sessionID: childSessionID, callID: "binding-child-first", tool: "bash" }, { args: childCall })
+  await f.hooks["tool.execute.after"](
+    { sessionID: childSessionID, callID: "binding-child-first", tool: "bash", args: childCall },
+    { title: "", output: "", metadata: { exit: 0 } },
+  )
+  await f.hooks.event({ event: { type: "message.updated", properties: { info: { sessionID: childSessionID, role: "assistant", finish: "stop" } } } })
+  const firstResult = {
+    title: "",
+    output: "OPERATIONAL_RESULT: PASS; COMMANDS_RUN: 1; COMMANDS_REQUIRED: 1",
+    metadata: { sessionId: childSessionID },
+  }
+  await f.hooks["tool.execute.after"]({ sessionID: f.sessionID, callID: "binding-task-one", tool: "task", args: firstTask.args }, firstResult)
+  assert.equal(firstResult.metadata.operationalSchema.complete, true)
+
+  const secondTask = { args: taskArgs("two") }
+  await f.hooks["tool.execute.before"]({ sessionID: f.sessionID, callID: "binding-task-two", tool: "task" }, secondTask)
+  await assert.rejects(
+    () => f.hooks["tool.execute.before"](
+      { sessionID: childSessionID, callID: "binding-stale-child", tool: "bash" },
+      { args: { command: "git status --short" } },
+    ),
+    /not bound to the lease-owning primary task's exact pending delegation \(delegation-no-longer-pending\)/,
+  )
+})
+
 test("delegated task completion is stale when exact-head lease invariants drift during the child run", async (t) => {
   const f = await repositoryGuard(t, "lease-task-boundary")
   await message(f.hooks, f.sessionID, `REQUIRED EXACT HEAD: ${f.target}`)
