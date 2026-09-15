@@ -125,6 +125,24 @@ test("user-authored Build, Verify, and Explore prompts are accepted and preserve
   assert.equal(parsed.agent.explore.prompt, prompts.explore)
 })
 
+test("validate-config CLI accepts user-authored prompt text", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "opencode-config-custom-prompts-"))
+  const candidate = join(directory, "candidate.json")
+  const config = validConfig()
+  config.agent.build.prompt = "Portable user-authored Build prompt."
+  config.agent.verify.prompt = "Portable user-authored Verify prompt."
+  config.agent.explore.prompt = "Portable user-authored Explore prompt."
+  await writeFile(candidate, `${JSON.stringify(config, null, 2)}\n`)
+
+  const result = spawnSync(
+    process.execPath,
+    [new URL("../scripts/validate-config.mjs", import.meta.url).pathname, "--candidate", candidate],
+    { encoding: "utf8" },
+  )
+  assert.equal(result.status, 0, result.stderr)
+  assert.match(result.stdout, /OPERATIONAL_CONFIG_RESULT: PASS/)
+})
+
 test("configured Build, Verify, and Explore prompts must remain usable non-empty strings", () => {
   for (const agentName of ["build", "verify", "explore"]) {
     for (const invalidPrompt of ["", "   ", null, 42]) {
