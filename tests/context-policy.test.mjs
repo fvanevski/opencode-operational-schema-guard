@@ -1,6 +1,6 @@
 import assert from "node:assert/strict"
 import { spawnSync } from "node:child_process"
-import { access, mkdtemp } from "node:fs/promises"
+import { access, mkdtemp, symlink } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import test from "node:test"
@@ -464,6 +464,46 @@ test("plugin routes resource identity and exact-target admission through the aut
 
   runGit(firecrawl, ["worktree", "remove", "--force", worktree])
   await hooks.dispose()
+})
+
+test("authoritative session-directory aliases share one canonical guard and authority namespace", async () => {
+  const config = liveConfig()
+  const repo = await sessionRepository("https://github.com/fvanevski/firecrawl_skill.git")
+  const target = runGit(repo, ["rev-parse", "HEAD"])
+  const aliasRoot = await mkdtemp(join(tmpdir(), "opencode-session-alias-root-"))
+  const alias = join(aliasRoot, "workspace-alias")
+  await symlink(repo, alias, "dir")
+  const sessions = new Map([["alias-session", repo]])
+  const stateDirectory = await mkdtemp(join(tmpdir(), "opencode-session-alias-state-"))
+  const hooks = await OperationalSchemaGuardPlugin({
+    client: sessionAwareClient(config, sessions),
+    directory: repo,
+    stateDirectory,
+  })
+  await hooks.config(config)
+  await hooks["chat.message"](
+    { sessionID: "alias-session", agent: "build" },
+    { message: {}, parts: [{ type: "text", text: `REQUIRED EXACT HEAD: ${target}` }] },
+  )
+  const proof = { command: "git rev-parse HEAD", workdir: repo }
+  await hooks["tool.execute.before"]({ sessionID: "alias-session", callID: "alias-proof", tool: "bash" }, { args: proof })
+  await hooks["tool.execute.after"](
+    { sessionID: "alias-session", callID: "alias-proof", tool: "bash", args: proof },
+    { title: "", output: `${target}\n`, metadata: { exit: 0 } },
+  )
+
+  sessions.set("alias-session", alias)
+  await hooks["chat.message"]({ sessionID: "alias-session", agent: "build" }, { message: {}, parts: [] })
+  const transformed = { system: [] }
+  await hooks["experimental.chat.system.transform"]({ sessionID: "alias-session", model: {} }, transformed)
+  assert.doesNotMatch(transformed.system.join("\n"), /authoritative governed directory changed/)
+  const compacted = { context: [] }
+  await hooks["experimental.session.compacting"]({ sessionID: "alias-session" }, compacted)
+  const continuity = compacted.context.join("\n")
+  assert.match(continuity, new RegExp(`Workspace: ${repo.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`))
+  assert.match(continuity, /Authority admission: verified; mode: target/)
+  assert.match(continuity, /Exact-head lease: .*status=valid/)
+  await hooks.dispose?.()
 })
 
 test("different session directories isolate workspace authority and a directory change creates an explicit boundary", async () => {

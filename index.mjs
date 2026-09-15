@@ -1,3 +1,4 @@
+import { realpathSync } from "node:fs"
 import { isAbsolute, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 import { unwrapLiveConfig } from "./lib/context-policy.mjs"
@@ -6,9 +7,18 @@ import { createOperationGuard, policyFromConfig, policyWithContextFailure } from
 const PLUGIN_ROOT = fileURLToPath(new URL(".", import.meta.url))
 const DEFAULT_STATE_DIRECTORY = "/home/filip/.local/share/opencode/operational-schema-v5/workspaces"
 
+function canonicalGovernedDirectory(value) {
+  const normalized = resolve(value)
+  try {
+    return realpathSync.native(normalized)
+  } catch {
+    return normalized
+  }
+}
+
 function normalizedAuthoritativeDirectory(value) {
   if (typeof value !== "string" || !value.trim() || !isAbsolute(value)) return undefined
-  return resolve(value)
+  return canonicalGovernedDirectory(value)
 }
 
 function eventSessionID(event) {
@@ -31,7 +41,7 @@ function unwrapSessionInfo(response) {
 }
 
 export async function OperationalSchemaGuardPlugin({ client, directory, stateDirectory = DEFAULT_STATE_DIRECTORY }) {
-  const fallbackDirectory = resolve(directory ?? process.cwd())
+  const fallbackDirectory = canonicalGovernedDirectory(directory ?? process.cwd())
   let policy = null
   let failureError = null
   const guards = new Map()
@@ -73,7 +83,7 @@ export async function OperationalSchemaGuardPlugin({ client, directory, stateDir
   })
 
   function guardForDirectory(governedDirectory) {
-    const normalized = resolve(governedDirectory)
+    const normalized = canonicalGovernedDirectory(governedDirectory)
     let guard = guards.get(normalized)
     if (!guard) {
       guard = createOperationGuard({
@@ -107,7 +117,7 @@ export async function OperationalSchemaGuardPlugin({ client, directory, stateDir
   }
 
   async function transitionSessionRoute(sessionID, governedDirectory, source) {
-    const normalized = resolve(governedDirectory)
+    const normalized = canonicalGovernedDirectory(governedDirectory)
     const existing = sessionRoutes.get(sessionID)
     if (existing?.directory === normalized) {
       if (source === "session") existing.source = "session"

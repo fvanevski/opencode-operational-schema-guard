@@ -78,6 +78,16 @@ async function gitFixture(prefix) {
   return directory
 }
 
+async function admitExactTarget(hooks, sessionID, head, declaration = `HEAD_SHA: ${head}`) {
+  await message(hooks, sessionID, "build", declaration)
+  const proof = { command: "git rev-parse HEAD" }
+  await before(hooks, sessionID, `${sessionID}-target-proof`, "bash", proof)
+  const admitted = await after(hooks, sessionID, `${sessionID}-target-proof`, "bash", proof, { output: `${head}\n`, metadata: { exit: 0 } })
+  assert.equal(admitted.metadata.operationalSchema.authorityStatus, "verified")
+  assert.match(admitted.output, /OPERATIONAL_EXACT_HEAD_LEASE: .*status=valid/)
+  return admitted
+}
+
 function actionsExecution() {
   return {
     schema_version: "ghdev-actions-execution-v1",
@@ -599,18 +609,25 @@ test("Explore injection prefers built-in discovery and runtime find rejection re
 })
 
 test("bounded Task records deterministic planning provenance when exact authority is declared", async () => {
-  const hooks = createOperationGuard({ directory: "/tmp/issue15-planner-ready", env: {} })
-  await message(hooks, "parent", "build", `HEAD_SHA: ${HEAD}`)
-  const args = taskArgs("verify")
-  const preflight = await before(hooks, "parent", "verify-plan", "task", args)
-  await register(hooks, "verify-plan-child", "verify")
-  await hooks.event({ event: { type: "message.updated", properties: { info: { sessionID: "verify-plan-child", role: "assistant", finish: "stop" } } } })
-  const result = await after(hooks, "parent", "verify-plan", "task", preflight.args, {
-    output: "OPERATIONAL_RESULT: PASS; COMMANDS_RUN: 1; COMMANDS_REQUIRED: 1",
-    metadata: { sessionId: "verify-plan-child" },
-  })
-  assert.equal(result.metadata.operationalSchema.planning.status, "READY")
-  assert.equal(result.metadata.operationalSchema.planning.coverage.unique_complete, true)
+  const directory = await gitFixture("issue15-planner-ready-")
+  try {
+    git(directory, "commit", "--allow-empty", "-qm", "base")
+    const head = git(directory, "rev-parse", "HEAD")
+    const hooks = createOperationGuard({ directory, env: {} })
+    await admitExactTarget(hooks, "parent", head)
+    const args = taskArgs("verify")
+    const preflight = await before(hooks, "parent", "verify-plan", "task", args)
+    await register(hooks, "verify-plan-child", "verify")
+    await hooks.event({ event: { type: "message.updated", properties: { info: { sessionID: "verify-plan-child", role: "assistant", finish: "stop" } } } })
+    const result = await after(hooks, "parent", "verify-plan", "task", preflight.args, {
+      output: "OPERATIONAL_RESULT: PASS; COMMANDS_RUN: 1; COMMANDS_REQUIRED: 1",
+      metadata: { sessionId: "verify-plan-child" },
+    })
+    assert.equal(result.metadata.operationalSchema.planning.status, "READY")
+    assert.equal(result.metadata.operationalSchema.planning.coverage.unique_complete, true)
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
 })
 
 test("live Verify planning consumes a user-pinned trusted Actions receipt and elides the duplicate child", async () => {
@@ -688,7 +705,7 @@ test("canonical Explore partitions returned by preflight are admitted on exact r
     git(directory, "commit", "-qm", "base")
     const base = git(directory, "rev-parse", "HEAD")
     const hooks = createOperationGuard({ directory, env: {} })
-    await message(hooks, "parent", "build", `HEAD_SHA: ${base}\nEXPECTED_BASE_SHA: ${base}`)
+    await admitExactTarget(hooks, "parent", base, `HEAD_SHA: ${base}\nEXPECTED_BASE_SHA: ${base}`)
     let firstError
     try {
       await before(hooks, "parent", "broad-explore", "task", {
@@ -773,7 +790,7 @@ test("partitioned Fresh-review and Verify advance their generations only after e
     const hooks = createOperationGuard({ directory, env: {} })
     await register(hooks, "parent", "build")
     await editThree(hooks, "parent")
-    await message(hooks, "parent", "build", `HEAD_SHA: ${base}\nSEMANTIC REVIEW AUTHORITY: local-fresh-review`)
+    await admitExactTarget(hooks, "parent", base, `HEAD_SHA: ${base}\nSEMANTIC REVIEW AUTHORITY: local-fresh-review`)
 
     async function partitionDetails(role, callID) {
       let error
@@ -872,7 +889,7 @@ test("partitioned Fresh-review and Verify advance their generations only after e
 })
 
 test("gate partition obligations survive plugin restart and preserve canonical membership", async () => {
-  const directory = await mkdtemp(join(tmpdir(), "issue15-partition-restart-"))
+  const directory = await gitFixture("issue15-partition-restart-")
   const stateDirectory = await mkdtemp(join(tmpdir(), "issue15-partition-state-"))
   try {
     await mkdir(join(directory, "lib"), { recursive: true })
@@ -882,12 +899,16 @@ test("gate partition obligations survive plugin restart and preserve canonical m
       targets.push(`- ${relative}`)
       await writeFile(join(directory, relative), "x".repeat(120000))
     }
+    git(directory, "add", "lib")
+    git(directory, "commit", "-qm", "base")
+    const head = git(directory, "rev-parse", "HEAD")
 
+    const parent = "parent-restart"
     const hooks1 = createOperationGuard({ directory, env: {}, stateDirectory })
-    await message(hooks1, "parent-before-restart", "build", `HEAD_SHA: ${HEAD}`)
+    await admitExactTarget(hooks1, parent, head)
     let firstError
     try {
-      await before(hooks1, "parent-before-restart", "broad-restart-verify", "task", {
+      await before(hooks1, parent, "broad-restart-verify", "task", {
         subagent_type: "verify",
         description: "Verify all bounded restart targets",
         prompt: `Scope: verify all bounded restart targets\nQuestions:\n- Does the complete bounded gate pass?\nStop condition: all listed targets are covered.\nTargets:\n${targets.join("\n")}`,
@@ -904,21 +925,21 @@ test("gate partition obligations survive plugin restart and preserve canonical m
     hooks1.dispose()
 
     const hooks2 = createOperationGuard({ directory, env: {}, stateDirectory })
-    await register(hooks2, "parent-after-restart", "build")
+    await register(hooks2, parent, "build")
     const compact = { context: [] }
-    await hooks2["experimental.session.compacting"]({ sessionID: "parent-after-restart" }, compact)
+    await hooks2["experimental.session.compacting"]({ sessionID: parent }, compact)
     assert.match(compact.context.join("\n"), /Outstanding deterministic partition obligations: 1/)
     assert.match(compact.context.join("\n"), /Verify generation: 0/)
 
     await assert.rejects(
-      () => before(hooks2, "parent-after-restart", "alternate-after-restart", "task", {
+      () => before(hooks2, parent, "alternate-after-restart", "task", {
         subagent_type: "verify",
         description: "Attempt alternate Verify packet after restart",
         prompt: "Scope: alternate Verify subset after restart\nQuestions:\n- Does this subset pass?\nStop condition: the subset result is reported.\nTargets:\n- lib/restart-gate-0.mjs",
       }),
       /outstanding deterministic verify partition obligation.*only its exact canonical packets.*evidence-elision routes cannot satisfy this gate/s,
     )
-    await assert.doesNotReject(() => before(hooks2, "parent-after-restart", "canonical-after-restart", "task", {
+    await assert.doesNotReject(() => before(hooks2, parent, "canonical-after-restart", "task", {
       subagent_type: "verify",
       description: "Run persisted canonical Verify partition",
       prompt: canonicalPacket,
