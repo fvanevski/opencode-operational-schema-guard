@@ -3413,6 +3413,8 @@ test("registered literal command fidelity rejects agent-authored rewrites before
   for (const [callID, command] of [
     ["git-global-options", "git -c color.ui=false -c core.quotePath=true status --short"],
     ["dynamic-subcommand", "git \"$(printf status)\" --short"],
+    ["dynamic-executable", "$(printf git) status --porcelain"],
+    ["shell-interpreter", "sh -c 'git status --porcelain'"],
   ]) {
     await requestedToolEvent(hooks, "literal-fidelity", callID, "bash", { command })
     const rejection = await rejectedCommandShapeMessage(() => before(hooks, "literal-fidelity", callID, "bash", { command }))
@@ -3423,6 +3425,7 @@ test("registered literal command fidelity rejects agent-authored rewrites before
   for (const [callID, command] of [
     ["unrelated", "git diff --check"],
     ["unrelated-nested-word", "git log \"$(printf status)\""],
+    ["unrelated-quoted-literal-data", "printf '%s\\n' 'git status --short'"],
   ]) {
     await requestedToolEvent(hooks, "literal-fidelity", callID, "bash", { command })
     await assert.doesNotReject(() => before(hooks, "literal-fidelity", callID, "bash", { command }))
@@ -3434,6 +3437,22 @@ test("registered literal command fidelity rejects agent-authored rewrites before
   assert.match(notice, /event_kind=pre_execution_rejection/)
   assert.match(notice, /execution_effect=not_executed/)
   assert.match(notice, /COMMANDS_MATCH_HANDOFF=no/)
+})
+
+test("registered literal command fidelity rejects generic same-family mutations without token-distance escapes", async () => {
+  const hooks = createOperationGuard({ directory: "/tmp/project", env: {} })
+  await message(hooks, "generic-literal-fidelity", "build", "LITERAL COMMAND: python3 --version")
+
+  const mutated = "python3 -B -E -I -s -S --version"
+  await requestedToolEvent(hooks, "generic-literal-fidelity", "generic-distance", "bash", { command: mutated })
+  const rejection = await rejectedCommandShapeMessage(() => before(hooks, "generic-literal-fidelity", "generic-distance", "bash", { command: mutated }))
+  assert.match(rejection, /OPERATIONAL_COMMAND_FIDELITY: REJECTED/)
+  assert.match(rejection, /execution_effect=not_executed/)
+
+  const inertData = "python3 -c 'print(\"--version\")'"
+  await requestedToolEvent(hooks, "generic-literal-fidelity", "generic-data", "bash", { command: inertData })
+  await assert.doesNotReject(() => before(hooks, "generic-literal-fidelity", "generic-data", "bash", { command: inertData }))
+  await after(hooks, "generic-literal-fidelity", "generic-data", "bash", { command: inertData }, { metadata: { exit: 0 } })
 })
 
 test("registered literal command fidelity refreshes streamed ToolPart input through pre-execution admission", async () => {
