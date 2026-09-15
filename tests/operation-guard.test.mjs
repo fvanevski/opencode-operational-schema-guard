@@ -3414,6 +3414,8 @@ test("registered literal command fidelity rejects agent-authored rewrites before
     ["git-global-options", "git -c color.ui=false -c core.quotePath=true status --short"],
     ["dynamic-subcommand", "git \"$(printf status)\" --short"],
     ["dynamic-executable", "$(printf git) status --porcelain"],
+    ["opaque-dynamic-executable", "$(printf g%s it) status --porcelain"],
+    ["parameter-executable", "$VCS status --porcelain"],
     ["shell-interpreter", "sh -c 'git status --porcelain'"],
   ]) {
     await requestedToolEvent(hooks, "literal-fidelity", callID, "bash", { command })
