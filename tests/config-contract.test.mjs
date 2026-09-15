@@ -108,10 +108,61 @@ test("the compatibility coalescer plugin must be the final configured plugin", (
   assert.throws(() => parseAndValidateConfig(JSON.stringify(unsafe)), /must place .*system-message-compat-v1.* after every prompt-augmenting plugin/)
 })
 
-test("the live-config contract rejects the v5.8-v5.9 preloaded recovery prompt", () => {
+test("user-authored Build, Verify, and Explore prompts are accepted and preserved", () => {
+  const config = validConfig()
+  const prompts = {
+    build: "User-authored Build prompt that intentionally differs from the plugin default.",
+    verify: "User-authored Verify prompt that intentionally differs from the plugin default.",
+    explore: "User-authored Explore prompt that intentionally differs from the plugin default.",
+  }
+  config.agent.build.prompt = prompts.build
+  config.agent.verify.prompt = prompts.verify
+  config.agent.explore.prompt = prompts.explore
+
+  const parsed = parseAndValidateConfig(JSON.stringify(config))
+  assert.equal(parsed.agent.build.prompt, prompts.build)
+  assert.equal(parsed.agent.verify.prompt, prompts.verify)
+  assert.equal(parsed.agent.explore.prompt, prompts.explore)
+})
+
+test("validate-config CLI accepts user-authored prompt text", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "opencode-config-custom-prompts-"))
+  const candidate = join(directory, "candidate.json")
+  const config = validConfig()
+  config.agent.build.prompt = "Portable user-authored Build prompt."
+  config.agent.verify.prompt = "Portable user-authored Verify prompt."
+  config.agent.explore.prompt = "Portable user-authored Explore prompt."
+  await writeFile(candidate, `${JSON.stringify(config, null, 2)}\n`)
+
+  const result = spawnSync(
+    process.execPath,
+    [new URL("../scripts/validate-config.mjs", import.meta.url).pathname, "--candidate", candidate],
+    { encoding: "utf8" },
+  )
+  assert.equal(result.status, 0, result.stderr)
+  assert.match(result.stdout, /OPERATIONAL_CONFIG_RESULT: PASS/)
+})
+
+test("configured Build, Verify, and Explore prompts must remain usable non-empty strings", () => {
+  for (const agentName of ["build", "verify", "explore"]) {
+    for (const invalidPrompt of ["", "   ", null, 42]) {
+      const config = validConfig()
+      config.agent[agentName].prompt = invalidPrompt
+      assert.throws(
+        () => parseAndValidateConfig(JSON.stringify(config)),
+        new RegExp(`${agentName === "build" ? "Build" : agentName === "verify" ? "Verify" : "Explore"} prompt must be a non-empty string`),
+      )
+    }
+  }
+})
+
+test("custom prompt text does not weaken unrelated live-config safety checks", () => {
   const unsafe = validConfig()
-  unsafe.agent.build.prompt += " After reasoning-only length exhaustion, execute one already-established action. A target mismatch permits git switch --detach SHA followed by a separate bare git rev-parse HEAD."
-  assert.throws(() => parseAndValidateConfig(JSON.stringify(unsafe)), /Build prompt must exactly match/)
+  unsafe.agent.build.prompt = "Custom Build prompt owned by the user configuration."
+  unsafe.agent.verify.prompt = "Custom Verify prompt owned by the user configuration."
+  unsafe.agent.explore.prompt = "Custom Explore prompt owned by the user configuration."
+  unsafe.agent.build.permission.edit["/home/filip/.config/opencode/opencode.json"] = "allow"
+  assert.throws(() => parseAndValidateConfig(JSON.stringify(unsafe)), /Build must deny direct edits to the live opencode\.json/)
 })
 
 test("the live-config contract rejects syntax, incoherent budgets, and unsafe Verify path ordering", () => {
