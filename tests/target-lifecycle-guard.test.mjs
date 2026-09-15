@@ -5,6 +5,10 @@ import { access, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:f
 import { tmpdir } from "node:os"
 import { join, resolve } from "node:path"
 import test, { after as afterAll } from "node:test"
+// The repository-final launcher selects this suite directly. Import the hybrid
+// guard suite here so its exact-head planning regressions are part of that same
+// deterministic execution without changing the trusted launcher/control plane.
+import "./hybrid-workflow-guard.test.mjs"
 import { createOperationGuard } from "../lib/operation-guard.mjs"
 import { ASSESSMENT_RESULT_SCHEMA } from "../lib/repo-pr-assessment.mjs"
 import { assessmentTerminalOutput } from "../scripts/local-agent-assessment.mjs"
@@ -811,6 +815,46 @@ test("new target authority invalidates the old lease but admits only canonical r
   assert.notEqual(secondLease.lease_id, firstLease.lease_id)
 })
 
+test("replacement current checkout remains proof-only until its new exact-head lease is issued", async (t) => {
+  const f = await repositoryGuard(t, "lease-replacement-current-proof-only")
+  git(f.directory, ["commit", "--allow-empty", "-m", "replacement-current-target"])
+  const nextTarget = git(f.directory, ["rev-parse", "HEAD"]).toLowerCase()
+  git(f.directory, ["switch", "--detach", f.target])
+
+  await message(f.hooks, f.sessionID, `REQUIRED EXACT HEAD: ${f.target}`)
+  const oldTargetWorktree = join(f.root, "old-target-worktree")
+  const oldSetup = { command: `git worktree add --detach ${oldTargetWorktree} ${f.target}` }
+  await before(f.hooks, f.sessionID, "replacement-current-old-setup", oldSetup)
+  const oldSetupOutput = git(f.directory, ["worktree", "add", "--detach", oldTargetWorktree, f.target])
+  await after(f.hooks, f.sessionID, "replacement-current-old-setup", oldSetup, { output: `${oldSetupOutput}\n`, metadata: { exit: 0 } })
+  const oldProof = { command: "git rev-parse HEAD", workdir: oldTargetWorktree }
+  await before(f.hooks, f.sessionID, "replacement-current-old-proof", oldProof)
+  await after(f.hooks, f.sessionID, "replacement-current-old-proof", oldProof, { output: `${f.target}\n`, metadata: { exit: 0 } })
+  const oldLease = (await persistedSafety(f.stateDirectory, f.directory)).exactHeadLease
+  assert.equal(resolve(oldLease.target.worktree), resolve(oldTargetWorktree))
+  assert.equal(oldLease.owner.protection, "owner-head-stable")
+
+  await message(f.hooks, f.sessionID, `REQUIRED EXACT HEAD: ${nextTarget}`)
+  const setup = { command: `git switch --detach ${nextTarget}` }
+  await before(f.hooks, f.sessionID, "replacement-current-setup", setup)
+  git(f.directory, ["switch", "--detach", nextTarget])
+  await after(f.hooks, f.sessionID, "replacement-current-setup", setup, { output: "prepared\n", metadata: { exit: 0 } })
+  const pending = await persistedSafety(f.stateDirectory, f.directory)
+  assert.deepEqual(pending.targetProofWorkdirs, [resolve(f.directory)])
+
+  await assert.rejects(
+    () => before(f.hooks, f.sessionID, "replacement-current-preproof-read", { command: "git status --short" }),
+    /replacement target worktree is proof-only.*ordinary reads.*blocked/s,
+  )
+  const proof = { command: "git rev-parse HEAD" }
+  await before(f.hooks, f.sessionID, "replacement-current-proof", proof)
+  const admitted = await after(f.hooks, f.sessionID, "replacement-current-proof", proof, { output: `${nextTarget}\n`, metadata: { exit: 0 } })
+  assert.match(admitted.output, /OPERATIONAL_AUTHORITY: verified/)
+  assert.match(admitted.output, /OPERATIONAL_EXACT_HEAD_LEASE: .*status=valid/)
+  assert.deepEqual((await persistedSafety(f.stateDirectory, f.directory)).targetProofWorkdirs, [])
+  await assert.doesNotReject(() => before(f.hooks, f.sessionID, "replacement-current-postproof-read", { command: "git status --short" }))
+})
+
 test("replacement linked worktree remains proof-only until its new exact-head lease is issued", async (t) => {
   const f = await repositoryGuard(t, "lease-replacement-proof-only")
   git(f.directory, ["commit", "--allow-empty", "-m", "replacement-target"])
@@ -833,12 +877,24 @@ test("replacement linked worktree remains proof-only until its new exact-head le
     () => before(f.hooks, f.sessionID, "replacement-preproof-read", { command: "git status --short", workdir: replacementWorktree }),
     /replacement target worktree is proof-only.*ordinary reads.*blocked/s,
   )
+  const persistedBeforeRestart = await persistedSafety(f.stateDirectory, f.directory)
+  assert.deepEqual(persistedBeforeRestart.targetProofWorkdirs, [resolve(replacementWorktree)])
+  await f.hooks.dispose()
+
+  const restarted = createOperationGuard({ directory: f.directory, env: {}, stateDirectory: f.stateDirectory, pluginRoot: process.cwd() })
+  await register(restarted, f.sessionID)
+  await assert.rejects(
+    () => before(restarted, f.sessionID, "replacement-restart-preproof-read", { command: "git status --short", workdir: replacementWorktree }),
+    /replacement target worktree is proof-only.*ordinary reads.*blocked/s,
+  )
   const proof = { command: "git rev-parse HEAD", workdir: replacementWorktree }
-  await before(f.hooks, f.sessionID, "replacement-linked-proof", proof)
-  const admitted = await after(f.hooks, f.sessionID, "replacement-linked-proof", proof, { output: `${nextTarget}\n`, metadata: { exit: 0 } })
+  await before(restarted, f.sessionID, "replacement-linked-proof", proof)
+  const admitted = await after(restarted, f.sessionID, "replacement-linked-proof", proof, { output: `${nextTarget}\n`, metadata: { exit: 0 } })
   assert.match(admitted.output, /OPERATIONAL_AUTHORITY: verified/)
   assert.match(admitted.output, /OPERATIONAL_EXACT_HEAD_LEASE: .*status=valid/)
-  await assert.doesNotReject(() => before(f.hooks, f.sessionID, "replacement-postproof-read", { command: "git status --short", workdir: replacementWorktree }))
+  assert.deepEqual((await persistedSafety(f.stateDirectory, f.directory)).targetProofWorkdirs, [])
+  await assert.doesNotReject(() => before(restarted, f.sessionID, "replacement-postproof-read", { command: "git status --short", workdir: replacementWorktree }))
+  await restarted.dispose()
 })
 
 test("evidence primary receives exact-head lease and a new candidate SHA requires fresh admission", async (t) => {
@@ -1059,12 +1115,18 @@ test("valid lease rejects a target HEAD-changing shell packet before any packet 
   await before(f.hooks, f.sessionID, "head-mutation-proof", proof)
   await after(f.hooks, f.sessionID, "head-mutation-proof", proof, { output: `${f.target}\n`, metadata: { exit: 0 } })
 
-  const packet = { command: `git reset --hard ${"a".repeat(40)} && printf 'must-not-run\\n'` }
-  await assert.rejects(
-    () => before(f.hooks, f.sessionID, "head-changing-packet", packet),
-    /valid exact-head lease permits a HEAD-changing Git transition only as one standalone invocation/s,
-  )
-  assert.equal(git(f.directory, ["rev-parse", "HEAD"]).toLowerCase(), f.target)
+  const packets = [
+    `git reset --hard ${"a".repeat(40)} && printf 'must-not-run\\n'`,
+    `/usr/bin/git reset --hard ${"a".repeat(40)} && printf 'must-not-run\\n'`,
+    `command -p /usr/bin/git reset --hard ${"a".repeat(40)} && printf 'must-not-run\\n'`,
+  ]
+  for (const [index, command] of packets.entries()) {
+    await assert.rejects(
+      () => before(f.hooks, f.sessionID, `head-changing-packet-${index}`, { command }),
+      /valid exact-head lease permits a HEAD-changing Git transition only as one standalone invocation/s,
+    )
+    assert.equal(git(f.directory, ["rev-parse", "HEAD"]).toLowerCase(), f.target)
+  }
   const state = await persistedSafety(f.stateDirectory, f.directory)
   assert.equal(state.authorityStatus, "verified")
   assert.equal(state.exactHeadLease.status, "valid")
@@ -1154,6 +1216,61 @@ test("delegated child revalidates exact-head lease between governed tool calls",
   assert.equal(invalidated.authorityStatus, "pending")
   assert.equal(invalidated.exactHeadLease.status, "invalidated")
   assert.equal(invalidated.exactHeadLease.invalidation.reason, "target-head-changed")
+})
+
+test("bounded Task resume cannot cross exact-head lease replacement", async (t) => {
+  const f = await repositoryGuard(t, "lease-resume-generation")
+  await message(f.hooks, f.sessionID, `REQUIRED EXACT HEAD: ${f.target}`)
+  const proof = { command: "git rev-parse HEAD" }
+  await before(f.hooks, f.sessionID, "resume-generation-proof", proof)
+  await after(f.hooks, f.sessionID, "resume-generation-proof", proof, { output: `${f.target}\n`, metadata: { exit: 0 } })
+  const firstLease = (await persistedSafety(f.stateDirectory, f.directory)).exactHeadLease
+
+  const taskArgs = {
+    subagent_type: "verify",
+    description: "Verify bounded resume lease identity",
+    prompt: [
+      "Scope: Verify bounded resume lease identity.",
+      "Questions:",
+      "- Does bounded resume preserve the originating exact-head lease?",
+      "Stop condition: Stop after the bounded resume identity check.",
+      "Expected terminal: OPERATIONAL_RESULT: PASS|FAIL|BLOCKED; COMMANDS_RUN: <n>; COMMANDS_REQUIRED: <n>.",
+    ].join("\n"),
+  }
+  await f.hooks["tool.execute.before"]({ sessionID: f.sessionID, callID: "resume-generation-original", tool: "task" }, { args: taskArgs })
+  await f.hooks.event({ event: { type: "message.part.updated", properties: { part: {
+    sessionID: f.sessionID,
+    messageID: "resume-generation-error-message",
+    type: "tool",
+    tool: "task",
+    callID: "resume-generation-original",
+    state: { status: "error", error: { message: "provider error timeout; task_id: lease-resume-child" } },
+  } } } })
+
+  const transition = { command: "git commit --allow-empty -m resume-lease-transition" }
+  await before(f.hooks, f.sessionID, "resume-generation-transition", transition)
+  git(f.directory, ["commit", "--allow-empty", "-m", "resume-lease-transition"])
+  await after(f.hooks, f.sessionID, "resume-generation-transition", transition, { output: "committed\n", metadata: { exit: 0 } })
+  assert.equal((await persistedSafety(f.stateDirectory, f.directory)).exactHeadLease.status, "invalidated")
+
+  const setup = { command: `git switch --detach ${f.target}` }
+  await before(f.hooks, f.sessionID, "resume-generation-setup", setup)
+  git(f.directory, ["switch", "--detach", f.target])
+  await after(f.hooks, f.sessionID, "resume-generation-setup", setup, { output: "prepared\n", metadata: { exit: 0 } })
+  const reproof = { command: "git rev-parse HEAD" }
+  await before(f.hooks, f.sessionID, "resume-generation-reproof", reproof)
+  await after(f.hooks, f.sessionID, "resume-generation-reproof", reproof, { output: `${f.target}\n`, metadata: { exit: 0 } })
+  const secondLease = (await persistedSafety(f.stateDirectory, f.directory)).exactHeadLease
+  assert.equal(secondLease.status, "valid")
+  assert.notEqual(secondLease.lease_id, firstLease.lease_id)
+
+  await assert.rejects(
+    () => f.hooks["tool.execute.before"](
+      { sessionID: f.sessionID, callID: "resume-generation-retry", tool: "task" },
+      { args: { ...taskArgs, task_id: "lease-resume-child" } },
+    ),
+    /originated under a different or no-longer-valid exact-head lease.*cannot inherit a replacement lease/s,
+  )
 })
 
 test("completed child cannot attach its lease binding to a later delegation", async (t) => {
