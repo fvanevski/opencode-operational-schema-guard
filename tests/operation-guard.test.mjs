@@ -3410,15 +3410,40 @@ test("registered literal command fidelity rejects agent-authored rewrites before
     assert.match(rejection, /event_kind=pre_execution_rejection; execution_effect=not_executed; COMMANDS_MATCH_HANDOFF=no/)
   }
 
-  await requestedToolEvent(hooks, "literal-fidelity", "unrelated", "bash", { command: "git diff --check" })
-  await assert.doesNotReject(() => before(hooks, "literal-fidelity", "unrelated", "bash", { command: "git diff --check" }))
-  await after(hooks, "literal-fidelity", "unrelated", "bash", { command: "git diff --check" }, { metadata: { exit: 0 } })
+  for (const [callID, command] of [
+    ["git-global-options", "git -c color.ui=false -c core.quotePath=true status --short"],
+    ["dynamic-subcommand", "git \"$(printf status)\" --short"],
+  ]) {
+    await requestedToolEvent(hooks, "literal-fidelity", callID, "bash", { command })
+    const rejection = await rejectedCommandShapeMessage(() => before(hooks, "literal-fidelity", callID, "bash", { command }))
+    assert.match(rejection, /OPERATIONAL_COMMAND_FIDELITY: REJECTED/)
+    assert.match(rejection, /event_kind=pre_execution_rejection; execution_effect=not_executed; COMMANDS_MATCH_HANDOFF=no/)
+  }
+
+  for (const [callID, command] of [
+    ["unrelated", "git diff --check"],
+    ["unrelated-nested-word", "git log \"$(printf status)\""],
+  ]) {
+    await requestedToolEvent(hooks, "literal-fidelity", callID, "bash", { command })
+    await assert.doesNotReject(() => before(hooks, "literal-fidelity", callID, "bash", { command }))
+    await after(hooks, "literal-fidelity", callID, "bash", { command }, { metadata: { exit: 0 } })
+  }
 
   const notice = await system(hooks, "literal-fidelity")
   assert.match(notice, /COMMAND_SHAPE_FRICTION_EVENT:/)
   assert.match(notice, /event_kind=pre_execution_rejection/)
   assert.match(notice, /execution_effect=not_executed/)
   assert.match(notice, /COMMANDS_MATCH_HANDOFF=no/)
+})
+
+test("registered literal command fidelity refreshes streamed ToolPart input through pre-execution admission", async () => {
+  const hooks = createOperationGuard({ directory: "/tmp/project", env: {} })
+  await message(hooks, "streamed-literal-input", "build", "LITERAL COMMAND: git status --short")
+  await requestedToolEvent(hooks, "streamed-literal-input", "streamed", "bash", { command: "g" }, "pending")
+  await requestedToolEvent(hooks, "streamed-literal-input", "streamed", "bash", { command: "git status --short" }, "running")
+
+  await assert.doesNotReject(() => before(hooks, "streamed-literal-input", "streamed", "bash", { command: "git status --short" }))
+  await after(hooks, "streamed-literal-input", "streamed", "bash", { command: "git status --short" }, { metadata: { exit: 0 } })
 })
 
 test("registered literal command fidelity attributes only captured exact-request RTK mutation as trusted harness rewrite", async () => {
