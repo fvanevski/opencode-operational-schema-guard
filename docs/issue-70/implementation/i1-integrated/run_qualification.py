@@ -5,7 +5,7 @@ ROOT=Path(__file__).resolve().parent
 OLD=Path(os.environ['ISSUE70_PHASE1_CANDIDATE'])
 PY=shutil.which('python3');NODE=shutil.which('node')
 commands=[
- ('gate',ROOT/'candidate/gate',['/usr/bin/python3','-m','unittest','discover','-s','tests','-v'],53),
+ ('gate',ROOT/'candidate/gate',['/usr/bin/python3','-m','unittest','discover','-s','tests','-v'],59),
  ('central-receipt',ROOT/'candidate/gate',['/usr/bin/python3','-m','unittest','test_receipt_protocol','-v'],7),
  ('capture',ROOT/'candidate/openviking-v2',[NODE,'--test','tests/candidate-capture.test.mjs','tests/capture-isolation.test.mjs','tests/central-authentication-regressions.test.mjs'],14),
  ('legacy-openviking',OLD/'openviking-context-v4',[NODE,'--test','tests/memory-session.test.mjs','tests/r3b-manager-integration.test.mjs','tests/hybrid-recall.test.mjs'],24),
