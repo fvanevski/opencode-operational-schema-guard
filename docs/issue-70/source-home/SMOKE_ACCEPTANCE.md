@@ -4,7 +4,7 @@
 
 ## Source-specific dependency finding (verified from current GitHub candidate)
 
-`candidate/openviking-v2/index.mjs` imports **nine** modules from `../openviking-context-v4/lib/` and computes its runtime plugin root from `../openviking-context-v4/index.mjs`. Copying only `openviking-v2` to a temp directory is an invalid fresh-process test; module import will fail before plugin setup. Preserve the exact relative sibling layout in a disposable packages tree, using the authenticated preserved V4 dependency source. Do not register `openviking-context-v4` as an additional OpenCode V2 plugin merely because it is an import dependency.
+`candidate/openviking-v2/index.mjs` imports **ten** modules from `../openviking-context-v4/lib/` and computes its runtime plugin root from `../openviking-context-v4/index.mjs`. Copying only `openviking-v2` to a temp directory is an invalid fresh-process test; module import will fail before plugin setup. Preserve the exact relative sibling layout in a disposable packages tree, using the authenticated preserved V4 dependency source. Do not register `openviking-context-v4` as an additional OpenCode V2 plugin merely because it is an import dependency.
 
 Central-staged `verify_v2_entrypoint.mjs` performs a read-only ESM import from that disposable sibling layout and checks default export `id=local.openviking-v2` and callable `setup`. **This is only an import-shape preflight; it does not prove runtime hooks or native V2 compatibility.** It does not run OpenCode or any inference.
 
