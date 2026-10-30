@@ -201,6 +201,67 @@ class SharedWorkTests(unittest.TestCase):
                 names = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
             self.assertNotIn("memory_work", names)
 
+    def test_blocked_reconcile_survives_restart_and_graphiti_disable(self):
+        # A process death after an ambiguous Graphiti submit is not a
+        # cancellation; switching the feature off must retain the block.
+        item = self.enqueue_synthetic(candidate("restart-unknown"))
+        row = self.work.claim(item["work_key"], "lease-before-restart")
+        self.work.processing(item["work_key"], row["attempt_generation"], item["work_key"])
+        self.work.recover_after_restart()
+        self.assertEqual(self.work.status()[0]["status"], "blocked_reconcile")
+        self.db.enqueue({"account": "a", "user_id": "u", "actor_peer": "p"},
+                        "ov-after-restart", 0, {}, "regression")
+        worker = gate.Worker(replace(self.cfg, graphiti_enabled=False),
+                             self.db, threading.Event())
+        attempted = []
+        worker._metrics = lambda: (0, 0)
+        worker._active_harness_processes = lambda: []
+        worker._process = lambda row: attempted.append(row["session_id"])
+        self.assertFalse(worker.tick())
+        self.assertEqual(worker.admission_status()["state"], "blocked_reconcile")
+        self.assertEqual(attempted, [])
+        self.assertEqual(self.work.status()[0]["status"], "blocked_reconcile")
+
+    def test_existing_malformed_graphiti_state_fails_closed_when_disabled(self):
+        # Legacy database had no optional Graphiti table, but a table with
+        # that name and wrong schema is NOT proof that no producer exists.
+        cfg = replace(self.cfg, graphiti_enabled=False)
+        with tempfile.TemporaryDirectory() as root:
+            cfg = replace(cfg, database=f"{root}/queue.sqlite3")
+            db = gate.QueueDB(cfg.database)
+            with db.connect() as conn:
+                conn.execute("CREATE TABLE memory_work (unrelated_column TEXT)")
+            db.enqueue({"account": "a", "user_id": "u", "actor_peer": "p"},
+                       "ov-malformed-graphiti-state", 0, {}, "regression")
+            worker = gate.Worker(cfg, db, threading.Event())
+            entered = []
+            worker._metrics = lambda: (0, 0)
+            worker._active_harness_processes = lambda: []
+            worker._process = lambda row: entered.append(row["session_id"])
+            self.assertFalse(worker.tick())
+            self.assertEqual(worker.admission_status()["state"], "graphiti_state_unverifiable")
+            self.assertEqual(entered, [])
+
+    def test_terminal_graphiti_does_not_indefinitely_block_ov_when_disabled(self):
+        # Source-backed terminal work is not an active inference producer.
+        item = self.enqueue_synthetic(candidate("completed-first"))
+        row = self.work.claim(item["work_key"], "lease-terminal")
+        self.work.processing(item["work_key"], row["attempt_generation"], item["work_key"])
+        self.work.finish(item["work_key"], row["attempt_generation"],
+                         item["work_key"], "completed")
+        cfg = replace(self.cfg, graphiti_enabled=False, quiet_grace_seconds=0)
+        self.db.enqueue({"account": "a", "user_id": "u", "actor_peer": "p"},
+                        "ov-after-terminal", 0, {}, "regression")
+        worker = gate.Worker(cfg, self.db, threading.Event())
+        worker._metrics = lambda: (0, 0)
+        worker._active_harness_processes = lambda: []
+        attempted = []
+        worker._process = lambda row: (attempted.append(row["session_id"]),
+                                      self.db.complete(row))
+        self.assertFalse(worker.tick())
+        self.assertTrue(worker.tick())
+        self.assertEqual(attempted, ["ov-after-terminal"])
+
     def test_legacy_ambiguous_queued_ack_does_not_resubmit(self):
         self.db.enqueue({"account": "a", "user_id": "u", "actor_peer": "p"}, "ov-ambiguous", 0, {}, "mixed")
         row = self.db.claim(self.db.next_ready())
