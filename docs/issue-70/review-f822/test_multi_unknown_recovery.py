@@ -28,7 +28,7 @@ class MultiUnknownRecovery(unittest.TestCase):
         claimed = self.db.claim(self.db.next_ready())
         self.assertIsNotNone(claimed)
         self.db.mark_unknown(claimed)
-        return self.db.unknown_rows()[-1]
+        return next(row for row in self.db.unknown_rows() if row["session_id"] == session)
 
     def test_second_recovery_is_not_admitted_while_first_could_be_queued(self):
         first = self.claim_unknown("first")
