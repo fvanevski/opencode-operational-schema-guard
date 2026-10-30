@@ -1,0 +1,5 @@
+# In-lock admission recheck — specific interleaving closure
+
+Central found a time-of-check/time-of-use gap in the previous disabled-mode guard. Reading existing `memory_work` before obtaining the exclusive resource flock prevents an already-processing Graphiti job, but another coordinator can claim a queued Graphiti job while the first worker waits for that flock. Re-check `_unresolved_graphiti_from_existing_db()` inside the exclusive lease before entering *any* new OpenViking or Graphiti work. The shared lease excludes subsequent Graphiti claims until the current worker completes.
+
+The executable `test_disabled_graphiti_rechecks_after_acquiring_exclusive_lease` stages exactly this transition between pre-lock observation and post-lock acquisition. Three other new regressions cover restart+disable, corrupt table, and terminal work allowing progress. Together with the prior two Central tests, the expected gate suite becomes 59 (baseline 53 + six new), subject to local actual discovery. The local agent must test and rebuild the complete installable gate patch and hashes; this staged source has NOT been host-tested.

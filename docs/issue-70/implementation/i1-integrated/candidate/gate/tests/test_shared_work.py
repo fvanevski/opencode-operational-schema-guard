@@ -242,6 +242,32 @@ class SharedWorkTests(unittest.TestCase):
             self.assertEqual(worker.admission_status()["state"], "graphiti_state_unverifiable")
             self.assertEqual(entered, [])
 
+    def test_disabled_graphiti_rechecks_after_acquiring_exclusive_lease(self):
+        # The first SQLite check sees a queued Graphiti record. While the
+        # worker is acquiring its lock another coordinator claims it.
+        # The in-lock check must observe that new processing identity.
+        item = self.enqueue_synthetic(candidate("interlock-race"))
+        self.db.enqueue({"account": "a", "user_id": "u", "actor_peer": "p"},
+                        "ov-race", 0, {}, "regression")
+        cfg = replace(self.cfg, graphiti_enabled=False, quiet_grace_seconds=0)
+        worker = gate.Worker(cfg, self.db, threading.Event())
+        worker._metrics = lambda: (0, 0)
+        worker._active_harness_processes = lambda: []
+        entered = []
+        worker._process = lambda row: entered.append(row["session_id"])
+        original_lock = worker._try_exclusive_lock
+        def interleaved_lock():
+            row = self.work.claim(item["work_key"], "lease-another-worker")
+            self.assertIsNotNone(row)
+            self.work.processing(item["work_key"], row["attempt_generation"],
+                                 item["work_key"])
+            return original_lock()
+        worker._try_exclusive_lock = interleaved_lock
+        self.assertFalse(worker.tick())
+        self.assertEqual(worker.admission_status()["state"], "blocked_reconcile")
+        self.assertEqual(entered, [])
+        self.assertEqual(self.work.status()[0]["status"], "processing")
+
     def test_terminal_graphiti_does_not_indefinitely_block_ov_when_disabled(self):
         # Source-backed terminal work is not an active inference producer.
         item = self.enqueue_synthetic(candidate("completed-first"))

@@ -954,6 +954,20 @@ class Worker:
             self._set_admission_status("shared_lease_active")
             return False
         try:
+            # The initial Graphiti check is only an early rejection. The
+            # authoritative recheck MUST be under the EX flock: another
+            # coordinator can claim a Graphiti job while we wait for it.
+            # Do not let config disablement release an old producer.
+            try:
+                graphiti_unresolved = self._unresolved_graphiti_from_existing_db()
+            except Exception:
+                self.quiet_since = None
+                self._set_admission_status("graphiti_state_unverifiable")
+                return False
+            if graphiti_unresolved:
+                self.quiet_since = None
+                self._set_admission_status("blocked_reconcile")
+                return False
             if inflight is not None and inflight["task_id"]:
                 # Already submitted: the running scheduler occupancy is this
                 # operation's own activity, not a new pre-admission veto.
