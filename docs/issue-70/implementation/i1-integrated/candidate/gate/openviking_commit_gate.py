@@ -851,7 +851,39 @@ class Worker:
                 self.quiet_since = None
                 self._set_admission_status("worker_error")
 
+    def _unresolved_graphiti_from_existing_db(self) -> bool:
+        """The Graphiti opt-in toggle cannot erase a prior producer.
+
+        In particular, cfg.graphiti_enabled=False must not disable global
+        exclusion for Graphiti work already admitted in the shared SQLite.
+        Inspect existing state without creating Graphiti tables in a legacy
+        installation. If the state table exists but is unreadable or has a
+        broken schema, fail closed rather than admitting another producer.
+        """
+        with self.db.connect() as conn:
+            found = conn.execute("""SELECT 1 FROM sqlite_master
+                WHERE type='table' AND name='memory_work'""").fetchone()
+            if not found:
+                return False
+            return conn.execute("""SELECT 1 FROM memory_work
+                WHERE status IN ('admitted','processing','blocked_reconcile')
+                LIMIT 1""").fetchone() is not None
+
     def tick(self) -> bool:
+        # Admission safety survives a later config disable, even though
+        # new Graphiti admissions are disabled and no optional schema is
+        # initialized. Unknown prior producers must remain globally fenced.
+        if not self.cfg.graphiti_enabled:
+            try:
+                unresolved = self._unresolved_graphiti_from_existing_db()
+            except Exception:
+                self.quiet_since = None
+                self._set_admission_status("graphiti_state_unverifiable")
+                return False
+            if unresolved:
+                self.quiet_since = None
+                self._set_admission_status("blocked_reconcile")
+                return False
         if not self.cfg.drain_enabled:
             self.quiet_since = None
             self._set_admission_status("drain_disabled")

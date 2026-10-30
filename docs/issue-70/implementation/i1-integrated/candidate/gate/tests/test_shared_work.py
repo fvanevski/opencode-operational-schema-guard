@@ -169,6 +169,38 @@ class SharedWorkTests(unittest.TestCase):
                 names = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
             self.assertNotIn("memory_work", names)
 
+    def test_disabling_graphiti_cannot_release_unresolved_global_admission(self):
+        # Create a real unresolved memory row with the feature on, then turn
+        # the feature OFF without erasing SQLite. An independent OV intent
+        # must not enter inference merely because Graphiti is now disabled.
+        item = self.enqueue_synthetic(candidate("disable-unknown"))
+        row = self.work.claim(item["work_key"], "lease-old")
+        self.work.processing(item["work_key"], row["attempt_generation"], item["work_key"])
+        self.db.enqueue({"account": "a", "user_id": "u", "actor_peer": "p"},
+                        "ov-after-disable", 0, {}, "regression")
+        cfg = replace(self.cfg, graphiti_enabled=False)
+        worker = gate.Worker(cfg, self.db, threading.Event())
+        self.assertIsNone(worker.shared)
+        calls = []
+        worker._metrics = lambda: (0, 0)
+        worker._active_harness_processes = lambda: []
+        worker._process = lambda ov: calls.append(ov["session_id"])
+        self.assertFalse(worker.tick())
+        self.assertEqual(worker.admission_status()["state"], "blocked_reconcile")
+        self.assertEqual(calls, [])
+        self.assertEqual(self.db.list_rows()[0]["state"], "pending")
+
+    def test_disabled_graphiti_legacy_without_state_table_stays_available(self):
+        cfg = replace(self.cfg, graphiti_enabled=False)
+        with tempfile.TemporaryDirectory() as root:
+            cfg = replace(cfg, database=f"{root}/queue.sqlite3")
+            db = gate.QueueDB(cfg.database)
+            worker = gate.Worker(cfg, db, threading.Event())
+            self.assertFalse(worker._unresolved_graphiti_from_existing_db())
+            with db.connect() as conn:
+                names = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+            self.assertNotIn("memory_work", names)
+
     def test_legacy_ambiguous_queued_ack_does_not_resubmit(self):
         self.db.enqueue({"account": "a", "user_id": "u", "actor_peer": "p"}, "ov-ambiguous", 0, {}, "mixed")
         row = self.db.claim(self.db.next_ready())

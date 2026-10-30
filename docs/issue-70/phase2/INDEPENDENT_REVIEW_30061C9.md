@@ -1,0 +1,11 @@
+# Independent review: disabled-Graphiti global admission (2026-10-30)
+
+Reviewed exact Phase 2 head: `30061c98659d32115d40b168bf30e35df33d8369`. This is a specific blocking finding, not an assertion that overlap occurred in production.
+
+Before this correction, `Worker.__init__` set `self.shared=None` when `graphiti_enabled=false`, and `Worker.tick` consulted Graphiti unresolved states only through `self.shared`. If an admitted/processing/blocked-reconcile Graphiti episode was running when configuration was disabled, a separate OpenViking commit could be admitted on zero model metrics even though Graphiti's unresolved producer still existed. The sticky launcher interlock does not independently serialize the gate's backend producer.
+
+Central fix in the Phase 2 candidate: `Worker.tick` now reads **existing** SQLite `memory_work` unresolved states even when Graphiti is disabled, without migrating/creating new optional tables. An unreadable existing table fails closed. An empty legacy database remains usable. A separate regression holds a Graphiti processing row and pending OpenViking intent, turns Graphiti off and asserts no OV processing; another regression checks old installations with no Graphiti table.
+
+**Validation status:** These source edits and tests were staged by Central but not host-executed or manifested on this new exact head. Local integration must run gate tests, reconfirm enabled/disabled restart and launcher paths, reconstruct gate.patch, update source-base-manifest.json / SHA256SUMS / qualification.json and publish source identities to the same Phase 2 branch. If an alternate stale gate worker can be started with a separate database path, fail closed on missing ownership rather than clearing unresolved state.
+
+An additional evidence boundary: the published real Graphiti qualification mocks scheduler metrics and active-harness enumeration; a single synchronous gate worker and pending OV row does not demonstrate true cross-process global GPU exclusion. Preserve the positive real-Graphiti persistence finding; describe cross-backend admission as CPU unit/integration qualification until the actual shared launcher/runtime and resource activity are exercised. No production deployment or unrestricted writes are authorized by this note.
