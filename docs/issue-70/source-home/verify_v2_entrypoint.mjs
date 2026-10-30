@@ -21,7 +21,21 @@ const realFile = (rel) => {
 }
 try {
   const candidate = realFile("openviking-v2/index.mjs")
-  realFile("openviking-context-v4/index.mjs")
+  // The V2 sibling dependency is a library: openviking-v2/index.mjs imports
+  // these ten context-v4 lib modules (its V1 root entry is retired as
+  // index.mjs.v1-retired and is not part of the V2 import graph).
+  for (const rel of [
+    "openviking-context-v4/lib/config.mjs",
+    "openviking-context-v4/lib/utils.mjs",
+    "openviking-context-v4/lib/memory-recall.mjs",
+    "openviking-context-v4/lib/memory-session.mjs",
+    "openviking-context-v4/lib/repo-context.mjs",
+    "openviking-context-v4/lib/session-inject.mjs",
+    "openviking-context-v4/lib/viking-uri-guard.mjs",
+    "openviking-context-v4/lib/shared/hybrid-lexical.mjs",
+    "openviking-context-v4/lib/shared/hybrid-recall.mjs",
+    "openviking-context-v4/lib/shared/uri-guard.mjs",
+  ]) realFile(rel)
   const module = await import(pathToFileURL(candidate).href)
   if (module?.default?.id !== "local.openviking-v2" ||
       typeof module.default.setup !== "function") {
