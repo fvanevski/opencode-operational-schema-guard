@@ -74,6 +74,53 @@ def check_package(package):
     return {"package_checks":len(lines), "candidate_checks":verified,
             "backend_patch_checks_deferred":deferred}
 
+
+# These runtime dependencies are read by the patched backend but do not
+# appear as modified files in source-base-manifest.json. Their byte identity
+# is nevertheless part of the tested publication/terminal-receipt contract.
+REQUIRED_BACKEND_DEPENDENCIES = frozenset({
+    "openviking/service/task_tracker.py",
+    "openviking/service/session_service.py",
+    "openviking/lib/ragfs_python.abi3.so",
+})
+
+def check_backend_dependencies(package, backend, originals):
+    """Validate recorded native/unmodified backend code against the explicit root."""
+    try:
+        data = json.loads(confined(package, "source-ownership.json").read_text())
+        sources = data["installed_sources"]
+        if not isinstance(sources, list):
+            raise ValueError("installed_sources must be a list")
+    except (ValueError, TypeError, KeyError) as exc:
+        raise PreflightError("invalid source-ownership.json") from exc
+    seen = set()
+    checked = 0
+    for record in sources:
+        if not isinstance(record, dict):
+            raise PreflightError("malformed installed-source record")
+        original_path = record.get("path")
+        if not isinstance(original_path, str):
+            raise PreflightError("invalid installed-source path")
+        marker = "/site-packages/"
+        if marker not in original_path:
+            continue
+        relative = original_path.split(marker, 1)[1]
+        if not relative.startswith("openviking/") or relative in seen:
+            raise PreflightError("unmapped or duplicate backend dependency")
+        seen.add(relative)
+        expected = record.get("sha256")
+        if not isinstance(expected, str) or not HEX64.fullmatch(expected):
+            raise PreflightError(f"invalid recorded dependency digest: {relative}")
+        if relative in originals and originals[relative] != expected:
+            raise PreflightError(f"conflicting backend source authorities: {relative}")
+        if hash_file(confined(backend, relative)) != expected:
+            raise PreflightError(f"backend dependency drift: {relative}")
+        checked += 1
+    missing = REQUIRED_BACKEND_DEPENDENCIES - seen
+    if missing:
+        raise PreflightError("unrecorded backend dependencies: " + ", ".join(sorted(missing)))
+    return checked
+
 def check_host(package, gate, v2, backend, shim):
     roots = {"gate":gate,"openviking-v2":v2,"backend":backend}
     checked = 0
@@ -93,7 +140,14 @@ def check_host(package, gate, v2, backend, shim):
         if hash_file(path) != expected:
             raise PreflightError(f"original source mismatch: {row['component']}/{row['path']}")
         checked += 1
-    return {"original_source_checks":checked, "host_mutations":0}
+    originals = {
+        row["path"]: row["source_base_sha256"]
+        for row in source_manifest(package)
+        if row["component"] == "backend" and row.get("source_base_sha256") is not None
+    }
+    dependencies = check_backend_dependencies(package, backend, originals)
+    return {"original_source_checks":checked, "backend_dependency_checks":dependencies,
+            "host_mutations":0}
 
 def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__)

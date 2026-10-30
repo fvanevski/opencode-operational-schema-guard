@@ -36,6 +36,18 @@ class SourceHomeTests(unittest.TestCase):
             rel=(f"backend-new/{name}" if comp=="backend" else f"candidate/{comp}/{name}")
             self.write(self.pkg,rel,new)
         self.write(self.pkg,"source-base-manifest.json",json.dumps({"files":rows}).encode())
+        backend_records = []
+        for rel, contents in (
+            ("openviking/session/session.py", b"old-backend"),
+            ("openviking/service/task_tracker.py", b"tracker-owned"),
+            ("openviking/service/session_service.py", b"service-owned"),
+            ("openviking/lib/ragfs_python.abi3.so", b"native-owned"),
+        ):
+            self.write(self.backend, rel, contents)
+            backend_records.append({"path": "/host/lib/site-packages/" + rel,
+                                    "sha256": sha(contents)})
+        self.write(self.pkg, "source-ownership.json",
+                   json.dumps({"installed_sources": backend_records}).encode())
         paths=sorted(p for p in self.pkg.rglob("*") if p.is_file())
         self.write(self.pkg,"SHA256SUMS","".join(f"{sha(p.read_bytes())}  {p.relative_to(self.pkg)}\n" for p in paths).encode())
 
@@ -44,7 +56,9 @@ class SourceHomeTests(unittest.TestCase):
 
     def test_positive_package_and_host(self):
         self.assertEqual(check_package(self.pkg)["candidate_checks"],4)
-        self.assertEqual(check_host(self.pkg,self.gate,self.v2,self.backend,self.shim)["original_source_checks"],4)
+        result = check_host(self.pkg,self.gate,self.v2,self.backend,self.shim)
+        self.assertEqual(result["original_source_checks"],4)
+        self.assertEqual(result["backend_dependency_checks"],4)
 
     def test_package_tampering_rejected(self):
         self.write(self.pkg,"candidate/gate/openviking_commit_gate.py",b"corrupt")
@@ -64,5 +78,30 @@ class SourceHomeTests(unittest.TestCase):
     def test_outside_symlink_rejected(self):
         (self.pkg/"escape").symlink_to(self.shim)
         with self.assertRaises(PreflightError):confined(self.pkg,"escape")
+
+    def test_native_library_drift_rejected(self):
+        self.write(self.backend,"openviking/lib/ragfs_python.abi3.so",b"native-drift")
+        with self.assertRaisesRegex(PreflightError,"backend dependency drift"):
+            check_host(self.pkg,self.gate,self.v2,self.backend,self.shim)
+
+    def test_unmodified_task_tracker_drift_rejected(self):
+        self.write(self.backend,"openviking/service/task_tracker.py",b"tracker-drift")
+        with self.assertRaisesRegex(PreflightError,"backend dependency drift"):
+            check_host(self.pkg,self.gate,self.v2,self.backend,self.shim)
+
+    def test_missing_recorded_runtime_dependency_rejected(self):
+        source = json.loads((self.pkg/"source-ownership.json").read_text())
+        source["installed_sources"] = [r for r in source["installed_sources"]
+                                       if not r["path"].endswith("/service/session_service.py")]
+        self.write(self.pkg,"source-ownership.json",json.dumps(source).encode())
+        with self.assertRaisesRegex(PreflightError,"unrecorded backend dependencies"):
+            check_host(self.pkg,self.gate,self.v2,self.backend,self.shim)
+
+    def test_original_and_recorded_backend_conflict_rejected(self):
+        source = json.loads((self.pkg/"source-ownership.json").read_text())
+        source["installed_sources"][0]["sha256"] = sha(b"contradiction")
+        self.write(self.pkg,"source-ownership.json",json.dumps(source).encode())
+        with self.assertRaisesRegex(PreflightError,"conflicting backend source authorities"):
+            check_host(self.pkg,self.gate,self.v2,self.backend,self.shim)
 
 if __name__ == "__main__": unittest.main()
