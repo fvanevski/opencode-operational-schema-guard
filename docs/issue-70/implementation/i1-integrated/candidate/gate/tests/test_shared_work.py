@@ -6,7 +6,7 @@ from dataclasses import replace
 from unittest import mock
 
 from test_gate import config, gate
-from shared_work import SharedWorkQueue, valid_candidate
+from shared_work import SharedWorkQueue, valid_candidate, work_key
 
 
 def candidate(suffix="1"):
@@ -34,7 +34,7 @@ class SyntheticGraphiti:
         self.timeline.append("submitted")
         if self.ambiguous:
             raise TimeoutError("ack lost after possible submission")
-        return "episode-1"
+        return work_key(item)
 
     def poll(self, backend_identity):
         status = next(self.statuses)
@@ -96,7 +96,7 @@ class SharedWorkTests(unittest.TestCase):
         self.assertEqual(metric_reads, [0, 0, 0])
         self.assertEqual(adapter.timeline, ["submitted", "queued", "processing", "completed"])
         self.assertEqual(self.work.status()[0]["status"], "completed")
-        self.assertEqual(self.work.status()[0]["backend_identity"], "episode-1")
+        self.assertEqual(self.work.status()[0]["backend_identity"], item["work_key"])
         self.assertEqual(item["work_key"], self.work.status()[0]["work_key"])
 
     def test_ambiguous_ack_restart_never_resubmits_and_reconcile_needs_identity(self):
@@ -144,9 +144,9 @@ class SharedWorkTests(unittest.TestCase):
         self.enqueue_synthetic(candidate("2"))
         order = []
         class Adapter:
-            def submit(self, _):
+            def submit(self, item):
                 order.append("graphiti")
-                return "ep-synthetic"
+                return work_key(item)
             def poll(self, backend_identity):
                 return {"backend_identity": backend_identity, "status": "completed", "persisted": True}
         worker = self.worker(Adapter())

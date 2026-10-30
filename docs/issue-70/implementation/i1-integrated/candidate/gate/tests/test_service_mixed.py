@@ -11,6 +11,7 @@ from unittest import mock
 
 from test_gate import config, gate
 from test_shared_work import candidate
+from shared_work import work_key
 
 
 def until(predicate, timeout=3):
@@ -40,11 +41,11 @@ class DelayedGraphiti:
         self.started = threading.Event()
         self.timeline = []
         self.submissions = 0
-    def submit(self, _candidate):
+    def submit(self, candidate):
         self.submissions += 1
         self.timeline.append(("graph_submitted", time.monotonic()))
         self.started.set()
-        return "episode-synthetic-1"
+        return work_key(candidate)
     def poll(self, backend_identity):
         status = "completed" if self.release.is_set() else "queued"
         if status == "queued" and not any(name == "graph_queued" for name, _ in self.timeline):
