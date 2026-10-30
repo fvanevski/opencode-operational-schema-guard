@@ -1,0 +1,53 @@
+diff --git a/docs/issue-70/implementation/i1-integrated/candidate/gate/openviking_commit_gate.py b/docs/issue-70/implementation/i1-integrated/candidate/gate/openviking_commit_gate.py
+--- a/docs/issue-70/implementation/i1-integrated/candidate/gate/openviking_commit_gate.py
++++ b/docs/issue-70/implementation/i1-integrated/candidate/gate/openviking_commit_gate.py
+@@ -869,7 +869,7 @@
+             try:
+                 for unknown in self.db.unknown_rows():
+-                    self._receipt_observation(unknown,allow_recovery=self._receipt_recovery_admitted())
++                    self._receipt_observation(unknown,allow_recovery=self._receipt_recovery_admitted(unknown))
+             finally:
+                 handle.close()
+@@ -1230,8 +1230,26 @@
+         return f"http://{self.cfg.backend_host}:{self.cfg.backend_port}/api/v1/admin/commit_receipts/{session}/{attempt['request_key']}"
+ 
+-    def _receipt_recovery_admitted(self):
++    def _receipt_recovery_admitted(self, row):
+         # Recovery may enqueue the exact old task. It is an inference-producing
+         # action and needs independent idle/grace admission under the EX lease.
++        #
++        # An ALREADY ADMITTED or unresolved *different* request may be queued
++        # while model metrics still say idle. Do not grant another recovery in
++        # that window: the backend's per-request receipt fence is not a global
++        # inference scheduler. Scope the exception only to the current request,
++        # whose exact queue identity is being reconciled under the EX lease.
++        identity = tuple(row[k] for k in ("account","user_id","actor_peer","session_id"))
++        generation = row["claimed_generation"]
++        with self.db.connect() as conn:
++            other = conn.execute("""
++                SELECT 1 FROM intents
++                 WHERE state IN ('unknown','inflight')
++                   AND NOT (account=? AND user_id=? AND actor_peer=?
++                            AND session_id=? AND claimed_generation=?)
++                 LIMIT 1
++            """, (*identity,generation)).fetchone()
++        if other is not None:
++            self._recovery_quiet_since=None
++            return False
+         try:
+             if self._metrics() != (0,0):
+                 self._recovery_quiet_since=None
+@@ -1293,8 +1311,9 @@
+                 if self._receipt_observation(row,payload): return
+             deadline=time.monotonic()+self.cfg.task_timeout_seconds
+             while not self.stop_event.is_set() and time.monotonic()<deadline:
+-                if self._receipt_observation(self.db.inflight() or row,allow_recovery=self._receipt_recovery_admitted()): return
++                current=self.db.inflight() or row
++                if self._receipt_observation(current,allow_recovery=self._receipt_recovery_admitted(current)): return
+                 self.stop_event.wait(self.cfg.task_poll_seconds)
+             self.db.mark_unknown(self.db.inflight() or row)
+diff --git a/docs/issue-70/implementation/i1-integrated/candidate/gate/tests/test_corrections.py b/docs/issue-70/implementation/i1-integrated/candidate/gate/tests/test_corrections.py
+--- a/docs/issue-70/implementation/i1-integrated/candidate/gate/tests/test_corrections.py
++++ b/docs/issue-70/implementation/i1-integrated/candidate/gate/tests/test_corrections.py
+@@ -1,3 +1,4 @@
++from dataclasses import replace
