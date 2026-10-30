@@ -1,0 +1,226 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/fvanevski/opencode-operational-schema-guard/blob/issue/70/contracts/memory-candidate-v1.schema.json",
+  "title": "Issue 70 selective memory candidate envelope, phase-one proposed internal wire contract",
+  "description": "Internal source-backed candidate envelope. No unrestricted content, credentials or raw transcripts. Runtime owners must authenticate API compatibility before installation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "event_id",
+    "source",
+    "scope",
+    "observed_at",
+    "category",
+    "authority",
+    "policy_revision",
+    "destination",
+    "fact_ref"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "event_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "Deterministic namespaced SHA-256 of stable source/fact identity, not transcript content"
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "system",
+        "session_id",
+        "event_id"
+      ],
+      "properties": {
+        "system": {
+          "const": "opencode-v2"
+        },
+        "session_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "message_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "tool_event_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "event_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "cursor_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        }
+      }
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "workspace_id",
+        "group_id"
+      ],
+      "properties": {
+        "workspace_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "group_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        }
+      }
+    },
+    "observed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "effective_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "category": {
+      "enum": [
+        "durable_decision",
+        "verified_architecture_fact",
+        "entity_relationship",
+        "exclusive_state_transition"
+      ]
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "basis",
+        "confidence"
+      ],
+      "properties": {
+        "basis": {
+          "enum": [
+            "operator_declared",
+            "source_verified",
+            "agent_candidate"
+          ]
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "evidence_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        }
+      }
+    },
+    "policy_revision": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "destination": {
+      "enum": [
+        "graphiti",
+        "openviking"
+      ]
+    },
+    "fact_ref": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "description": "Opaque canonical fact/source reference, not freeform text"
+    },
+    "logical_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "transition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "subject_ref",
+        "predicate",
+        "outgoing_state_ref",
+        "incoming_state_ref",
+        "effective_at"
+      ],
+      "properties": {
+        "subject_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "predicate": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "outgoing_state_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "incoming_state_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "effective_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "category": {
+            "const": "exclusive_state_transition"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "transition"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "category": {
+            "enum": [
+              "durable_decision",
+              "verified_architecture_fact",
+              "entity_relationship"
+            ]
+          }
+        }
+      },
+      "then": {
+        "not": {
+          "required": [
+            "transition"
+          ]
+        }
+      }
+    }
+  ]
+}

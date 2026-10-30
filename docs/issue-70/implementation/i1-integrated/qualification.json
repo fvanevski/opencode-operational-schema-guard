@@ -1,0 +1,140 @@
+[
+  {
+    "suite": "gate",
+    "exit_code": 0,
+    "expected_checks": 48,
+    "observed_checks": 48,
+    "command": [
+      "python3",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "tests",
+      "-v"
+    ],
+    "cwd": "candidate/gate",
+    "isolation": "read-only root, private /tmp and network, no GPU devices",
+    "output_sha256": "716a5ef48c8df9b0532ed69d6bcc73bfdbd34f7f5075c5956a1edbaa02c5bd32",
+    "sanitized_traces": [
+      "RECOVERY_SERVICE {\"events\": [\"archive-published\", \"poll\", \"poll\"], \"commit_posts\": 1, \"terminal\": \"complete\"}",
+      "QUIESCENCE_GAP_SERVICE {\"publication_pending\": true, \"task_list_empty\": true, \"initial_metrics\": [0, 0], \"independent_admitted\": false, \"commit_posts\": 1}",
+      "MIXED_TIMELINE {\"events_ms\": [[\"graph_submitted\", 0.0], [\"graph_queued\", 0.9], [\"graph_terminal\", 61.3], [\"ov_started\", 99.7]], \"overlap\": false, \"graph_submissions\": 1}"
+    ],
+    "final_targeted_rerun": "PASS; recovery grace resets on lease contention"
+  },
+  {
+    "suite": "central-receipt",
+    "exit_code": 0,
+    "expected_checks": 7,
+    "observed_checks": 7,
+    "command": [
+      "python3",
+      "-m",
+      "unittest",
+      "test_receipt_protocol",
+      "-v"
+    ],
+    "cwd": "candidate/gate",
+    "isolation": "read-only root, private /tmp and network, no GPU devices",
+    "output_sha256": "b65a491d74ee1498057be894e1fa2c68671f1cf68388cebe86011e3ff3bbff3c",
+    "sanitized_traces": []
+  },
+  {
+    "suite": "capture",
+    "exit_code": 0,
+    "expected_checks": 14,
+    "observed_checks": 14,
+    "command": [
+      "node",
+      "--test",
+      "tests/candidate-capture.test.mjs",
+      "tests/capture-isolation.test.mjs",
+      "tests/central-authentication-regressions.test.mjs"
+    ],
+    "cwd": "candidate/openviking-v2",
+    "isolation": "read-only root, private /tmp and network, no GPU devices",
+    "output_sha256": "cd366d8479ed3acab481ee24e43b9fba64341f8e7cfaf74b7e115888ecdf66b4",
+    "sanitized_traces": []
+  },
+  {
+    "suite": "legacy-openviking",
+    "exit_code": 0,
+    "expected_checks": 24,
+    "observed_checks": 24,
+    "command": [
+      "node",
+      "--test",
+      "tests/memory-session.test.mjs",
+      "tests/r3b-manager-integration.test.mjs",
+      "tests/hybrid-recall.test.mjs"
+    ],
+    "cwd": "PHASE1_CANDIDATE/openviking-context-v4",
+    "isolation": "read-only root, private /tmp and network, no GPU devices",
+    "output_sha256": "509c176257c2a0cf4969ace99b717c52bd0db84c526ac4d5bdd08019a4229ae0",
+    "sanitized_traces": []
+  },
+  {
+    "suite": "compaction",
+    "exit_code": 0,
+    "expected_checks": 7,
+    "observed_checks": 7,
+    "command": [
+      "node",
+      "--test",
+      "tests/compaction-adapter.test.mjs"
+    ],
+    "cwd": "PHASE1_CANDIDATE/operational-schema-v2",
+    "isolation": "read-only root, private /tmp and network, no GPU devices",
+    "output_sha256": "0f3f957c25f4c1ad9ed68ab330eb461c89a180b083a7bd37479c923235cc520f",
+    "sanitized_traces": []
+  },
+  {
+    "suite": "validator-offline",
+    "exit_code": 0,
+    "expected_checks": 6,
+    "observed_checks": 6,
+    "command": [
+      "VALIDATOR_PYTHON",
+      "tests/test_validator.py",
+      "--no-live"
+    ],
+    "cwd": "PHASE1_CANDIDATE/validator",
+    "isolation": "read-only root, private /tmp and network, no GPU devices",
+    "output_sha256": "1cf32918149ca7de70c845678de11564e753cdd040e80aa60b372eaad769c175",
+    "sanitized_traces": []
+  },
+  {
+    "suite": "launcher",
+    "exit_code": 0,
+    "expected_checks": 5,
+    "observed_checks": 5,
+    "command": [
+      "python3",
+      "tests/test_launcher_admission.py",
+      "-v"
+    ],
+    "cwd": ".",
+    "isolation": "read-only root, private /tmp and network, no GPU devices",
+    "output_sha256": "65fc883f6477abcf0d8dd898c0f6c5a418d59ebbf0af4d4bd6b02336c4f2e394",
+    "sanitized_traces": [],
+    "final_targeted_rerun": "PASS; recovery grace resets on lease contention"
+  },
+  {
+    "suite": "actual-backend",
+    "exit_code": 0,
+    "expected_checks": 9,
+    "observed_checks": 9,
+    "command": [
+      "python3",
+      "tests/test_i1_service.py",
+      "-v"
+    ],
+    "cwd": ".",
+    "isolation": "read-only root, private /tmp and network, no GPU devices",
+    "output_sha256": "2d1f2a30e8cb3c54a46d5d11798f2da1643896602f4ad7b0e2218958c3fbd5c9",
+    "sanitized_traces": [
+      "I1_PUBLICATION_TIMELINE {\"actual_native_queuefs\": true, \"publication_empty_task_list\": true, \"idle_metrics\": [0, 0], \"interactive_blocked\": true, \"original_extractions\": 1, \"newer_generation_preserved\": true, \"unrelated_resumed\": true}"
+    ]
+  }
+]

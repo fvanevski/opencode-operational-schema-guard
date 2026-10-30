@@ -1,0 +1,515 @@
+--- a/openviking/server/app.py
++++ b/openviking/server/app.py
+@@ -646,6 +646,8 @@
+     app.include_router(privacy_configs_router)
+     app.include_router(skills_router)
+     app.include_router(sessions_router)
++    from openviking.server.routers.sessions import receipt_router
++    app.include_router(receipt_router)
+     app.include_router(snapshot_router)
+     app.include_router(stats_router)
+     app.include_router(pack_router)
+--- a/openviking/server/routers/sessions.py
++++ b/openviking/server/routers/sessions.py
+@@ -828,3 +828,77 @@
+         fn=_batch_add,
+     )
+     return Response(status="ok", result=execution.result, telemetry=execution.telemetry)
++
++
++receipt_router = APIRouter(prefix="/api/v1/admin/commit_receipts", tags=["admin"])
++
++# Issue 70: opt-in, backend-owner receipt boundary. Ordinary commit is unchanged.
++from fastapi import Request
++from openviking.server.identity import Role
++from openviking.service.commit_receipts import runtime as receipt_runtime
++from openviking.service.receipt_protocol import ReceiptConflict, request_key as receipt_key
++from openviking.service.task_tracker import get_task_tracker
++
++
++def _receipt_owner(request, ctx, session_id, scope):
++    if ctx.role != Role.ROOT:
++        raise HTTPException(403, "receipt interface requires backend owner")
++    if (set(scope) != {"account","user_id","actor_peer","session_id"}
++            or not all(isinstance(v,str) and 0<len(v)<=256 for v in scope.values())
++            or scope.get("session_id") != session_id
++            or scope.get("actor_peer") != request.headers.get("X-OpenViking-Actor-Peer", "")):
++        raise HTTPException(409, "receipt scope mismatch")
++    mode=getattr(request.app.state.config,"auth_mode",None)
++    if mode=="trusted":
++        if scope["account"]!=ctx.account_id or scope["user_id"]!=ctx.user.user_id:
++            raise HTTPException(409,"receipt tenant mismatch")
++    elif mode!="api_key":
++        raise HTTPException(403,"receipt owner authentication mode unavailable")
++    # Native api_key mode deliberately strips tenant assertion headers and pins
++    # ROOT to its own identity. This ADMIN operation explicitly scopes the
++    # verified backend owner to the immutable request tenant, without relaxing
++    # ordinary tenant API authentication or accepting the nomination token.
++    from dataclasses import replace
++    from openviking_cli.session.user_id import UserIdentifier
++    return replace(ctx,user=UserIdentifier(scope["account"],scope["user_id"]),actor_peer_id=None)
++
++
++@receipt_router.post("/{session_id}/{request_key}")
++async def commit_with_receipt(request: Request, session_id: str, request_key: str,
++                              envelope: Dict[str, Any] = Body(...),
++                              _ctx: RequestContext = Depends(get_session_request_context)):
++    owner = receipt_runtime()
++    if owner is None: raise HTTPException(503, "receipt protocol disabled")
++    scope = envelope.get("scope", {})
++    _ctx=_receipt_owner(request,_ctx,session_id,scope)
++    try:
++        generation = envelope["generation"]
++        if isinstance(generation,bool): raise ValueError("invalid generation")
++        body = envelope["body"]
++        parsed = CommitRequest.model_validate(body)
++        async def commit():
++            response = await commit_session(session_id, parsed, _ctx)
++            return response["result"]
++        row = await owner.submit(request_key,scope,generation,body,envelope["body_digest"],commit)
++        return {"status":"ok","result":row}
++    except ReceiptConflict as exc:
++        raise HTTPException(409, {"code":"receipt_conflict","message":str(exc)}) from exc
++    except (ValueError,KeyError,TypeError) as exc:
++        raise HTTPException(400, "invalid receipt envelope") from exc
++
++
++@receipt_router.get("/{session_id}/{request_key}")
++async def get_commit_receipt(request: Request, session_id: str, request_key: str,
++                             recover: bool = Query(False),
++                             _ctx: RequestContext = Depends(get_session_request_context)):
++    owner = receipt_runtime()
++    if owner is None: raise HTTPException(503, "receipt protocol disabled")
++    row = owner.ledger.read(request_key)
++    if row is None: raise HTTPException(404, "receipt unavailable")
++    import json
++    scope = json.loads(row["scope_json"])
++    _ctx=_receipt_owner(request,_ctx,session_id,scope)
++    service = get_service()
++    session = await service.sessions.open(session_id,_ctx)
++    row = await owner.reconcile(request_key,session,get_task_tracker(),allow_recovery=recover)
++    return {"status":"ok","result":row}
+--- /dev/null
++++ b/openviking/service/commit_receipts.py
+@@ -0,0 +1,193 @@
++"""Request-keyed publication and terminal fence; no inference scheduler.
++
++Disabled unless OPENVIKING_COMMIT_RECEIPT_DB names private durable local storage.
++Every keyed producer/consumer uses the same cross-process operation lock. Terminal
++sealing fences all future keyed Session replay; Task Store guards descendant work.
++"""
++from __future__ import annotations
++import asyncio
++from contextlib import asynccontextmanager
++from contextvars import ContextVar
++import fcntl
++import json
++import os
++from pathlib import Path
++import re
++from openviking.storage.errors import LockAcquisitionError
++from .receipt_protocol import ReceiptLedger, ReceiptConflict, canonical_digest, request_key
++
++current_operation = ContextVar("commit_receipt_operation", default=None)
++
++class CommitReceipts:
++    def __init__(self, path):
++        self.ledger = ReceiptLedger(path)
++        self.lock_root = Path(path + ".locks")
++        self.lock_root.mkdir(mode=0o700, exist_ok=True)
++        with self.ledger._connect() as db:
++            db.execute("CREATE TABLE IF NOT EXISTS receipt_bindings (request_key TEXT PRIMARY KEY, task_id TEXT UNIQUE NOT NULL, archive_uri TEXT NOT NULL)")
++
++    def binding(self, key):
++        with self.ledger._connect() as db:
++            row = db.execute("SELECT * FROM receipt_bindings WHERE request_key=?", (key,)).fetchone()
++            return dict(row) if row else None
++
++    def key_for_task(self, task_id):
++        with self.ledger._connect() as db:
++            row=db.execute("SELECT request_key FROM receipt_bindings WHERE task_id=?",(task_id,)).fetchone()
++            return row[0] if row else None
++
++    async def queue_has_work(self, task_id):
++        from openviking.storage.queuefs import get_queue_manager
++        from openviking.service.task_work_index import extract_task_metadata
++        manager=get_queue_manager()
++        # Strict read of native QueueFS unacknowledged messages (pending AND
++        # processing). Do not use the forgiving public snapshot fallback.
++        for queue in manager._queues.values():
++            await queue._ensure_initialized()
++            data=await queue._async_agfs.read(queue.path+"/messages")
++            rows=json.loads(data)
++            if not isinstance(rows,list): raise RuntimeError("invalid QueueFS snapshot")
++            status=await queue._read_backend_status()
++            if len(rows)!=status["pending"]+status["processing"]:
++                raise RuntimeError("QueueFS snapshot changed; retry reconciliation")
++            for message in rows:
++                metadata=extract_task_metadata(message)
++                if metadata is not None and metadata.task_id==task_id: return True
++        return False
++
++    def bind(self, key, task_id, archive_uri):
++        # Durable before the archive intent is written, never inferred by time/session.
++        with self.ledger._connect() as db:
++            db.execute("BEGIN IMMEDIATE")
++            old = db.execute("SELECT * FROM receipt_bindings WHERE request_key=?", (key,)).fetchone()
++            if old and (old["task_id"] != task_id or old["archive_uri"] != archive_uri):
++                db.execute("ROLLBACK"); raise ReceiptConflict("conflicting archive binding")
++            db.execute("INSERT OR IGNORE INTO receipt_bindings VALUES (?,?,?)", (key,task_id,archive_uri))
++            db.execute("COMMIT")
++
++    def _try_lock(self, key, shared=False, lane="producer"):
++        if re.fullmatch(r"[0-9a-f]{64}", key) is None:
++            raise ValueError("invalid request key")
++        if lane not in ("producer","parent"): raise ValueError("invalid fence lane")
++        handle = open(self.lock_root/(key+"."+lane), "a+")
++        try:
++            fcntl.flock(handle, (fcntl.LOCK_SH if shared else fcntl.LOCK_EX) | fcntl.LOCK_NB)
++            return handle
++        except BlockingIOError:
++            handle.close(); return None
++
++    @asynccontextmanager
++    async def fence(self, key, shared=False, lane="producer"):
++        handle = None
++        try:
++            while handle is None:
++                handle = self._try_lock(key,shared=shared,lane=lane)
++                if handle is None: await asyncio.sleep(0.01)
++            yield
++        finally:
++            if handle is not None: handle.close()
++
++    async def submit(self, key, scope, generation, body, digest, call):
++        if request_key(scope,generation) != key or canonical_digest(body) != digest:
++            raise ReceiptConflict("request key or canonical payload mismatch")
++        row, first = self.ledger.begin(key,scope,digest)
++        if not first: return row
++        async with self.fence(key):
++            token = current_operation.set((self,key))
++            try:
++                result = await call()
++                if (result.get("status") == "skipped" and result.get("archived") is False
++                        and result.get("archive_uri") is None and not result.get("task_id")
++                        and self.binding(key) is None):
++                    # Actual commit_async returned under this fence, no archive
++                    # was ever allocated, and duplicate submit cannot execute.
++                    self.ledger.sealed_terminal(key,"skipped",backend_quiescence_verified=True)
++                elif result.get("task_id"):
++                    bound = self.binding(key)
++                    if not bound or bound["task_id"] != result["task_id"]:
++                        raise ReceiptConflict("actual task/archive binding missing")
++                    self.ledger.accepted(key,result["task_id"])
++            finally:
++                current_operation.reset(token)
++        return self.ledger.read(key)
++
++    async def reconcile(self, key, session, tracker, *, allow_recovery=False):
++        row = self.ledger.read(key)
++        if row is None or row["state"] == "terminal": return row
++        handle = self._try_lock(key)
++        if handle is None: return row  # Still publishing or executing; NONTERMINAL.
++        try:
++            bound = self.binding(key)
++            if not bound: return row  # No retrospective operation identity.
++            scope = json.loads(row["scope_json"])
++            if (scope["session_id"] != session.session_id or scope["account"] != session.ctx.account_id
++                    or scope["user_id"] != session.ctx.user.user_id):
++                raise ReceiptConflict("receipt/session owner mismatch")
++            phase1 = await session._read_phase1_meta(bound["archive_uri"])
++            message = phase1.get("queue_message", {})
++            if (message.get("receipt_request_key") != key or message.get("task_id") != bound["task_id"]
++                    or message.get("archive_uri") != bound["archive_uri"]): return row
++            task = await tracker.get(bound["task_id"],account_id=scope["account"],user_id=scope["user_id"])
++            if allow_recovery and phase1.get("status")=="ready" and (task is None or task.status.value=="pending"):
++                # Resume ONLY the exact durably published operation. Never call
++                # commit_async again or infer an archive from session/time.
++                lease=None
++                try:
++                    archive_path=session._viking_fs._uri_to_path(bound["archive_uri"],ctx=session.ctx)
++                    lease=await session._viking_fs._async_agfs.pathlock_acquire_exact(archive_path,timeout_secs=0.1)
++                    queued=await self.queue_has_work(bound["task_id"])
++                    if task is None:
++                        task=await tracker.create("session_commit",resource_id=scope["session_id"],account_id=scope["account"],user_id=scope["user_id"],task_id=bound["task_id"])
++                    if not queued and not await tracker.has_work(bound["task_id"],account_id=scope["account"],user_id=scope["user_id"]):
++                        from openviking.storage.queuefs import get_queue_manager,QueueManager
++                        from openviking.service.task_work_index import bind_task_context
++                        with bind_task_context(bound["task_id"],scope["account"],scope["user_id"]):
++                            await get_queue_manager().enqueue(QueueManager.SESSION_COMMIT,message)
++                except LockAcquisitionError:
++                    return row  # Native publication lease is not yet recoverable.
++                finally:
++                    if lease is not None: await session._viking_fs._async_agfs.pathlock_release(lease)
++            if task is None: return row
++            if task.resource_id != scope["session_id"]: return row
++            if row["state"] == "preparing":
++                row = self.ledger.accepted(key,bound["task_id"])
++            status = task.status.value
++            if status not in ("completed","failed","cancelled"): return row
++            # Store-authoritative open work includes queued/requeued descendants.
++            # Terminal Store tasks reject new register_work and late deliveries.
++            if await tracker.has_work(bound["task_id"],account_id=scope["account"],user_id=scope["user_id"]): return row
++            if tracker.has_active_producer(bound["task_id"]): return row
++            if await self.queue_has_work(bound["task_id"]): return row
++            done = await session._archives.file_exists(bound["archive_uri"],".done")
++            failed = await session._archives.file_exists(bound["archive_uri"],".failed.json")
++            if not (done if status == "completed" else failed): return row
++            # No publication/parent worker can run under this same fence. Seal
++            # before unlocking so every later keyed delivery is a no-op.
++            return self.ledger.sealed_terminal(key,status,backend_quiescence_verified=True)
++        finally:
++            handle.close()
++
++_runtime = None
++
++def runtime():
++    global _runtime
++    path = os.environ.get("OPENVIKING_COMMIT_RECEIPT_DB")
++    if not path: return None
++    if _runtime is None or _runtime.ledger.path != path: _runtime = CommitReceipts(path)
++    return _runtime
++
++async def resume_fenced(session, message, call):
++    key = getattr(message,"receipt_request_key","")
++    if not key: return await call()
++    owner = runtime()
++    if owner is None: raise RuntimeError("Keyed queue delivery requires receipt owner")
++    async with owner.fence(key,shared=True):
++        row = owner.ledger.read(key); bound = owner.binding(key)
++        if not row or not bound or bound["task_id"] != message.task_id or bound["archive_uri"] != message.archive_uri:
++            raise ReceiptConflict("queue/receipt binding mismatch")
++        scope = json.loads(row["scope_json"])
++        if scope["account"] != session.ctx.account_id or scope["user_id"] != session.ctx.user.user_id or scope["session_id"] != session.session_id:
++            raise ReceiptConflict("queue owner mismatch")
++        if row["state"] == "terminal": return True
++        async with owner.fence(key,lane="parent"):
++            return await call()
+--- /dev/null
++++ b/openviking/service/receipt_protocol.py
+@@ -0,0 +1,165 @@
++"""Issue 70: durable OpenViking commit receipt core (disabled until integrated).
++
++Backend-owned storage and conservative gate parsing. This file is not an HTTP
++endpoint and does not itself attest to QueueFS quiescence or launch shims.
++"""
++from __future__ import annotations
++
++import hashlib
++import os
++from contextlib import contextmanager
++import json
++import sqlite3
++from pathlib import Path
++from typing import Any, Mapping
++
++PROTOCOL = "openviking-commit-receipt-v1"
++TERMINAL = frozenset(("completed", "failed", "cancelled", "skipped"))
++
++
++class ReceiptConflict(ValueError):
++    pass
++
++
++def canonical_digest(body: Mapping[str, Any]) -> str:
++    return hashlib.sha256(json.dumps(body, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()).hexdigest()
++
++
++def request_key(identity: Mapping[str, Any], claimed_generation: int) -> str:
++    """Bind only immutable claimed generation + scope, not mutable retry payload."""
++    if not isinstance(claimed_generation, int) or claimed_generation < 1:
++        raise ValueError("claimed_generation must be a positive integer")
++    required = ("account", "user_id", "actor_peer", "session_id")
++    if not all(isinstance(identity.get(k), str) for k in required) or not identity["session_id"]:
++        raise ValueError("missing immutable scope")
++    return canonical_digest({"scope": {k: identity[k] for k in required}, "generation": claimed_generation})
++
++
++class ReceiptLedger:
++    """Backend-only journal; never expose mutation methods to plugin/gate clients.
++
++    All status changes are sync, durable local SQLite transactions. Incomplete
++    begin() survives backend restart as PREPARING and cannot be replayed.
++    """
++    def __init__(self, path: str):
++        self.path = path
++        Path(path).parent.mkdir(parents=True, exist_ok=True, mode=0o700)
++        with self._connect() as db:
++            db.execute("""CREATE TABLE IF NOT EXISTS commit_receipts (
++                request_key TEXT PRIMARY KEY,
++                scope_json TEXT NOT NULL,
++                body_digest TEXT NOT NULL,
++                state TEXT NOT NULL,
++                task_id TEXT,
++                outcome TEXT,
++                release_proven INTEGER NOT NULL DEFAULT 0
++            )""")
++        os.chmod(path, 0o600)
++
++    @contextmanager
++    def _connect(self):
++        db = sqlite3.connect(self.path, timeout=10, isolation_level=None)
++        try:
++            db.row_factory = sqlite3.Row
++            db.execute("PRAGMA busy_timeout=10000")
++            db.execute("PRAGMA journal_mode=WAL")
++            db.execute("PRAGMA synchronous=FULL")
++            yield db
++        finally:
++            db.close()
++
++    def _read(self, db, key):
++        found = db.execute("SELECT * FROM commit_receipts WHERE request_key=?", (key,)).fetchone()
++        return {"protocol": PROTOCOL, **dict(found)} if found else None
++
++    def begin(self, key: str, scope: Mapping[str, Any], body_digest: str) -> tuple[dict, bool]:
++        if not isinstance(key, str) or len(key) != 64 or not isinstance(body_digest, str) or len(body_digest) != 64:
++            raise ValueError("invalid request or body digest")
++        scope_json = json.dumps(scope, sort_keys=True, separators=(",", ":"), allow_nan=False)
++        with self._connect() as db:
++            try:
++                db.execute("BEGIN IMMEDIATE")
++                old = self._read(db, key)
++                if old is not None:
++                    if old["scope_json"] != scope_json or old["body_digest"] != body_digest:
++                        raise ReceiptConflict("same request key with contradictory input")
++                    db.execute("COMMIT")
++                    return old, False  # Existing receipt: DO NOT execute commit_async again.
++                db.execute("INSERT INTO commit_receipts(request_key,scope_json,body_digest,state) VALUES(?,?,?,'preparing')",
++                           (key, scope_json, body_digest))
++                new = self._read(db, key)
++                db.execute("COMMIT")
++                return new, True
++            except BaseException:
++                if db.in_transaction:
++                    db.execute("ROLLBACK")
++                raise
++
++    def accepted(self, key: str, task_id: str) -> dict:
++        if not isinstance(task_id, str) or not task_id:
++            raise ValueError("a queued extraction needs a real task id")
++        with self._connect() as db:
++            db.execute("BEGIN IMMEDIATE")
++            row = self._read(db, key)
++            if row is None or row["state"] not in ("preparing", "accepted") or (row["task_id"] not in (None, task_id)):
++                db.execute("ROLLBACK")
++                raise ReceiptConflict("not the unique accepted task")
++            db.execute("UPDATE commit_receipts SET state='accepted',task_id=? WHERE request_key=?", (task_id, key))
++            new = self._read(db, key)
++            db.execute("COMMIT")
++            return new
++
++    def sealed_terminal(self, key: str, outcome: str, *, backend_quiescence_verified: bool) -> dict:
++        """Only backend owner calls after verifying the exact task is non-replayable.
++
++        Cannot infer this boolean from an HTTP response, task list or idle metrics.
++        Backend integration MUST implement the proof before making this call.
++        """
++        if outcome not in TERMINAL or backend_quiescence_verified is not True:
++            raise ValueError("backend terminal/quiescence proof required")
++        with self._connect() as db:
++            db.execute("BEGIN IMMEDIATE")
++            row = self._read(db, key)
++            if row is None or row["state"] not in ("preparing", "accepted", "terminal"):
++                db.execute("ROLLBACK")
++                raise ReceiptConflict("no matching operation")
++            if outcome != "skipped" and not row["task_id"]:
++                db.execute("ROLLBACK")
++                raise ReceiptConflict("task terminal requires matched task id")
++            if outcome == "skipped" and row["task_id"]:
++                db.execute("ROLLBACK")
++                raise ReceiptConflict("skipped cannot have queued task")
++            if row["state"] == "terminal" and row["outcome"] != outcome:
++                db.execute("ROLLBACK")
++                raise ReceiptConflict("conflicting terminal evidence")
++            db.execute("UPDATE commit_receipts SET state='terminal',outcome=?,release_proven=1 WHERE request_key=?", (outcome, key))
++            new = self._read(db, key)
++            db.execute("COMMIT")
++            return new
++
++    def read(self, key: str) -> dict | None:
++        with self._connect() as db:
++            return self._read(db, key)
++
++
++def gate_decision(receipt: Mapping[str, Any] | None, *, key: str, scope: Mapping[str, Any], body_digest: str) -> tuple[str, str | None]:
++    """Return BLOCK, TRACK or RELEASE. Authenticated backend transport required.
++
++    Caller must keep the cross-process admission fence until a RELEASE is
++    durably reconciled while holding the existing exclusive gate lease.
++    """
++    if not isinstance(receipt, Mapping) or receipt.get("protocol") != PROTOCOL or receipt.get("request_key") != key or receipt.get("body_digest") != body_digest:
++        return "BLOCK", None
++    expected = json.dumps(scope, sort_keys=True, separators=(",", ":"), allow_nan=False)
++    if receipt.get("scope_json") != expected:
++        return "BLOCK", None
++    state = receipt.get("state")
++    task_id = receipt.get("task_id")
++    if state == "terminal" and receipt.get("release_proven") == 1 and receipt.get("outcome") in TERMINAL:
++        if receipt["outcome"] == "skipped" and task_id is None:
++            return "RELEASE", receipt["outcome"]
++        if receipt["outcome"] != "skipped" and isinstance(task_id, str) and task_id:
++            return "RELEASE", receipt["outcome"]
++    if state == "accepted" and isinstance(task_id, str) and task_id:
++        return "TRACK", task_id
++    return "BLOCK", None
+--- a/openviking/service/task_queue_middleware.py
++++ b/openviking/service/task_queue_middleware.py
+@@ -126,6 +126,19 @@
+         return message_id
+ 
+     async def process(self, ctx: ProcessContext, call_next: ProcessNext) -> ProcessResult:
++        from openviking.service.commit_receipts import runtime
++        owner=runtime()
++        metadata=extract_task_metadata(ctx.message)
++        key=owner.key_for_task(metadata.task_id) if owner and metadata else None
++        if key:
++            async with owner.fence(key,shared=True):
++                row=owner.ledger.read(key)
++                if row is None: raise RuntimeError("receipt owner unavailable")
++                if row["state"]=="terminal": return ProcessResult.success()
++                return await self._process_unfenced(ctx,call_next)
++        return await self._process_unfenced(ctx,call_next)
++
++    async def _process_unfenced(self, ctx: ProcessContext, call_next: ProcessNext) -> ProcessResult:
+         metadata = extract_task_metadata(ctx.message)
+         if metadata is None:
+             return await call_next(ctx)
+--- a/openviking/session/session.py
++++ b/openviking/session/session.py
+@@ -1657,8 +1657,14 @@
+             )
+             original_messages = list(self._messages)
+             task_id = str(uuid4())
++            from openviking.service.commit_receipts import current_operation
++            receipt_operation = current_operation.get()
++            if receipt_operation:
++                receipt_operation[0].bind(receipt_operation[1], task_id, archive_uri)
+             queue_msg = SessionCommitMsg(
+                 task_id=task_id,
++                receipt_request_key=receipt_operation[1] if receipt_operation else "",
++                _task_work_id=(receipt_operation[1] + ":phase2") if receipt_operation else "",
+                 session_id=self.session_id,
+                 session_uri=self._session_uri,
+                 archive_uri=archive_uri,
+@@ -1916,6 +1922,10 @@
+         )
+ 
+     async def resume_queued_commit(self, msg: "SessionCommitMsg") -> bool:
++        from openviking.service.commit_receipts import resume_fenced
++        return await resume_fenced(self, msg, lambda: self._resume_queued_commit(msg))
++
++    async def _resume_queued_commit(self, msg: "SessionCommitMsg") -> bool:
+         """Run one durable Phase 2 job from its archived messages."""
+         from openviking.service.task_tracker import get_task_tracker
+ 
+--- a/openviking/storage/queuefs/session_commit_msg.py
++++ b/openviking/storage/queuefs/session_commit_msg.py
+@@ -25,6 +25,7 @@
+     # Version 1 snapshots explicitly encode WM. Version 0 (before default-off)
+     # omitted true; only queued work, never saved user intent, inherits that value.
+     memory_policy_version: int = 1
++    receipt_request_key: str = ""
+ 
+     def to_dict(self) -> Dict[str, Any]:
+         return asdict(self)

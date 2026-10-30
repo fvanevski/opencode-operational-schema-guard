@@ -1,0 +1,11 @@
+{
+  "encountered": false,
+  "requested_shape": "rtk proxy python3 /home/filip/issue70-i1-_g1_n3yw/run_qualification.py",
+  "effective_shape": "rtk proxy python3 /home/filip/issue70-i1-_g1_n3yw/run_qualification.py",
+  "rewrite_provenance": "agent-authored RTK prefix; no harness rewrite observed",
+  "event_kind": "completed_execution",
+  "execution_effect": "120 CPU-only checks in private network/read-only filesystem; separately authorized issue-branch artifact commit",
+  "correction": "none for command shape; diagnostic source-path and fixture invocation errors corrected without protected mutations",
+  "recipe_reference": "GHDEV-10; /home/filip/.codex/RTK.md; README.md reproduction recipe",
+  "sensitive_values_omitted": true
+}

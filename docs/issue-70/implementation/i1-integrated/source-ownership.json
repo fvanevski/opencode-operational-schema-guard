@@ -1,0 +1,81 @@
+{
+  "installed_sources": [
+    {
+      "path": "/home/filip/.local/share/openviking-commit-gate/openviking_commit_gate.py",
+      "sha256": "6ad48a939d3f52df1c774f87d030986b35022a8c20f15916d82177ccf2094f42"
+    },
+    {
+      "path": "/home/filip/.config/opencode/plugins/openviking-v2/index.mjs",
+      "sha256": "6899822ec75a16ba05578d4ba165dfe8f913f3d37a4d96717767a170b906766d"
+    },
+    {
+      "path": "/home/filip/.local/bin/openviking-agent-run",
+      "sha256": "d22ca3f904924356ee54926276be9b28988646805f5d498aa91e901ef10d1d6a"
+    },
+    {
+      "path": "/home/filip/.local/lib/openviking-agent-shims/opencode",
+      "sha256": "fecd78de50cf05c6645fd01f7f4d8b20b20941a7274c5d8af6bf95101379b77f"
+    },
+    {
+      "path": "/home/filip/.local/lib/openviking-agent-shims/agy",
+      "sha256": "f10fc12c90ce075315d68a9c56d7206443376f645f40334853db007ceb6bcda5"
+    },
+    {
+      "path": "/home/filip/.local/lib/openviking-agent-shims/codex",
+      "sha256": "dbe087c8b32043e9690874b123c0c4f80763bca11dcddc5355df74489144d523"
+    },
+    {
+      "path": "/home/filip/.local/share/uv/tools/openviking/lib/python3.14/site-packages/openviking/server/routers/sessions.py",
+      "sha256": "4b0cb8b6d141f3987ebe398d0ce64b4474414d7281ecc208efacdb9439e1247b"
+    },
+    {
+      "path": "/home/filip/.local/share/uv/tools/openviking/lib/python3.14/site-packages/openviking/service/session_service.py",
+      "sha256": "a05d70990f22c7086844a1ccfbdf5b31df8671f5d098e7ba7a9b7a31559e4bf7"
+    },
+    {
+      "path": "/home/filip/.local/share/uv/tools/openviking/lib/python3.14/site-packages/openviking/session/session.py",
+      "sha256": "2cd71ec6b24ac79df7f23a427d9cab6b02a33a9772942580d40be3875dccd883"
+    },
+    {
+      "path": "/home/filip/.local/share/uv/tools/openviking/lib/python3.14/site-packages/openviking/service/task_tracker.py",
+      "sha256": "f823631dcf5001fd00f752ecab9a57870fec4096bb26064a5c39684d919a680e"
+    },
+    {
+      "path": "/home/filip/.local/share/uv/tools/openviking/lib/python3.14/site-packages/openviking/service/task_queue_middleware.py",
+      "sha256": "cbfaea108baa7ef694c9f908cc3233d03297c822df2892a07893ecc00226a996"
+    },
+    {
+      "path": "/home/filip/.local/share/uv/tools/openviking/lib/python3.14/site-packages/openviking/server/app.py",
+      "sha256": "bbd53faaba62283b35934de0763502c5aca2478ffb62874687520422ff1665bd"
+    },
+    {
+      "path": "/home/filip/.local/share/uv/tools/openviking/lib/python3.14/site-packages/openviking/storage/queuefs/session_commit_msg.py",
+      "sha256": "7b8922a20a82e5ff103a84d8cd9de6c6c865cc5010d56c4add70b5eceadc9852"
+    },
+    {
+      "path": "/home/filip/.local/share/uv/tools/openviking/lib/python3.14/site-packages/openviking/lib/ragfs_python.abi3.so",
+      "sha256": "3177275b4948b57713b86eebb07d3cf45bb0c90bfdc14bd368b97efa3676a65e"
+    }
+  ],
+  "backend": {
+    "entry": "/home/filip/.local/bin/openviking-server",
+    "executable": "/home/filip/.local/share/uv/python/cpython-3.14.7-linux-x86_64-gnu/bin/python3.14",
+    "config_path": "/home/filip/.openviking/ov.conf",
+    "config_sha256": "cc9e9e94da236aa3035082a1e61aef25f5954d58a9be899c98149da982b33e76",
+    "auth_mode": "api_key",
+    "agfs_backend": "local"
+  },
+  "queue": {
+    "path": "/home/filip/.local/state/openviking-commit-gate/queue.sqlite3",
+    "observed_exists": true,
+    "contents_published": false
+  },
+  "scheduler": {
+    "provider": "ninfer",
+    "url": "http://127.0.0.1:8001/metrics",
+    "requests_running_observed": 0,
+    "requests_waiting_observed": 0
+  },
+  "live_sources_unchanged": true,
+  "live_databases_byte_invariance": "unverified"
+}

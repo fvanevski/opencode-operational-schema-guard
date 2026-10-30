@@ -1,0 +1,654 @@
+--- /dev/null
++++ b/candidate-capture.mjs
+@@ -0,0 +1,130 @@
++import { createHash } from "node:crypto"
++import { readFileSync } from "node:fs"
++
++const schema = JSON.parse(readFileSync(new URL("./memory-candidate-v1.schema.json", import.meta.url), "utf8"))
++const categories = new Set(schema.properties.category.enum)
++const forbidden = /(?:-----BEGIN [A-Z ]*PRIVATE KEY-----|\b(?:sk-[A-Za-z0-9]{16,}|gh[pousr]_[A-Za-z0-9]{20,}|Bearer\s+\S+|password\s*[:=])|\bfixtures?\/|\btests?\/|\.(?:log|trace)\b)/i
++const hex = /^[0-9a-f]{64}$/
++const id = (x, max = 256) => typeof x === "string" && x.length > 0 && x.length <= max
++const timestamp = (x) => typeof x === "string" && !Number.isNaN(Date.parse(x)) && /(?:Z|[+-]\d\d:\d\d)$/.test(x)
++const exact = (x, keys) => x && typeof x === "object" && !Array.isArray(x) && Object.keys(x).every((key) => keys.includes(key))
++const canonical = (x) => Array.isArray(x) ? x.map(canonical) : x && typeof x === "object" ? Object.fromEntries(Object.keys(x).sort().map((key) => [key, canonical(x[key])])) : x
++const hash = (value) => createHash("sha256").update(JSON.stringify(canonical(value))).digest("hex")
++const digest = (...parts) => hash(parts)
++
++export function validateCandidate(x) {
++  if (!exact(x, Object.keys(schema.properties))) return false
++  if (x.schema_version !== 1 || !hex.test(x.event_id) || !categories.has(x.category)) return false
++  if (!exact(x.source, Object.keys(schema.properties.source.properties)) || x.source.system !== "opencode-v2" || !id(x.source.session_id) || !id(x.source.event_id)) return false
++  if (x.source.message_id !== undefined && !id(x.source.message_id)) return false
++  if (x.source.tool_event_id !== undefined && !id(x.source.tool_event_id)) return false
++  if (x.source.cursor_id !== undefined && !id(x.source.cursor_id)) return false
++  if (!exact(x.scope, ["workspace_id", "group_id"]) || !id(x.scope.workspace_id) || !id(x.scope.group_id)) return false
++  if (!timestamp(x.observed_at) || (x.effective_at !== undefined && !timestamp(x.effective_at))) return false
++  if (!exact(x.authority, ["basis", "confidence", "evidence_ref"]) || !schema.properties.authority.properties.basis.enum.includes(x.authority.basis) || !Number.isFinite(x.authority.confidence) || x.authority.confidence < 0 || x.authority.confidence > 1) return false
++  if (x.authority.evidence_ref !== undefined && (!id(x.authority.evidence_ref, 512) || !/^[-\w./:@]+$/.test(x.authority.evidence_ref))) return false
++  if (!id(x.policy_revision, 128) || !schema.properties.destination.enum.includes(x.destination) || !id(x.fact_ref, 512)) return false
++  if (x.logical_digest !== undefined && !hex.test(x.logical_digest)) return false
++  if (x.category === "exclusive_state_transition") {
++    const t = x.transition
++    if (!exact(t, Object.keys(schema.properties.transition.properties)) || !t || ![t.subject_ref, t.predicate, t.outgoing_state_ref, t.incoming_state_ref].every((v) => id(v)) || !timestamp(t.effective_at)) return false
++  } else if (x.transition !== undefined) return false
++  return !forbidden.test(JSON.stringify(x))
++}
++
++export function loadCapturePolicy(path) {
++  if (!path) return null
++  try {
++    const policy = JSON.parse(readFileSync(path, "utf8"))
++    if (policy.enabled !== true || !id(policy.revision, 128) || !Array.isArray(policy.workspaces) || !Array.isArray(policy.groups) || !Array.isArray(policy.categories) || !Array.isArray(policy.tools)) return null
++    if (![policy.workspaces, policy.groups, policy.categories, policy.tools].every((items) => items.length > 0 && items.length <= 64 && items.every((item) => id(item)))) return null
++    return policy
++  } catch { return null }
++}
++
++// Only structured metadata from an operator-allowlisted completed tool is considered.
++// No transcript, tool body, model proposal, or compaction context is parsed.
++export function candidateFromToolEvent(event, policy, workspaceID) {
++  if (!policy?.enabled || event?.type !== "session.tool.success" || event.data?.executed !== true) return null
++  const data = event.data
++  if (!id(workspaceID) || !policy.workspaces.includes(workspaceID) || !policy.tools.includes(data.name)) return null
++  const proposal = data.metadata?.memory_candidate_v1
++  if (!proposal || typeof proposal !== "object") return null
++  if (!policy.groups.includes(proposal.group_id) || !policy.categories.includes(proposal.category)) return null
++  if (!id(data.sessionID) || !id(data.assistantMessageID) || !id(data.id)) return null
++  // A tool result can nominate an opaque fact reference, but cannot choose its
++  // own source event identity. Native tool completion authenticates execution,
++  // not the truth of metadata. No V2 fact-attestation interface is available.
++  const source = { system: "opencode-v2", session_id: data.sessionID, message_id: data.assistantMessageID, tool_event_id: data.id, event_id: data.id, cursor_id: data.assistantMessageID }
++  const factRef = proposal.fact_ref
++  if (!id(factRef, 512) || !/^[-\w./:@]+$/.test(factRef)) return null
++  const candidate = {
++    schema_version: 1,
++    event_id: digest("memory-source-event-v1", workspaceID, source.system, source.session_id, source.event_id),
++    source,
++    scope: { workspace_id: workspaceID, group_id: proposal.group_id },
++    observed_at: proposal.observed_at,
++    category: proposal.category,
++    authority: { basis: "agent_candidate", confidence: 0 },
++    policy_revision: policy.revision,
++    destination: "graphiti",
++    fact_ref: factRef,
++  }
++  // All proposed times and transitions remain unverified; the gate defers them.
++  if (proposal.effective_at !== undefined) candidate.effective_at = proposal.effective_at
++  if (proposal.transition !== undefined) candidate.transition = proposal.transition
++  candidate.logical_digest = hash(candidate)
++  return validateCandidate(candidate) ? candidate : null
++}
++
++export async function enqueueCandidate(candidate, { url, token, timeoutMs = 200 }) {
++  if (!validateCandidate(candidate) || !id(token, 4096) || !/^http:\/\/127\.0\.0\.1:\d+$/.test(url)) return false
++  try {
++    const result = await fetch(`${url}/__commit_gate/memory_candidates`, {
++      method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
++      body: JSON.stringify(candidate), signal: AbortSignal.timeout(timeoutMs),
++    })
++    return result.status === 202
++  } catch { return false }
++}
++
++// Optional delivery is bounded and independent of the baseline subscription.
++// Interruption, queue overflow, timeout or missing Called loses/defer this proposal;
++// no exactly-once delivery claim is made. Replays retain source identity.
++export function createCaptureObserver({ workspaceID, policyPath, url, token, policyLoader = loadCapturePolicy, enqueue = enqueueCandidate, maxPending = 8, timeoutMs = 200 }) {
++  const calls = new Map()
++  const pending = new Map()
++  const stats = { deferred: 0, failed: 0 }
++  const observe = async (event) => {
++    try {
++      const data = event?.data
++      if (!id(data?.sessionID) || !id(data.id)) return null
++      const key = JSON.stringify([data.sessionID, data.id])
++      if (event.type === "session.tool.called") {
++        if (!id(data.name)) return null
++        calls.set(key, data.name)
++        if (calls.size > 1024) { calls.delete(calls.keys().next().value); stats.deferred++ }
++        return null
++      }
++      if (event.type !== "session.tool.success" && event.type !== "session.tool.failed") return null
++      const name = calls.get(key)
++      calls.delete(key)
++      if (event.type !== "session.tool.success" || !name) return null
++      const candidate = candidateFromToolEvent({ ...event, data: { ...data, name } }, policyLoader(policyPath), workspaceID)
++      if (!candidate) return null
++      if (pending.has(candidate.event_id)) return candidate.event_id
++      if (pending.size >= Math.max(1, Math.min(64, maxPending))) { stats.deferred++; return null }
++      // enqueueCandidate aborts its actual network operation on timeout. Do not
++      // release a slot until the operation settles, including injected senders.
++      const task = Promise.resolve().then(() => enqueue(candidate, { url, token, timeoutMs }))
++        .then((ok) => { if (!ok) stats.failed++ }, () => { stats.failed++ })
++        .finally(() => pending.delete(candidate.event_id))
++      pending.set(candidate.event_id, task)
++      return candidate.event_id
++    } catch { stats.failed++; return null }
++  }
++  // Tests/owners may drain explicitly; the event loop never awaits this.
++  observe.flush = () => Promise.allSettled([...pending.values()])
++  observe.status = () => ({ ...stats, pending: pending.size, calls: calls.size })
++  return observe
++}
+--- a/index.mjs
++++ b/index.mjs
+@@ -11,6 +11,7 @@
+ import { createHybridLexicalIndex } from "../openviking-context-v4/lib/shared/hybrid-lexical.mjs"
+ import { createHybridRecall, loadVikingCorpus, DEFAULT_CORPUS_ROOT } from "../openviking-context-v4/lib/shared/hybrid-recall.mjs"
+ import { normalizeToolName } from "../openviking-context-v4/lib/shared/uri-guard.mjs"
++import { createCaptureObserver } from "./candidate-capture.mjs"
+ 
+ const pluginRoot = dirname(fileURLToPath(new URL("../openviking-context-v4/index.mjs", import.meta.url)))
+ const parts = (message) => message.type === "user"
+@@ -65,6 +66,12 @@
+     const uriGuard = createVikingUriGuard()
+     const controller = new AbortController()
+     const owned = new Set()
++    const observeCandidate = createCaptureObserver({
++      workspaceID: directory,
++      policyPath: process.env.GRAPHITI_CAPTURE_POLICY_PATH,
++      url: process.env.GRAPHITI_CAPTURE_GATE_URL ?? "http://127.0.0.1:1933",
++      token: process.env.GRAPHITI_CAPTURE_TOKEN ?? "",
++    })
+     let stopped = false
+     const consumeCanonical = async (sessionID) => {
+       const messages = await canonicalMessages(ctx, sessionID, directory)
+@@ -126,6 +133,9 @@
+       try {
+         for await (const event of ctx.event.subscribe({ signal: controller.signal })) {
+           const sessionID = event.data?.sessionID
++          // The event subscriber is outside interactive context/tool hooks.
++          // A bounded local enqueue failure cannot block the model turn.
++          observeCandidate(event)
+           if (process.env.PHASE_B_OV_EVENT_TRACE) appendFileSync(process.env.PHASE_B_OV_EVENT_TRACE, `${JSON.stringify({ type: event.type, session: Boolean(sessionID) })}\n`)
+           if (!sessionID) continue
+           try {
+--- /dev/null
++++ b/memory-candidate-v1.schema.json
+@@ -0,0 +1,226 @@
++{
++  "$schema": "https://json-schema.org/draft/2020-12/schema",
++  "$id": "https://github.com/fvanevski/opencode-operational-schema-guard/blob/issue/70/contracts/memory-candidate-v1.schema.json",
++  "title": "Issue 70 selective memory candidate envelope, phase-one proposed internal wire contract",
++  "description": "Internal source-backed candidate envelope. No unrestricted content, credentials or raw transcripts. Runtime owners must authenticate API compatibility before installation.",
++  "type": "object",
++  "additionalProperties": false,
++  "required": [
++    "schema_version",
++    "event_id",
++    "source",
++    "scope",
++    "observed_at",
++    "category",
++    "authority",
++    "policy_revision",
++    "destination",
++    "fact_ref"
++  ],
++  "properties": {
++    "schema_version": {
++      "const": 1
++    },
++    "event_id": {
++      "type": "string",
++      "pattern": "^[0-9a-f]{64}$",
++      "description": "Deterministic namespaced SHA-256 of stable source/fact identity, not transcript content"
++    },
++    "source": {
++      "type": "object",
++      "additionalProperties": false,
++      "required": [
++        "system",
++        "session_id",
++        "event_id"
++      ],
++      "properties": {
++        "system": {
++          "const": "opencode-v2"
++        },
++        "session_id": {
++          "type": "string",
++          "minLength": 1,
++          "maxLength": 256
++        },
++        "message_id": {
++          "type": "string",
++          "minLength": 1,
++          "maxLength": 256
++        },
++        "tool_event_id": {
++          "type": "string",
++          "minLength": 1,
++          "maxLength": 256
++        },
++        "event_id": {
++          "type": "string",
++          "minLength": 1,
++          "maxLength": 256
++        },
++        "cursor_id": {
++          "type": "string",
++          "minLength": 1,
++          "maxLength": 256
++        }
++      }
++    },
++    "scope": {
++      "type": "object",
++      "additionalProperties": false,
++      "required": [
++        "workspace_id",
++        "group_id"
++      ],
++      "properties": {
++        "workspace_id": {
++          "type": "string",
++          "minLength": 1,
++          "maxLength": 256
++        },
++        "group_id": {
++          "type": "string",
++          "minLength": 1,
++          "maxLength": 256
++        }
++      }
++    },
++    "observed_at": {
++      "type": "string",
++      "format": "date-time"
++    },
++    "effective_at": {
++      "type": "string",
++      "format": "date-time"
++    },
++    "category": {
++      "enum": [
++        "durable_decision",
++        "verified_architecture_fact",
++        "entity_relationship",
++        "exclusive_state_transition"
++      ]
++    },
++    "authority": {
++      "type": "object",
++      "additionalProperties": false,
++      "required": [
++        "basis",
++        "confidence"
++      ],
++      "properties": {
++        "basis": {
++          "enum": [
++            "operator_declared",
++            "source_verified",
++            "agent_candidate"
++          ]
++        },
++        "confidence": {
++          "type": "number",
++          "minimum": 0,
++          "maximum": 1
++        },
++        "evidence_ref": {
++          "type": "string",
++          "minLength": 1,
++          "maxLength": 512
++        }
++      }
++    },
++    "policy_revision": {
++      "type": "string",
++      "minLength": 1,
++      "maxLength": 128
++    },
++    "destination": {
++      "enum": [
++        "graphiti",
++        "openviking"
++      ]
++    },
++    "fact_ref": {
++      "type": "string",
++      "minLength": 1,
++      "maxLength": 512,
++      "description": "Opaque canonical fact/source reference, not freeform text"
++    },
++    "logical_digest": {
++      "type": "string",
++      "pattern": "^[0-9a-f]{64}$"
++    },
++    "transition": {
++      "type": "object",
++      "additionalProperties": false,
++      "required": [
++        "subject_ref",
++        "predicate",
++        "outgoing_state_ref",
++        "incoming_state_ref",
++        "effective_at"
++      ],
++      "properties": {
++        "subject_ref": {
++          "type": "string",
++          "minLength": 1,
++          "maxLength": 256
++        },
++        "predicate": {
++          "type": "string",
++          "minLength": 1,
++          "maxLength": 128
++        },
++        "outgoing_state_ref": {
++          "type": "string",
++          "minLength": 1,
++          "maxLength": 256
++        },
++        "incoming_state_ref": {
++          "type": "string",
++          "minLength": 1,
++          "maxLength": 256
++        },
++        "effective_at": {
++          "type": "string",
++          "format": "date-time"
++        }
++      }
++    }
++  },
++  "allOf": [
++    {
++      "if": {
++        "properties": {
++          "category": {
++            "const": "exclusive_state_transition"
++          }
++        }
++      },
++      "then": {
++        "required": [
++          "transition"
++        ]
++      }
++    },
++    {
++      "if": {
++        "properties": {
++          "category": {
++            "enum": [
++              "durable_decision",
++              "verified_architecture_fact",
++              "entity_relationship"
++            ]
++          }
++        }
++      },
++      "then": {
++        "not": {
++          "required": [
++            "transition"
++          ]
++        }
++      }
++    }
++  ]
++}
+--- /dev/null
++++ b/tests/candidate-capture.test.mjs
+@@ -0,0 +1,107 @@
++import test from "node:test"
++import assert from "node:assert/strict"
++import { mkdtempSync, writeFileSync, rmSync } from "node:fs"
++import { tmpdir } from "node:os"
++import { join } from "node:path"
++import { candidateFromToolEvent, createCaptureObserver, enqueueCandidate, loadCapturePolicy, validateCandidate } from "../candidate-capture.mjs"
++
++const policy = {
++  enabled: true, revision: "operator-r1", extractor_version: "1",
++  workspaces: ["/work"], groups: ["approved"],
++  categories: ["verified_architecture_fact"], tools: ["verified_source_tool"],
++}
++const event = {
++  type: "session.tool.success",
++  data: {
++    sessionID: "s1", assistantMessageID: "m1", id: "t1", name: "verified_source_tool", executed: true,
++    metadata: { memory_candidate_v1: {
++      group_id: "approved", category: "verified_architecture_fact", fact_ref: "repo:commit:fact-1",
++      observed_at: "2026-10-30T00:00:00Z", confidence: 1, evidence_ref: "repo:commit:file",
++    } },
++  },
++}
++
++test("disabled policy and mismatched scope do not persist candidates", () => {
++  assert.equal(loadCapturePolicy(""), null)
++  assert.equal(candidateFromToolEvent(event, null, "/work"), null)
++  assert.equal(candidateFromToolEvent(event, { ...policy, enabled: false }, "/work"), null)
++  assert.equal(candidateFromToolEvent(event, policy, "/other"), null)
++  assert.equal(candidateFromToolEvent({ ...event, data: { ...event.data, name: "untrusted" } }, policy, "/work"), null)
++})
++
++test("operator policy reload requires an explicit enabled revision", () => {
++  const root = mkdtempSync(join(tmpdir(), "issue70-policy-"))
++  const path = join(root, "policy.json")
++  try {
++    writeFileSync(path, JSON.stringify({ ...policy, enabled: false }))
++    assert.equal(loadCapturePolicy(path), null)
++    writeFileSync(path, JSON.stringify(policy))
++    assert.equal(loadCapturePolicy(path).revision, "operator-r1")
++    writeFileSync(path, JSON.stringify({ ...policy, groups: [] }))
++    assert.equal(loadCapturePolicy(path), null)
++  } finally { rmSync(root, { recursive: true }) }
++})
++
++test("durable source IDs survive duplicate delivery and compaction", () => {
++  const first = candidateFromToolEvent(event, policy, "/work")
++  assert.ok(first)
++  assert.ok(validateCandidate(first))
++  assert.equal(candidateFromToolEvent(structuredClone(event), policy, "/work").event_id, first.event_id)
++  assert.equal(first.source.message_id, "m1")
++  assert.equal(first.source.cursor_id, "m1")
++  assert.equal(first.source.tool_event_id, "t1")
++  assert.equal(first.source.event_id, "t1")
++})
++
++test("native called/success sequence, duplicate replay and restart retain identity", async () => {
++  const accepted = new Map()
++  const options = {
++    workspaceID: "/work", policyPath: "test-policy", url: "http://127.0.0.1:1933", token: "test-token",
++    policyLoader: () => policy,
++    enqueue: async (candidate) => { accepted.set(candidate.event_id, candidate); return true },
++  }
++  const called = { type: "session.tool.called", data: { sessionID: "s1", id: "t1", name: "verified_source_tool" } }
++  const success = structuredClone(event)
++  delete success.data.name // Native Success carries tool ID; Called carries its name.
++  const first = createCaptureObserver(options)
++  assert.equal(await first(called), null)
++  const id = await first(success)
++  assert.match(id, /^[0-9a-f]{64}$/)
++  assert.equal(await first(success), null) // Missing Called is safely deferred.
++  const restarted = createCaptureObserver(options)
++  await restarted(called)
++  assert.equal(await restarted(success), id)
++  await first.flush()
++  await restarted.flush()
++  assert.equal(accepted.size, 1)
++})
++
++test("secrets fixtures raw logs unsupported and unstructured claims are rejected", () => {
++  for (const fact_ref of ["tests/fixture", "logs/run.log", "password=secret", "raw conversation text", "sk-abcdefghijklmnopqrstuvwxyz123456"]) {
++    const changed = structuredClone(event)
++    changed.data.metadata.memory_candidate_v1.fact_ref = fact_ref
++    assert.equal(candidateFromToolEvent(changed, policy, "/work"), null)
++  }
++  const speculative = structuredClone(event)
++  speculative.data.metadata.memory_candidate_v1.category = "agent_candidate"
++  assert.equal(candidateFromToolEvent(speculative, policy, "/work"), null)
++  assert.equal(candidateFromToolEvent({ ...event, type: "session.tool.failed" }, policy, "/work"), null)
++})
++
++test("local enqueue uses bounded background transport and no Graphiti invocation", async () => {
++  const candidate = candidateFromToolEvent(event, policy, "/work")
++  const original = globalThis.fetch
++  let calls = 0
++  globalThis.fetch = async (url, opts) => {
++    calls++
++    assert.match(url, /\/__commit_gate\/memory_candidates$/)
++    assert.equal(opts.method, "POST")
++    return { status: 202 }
++  }
++  try {
++    assert.equal(await enqueueCandidate(candidate, { url: "http://127.0.0.1:1933", token: "test-token" }), true)
++    assert.equal(calls, 1)
++    assert.equal(await enqueueCandidate(candidate, { url: "https://example.org", token: "test-token" }), false)
++    assert.equal(calls, 1)
++  } finally { globalThis.fetch = original }
++})
+--- /dev/null
++++ b/tests/capture-isolation.test.mjs
+@@ -0,0 +1,91 @@
++import test from "node:test"
++import assert from "node:assert/strict"
++import { createServer } from "node:http"
++import { once } from "node:events"
++import { candidateFromToolEvent, createCaptureObserver } from "../candidate-capture.mjs"
++
++const policy = { enabled: true, revision: "r1", workspaces: ["/work"], groups: ["approved"], categories: ["verified_architecture_fact", "exclusive_state_transition"], tools: ["tool"] }
++const called = (id = "t1") => ({ type: "session.tool.called", data: { sessionID: "s1", id, name: "tool" } })
++const success = (id = "t1") => ({ type: "session.tool.success", data: { sessionID: "s1", assistantMessageID: "m1", id, name: "tool", executed: true, metadata: { memory_candidate_v1: { group_id: "approved", category: "verified_architecture_fact", fact_ref: "repo:fact", evidence_ref: "repo:forged", observed_at: "2026-10-30T00:00:00Z", confidence: 1, logical_digest: "0".repeat(64) } } } })
++const options = { workspaceID: "/work", policyPath: "fixture-policy", policyLoader: () => policy, url: "http://127.0.0.1:1", token: "disposable-capture" }
++
++test("forged evidence confidence time and transitions never become verified", () => {
++  const event = success()
++  const first = candidateFromToolEvent(event, policy, "/work")
++  assert.equal(first.authority.basis, "agent_candidate")
++  assert.equal(first.authority.confidence, 0)
++  assert.equal(first.authority.evidence_ref, undefined)
++  event.data.metadata.memory_candidate_v1.evidence_ref = "repo:different-forgery"
++  event.data.metadata.memory_candidate_v1.confidence = 0.9
++  event.data.metadata.memory_candidate_v1.logical_digest = "f".repeat(64)
++  const same = candidateFromToolEvent(event, policy, "/work")
++  assert.deepEqual(first, same)
++  event.data.metadata.memory_candidate_v1.observed_at = "2099-01-01T00:00:00Z"
++  const forged = candidateFromToolEvent(event, policy, "/work")
++  assert.equal(forged.event_id, first.event_id)
++  assert.notEqual(forged.logical_digest, first.logical_digest)
++  assert.equal(forged.authority.basis, "agent_candidate")
++  event.data.metadata.memory_candidate_v1.category = "exclusive_state_transition"
++  event.data.metadata.memory_candidate_v1.transition = { subject_ref: "repo:entity", predicate: "state", outgoing_state_ref: "repo:old", incoming_state_ref: "repo:new", effective_at: "2099-01-01T00:00:00Z" }
++  assert.equal(candidateFromToolEvent(event, policy, "/work").authority.basis, "agent_candidate")
++})
++
++test("outstanding work is bounded; duplicates coalesce; baseline delivery proceeds before network", async () => {
++  let release
++  const slow = new Promise((resolve) => { release = resolve })
++  const sent = []
++  const observer = createCaptureObserver({ ...options, maxPending: 2, enqueue: async (candidate) => { sent.push(candidate.event_id); await slow; return true } })
++  const baseline = []
++  for (const id of ["t1", "t1", "t2", "t3"]) {
++    // Faithful subscription pattern: optional observer is never awaited.
++    observer(called(id)); observer(success(id)); baseline.push(id)
++  }
++  await Promise.resolve()
++  assert.equal(baseline.length, 4)
++  assert.equal(observer.status().pending, 2)
++  assert.equal(observer.status().deferred, 1)
++  assert.equal(sent.length, 2)
++  release(); await observer.flush()
++  assert.equal(observer.status().pending, 0)
++})
++
++test("policy and sender exceptions are isolated including synchronous throws", async () => {
++  for (const overrides of [{ policyLoader: () => { throw Error("bad policy") } }, { enqueue: () => { throw Error("send threw") } }, { enqueue: async () => { throw Error("send rejected") } }]) {
++    const observer = createCaptureObserver({ ...options, ...overrides })
++    await observer(called()); await assert.doesNotReject(observer(success()))
++    await observer.flush()
++    assert.equal(observer.status().failed, 1)
++  }
++})
++
++test("slow real endpoint times out without delaying baseline callbacks", async () => {
++  let requests = 0
++  const sockets = new Set()
++  const server = createServer((_req, _res) => { requests++ })
++  server.on("connection", (socket) => { sockets.add(socket); socket.on("close", () => sockets.delete(socket)) })
++  server.listen(0, "127.0.0.1"); await once(server, "listening")
++  try {
++    const observer = createCaptureObserver({ ...options, url: `http://127.0.0.1:${server.address().port}`, timeoutMs: 100 })
++    observer(called()); observer(success())
++    let baseline = false; baseline = true
++    assert.equal(baseline, true)
++    assert.equal(observer.status().pending, 1)
++    await observer.flush()
++    assert.equal(requests, 1)
++    assert.equal(observer.status().failed, 1)
++    assert.equal(observer.status().pending, 0)
++  } finally { for (const socket of sockets) socket.destroy(); await new Promise((resolve) => server.close(resolve)) }
++})
++
++test("restart and continuation preserve event binding but missing Called is deferred", async () => {
++  const sent = []
++  const opts = { ...options, enqueue: async (candidate) => { sent.push(candidate); return true } }
++  const first = createCaptureObserver(opts)
++  await first(called()); const id = await first(success()); await first.flush()
++  const restarted = createCaptureObserver(opts)
++  assert.equal(await restarted(success()), null)
++  await restarted(called()); assert.equal(await restarted(success()), id); await restarted.flush()
++  assert.deepEqual(sent[0], sent[1])
++  const continued = success(); continued.data.assistantMessageID = "continued-message"
++  assert.equal(candidateFromToolEvent(continued, policy, "/work").event_id, id)
++})
+--- /dev/null
++++ b/tests/central-authentication-regressions.test.mjs
+@@ -0,0 +1,52 @@
++// Issue #70. Copy this file to the authenticated openviking-v2 source's
++// tests/ directory, alongside candidate-capture.test.mjs, before running.
++// This intentionally fails against the 2026-10-30 supplied Phase 1 candidate.
++// Do not change these assertions merely to achieve green.
++import test from 'node:test'
++import assert from 'node:assert/strict'
++import { candidateFromToolEvent, createCaptureObserver } from '../candidate-capture.mjs'
++
++const policy = {
++  enabled: true, revision: 'operator-r1', extractor_version: '1',
++  workspaces: ['/workspace'], groups: ['authorized'],
++  categories: ['verified_architecture_fact'], tools: ['operator_allowlisted_tool'],
++}
++function candidateEvent() {
++  return {type:'session.tool.success',data:{
++    sessionID:'session1', assistantMessageID:'message1',id:'event1',
++    name:'operator_allowlisted_tool', executed:true,metadata:{memory_candidate_v1:{
++      group_id:'authorized',category:'verified_architecture_fact',
++      fact_ref:'repo:main:claim1',evidence_ref:'repo:main:claim1',
++      observed_at:'2026-10-30T00:00:00Z',confidence:1,
++      logical_digest:'0'.repeat(64),
++    }},
++  }}
++}
++
++test('unverified tool proposal cannot be silently promoted to source_verified', () => {
++  const candidate = candidateFromToolEvent(candidateEvent(), policy, '/workspace')
++  assert.ok(candidate === null || candidate.authority.basis !== 'source_verified',
++    'An allowlisted tool name is not independent source verification')
++})
++test('same source event cannot select alternate work identities through caller digest', () => {
++  const a = candidateEvent()
++  const b = candidateEvent()
++  b.data.metadata.memory_candidate_v1.logical_digest = '1'.repeat(64)
++  const first = candidateFromToolEvent(a, policy, '/workspace')
++  const second = candidateFromToolEvent(b, policy, '/workspace')
++  assert.ok(first === null || second === null || (
++    first.event_id === second.event_id && first.logical_digest === second.logical_digest
++  ), 'work-key inputs must be derived from authenticated canonical source data')
++})
++test('optional observer errors cannot reject the enclosing existing event callback', async () => {
++  const observer = createCaptureObserver({
++    workspaceID:'/workspace',policyPath:'fixture-policy',
++    url:'http://127.0.0.1:1933',token:'test-only',
++    policyLoader:()=>policy,
++    enqueue:async()=>{throw new Error('optional network failure')},
++  })
++  await observer({type:'session.tool.called',data:{
++    sessionID:'session1',id:'event1',name:'operator_allowlisted_tool',
++  }})
++  await assert.doesNotReject(observer(candidateEvent()))
++})

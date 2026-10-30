@@ -1,0 +1,250 @@
+{
+  "central_inputs": {
+    "graphiti-terminal-boundary.md": {
+      "encoding": "utf-8",
+      "path": "docs/issue-70/graphiti-terminal-boundary.md",
+      "ref": "c4714d33f30ce6f3aa81eac1c9caabcdefd6a3b9",
+      "sha": "58ee0d3b4c025f954eea15be807ff46cddf8a930",
+      "size": 6852
+    },
+    "i1-next-integration-contract.md": {
+      "encoding": "utf-8",
+      "path": "docs/issue-70/i1-next-integration-contract.md",
+      "ref": "c4714d33f30ce6f3aa81eac1c9caabcdefd6a3b9",
+      "sha": "cbf43a490b35d84007cd9e724dabb5cf2b0e8d04",
+      "size": 9002
+    },
+    "i1-unknown-commit-quiescence.md": {
+      "encoding": "utf-8",
+      "path": "docs/issue-70/i1-unknown-commit-quiescence.md",
+      "ref": "c4714d33f30ce6f3aa81eac1c9caabcdefd6a3b9",
+      "sha": "2bd1f4e45a6db0b1189a3a57259496a6e7bbc285",
+      "size": 5479
+    },
+    "implementation/backend/receipt_protocol.py": {
+      "encoding": "utf-8",
+      "path": "docs/issue-70/implementation/backend/receipt_protocol.py",
+      "ref": "c4714d33f30ce6f3aa81eac1c9caabcdefd6a3b9",
+      "sha": "c5ac37153cf09135e32343669e15e389532f5434",
+      "size": 7850
+    },
+    "implementation/backend/test_receipt_protocol.py": {
+      "encoding": "utf-8",
+      "path": "docs/issue-70/implementation/backend/test_receipt_protocol.py",
+      "ref": "c4714d33f30ce6f3aa81eac1c9caabcdefd6a3b9",
+      "sha": "e494d4f3e5b2c4a9d9ec3a57960236e157e76dc1",
+      "size": 3508
+    },
+    "patches/i2-no-task-terminal-proof.patch": {
+      "encoding": "utf-8",
+      "path": "docs/issue-70/patches/i2-no-task-terminal-proof.patch",
+      "ref": "c4714d33f30ce6f3aa81eac1c9caabcdefd6a3b9",
+      "sha": "7e105bbff7fbdc1956b1622aa8d97daf3e56ce6e",
+      "size": 3648
+    },
+    "phase1-correction-independent-disposition.md": {
+      "encoding": "utf-8",
+      "path": "docs/issue-70/phase1-correction-independent-disposition.md",
+      "ref": "c4714d33f30ce6f3aa81eac1c9caabcdefd6a3b9",
+      "sha": "b22e967fa9dcfff44b0fe22904441bad6bb039d1",
+      "size": 4158
+    }
+  },
+  "correction_archive_sha256": "08442b4b6fc89173314cc0a48ef12982487fb42e38c6fc15e69173ed9fc3d00c",
+  "files": [
+    {
+      "candidate_sha256": "1284077e96eaa5b7fac45711cb9f180eb6d765bfe029f559f3490cd75d775a7b",
+      "component": "gate",
+      "path": "shared_work.py",
+      "source_base_sha256": null
+    },
+    {
+      "candidate_sha256": "b30bbe291ac02c477dc7f6febf40b943f8166a086169aa37c316611293fc9d7e",
+      "component": "gate",
+      "path": "memory-candidate-v1.schema.json",
+      "source_base_sha256": null
+    },
+    {
+      "candidate_sha256": "3351b776ebac83e9f9ed3fd9a0319a9bb6b85deca542ef9a36b7302c74ce3014",
+      "component": "gate",
+      "path": "requirements-phase1.txt",
+      "source_base_sha256": null
+    },
+    {
+      "candidate_sha256": "da95cd9cfe32c44f59ed4b4100b910b44ed4451336e636dcc2d316ba7ade33e1",
+      "component": "gate",
+      "path": "receipt_protocol.py",
+      "source_base_sha256": null
+    },
+    {
+      "candidate_sha256": "6839dc0ec3ba04c6294ddb77783c114e6970a907b839f232bced736d7f06927e",
+      "component": "gate",
+      "path": "test_receipt_protocol.py",
+      "source_base_sha256": null
+    },
+    {
+      "candidate_sha256": "4441d428a2c676821ff11f81fa3bc9bc3c0218badb381e70a424234fed3d3991",
+      "component": "gate",
+      "path": "openviking_commit_gate.py",
+      "source_base_sha256": "6ad48a939d3f52df1c774f87d030986b35022a8c20f15916d82177ccf2094f42"
+    },
+    {
+      "candidate_sha256": "4e2234f65a4e3bd86d1aaf9fbe5a27983c5538a2a65bc381f814422f102de4e5",
+      "component": "gate",
+      "path": "tests/test_gate.py",
+      "source_base_sha256": "4e2234f65a4e3bd86d1aaf9fbe5a27983c5538a2a65bc381f814422f102de4e5"
+    },
+    {
+      "candidate_sha256": "7de5fa398ba0be9b8331bf8cfd109ca18bf18408f82cd63b054e4cb71d7541ff",
+      "component": "gate",
+      "path": "tests/test_dual_metrics.py",
+      "source_base_sha256": "7de5fa398ba0be9b8331bf8cfd109ca18bf18408f82cd63b054e4cb71d7541ff"
+    },
+    {
+      "candidate_sha256": "d17f8df4901816a8c2e340e6436744735b2ec978db29ae45c492bfb9debca55b",
+      "component": "gate",
+      "path": "tests/test_shared_work.py",
+      "source_base_sha256": null
+    },
+    {
+      "candidate_sha256": "0c432abadecc15ab3be364c36df5afda44764d476322d223f42a8cce5d95c072",
+      "component": "gate",
+      "path": "tests/test_service_mixed.py",
+      "source_base_sha256": null
+    },
+    {
+      "candidate_sha256": "f9bd6fd390956125da9749e9d1d9eea8cd0a09d4dd3e0e943d60fb237eb1b558",
+      "component": "gate",
+      "path": "tests/test_service_corrections.py",
+      "source_base_sha256": null
+    },
+    {
+      "candidate_sha256": "67d8e07a364a88a2a9b550be63795da1b0220cd9557e931ab44935fd960b09f6",
+      "component": "gate",
+      "path": "tests/test_corrections.py",
+      "source_base_sha256": null
+    },
+    {
+      "candidate_sha256": "ac54e32016b2c29d38c302f116a69110395a579d82b602d2cbf7cbf416d63e4a",
+      "component": "openviking-v2",
+      "path": "package.json",
+      "source_base_sha256": "ac54e32016b2c29d38c302f116a69110395a579d82b602d2cbf7cbf416d63e4a"
+    },
+    {
+      "candidate_sha256": "f017a8f04dbd33f87fae71c0be9a29f8748bc1a16a29a64782c987dba247adee",
+      "component": "openviking-v2",
+      "path": "index.mjs",
+      "source_base_sha256": "6899822ec75a16ba05578d4ba165dfe8f913f3d37a4d96717767a170b906766d"
+    },
+    {
+      "candidate_sha256": "b30bbe291ac02c477dc7f6febf40b943f8166a086169aa37c316611293fc9d7e",
+      "component": "openviking-v2",
+      "path": "memory-candidate-v1.schema.json",
+      "source_base_sha256": null
+    },
+    {
+      "candidate_sha256": "138d82f483a641f61b0a9330beb45ce1fb64fe103ae562887845372cbc646e4d",
+      "component": "openviking-v2",
+      "path": "candidate-capture.mjs",
+      "source_base_sha256": null
+    },
+    {
+      "candidate_sha256": "d8e57bd53294d692a91fc681ca1c6920ee0b09cb684c1142dadaede3fb6f541d",
+      "component": "openviking-v2",
+      "path": "tests/candidate-capture.test.mjs",
+      "source_base_sha256": null
+    },
+    {
+      "candidate_sha256": "770d5c0bae05b67f193f9b5fd205bb7e4e8e63f754727f920223a2fe37c65860",
+      "component": "openviking-v2",
+      "path": "tests/central-authentication-regressions.test.mjs",
+      "source_base_sha256": null
+    },
+    {
+      "candidate_sha256": "cd77e3e057940b2f62c26e422e594ab0ca02ccd339c550ddb042f5b619e4c026",
+      "component": "openviking-v2",
+      "path": "tests/capture-isolation.test.mjs",
+      "source_base_sha256": null
+    },
+    {
+      "candidate_sha256": "6b876bdb26588f8f1e67e066c8c91637ad5fd344e679ebb2515f87526567d8d2",
+      "component": "backend",
+      "path": "openviking/session/session.py",
+      "source_base_sha256": "2cd71ec6b24ac79df7f23a427d9cab6b02a33a9772942580d40be3875dccd883"
+    },
+    {
+      "candidate_sha256": "eec7d6297bfee0c58ff652a7b1a2d5512ff1f28f1bd8e35a4ec8696a361cad71",
+      "component": "backend",
+      "path": "openviking/server/app.py",
+      "source_base_sha256": "bbd53faaba62283b35934de0763502c5aca2478ffb62874687520422ff1665bd"
+    },
+    {
+      "candidate_sha256": "a44bc78466b36304fea8e9809b14ef681a9a14f91d567173f472b362bb318e5b",
+      "component": "backend",
+      "path": "openviking/service/task_queue_middleware.py",
+      "source_base_sha256": "cbfaea108baa7ef694c9f908cc3233d03297c822df2892a07893ecc00226a996"
+    },
+    {
+      "candidate_sha256": "4959299bb99a6f8833f44957883fc322a3bf3acbdd846c041ee93d5da5c6c7ad",
+      "component": "backend",
+      "path": "openviking/storage/queuefs/session_commit_msg.py",
+      "source_base_sha256": "7b8922a20a82e5ff103a84d8cd9de6c6c865cc5010d56c4add70b5eceadc9852"
+    },
+    {
+      "candidate_sha256": "2775fae94e0ae7900b6f0f58dbc3fdf7f995a31e98dfcc2f79b5d9e81a611b92",
+      "component": "backend",
+      "path": "openviking/server/routers/sessions.py",
+      "source_base_sha256": "4b0cb8b6d141f3987ebe398d0ce64b4474414d7281ecc208efacdb9439e1247b"
+    },
+    {
+      "candidate_sha256": "da95cd9cfe32c44f59ed4b4100b910b44ed4451336e636dcc2d316ba7ade33e1",
+      "component": "backend",
+      "path": "openviking/service/receipt_protocol.py",
+      "source_base_sha256": null
+    },
+    {
+      "candidate_sha256": "aa90595a73d719dea45f5591af63ff2f9a5d13af4bc3d7071cfb4426b8cffb12",
+      "component": "backend",
+      "path": "openviking/service/commit_receipts.py",
+      "source_base_sha256": null
+    },
+    {
+      "candidate_sha256": "29d4b1087fab4ec2d4850419e7e614231ba59c2352b52692ce95de6e25f62a85",
+      "component": "shim",
+      "path": "openviking-agent-run",
+      "source_base_sha256": "d22ca3f904924356ee54926276be9b28988646805f5d498aa91e901ef10d1d6a"
+    },
+    {
+      "candidate_sha256": "08fc29d1c89d14595826eb2601e832a9ff3f3566015162ea1a74625065c4af7f",
+      "component": "shim",
+      "path": "admission_exec.py",
+      "source_base_sha256": null
+    }
+  ],
+  "installation_mapping": {
+    "candidate/gate": "~/.local/share/openviking-commit-gate",
+    "candidate/openviking-v2": "~/.config/opencode/plugins/openviking-v2",
+    "candidate/shim/admission_exec.py": "~/.local/share/openviking-commit-gate/admission_exec.py",
+    "candidate/shim/openviking-agent-run": "~/.local/bin/openviking-agent-run",
+    "patches/backend.patch": "authenticated OpenViking site-packages root; apply only in isolated copies until separately authorized"
+  },
+  "patches": [
+    {
+      "apply_and_reverse": "PASS",
+      "path": "patches/gate.patch",
+      "sha256": "047d2be72b8bd6cdd143a4a85e1fc067ea4b6a1e07ae3fac80b2d4ec963f608a"
+    },
+    {
+      "apply_and_reverse": "PASS",
+      "path": "patches/openviking-v2.patch",
+      "sha256": "aded0966c4f2f155d31a2825c4f56e3aab0f5e24dc55e51a2178aaacc92a3dce"
+    },
+    {
+      "apply_and_reverse": "PASS",
+      "path": "patches/backend.patch",
+      "sha256": "a03ab064dc6f0d13861ef7b20faf8a4b6b490474f9f2f92cffc740b0cbe1ad61"
+    }
+  ],
+  "publication_parent_sha": "c4714d33f30ce6f3aa81eac1c9caabcdefd6a3b9",
+  "tracker_base": "c4714d33f30ce6f3aa81eac1c9caabcdefd6a3b9"
+}
