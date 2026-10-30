@@ -1,11 +1,18 @@
 {
-  "encountered": false,
-  "requested_shape": "rtk proxy python3 /home/filip/issue70-i1-_g1_n3yw/run_qualification.py",
-  "effective_shape": "rtk proxy python3 /home/filip/issue70-i1-_g1_n3yw/run_qualification.py",
-  "rewrite_provenance": "agent-authored RTK prefix; no harness rewrite observed",
-  "event_kind": "completed_execution",
-  "execution_effect": "120 CPU-only checks in private network/read-only filesystem; separately authorized issue-branch artifact commit",
-  "correction": "none for command shape; diagnostic source-path and fixture invocation errors corrected without protected mutations",
+  "encountered": true,
+  "requested_shape": "agent-authored: python3 -m unittest (discover/individual class forms), bwrap-isolated run_qualification.py, sha256sum/diff/patch proofs; no rtk prefix on agent-chosen commands",
+  "effective_shape": "as requested; no harness rewrites observed on suite or proof commands",
+  "rewrite_provenance": "agent-authored commands; zsh shell-shape errors only (cosmetic 'echo ===' glob failures), no authority/identity command touched",
+  "event_kind": "completed_execution_with_local_repair",
+  "events": [
+    "unittest import form: 'unittest tests.test_multi_unknown_recovery' failed to resolve; corrected to discover/class form (interface discovery, pre-execution)",
+    "one permission.rejected on a compound 'mkdir -p /tmp/opencode/issue70 && ...' call; retried without mkdir since the directory existed (pre_execution_rejection)",
+    "cosmetic zsh glob failures on 'echo ===' separators; no command semantics affected",
+    "fixture disabled-stage AttributeError (receipt runtime None) found by full-suite run; fixture guard added (test repair, not command friction)",
+    "stale patches/gate.patch detected by forward/reverse proof; regenerated against installed base 6ad48a93 and re-proven byte-exact forward/reverse (artifact correction)"
+  ],
+  "execution_effect": "136 CPU-only qualification checks (8 suites, bwrap read-only root/private net/tmp, no GPU) plus forward/reverse byte-exact gate patch proofs; disposable backend subprocesses only; no production storage/services touched; Graphiti writes stayed disabled; no PR/merge/deploy",
+  "correction": "command shapes corrected in place; all acceptance-bearing suites re-run after fixture and artifact repairs; repaired runs are the recorded evidence",
   "recipe_reference": "GHDEV-10; /home/filip/.codex/RTK.md; README.md reproduction recipe",
   "sensitive_values_omitted": true
 }

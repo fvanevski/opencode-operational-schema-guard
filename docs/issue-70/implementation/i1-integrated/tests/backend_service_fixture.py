@@ -27,6 +27,8 @@ from openviking.service.commit_receipts import runtime
 from openviking_cli.exceptions import OpenVikingError
 
 async def main(root,stage):
+    import signal
+    signal.signal(signal.SIGTERM,lambda *_:os._exit(143))
     root=Path(root);root.mkdir(exist_ok=True)
     if stage=="disabled": os.environ.pop("OPENVIKING_COMMIT_RECEIPT_DB",None)
     else: os.environ["OPENVIKING_COMMIT_RECEIPT_DB"]=str(root/"receipts.sqlite")
@@ -40,31 +42,61 @@ async def main(root,stage):
     # Native persistent QueueFS owns Work reconstruction after a process restart.
     await queues.prepare_task_tracking(tracker)
     ctx=RequestContext(UserIdentifier("a","u"),Role.ROOT)
-    for name in ("s","other","skip","legacy"):
+    for name in ("s","other","skip","legacy","a","b"):
         obj=service.session(ctx,name)
         if not await obj.exists():
             obj=await service.create(ctx,session_id=name)
             if name!='skip':
                 msg=Message(id="m1-"+name,role="user",parts=[TextPart(text="CPU disposable fixture")])
                 await fs.write_file(obj.uri+"/messages.jsonl",(msg.to_jsonl()+"\n").encode(),ctx=ctx)
-    state={"busy":0,"stage":"ready","extractions":0,"commit_calls":0,"archive_published":False}
+    state={"busy":0,"stage":"ready","extractions":0,"commit_calls":0,"archive_published":False,
+           "task_creates":[],"enqueues":0,"receipt_calls":{}}
     release=asyncio.Event()
+    releases={"s":release}
+    def session_release(rid): return releases.setdefault(rid,asyncio.Event())
     original=tracker.create
     async def pause_create(*args,**kwargs):
+        rid=kwargs.get("resource_id")
+        if stage=="multi" and rid=="b" and not state.get("b_published"):
+            state["b_published"]=True
+            state["stage"]="b_published_before_task"
+            await session_release("b").wait()
+        elif stage=="multi_both" and rid in ("a","b") and not state.get(rid+"_published"):
+            state[rid+"_published"]=True
+            state["stage"]=rid+"_published_before_task"
+            await session_release(rid).wait()
         if kwargs.get("resource_id")=="s" and stage in ("publication","registration") and not state["archive_published"]:
             state["archive_published"]=True
             if stage=="publication":
                 state["stage"]="published_before_task";await release.wait()
-                return await original(*args,**kwargs)
-            result=await original(*args,**kwargs)
-            state["stage"]="registered_before_enqueue";await release.wait();return result
-        return await original(*args,**kwargs)
+            else:
+                result=await original(*args,**kwargs)
+                state["stage"]="registered_before_enqueue";await release.wait()
+                state["task_creates"].append({"resource_id":rid,"task_id":kwargs.get("task_id")})
+                return result
+        result=await original(*args,**kwargs)
+        state["task_creates"].append({"resource_id":rid,"task_id":kwargs.get("task_id")})
+        return result
     tracker.create=pause_create
     real_commit=service.commit_async
     async def counted(*args,**kwargs):
         state["commit_calls"]+=1
         return await real_commit(*args,**kwargs)
     service.commit_async=counted
+    real_enqueue=queues.enqueue
+    async def counted_enqueue(queue_name,data,*a,**k):
+        result=await real_enqueue(queue_name,data,*a,**k)
+        if queue_name==queues.SESSION_COMMIT:state["enqueues"]+=1
+        return result
+    queues.enqueue=counted_enqueue
+    receipt_owner=runtime()
+    if receipt_owner is not None:
+        real_reconcile=receipt_owner.reconcile
+        async def counted_reconcile(key,session,tracker_arg,*,allow_recovery=False):
+            entry=state["receipt_calls"].setdefault(key,{"read_only":0,"recover":0})
+            entry["recover" if allow_recovery else "read_only"]+=1
+            return await real_reconcile(key,session,tracker_arg,allow_recovery=allow_recovery)
+        receipt_owner.reconcile=counted_reconcile
     async def cpu_extract(obj,**kwargs):
         state["extractions"]+=1
         if stage=="failure":
@@ -98,15 +130,22 @@ async def main(root,stage):
         tasks=await tracker.list_tasks(account_id="a",user_id="u",limit=200)
         return {**state,"tasks":[t.to_dict() for t in tasks],"queue_size":len(await queue.snapshot())}
     @app.post("/test/release")
-    async def release_publication(): release.set();return {"ok":True}
+    async def release_publication(session: str = "s"):
+        releases.setdefault(session,asyncio.Event()).set()
+        return {"ok":True}
     @app.post("/test/drain")
     async def drain():
         await queue.dequeue()
         return {"extractions":state["extractions"],"queue_size":len(await queue.snapshot())}
     @app.post("/test/replay")
-    async def replay():
+    async def replay(key: str = ""):
         with runtime().ledger._connect() as db:
-            key=db.execute("SELECT request_key FROM receipt_bindings LIMIT 1").fetchone()[0]
+            if key:
+                found=db.execute("SELECT request_key FROM receipt_bindings WHERE request_key=?",(key,)).fetchone()
+                if found is None:raise LookupError("no receipt binding for requested key")
+                key=found[0]
+            else:
+                key=db.execute("SELECT request_key FROM receipt_bindings LIMIT 1").fetchone()[0]
         bound=runtime().binding(key)
         obj=service.session(ctx,"s")
         message=(await obj._read_phase1_meta(bound["archive_uri"]))["queue_message"]

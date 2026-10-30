@@ -206,4 +206,193 @@ class I1Service(unittest.TestCase):
         self.assertFalse(self.worker.tick())
         self.assertEqual(self.launcher()[0].returncode,75)
 
+class MultiRequestAdmission(I1Service):
+    """Distinct ambiguous commit identities under the shared admission guard."""
+    def rows(self):
+        return {r["session_id"]:r for r in self.db.list_rows()}
+    def unknown_key(self,session):
+        row=next(r for r in self.db.unknown_rows() if r["session_id"]==session)
+        return self.db.attempt(row)["request_key"]
+    def claim_and_submit(self,session):
+        row=self.db.claim(self.db.next_ready())
+        self.assertIsNotNone(row)
+        self.assertEqual(row["session_id"],session)
+        self.worker._process(row)
+        return row
+    def recover_phase_cfg(self):
+        # Short poll deadline plus a recovery grace longer than the drain gap:
+        # the single authorized recovery is not re-issued by the poll loop.
+        self.cfg=replace(self.cfg,task_timeout_seconds=0.03,quiet_grace_seconds=0.25)
+        self.worker=gate.Worker(self.cfg,self.db,threading.Event())
+    def test_queued_task_and_ambiguous_recovery_conflict(self):
+        self.start("multi")
+        # Guarded-window configuration: the long recovery grace keeps every
+        # receipt poll read-only while a distinct operation is unresolved.
+        self.cfg=replace(self.cfg,task_timeout_seconds=2.0,quiet_grace_seconds=2.0)
+        self.worker=gate.Worker(self.cfg,self.db,threading.Event())
+        self.enqueue("a");self.enqueue("b")
+        # Ordinary admission claims A first: accepted, task registered and
+        # durable in QueueFS, extraction not yet started.
+        self.claim_and_submit("a")
+        a_row=self.rows()["a"]
+        # A's poll deadline lapses while the receipt is non-terminal; the
+        # durable task identity is preserved on the unknown claim.
+        self.assertEqual(a_row["state"],"unknown");self.assertTrue(a_row["task_id"])
+        a_task=a_row["task_id"]
+        # B's publication pauses before task registration; the gate loses the
+        # response and B becomes an ambiguous unknown with an authoritative archive.
+        self.claim_and_submit("b")
+        self.assertEqual(self.rows()["b"]["state"],"unknown")
+        state=self.state()
+        self.assertEqual(state["queue_size"],1)
+        self.assertEqual([t["resource_id"] for t in state["tasks"]],["a"])
+        a_key=self.db.attempt(a_row)["request_key"];b_key=self.unknown_key("b")
+        for _ in range(2):self.worker.tick()
+        state=self.state()
+        # While A can still produce inference, B's recovery must not enqueue.
+        # Both commits started exactly once; only A is registered/enqueued.
+        self.assertEqual(state["queue_size"],1)
+        self.assertEqual(state["extractions"],0)
+        self.assertEqual(state["commit_calls"],2)
+        self.assertEqual(state["enqueues"],1)
+        self.assertEqual(state["task_creates"],[{"resource_id":"a","task_id":a_task}])
+        self.assertEqual(state["receipt_calls"][b_key]["recover"],0)
+        self.assertGreaterEqual(state["receipt_calls"][b_key]["read_only"],1)
+        self.assertEqual(state["receipt_calls"][a_key]["recover"],0)
+        self.assertEqual(self.rows()["a"]["task_id"],a_task)
+        self.assertEqual(dict(self.db.attempt(self.rows()["a"])),dict(self.db.attempt(a_row)))
+        self.assertEqual(self.launcher()[0].returncode,75)
+        # A reaches a verified terminal, non-replayable state.
+        self.http("POST","/test/drain",{})
+        self.reconcile_until("a")
+        state=self.state()
+        self.assertEqual(state["extractions"],1)
+        self.assertEqual(state["commit_calls"],2)
+        self.assertEqual(state["receipt_calls"][a_key]["recover"],0)
+        code,receipt=self.http("GET","/api/v1/admin/commit_receipts/a/"+a_key,headers=HEADERS)
+        self.assertEqual(code,200);self.assertEqual(receipt["result"]["state"],"terminal")
+        self.assertEqual(receipt["result"]["release_proven"],1)
+        # Release B's paused publication: the exact durable task registers, the
+        # original path enqueues once, and the per-key fence releases. The
+        # recovery GET below can now observe the published archive.
+        self.http("POST","/test/release?session=b",{})
+        wait_for(lambda:self.state()["enqueues"]==2,5)
+        self.assertEqual(self.state()["commit_calls"],2)
+        # Exactly one authorized recovery for B, then terminal resolution.
+        self.recover_phase_cfg()
+        self.worker.tick()
+        time.sleep(0.3)
+        self.worker.tick()
+        state=self.state()
+        self.assertEqual(state["receipt_calls"][b_key]["recover"],1)
+        b_row=self.rows()["b"];self.assertTrue(b_row["task_id"])
+        # The native processor/resume paths re-register the same durable task
+        # idempotently; what is asserted is distinct identities, not call count.
+        self.assertEqual({(e["resource_id"],e["task_id"]) for e in state["task_creates"]},
+            {("a",a_task),("b",b_row["task_id"])})
+        self.assertEqual(state["enqueues"],2)
+        self.http("POST","/test/drain",{})
+        self.reconcile_until("b")
+        state=self.state()
+        self.assertEqual(state["extractions"],2)
+        self.assertEqual(state["commit_calls"],2)
+        self.assertEqual(state["receipt_calls"][b_key]["recover"],1)
+        self.assertEqual(self.rows()["b"]["state"],"complete")
+        # Backend restart after publication: persistent QueueFS state is intact.
+        self.stop(kill=True);self.start("multi")
+        self.cfg=replace(self.cfg,task_timeout_seconds=2.0,quiet_grace_seconds=0)
+        self.worker=gate.Worker(self.cfg,self.db,threading.Event())
+        # Unrelated pending work resumes through ordinary admission.
+        self.enqueue("other");self.submit_gate()
+        self.http("POST","/test/drain",{})
+        self.reconcile_until("other")
+        state=self.state()
+        self.assertEqual(state["extractions"],1)
+        self.assertEqual(state["commit_calls"],1)
+        self.assertEqual(self.launcher()[0].returncode,0)
+        # Queue replay after the authoritative terminal seal is a no-op.
+        self.http("POST","/test/replay?key="+b_key,{});self.http("POST","/test/drain",{})
+        self.assertEqual(self.state()["extractions"],1)
+        code,receipt=self.http("GET","/api/v1/admin/commit_receipts/b/"+b_key,headers=HEADERS)
+        self.assertEqual(receipt["result"]["state"],"terminal")
+        self.assertEqual(receipt["result"]["release_proven"],1)
+        self.stop(kill=True)
+        print("MULTI_UNKNOWN_ADMISSION "+json.dumps({
+            "queued_task_blocks_distinct_recovery":True,
+            "b_recover_before_a_terminal":0,
+            "b_single_authorized_recovery":True,
+            "a_identity_unchanged":True,
+            "no_duplicate_extractions":True,
+            "restart_persistent_queuefs":True,
+            "unrelated_resumed":True,
+            "replay_after_seal_noop":True}))
+    def test_two_ambiguous_unknowns_fail_closed_until_backend_evidence(self):
+        self.start("multi_both")
+        self.cfg=replace(self.cfg,task_timeout_seconds=2.0,quiet_grace_seconds=2.0)
+        self.worker=gate.Worker(self.cfg,self.db,threading.Event())
+        self.enqueue("a");self.enqueue("b")
+        # Both publications pause before task registration and both responses
+        # are lost: two distinct ambiguous unknowns, no authoritative terminal
+        # proof, no registered tasks.
+        self.claim_and_submit("a");self.claim_and_submit("b")
+        state=self.state()
+        # Two simultaneously ambiguous requests with no authoritative terminal
+        # proof: the guard stays fail-closed. Empty task lists and idle metrics
+        # do not release either request.
+        self.assertEqual(state["queue_size"],0)
+        self.assertEqual(state["tasks"],[])
+        self.assertEqual(state["extractions"],0)
+        a_key=self.unknown_key("a");b_key=self.unknown_key("b")
+        self.assertEqual(state["receipt_calls"].get(a_key,{}).get("recover",0),0)
+        self.assertEqual(state["receipt_calls"].get(b_key,{}).get("recover",0),0)
+        self.assertEqual(self.launcher()[0].returncode,75)
+        # Backend-authoritative evidence (A's registered task) restores A.
+        self.http("POST","/test/release?session=a",{})
+        wait_for(lambda:self.state()["enqueues"]==1,5)
+        state=self.state()
+        self.assertEqual(state["queue_size"],1)
+        self.assertEqual([t["resource_id"] for t in state["tasks"]],["a"])
+        self.worker.tick()
+        a_row=self.rows()["a"]
+        # The long poll deadline lapses while the receipt is non-terminal; the
+        # durable task identity is preserved on the unknown claim.
+        self.assertEqual(a_row["state"],"unknown");self.assertTrue(a_row["task_id"])
+        self.assertEqual(self.rows()["b"]["state"],"unknown")
+        state=self.state()
+        self.assertEqual(state["receipt_calls"][a_key]["recover"],0)
+        self.assertEqual(state["enqueues"],1)
+        self.http("POST","/test/drain",{})
+        self.reconcile_until("a")
+        # Only then is B's paused publication released: the exact durable task
+        # registers, the original path enqueues once, and the fence releases.
+        self.http("POST","/test/release?session=b",{})
+        wait_for(lambda:self.state()["enqueues"]==2,5)
+        # Only then may B undergo its single authorized recovery.
+        self.recover_phase_cfg()
+        self.worker.tick()
+        time.sleep(0.3)
+        self.worker.tick()
+        state=self.state()
+        self.assertEqual(state["receipt_calls"][b_key]["recover"],1)
+        b_row=self.rows()["b"];self.assertTrue(b_row["task_id"])
+        # The native processor/resume paths re-register the same durable task
+        # idempotently; what is asserted is distinct identities, not call count.
+        self.assertEqual({(e["resource_id"],e["task_id"]) for e in state["task_creates"]},
+            {("a",a_row["task_id"]),("b",b_row["task_id"])})
+        self.assertEqual(state["enqueues"],2)
+        self.http("POST","/test/drain",{})
+        self.reconcile_until("b")
+        state=self.state()
+        self.assertEqual(state["extractions"],2)
+        self.assertEqual(state["commit_calls"],2)
+        self.assertEqual(state["receipt_calls"][b_key]["recover"],1)
+        self.assertEqual(self.launcher()[0].returncode,0)
+        self.stop(kill=True)
+        print("MULTI_UNKNOWN_ADMISSION "+json.dumps({
+            "two_ambiguous_fail_closed":True,
+            "no_recovery_without_backend_proof":True,
+            "evidence_restored_availability":True,
+            "b_single_authorized_recovery":True,
+            "no_duplicate_extractions":True}))
+
 if __name__=='__main__':unittest.main()

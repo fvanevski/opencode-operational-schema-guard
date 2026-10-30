@@ -83,7 +83,7 @@
       "source_base_sha256": null
     },
     {
-      "candidate_sha256": "4441d428a2c676821ff11f81fa3bc9bc3c0218badb381e70a424234fed3d3991",
+      "candidate_sha256": "303f9bd05ea88c66eab29b4b7ff7d3023a55abd34b7d0e4bbe2233358329acc9",
       "component": "gate",
       "path": "openviking_commit_gate.py",
       "source_base_sha256": "6ad48a939d3f52df1c774f87d030986b35022a8c20f15916d82177ccf2094f42"
@@ -232,7 +232,7 @@
     {
       "apply_and_reverse": "PASS",
       "path": "patches/gate.patch",
-      "sha256": "047d2be72b8bd6cdd143a4a85e1fc067ea4b6a1e07ae3fac80b2d4ec963f608a"
+      "sha256": "dcb2070be061c4ba9caa9948006e6e0c50cad88779636ea15b60d68e91e6590b"
     },
     {
       "apply_and_reverse": "PASS",

@@ -342,20 +342,20 @@
              conn.execute(
                  """
                  UPDATE intents SET state='inflight', claimed_generation=?, task_id=NULL
-@@ -583,6 +634,13 @@
-                 WHERE state='inflight' AND (task_id IS NULL OR task_id='')
+@@ -584,6 +635,13 @@
                  """
              )
-+
+ 
 +    def mark_unknown(self, row: sqlite3.Row) -> None:
 +        key = (row["account"], row["user_id"], row["actor_peer"], row["session_id"])
 +        with self.connect() as conn:
 +            conn.execute("""UPDATE intents SET state='unknown', last_error='ambiguous backend acknowledgment'
 +                WHERE account=? AND user_id=? AND actor_peer=? AND session_id=?
 +                  AND state='inflight'""", key)
- 
++
      def list_rows(self) -> list[dict[str, Any]]:
          with self.connect() as conn:
+             rows = conn.execute(
 @@ -746,10 +804,21 @@
  
  
@@ -405,7 +405,7 @@
 +                return False
 +            try:
 +                for unknown in self.db.unknown_rows():
-+                    self._receipt_observation(unknown,allow_recovery=self._receipt_recovery_admitted())
++                    self._receipt_observation(unknown,allow_recovery=self._receipt_recovery_admitted(unknown))
 +            finally:
 +                handle.close()
          inflight = self.db.inflight()
@@ -483,7 +483,7 @@
              row = candidate if candidate["state"] == "inflight" else self.db.claim(candidate)
              if row is None:
                  self.quiet_since = None
-@@ -841,11 +968,53 @@
+@@ -841,12 +968,54 @@
                  return False
              self._set_admission_status("committing", session_id=str(row["session_id"]))
              self._process(row)
@@ -493,7 +493,7 @@
          finally:
              fcntl.flock(lock_handle.fileno(), fcntl.LOCK_UN)
              lock_handle.close()
-+
+ 
 +    def _unknown_quiescent(self) -> bool:
 +        # Installed commit_async publishes a durable archive marker BEFORE task
 +        # registration. A timed-out request can still enqueue extraction later,
@@ -534,9 +534,10 @@
 +            self.shared.block(key, "observer_interrupted")
 +        except Exception:
 +            self.shared.block(key, "submit_or_observer_ambiguous")
- 
++
      def _active_harness_processes(self, proc_root: str = "/proc") -> list[dict[str, Any]]:
          """Return interactive harnesses, excluding persistent editor/server helpers."""
+         wanted = set(self.cfg.process_names)
 @@ -966,33 +1135,66 @@
          return headers
  
@@ -611,7 +612,7 @@
              self.db.set_task(row, str(task_id))
              row = self.db.inflight() or row
              LOG.info("commit accepted session=%s task=%s", row["session_id"], task_id)
-@@ -1019,7 +1221,84 @@
+@@ -1019,8 +1221,102 @@
              if current is not None and current["task_id"]:
                  # Preserve a known in-flight task for later status polling.
                  return
@@ -619,12 +620,28 @@
 +                self.db.mark_unknown(current or row)
 +                return
              self.db.retry(current or row, str(exc), self.cfg)
-+
+ 
 +    def _receipt_url(self, row, attempt):
 +        session = urllib.parse.quote(str(row["session_id"]),safe="")
 +        return f"http://{self.cfg.backend_host}:{self.cfg.backend_port}/api/v1/admin/commit_receipts/{session}/{attempt['request_key']}"
 +
-+    def _receipt_recovery_admitted(self):
++    def _receipt_recovery_admitted(self, row):
++        # The backend's per-request fence does not serialize different keys.
++        # Another unproven/queued task can exist while metrics report idle.
++        # Read-only receipt polling remains permitted; this only guards
++        # recovery that can enqueue extraction under the exclusive gate flock.
++        with self.db.connect() as conn:
++            other = conn.execute("""
++                SELECT 1 FROM intents
++                 WHERE state IN ('unknown','inflight')
++                   AND NOT (account=? AND user_id=? AND actor_peer=?
++                            AND session_id=? AND claimed_generation=?)
++                 LIMIT 1
++            """, (row["account"],row["user_id"],row["actor_peer"],
++                  row["session_id"],row["claimed_generation"])).fetchone()
++        if other is not None:
++            self._recovery_quiet_since = None
++            return False
 +        # Recovery may enqueue the exact old task. It is an inference-producing
 +        # action and needs independent idle/grace admission under the EX lease.
 +        try:
@@ -688,15 +705,17 @@
 +                if self._receipt_observation(row,payload): return
 +            deadline=time.monotonic()+self.cfg.task_timeout_seconds
 +            while not self.stop_event.is_set() and time.monotonic()<deadline:
-+                if self._receipt_observation(self.db.inflight() or row,allow_recovery=self._receipt_recovery_admitted()): return
++                current = self.db.inflight() or row
++                if self._receipt_observation(current,allow_recovery=self._receipt_recovery_admitted(current)): return
 +                self.stop_event.wait(self.cfg.task_poll_seconds)
 +            self.db.mark_unknown(self.db.inflight() or row)
 +        except Exception:
 +            self.db.mark_unknown(self.db.inflight() or row)
- 
++
      def _wait_task(self, row: sqlite3.Row, task_id: str) -> None:
          deadline = time.monotonic() + self.cfg.task_timeout_seconds
-@@ -1100,6 +1379,13 @@
+         quoted = urllib.parse.quote(task_id, safe="")
+@@ -1100,6 +1396,13 @@
                  },
              )
              return
@@ -710,7 +729,7 @@
          if path in {"/__commit_gate/failures", "/__commit_gate/unresolved"}:
              if not self._admin_authorized():
                  self._json(401, {"status": "error", "error": {"message": "Unauthorized"}})
-@@ -1121,6 +1407,25 @@
+@@ -1121,6 +1424,25 @@
  
      def do_POST(self):
          path = urllib.parse.urlsplit(self.path).path
@@ -736,7 +755,7 @@
          match = COMMIT_RE.match(path)
          if match:
              self._enqueue(match.group(1))
-@@ -1144,7 +1449,7 @@
+@@ -1144,7 +1466,7 @@
  
      def _read_body(self, limit: int | None = None) -> bytes:
          length = int(self.headers.get("Content-Length", "0") or 0)
@@ -745,7 +764,7 @@
              raise ValueError("request body exceeds configured limit")
          return self.rfile.read(length) if length else b""
  
-@@ -1155,7 +1460,22 @@
+@@ -1155,7 +1477,22 @@
              "actor_peer": self.headers.get("X-OpenViking-Actor-Peer", "").strip(),
          }
  
@@ -768,7 +787,7 @@
          api_key = os.environ.get("OPENVIKING_ROOT_API_KEY") or os.environ.get(
              "OPENVIKING_API_KEY", ""
          )
-@@ -1163,6 +1483,9 @@
+@@ -1163,6 +1500,9 @@
          return bool(api_key) and hmac.compare_digest(supplied, f"Bearer {api_key}")
  
      def _enqueue(self, encoded_session: str) -> None:
@@ -778,7 +797,7 @@
          try:
              session_id = urllib.parse.unquote(encoded_session).strip()
              if not session_id or "/" in session_id or len(session_id) > 255:
-@@ -1203,6 +1526,9 @@
+@@ -1203,6 +1543,9 @@
              self._json(503, {"status": "error", "error": {"message": str(exc)}})
  
      def _proxy(self) -> None:

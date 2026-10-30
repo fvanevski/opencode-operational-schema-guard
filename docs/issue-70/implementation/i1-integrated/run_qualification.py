@@ -12,17 +12,17 @@ commands=[
  ('compaction',OLD/'operational-schema-v2',[NODE,'--test','tests/compaction-adapter.test.mjs'],7),
  ('validator-offline',OLD/'validator',[os.environ['ISSUE70_VALIDATOR_PYTHON'],'tests/test_validator.py','--no-live'],6),
  ('launcher',ROOT,['/usr/bin/python3','tests/test_launcher_admission.py','-v'],5),
- ('actual-backend',ROOT,['/usr/bin/python3','tests/test_i1_service.py','-v'],9),
+ ('actual-backend',ROOT,['/usr/bin/python3','tests/test_i1_service.py','-v'],20),
 ]
 def run(item):
  name,cwd,args,count=item
  argv=['bwrap','--ro-bind','/','/','--proc','/proc','--dev','/dev','--tmpfs','/tmp','--unshare-net','--die-with-parent','--chdir',str(cwd),*args]
- result=subprocess.run(argv,env={**os.environ,'PYTHONDONTWRITEBYTECODE':'1'},capture_output=True,text=True,timeout=180)
+ result=subprocess.run(argv,env={**os.environ,'PYTHONDONTWRITEBYTECODE':'1'},capture_output=True,text=True,timeout=420)
  output=result.stdout+result.stderr
  (ROOT/'evidence'/(name+'.private.log')).write_text(output)
  parsed=re.findall(r'(?:Ran (\d+) tests|ℹ tests (\d+)|(\d+)/\d+ passed)',output)
  observed=int(next(x for x in parsed[-1] if x)) if parsed else None
- lines=[line for line in output.splitlines() if line.startswith(('I1_PUBLICATION_TIMELINE ','MIXED_TIMELINE ','RECOVERY_SERVICE ','QUIESCENCE_GAP_SERVICE '))]
+ lines=[line for line in output.splitlines() if line.startswith(('I1_PUBLICATION_TIMELINE ','MIXED_TIMELINE ','RECOVERY_SERVICE ','QUIESCENCE_GAP_SERVICE ','MULTI_UNKNOWN_ADMISSION '))]
  return {'suite':name,'exit_code':result.returncode,'expected_checks':count,'observed_checks':observed,'command':args,'cwd':str(cwd),'isolation':'read-only root, private /tmp and network, no GPU devices','output_sha256':hashlib.sha256(output.encode()).hexdigest(),'sanitized_traces':lines}
 if __name__=='__main__':
  with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
