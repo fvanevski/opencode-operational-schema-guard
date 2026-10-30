@@ -15,6 +15,8 @@ Source: `candidate/gate/openviking_commit_gate.py` (`Worker.tick`, `_receipt_rec
 
 Concrete counterexample: A is already durable QueueFS pending with gate intent `inflight`, model metrics zero; B is a distinct `unknown` with Phase 1 ready but task not enqueued. After quiet grace, the unknown loop can authorize B's `recover=true` while A is outstanding. This permits two backend jobs to be queued under the same global single-inference admission policy; if their workers run concurrently, inference can overlap. No published regression exercises **two distinct unresolved keyed commit attempts** at this boundary.
 
+Independent upstream corroboration: `volcengine/OpenViking@230aa7e2b82636479c1862ed91796ff1386c60b2`, `openviking/storage/queuefs/queue_manager.py` lines 27, 42, 314–338, sets the **default concurrent SessionCommit capacity to 8** and uses an asynchronous concurrent worker whenever that limit exceeds one. Thus two concurrently enqueued SessionCommit jobs are not assured to serialize at the native queue layer. Exact installed backend configuration remains host-owned and requires re-read.
+
 This finding does not disprove the published *single-unknown* publication-race test, nor imply actual production overlap occurred. It does block acceptance of a general globally serialized coordinator.
 
 ### Central-authored proposed source remedy
