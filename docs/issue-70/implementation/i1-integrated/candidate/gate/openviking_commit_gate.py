@@ -874,9 +874,28 @@ class Worker:
                 handle.close()
         inflight = self.db.inflight()
         if self.shared and self.shared.unresolved():
-            self.quiet_since = None
-            self._set_admission_status("blocked_reconcile")
-            return False
+            # Reconcile a previously sealed OWNED Graphiti receipt read-only;
+            # never retry the old episode on restart or transport ambiguity.
+            unresolved = self.shared.unresolved()
+            if unresolved["status"] == "blocked_reconcile" and unresolved["backend_identity"]:
+                handle = self._try_exclusive_lock()
+                if handle is not None:
+                    try:
+                        receipt = self.graphiti_adapter.poll(unresolved["backend_identity"])
+                        if (isinstance(receipt,dict)
+                                and receipt.get("backend_identity")==unresolved["backend_identity"]
+                                and receipt.get("status")=="completed"
+                                and receipt.get("persisted") is True):
+                            self.shared.reconcile(unresolved["work_key"],unresolved["backend_identity"],"completed")
+                    except Exception:
+                        pass  # Absence of authoritative proof is never safe release.
+                    finally:
+                        fcntl.flock(handle.fileno(),fcntl.LOCK_UN)
+                        handle.close()
+            if self.shared.unresolved():
+                self.quiet_since = None
+                self._set_admission_status("blocked_reconcile")
+                return False
         candidate = inflight or self.db.next_ready()
         graph_candidate = self.shared.ready() if self.shared else None
         if candidate is None and graph_candidate is None:
@@ -988,13 +1007,15 @@ class Worker:
         generation = int(row["attempt_generation"])
         backend_identity = None
         try:
-            # Claim is durable before submission. A crash here is ambiguous and
-            # will block on restart; the adapter must never blindly resubmit.
-            backend_identity = self.graphiti_adapter.submit(json.loads(row["candidate_json"]))
-            if not isinstance(backend_identity, str) or not backend_identity:
-                self.shared.block(key, "ambiguous_ack")
+            # Persist stable backend identity BEFORE submission. If the
+            # worker dies after Graphiti's graph write but before returning,
+            # the source/work identity is still reconstructible on restart.
+            backend_identity = key
+            self.shared.processing(key,generation,backend_identity)
+            returned = self.graphiti_adapter.submit(json.loads(row["candidate_json"]))
+            if returned != backend_identity:
+                self.shared.block(key,"submit_identity_mismatch")
                 return
-            self.shared.processing(key, generation, backend_identity)
             deadline = time.monotonic() + self.cfg.task_timeout_seconds
             while not self.stop_event.is_set() and time.monotonic() < deadline:
                 result = self.graphiti_adapter.poll(backend_identity)

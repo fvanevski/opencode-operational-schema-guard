@@ -143,6 +143,50 @@ class SharedWorkQueue:
             conn.execute("INSERT INTO memory_source_admissions VALUES (?, ?, ?, ?)", (*identity, candidate["logical_digest"], key))
             return {"work_key": key, "status": "deferred_unverified"}
 
+    def admit_attested(self, candidate, envelope, *, source_authority):
+        """Queue a previously deferred event ONLY after trusted source verification.
+
+        The supplied envelope is produced by a separate authenticated source
+        resolver, not by metadata in the OpenCode tool event. The caller is
+        responsible for verifying real source ownership and operator opt-in.
+        """
+        if not isinstance(source_authority, str) or not source_authority:
+            raise SourceAuthorityUnavailable("trusted authority identity missing")
+        if not valid_candidate(candidate):
+            raise ValueError("invalid original source candidate")
+        item = normalized_candidate(candidate)
+        key = work_key(item)
+        if (envelope.work_key != key or envelope.source_event_key != source_key(item)
+                or envelope.group_id != item["scope"]["group_id"]):
+            raise SourceAuthorityUnavailable("source attestation identity mismatch")
+        envelope.validate()
+        with self.legacy_db.connect() as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            conn.execute("""CREATE TABLE IF NOT EXISTS memory_source_attestations(
+                work_key TEXT PRIMARY KEY, source_authority TEXT NOT NULL,
+                attestation_digest TEXT NOT NULL, episode_digest TEXT NOT NULL,
+                created_at REAL NOT NULL)""")
+            row = conn.execute("SELECT * FROM memory_work WHERE work_key=?", (key,)).fetchone()
+            if row is None or row["logical_digest"] != item["logical_digest"]:
+                raise SourceEventConflict("source event was not durably nominated")
+            prior = conn.execute("SELECT * FROM memory_source_attestations WHERE work_key=?", (key,)).fetchone()
+            if prior is not None:
+                if (prior["source_authority"] != source_authority
+                        or prior["attestation_digest"] != envelope.attestation_digest
+                        or prior["episode_digest"] != envelope.payload_hash()):
+                    raise SourceEventConflict("source attestation changed after admission")
+                return {"work_key":key,"status":row["status"]}
+            if row["status"] != "deferred_unverified":
+                raise SourceAuthorityUnavailable("source event is not awaiting verification")
+            conn.execute("""INSERT INTO memory_source_attestations
+                VALUES (?,?,?,?,?)""",(key,source_authority,envelope.attestation_digest,
+                                        envelope.payload_hash(),time.time()))
+            changed = conn.execute("""UPDATE memory_work
+                SET status='queued', error_code=NULL, updated_at=?
+                WHERE work_key=? AND status='deferred_unverified'""",(time.time(),key))
+            if changed.rowcount!=1: raise RuntimeError("attested admission race")
+            return {"work_key":key,"status":"queued"}
+
     def ready(self):
         with self.legacy_db.connect() as conn:
             return conn.execute("SELECT * FROM memory_work WHERE status='queued' ORDER BY created_at, work_key LIMIT 1").fetchone()
