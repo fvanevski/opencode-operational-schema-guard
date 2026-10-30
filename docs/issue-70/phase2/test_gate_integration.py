@@ -102,5 +102,50 @@ class GateIntegration(unittest.TestCase):
         self.assertFalse(worker.tick())
         self.assertEqual(self.graph.writes,1)
 
+    def _ov_job(self, session_id):
+        self.db.enqueue(
+            {"account": "garion", "user_id": "filip", "actor_peer": "opencode"},
+            session_id, 3, {"keep_recent_count": 3}, "compact", now=1)
+
+    def test_graphiti_pending_blocks_openviking_inference(self):
+        # Graphiti-then-OpenViking order: an unresolved (processing) Graphiti job
+        # must block a new OpenViking job from entering inference.
+        self.shared.enqueue(candidate())
+        self.shared.admit_attested(self.original, self.ep, source_authority="operator-policy")
+        row = self.shared.claim(self.key, "lease-x")
+        self.shared.processing(self.key, row["attempt_generation"], self.key)
+        self._ov_job("ov-while-graphiti-busy")
+        ov_calls = []
+        worker = gate.Worker(self.cfg, self.db, threading.Event(), self.adapter)
+        worker._metrics = lambda: (0, 0)
+        worker._active_harness_processes = lambda: []
+        worker._process = lambda r: ov_calls.append(r["session_id"])
+        self.assertFalse(worker.tick())
+        self.assertEqual(worker.admission_status()["state"], "blocked_reconcile")
+        self.assertEqual(ov_calls, [])  # OpenViking never entered inference
+        self.assertEqual(self.graph.writes, 0)
+        self.assertEqual(self.shared.status()[0]["status"], "processing")
+
+    def test_openviking_inflight_blocks_graphiti_inference(self):
+        # OpenViking-then-Graphiti order: an inflight OpenViking job must block a
+        # queued Graphiti job from entering inference.
+        self._ov_job("ov-inflight-first")
+        ready = self.db.next_ready()
+        self.assertIsNotNone(ready)
+        claimed = self.db.claim(ready)
+        self.assertEqual(claimed["state"], "inflight")
+        self.shared.enqueue(candidate())
+        self.shared.admit_attested(self.original, self.ep, source_authority="operator-policy")
+        ov_calls = []
+        worker = gate.Worker(self.cfg, self.db, threading.Event(), self.adapter)
+        worker._metrics = lambda: (0, 0)
+        worker._active_harness_processes = lambda: []
+        worker._process = lambda r: (ov_calls.append(r["session_id"]), self.db.complete(r))
+        self.assertFalse(worker.tick())  # quiet-grace first observation
+        self.assertTrue(worker.tick())   # processes the inflight OpenViking job
+        self.assertEqual(ov_calls, ["ov-inflight-first"])  # OpenViking advanced
+        self.assertEqual(self.graph.writes, 0)  # Graphiti did NOT enter inference
+        self.assertEqual(self.shared.status()[0]["status"], "queued")
+
 
 if __name__=="__main__":unittest.main()

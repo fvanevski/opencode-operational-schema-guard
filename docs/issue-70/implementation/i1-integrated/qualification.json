@@ -137,5 +137,116 @@
       "I1_PUBLICATION_TIMELINE {\"actual_native_queuefs\": true, \"publication_empty_task_list\": true, \"idle_metrics\": [0, 0], \"interactive_blocked\": true, \"original_extractions\": 1, \"newer_generation_preserved\": true, \"unrelated_resumed\": true}",
       "MULTI_UNKNOWN_ADMISSION {\"two_ambiguous_fail_closed\": true, \"no_recovery_without_backend_proof\": true, \"evidence_restored_availability\": true, \"b_single_authorized_recovery\": true, \"no_duplicate_extractions\": true}"
     ]
+  },
+  {
+    "suite": "phase1-gate-recheck",
+    "exit_code": 0,
+    "expected_checks": 53,
+    "observed_checks": 53,
+    "command": [
+      "/usr/bin/python3",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "tests",
+      "-v"
+    ],
+    "cwd": "docs/issue-70/implementation/i1-integrated/candidate/gate (branch issue/70-graphiti-ingest working tree)",
+    "isolation": "CPU-only, no GPU devices; rerun after the Phase 2 gate candidate changes (f261080, 1e881e2)",
+    "output_sha256": "952de82c151e7423419d09f0649af65cf843067317c34606174d1a2c9b861c1c",
+    "sanitized_traces": []
+  },
+  {
+    "suite": "phase2-integration",
+    "exit_code": 0,
+    "expected_checks": 20,
+    "observed_checks": 20,
+    "command": [
+      "/usr/bin/python3",
+      "-m",
+      "unittest",
+      "test_graphiti_terminal",
+      "test_source_authority",
+      "test_gate_integration",
+      "-v"
+    ],
+    "cwd": "docs/issue-70/phase2",
+    "isolation": "CPU-only stubs; no live Graphiti calls; includes 2 new cross-backend exclusion tests (graphiti-pending blocks openviking inference, openviking-inflight blocks graphiti inference)",
+    "breakdown": {
+      "test_graphiti_terminal": 9,
+      "test_source_authority": 6,
+      "test_gate_integration": 5
+    },
+    "sanitized_traces": []
+  },
+  {
+    "suite": "source-home",
+    "exit_code": 0,
+    "expected_checks": 10,
+    "observed_checks": 10,
+    "command": [
+      "python3",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "docs/issue-70/source-home",
+      "-p",
+      "test_verify_source_home.py",
+      "-v"
+    ],
+    "cwd": "issue/70 branch worktree at exact Phase 1 code (published separately; this branch does not modify Phase 2 source for it)",
+    "isolation": "read-only root, private /tmp and network, no GPU devices",
+    "published_to": {
+      "branch": "issue/70",
+      "commit": "033b5aae7282665f57700f131661bbd0d59b16ec",
+      "record": "docs/issue-70/source-home/CODEX_P2_QUALIFICATION.md"
+    },
+    "notes": "6 original + 4 Codex-P2 regressions; --host preflight PASS with backend_dependency_checks=8 on the live host",
+    "sanitized_traces": []
+  },
+  {
+    "suite": "real-graphiti",
+    "exit_code": 0,
+    "status": "PASS",
+    "command": [
+      "/workspace/mcp_servers/graphiti/upstream/mcp_server/.venv/bin/python",
+      "real_graphiti_qualification.py"
+    ],
+    "cwd": "docs/issue-70/phase2",
+    "isolation": "disposable FalkorDB graph issue70_phase2_disposable on 127.0.0.1:6382; live graphiti_live not mutated; local LLM 8002 / embedder 8004 (dim 1024); CPU-only host, no GPU used",
+    "evidence": "docs/issue-70/phase2/results/real_graphiti_result.json",
+    "evidence_sha256": "772a3ac9469eefdb19ca12dcb9adeba03e8dde46fdd1dbd781e9e5f9ca7005ea",
+    "key_fields": {
+      "episode_uuid": "613f6893-5e2d-4fe6-a298-0576f3964983",
+      "group_id": "issue70_phase2_disposable",
+      "disposable_episode_count": 1,
+      "memory_work_status": "completed",
+      "journal_state": "completed",
+      "dup_submit_returned": "32c6457a0c9b22123e8828753b9fa33f0111800215e489b792f6a463a3a2403c",
+      "ov_job_state": "pending"
+    },
+    "sanitized_traces": []
+  },
+  {
+    "suite": "temporal-validation",
+    "exit_code": 0,
+    "status": "PASS",
+    "command": [
+      "/workspace/mcp_servers/graphiti/upstream/mcp_server/.venv/bin/python",
+      "temporal_validation_integration.py"
+    ],
+    "cwd": "docs/issue-70/phase2",
+    "isolation": "same disposable graph; read-only qualified graphiti_temporal_validator.py (logic not duplicated); deterministic outcomes exercised without live graph writes",
+    "evidence": "docs/issue-70/phase2/results/temporal_validation_result.json",
+    "evidence_sha256": "a27e2bf5d9628774219958d4a65771a493b3275fb2d681506ea6196dee2f90cf",
+    "key_fields": {
+      "live_validation": "exit 0, PASS, coverage complete, zero findings",
+      "deterministic": "INCONSISTENT=1, INCOMPLETE=2 (INCOMPLETE_EVIDENCE), INVALID_INPUT=3",
+      "transition_episode_uuid": "6ccaf5aa-7008-42d9-9eed-8ada72893c97",
+      "contract_bound_before_extraction": true
+    },
+    "sanitized_traces": []
   }
 ]

@@ -118,12 +118,16 @@ class IngestJournal:
 class AwaitedCoreAdapter:
     # Owns exact graph results; never sends to Graphiti MCP's background queue.
     # Resolve callback MUST be backed by independent operator/source evidence.
-    def __init__(self,db,*,resolve,identity_fn,client_factory,read_episode):
+    def __init__(self,db,*,resolve,identity_fn,client_factory,read_episode,
+                 extra_episode_kwargs=None):
         self.journal=IngestJournal(db)
         self.resolve=resolve
         self.identity_fn=identity_fn
         self.client_factory=client_factory
         self.read_episode=read_episode
+        # Bounded extension point: coordinator-owned add_episode extras (e.g.
+        # custom_extraction_instructions, edge_types). Backward compatible.
+        self.extra_episode_kwargs=extra_episode_kwargs or {}
 
     async def _execute(self,ep):
         client=self.client_factory()
@@ -132,7 +136,8 @@ class AwaitedCoreAdapter:
         result=await client.add_episode(
             name=ep.name,episode_body=ep.episode_body,
             source_description=ep.source_description,
-            reference_time=ep.reference_time,group_id=ep.group_id)
+            reference_time=ep.reference_time,group_id=ep.group_id,
+            **self.extra_episode_kwargs)
         item=getattr(result,"episode",None)
         uuid=getattr(item,"uuid",None)
         if not isinstance(uuid,str) or not uuid: raise RuntimeError("missing real episode UUID")
