@@ -13,7 +13,7 @@ import re
 
 from graphiti_terminal import EpisodeEnvelope, UnverifiedSource, digest
 
-PRIVATE = re.compile(r"(?:-----BEGIN .*PRIVATE KEY-----|Bearer\\s+\\S+|password\\s*[:=]|\\bsk-[A-Za-z0-9]{16,}|gh[pousr]_[A-Za-z0-9]{20,})", re.I)
+PRIVATE = re.compile(r"(?:-----BEGIN .*PRIVATE KEY-----|Bearer\s+\S+|password\s*[:=]|\bsk-[A-Za-z0-9]{16,}|gh[pousr]_[A-Za-z0-9]{20,})", re.I)
 
 
 def read_record(root, rel):
