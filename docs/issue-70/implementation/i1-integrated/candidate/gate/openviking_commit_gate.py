@@ -869,7 +869,7 @@ class Worker:
                 return False
             try:
                 for unknown in self.db.unknown_rows():
-                    self._receipt_observation(unknown,allow_recovery=self._receipt_recovery_admitted())
+                    self._receipt_observation(unknown,allow_recovery=self._receipt_recovery_admitted(unknown))
             finally:
                 handle.close()
         inflight = self.db.inflight()
@@ -1230,7 +1230,23 @@ class Worker:
         session = urllib.parse.quote(str(row["session_id"]),safe="")
         return f"http://{self.cfg.backend_host}:{self.cfg.backend_port}/api/v1/admin/commit_receipts/{session}/{attempt['request_key']}"
 
-    def _receipt_recovery_admitted(self):
+    def _receipt_recovery_admitted(self, row):
+        # The backend's per-request fence does not serialize different keys.
+        # Another unproven/queued task can exist while metrics report idle.
+        # Read-only receipt polling remains permitted; this only guards
+        # recovery that can enqueue extraction under the exclusive gate flock.
+        with self.db.connect() as conn:
+            other = conn.execute("""
+                SELECT 1 FROM intents
+                 WHERE state IN ('unknown','inflight')
+                   AND NOT (account=? AND user_id=? AND actor_peer=?
+                            AND session_id=? AND claimed_generation=?)
+                 LIMIT 1
+            """, (row["account"],row["user_id"],row["actor_peer"],
+                  row["session_id"],row["claimed_generation"])).fetchone()
+        if other is not None:
+            self._recovery_quiet_since = None
+            return False
         # Recovery may enqueue the exact old task. It is an inference-producing
         # action and needs independent idle/grace admission under the EX lease.
         try:
@@ -1294,7 +1310,8 @@ class Worker:
                 if self._receipt_observation(row,payload): return
             deadline=time.monotonic()+self.cfg.task_timeout_seconds
             while not self.stop_event.is_set() and time.monotonic()<deadline:
-                if self._receipt_observation(self.db.inflight() or row,allow_recovery=self._receipt_recovery_admitted()): return
+                current = self.db.inflight() or row
+                if self._receipt_observation(current,allow_recovery=self._receipt_recovery_admitted(current)): return
                 self.stop_event.wait(self.cfg.task_poll_seconds)
             self.db.mark_unknown(self.db.inflight() or row)
         except Exception:
