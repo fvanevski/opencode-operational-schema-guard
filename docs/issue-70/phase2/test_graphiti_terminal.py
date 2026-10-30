@@ -54,6 +54,7 @@ class TerminalTests(unittest.TestCase):
             await asyncio.sleep(0)
             return client.saved.get(uuid)
         self.adapter=AwaitedCoreAdapter(self.db,resolve=lambda _:self.ep,
+            identity_fn=lambda _:("a"*64,"e"*64),
             client_factory=lambda:self.graph,read_episode=get_by_uuid)
 
     def test_awaited_persistence_exact_readback_and_duplicate(self):
@@ -105,6 +106,12 @@ class TerminalTests(unittest.TestCase):
     def test_candidate_mismatched_group_fails_before_extraction(self):
         with self.assertRaises(UnverifiedSource):
             self.adapter.submit({"scope":{"group_id":"cross-group"}})
+        self.assertEqual(self.graph.writes,0)
+
+    def test_attestor_cannot_substitute_another_work_identity(self):
+        self.adapter.identity_fn=lambda _:("b"*64,"e"*64)
+        with self.assertRaisesRegex(UnverifiedSource,"identity mismatch"):
+            self.adapter.submit(self.candidate)
         self.assertEqual(self.graph.writes,0)
 
 

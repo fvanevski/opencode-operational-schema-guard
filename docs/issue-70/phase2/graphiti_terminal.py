@@ -118,9 +118,10 @@ class IngestJournal:
 class AwaitedCoreAdapter:
     # Owns exact graph results; never sends to Graphiti MCP's background queue.
     # Resolve callback MUST be backed by independent operator/source evidence.
-    def __init__(self,db,*,resolve,client_factory,read_episode):
+    def __init__(self,db,*,resolve,identity_fn,client_factory,read_episode):
         self.journal=IngestJournal(db)
         self.resolve=resolve
+        self.identity_fn=identity_fn
         self.client_factory=client_factory
         self.read_episode=read_episode
 
@@ -146,6 +147,11 @@ class AwaitedCoreAdapter:
         ep=self.resolve(candidate)
         if not isinstance(ep,EpisodeEnvelope): raise UnverifiedSource("no verified source record")
         ep.validate()
+        # The source verifier must not substitute an unrelated verified event.
+        # identity_fn is the coordinator's canonical work_key/source_key logic.
+        expected_work,expected_source=self.identity_fn(candidate)
+        if ep.work_key!=expected_work or ep.source_event_key!=expected_source:
+            raise UnverifiedSource("verified source/work identity mismatch")
         if ep.group_id!=candidate.get("scope",{}).get("group_id"):
             raise UnverifiedSource("verified group scope mismatch")
         old=self.journal.reserve(ep)
