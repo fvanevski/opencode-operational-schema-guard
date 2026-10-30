@@ -56,15 +56,15 @@ node docs/issue-70/source-home/verify_v2_entrypoint.mjs "$SMOKE/packages"
 
 ```sh
 # disposable V2 config: local plugin dir entry + CPU stub provider (no production endpoint)
-cat > "$SMOKE/config/opencode.json" <<'JSON'
+cat > "$SMOKE/config/opencode.json" <<JSON
 { "model":"smoke/stub",
   "provider":{ "smoke":{ "npm":"@ai-sdk/openai-compatible",
     "options":{"baseURL":"http://127.0.0.1:<stub-port>/v1","apiKey":"stub"},
     "models":{"stub":{"limit":{"context":8192,"input":8192,"output":8192}} } } },
   "compaction":{"auto":true},
-  "plugins":["file:///$SMOKE/packages/openviking-v2"] }
+  "plugins":["file://$SMOKE/packages/openviking-v2"] }
 JSON
-cat > "$SMOKE/config/openviking-config.json" <<'JSON'
+cat > "$SMOKE/config/openviking-config.json" <<JSON
 { "runtime":{"dataDir":"$SMOKE/data/openviking"},
   "mcp":{"enabled":false}, "repoContext":{"enabled":false}, "debug":true }
 JSON
@@ -87,6 +87,7 @@ env HOME="$SMOKE/home" \
 ```
 
 Notes:
+- The JSON here is an **environment-substitution template**, not a complete one-command reproduction script. The unquoted `<<JSON` delimiters expand `$SMOKE` into absolute paths; quoted delimiters would produce invalid literal `$SMOKE` paths. The operator must provide and launch the isolated CPU stub and substitute the observed stub/dead ports before invoking OpenCode. Do not substitute any live inference endpoint.
 - `<stub-port>` is a local deterministic OpenAI-compatible HTTP stub that
   returns bounded filler for normal turns and a `##`-templated summary for
   compaction requests (verified against the 2.2.4 compaction template check).
