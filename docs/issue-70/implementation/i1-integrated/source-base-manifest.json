@@ -83,7 +83,7 @@
       "source_base_sha256": null
     },
     {
-      "candidate_sha256": "134c017a25f38f74bebc6637f2dfd2d1d44a088be17ff3e31567ab3437eed663",
+      "candidate_sha256": "3b3596bdac87418ba12d4c59333ee346ce775356c4ec81424a086cedcf2f1250",
       "component": "gate",
       "path": "openviking_commit_gate.py",
       "source_base_sha256": "6ad48a939d3f52df1c774f87d030986b35022a8c20f15916d82177ccf2094f42"
@@ -95,15 +95,21 @@
       "source_base_sha256": "4e2234f65a4e3bd86d1aaf9fbe5a27983c5538a2a65bc381f814422f102de4e5"
     },
     {
-      "candidate_sha256": "7de5fa398ba0be9b8331bf8cfd109ca18bf18408f82cd63b054e4cb71d7541ff",
+      "candidate_sha256": "14a2ef6029c05ad843666cedcc2bb5317ac22eeb4012607962dbad3ff0832278",
       "component": "gate",
       "path": "tests/test_dual_metrics.py",
       "source_base_sha256": "7de5fa398ba0be9b8331bf8cfd109ca18bf18408f82cd63b054e4cb71d7541ff"
     },
     {
-      "candidate_sha256": "32919f369a0f753e419835b511918c9733b70339c86919925590d46724e24492",
+      "candidate_sha256": "899e0a1e5ffd764637b06c0172c48e4541eb6e694ff403f9f717025858ec5721",
       "component": "gate",
       "path": "tests/test_shared_work.py",
+      "source_base_sha256": null
+    },
+    {
+      "candidate_sha256": "16b71c7fa65a1148e1a05ad95271d38e11be8f34db3d79f7d42eb35698cfd603",
+      "component": "gate",
+      "path": "tests/test_multi_unknown_recovery.py",
       "source_base_sha256": null
     },
     {
@@ -222,7 +228,7 @@
     }
   ],
   "phase2_evidence": {
-    "note": "Branch-level Phase 2 Graphiti Core completion evidence lives outside this installable package at docs/issue-70/phase2/; listed here for inventory coherence. No install mapping applies.",
+    "note": "Branch-level Phase 2 Graphiti Core completion evidence lives outside this installable package at docs/issue-70/phase2/; listed here for inventory coherence. No install mapping applies. The admission-safety closure (independent review, interleaving analysis, disabled-state regressions, cross-process qualification) is inventoried alongside the original Graphiti Core evidence.",
     "files": [
       {
         "path": "docs/issue-70/phase2/QUALIFICATION.md",
@@ -231,6 +237,18 @@
       {
         "path": "docs/issue-70/phase2/INTEGRATION_CONTRACT.md",
         "sha256": "9e938250c30a6034d2dbfb84e9f91d8b39581fc9e35f641fc04c8de147a19e50"
+      },
+      {
+        "path": "docs/issue-70/phase2/INDEPENDENT_REVIEW_30061C9.md",
+        "sha256": "b28f1b8fd06abefe07c27a002eb26a1d093050ab780f000518b500caf3c5c6b6"
+      },
+      {
+        "path": "docs/issue-70/phase2/ADMISSION_INTERLEAVING.md",
+        "sha256": "8a1c25f15525d9ff2eee81af991683258c36dc3a5089b6e9d5e199f1cf725770"
+      },
+      {
+        "path": "docs/issue-70/phase2/DISABLED_STATE_REGRESSION_SCOPE.md",
+        "sha256": "b3f043de7adab9e1b8c139a879f4b0d68488e064d6dc19b74149bd5f33f93b15"
       },
       {
         "path": "docs/issue-70/phase2/graphiti_core_bridge.py",
@@ -265,6 +283,10 @@
         "sha256": "f6946da4322c1bcf62092efaa908ab611fcafeadb8ab68046479276e12b09a6c"
       },
       {
+        "path": "docs/issue-70/phase2/test_cross_process_admission.py",
+        "sha256": "ae5cd0d81f7353c0497ac244f9adcca445bef02e292cc499cba2390e8e7803c5"
+      },
+      {
         "path": "docs/issue-70/phase2/results/real_graphiti_result.json",
         "sha256": "772a3ac9469eefdb19ca12dcb9adeba03e8dde46fdd1dbd781e9e5f9ca7005ea"
       },
@@ -275,6 +297,10 @@
       {
         "path": "docs/issue-70/phase2/results/graphiti_core_SHA256SUMS.txt",
         "sha256": "42d50f7271dd21240d45223b9d6ce0e8e1649fe2af6d30de18c1739c801aa5a8"
+      },
+      {
+        "path": "docs/issue-70/phase2/results/cross_process_admission_result.json",
+        "sha256": "52e98600f91fca4276030f60c11dec9ea1d241b0f1fed46aa11663b75da0bb62"
       }
     ]
   },
@@ -289,7 +315,7 @@
     {
       "apply_and_reverse": "PASS",
       "path": "patches/gate.patch",
-      "sha256": "6dcfb9385998dd4737d9b0c678118cdb6b0cab1af60afa3d3072454dcbc64c92"
+      "sha256": "bf5a19328f91c0430a86b8be2633a49ae89438ef8d3db248d19c13b657452709"
     },
     {
       "apply_and_reverse": "PASS",

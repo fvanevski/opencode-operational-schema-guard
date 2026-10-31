@@ -16,6 +16,7 @@ docs/issue-70/implementation/i1-integrated/candidate/gate/test_receipt_protocol.
 docs/issue-70/implementation/i1-integrated/candidate/gate/tests/test_corrections.py
 docs/issue-70/implementation/i1-integrated/candidate/gate/tests/test_dual_metrics.py
 docs/issue-70/implementation/i1-integrated/candidate/gate/tests/test_gate.py
+docs/issue-70/implementation/i1-integrated/candidate/gate/tests/test_multi_unknown_recovery.py
 docs/issue-70/implementation/i1-integrated/candidate/gate/tests/test_service_corrections.py
 docs/issue-70/implementation/i1-integrated/candidate/gate/tests/test_service_mixed.py
 docs/issue-70/implementation/i1-integrated/candidate/gate/tests/test_shared_work.py

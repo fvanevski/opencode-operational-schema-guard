@@ -30,6 +30,48 @@ Cases also cover publisher crash/restart, persistent queue recovery, lost accept
 
 Runs used a read-only root, private network and /tmp, and no GPU devices. Full patches reconstruct and reverse byte-identically. source-ownership.json records exact installed identities and unchanged source hashes. Live database byte invariance remains unverified; task commands did not modify live data.
 
+## Phase 2 admission-safety update
+
+The gate candidate now enforces the disabled-Graphiti admission invariants (see
+`docs/issue-70/phase2/INDEPENDENT_REVIEW_30061C9.md` and
+`ADMISSION_INTERLEAVING.md`):
+
+- Switching `graphiti_enabled` off does not erase unresolved Graphiti work:
+  the sticky `admission_contract` activation is retained, and `Worker.tick`
+  reads existing `memory_work` states `admitted`/`processing`/`blocked_reconcile`
+  even when the feature is disabled.
+- The initial state inspection is repeated as a decisive recheck while holding
+  the exclusive resource flock, so a coordinator claiming a queued Graphiti job
+  while another worker waits for the lease cannot be admitted into OpenViking
+  inference.
+- A missing optional `memory_work` table in a genuinely legacy database
+  creates no migration and does not block ordinary use; an existing
+  malformed/unreadable state table fails closed (`graphiti_state_unverifiable`).
+- A terminal Graphiti record does not indefinitely block later OpenViking
+  work; blocked-reconcile rows reconcile only on authoritative terminal
+  evidence. The same physical SQLite database and lock identity govern both
+  backend classes and the launcher helper.
+
+The gate suite is now **59 tests** (53 previously qualified + six staged
+disabled-state regressions in `tests/test_shared_work.py`, plus one fixture
+repair in `tests/test_dual_metrics.py` whose mock database now models the
+disabled-mode recheck's `connect()` context-manager contract on a legacy
+database). A focused two-process qualification
+(`docs/issue-70/phase2/test_cross_process_admission.py`, 5 boundaries)
+exercises the real `flock` path and the real launcher admission helper across
+independently executing processes over one disposable SQLite database and one
+lock file; deterministic idle CPU-side scheduler metrics are used, and no
+scheduler-occupancy evidence is invented. Sanitized outcome:
+`docs/issue-70/phase2/results/cross_process_admission_result.json`.
+
+`patches/gate.patch` was regenerated from the complete current candidate
+against the authenticated installed gate source (now twelve file entries,
+including the previously unlisted `tests/test_multi_unknown_recovery.py` and
+the repaired `tests/test_dual_metrics.py`) and proven byte-exact in both
+directions, including cleanup of patch-introduced files on reverse. The full
+isolated runner total is now **142 checks** (136 + six gate tests) with all
+other suite counts unchanged.
+
 ## Reproduction
 
 Use a Python environment matching the authenticated OpenViking/native RAGFS installation, Python 3.14 for gate tests, Node, patch and bwrap. The optional queue tests use requirements-phase1.txt; disabled gate startup is also tested with jsonschema deliberately unavailable. No dependency was installed into the protected host.

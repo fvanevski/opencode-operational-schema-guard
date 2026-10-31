@@ -1,7 +1,9 @@
 {
   "source_mismatch_rejected_before_copy": true,
   "source_bound_apply_and_final_hashes": "PASS",
+  "gate_patch_forward_reverse_byte_exact": "PASS",
   "final_packaged_actual_backend_auth_smoke": "PASS",
   "raw_log_published": false,
-  "isolation": "read-only root; private network/tmp; no GPU devices"
+  "isolation": "read-only root; private network/tmp; no GPU devices",
+  "phase2_note": "Admission-safety re-run: installed gate base 6ad48a939d3f52df1c774f87d030986b35022a8c20f15916d82177ccf2094f42 authenticated; regenerated gate.patch (twelve file entries, including the previously unlisted tests/test_multi_unknown_recovery.py and the repaired tests/test_dual_metrics.py) proven byte-exact forward and reverse with cleanup of patch-introduced files; disposable backend re-assembled from the authenticated installed OpenViking package and verified against candidate hashes before the full 142-check runner."
 }

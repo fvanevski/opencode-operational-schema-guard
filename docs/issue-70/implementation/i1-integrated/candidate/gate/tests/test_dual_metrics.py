@@ -99,7 +99,11 @@ class DualMetricsTests(unittest.TestCase):
 
     def test_each_provider_busy_blocks_and_idle_keeps_grace(self):
         with tempfile.TemporaryDirectory() as root:
-            db=mock.Mock(); db.inflight.return_value=None; db.next_ready.return_value={'state':'pending'}
+            db=mock.MagicMock(); db.inflight.return_value=None; db.next_ready.return_value={'state':'pending'}
+            # The disabled-Graphiti admission recheck reads existing state
+            # through the connect() context manager. Model a legacy database
+            # without a memory_work table so the recheck reports available.
+            db.connect.return_value.__enter__.return_value.execute.return_value.fetchone.return_value=None
             worker=gate.Worker(replace(config(root), drain_enabled=True, process_names=(),quiet_grace_seconds=30), db, threading.Event())
             for pair in PAIRS:
                 for running,waiting in [(1,0),(0,1),(0,0)]:

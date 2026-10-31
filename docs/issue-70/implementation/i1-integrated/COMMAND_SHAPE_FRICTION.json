@@ -9,9 +9,12 @@
     "one permission.rejected on a compound 'mkdir -p /tmp/opencode/issue70 && ...' call; retried without mkdir since the directory existed (pre_execution_rejection)",
     "cosmetic zsh glob failures on 'echo ===' separators; no command semantics affected",
     "fixture disabled-stage AttributeError (receipt runtime None) found by full-suite run; fixture guard added (test repair, not command friction)",
-    "stale patches/gate.patch detected by forward/reverse proof; regenerated against installed base 6ad48a93 and re-proven byte-exact forward/reverse (artifact correction)"
+    "stale patches/gate.patch detected by forward/reverse proof; regenerated against installed base 6ad48a93 and re-proven byte-exact forward/reverse (artifact correction)",
+    "phase2: compound 'rm -rf <scratch> && mkdir -p' rejected twice by the guard; recovered with a plain mkdir of a fresh scratch directory and scoped 'rm -r' of __pycache__ only (pre_execution_rejection, recovered)",
+    "phase2: 'grep -h -E' over evidence logs was rewritten by the rtk alias to rtk grep usage output; recovered by invoking /usr/bin/grep explicitly (harness rewrite, no semantics changed)",
+    "phase2: first prepare_backend.py call passed the site-packages root; preparer strips the openviking/ prefix and correctly rejected 'source mismatch: openviking/session/session.py'; corrected to .../site-packages/openviking and the authentication then passed (interface discovery, pre-execution)"
   ],
-  "execution_effect": "136 CPU-only qualification checks (8 suites, bwrap read-only root/private net/tmp, no GPU) plus forward/reverse byte-exact gate patch proofs; disposable backend subprocesses only; no production storage/services touched; Graphiti writes stayed disabled; no PR/merge/deploy",
+  "execution_effect": "Phase 2 campaign: gate suite 59/59 (one fixture repair in test_dual_metrics.py), Phase 2 integration 20/20, launcher 5/5, actual-backend 20/20, new cross-process admission 5/5, full isolated runner 142/142; forward/reverse byte-exact regenerated gate.patch (twelve file entries) against installed base 6ad48a93; disposable backend re-assembled from the authenticated installed package; no production storage/services touched; Graphiti writes stayed disabled; no PR/merge/deploy",
   "correction": "command shapes corrected in place; all acceptance-bearing suites re-run after fixture and artifact repairs; repaired runs are the recorded evidence",
   "recipe_reference": "GHDEV-10; /home/filip/.codex/RTK.md; README.md reproduction recipe",
   "sensitive_values_omitted": true

@@ -1,5 +1,6 @@
---- /dev/null
-+++ b/memory-candidate-v1.schema.json
+diff -Nru a/memory-candidate-v1.schema.json b/memory-candidate-v1.schema.json
+--- a/memory-candidate-v1.schema.json	1969-12-31 16:00:00.000000000 -0800
++++ b/memory-candidate-v1.schema.json	2026-10-30 17:24:53.057151972 -0700
 @@ -0,0 +1,226 @@
 +{
 +  "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -227,8 +228,9 @@
 +    }
 +  ]
 +}
---- a/openviking_commit_gate.py
-+++ b/openviking_commit_gate.py
+diff -Nru a/openviking_commit_gate.py b/openviking_commit_gate.py
+--- a/openviking_commit_gate.py	2026-10-30 17:24:53.055178758 -0700
++++ b/openviking_commit_gate.py	2026-10-30 17:24:53.057210113 -0700
 @@ -32,6 +32,8 @@
  from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
  from pathlib import Path
@@ -388,7 +390,44 @@
          LOG.info("worker started drain_enabled=%s", self.cfg.drain_enabled)
          while not self.stop_event.wait(self.cfg.poll_seconds):
              try:
-@@ -785,12 +856,60 @@
+@@ -780,17 +851,97 @@
+                 self.quiet_since = None
+                 self._set_admission_status("worker_error")
+ 
++    def _unresolved_graphiti_from_existing_db(self) -> bool:
++        """The Graphiti opt-in toggle cannot erase a prior producer.
++
++        In particular, cfg.graphiti_enabled=False must not disable global
++        exclusion for Graphiti work already admitted in the shared SQLite.
++        Inspect existing state without creating Graphiti tables in a legacy
++        installation. If the state table exists but is unreadable or has a
++        broken schema, fail closed rather than admitting another producer.
++        """
++        with self.db.connect() as conn:
++            found = conn.execute("""SELECT 1 FROM sqlite_master
++                WHERE type='table' AND name='memory_work'""").fetchone()
++            if not found:
++                return False
++            return conn.execute("""SELECT 1 FROM memory_work
++                WHERE status IN ('admitted','processing','blocked_reconcile')
++                LIMIT 1""").fetchone() is not None
++
+     def tick(self) -> bool:
++        # Admission safety survives a later config disable, even though
++        # new Graphiti admissions are disabled and no optional schema is
++        # initialized. Unknown prior producers must remain globally fenced.
++        if not self.cfg.graphiti_enabled:
++            try:
++                unresolved = self._unresolved_graphiti_from_existing_db()
++            except Exception:
++                self.quiet_since = None
++                self._set_admission_status("graphiti_state_unverifiable")
++                return False
++            if unresolved:
++                self.quiet_since = None
++                self._set_admission_status("blocked_reconcile")
++                return False
+         if not self.cfg.drain_enabled:
              self.quiet_since = None
              self._set_admission_status("drain_disabled")
              return False
@@ -450,7 +489,7 @@
          harnesses = self._active_harness_processes()
          if harnesses:
              self.quiet_since = None
-@@ -798,10 +917,22 @@
+@@ -798,10 +949,36 @@
              return False
          lock_handle = self._try_exclusive_lock()
          if lock_handle is None:
@@ -459,6 +498,20 @@
              self._set_admission_status("shared_lease_active")
              return False
          try:
++            # The initial Graphiti check is only an early rejection. The
++            # authoritative recheck MUST be under the EX flock: another
++            # coordinator can claim a Graphiti job while we wait for it.
++            # Do not let config disablement release an old producer.
++            try:
++                graphiti_unresolved = self._unresolved_graphiti_from_existing_db()
++            except Exception:
++                self.quiet_since = None
++                self._set_admission_status("graphiti_state_unverifiable")
++                return False
++            if graphiti_unresolved:
++                self.quiet_since = None
++                self._set_admission_status("blocked_reconcile")
++                return False
 +            if inflight is not None and inflight["task_id"]:
 +                # Already submitted: the running scheduler occupancy is this
 +                # operation's own activity, not a new pre-admission veto.
@@ -473,7 +526,7 @@
              running, waiting = self._metrics()
              if running != 0 or waiting != 0:
                  self.quiet_since = None
-@@ -827,6 +958,10 @@
+@@ -827,6 +1004,10 @@
                  return False
              # The lock has remained exclusively obtainable and vLLM idle for the
              # grace period. Re-check metrics while retaining this lock.
@@ -484,7 +537,7 @@
              running, waiting = self._metrics()
              if running != 0 or waiting != 0:
                  self.quiet_since = None
-@@ -834,6 +969,17 @@
+@@ -834,6 +1015,17 @@
                      "vllm_busy", requests_running=running, requests_waiting=waiting
                  )
                  return False
@@ -502,7 +555,7 @@
              row = candidate if candidate["state"] == "inflight" else self.db.claim(candidate)
              if row is None:
                  self.quiet_since = None
-@@ -841,12 +987,56 @@
+@@ -841,12 +1033,56 @@
                  return False
              self._set_admission_status("committing", session_id=str(row["session_id"]))
              self._process(row)
@@ -559,7 +612,7 @@
      def _active_harness_processes(self, proc_root: str = "/proc") -> list[dict[str, Any]]:
          """Return interactive harnesses, excluding persistent editor/server helpers."""
          wanted = set(self.cfg.process_names)
-@@ -966,33 +1156,66 @@
+@@ -966,33 +1202,66 @@
          return headers
  
      def _process(self, row: sqlite3.Row) -> None:
@@ -633,7 +686,7 @@
              self.db.set_task(row, str(task_id))
              row = self.db.inflight() or row
              LOG.info("commit accepted session=%s task=%s", row["session_id"], task_id)
-@@ -1019,8 +1242,102 @@
+@@ -1019,8 +1288,102 @@
              if current is not None and current["task_id"]:
                  # Preserve a known in-flight task for later status polling.
                  return
@@ -736,7 +789,7 @@
      def _wait_task(self, row: sqlite3.Row, task_id: str) -> None:
          deadline = time.monotonic() + self.cfg.task_timeout_seconds
          quoted = urllib.parse.quote(task_id, safe="")
-@@ -1100,6 +1417,13 @@
+@@ -1100,6 +1463,13 @@
                  },
              )
              return
@@ -750,7 +803,7 @@
          if path in {"/__commit_gate/failures", "/__commit_gate/unresolved"}:
              if not self._admin_authorized():
                  self._json(401, {"status": "error", "error": {"message": "Unauthorized"}})
-@@ -1121,6 +1445,25 @@
+@@ -1121,6 +1491,25 @@
  
      def do_POST(self):
          path = urllib.parse.urlsplit(self.path).path
@@ -776,7 +829,7 @@
          match = COMMIT_RE.match(path)
          if match:
              self._enqueue(match.group(1))
-@@ -1144,7 +1487,7 @@
+@@ -1144,7 +1533,7 @@
  
      def _read_body(self, limit: int | None = None) -> bytes:
          length = int(self.headers.get("Content-Length", "0") or 0)
@@ -785,7 +838,7 @@
              raise ValueError("request body exceeds configured limit")
          return self.rfile.read(length) if length else b""
  
-@@ -1155,7 +1498,22 @@
+@@ -1155,7 +1544,22 @@
              "actor_peer": self.headers.get("X-OpenViking-Actor-Peer", "").strip(),
          }
  
@@ -808,7 +861,7 @@
          api_key = os.environ.get("OPENVIKING_ROOT_API_KEY") or os.environ.get(
              "OPENVIKING_API_KEY", ""
          )
-@@ -1163,6 +1521,9 @@
+@@ -1163,6 +1567,9 @@
          return bool(api_key) and hmac.compare_digest(supplied, f"Bearer {api_key}")
  
      def _enqueue(self, encoded_session: str) -> None:
@@ -818,7 +871,7 @@
          try:
              session_id = urllib.parse.unquote(encoded_session).strip()
              if not session_id or "/" in session_id or len(session_id) > 255:
-@@ -1203,6 +1564,9 @@
+@@ -1203,6 +1610,9 @@
              self._json(503, {"status": "error", "error": {"message": str(exc)}})
  
      def _proxy(self) -> None:
@@ -828,8 +881,9 @@
          cfg = self.server.cfg
          response_started = False
          try:
---- /dev/null
-+++ b/receipt_protocol.py
+diff -Nru a/receipt_protocol.py b/receipt_protocol.py
+--- a/receipt_protocol.py	1969-12-31 16:00:00.000000000 -0800
++++ b/receipt_protocol.py	2026-10-30 17:24:53.057264805 -0700
 @@ -0,0 +1,165 @@
 +"""Issue 70: durable OpenViking commit receipt core (disabled until integrated).
 +
@@ -996,12 +1050,14 @@
 +    if state == "accepted" and isinstance(task_id, str) and task_id:
 +        return "TRACK", task_id
 +    return "BLOCK", None
---- /dev/null
-+++ b/requirements-phase1.txt
+diff -Nru a/requirements-phase1.txt b/requirements-phase1.txt
+--- a/requirements-phase1.txt	1969-12-31 16:00:00.000000000 -0800
++++ b/requirements-phase1.txt	2026-10-30 17:24:53.057287775 -0700
 @@ -0,0 +1 @@
 +jsonschema>=4.26,<5
---- /dev/null
-+++ b/shared_work.py
+diff -Nru a/shared_work.py b/shared_work.py
+--- a/shared_work.py	1969-12-31 16:00:00.000000000 -0800
++++ b/shared_work.py	2026-10-30 17:24:53.057314686 -0700
 @@ -0,0 +1,265 @@
 +"""Phase 1 typed work in the existing commit-gate SQLite and worker owner.
 +
@@ -1268,8 +1324,9 @@
 +
 +    def poll(self, backend_identity):
 +        raise RuntimeError("Graphiti terminal observation interface unavailable")
---- /dev/null
-+++ b/test_receipt_protocol.py
+diff -Nru a/test_receipt_protocol.py b/test_receipt_protocol.py
+--- a/test_receipt_protocol.py	1969-12-31 16:00:00.000000000 -0800
++++ b/test_receipt_protocol.py	2026-10-30 17:24:53.057343777 -0700
 @@ -0,0 +1,59 @@
 +import tempfile
 +import unittest
@@ -1330,8 +1387,9 @@
 +        self.assertNotEqual(KEY, request_key({**SCOPE,"user_id":"other"},7))
 +        self.assertEqual(BODY, canonical_digest({"keep_recent_count":0}))
 +if __name__ == '__main__': unittest.main()
---- /dev/null
-+++ b/tests/test_corrections.py
+diff -Nru a/tests/test_corrections.py b/tests/test_corrections.py
+--- a/tests/test_corrections.py	1969-12-31 16:00:00.000000000 -0800
++++ b/tests/test_corrections.py	2026-10-30 17:24:53.057377418 -0700
 @@ -0,0 +1,240 @@
 +"""Issue 70 corrections, disposable state only; never talks to installed services."""
 +import copy
@@ -1573,8 +1631,120 @@
 +
 +if __name__ == '__main__':
 +    unittest.main()
---- /dev/null
-+++ b/tests/test_service_corrections.py
+diff -Nru a/tests/test_dual_metrics.py b/tests/test_dual_metrics.py
+--- a/tests/test_dual_metrics.py	2026-10-30 17:24:53.056239647 -0700
++++ b/tests/test_dual_metrics.py	2026-10-30 17:24:53.057417909 -0700
+@@ -99,7 +99,11 @@
+ 
+     def test_each_provider_busy_blocks_and_idle_keeps_grace(self):
+         with tempfile.TemporaryDirectory() as root:
+-            db=mock.Mock(); db.inflight.return_value=None; db.next_ready.return_value={'state':'pending'}
++            db=mock.MagicMock(); db.inflight.return_value=None; db.next_ready.return_value={'state':'pending'}
++            # The disabled-Graphiti admission recheck reads existing state
++            # through the connect() context manager. Model a legacy database
++            # without a memory_work table so the recheck reports available.
++            db.connect.return_value.__enter__.return_value.execute.return_value.fetchone.return_value=None
+             worker=gate.Worker(replace(config(root), drain_enabled=True, process_names=(),quiet_grace_seconds=30), db, threading.Event())
+             for pair in PAIRS:
+                 for running,waiting in [(1,0),(0,1),(0,0)]:
+diff -Nru a/tests/test_multi_unknown_recovery.py b/tests/test_multi_unknown_recovery.py
+--- a/tests/test_multi_unknown_recovery.py	1969-12-31 16:00:00.000000000 -0800
++++ b/tests/test_multi_unknown_recovery.py	2026-10-30 17:24:53.057478701 -0700
+@@ -0,0 +1,91 @@
++"""Gate admission regressions for multiple unresolved backend receipts.
++
++Coordinator checks only; actual QueueFS/backend interleavings tested separately.
++"""
++import fcntl
++import tempfile
++import threading
++import time
++import unittest
++from dataclasses import replace
++from unittest import mock
++
++from test_gate import gate, config
++
++
++class MultipleUnknownRecoveryTests(unittest.TestCase):
++    def setUp(self):
++        self.tmp = tempfile.TemporaryDirectory()
++        self.addCleanup(self.tmp.cleanup)
++        self.cfg = replace(
++            config(self.tmp.name), receipts_enabled=True,
++            drain_enabled=True, quiet_grace_seconds=0.01, process_names=(),
++        )
++        self.db = gate.QueueDB(self.cfg.database)
++        self.worker = gate.Worker(self.cfg, self.db, threading.Event())
++        self.worker._metrics = mock.Mock(return_value=(0, 0))
++        self.scope = {"account": "a", "user_id": "u", "actor_peer": "p"}
++
++    def unknown(self, session):
++        self.db.enqueue(self.scope, session, 0, {}, "multi-unknown-case")
++        row = self.db.claim(self.db.next_ready())
++        self.assertIsNotNone(row)
++        self.assertEqual(row["session_id"], session)
++        self.db.mark_unknown(row)
++        return next(r for r in self.db.unknown_rows() if r["session_id"] == session)
++
++    def eligible_now(self):
++        self.worker._recovery_quiet_since = time.monotonic() - 10
++
++    def test_queued_inflight_task_blocks_distinct_unknown_recovery(self):
++        a = self.unknown("a")
++        b = self.unknown("b")
++        self.db.adopt_receipt_task(a, "durable-task-a")
++        self.eligible_now()
++        self.assertFalse(self.worker._receipt_recovery_admitted(b))
++        self.assertIsNone(self.worker._recovery_quiet_since)
++        # This unit-level completion models a separately proven terminal
++        # receipt. The service-backed tests must establish actual finality.
++        self.db.complete(a, outcome="completed")
++        self.eligible_now()
++        self.assertTrue(self.worker._receipt_recovery_admitted(b))
++
++    def test_two_ambiguous_submissions_fail_closed_without_external_proof(self):
++        a = self.unknown("a")
++        b = self.unknown("b")
++        for row in (a, b):
++            self.eligible_now()
++            self.assertFalse(self.worker._receipt_recovery_admitted(row))
++        self.worker._metrics.assert_not_called()
++
++    def test_tick_only_observes_when_multiple_unknown_requests_exist(self):
++        self.unknown("a")
++        self.unknown("b")
++        self.eligible_now()
++        with mock.patch.object(self.worker, "_receipt_observation", return_value=False) as observe:
++            self.assertFalse(self.worker.tick())
++            self.assertEqual(observe.call_count, 2)
++            self.assertTrue(all(c.kwargs["allow_recovery"] is False for c in observe.call_args_list))
++
++    def test_unrelated_pending_intent_does_not_starve_single_recovery(self):
++        row = self.unknown("ambiguous")
++        self.db.enqueue(self.scope, "not-yet-submitted", 0, {}, "new")
++        self.eligible_now()
++        self.assertTrue(self.worker._receipt_recovery_admitted(row))
++
++    def test_competing_interactive_shared_lease_resets_recovery_grace(self):
++        self.unknown("ambiguous")
++        self.eligible_now()
++        with open(self.cfg.lock_file, "a+") as holder:
++            fcntl.flock(holder, fcntl.LOCK_SH | fcntl.LOCK_NB)
++            try:
++                with mock.patch.object(self.worker, "_receipt_observation") as observe:
++                    self.assertFalse(self.worker.tick())
++                    observe.assert_not_called()
++                self.assertIsNone(self.worker._recovery_quiet_since)
++            finally:
++                fcntl.flock(holder, fcntl.LOCK_UN)
++
++
++if __name__ == "__main__":
++    unittest.main()
+diff -Nru a/tests/test_service_corrections.py b/tests/test_service_corrections.py
+--- a/tests/test_service_corrections.py	1969-12-31 16:00:00.000000000 -0800
++++ b/tests/test_service_corrections.py	2026-10-30 17:24:53.057502111 -0700
 @@ -0,0 +1,144 @@
 +"""Service-backed contract tests, loopback ephemeral ports and disposable DB."""
 +import copy
@@ -1720,8 +1890,9 @@
 +
 +
 +if __name__ == '__main__': unittest.main()
---- /dev/null
-+++ b/tests/test_service_mixed.py
+diff -Nru a/tests/test_service_mixed.py b/tests/test_service_mixed.py
+--- a/tests/test_service_mixed.py	1969-12-31 16:00:00.000000000 -0800
++++ b/tests/test_service_mixed.py	2026-10-30 17:24:53.057526072 -0700
 @@ -0,0 +1,127 @@
 +import json
 +import os
@@ -1850,9 +2021,10 @@
 +
 +if __name__ == "__main__":
 +    unittest.main()
---- /dev/null
-+++ b/tests/test_shared_work.py
-@@ -0,0 +1,184 @@
+diff -Nru a/tests/test_shared_work.py b/tests/test_shared_work.py
+--- a/tests/test_shared_work.py	1969-12-31 16:00:00.000000000 -0800
++++ b/tests/test_shared_work.py	2026-10-30 17:24:53.057560403 -0700
+@@ -0,0 +1,303 @@
 +import hashlib
 +import tempfile
 +import threading
@@ -2023,6 +2195,125 @@
 +            with db.connect() as conn:
 +                names = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
 +            self.assertNotIn("memory_work", names)
++
++    def test_disabling_graphiti_cannot_release_unresolved_global_admission(self):
++        # Create a real unresolved memory row with the feature on, then turn
++        # the feature OFF without erasing SQLite. An independent OV intent
++        # must not enter inference merely because Graphiti is now disabled.
++        item = self.enqueue_synthetic(candidate("disable-unknown"))
++        row = self.work.claim(item["work_key"], "lease-old")
++        self.work.processing(item["work_key"], row["attempt_generation"], item["work_key"])
++        self.db.enqueue({"account": "a", "user_id": "u", "actor_peer": "p"},
++                        "ov-after-disable", 0, {}, "regression")
++        cfg = replace(self.cfg, graphiti_enabled=False)
++        worker = gate.Worker(cfg, self.db, threading.Event())
++        self.assertIsNone(worker.shared)
++        calls = []
++        worker._metrics = lambda: (0, 0)
++        worker._active_harness_processes = lambda: []
++        worker._process = lambda ov: calls.append(ov["session_id"])
++        self.assertFalse(worker.tick())
++        self.assertEqual(worker.admission_status()["state"], "blocked_reconcile")
++        self.assertEqual(calls, [])
++        self.assertEqual(self.db.list_rows()[0]["state"], "pending")
++
++    def test_disabled_graphiti_legacy_without_state_table_stays_available(self):
++        cfg = replace(self.cfg, graphiti_enabled=False)
++        with tempfile.TemporaryDirectory() as root:
++            cfg = replace(cfg, database=f"{root}/queue.sqlite3")
++            db = gate.QueueDB(cfg.database)
++            worker = gate.Worker(cfg, db, threading.Event())
++            self.assertFalse(worker._unresolved_graphiti_from_existing_db())
++            with db.connect() as conn:
++                names = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
++            self.assertNotIn("memory_work", names)
++
++    def test_blocked_reconcile_survives_restart_and_graphiti_disable(self):
++        # A process death after an ambiguous Graphiti submit is not a
++        # cancellation; switching the feature off must retain the block.
++        item = self.enqueue_synthetic(candidate("restart-unknown"))
++        row = self.work.claim(item["work_key"], "lease-before-restart")
++        self.work.processing(item["work_key"], row["attempt_generation"], item["work_key"])
++        self.work.recover_after_restart()
++        self.assertEqual(self.work.status()[0]["status"], "blocked_reconcile")
++        self.db.enqueue({"account": "a", "user_id": "u", "actor_peer": "p"},
++                        "ov-after-restart", 0, {}, "regression")
++        worker = gate.Worker(replace(self.cfg, graphiti_enabled=False),
++                             self.db, threading.Event())
++        attempted = []
++        worker._metrics = lambda: (0, 0)
++        worker._active_harness_processes = lambda: []
++        worker._process = lambda row: attempted.append(row["session_id"])
++        self.assertFalse(worker.tick())
++        self.assertEqual(worker.admission_status()["state"], "blocked_reconcile")
++        self.assertEqual(attempted, [])
++        self.assertEqual(self.work.status()[0]["status"], "blocked_reconcile")
++
++    def test_existing_malformed_graphiti_state_fails_closed_when_disabled(self):
++        # Legacy database had no optional Graphiti table, but a table with
++        # that name and wrong schema is NOT proof that no producer exists.
++        cfg = replace(self.cfg, graphiti_enabled=False)
++        with tempfile.TemporaryDirectory() as root:
++            cfg = replace(cfg, database=f"{root}/queue.sqlite3")
++            db = gate.QueueDB(cfg.database)
++            with db.connect() as conn:
++                conn.execute("CREATE TABLE memory_work (unrelated_column TEXT)")
++            db.enqueue({"account": "a", "user_id": "u", "actor_peer": "p"},
++                       "ov-malformed-graphiti-state", 0, {}, "regression")
++            worker = gate.Worker(cfg, db, threading.Event())
++            entered = []
++            worker._metrics = lambda: (0, 0)
++            worker._active_harness_processes = lambda: []
++            worker._process = lambda row: entered.append(row["session_id"])
++            self.assertFalse(worker.tick())
++            self.assertEqual(worker.admission_status()["state"], "graphiti_state_unverifiable")
++            self.assertEqual(entered, [])
++
++    def test_disabled_graphiti_rechecks_after_acquiring_exclusive_lease(self):
++        # The first SQLite check sees a queued Graphiti record. While the
++        # worker is acquiring its lock another coordinator claims it.
++        # The in-lock check must observe that new processing identity.
++        item = self.enqueue_synthetic(candidate("interlock-race"))
++        self.db.enqueue({"account": "a", "user_id": "u", "actor_peer": "p"},
++                        "ov-race", 0, {}, "regression")
++        cfg = replace(self.cfg, graphiti_enabled=False, quiet_grace_seconds=0)
++        worker = gate.Worker(cfg, self.db, threading.Event())
++        worker._metrics = lambda: (0, 0)
++        worker._active_harness_processes = lambda: []
++        entered = []
++        worker._process = lambda row: entered.append(row["session_id"])
++        original_lock = worker._try_exclusive_lock
++        def interleaved_lock():
++            row = self.work.claim(item["work_key"], "lease-another-worker")
++            self.assertIsNotNone(row)
++            self.work.processing(item["work_key"], row["attempt_generation"],
++                                 item["work_key"])
++            return original_lock()
++        worker._try_exclusive_lock = interleaved_lock
++        self.assertFalse(worker.tick())
++        self.assertEqual(worker.admission_status()["state"], "blocked_reconcile")
++        self.assertEqual(entered, [])
++        self.assertEqual(self.work.status()[0]["status"], "processing")
++
++    def test_terminal_graphiti_does_not_indefinitely_block_ov_when_disabled(self):
++        # Source-backed terminal work is not an active inference producer.
++        item = self.enqueue_synthetic(candidate("completed-first"))
++        row = self.work.claim(item["work_key"], "lease-terminal")
++        self.work.processing(item["work_key"], row["attempt_generation"], item["work_key"])
++        self.work.finish(item["work_key"], row["attempt_generation"],
++                         item["work_key"], "completed")
++        cfg = replace(self.cfg, graphiti_enabled=False, quiet_grace_seconds=0)
++        self.db.enqueue({"account": "a", "user_id": "u", "actor_peer": "p"},
++                        "ov-after-terminal", 0, {}, "regression")
++        worker = gate.Worker(cfg, self.db, threading.Event())
++        worker._metrics = lambda: (0, 0)
++        worker._active_harness_processes = lambda: []
++        attempted = []
++        worker._process = lambda row: (attempted.append(row["session_id"]),
++                                      self.db.complete(row))
++        self.assertFalse(worker.tick())
++        self.assertTrue(worker.tick())
++        self.assertEqual(attempted, ["ov-after-terminal"])
 +
 +    def test_legacy_ambiguous_queued_ack_does_not_resubmit(self):
 +        self.db.enqueue({"account": "a", "user_id": "u", "actor_peer": "p"}, "ov-ambiguous", 0, {}, "mixed")
