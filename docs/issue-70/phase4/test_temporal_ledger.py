@@ -43,7 +43,8 @@ class Tests(unittest.TestCase):
         count=[]
         def runner(c):
             count.append(c)
-            return {"exit":exit_code,"disposition":disposition,"mode":"live",
+            return {"validator_sha256":self.pin,"exit":exit_code,
+                    "disposition":disposition,"mode":"live",
                     "coverage":"complete","findings":[]}
         return runner,count
 
@@ -80,7 +81,8 @@ class Tests(unittest.TestCase):
 
     def test_findings_projection_keeps_bounded_diagnostic_fields(self):
         def runner(_):
-            return {"exit":1,"disposition":"MISSING_STATE","mode":"live",
+            return {"validator_sha256":self.pin,
+                    "exit":1,"disposition":"MISSING_STATE","mode":"live",
                     "coverage":"complete",
                     "findings":[{"type":"MISSING_STATE","state":"NATS",
                                  "detail":"no outgoing current-state edge for 'NATS'",
@@ -124,8 +126,8 @@ class Tests(unittest.TestCase):
         class Core:
             def poll(self,key):
                 return {"status":"completed","persisted":True,"backend_identity":key}
-        adapter=TemporalCheckingAdapter(Core(),self.db,lambda _:{"exit":1,
-            "disposition":"TEMPORAL_CONFLICT","mode":"live","findings":[]},
+        adapter=TemporalCheckingAdapter(Core(),self.db,lambda _:{"validator_sha256":self.pin,
+            "exit":1,"disposition":"TEMPORAL_CONFLICT","mode":"live","findings":[]},
             validator_sha256=self.pin)
         self.assertEqual(adapter.poll("k")["status"],"completed")
         self.assertEqual(self.ledger.status_for_episode("ep-1","issue70_test"),"INCONSISTENT")
@@ -142,8 +144,8 @@ class Tests(unittest.TestCase):
         def runner(_):
             calls.append(True)
             if len(calls)==1:raise TimeoutError("transient read-only outage")
-            return {"exit":0,"disposition":"PASS","mode":"live",
-                    "coverage":"complete","findings":[]}
+            return {"validator_sha256":self.pin,"exit":0,"disposition":"PASS",
+                    "mode":"live","coverage":"complete","findings":[]}
         adapter=TemporalCheckingAdapter(Core(),self.db,runner,validator_sha256=self.pin)
         self.assertEqual(adapter.ledger.evaluate("k",runner),"UNVERIFIED")
         self.assertEqual(adapter.retry_pending(max_items=1),1)
@@ -163,6 +165,12 @@ class Tests(unittest.TestCase):
         with self.db.connect() as c:
             r=c.execute("SELECT attempts,state FROM temporal_validation_results").fetchone()
         self.assertEqual((r["attempts"],r["state"]),(2,"unverified"))
+
+    def test_mismatched_runner_identity_cannot_persist_pass(self):
+        runner=lambda _:{"validator_sha256":"b"*64,"exit":0,
+                          "disposition":"PASS","mode":"live","findings":[]}
+        self.assertEqual(self.ledger.evaluate("k",runner),"UNVERIFIED")
+        self.assertEqual(self.ledger.status_for_episode("ep-1","issue70_test"),"UNVERIFIED")
 
     def test_validator_identity_change_preserves_history_but_blocks_reuse(self):
         runner,calls=self.run_code(0,"PASS")

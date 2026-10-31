@@ -162,6 +162,8 @@ class TemporalLedger:
             value=runner(specified)
             exit_code=value["exit"]
             disposition=value["disposition"]
+            if value.get("validator_sha256")!=self.validator_sha256:
+                raise ValueError("validator returned an unbound source identity")
             if (type(exit_code) is not int or exit_code not in EXIT_DISPOSITIONS
                     or disposition not in VALIDATOR_DISPOSITIONS[exit_code]):
                 raise ValueError("invalid validator exit/disposition pair")

@@ -828,6 +828,15 @@ class Worker:
         if cfg.graphiti_enabled:
             capture_preflight()
         self.shared = SharedWorkQueue(db) if cfg.graphiti_enabled else None
+        if not cfg.graphiti_enabled:
+            # Disabling the feature also invalidates the currently active
+            # temporal validation identity without rewriting historical
+            # outcome rows or creating optional tables on legacy gates.
+            with db.connect() as conn:
+                exists=conn.execute("""SELECT 1 FROM sqlite_master
+                    WHERE type='table' AND name='temporal_validator_active'""").fetchone()
+                if exists:
+                    conn.execute("DELETE FROM temporal_validator_active WHERE singleton=1")
         self.graphiti_adapter = graphiti_adapter or DisabledGraphitiAdapter()
         # Injection-only until the exact installed Graphiti Python environment
         # and operator policy have been qualified. Never derive authority from
