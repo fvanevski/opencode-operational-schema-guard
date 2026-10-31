@@ -2,7 +2,9 @@
 
 No separate inference scheduler: the gate Worker owns EX flock + SQLite.
 Graphiti Core runs only as an awaited subprocess in its configured Python
-environment and only against a disposable issue70_* graph during qualification.
+environment. Non-disposable graph targets require the separate operator policy.
+Exclusive-state bootstrap persists only the active validator identity;
+ingestion and temporal-result tables remain deferred until real work.
 """
 from __future__ import annotations
 import hashlib

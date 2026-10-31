@@ -155,3 +155,36 @@ production Graphiti capture. Central will decide final-source PR merge
 and obtain an explicit operator opt-in to the exact production group,
 categories, installed/config source identities and rollback posture
 before any write-capable production activation.
+
+
+## Validator activation identity under overlapping runtimes
+
+An independently verified Codex P1 demonstrated that a previously booted
+runtime could lazily construct its temporal ledger after a newer runtime
+selected a different validator, accidentally restoring the old SHA and
+re-authorizing historical PASS results in read-only recall.
+
+The selected validator SHA is now an **explicit bootstrap decision**. For
+an enabled exclusive-state policy, bootstrapping persists exactly one
+`temporal_validator_active` singleton row after the validator file's
+digest is checked. This identity table is intentionally present before
+work, including on a fresh database. Graphiti ingestion receipts,
+temporal result and contract tables remain deferred. A temporal ledger
+constructor may create its ordinary schema on actual work but **never**
+updates validator selection. The later committed bootstrap wins; an
+earlier adapter's delayed first poll/submit/retry cannot restore its SHA.
+
+A nonexclusive policy clears the active selector when present, and a
+disabled runtime keeps the existing disabled-mode revocation behavior.
+An old, pre-fix installed process does NOT have this protection: require
+operator-owned stop/quiescence of previous gate runtimes during eventual
+production installation. Do not assert this concurrency invariant based
+on an unchanged prior runtime. Preserve historical result rows and
+never re-ingest episodes to reconcile validator identity.
+
+New regression: `test_overlapping_bootstrap_does_not_resurrect_old_validator`
+runs validator A bootstrap, B bootstrap, delayed A adapter construction,
+and a prior SHA-A PASS row; the active SHA remains B and A's result
+is UNVERIFIED. `test_idle_retry_does_not_create_optional_graphiti_tables`
+now asserts the sole authority singleton exists while confirming the
+ingestion and result/contract tables have not been initialized.
