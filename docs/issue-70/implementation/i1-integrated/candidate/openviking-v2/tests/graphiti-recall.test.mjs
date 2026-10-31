@@ -44,6 +44,19 @@ test("exclusive conflicted state never asserted as verified", () => {
   assert.equal(formatGraphitiFacts([{...item,exclusive:true,validation_status:"unknown"}],{groupID:"grp"}),"")
 })
 
+test("same-source historical and disputed periods are not incorrectly collapsed", () => {
+  const facts=[
+    {...item,exclusive:true,validation_status:"PASS",
+     valid_at:"2026-01-01T00:00:00Z",invalid_at:"2026-10-30T00:00:00Z"},
+    {...item,exclusive:true,validation_status:"INCONSISTENT",
+     valid_at:"2026-10-30T00:00:00Z",invalid_at:""},
+  ]
+  const text=formatGraphitiFacts(facts,{groupID:"grp",maxItems:3,maxChars:2200})
+  assert.match(text,/HISTORICAL \/ INVALIDATED/)
+  assert.match(text,/CURRENT STATE UNVERIFIED \/ CONFLICTED/)
+  assert.equal(text.split("\n").length,3)
+})
+
 test("deduplicates prior OpenViking context, bounds entries and filters tokens", () => {
   assert.equal(formatGraphitiFacts([item],{groupID:"grp",existing:[item.fact]}),"")
   const text=formatGraphitiFacts([item,{...item,fact:"password=secret"}],{groupID:"grp",maxItems:1})

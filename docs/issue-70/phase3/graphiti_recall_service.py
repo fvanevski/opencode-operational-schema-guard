@@ -75,7 +75,7 @@ def combined_validation(episodes,receipts,overflow=False):
     mixed=exclusive and any(not x["exclusive"] for x in approved)
     if not exclusive:
         status="UNVERIFIED" if missing else "not_required"
-    elif missing or mixed or "UNVERIFIED" in statuses:
+    elif missing or mixed or len(refs)>16 or "UNVERIFIED" in statuses:
         status="UNVERIFIED"
     elif "INCONSISTENT" in statuses:
         status="INCONSISTENT"

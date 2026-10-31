@@ -40,7 +40,10 @@ export function formatGraphitiFacts(facts, {groupID, maxItems = 4, maxChars = 16
     const exclusive = fact.exclusive === true
     if (exclusive && !["PASS","INCONSISTENT","INCOMPLETE","INVALID_INPUT","UNVERIFIED"].includes(status)) continue
     if (!exclusive && status !== "not_required") continue
-    const key = fact.source_ref + ":" + fact.fact
+    const key = [
+      fact.source_ref, fact.fact, status,
+      String(fact.valid_at ?? ""), String(fact.invalid_at ?? ""),
+    ].join(":")
     if (seen.has(key) || existing.some(value => same(value, fact.fact))) continue
     seen.add(key)
     const claim = fact.fact.replace(/[\r\n\t]+/g, " ").slice(0, 400)
