@@ -99,3 +99,39 @@ PR73_CI=<check/sha/status or pending>
 BLOCKERS=<none or exact>
 COMMAND_SHAPE_FRICTION=<canonical GHDEV-10 record>
 \`\`\`
+
+### Read-only installed-byte helper
+
+The project also ships \`docs/issue-70/deployment/verify_installed_sources.py\`, a read-only
+source/installed-byte verifier for the Build/independent Evidence readback boundary.
+It requires Python 3.11+, \`git\` and an operator-generated private JSON mapping.
+Example mapping **shape only**, not actual host paths:
+
+\`\`\`json
+{
+  "reviewed_checkout": "/absolute/immutable/release/checkout",
+  "gate_toml": "/absolute/current/gate.toml",
+  "false_defaults_verified": false,
+  "operator_policy_json": null,
+  "mappings": [
+    {
+      "source": "docs/issue-70/implementation/i1-integrated/candidate/gate/openviking_commit_gate.py",
+      "installed": "/absolute/installed/gate/openviking_commit_gate.py"
+    }
+  ]
+}
+\`\`\`
+
+The helper verifies exact reviewed commit/tree, clean checkout, source hashes
+against the committed package manifest, and each installed target against
+the same candidate bytes. All installed components must be included in the
+actual mapping; the example above is deliberately incomplete. Absent
+\`graphiti_enabled\` or \`graphiti_production_approved\` TOML keys are accepted
+only if the *host-tested* parser's false defaults have been established and
+\`false_defaults_verified=true\` is set in the plan. Run it once after
+Build promotion and again independently after fresh-process validation;
+store raw sanitized receipts and digests in the private operator directory.
+
+This helper does **not** prove service behavior, process quiescence, backend
+inference admission, backups or any protected database identity. Those remain
+separate mandatory acceptance observations.
