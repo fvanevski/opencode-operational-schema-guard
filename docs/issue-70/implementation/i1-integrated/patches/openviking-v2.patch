@@ -1,6 +1,6 @@
 diff -ruN a/candidate-capture.mjs b/candidate-capture.mjs
 --- a/candidate-capture.mjs	1969-12-31 16:00:00.000000000 -0800
-+++ b/candidate-capture.mjs	2026-10-30 19:56:24.552954533 -0700
++++ b/candidate-capture.mjs	2026-10-30 22:12:49.775631440 -0700
 @@ -0,0 +1,136 @@
 +import { createHash } from "node:crypto"
 +import { readFileSync } from "node:fs"
@@ -140,8 +140,8 @@ diff -ruN a/candidate-capture.mjs b/candidate-capture.mjs
 +}
 diff -ruN a/graphiti-recall.mjs b/graphiti-recall.mjs
 --- a/graphiti-recall.mjs	1969-12-31 16:00:00.000000000 -0800
-+++ b/graphiti-recall.mjs	2026-10-30 19:56:24.552989694 -0700
-@@ -0,0 +1,89 @@
++++ b/graphiti-recall.mjs	2026-10-30 22:12:49.776756569 -0700
+@@ -0,0 +1,96 @@
 +/** Optional, bounded, read-only Graphiti recall alongside existing OpenViking.
 + * The configured localhost service must use CPU/graph-only lookups: no LLM or
 + * embedding calls in context hooks, and never a broad per-turn graph scan.
@@ -184,7 +184,10 @@ diff -ruN a/graphiti-recall.mjs b/graphiti-recall.mjs
 +    const exclusive = fact.exclusive === true
 +    if (exclusive && !["PASS","INCONSISTENT","INCOMPLETE","INVALID_INPUT","UNVERIFIED"].includes(status)) continue
 +    if (!exclusive && status !== "not_required") continue
-+    const key = fact.source_ref + ":" + fact.fact
++    const key = [
++      fact.source_ref, fact.fact, status,
++      String(fact.valid_at ?? ""), String(fact.invalid_at ?? ""),
++    ].join(":")
 +    if (seen.has(key) || existing.some(value => same(value, fact.fact))) continue
 +    seen.add(key)
 +    const claim = fact.fact.replace(/[\r\n\t]+/g, " ").slice(0, 400)
@@ -194,7 +197,11 @@ diff -ruN a/graphiti-recall.mjs b/graphiti-recall.mjs
 +      exclusive && status !== "PASS" ? " [CURRENT STATE UNVERIFIED / CONFLICTED]" : "",
 +      fact.invalid_at ? " [HISTORICAL / INVALIDATED]" : "",
 +    ].join("")
-+    const source = fact.source_ref
++    const sources = Array.isArray(fact.source_refs) && fact.source_refs.length
++      ? fact.source_refs.filter(s => valid(s,512) && /^git:[0-9a-f]{40}:[-\w./]+$/.test(s))
++      : [fact.source_ref]
++    if (!sources.length || sources.length > 16) continue
++    const source = [...new Set(sources)].sort().join(", ")
 +    const line = "- " + claim + marker + " (source: " + source + ")"
 +    if (lines.join("\n").length + line.length > Math.max(200, Math.min(maxChars, 2400))) break
 +    lines.push(line)
@@ -232,8 +239,8 @@ diff -ruN a/graphiti-recall.mjs b/graphiti-recall.mjs
 +  return recall
 +}
 diff -ruN a/index.mjs b/index.mjs
---- a/index.mjs	2026-10-30 19:56:24.551868983 -0700
-+++ b/index.mjs	2026-10-30 19:56:24.553020364 -0700
+--- a/index.mjs	2026-10-30 22:12:49.772719618 -0700
++++ b/index.mjs	2026-10-30 22:12:49.777905707 -0700
 @@ -11,6 +11,8 @@
  import { createHybridLexicalIndex } from "../openviking-context-v4/lib/shared/hybrid-lexical.mjs"
  import { createHybridRecall, loadVikingCorpus, DEFAULT_CORPUS_ROOT } from "../openviking-context-v4/lib/shared/hybrid-recall.mjs"
@@ -291,7 +298,7 @@ diff -ruN a/index.mjs b/index.mjs
            try {
 diff -ruN a/memory-candidate-v1.schema.json b/memory-candidate-v1.schema.json
 --- a/memory-candidate-v1.schema.json	1969-12-31 16:00:00.000000000 -0800
-+++ b/memory-candidate-v1.schema.json	2026-10-30 19:56:24.553049365 -0700
++++ b/memory-candidate-v1.schema.json	2026-10-30 22:12:49.778820320 -0700
 @@ -0,0 +1,226 @@
 +{
 +  "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -521,7 +528,7 @@ diff -ruN a/memory-candidate-v1.schema.json b/memory-candidate-v1.schema.json
 +}
 diff -ruN a/tests/candidate-capture.test.mjs b/tests/candidate-capture.test.mjs
 --- a/tests/candidate-capture.test.mjs	1969-12-31 16:00:00.000000000 -0800
-+++ b/tests/candidate-capture.test.mjs	2026-10-30 19:56:24.553113256 -0700
++++ b/tests/candidate-capture.test.mjs	2026-10-30 22:12:49.780753649 -0700
 @@ -0,0 +1,137 @@
 +import test from "node:test"
 +import assert from "node:assert/strict"
@@ -662,7 +669,7 @@ diff -ruN a/tests/candidate-capture.test.mjs b/tests/candidate-capture.test.mjs
 +})
 diff -ruN a/tests/capture-isolation.test.mjs b/tests/capture-isolation.test.mjs
 --- a/tests/capture-isolation.test.mjs	1969-12-31 16:00:00.000000000 -0800
-+++ b/tests/capture-isolation.test.mjs	2026-10-30 19:56:24.553148477 -0700
++++ b/tests/capture-isolation.test.mjs	2026-10-30 22:12:49.781974959 -0700
 @@ -0,0 +1,91 @@
 +import test from "node:test"
 +import assert from "node:assert/strict"
@@ -757,7 +764,7 @@ diff -ruN a/tests/capture-isolation.test.mjs b/tests/capture-isolation.test.mjs
 +})
 diff -ruN a/tests/central-authentication-regressions.test.mjs b/tests/central-authentication-regressions.test.mjs
 --- a/tests/central-authentication-regressions.test.mjs	1969-12-31 16:00:00.000000000 -0800
-+++ b/tests/central-authentication-regressions.test.mjs	2026-10-30 19:56:24.553171807 -0700
++++ b/tests/central-authentication-regressions.test.mjs	2026-10-30 22:12:49.782990095 -0700
 @@ -0,0 +1,52 @@
 +// Issue #70. Copy this file to the authenticated openviking-v2 source's
 +// tests/ directory, alongside candidate-capture.test.mjs, before running.
@@ -813,8 +820,8 @@ diff -ruN a/tests/central-authentication-regressions.test.mjs b/tests/central-au
 +})
 diff -ruN a/tests/graphiti-recall.test.mjs b/tests/graphiti-recall.test.mjs
 --- a/tests/graphiti-recall.test.mjs	1969-12-31 16:00:00.000000000 -0800
-+++ b/tests/graphiti-recall.test.mjs	2026-10-30 19:56:24.553192307 -0700
-@@ -0,0 +1,52 @@
++++ b/tests/graphiti-recall.test.mjs	2026-10-30 22:12:49.783944639 -0700
+@@ -0,0 +1,65 @@
 +import test from "node:test"
 +import assert from "node:assert/strict"
 +import { createGraphitiRecall, graphIntentQuery, formatGraphitiFacts } from "../graphiti-recall.mjs"
@@ -859,6 +866,19 @@ diff -ruN a/tests/graphiti-recall.test.mjs b/tests/graphiti-recall.test.mjs
 +  const t=formatGraphitiFacts([{...item,exclusive:true,validation_status:"INCONSISTENT"}],{groupID:"grp"})
 +  assert.match(t,/CURRENT STATE UNVERIFIED/)
 +  assert.equal(formatGraphitiFacts([{...item,exclusive:true,validation_status:"unknown"}],{groupID:"grp"}),"")
++})
++
++test("same-source historical and disputed periods are not incorrectly collapsed", () => {
++  const facts=[
++    {...item,exclusive:true,validation_status:"PASS",
++     valid_at:"2026-01-01T00:00:00Z",invalid_at:"2026-10-30T00:00:00Z"},
++    {...item,exclusive:true,validation_status:"INCONSISTENT",
++     valid_at:"2026-10-30T00:00:00Z",invalid_at:""},
++  ]
++  const text=formatGraphitiFacts(facts,{groupID:"grp",maxItems:3,maxChars:2200})
++  assert.match(text,/HISTORICAL \/ INVALIDATED/)
++  assert.match(text,/CURRENT STATE UNVERIFIED \/ CONFLICTED/)
++  assert.equal(text.split("\n").length,3)
 +})
 +
 +test("deduplicates prior OpenViking context, bounds entries and filters tokens", () => {

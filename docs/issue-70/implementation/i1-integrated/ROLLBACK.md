@@ -38,3 +38,28 @@ pinned read-only validator is an operator-supplied file outside the
 repository. Production exclusive-state capture remains disabled in every
 shipped configuration; demonstrating a genuine automatic PASS does not
 activate it.
+
+## Four-finding campaign rollback scope
+
+The four-finding campaign (A1 recall authority in
+`docs/issue-70/phase3/graphiti_recall_service.py`, A2 fair deferred
+cursor in `candidate/gate/shared_work.py`, A3 exact validator identity in
+`graphiti_runtime_bootstrap.py`/`openviking_commit_gate.py`, A4 read-only
+validator retry in the gate worker, plus the bounded
+`tests/test_dual_metrics.py` fixture repair) rolls back with the same
+discipline: reverse the regenerated `patches/gate.patch` (thirteen entries)
+and `patches/openviking-v2.patch` (eight entries) on isolated copies to
+restore the authenticated installed gate/plugin bytes
+(`6ad48a93` / `6899822e`), dropping every patch-introduced file, and drop
+the source-pinned `docs/issue-70/phase3/` + `phase4/` runtime from the
+deployment manifest. The source-pinned recall-service and phase4 runtime
+files roll back with the branch commit; no component is installed on the
+live host. The genuine real-service qualification ran only on the
+disposable graph `issue70_p4c_final` and a disposable gate database; the
+live `graphiti_live` graph was not mutated, the live gate database was
+never accessed by tests, and the pinned read-only validator is an
+operator-supplied file outside the repository. A failed or transient
+validation outcome (UNVERIFIED/INCONSISTENT/INCOMPLETE) never erases or
+re-executes the completed Graphiti ingestion receipt; the read-only retry
+is bounded and never replays ingestion. Production exclusive-state
+capture remains disabled in every shipped configuration.

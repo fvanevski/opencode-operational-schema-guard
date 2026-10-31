@@ -69,7 +69,10 @@ def combined_validation(episodes,receipts,overflow=False):
     if not refs:return None
     approved=[receipts[uid] for uid in episodes if uid in receipts]
     exclusive=any(x["exclusive"] for x in approved)
-    statuses=[x["validation_status"] for x in approved if x["exclusive"]]
+    # An exclusive contributor without a recorded validation disposition is
+    # never validation-exempt: treat a missing record as UNVERIFIED, not as a
+    # KeyError, so the edge fails closed.
+    statuses=[x.get("validation_status","UNVERIFIED") for x in approved if x["exclusive"]]
     missing=overflow or len(approved)!=len(episodes)
     # An ordinary episode cannot silently assert validated exclusive state.
     mixed=exclusive and any(not x["exclusive"] for x in approved)

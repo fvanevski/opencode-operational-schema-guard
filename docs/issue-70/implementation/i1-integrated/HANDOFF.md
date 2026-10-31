@@ -1,3 +1,23 @@
+# Four-finding campaign handback (A1–A4, source-only, one consolidated PR)
+
+```text
+ISSUE70_FOUR_FINDING_RESULT=PASS (source-only; four Codex findings closed; genuine real-service PASS with read-only retry and no re-ingestion; production activation still disabled)
+BRANCH=issue/70-temporal-final
+CENTRAL_START_SHA=7d0ca45ca59f6fccbc6dcd2726dee51cd3930b08
+A1_RECALL_AUTHORITY=PASS graphiti_recall_service.py combined_validation() now fails an exclusive contributor with a missing validation record closed as UNVERIFIED (x.get('validation_status','UNVERIFIED')); a missing record is never validation-exempt
+A2_FAIR_DEFERRED_CURSOR=PASS shared_work.py auto_admit() advances the deferred-candidate cursor fairly (no starvation of later deferred candidates)
+A3_EXACT_VALIDATOR_IDENTITY=PASS validator bound by exact path + SHA-256 (graphiti_validator_path/sha256); pinned bytes verified inside the awaited child and terminal transport; mismatched pin fails closed before work tables are created
+A4_READONLY_VALIDATOR_RETRY=PASS transient validator-transport failure -> UNVERIFIED (attempts 1); exactly one bounded read-only retry by the existing worker -> done/PASS (attempts 2); no Graphiti re-ingestion (episode UUID + ingestion count unchanged)
+TEST_FIXTURE_REPAIR=PASS candidate/gate/tests/test_dual_metrics.py two tests now pass a MagicMock db modeling the legacy graphiti-disable connect() recheck (sibling pattern); source invariants preserved
+CPU_SUITES=PASS phase4 35/35, phase3 30/30, phase2 30/30, gate 59/59, receipt 7/7, launcher 5/5, cross-process 5/5, ov2 21/21 (graphiti-recall 6, candidate-capture 7, capture-isolation 5, central-auth 3), actual-backend 20/20 (212 total)
+REAL_SERVICE_QUALIFICATION=PASS fresh disposable graph issue70_p4c_final; genuine exclusive-state transition (Service X Redis->NATS); transient failure -> UNVERIFIED attempts=1, single read-only retry -> done/PASS attempts=2; work_key 77c88996...; transition episode 6ca0562f-4efc-4466-93d2-d9517f325ce3; outgoing episode dfca1dee-37d7-49c5-a1be-825f3dbb6505; ingestion count 2->2 (no re-ingestion); operator temporal_validation_status=PASS
+PACKAGE_RECONSTRUCTION=PASS committed package metadata was stale (four-finding commits after 55d70f8 updated candidate source without regenerating manifest/patches); gate.patch (7360ea01, 13 entries) + openviking-v2.patch (b0ee5faa, 8 entries) regenerated from committed candidate source against re-authenticated installed bases 6ad48a93/6899822e, byte-exact forward/reverse; backend.patch (a03ab064) unchanged and re-verified; source-base-manifest.json (all drifted candidate/evidence/patch hashes) + SHA256SUMS (47 entries) + CHANGED_FILES.txt (48 files) refreshed
+PROTECTED_LIVE_SURFACES=live graphiti_live graph untouched; live gate DB never accessed by tests; installed plugin pre-Phase 4 (6899822e); pinned validator byte-identical (aa4f048d...); no production capture activation
+LIVE_GRAPH_MUTATION=no; LIVE_GATE_DB_ACCESS_BY_TESTS=no; PRODUCTION_DEPLOYMENT=no; PRODUCTION_EXCLUSIVE_CAPTURE=disabled
+ONE_CONSOLIDATED_PR=authorized after qualification; publish ONE fast-forward commit to issue/70-temporal-final and update PR #72; no new PR, no merge, no self-approval
+RECOMMENDED_CENTRAL_ACTION=Independently review this consolidated four-finding source-only continuation on issue/70-temporal-final (fast-forward from 7d0ca45); production activation of exclusive-state capture and issue #70 closure remain separate Central decisions
+```
+
 # Final integrated campaign handback (source-only, one PR)
 
 ```text

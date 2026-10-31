@@ -61,7 +61,10 @@ class DualMetricsTests(unittest.TestCase):
 
     def test_worker_switches_both_directions_without_restart(self):
         with tempfile.TemporaryDirectory() as root:
-            worker=gate.Worker(config(root), mock.Mock(), threading.Event())
+            db=mock.MagicMock()
+            # The legacy graphiti-disable recheck reads state via connect().
+            db.connect.return_value.__enter__.return_value.execute.return_value.fetchone.return_value=None
+            worker=gate.Worker(config(root), db, threading.Event())
             responses=[]
             for pair in [PAIRS[0],PAIRS[1],PAIRS[2],PAIRS[0]]:
                 response=io.BytesIO(payload(pair,2,1).encode()); response.status=200; responses.append(response)
@@ -75,7 +78,9 @@ class DualMetricsTests(unittest.TestCase):
                 metrics_url="http://127.0.0.1:8001/metrics",
                 metrics_fallback_urls=("http://127.0.0.1:8002/metrics",),
             )
-            worker = gate.Worker(cfg, mock.Mock(), threading.Event())
+            db=mock.MagicMock()
+            db.connect.return_value.__enter__.return_value.execute.return_value.fetchone.return_value=None
+            worker = gate.Worker(cfg, db, threading.Event())
             ok_resp = io.BytesIO(payload(PAIRS[0], 0, 0).encode())
             ok_resp.status = 200
             with mock.patch.object(

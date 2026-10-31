@@ -1,7 +1,7 @@
 diff -ruN a/graphiti_runtime_bootstrap.py b/graphiti_runtime_bootstrap.py
 --- a/graphiti_runtime_bootstrap.py	1969-12-31 16:00:00.000000000 -0800
-+++ b/graphiti_runtime_bootstrap.py	2026-10-30 19:56:19.256568889 -0700
-@@ -0,0 +1,80 @@
++++ b/graphiti_runtime_bootstrap.py	2026-10-30 22:11:40.039752821 -0700
+@@ -0,0 +1,89 @@
 +"""Explicit, opt-in Graphiti Core runtime wiring for the existing gate.
 +
 +No separate inference scheduler: the gate Worker owns EX flock + SQLite.
@@ -54,6 +54,13 @@ diff -ruN a/graphiti_runtime_bootstrap.py b/graphiti_runtime_bootstrap.py
 +            raise RuntimeError("durable temporal ledger implementation unavailable")
 +    else:
 +        phase4=None
++        # The currently selected nonexclusive policy must not reuse a
++        # historical exclusive validator identity from a previous runtime.
++        with db.connect() as conn:
++            found=conn.execute("""SELECT 1 FROM sqlite_master WHERE
++                type='table' AND name='temporal_validator_active'""").fetchone()
++            if found:
++                conn.execute("DELETE FROM temporal_validator_active WHERE singleton=1")
 +    # Python's import boundary is explicitly operator-specified; the gate and
 +    # Git/Graphiti modules must be source-pinned by the deployment manifest.
 +    sys.path.insert(0,str(phase2))
@@ -79,12 +86,14 @@ diff -ruN a/graphiti_runtime_bootstrap.py b/graphiti_runtime_bootstrap.py
 +        run_validation=make_runner(
 +            python=str(python),
 +            child=str(phase4/"temporal_validator_child.py"),
-+            validator_path=str(validator_path))
-+        adapter=TemporalCheckingAdapter(adapter,db,run_validation)
++            validator_path=str(validator_path),
++            validator_sha256=expected)
++        adapter=TemporalCheckingAdapter(adapter,db,run_validation,
++                                        validator_sha256=expected)
 +    return adapter,resolver
 diff -ruN a/memory-candidate-v1.schema.json b/memory-candidate-v1.schema.json
 --- a/memory-candidate-v1.schema.json	1969-12-31 16:00:00.000000000 -0800
-+++ b/memory-candidate-v1.schema.json	2026-10-30 19:56:19.256599120 -0700
++++ b/memory-candidate-v1.schema.json	2026-10-30 22:11:40.040730676 -0700
 @@ -0,0 +1,226 @@
 +{
 +  "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -313,8 +322,8 @@ diff -ruN a/memory-candidate-v1.schema.json b/memory-candidate-v1.schema.json
 +  ]
 +}
 diff -ruN a/openviking_commit_gate.py b/openviking_commit_gate.py
---- a/openviking_commit_gate.py	2026-10-30 19:56:19.255580481 -0700
-+++ b/openviking_commit_gate.py	2026-10-30 19:56:19.256655591 -0700
+--- a/openviking_commit_gate.py	2026-10-30 22:11:40.037217256 -0700
++++ b/openviking_commit_gate.py	2026-10-30 22:11:40.041788893 -0700
 @@ -32,6 +32,8 @@
  from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
  from pathlib import Path
@@ -454,7 +463,7 @@ diff -ruN a/openviking_commit_gate.py b/openviking_commit_gate.py
      def list_rows(self) -> list[dict[str, Any]]:
          with self.connect() as conn:
              rows = conn.execute(
-@@ -746,10 +816,25 @@
+@@ -746,10 +816,34 @@
  
  
  class Worker:
@@ -471,6 +480,15 @@ diff -ruN a/openviking_commit_gate.py b/openviking_commit_gate.py
 +        if cfg.graphiti_enabled:
 +            capture_preflight()
 +        self.shared = SharedWorkQueue(db) if cfg.graphiti_enabled else None
++        if not cfg.graphiti_enabled:
++            # Disabling the feature also invalidates the currently active
++            # temporal validation identity without rewriting historical
++            # outcome rows or creating optional tables on legacy gates.
++            with db.connect() as conn:
++                exists=conn.execute("""SELECT 1 FROM sqlite_master
++                    WHERE type='table' AND name='temporal_validator_active'""").fetchone()
++                if exists:
++                    conn.execute("DELETE FROM temporal_validator_active WHERE singleton=1")
 +        self.graphiti_adapter = graphiti_adapter or DisabledGraphitiAdapter()
 +        # Injection-only until the exact installed Graphiti Python environment
 +        # and operator policy have been qualified. Never derive authority from
@@ -481,7 +499,7 @@ diff -ruN a/openviking_commit_gate.py b/openviking_commit_gate.py
          self.quiet_since: float | None = None
          self._status_lock = threading.Lock()
          self._admission_status: dict[str, Any] = {
-@@ -771,6 +856,8 @@
+@@ -771,6 +865,8 @@
  
      def run(self) -> None:
          self.db.mark_unknown_claims()
@@ -490,7 +508,7 @@ diff -ruN a/openviking_commit_gate.py b/openviking_commit_gate.py
          LOG.info("worker started drain_enabled=%s", self.cfg.drain_enabled)
          while not self.stop_event.wait(self.cfg.poll_seconds):
              try:
-@@ -780,17 +867,102 @@
+@@ -780,17 +876,113 @@
                  self.quiet_since = None
                  self._set_admission_status("worker_error")
  
@@ -571,6 +589,17 @@ diff -ruN a/openviking_commit_gate.py b/openviking_commit_gate.py
 +                self.quiet_since = None
 +                self._set_admission_status("blocked_reconcile")
 +                return False
++        # The existing worker owns read-only temporal retries after Graphiti
++        # work has already completed; no extra scheduler or graph re-ingestion.
++        retry = getattr(self.graphiti_adapter, "retry_pending", None)
++        if self.shared is not None and callable(retry):
++            handle = self._try_exclusive_lock()
++            if handle is not None:
++                try:
++                    retry(max_items=1)
++                finally:
++                    fcntl.flock(handle.fileno(),fcntl.LOCK_UN)
++                    handle.close()
          candidate = inflight or self.db.next_ready()
 -        if candidate is None:
 +        if (self.shared is not None and self.source_resolver is not None
@@ -594,7 +623,7 @@ diff -ruN a/openviking_commit_gate.py b/openviking_commit_gate.py
          harnesses = self._active_harness_processes()
          if harnesses:
              self.quiet_since = None
-@@ -798,10 +970,36 @@
+@@ -798,10 +990,36 @@
              return False
          lock_handle = self._try_exclusive_lock()
          if lock_handle is None:
@@ -631,7 +660,7 @@ diff -ruN a/openviking_commit_gate.py b/openviking_commit_gate.py
              running, waiting = self._metrics()
              if running != 0 or waiting != 0:
                  self.quiet_since = None
-@@ -827,6 +1025,10 @@
+@@ -827,6 +1045,10 @@
                  return False
              # The lock has remained exclusively obtainable and vLLM idle for the
              # grace period. Re-check metrics while retaining this lock.
@@ -642,7 +671,7 @@ diff -ruN a/openviking_commit_gate.py b/openviking_commit_gate.py
              running, waiting = self._metrics()
              if running != 0 or waiting != 0:
                  self.quiet_since = None
-@@ -834,6 +1036,17 @@
+@@ -834,6 +1056,17 @@
                      "vllm_busy", requests_running=running, requests_waiting=waiting
                  )
                  return False
@@ -660,7 +689,7 @@ diff -ruN a/openviking_commit_gate.py b/openviking_commit_gate.py
              row = candidate if candidate["state"] == "inflight" else self.db.claim(candidate)
              if row is None:
                  self.quiet_since = None
-@@ -841,12 +1054,56 @@
+@@ -841,12 +1074,56 @@
                  return False
              self._set_admission_status("committing", session_id=str(row["session_id"]))
              self._process(row)
@@ -717,7 +746,7 @@ diff -ruN a/openviking_commit_gate.py b/openviking_commit_gate.py
      def _active_harness_processes(self, proc_root: str = "/proc") -> list[dict[str, Any]]:
          """Return interactive harnesses, excluding persistent editor/server helpers."""
          wanted = set(self.cfg.process_names)
-@@ -966,33 +1223,66 @@
+@@ -966,33 +1243,66 @@
          return headers
  
      def _process(self, row: sqlite3.Row) -> None:
@@ -791,7 +820,7 @@ diff -ruN a/openviking_commit_gate.py b/openviking_commit_gate.py
              self.db.set_task(row, str(task_id))
              row = self.db.inflight() or row
              LOG.info("commit accepted session=%s task=%s", row["session_id"], task_id)
-@@ -1019,8 +1309,102 @@
+@@ -1019,8 +1329,102 @@
              if current is not None and current["task_id"]:
                  # Preserve a known in-flight task for later status polling.
                  return
@@ -894,7 +923,7 @@ diff -ruN a/openviking_commit_gate.py b/openviking_commit_gate.py
      def _wait_task(self, row: sqlite3.Row, task_id: str) -> None:
          deadline = time.monotonic() + self.cfg.task_timeout_seconds
          quoted = urllib.parse.quote(task_id, safe="")
-@@ -1100,6 +1484,13 @@
+@@ -1100,6 +1504,13 @@
                  },
              )
              return
@@ -908,7 +937,7 @@ diff -ruN a/openviking_commit_gate.py b/openviking_commit_gate.py
          if path in {"/__commit_gate/failures", "/__commit_gate/unresolved"}:
              if not self._admin_authorized():
                  self._json(401, {"status": "error", "error": {"message": "Unauthorized"}})
-@@ -1121,6 +1512,25 @@
+@@ -1121,6 +1532,25 @@
  
      def do_POST(self):
          path = urllib.parse.urlsplit(self.path).path
@@ -934,7 +963,7 @@ diff -ruN a/openviking_commit_gate.py b/openviking_commit_gate.py
          match = COMMIT_RE.match(path)
          if match:
              self._enqueue(match.group(1))
-@@ -1144,7 +1554,7 @@
+@@ -1144,7 +1574,7 @@
  
      def _read_body(self, limit: int | None = None) -> bytes:
          length = int(self.headers.get("Content-Length", "0") or 0)
@@ -943,7 +972,7 @@ diff -ruN a/openviking_commit_gate.py b/openviking_commit_gate.py
              raise ValueError("request body exceeds configured limit")
          return self.rfile.read(length) if length else b""
  
-@@ -1155,7 +1565,22 @@
+@@ -1155,7 +1585,22 @@
              "actor_peer": self.headers.get("X-OpenViking-Actor-Peer", "").strip(),
          }
  
@@ -966,7 +995,7 @@ diff -ruN a/openviking_commit_gate.py b/openviking_commit_gate.py
          api_key = os.environ.get("OPENVIKING_ROOT_API_KEY") or os.environ.get(
              "OPENVIKING_API_KEY", ""
          )
-@@ -1163,6 +1588,9 @@
+@@ -1163,6 +1608,9 @@
          return bool(api_key) and hmac.compare_digest(supplied, f"Bearer {api_key}")
  
      def _enqueue(self, encoded_session: str) -> None:
@@ -976,7 +1005,7 @@ diff -ruN a/openviking_commit_gate.py b/openviking_commit_gate.py
          try:
              session_id = urllib.parse.unquote(encoded_session).strip()
              if not session_id or "/" in session_id or len(session_id) > 255:
-@@ -1203,6 +1631,9 @@
+@@ -1203,6 +1651,9 @@
              self._json(503, {"status": "error", "error": {"message": str(exc)}})
  
      def _proxy(self) -> None:
@@ -986,7 +1015,7 @@ diff -ruN a/openviking_commit_gate.py b/openviking_commit_gate.py
          cfg = self.server.cfg
          response_started = False
          try:
-@@ -1265,7 +1696,11 @@
+@@ -1265,7 +1716,11 @@
  def serve(cfg: Config) -> None:
      db = QueueDB(cfg.database)
      stop_event = threading.Event()
@@ -999,13 +1028,9 @@ diff -ruN a/openviking_commit_gate.py b/openviking_commit_gate.py
      server = GateServer(cfg, db, worker)
      worker_thread = threading.Thread(target=worker.run, name="commit-worker", daemon=True)
  
-Binary files a/__pycache__/openviking_commit_gate.cpython-314.pyc and b/__pycache__/openviking_commit_gate.cpython-314.pyc differ
-Binary files a/__pycache__/receipt_protocol.cpython-314.pyc and b/__pycache__/receipt_protocol.cpython-314.pyc differ
-Binary files a/__pycache__/shared_work.cpython-314.pyc and b/__pycache__/shared_work.cpython-314.pyc differ
-Binary files a/__pycache__/test_receipt_protocol.cpython-314.pyc and b/__pycache__/test_receipt_protocol.cpython-314.pyc differ
 diff -ruN a/receipt_protocol.py b/receipt_protocol.py
 --- a/receipt_protocol.py	1969-12-31 16:00:00.000000000 -0800
-+++ b/receipt_protocol.py	2026-10-30 19:56:19.256708212 -0700
++++ b/receipt_protocol.py	2026-10-30 22:11:40.042975063 -0700
 @@ -0,0 +1,165 @@
 +"""Issue 70: durable OpenViking commit receipt core (disabled until integrated).
 +
@@ -1174,13 +1199,13 @@ diff -ruN a/receipt_protocol.py b/receipt_protocol.py
 +    return "BLOCK", None
 diff -ruN a/requirements-phase1.txt b/requirements-phase1.txt
 --- a/requirements-phase1.txt	1969-12-31 16:00:00.000000000 -0800
-+++ b/requirements-phase1.txt	2026-10-30 19:56:19.256732202 -0700
++++ b/requirements-phase1.txt	2026-10-30 22:11:40.043819535 -0700
 @@ -0,0 +1 @@
 +jsonschema>=4.26,<5
 diff -ruN a/shared_work.py b/shared_work.py
 --- a/shared_work.py	1969-12-31 16:00:00.000000000 -0800
-+++ b/shared_work.py	2026-10-30 19:56:19.256761513 -0700
-@@ -0,0 +1,359 @@
++++ b/shared_work.py	2026-10-30 22:11:40.045186400 -0700
+@@ -0,0 +1,398 @@
 +"""Phase 1 typed work in the existing commit-gate SQLite and worker owner.
 +
 +The real Graphiti adapter is deliberately unavailable until a durable terminal
@@ -1402,10 +1427,34 @@ diff -ruN a/shared_work.py b/shared_work.py
 +                or not policy["revision"]):
 +            return {"inspected": 0, "admitted": 0, "deferred": 0}
 +        authority = "git-record-v1:" + policy["revision"]
++        # Durable, bounded round-robin scan. Rejected nominations stay
++        # deferred (future Git/policy changes may authorize them), but can
++        # never pin the oldest N positions on every tick or after restart.
 +        with self.legacy_db.connect() as conn:
-+            rows = conn.execute("""SELECT candidate_json FROM memory_work
-+                WHERE status='deferred_unverified' ORDER BY created_at, work_key LIMIT ?""",
-+                (max(1, min(8, max_items)),)).fetchall()
++            conn.execute("BEGIN IMMEDIATE")
++            conn.execute("""CREATE TABLE IF NOT EXISTS memory_source_scan_cursor(
++                singleton INTEGER PRIMARY KEY CHECK(singleton=1),
++                created_at REAL NOT NULL, work_key TEXT NOT NULL)""")
++            cursor=conn.execute("""SELECT created_at,work_key
++                FROM memory_source_scan_cursor WHERE singleton=1""").fetchone()
++            limit=max(1,min(8,max_items))
++            rows=conn.execute("""SELECT candidate_json,created_at,work_key
++                FROM memory_work WHERE status='deferred_unverified'
++                  AND (created_at,work_key) > (?,?)
++                ORDER BY created_at,work_key LIMIT ?""",
++                (cursor["created_at"] if cursor else -1.0,
++                 cursor["work_key"] if cursor else "",limit)).fetchall()
++            if not rows:
++                rows=conn.execute("""SELECT candidate_json,created_at,work_key
++                    FROM memory_work WHERE status='deferred_unverified'
++                    ORDER BY created_at,work_key LIMIT ?""",(limit,)).fetchall()
++            if rows:
++                last=rows[-1]
++                conn.execute("""INSERT INTO memory_source_scan_cursor
++                    (singleton,created_at,work_key) VALUES (1,?,?)
++                    ON CONFLICT(singleton) DO UPDATE SET
++                    created_at=excluded.created_at,work_key=excluded.work_key""",
++                    (last["created_at"],last["work_key"]))
 +        totals = {"inspected": 0, "admitted": 0, "deferred": 0}
 +        for row in rows:
 +            totals["inspected"] += 1
@@ -1495,13 +1544,25 @@ diff -ruN a/shared_work.py b/shared_work.py
 +            if not has_temporal:
 +                rows = conn.execute(f"SELECT {columns} FROM memory_work mw ORDER BY mw.created_at DESC LIMIT ?",(count,)).fetchall()
 +                return [dict(row) for row in rows]
++            has_validator_column="validator_sha256" in {
++                c["name"] for c in conn.execute("PRAGMA table_info(temporal_validation_results)")}
++            has_active=conn.execute("""SELECT 1 FROM sqlite_master WHERE
++                type='table' AND name='temporal_validator_active'""").fetchone() is not None
++            digest_column=("tv.validator_sha256 AS temporal_validator_sha256"
++                           if has_validator_column else "NULL AS temporal_validator_sha256")
++            active_column=("va.validator_sha256 AS _active_validator_sha256"
++                           if has_active else "NULL AS _active_validator_sha256")
++            active_join=("LEFT JOIN temporal_validator_active va ON va.singleton=1"
++                         if has_active else "")
 +            rows = conn.execute(f"""SELECT {columns},mw.candidate_json AS _candidate_json,
 +                tc.work_key AS temporal_contract_key,
 +                tv.state AS temporal_state,tv.exit_code AS temporal_exit,
-+                tv.disposition AS temporal_disposition,tv.episode_uuid AS temporal_episode_uuid
++                tv.disposition AS temporal_disposition,tv.episode_uuid AS temporal_episode_uuid,
++                {digest_column},{active_column}
 +                FROM memory_work mw
 +                LEFT JOIN temporal_transition_contracts tc ON tc.work_key=mw.work_key
 +                LEFT JOIN temporal_validation_results tv ON tv.work_key=mw.work_key
++                {active_join}
 +                ORDER BY mw.created_at DESC LIMIT ?""",(count,)).fetchall()
 +            outcomes={0:"PASS",1:"INCONSISTENT",2:"INCOMPLETE",3:"INVALID_INPUT"}
 +            response=[]
@@ -1511,6 +1572,8 @@ diff -ruN a/shared_work.py b/shared_work.py
 +                contract=record.pop("temporal_contract_key")
 +                state=record.pop("temporal_state")
 +                code=record.pop("temporal_exit")
++                result_sha=record.get("temporal_validator_sha256")
++                active_sha=record.pop("_active_validator_sha256")
 +                try:
 +                    category=json.loads(raw_candidate).get("category")
 +                except (TypeError,ValueError,AttributeError):
@@ -1529,7 +1592,8 @@ diff -ruN a/shared_work.py b/shared_work.py
 +                    # validation outcome, retaining each result's disposition.
 +                    record["temporal_validation_status"]=(
 +                        outcomes.get(code,"UNVERIFIED")
-+                        if state=="done" else "UNVERIFIED")
++                        if state=="done" and result_sha is not None
++                            and result_sha==active_sha else "UNVERIFIED")
 +                response.append(record)
 +            return response
 +
@@ -1542,7 +1606,7 @@ diff -ruN a/shared_work.py b/shared_work.py
 +        raise RuntimeError("Graphiti terminal observation interface unavailable")
 diff -ruN a/test_receipt_protocol.py b/test_receipt_protocol.py
 --- a/test_receipt_protocol.py	1969-12-31 16:00:00.000000000 -0800
-+++ b/test_receipt_protocol.py	2026-10-30 19:56:19.256793623 -0700
++++ b/test_receipt_protocol.py	2026-10-30 22:11:40.046295738 -0700
 @@ -0,0 +1,59 @@
 +import tempfile
 +import unittest
@@ -1603,16 +1667,9 @@ diff -ruN a/test_receipt_protocol.py b/test_receipt_protocol.py
 +        self.assertNotEqual(KEY, request_key({**SCOPE,"user_id":"other"},7))
 +        self.assertEqual(BODY, canonical_digest({"keep_recent_count":0}))
 +if __name__ == '__main__': unittest.main()
-Binary files a/tests/__pycache__/test_corrections.cpython-314.pyc and b/tests/__pycache__/test_corrections.cpython-314.pyc differ
-Binary files a/tests/__pycache__/test_dual_metrics.cpython-314.pyc and b/tests/__pycache__/test_dual_metrics.cpython-314.pyc differ
-Binary files a/tests/__pycache__/test_gate.cpython-314.pyc and b/tests/__pycache__/test_gate.cpython-314.pyc differ
-Binary files a/tests/__pycache__/test_multi_unknown_recovery.cpython-314.pyc and b/tests/__pycache__/test_multi_unknown_recovery.cpython-314.pyc differ
-Binary files a/tests/__pycache__/test_service_corrections.cpython-314.pyc and b/tests/__pycache__/test_service_corrections.cpython-314.pyc differ
-Binary files a/tests/__pycache__/test_service_mixed.cpython-314.pyc and b/tests/__pycache__/test_service_mixed.cpython-314.pyc differ
-Binary files a/tests/__pycache__/test_shared_work.cpython-314.pyc and b/tests/__pycache__/test_shared_work.cpython-314.pyc differ
 diff -ruN a/tests/test_corrections.py b/tests/test_corrections.py
 --- a/tests/test_corrections.py	1969-12-31 16:00:00.000000000 -0800
-+++ b/tests/test_corrections.py	2026-10-30 19:56:19.256829584 -0700
++++ b/tests/test_corrections.py	2026-10-30 22:11:40.048284979 -0700
 @@ -0,0 +1,240 @@
 +"""Issue 70 corrections, disposable state only; never talks to installed services."""
 +import copy
@@ -1855,9 +1912,32 @@ diff -ruN a/tests/test_corrections.py b/tests/test_corrections.py
 +if __name__ == '__main__':
 +    unittest.main()
 diff -ruN a/tests/test_dual_metrics.py b/tests/test_dual_metrics.py
---- a/tests/test_dual_metrics.py	2026-10-30 19:56:19.255522790 -0700
-+++ b/tests/test_dual_metrics.py	2026-10-30 19:56:19.256871145 -0700
-@@ -99,7 +99,11 @@
+--- a/tests/test_dual_metrics.py	2026-10-30 22:11:40.038599291 -0700
++++ b/tests/test_dual_metrics.py	2026-10-30 22:11:40.049295814 -0700
+@@ -61,7 +61,10 @@
+ 
+     def test_worker_switches_both_directions_without_restart(self):
+         with tempfile.TemporaryDirectory() as root:
+-            worker=gate.Worker(config(root), mock.Mock(), threading.Event())
++            db=mock.MagicMock()
++            # The legacy graphiti-disable recheck reads state via connect().
++            db.connect.return_value.__enter__.return_value.execute.return_value.fetchone.return_value=None
++            worker=gate.Worker(config(root), db, threading.Event())
+             responses=[]
+             for pair in [PAIRS[0],PAIRS[1],PAIRS[2],PAIRS[0]]:
+                 response=io.BytesIO(payload(pair,2,1).encode()); response.status=200; responses.append(response)
+@@ -75,7 +78,9 @@
+                 metrics_url="http://127.0.0.1:8001/metrics",
+                 metrics_fallback_urls=("http://127.0.0.1:8002/metrics",),
+             )
+-            worker = gate.Worker(cfg, mock.Mock(), threading.Event())
++            db=mock.MagicMock()
++            db.connect.return_value.__enter__.return_value.execute.return_value.fetchone.return_value=None
++            worker = gate.Worker(cfg, db, threading.Event())
+             ok_resp = io.BytesIO(payload(PAIRS[0], 0, 0).encode())
+             ok_resp.status = 200
+             with mock.patch.object(
+@@ -99,7 +104,11 @@
  
      def test_each_provider_busy_blocks_and_idle_keeps_grace(self):
          with tempfile.TemporaryDirectory() as root:
@@ -1872,7 +1952,7 @@ diff -ruN a/tests/test_dual_metrics.py b/tests/test_dual_metrics.py
                  for running,waiting in [(1,0),(0,1),(0,0)]:
 diff -ruN a/tests/test_multi_unknown_recovery.py b/tests/test_multi_unknown_recovery.py
 --- a/tests/test_multi_unknown_recovery.py	1969-12-31 16:00:00.000000000 -0800
-+++ b/tests/test_multi_unknown_recovery.py	2026-10-30 19:56:19.256924296 -0700
++++ b/tests/test_multi_unknown_recovery.py	2026-10-30 22:11:40.050722891 -0700
 @@ -0,0 +1,91 @@
 +"""Gate admission regressions for multiple unresolved backend receipts.
 +
@@ -1967,7 +2047,7 @@ diff -ruN a/tests/test_multi_unknown_recovery.py b/tests/test_multi_unknown_reco
 +    unittest.main()
 diff -ruN a/tests/test_service_corrections.py b/tests/test_service_corrections.py
 --- a/tests/test_service_corrections.py	1969-12-31 16:00:00.000000000 -0800
-+++ b/tests/test_service_corrections.py	2026-10-30 19:56:19.256950936 -0700
++++ b/tests/test_service_corrections.py	2026-10-30 22:11:40.052421084 -0700
 @@ -0,0 +1,144 @@
 +"""Service-backed contract tests, loopback ephemeral ports and disposable DB."""
 +import copy
@@ -2115,7 +2195,7 @@ diff -ruN a/tests/test_service_corrections.py b/tests/test_service_corrections.p
 +if __name__ == '__main__': unittest.main()
 diff -ruN a/tests/test_service_mixed.py b/tests/test_service_mixed.py
 --- a/tests/test_service_mixed.py	1969-12-31 16:00:00.000000000 -0800
-+++ b/tests/test_service_mixed.py	2026-10-30 19:56:19.256975487 -0700
++++ b/tests/test_service_mixed.py	2026-10-30 22:11:40.053748768 -0700
 @@ -0,0 +1,127 @@
 +import json
 +import os
@@ -2246,7 +2326,7 @@ diff -ruN a/tests/test_service_mixed.py b/tests/test_service_mixed.py
 +    unittest.main()
 diff -ruN a/tests/test_shared_work.py b/tests/test_shared_work.py
 --- a/tests/test_shared_work.py	1969-12-31 16:00:00.000000000 -0800
-+++ b/tests/test_shared_work.py	2026-10-30 19:56:19.257001507 -0700
++++ b/tests/test_shared_work.py	2026-10-30 22:11:40.055036311 -0700
 @@ -0,0 +1,303 @@
 +import hashlib
 +import tempfile

@@ -175,5 +175,94 @@
       },
       "total": 196
     }
+  },
+  "four_finding_campaign": {
+    "note": "One-campaign closure of the four Codex findings on PR #72 (issue #70) on the corrected source (branch issue/70-temporal-final, central start 7d0ca45ca59f6fccbc6dcd2726dee51cd3930b08). Disposable-qualification scope only: no new PR, no merge, no production deployment, no live graph/gate DB mutation, no production capture activation. All graph/gate/validator activity stayed on the disposable issue70_p4c_final surface.",
+    "base_sha": "7d0ca45ca59f6fccbc6dcd2726dee51cd3930b08",
+    "findings": {
+      "A1_multi_episode_recall_authority": "graphiti_recall_service.py combined_validation() now treats an exclusive contributor with no recorded validation disposition as UNVERIFIED (x.get('validation_status','UNVERIFIED')) instead of raising KeyError; a missing record is never validation-exempt, so the edge fails closed",
+      "A2_fair_deferred_admission_cursor": "shared_work.py auto_admit() advances the deferred-candidate cursor fairly so an earlier non-admissible candidate does not starve later deferred candidates",
+      "A3_exact_validator_source_identity": "the validator is bound by exact path + SHA-256 (graphiti_validator_path/graphiti_validator_sha256) and the pinned bytes are verified inside the awaited child and terminal transport; a mismatched pin fails closed before any work table is created",
+      "A4_automatic_read_only_validator_retry": "a transient validator-transport failure records UNVERIFIED (attempts 1); restoring the transport and advancing the EXISTING worker performs exactly one bounded read-only validation retry (attempts 2) with no Graphiti re-ingestion"
+    },
+    "source_fixes": {
+      "graphiti_recall_service": "docs/issue-70/phase3/graphiti_recall_service.py: combined_validation() exclusive-contributor status now x.get('validation_status','UNVERIFIED'); committed",
+      "test_dual_metrics_fixture": "candidate/gate/tests/test_dual_metrics.py: two tests now pass a MagicMock db modeling the legacy graphiti-disable connect() recheck (fetchone()->None), matching the sibling test pattern; source invariants preserved"
+    },
+    "cpu_suites": {
+      "note": "All suites re-executed on the corrected four-finding source; no prior totals reused.",
+      "phase4": "35/35 OK",
+      "phase3": "30/30 OK",
+      "phase2": "30/30 OK",
+      "gate_tests": "59/59 OK",
+      "gate_top_level_receipt_protocol": "7/7 OK",
+      "i1_launcher_admission": "5/5 OK",
+      "i1_cross_process_admission": "5/5 OK",
+      "ov2_graphiti_recall": "6/6 pass",
+      "ov2_candidate_capture": "7/7 pass",
+      "ov2_capture_isolation": "5/5 pass",
+      "ov2_central_authentication_regressions": "3/3 pass",
+      "i1_actual_backend_service": "20/20 OK (disposable backend tree /tmp/opencode/issue70-disposable-backend-3 assembled by prepare_backend.py from the authenticated installed OpenViking package)",
+      "total": 212
+    },
+    "real_service_qualification": {
+      "result": "PASS (genuine automatic exclusive-state transition with a bounded read-only validation retry and no re-ingestion)",
+      "root": "/tmp/opencode/issue70-p4c/root",
+      "disposable_graph": "issue70_p4c_final",
+      "subject_transition": "Service X active job-queue backend Redis -> NATS (effective 2026-06-01T00:00:00Z), predicate USES_AS_ACTIVE_JOB_QUEUE_BACKEND",
+      "work_key": "77c88996efbe9474f714214ee9674c35cf3ae4ddc9f3862515ecb74756652a56",
+      "outgoing_episode_uuid": "dfca1dee-37d7-49c5-a1be-825f3dbb6505",
+      "transition_episode_uuid": "6ca0562f-4efc-4466-93d2-d9517f325ce3",
+      "ingestion_state": "completed",
+      "initial_validation": {
+        "attempts": 1,
+        "state": "unverified",
+        "validator_sha256": "aa4f048dd4add8a0916e18e49ea90a2d89639ab8a9d08810c6181882aeaa8550"
+      },
+      "recall_fact_validation_status_at_capture": "UNVERIFIED",
+      "retry_outcome": {
+        "attempts": 2,
+        "disposition": "PASS",
+        "exit_code": 0,
+        "state": "done"
+      },
+      "operator_status_temporal": "PASS",
+      "validator_calls": 2,
+      "ingestion_count_before": 2,
+      "ingestion_count_after": 2,
+      "no_reingestion": true,
+      "episode_uuid_unchanged": true,
+      "evidence_file": "/tmp/opencode/issue70-p4c-final-evidence.clean.json (host-only, not committed)"
+    },
+    "package_reconstruction": {
+      "stale_metadata_discovered": "the committed source-base-manifest.json + patches/gate.patch + patches/openviking-v2.patch were stale relative to the committed candidate source (the four-finding commits after 55d70f8 updated shared_work.py, openviking_commit_gate.py, graphiti_runtime_bootstrap.py, tests/test_dual_metrics.py, graphiti-recall.mjs and its test without regenerating the manifest/patches)",
+      "patches_regenerated": {
+        "patches/gate.patch": {
+          "sha256": "7360ea0132b78ff6a4f4eeaac3f6b09e71d3b989146ccefcce5ebd5856e62cab",
+          "entries": 13,
+          "forward_reverse": "byte-exact PASS (applied to installed base 6ad48a93 reproduces the committed candidate gate tree; reverse restores base bytes and removes every patch-introduced file)"
+        },
+        "patches/openviking-v2.patch": {
+          "sha256": "b0ee5faae46ccaf8c9201f9a0bdd46d8f4c20a285e38e27832707b1b5ef2b321",
+          "entries": 8,
+          "forward_reverse": "byte-exact PASS (installed base 6899822e)"
+        },
+        "patches/backend.patch": {
+          "sha256": "a03ab064dc6f0d13861ef7b20faf8a4b6b490474f9f2f92cffc740b0cbe1ad61",
+          "note": "unchanged; re-verified by prepare_backend.py into /tmp/opencode/issue70-disposable-backend-3 (all five modified backend bases re-authenticated, all seven candidate hashes verified)"
+        }
+      },
+      "manifest": "source-base-manifest.json refreshed: every drifted candidate_sha256 (6 candidate files) + all phase2/phase3/phase4 evidence hashes + the two regenerated patch hashes recomputed from the actual files; backend candidate hashes preserved and re-verified",
+      "sha256sums": "SHA256SUMS (47 entries) and CHANGED_FILES.txt (48 files) refreshed"
+    },
+    "protected_surfaces": {
+      "live_gate_config": "unchanged (no graphiti keys; stays disabled)",
+      "live_gate_db": "never accessed by tests",
+      "installed_plugin": "index.mjs remains pre-Phase 4 at 6899822e",
+      "live_graph": "LIVE_GRAPH_MUTATION=no - only the disposable graph issue70_p4c_final was created/mutated",
+      "pinned_validator": "unchanged at aa4f048dd4add8a0916e18e49ea90a2d89639ab8a9d08810c6181882aeaa8550",
+      "production_capture": "not activated",
+      "pr_merge_deploy": "none (no new PR, no merge, no deployment)"
+    }
   }
 }

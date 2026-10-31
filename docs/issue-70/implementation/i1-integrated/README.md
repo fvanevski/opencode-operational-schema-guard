@@ -230,6 +230,64 @@ validation-exempt) are now qualified on the corrected source
 Production exclusive-state capture remains **disabled**; this PASS is a
 product-confidence prerequisite, not an activation.
 
+## Four-finding campaign (A1–A4, one consolidated PR)
+
+The four Codex findings on PR #72 (issue #70) are now closed on the
+corrected source (`issue/70-temporal-final`, central start
+`7d0ca45ca59f6fccbc6dcd2726dee51cd3930b08`):
+
+- **A1 — multi-episode recall authority**: `docs/issue-70/phase3/graphiti_recall_service.py`
+  `combined_validation()` now treats an exclusive contributor that has no
+  recorded validation disposition as `UNVERIFIED` via
+  `x.get("validation_status","UNVERIFIED")` instead of raising `KeyError`. A
+  missing record is never validation-exempt: the edge fails closed.
+- **A2 — fair deferred admission cursor**: `shared_work.py` `auto_admit()`
+  advances the deferred-candidate cursor fairly (no starvation of later
+  deferred candidates when an earlier one is not yet admissible).
+- **A3 — exact validator source identity**: the validator is bound by exact
+  path + SHA-256 (`graphiti_validator_path`/`graphiti_validator_sha256`) and
+  the pinned bytes are verified inside the awaited child and terminal
+  transport; a mismatched pin fails closed before any work table is created.
+- **A4 — automatic read-only validator retry**: a transient
+  validator-transport failure records `UNVERIFIED` (attempts 1); restoring
+  the transport and advancing the **existing** worker performs exactly one
+  bounded **read-only** validation retry (attempts 2) with **no Graphiti
+  re-ingestion** (the episode UUID and ingestion count are unchanged).
+
+- **Bounded test-fixture repair** to
+  `candidate/gate/tests/test_dual_metrics.py`: two tests now pass a
+  `MagicMock` database modeling the legacy graphiti-disable `connect()`
+  recheck (matching the sibling test pattern) so the Worker's disabled-mode
+  state recheck is exercised without a real DB.
+- **CPU suites re-executed on the corrected source**: phase4 35/35, phase3
+  30/30, phase2 30/30, gate 59/59, receipt 7/7, launcher 5/5,
+  cross-process 5/5, ov2 21/21 (graphiti-recall 6, candidate-capture 7,
+  capture-isolation 5, central-auth 3), actual-backend 20/20 → **212 total**.
+- **One genuine real-service qualification** on fresh disposable graph
+  `issue70_p4c_final`: a genuine exclusive-state transition in which a
+  controlled transient validator-transport failure yields `UNVERIFIED`
+  (attempts 1), then exactly one bounded read-only retry by the existing
+  worker yields `done`/`PASS` (attempts 2) with the episode UUID and
+  ingestion count unchanged (no re-ingestion) and operator-visible
+  `temporal_validation_status=PASS`. Live `graphiti_live` graph untouched;
+  no live gate DB access; no production deployment.
+
+The committed package metadata was found **stale** relative to the committed
+candidate source (the four-finding commits after `55d70f8` updated
+`shared_work.py`, `openviking_commit_gate.py`,
+`graphiti_runtime_bootstrap.py`, `tests/test_dual_metrics.py`,
+`graphiti-recall.mjs` and its test without regenerating the manifest/patches).
+`patches/gate.patch` (thirteen entries) and `patches/openviking-v2.patch`
+(eight entries) were regenerated from the committed candidate source against
+the re-authenticated installed bases (`6ad48a93` / `6899822e`) and proven
+byte-exact forward and reverse (removal of every patch-introduced file);
+`patches/backend.patch` is unchanged and re-verified. `SHA256SUMS`,
+`source-base-manifest.json` and `CHANGED_FILES.txt` were refreshed for the
+corrected source.
+
+Production exclusive-state capture remains **disabled**; the genuine PASS is
+a product-confidence prerequisite, not an activation.
+
 ## Reproduction
 
 Use a Python environment matching the authenticated OpenViking/native RAGFS installation, Python 3.14 for gate tests, Node, patch and bwrap. The optional queue tests use requirements-phase1.txt; disabled gate startup is also tested with jsonschema deliberately unavailable. No dependency was installed into the protected host.

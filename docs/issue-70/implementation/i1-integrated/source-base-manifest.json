@@ -53,7 +53,7 @@
  "correction_archive_sha256": "08442b4b6fc89173314cc0a48ef12982487fb42e38c6fc15e69173ed9fc3d00c",
  "files": [
   {
-   "candidate_sha256": "1f31823ec90bc4d30f7a6eb141d1cbbfb49aaebb6227b6f7bef1616f2a945323",
+   "candidate_sha256": "4543e71ebbd4a53d109c7be8903cb404b578825c74a02ed9e0a5301124417a89",
    "component": "gate",
    "path": "shared_work.py",
    "source_base_sha256": null
@@ -83,13 +83,13 @@
    "source_base_sha256": null
   },
   {
-   "candidate_sha256": "f38e0501af57da66a62b83534dbbddf582d0be9921a52c7ad3e2ae8f62edca7a",
+   "candidate_sha256": "40e7dc91f3427c2195be38567e177fc02c72c84836cd7a95480b99153e1bbd0f",
    "component": "gate",
    "path": "openviking_commit_gate.py",
    "source_base_sha256": "6ad48a939d3f52df1c774f87d030986b35022a8c20f15916d82177ccf2094f42"
   },
   {
-   "candidate_sha256": "cb7eb478ecb773601df2be1b50047428c0e9b293f7df2186a78cc9f93f182682",
+   "candidate_sha256": "5df884f94586222a99fe03cafec7cc0c03d792e5ca567e6f4d666967ff9e96e1",
    "component": "gate",
    "path": "graphiti_runtime_bootstrap.py",
    "source_base_sha256": null
@@ -101,7 +101,7 @@
    "source_base_sha256": "4e2234f65a4e3bd86d1aaf9fbe5a27983c5538a2a65bc381f814422f102de4e5"
   },
   {
-   "candidate_sha256": "14a2ef6029c05ad843666cedcc2bb5317ac22eeb4012607962dbad3ff0832278",
+   "candidate_sha256": "573a65d30ed2a0faf342d957e6a1db0d482593284bbbd9e78487ab01d2a9d3c2",
    "component": "gate",
    "path": "tests/test_dual_metrics.py",
    "source_base_sha256": "7de5fa398ba0be9b8331bf8cfd109ca18bf18408f82cd63b054e4cb71d7541ff"
@@ -161,7 +161,7 @@
    "source_base_sha256": null
   },
   {
-   "candidate_sha256": "c1eab9e9489a9f506ff197bfd1ba2dfce6922dd8ce5a1e3eefd65ba8dd95af70",
+   "candidate_sha256": "084fae37be2fccacd3c3459b92bc0786abb2a307560520e644e13c8cf5cd42f4",
    "component": "openviking-v2",
    "path": "graphiti-recall.mjs",
    "source_base_sha256": null
@@ -173,7 +173,7 @@
    "source_base_sha256": null
   },
   {
-   "candidate_sha256": "4a4ace916a5db5bd525cabd62e1ab41f522cc362223ce84241271728fff364a6",
+   "candidate_sha256": "69359d8b945c9a4e2586edbb8023e6bccdce9700b3a9f2bd809576fa79a4cd31",
    "component": "openviking-v2",
    "path": "tests/graphiti-recall.test.mjs",
    "source_base_sha256": null
@@ -274,11 +274,11 @@
    },
    {
     "path": "docs/issue-70/phase2/graphiti_terminal.py",
-    "sha256": "9d6d617c87a2ec7a69396090fbb9fde6c1932ff95c10d82aa0eeb95499d439fb"
+    "sha256": "3d067b8d0cb305626fa66c5b4f5a4636b80db24cf753594c7837aa07b5471d17"
    },
    {
     "path": "docs/issue-70/phase2/real_graphiti_qualification.py",
-    "sha256": "7735e7abdacd92f048ff2a5fdbdb80904410a7bb417ccaf2de788cf308d36f62"
+    "sha256": "ed1684fae0663b79fdb89f59d066167e0f9249ad9454f79313e62123448ee96e"
    },
    {
     "path": "docs/issue-70/phase2/source_authority.py",
@@ -286,7 +286,7 @@
    },
    {
     "path": "docs/issue-70/phase2/temporal_validation_integration.py",
-    "sha256": "5ff5b7b26a3b04df75b705ba99c033c314e26dd7821b64471961ee2c19f61caa"
+    "sha256": "85275e5480590f30727b66ea71a08f26802d71b24f0b2737152659759632f0e1"
    },
    {
     "path": "docs/issue-70/phase2/test_gate_integration.py",
@@ -294,7 +294,7 @@
    },
    {
     "path": "docs/issue-70/phase2/test_graphiti_terminal.py",
-    "sha256": "6a170a04a3551c1060be6a45cb4a4702f0979013edfd675cdd68ba25b2e23c5b"
+    "sha256": "b76818ce1c60956c7e4e35d885efe9b6b1cee04b6402e26e760c4b0307767807"
    },
    {
     "path": "docs/issue-70/phase2/test_source_authority.py",
@@ -331,19 +331,19 @@
    },
    {
     "path": "docs/issue-70/phase3/git_source_authority.py",
-    "sha256": "90e16fafea4a83d6d39cad5d7084e7cab5b5244187765fadd60acbbf910facf3"
+    "sha256": "3ca7b5a7c8afb9fa2ae186ede3a4c451657bc9d81a1a3d936f6fa647bff8e8c7"
    },
    {
     "path": "docs/issue-70/phase3/graphiti_process_transport.py",
-    "sha256": "52b704f561db73fc998b674fb5e6a4df881dc6e54174f4214f3b046f63f3b721"
+    "sha256": "8398dc3c0159149fe5af4d1c2da6d3df0d642d207859b3aa75780d63749c1d56"
    },
    {
     "path": "docs/issue-70/phase3/graphiti_core_worker.py",
-    "sha256": "997c9f0519a4c2d3fcd76a87af881b7de3bb4c15f402ee85d19616f220ced589"
+    "sha256": "52c960772ce5a0e9701d9effa1fa526637d1a97fdcb678f427812f99fe29fa8c"
    },
    {
     "path": "docs/issue-70/phase3/graphiti_recall_service.py",
-    "sha256": "c153e7684ec6a2d44ab178f3ebafbe7ca0df4e81f7624daa7ac0759013e6bf5f"
+    "sha256": "94be2d4b86d2244270bfee941771e582c8ee96b241391dc424b270ed2a98c54d"
    },
    {
     "path": "docs/issue-70/phase3/test_git_source_authority.py",
@@ -351,11 +351,11 @@
    },
    {
     "path": "docs/issue-70/phase3/test_auto_promotion.py",
-    "sha256": "532d3e22d425c75c5e2e4ae8800e59511dab79b79e665e8c5591e84c31093b89"
+    "sha256": "92ada605f34ebddf028fbf15294077820bdf7938ebe564aa905a861b6be501be"
    },
    {
     "path": "docs/issue-70/phase3/test_graphiti_process_transport.py",
-    "sha256": "bebb98038512c52a4fcc82a5ba8cc8fd2f20eb8da4d8d2e12fd83952fd278985"
+    "sha256": "9e390b54dc0ccefa6329bd3e6b83e6539290a851098e0a037299433b7872ca2b"
    },
    {
     "path": "docs/issue-70/phase3/test_graphiti_process_transport_extended.py",
@@ -363,15 +363,15 @@
    },
    {
     "path": "docs/issue-70/phase3/test_graphiti_recall_service.py",
-    "sha256": "73728b317aeea46268c44f730a303dc1a960cfd6e06eb0a5453fdfed133a0c47"
+    "sha256": "a15f5d78cfc08ba403d9ef13b1221256816e4797439f06f05a33d5829279e9a1"
    },
    {
     "path": "docs/issue-70/phase2/graphiti_terminal.py",
-    "sha256": "d4157e2fe7791d02d1531e9ff57aedcd742a408d9be6029886c2da5c32178f33"
+    "sha256": "3d067b8d0cb305626fa66c5b4f5a4636b80db24cf753594c7837aa07b5471d17"
    },
    {
     "path": "docs/issue-70/phase2/test_graphiti_terminal.py",
-    "sha256": "dc702404aa7eedc10859525f26a63305901712de8ed05041d6ebfde6dd2e07c2"
+    "sha256": "b76818ce1c60956c7e4e35d885efe9b6b1cee04b6402e26e760c4b0307767807"
    },
    {
     "path": "docs/issue-70/phase2/real_graphiti_qualification.py",
@@ -379,7 +379,7 @@
    },
    {
     "path": "docs/issue-70/phase2/temporal_validation_integration.py",
-    "sha256": "85275e5480590f30727b66ea71a08f26802d71b24f0b2737152659759632f0e"
+    "sha256": "85275e5480590f30727b66ea71a08f26802d71b24f0b2737152659759632f0e1"
    }
   ]
  },
@@ -396,13 +396,13 @@
   {
    "apply_and_reverse": "PASS",
    "path": "patches/gate.patch",
-   "sha256": "25e8fd19a1b27612974c6526f3064a7cc00c65f9d43e01550d048a40b71f99ed",
+   "sha256": "7360ea0132b78ff6a4f4eeaac3f6b09e71d3b989146ccefcce5ebd5856e62cab",
    "entries": "thirteen file entries: Phase 1/2 gate files plus Phase 3 graphiti_runtime_bootstrap.py and the Phase 4 shared_work.py transactional contract binding (temporal_transition_contracts) and bootstrap validator pin (graphiti_validator_path/sha256); regenerated against installed base 6ad48a93"
   },
   {
    "apply_and_reverse": "PASS",
    "path": "patches/openviking-v2.patch",
-   "sha256": "25d4e652f679e421fdf77e83eaeacaced1ebb6525ac60b26ce2c828eae70b46a",
+   "sha256": "b0ee5faae46ccaf8c9201f9a0bdd46d8f4c20a285e38e27832707b1b5ef2b321",
    "entries": "eight file entries: capture/recall additions (graphiti-recall.mjs + tests), 2.2.5 event-shape compatibility in candidate-capture.mjs, index.mjs recall wiring, and the Phase 4 temporal label semantics in graphiti-recall.mjs (CURRENT STATE UNVERIFIED / CONFLICTED, HISTORICAL / INVALIDATED); regenerated against installed base 6899822e"
   },
   {
@@ -426,15 +426,15 @@
    },
    {
     "path": "docs/issue-70/phase4/temporal_ledger.py",
-    "sha256": "8624f9f72fa0768f262b47bb56864c46673598ed76850e44485168b6642faf4c"
+    "sha256": "080a4224ce0dfab9b2780eedfa0b9fd201163a04a3d0c10ccbc34c3c37af2da9"
    },
    {
     "path": "docs/issue-70/phase4/temporal_validator_child.py",
-    "sha256": "922179d6cc1b6bc1b503f14863ab60730223107f77223315c8030107ea3d1d74"
+    "sha256": "c951b1fe4d866e23a4d250c19192f9234385c42b3ca42e347f3c813edae7a66a"
    },
    {
     "path": "docs/issue-70/phase4/temporal_validator_transport.py",
-    "sha256": "b156fa8a60ff4e676c4df75f17c2f609b024552b13a4d2c477fa49ddfbc9fbf6"
+    "sha256": "7620873fb3bdfbeb7009d9dc593f019cf500696e141b30dd31dbb7c0d07f94f1"
    },
    {
     "path": "docs/issue-70/phase4/test_safe_test_paths.py",
@@ -442,11 +442,11 @@
    },
    {
     "path": "docs/issue-70/phase4/test_temporal_ledger.py",
-    "sha256": "db631c5c5cd6115832fdaac30a574378f392f3f852132183b445f2e4190eb602"
+    "sha256": "5445826a90c875ae119baabb60b88945edb171f3772777ca5ab53868c6f792eb"
    },
    {
     "path": "docs/issue-70/phase4/test_temporal_recall.py",
-    "sha256": "7e2e342d6c64e2c1efeaa3dde1a5a45c20e3b55776472247d2f7f9113a62c291"
+    "sha256": "cc845d5147d356aad775415cc7b6edc06f7c969199b4a528581774438b893594"
    },
    {
     "path": "docs/issue-70/phase4/test_temporal_source_contract.py",
@@ -454,11 +454,11 @@
    },
    {
     "path": "docs/issue-70/phase4/test_temporal_status.py",
-    "sha256": "353f882476878b1a30dc97350e049bf7bd84bf51e1b5a6c63914bc7dbfd7c3df"
+    "sha256": "2ea7c76186893c548a447b472175a4fc7ccf32e5ffe54923881bebb7f7352ef8"
    },
    {
     "path": "docs/issue-70/phase4/test_temporal_validator_transport.py",
-    "sha256": "868e2c46946f92e340a4b0794ee3758a7beab46c69c4165277784b28f7a99188"
+    "sha256": "220d9e741bbf4c663481ef3821b21413da4a0e491c86eeb4cf65db18210d5e06"
    },
    {
     "path": "docs/issue-70/phase2/graphiti_terminal.py",
@@ -470,7 +470,7 @@
    },
    {
     "path": "docs/issue-70/phase3/graphiti_recall_service.py",
-    "sha256": "84969f013ce8ff9244c6e4693cd2d225d959412bd268d1d1c7eec7d359dbb178"
+    "sha256": "94be2d4b86d2244270bfee941771e582c8ee96b241391dc424b270ed2a98c54d"
    },
    {
     "path": "docs/issue-70/phase3/graphiti_core_worker.py",
