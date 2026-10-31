@@ -46,9 +46,10 @@ export async function proposalFromCompletedRead(event, {
   try {
     const source = JSON.parse(await readFile(sourcePolicyPath, "utf8"))
     if (source.enabled !== true || source.source_type !== "git-record-v1" ||
-        source.production_activation !== true ||
         !Array.isArray(source.groups) || source.groups.length !== 1 ||
-        !NAME.test(source.groups[0]) || !capturePolicy.groups.includes(source.groups[0]) ||
+        !NAME.test(source.groups[0]) ||
+        (source.groups[0].startsWith("issue70_") ? source.production_activation === true : source.production_activation !== true) ||
+        !capturePolicy.groups.includes(source.groups[0]) ||
         !Array.isArray(source.categories) || !Array.isArray(source.workspaces) ||
         !source.workspaces.includes(workspaceID) || !isAbsolute(source.repository ?? "") ||
         !BRANCH.test(source.trusted_ref) ||
