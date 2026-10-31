@@ -264,5 +264,56 @@
       "production_capture": "not activated",
       "pr_merge_deploy": "none (no new PR, no merge, no deployment)"
     }
+  },
+  "unicode_preflight_closeout": {
+    "note": "Deterministic input-preflight closeout of the final Codex finding (thread PRRT_kwDOULzk_M6yOQoN, phase2/graphiti_terminal.py:87). Central moved generated-instruction validation into EpisodeEnvelope.validate() (invoked in AwaitedCoreAdapter.submit() before IngestJournal.reserve()) and into GitFactResolver.__call__() (before SharedWorkQueue.admit_attested()). No transport-limit increase, no validator change, no special recovery mechanism. This is a pre-submission CPU-only closeout: no fresh GPU inference and no new real-service execution was performed; the historical real Graphiti PASS/retry evidence above is preserved under its original source head and is NOT re-claimed here.",
+    "base_sha": "df5335634198522b8303a08c74b797afc44ff810",
+    "pre_correction_sha": "5aa62b709ed686d6b3ddfabc7d5d203350cc447a",
+    "central_correction_commits": [
+      "910f49c fix(issue-70): reject oversized canonical extraction instructions before Graphiti admission",
+      "19c19e9 test(issue-70): give valid follow-up an independent source event identity",
+      "df53356 docs(issue-70): bound final Codex input-preflight qualification to one CPU-only closeout"
+    ],
+    "pr": 72,
+    "pr_base_branch": "issue/70",
+    "pr_base_sha": "033b5aae7282665f57700f131661bbd0d59b16ec",
+    "a_claims": {
+      "A1_oversized_cjk_structural_pass_then_size_reject": "PASS - a 256-char CJK subject (CJK * 256) passes temporal_ledger.validate_contract (structural <=256-char input bound) but transition_extraction_instructions() emits 2073 bytes > the 2048-byte child transport limit and raises UnverifiedSource('canonical Graphiti extraction instructions exceed bound')",
+      "A2_reject_before_reserve_and_admit": "PASS - rejection occurs in EpisodeEnvelope.validate() before IngestJournal.reserve() in AwaitedCoreAdapter.submit(), and in GitFactResolver.__call__() before SharedWorkQueue.admit_attested(); auto_admit returns admitted=0 deferred=1 and ready()=None",
+      "A3_no_receipt_episode_contract_attestation": "PASS - for the rejected nomination no graphiti_ingest_receipts row, no completed episode, no temporal_transition_contracts row, and no memory_source_attestations row exist (all three tables absent)",
+      "A4_rejected_stays_deferred": "PASS - memory_work.status for the rejected work_key remains deferred_unverified, not blocked_reconcile",
+      "A5_later_valid_nomination_admitted": "PASS - an independently-identified valid Unicode follow-up (candidate('unicode-valid-followup'), its own source event identity, 16-char CJK subject) is admitted (admitted=1) and reaches queued (ready() returns its work_key)",
+      "A6_ascii_short_unicode_ordinary_nonregression": "PASS - ASCII transition, short-CJK(16) subject, and ordinary no-contract episodes all submit -> poll completed with exactly one Graphiti write each; the existing child transport is unchanged"
+    },
+    "cpu_suites": {
+      "note": "Complete Phase 2/3/4 CPU discovery suites plus the affected gate/shared-work CPU tests re-executed on the corrected source df53356. The historical 212-check full-campaign total is NOT re-presented. No GPU/real-service suite was re-run (not an acceptance requirement for a deterministic pre-submission input fix).",
+      "phase2": "32/32 OK (was 30; +2 new CJK pre-admission regressions in test_graphiti_terminal.py)",
+      "phase3": "30/30 OK (unchanged)",
+      "phase4": "36/36 OK (was 35; +1 new disposable Git-source/SQLite Unicode nomination regression in test_temporal_source_contract.py)",
+      "gate_tests": "59/59 OK (test_gate 16, test_shared_work 14, test_corrections 13, test_dual_metrics 7, test_multi_unknown_recovery 5, test_service_corrections 3, test_service_mixed 1)",
+      "total_newly_executed": 157
+    },
+    "package_reconstruction": {
+      "note": "The Central correction modified reviewed Phase 2/3 runtime sources and regression files, so the source-bound evidence hashes in source-base-manifest.json were stale. Only the changed phase-source evidence hashes were recomputed; the installable package (gate/openviking-v2/shim/backend) files are unchanged, so the gate/V2/backend patches were NOT regenerated.",
+      "manifest_phase_source_hashes_updated": {
+        "docs/issue-70/phase2/graphiti_terminal.py": {"old": "3d067b8d0cb305626fa66c5b4f5a4636b80db24cf753594c7837aa07b5471d17", "new": "475e75e59d8faae487dc2ca23763f30db76463af834c3afde317abaab80818e0"},
+        "docs/issue-70/phase2/test_graphiti_terminal.py": {"old": "b76818ce1c60956c7e4e35d885efe9b6b1cee04b6402e26e760c4b0307767807", "new": "bb09d4246f39425eaff5c847b7222bbb0b835ea72b9358528cf7d8fdcc6d47ea"},
+        "docs/issue-70/phase3/git_source_authority.py": {"old": "3ca7b5a7c8afb9fa2ae186ede3a4c451657bc9d81a1a3d936f6fa647bff8e8c7", "new": "24201acff423715651cf2b26981f20c34ba3651106db8d51d3e4ce259ac770d2"},
+        "docs/issue-70/phase4/test_temporal_source_contract.py": {"old": "a5dda1127c0e8d2cb0de93e7e7ed685151266e5ef6f0a0204abbebec90db2611", "new": "92504b047e159214b8d6e0c66eebfb4273c9e6a6082284419f6cb92e81b2b9e8"}
+      },
+      "unchanged_patches_reverified": {
+        "patches/gate.patch": {"sha256": "7360ea0132b78ff6a4f4eeaac3f6b09e71d3b989146ccefcce5ebd5856e62cab", "entries": 13, "forward_reverse": "byte-exact PASS against installed base 6ad48a93; unchanged, not regenerated"},
+        "patches/openviking-v2.patch": {"sha256": "b0ee5faae46ccaf8c9201f9a0bdd46d8f4c20a285e38e27832707b1b5ef2b321", "entries": 8, "forward_reverse": "byte-exact PASS against installed base 6899822e; unchanged, not regenerated"},
+        "patches/backend.patch": {"sha256": "a03ab064dc6f0d13861ef7b20faf8a4b6b490474f9f2f92cffc740b0cbe1ad61", "note": "unchanged; recorded hash still matches"}
+      },
+      "sha256sums": "SHA256SUMS re-authenticated; only the metadata entries whose bytes changed (source-base-manifest.json, qualification-phase4.json) were recomputed. No installable package file hash changed."
+    },
+    "protected_surfaces": {
+      "live_gate_db": "never accessed (LIVE_GATE_DB_MUTATION=no); safe_test_paths.py preflight in place",
+      "live_graph": "LIVE_GRAPH_MUTATION=no - no new real-service/GPU execution this campaign",
+      "pinned_validator": "unchanged at aa4f048dd4add8a0916e18e49ea90a2d89639ab8a9d08810c6181882aeaa8550",
+      "production_capture": "not activated",
+      "pr_merge_deploy": "none (no new PR, no merge, no deployment, no issue closure, no production activation)"
+    }
   }
 }

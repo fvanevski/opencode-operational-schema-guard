@@ -1,3 +1,27 @@
+# Unicode pre-admission closeout handback (final Codex input-preflight, source-only, one PR update)
+
+```text
+ISSUE70_UNICODE_CLOSEOUT=PASS (deterministic pre-submission input-validation closeout of the final Codex finding; no fresh GPU/real-service execution; production activation still disabled)
+BRANCH=issue/70-temporal-final
+CENTRAL_BASE_SHA=df5335634198522b8303a08c74b797afc44ff810
+PRE_CORRECTION_SHA=5aa62b709ed686d6b3ddfabc7d5d203350cc447a
+PR=72 (existing; base issue/70 @ 033b5aae7282665f57700f131661bbd0d59b16ec)
+CODEX_FINDING=PRRT_kwDOULzk_M6yOQoN phase2/graphiti_terminal.py:87 (a legal 256-char CJK subject passed structural validate_contract, but json.dumps(ensure_ascii=True) emitted 2073 bytes > the 2048-byte child transport limit; previously raised inside _execute() after the journal was marked processing, yielding a receipt-less blocked_reconcile)
+CENTRAL_CORRECTION=PASS generated-instruction validation moved into EpisodeEnvelope.validate() (called in AwaitedCoreAdapter.submit() before IngestJournal.reserve()) and into GitFactResolver.__call__() (before SharedWorkQueue.admit_attested()); the transport limit, validator and child transport are unchanged; no special recovery mechanism added
+A1_OVERSIZED_CJK_STRUCTURAL_PASS_THEN_SIZE_REJECT=PASS 256-char CJK subject passes temporal_ledger.validate_contract (<=256-char input bound) but the generated instruction is 2073 bytes > 2048 and is rejected with 'canonical Graphiti extraction instructions exceed bound'
+A2_REJECT_BEFORE_RESERVE_AND_ADMIT=PASS rejection precedes IngestJournal.reserve() (submit path) and SharedWorkQueue.admit_attested() (source-verification path); auto_admit admitted=0 deferred=1, ready()=None
+A3_NO_RECEIPT_ON_REJECTION=PASS no graphiti_ingest_receipts row, no completed episode, no temporal_transition_contracts row, no memory_source_attestations row for the rejected nomination (all three tables absent)
+A4_REJECTED_STAYS_DEFERRED=PASS memory_work.status for the rejected work_key remains deferred_unverified, not blocked_reconcile
+A5_LATER_VALID_NOMINATION_ADMITTED=PASS an independently-identified valid Unicode follow-up (candidate('unicode-valid-followup'), its own source event identity, 16-char CJK subject) is admitted (admitted=1) and reaches queued
+A6_NONREGRESSION=PASS ASCII transition, short-CJK(16) subject, ordinary no-contract episodes, and the existing child transport all remain functional (one Graphiti write each; completed)
+CPU_SUITES=PASS (on corrected source df53356) phase2 32/32 (+2 new CJK pre-admission regressions), phase3 30/30, phase4 36/36 (+1 new disposable Git-source/SQLite Unicode nomination regression), gate 59/59 (test_gate 16, test_shared_work 14, test_corrections 13, test_dual_metrics 7, test_multi_unknown_recovery 5, test_service_corrections 3, test_service_mixed 1); total newly executed 157. The historical 212-check full-campaign total is NOT re-presented. No GPU/real-service suite re-run (not an acceptance requirement for a deterministic pre-submission input fix).
+PACKAGE_RECONSTRUCTION=PASS Central correction modified reviewed Phase 2/3 runtime sources + regression files, so the source-bound evidence hashes in source-base-manifest.json were stale; only the 4 changed phase-source evidence hashes were recomputed (graphiti_terminal.py 3d067b8d->475e75e5, test_graphiti_terminal.py b76818ce->bb09d424, git_source_authority.py 3ca7b5a7->24201acf, test_temporal_source_contract.py a5dda112->92504b04). The installable package (gate/openviking-v2/shim/backend) is unchanged, so gate.patch (7360ea01, 13 entries), openviking-v2.patch (b0ee5faa, 8 entries) and backend.patch (a03ab064) were NOT regenerated; their recorded hashes match and they apply/reverse byte-exactly against installed bases 6ad48a93/6899822e. SHA256SUMS (47 entries) re-authenticated (only the source-base-manifest.json + qualification-phase4.json entries recomputed); CHANGED_FILES.txt (48 files) scope unchanged.
+PROTECTED_LIVE_SURFACES=live gate DB never accessed (LIVE_GATE_DB_MUTATION=no); no new real-service/GPU execution (LIVE_GRAPH_MUTATION=no); pinned validator byte-identical (aa4f048d...); no production capture activation
+NO_NEW_PR=no (PR #72 updated in place); MERGE=no; PRODUCTION_DEPLOYMENT=no; ISSUE70_CLOSURE=no; LIVE_GATE_DB_MUTATION=no; LIVE_GRAPH_MUTATION=no
+HISTORICAL_EVIDENCE_PRESERVED=real Graphiti PASS + retry evidence retained under its original source head (7d0ca45 four-finding campaign, disposable graph issue70_p4c_final); NOT re-claimed as new
+RECOMMENDED_CENTRAL_ACTION=Independently review this Unicode pre-admission closeout on issue/70-temporal-final (fast-forward from 5aa62b7); the refreshed exact-head review supports the project's CODEX_REVIEW=WAIVED_REQUEST_CAP procedure. Production activation of exclusive-state capture and issue #70 closure remain separate Central decisions.
+```
+
 # Four-finding campaign handback (A1–A4, source-only, one consolidated PR)
 
 ```text

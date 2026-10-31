@@ -274,7 +274,7 @@
    },
    {
     "path": "docs/issue-70/phase2/graphiti_terminal.py",
-    "sha256": "3d067b8d0cb305626fa66c5b4f5a4636b80db24cf753594c7837aa07b5471d17"
+    "sha256": "475e75e59d8faae487dc2ca23763f30db76463af834c3afde317abaab80818e0"
    },
    {
     "path": "docs/issue-70/phase2/real_graphiti_qualification.py",
@@ -294,7 +294,7 @@
    },
    {
     "path": "docs/issue-70/phase2/test_graphiti_terminal.py",
-    "sha256": "b76818ce1c60956c7e4e35d885efe9b6b1cee04b6402e26e760c4b0307767807"
+    "sha256": "bb09d4246f39425eaff5c847b7222bbb0b835ea72b9358528cf7d8fdcc6d47ea"
    },
    {
     "path": "docs/issue-70/phase2/test_source_authority.py",
@@ -331,7 +331,7 @@
    },
    {
     "path": "docs/issue-70/phase3/git_source_authority.py",
-    "sha256": "3ca7b5a7c8afb9fa2ae186ede3a4c451657bc9d81a1a3d936f6fa647bff8e8c7"
+    "sha256": "24201acff423715651cf2b26981f20c34ba3651106db8d51d3e4ce259ac770d2"
    },
    {
     "path": "docs/issue-70/phase3/graphiti_process_transport.py",
@@ -367,11 +367,11 @@
    },
    {
     "path": "docs/issue-70/phase2/graphiti_terminal.py",
-    "sha256": "3d067b8d0cb305626fa66c5b4f5a4636b80db24cf753594c7837aa07b5471d17"
+    "sha256": "475e75e59d8faae487dc2ca23763f30db76463af834c3afde317abaab80818e0"
    },
    {
     "path": "docs/issue-70/phase2/test_graphiti_terminal.py",
-    "sha256": "b76818ce1c60956c7e4e35d885efe9b6b1cee04b6402e26e760c4b0307767807"
+    "sha256": "bb09d4246f39425eaff5c847b7222bbb0b835ea72b9358528cf7d8fdcc6d47ea"
    },
    {
     "path": "docs/issue-70/phase2/real_graphiti_qualification.py",
@@ -450,7 +450,7 @@
    },
    {
     "path": "docs/issue-70/phase4/test_temporal_source_contract.py",
-    "sha256": "a5dda1127c0e8d2cb0de93e7e7ed685151266e5ef6f0a0204abbebec90db2611"
+    "sha256": "92504b047e159214b8d6e0c66eebfb4273c9e6a6082284419f6cb92e81b2b9e8"
    },
    {
     "path": "docs/issue-70/phase4/test_temporal_status.py",
@@ -462,11 +462,11 @@
    },
    {
     "path": "docs/issue-70/phase2/graphiti_terminal.py",
-    "sha256": "3d067b8d0cb305626fa66c5b4f5a4636b80db24cf753594c7837aa07b5471d17"
+    "sha256": "475e75e59d8faae487dc2ca23763f30db76463af834c3afde317abaab80818e0"
    },
    {
     "path": "docs/issue-70/phase3/git_source_authority.py",
-    "sha256": "3ca7b5a7c8afb9fa2ae186ede3a4c451657bc9d81a1a3d936f6fa647bff8e8c7"
+    "sha256": "24201acff423715651cf2b26981f20c34ba3651106db8d51d3e4ce259ac770d2"
    },
    {
     "path": "docs/issue-70/phase3/graphiti_recall_service.py",
@@ -482,7 +482,7 @@
    },
    {
     "path": "docs/issue-70/phase2/test_graphiti_terminal.py",
-    "sha256": "b76818ce1c60956c7e4e35d885efe9b6b1cee04b6402e26e760c4b0307767807"
+    "sha256": "bb09d4246f39425eaff5c847b7222bbb0b835ea72b9358528cf7d8fdcc6d47ea"
    },
    {
     "path": "docs/issue-70/phase3/test_graphiti_process_transport.py",
