@@ -50,6 +50,11 @@ class EpisodeEnvelope:
         if self.transition_contract is not None:
             from temporal_ledger import validate_contract
             validate_contract(self.transition_contract,self.group_id)
+            # Check the *generated* instruction, not just its input contract.
+            # A valid Unicode contract can exceed the child's 2048-byte
+            # instruction limit after JSON escaping. This must fail before
+            # journal reservation or any Graphiti submission.
+            transition_extraction_instructions(self.transition_contract)
 
     def payload_hash(self):
         self.validate()

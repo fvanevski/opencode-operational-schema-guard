@@ -135,7 +135,7 @@ class GitFactResolver:
 
         work_key = self.work_key_fn(candidate)
         source_key = self.source_key_fn(candidate)
-        return EpisodeEnvelope(
+        envelope = EpisodeEnvelope(
             work_key=work_key, source_event_key=source_key, group_id=group,
             name="git-source:" + work_key[:24], episode_body=body,
             source_description="git:" + commit + ":" + relative,
@@ -146,3 +146,8 @@ class GitFactResolver:
             ]),
             transition_contract=declared,
         )
+        # Perform all deterministic source-derived transport checks while
+        # still in independent source verification. The coordinator must
+        # never queue a contract that can fail before the first graph call.
+        envelope.validate()
+        return envelope

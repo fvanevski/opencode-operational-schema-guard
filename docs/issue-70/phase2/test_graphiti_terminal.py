@@ -83,6 +83,31 @@ class TerminalTests(unittest.TestCase):
         self.assertIn("USES_AS_JOB_QUEUE_BACKEND",
                       transition_extraction_instructions(contract))
 
+    def test_oversized_unicode_instruction_rejected_before_receipt(self):
+        from dataclasses import replace
+        contract={"group_id":"group-a","subject":"界"*256,
+                  "predicate":"USES_AS_JOB_QUEUE_BACKEND",
+                  "transition":{"from":"Redis","to":"NATS",
+                                "effective_at":"2026-10-30T00:00:00Z"}}
+        self.ep=replace(self.ep,transition_contract=contract)
+        with self.assertRaisesRegex(UnverifiedSource,"instructions exceed bound"):
+            self.adapter.submit(self.candidate)
+        # No journal identity exists to reconcile because no work was
+        # reserved, and the Graphiti backend was never called.
+        self.assertIsNone(self.adapter.journal.read("a"*64))
+        self.assertEqual(self.graph.writes,0)
+
+    def test_valid_unicode_instruction_stays_supported(self):
+        from dataclasses import replace
+        contract={"group_id":"group-a","subject":"界"*16,
+                  "predicate":"USES_AS_JOB_QUEUE_BACKEND",
+                  "transition":{"from":"Redis","to":"NATS",
+                                "effective_at":"2026-10-30T00:00:00Z"}}
+        self.ep=replace(self.ep,transition_contract=contract)
+        self.assertEqual(self.adapter.submit(self.candidate),"a"*64)
+        self.assertEqual(self.graph.writes,1)
+        self.assertEqual(self.adapter.poll("a"*64)["status"],"completed")
+
     def test_ordinary_episode_does_not_inject_temporal_instructions(self):
         submitted=[]
         original=self.graph.add_episode

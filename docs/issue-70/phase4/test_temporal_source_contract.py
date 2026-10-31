@@ -68,6 +68,47 @@ class TemporalSourceTests(unittest.TestCase):
             self.assertEqual(json.loads(row["contract_json"]),CONTRACT)
             self.assertEqual(row["work_key"],work_key(self.item))
 
+    def test_unicode_expansion_fails_source_verification_before_queue_admission(self):
+        # 256 CJK codepoints satisfy validate_contract's <=256-character
+        # input bound, but ensure_ascii=True expands generated instructions
+        # beyond the child's 2048-byte transport limit.
+        subject="界"*256
+        self.record["transition_contract"]={**CONTRACT,"subject":subject}
+        self.item["transition"]["subject_ref"]=subject
+        self.recommit()
+        self.item["fact_ref"]=self.ref
+        with self.assertRaisesRegex(UnverifiedSource,"instructions exceed bound"):
+            self.resolver(self.item)
+        rejected=self.work.enqueue(self.item)
+        self.assertEqual(rejected["status"],"deferred_unverified")
+        totals=self.work.auto_admit(self.resolver)
+        self.assertEqual((totals["admitted"],totals["deferred"]),(0,1))
+        self.assertIsNone(self.work.ready())
+        with self.db.connect() as c:
+            status=c.execute("SELECT status FROM memory_work WHERE work_key=?",
+                             (rejected["work_key"],)).fetchone()["status"]
+            self.assertEqual(status,"deferred_unverified")
+            for table in ("graphiti_ingest_receipts",
+                          "temporal_transition_contracts",
+                          "memory_source_attestations"):
+                self.assertIsNone(c.execute("""SELECT 1 FROM sqlite_master
+                    WHERE type='table' AND name=?""",(table,)).fetchone())
+
+        # A new, valid authenticated record can still be admitted. The
+        # rejected source does not poison the coordinator or global lease.
+        self.record["transition_contract"]={**CONTRACT,"subject":"界"*16}
+        self.item["transition"]["subject_ref"]="界"*16
+        self.recommit()
+        self.item["fact_ref"]=self.ref
+        allowed=self.work.enqueue(self.item)
+        after=self.work.auto_admit(self.resolver,max_items=2)
+        self.assertEqual(after["admitted"],1)
+        self.assertEqual(self.work.ready()["work_key"],allowed["work_key"])
+        with self.db.connect() as c:
+            self.assertEqual(c.execute("""SELECT status FROM memory_work
+                WHERE work_key=?""",(rejected["work_key"],)).fetchone()["status"],
+                "deferred_unverified")
+
     def test_candidate_lookalike_transition_cannot_override_source(self):
         self.item["transition"]["incoming_state_ref"]="Kafka"
         self.work.enqueue(self.item)
