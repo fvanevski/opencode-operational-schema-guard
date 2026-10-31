@@ -303,10 +303,35 @@ class SharedWorkQueue:
 
     def status(self, limit: int = 50):
         with self.legacy_db.connect() as conn:
-            rows = conn.execute("""SELECT work_key, work_class, source_event_id, destination_scope,
-                status, attempt_generation, backend_identity, lease_identity, created_at, updated_at, error_code
-                FROM memory_work ORDER BY created_at DESC LIMIT ?""", (min(max(limit, 1), 100),)).fetchall()
-            return [dict(row) for row in rows]
+            count = min(max(limit, 1), 100)
+            columns = ("mw.work_key,mw.work_class,mw.source_event_id,mw.destination_scope,"
+                       "mw.status,mw.attempt_generation,mw.backend_identity,"
+                       "mw.lease_identity,mw.created_at,mw.updated_at,mw.error_code")
+            has_temporal = conn.execute("""SELECT 1 FROM sqlite_master WHERE
+                type='table' AND name='temporal_validation_results'""").fetchone()
+            if not has_temporal:
+                rows = conn.execute(f"SELECT {columns} FROM memory_work mw ORDER BY mw.created_at DESC LIMIT ?",(count,)).fetchall()
+                return [dict(row) for row in rows]
+            rows = conn.execute(f"""SELECT {columns},
+                tc.work_key AS temporal_contract_key,
+                tv.state AS temporal_state,tv.exit_code AS temporal_exit,
+                tv.disposition AS temporal_disposition,tv.episode_uuid AS temporal_episode_uuid
+                FROM memory_work mw
+                LEFT JOIN temporal_transition_contracts tc ON tc.work_key=mw.work_key
+                LEFT JOIN temporal_validation_results tv ON tv.work_key=mw.work_key
+                ORDER BY mw.created_at DESC LIMIT ?""",(count,)).fetchall()
+            outcomes={0:"PASS",1:"INCONSISTENT",2:"INCOMPLETE",3:"INVALID_INPUT"}
+            response=[]
+            for row in rows:
+                record=dict(row)
+                contract=record.pop("temporal_contract_key")
+                state=record.pop("temporal_state")
+                code=record.pop("temporal_exit")
+                record["temporal_validation_status"]=(
+                    "not_required" if contract is None else
+                    outcomes.get(code,"UNVERIFIED") if state=="done" else "UNVERIFIED")
+                response.append(record)
+            return response
 
 
 class DisabledGraphitiAdapter:
