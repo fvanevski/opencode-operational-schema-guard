@@ -132,6 +132,17 @@ only if the *host-tested* parser's false defaults have been established and
 Build promotion and again independently after fresh-process validation;
 store raw sanitized receipts and digests in the private operator directory.
 
+Run the verifier from the **current PR #73 tooling checkout**, while the
+`reviewed_checkout` inside the plan points to the separate immutable
+`b126b6d415a3f8706e0c8c22b219cca2161a7465` release directory.
+The verifier is a newly staged deployment tool, not part of the previously
+approved immutable source tree. It requires `mappings` covering **all**
+runtime-critical gate, V2 plugin, shim and backend files; the five backend
+patch-derived members are checked against their manifest candidate digests
+and pinned backend patch identity, while the full forward/reverse
+reconstruction must be proven separately. Do not claim that merely running
+the verifier is independent Evidence acceptance.
+
 This helper does **not** prove service behavior, process quiescence, backend
 inference admission, backups or any protected database identity. Those remain
 separate mandatory acceptance observations.
