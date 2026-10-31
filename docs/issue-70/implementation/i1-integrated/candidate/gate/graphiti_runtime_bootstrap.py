@@ -20,9 +20,9 @@ class LazyCoreAdapter:
     concrete core adapter (and its durable journal/ledger tables) until the
     first real submit or poll.
 
-    A positive production setup must not create optional Graphiti tables in
-    the gate database at startup; table creation follows the first durable
-    work, preserving the legacy-database non-intrusion invariant.
+    The explicitly authorized validator selector is persisted at exclusive
+    bootstrap, but ingestion receipts and temporal work/results tables remain
+    deferred until actual work. Idle retries never initialize them.
     """
 
     def __init__(self, build, client_factory, *, exposes_retry, db):
