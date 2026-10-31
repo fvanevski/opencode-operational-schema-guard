@@ -7,14 +7,20 @@ repair graph edges, or run Graphiti extraction.
 from __future__ import annotations
 import asyncio
 import importlib.util
+import hashlib
 import json
 from pathlib import Path
 import sys
 
 def main():
     try:
-        if len(sys.argv)!=2 or not Path(sys.argv[1]).is_file():
+        if len(sys.argv)!=3 or not Path(sys.argv[1]).is_file():
             raise ValueError("exact existing temporal validator path required")
+        expected=sys.argv[2]
+        path=Path(sys.argv[1])
+        actual=hashlib.sha256(path.read_bytes()).hexdigest()
+        if len(expected)!=64 or expected!=actual:
+            raise ValueError("validator script content does not match active pin")
         raw=sys.stdin.buffer.read(8193)
         if not raw or len(raw)>8192:raise ValueError("bounded contract required")
         contract=json.loads(raw)
@@ -27,7 +33,8 @@ def main():
         if type(exit_code) is not int or exit_code not in (0,1,2,3):
             raise ValueError("unsupported validator result")
         # Keep the subprocess response bounded and source/edge-ID focused.
-        output={"exit":exit_code,"disposition":result.get("disposition"),
+        output={"validator_sha256":actual,
+                "exit":exit_code,"disposition":result.get("disposition"),
                 "mode":result.get("mode"),"coverage":result.get("coverage"),
                 "findings":result.get("findings",[])[:16]}
         payload=json.dumps(output,ensure_ascii=False,separators=(",",":"))
