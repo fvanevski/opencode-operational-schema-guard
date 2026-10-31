@@ -41,6 +41,13 @@ class StatusTests(unittest.TestCase):
         q=SharedWorkQueue(db)
         item=candidate("exclusive-status")
         item["category"]="exclusive_state_transition"
+        item["transition"]={
+            "subject_ref":"Service",
+            "predicate":"USES_AS_JOB_QUEUE_BACKEND",
+            "outgoing_state_ref":"Redis",
+            "incoming_state_ref":"NATS",
+            "effective_at":"2026-10-30T00:00:00Z",
+        }
         nominated=q.enqueue(item)
         TemporalLedger(db)
         # An unbound exclusive candidate must not display 'not_required'.
