@@ -45,7 +45,7 @@ export function loadCapturePolicy(path) {
 // Only structured metadata from an operator-allowlisted completed tool is considered.
 // No transcript, tool body, model proposal, or compaction context is parsed.
 export function candidateFromToolEvent(event, policy, workspaceID) {
-  if (!policy?.enabled || event?.type !== "session.tool.success" || event.data?.executed !== true) return null
+  if (!policy?.enabled || event?.type !== "session.tool.success" || typeof event.data?.executed !== "boolean") return null
   const data = event.data
   if (!id(workspaceID) || !policy.workspaces.includes(workspaceID) || !policy.tools.includes(data.name)) return null
   const proposal = data.metadata?.memory_candidate_v1
@@ -95,6 +95,16 @@ export function createCaptureObserver({ workspaceID, policyPath, url, token, pol
   const calls = new Map()
   const pending = new Map()
   const stats = { deferred: 0, failed: 0 }
+  const schedule = (candidate) => {
+    if (!candidate) return null
+    if (pending.has(candidate.event_id)) return candidate.event_id
+    if (pending.size >= Math.max(1, Math.min(64, maxPending))) { stats.deferred++; return null }
+    const task = Promise.resolve().then(() => enqueue(candidate, { url, token, timeoutMs }))
+      .then((ok) => { if (!ok) stats.failed++ }, () => { stats.failed++ })
+      .finally(() => pending.delete(candidate.event_id))
+    pending.set(candidate.event_id, task)
+    return candidate.event_id
+  }
   const observe = async (event) => {
     try {
       const data = event?.data
@@ -117,19 +127,23 @@ export function createCaptureObserver({ workspaceID, policyPath, url, token, pol
       calls.delete(key)
       if (event.type !== "session.tool.success" || !name) return null
       const candidate = candidateFromToolEvent({ ...event, data: { ...data, name } }, policyLoader(policyPath), workspaceID)
-      if (!candidate) return null
-      if (pending.has(candidate.event_id)) return candidate.event_id
-      if (pending.size >= Math.max(1, Math.min(64, maxPending))) { stats.deferred++; return null }
-      // enqueueCandidate aborts its actual network operation on timeout. Do not
-      // release a slot until the operation settles, including injected senders.
-      const task = Promise.resolve().then(() => enqueue(candidate, { url, token, timeoutMs }))
-        .then((ok) => { if (!ok) stats.failed++ }, () => { stats.failed++ })
-        .finally(() => pending.delete(candidate.event_id))
-      pending.set(candidate.event_id, task)
-      return candidate.event_id
+      return schedule(candidate)
     } catch { stats.failed++; return null }
   }
   // Tests/owners may drain explicitly; the event loop never awaits this.
+  // A completed native V2 local tool hook authenticates execution; the
+  // native "executed" field is a provider-execution flag, not a success flag.
+  observe.fromCompletedHook = (hook, proposal) => {
+    if (hook?.status !== "completed" || hook.tool !== "read" ||
+        !id(hook.sessionID) || !id(hook.messageID) || !id(hook.id) ||
+        !proposal || typeof proposal !== "object") return null
+    const policy = policyLoader(policyPath)
+    return schedule(candidateFromToolEvent({ type: "session.tool.success", data: {
+      sessionID: hook.sessionID, assistantMessageID: hook.messageID,
+      id: hook.id, name: hook.tool, executed: false,
+      metadata: { memory_candidate_v1: proposal },
+    } }, policy, workspaceID))
+  }
   observe.flush = () => Promise.allSettled([...pending.values()])
   observe.status = () => ({ ...stats, pending: pending.size, calls: calls.size })
   return observe
