@@ -97,10 +97,16 @@ class TemporalSourceTests(unittest.TestCase):
         # A new, valid authenticated record can still be admitted. The
         # rejected source does not poison the coordinator or global lease.
         self.record["transition_contract"]={**CONTRACT,"subject":"界"*16}
-        self.item["transition"]["subject_ref"]="界"*16
         self.recommit()
-        self.item["fact_ref"]=self.ref
-        allowed=self.work.enqueue(self.item)
+        accepted=candidate("unicode-valid-followup")
+        accepted["category"]="exclusive_state_transition"
+        accepted["scope"]["group_id"]="issue70_temporal"
+        accepted["transition"]={
+            "subject_ref":"界"*16,"predicate":"USES_QUEUE",
+            "outgoing_state_ref":"Redis","incoming_state_ref":"NATS",
+            "effective_at":"2026-10-30T00:00:00Z"}
+        accepted["fact_ref"]=self.ref
+        allowed=self.work.enqueue(accepted)
         after=self.work.auto_admit(self.resolver,max_items=2)
         self.assertEqual(after["admitted"],1)
         self.assertEqual(self.work.ready()["work_key"],allowed["work_key"])
