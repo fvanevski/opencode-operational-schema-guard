@@ -34,6 +34,9 @@ def build_runtime(cfg,db):
         raise RuntimeError("source authority requires operator opt-in")
     if policy.get("groups") != [cfg.graphiti_group]:
         raise RuntimeError("one exact authorized Graphiti group per gate runtime required")
+    # The policy helper lives in the operator-selected, reviewed Phase 3 tree.
+    # Make that path importable before using it in the target preflight.
+    sys.path.insert(0,str(root))
     from graphiti_process_transport import allowed_group
     production_group=not cfg.graphiti_group.startswith("issue70_")
     if not allowed_group(cfg.graphiti_group,
@@ -69,7 +72,6 @@ def build_runtime(cfg,db):
     # Python's import boundary is explicitly operator-specified; the gate and
     # Git/Graphiti modules must be source-pinned by the deployment manifest.
     sys.path.insert(0,str(phase2))
-    sys.path.insert(0,str(root))
     if phase4 is not None:
         sys.path.insert(0,str(phase4))
     from graphiti_terminal import AwaitedCoreAdapter
