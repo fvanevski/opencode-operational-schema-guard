@@ -138,6 +138,10 @@ class Config:
     metrics_fallback_urls: tuple[str, ...] = ()
     graphiti_enabled: bool = False
     receipts_enabled: bool = False
+    graphiti_runtime_dir: str = ""
+    graphiti_source_policy: str = ""
+    graphiti_core_python: str = ""
+    graphiti_group: str = ""
 
     @classmethod
     def load(cls, path: str) -> "Config":
@@ -161,6 +165,10 @@ class Config:
             metrics_waiting=str(gate.get("metrics_waiting", "auto")),
             graphiti_enabled=bool(worker.get("graphiti_enabled", False)),
             receipts_enabled=bool(worker.get("receipts_enabled", False)),
+            graphiti_runtime_dir=_expanded(str(worker.get("graphiti_runtime_dir", ""))),
+            graphiti_source_policy=_expanded(str(worker.get("graphiti_source_policy", ""))),
+            graphiti_core_python=_expanded(str(worker.get("graphiti_core_python", ""))),
+            graphiti_group=str(worker.get("graphiti_group", "")),
             lock_file=_expanded(str(gate.get("lock_file", "$XDG_RUNTIME_DIR/openviking-agent.lock"))),
             database=_expanded(str(gate.get("database", "~/.local/state/openviking-commit-gate/queue.sqlite3"))),
             drain_enabled=bool(worker.get("drain_enabled", False)),
@@ -1684,7 +1692,11 @@ class GateHandler(BaseHTTPRequestHandler):
 def serve(cfg: Config) -> None:
     db = QueueDB(cfg.database)
     stop_event = threading.Event()
-    worker = Worker(cfg, db, stop_event)
+    graphiti_adapter, source_resolver = (None, None)
+    if cfg.graphiti_enabled:
+        from graphiti_runtime_bootstrap import build_runtime
+        graphiti_adapter, source_resolver = build_runtime(cfg, db)
+    worker = Worker(cfg, db, stop_event, graphiti_adapter, source_resolver)
     server = GateServer(cfg, db, worker)
     worker_thread = threading.Thread(target=worker.run, name="commit-worker", daemon=True)
 
