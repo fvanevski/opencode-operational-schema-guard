@@ -34,12 +34,22 @@ def build_runtime(cfg,db):
         raise RuntimeError("one exact authorized Graphiti group per gate runtime required")
     if not cfg.graphiti_group.startswith("issue70_"):
         raise RuntimeError("non-disposable Graphiti graph requires separate activation review")
-    if "exclusive_state_transition" in policy.get("categories",[]):
-        raise RuntimeError("automatic exclusive-state ingestion requires integrated validator disposition")
+    exclusive="exclusive_state_transition" in policy.get("categories",[])
+    if exclusive:
+        validator_path=Path(cfg.graphiti_validator_path)
+        if (not validator_path.is_absolute() or not validator_path.is_file()):
+            raise RuntimeError("automatic exclusive-state ingestion requires exact existing validator script")
+        phase4=root.parent/"phase4"
+        if not (phase4/"temporal_ledger.py").is_file():
+            raise RuntimeError("durable temporal ledger implementation unavailable")
+    else:
+        phase4=None
     # Python's import boundary is explicitly operator-specified; the gate and
     # Git/Graphiti modules must be source-pinned by the deployment manifest.
     sys.path.insert(0,str(phase2))
     sys.path.insert(0,str(root))
+    if phase4 is not None:
+        sys.path.insert(0,str(phase4))
     from graphiti_terminal import AwaitedCoreAdapter
     from git_source_authority import GitFactResolver
     from graphiti_process_transport import (make_process_client_factory,
@@ -53,4 +63,12 @@ def build_runtime(cfg,db):
         db,resolve=resolver,
         identity_fn=lambda c:(work_key(c),source_key(c)),
         client_factory=factory,read_episode=read_process_episode)
+    if exclusive:
+        from temporal_ledger import TemporalCheckingAdapter
+        from temporal_validator_transport import make_runner
+        run_validation=make_runner(
+            python=str(python),
+            child=str(phase4/"temporal_validator_child.py"),
+            validator_path=str(validator_path))
+        adapter=TemporalCheckingAdapter(adapter,db,run_validation)
     return adapter,resolver

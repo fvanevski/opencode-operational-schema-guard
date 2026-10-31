@@ -46,7 +46,10 @@ export function formatGraphitiFacts(facts, {groupID, maxItems = 4, maxChars = 16
     const claim = fact.fact.replace(/[\r\n\t]+/g, " ").slice(0, 400)
     // Post-write temporal PASS alone is not a warrant of truth. Flag missing
     // or conflicting exclusive-state validation instead of asserting a winner.
-    const marker = exclusive && status !== "PASS" ? " [CURRENT STATE UNVERIFIED / CONFLICTED]" : ""
+    const marker = [
+      exclusive && status !== "PASS" ? " [CURRENT STATE UNVERIFIED / CONFLICTED]" : "",
+      fact.invalid_at ? " [HISTORICAL / INVALIDATED]" : "",
+    ].join("")
     const source = fact.source_ref
     const line = "- " + claim + marker + " (source: " + source + ")"
     if (lines.join("\n").length + line.length > Math.max(200, Math.min(maxChars, 2400))) break

@@ -62,10 +62,21 @@ def receipt_sources(db_path: str, group_id: str, ids: list[str]) -> dict:
     # sqlite3 URI must target the existing file; never initialize a state DB.
     with sqlite3.connect(uri,uri=True,timeout=1) as conn:
         conn.row_factory=sqlite3.Row
-        query="""SELECT gi.episode_uuid, mw.candidate_json
+        has_results=conn.execute("""SELECT 1 FROM sqlite_master WHERE
+            type='table' AND name='temporal_validation_results'""").fetchone() is not None
+        temporal_select=(
+            "tv.state AS temporal_state,tv.exit_code AS temporal_exit"
+            if has_results else "NULL AS temporal_state,NULL AS temporal_exit")
+        temporal_join=(
+            """LEFT JOIN temporal_validation_results tv
+              ON tv.work_key=gi.work_key AND tv.episode_uuid=gi.episode_uuid"""
+            if has_results else "")
+        query=f"""SELECT gi.episode_uuid, mw.candidate_json,
+            {temporal_select}
             FROM graphiti_ingest_receipts gi
             JOIN memory_work mw ON mw.work_key=gi.work_key
             JOIN memory_source_attestations att ON att.work_key=gi.work_key
+            {temporal_join}
             WHERE gi.group_id=? AND gi.state='completed'
               AND mw.status='completed' AND att.source_authority LIKE 'git-record-v1:%'
               AND gi.episode_uuid IN (""" + ",".join("?" for _ in ids) + ")"
@@ -75,8 +86,13 @@ def receipt_sources(db_path: str, group_id: str, ids: list[str]) -> dict:
                 ref=candidate["fact_ref"]
                 if (GRAPH_SOURCE.fullmatch(ref) and
                         candidate["scope"]["group_id"]==group_id):
+                    exclusive=candidate["category"]=="exclusive_state_transition"
+                    statuses={0:"PASS",1:"INCONSISTENT",2:"INCOMPLETE",3:"INVALID_INPUT"}
+                    status=(statuses.get(row["temporal_exit"],"UNVERIFIED")
+                            if row["temporal_state"]=="done" else "UNVERIFIED")
                     out[row["episode_uuid"]]={"source_ref":ref,
-                        "exclusive":candidate["category"]=="exclusive_state_transition"}
+                        "exclusive":exclusive,
+                        "validation_status":status if exclusive else "not_required"}
             except (KeyError,ValueError,TypeError):continue
     return out
 
@@ -96,7 +112,8 @@ def format_rows(rows, receipts, group_id: str, *,limit=4) -> list[dict]:
             seen.add(key)
             facts.append({"group_id":group_id,"fact":name,
               "source_ref":approved["source_ref"],"exclusive":approved["exclusive"],
-              "validation_status":"UNVERIFIED" if approved["exclusive"] else "not_required",
+              "validation_status":approved.get("validation_status","UNVERIFIED")
+                 if approved["exclusive"] else "not_required",
               "valid_at":str(row.get("valid_at") or "")[:64],
               "invalid_at":str(row.get("invalid_at") or "")[:64]})
             break

@@ -142,6 +142,7 @@ class Config:
     graphiti_source_policy: str = ""
     graphiti_core_python: str = ""
     graphiti_group: str = ""
+    graphiti_validator_path: str = ""
 
     @classmethod
     def load(cls, path: str) -> "Config":
@@ -169,6 +170,7 @@ class Config:
             graphiti_source_policy=_expanded(str(worker.get("graphiti_source_policy", ""))),
             graphiti_core_python=_expanded(str(worker.get("graphiti_core_python", ""))),
             graphiti_group=str(worker.get("graphiti_group", "")),
+            graphiti_validator_path=_expanded(str(worker.get("graphiti_validator_path", ""))),
             lock_file=_expanded(str(gate.get("lock_file", "$XDG_RUNTIME_DIR/openviking-agent.lock"))),
             database=_expanded(str(gate.get("database", "~/.local/state/openviking-commit-gate/queue.sqlite3"))),
             drain_enabled=bool(worker.get("drain_enabled", False)),
