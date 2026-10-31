@@ -144,6 +144,9 @@ class Config:
     graphiti_group: str = ""
     graphiti_validator_path: str = ""
     graphiti_validator_sha256: str = ""
+    # A non-disposable Graphiti group needs separate, explicit operator opt-in.
+    # Defaults false, including for previously installed TOML configurations.
+    graphiti_production_approved: bool = False
 
     @classmethod
     def load(cls, path: str) -> "Config":
@@ -173,6 +176,7 @@ class Config:
             graphiti_group=str(worker.get("graphiti_group", "")),
             graphiti_validator_path=_expanded(str(worker.get("graphiti_validator_path", ""))),
             graphiti_validator_sha256=str(worker.get("graphiti_validator_sha256", "")),
+            graphiti_production_approved=(worker.get("graphiti_production_approved") is True),
             lock_file=_expanded(str(gate.get("lock_file", "$XDG_RUNTIME_DIR/openviking-agent.lock"))),
             database=_expanded(str(gate.get("database", "~/.local/state/openviking-commit-gate/queue.sqlite3"))),
             drain_enabled=bool(worker.get("drain_enabled", False)),

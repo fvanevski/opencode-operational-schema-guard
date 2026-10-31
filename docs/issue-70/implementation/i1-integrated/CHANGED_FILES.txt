@@ -35,6 +35,7 @@ patches/gate.patch
 patches/openviking-v2.patch
 prepare_backend.py
 qualification.json
+qualification-host-activation.json
 qualification-phase3.json
 qualification-phase4.json
 README.md

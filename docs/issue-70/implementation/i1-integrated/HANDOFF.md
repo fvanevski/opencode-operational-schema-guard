@@ -1,3 +1,46 @@
+# Codex P1 validator-authority closeout handback (issue/70-host-activation, source-only, one PR update)
+
+```text
+CODEX_P1_CLOSEOUT=PASS (centrally implemented validator-authority correction qualified via CPU regressions + one isolated two-process disposable-DB interleaving regression; production activation still disabled)
+BRANCH=issue/70-host-activation
+CENTRAL_START_SHA=e97a739a412b09f9e69dd5f4d3313f2e884a3847
+PR=73 (existing; one non-force fast-forward update)
+VALIDATOR_AUTHORITY_CORRECTION=PASS temporal_ledger.select_active_validator(db,sha) is the explicit bootstrap authority (one temporal_validator_active singleton via BEGIN IMMEDIATE + upsert; ingestion/result/contract tables remain deferred); TemporalLedger.__init__ no longer selects/reselects the active validator, fencing overlapping runtimes (an old lazy runtime initializing after a newer bootstrap cannot restore its obsolete SHA); build_runtime calls select_active_validator at exclusive bootstrap
+STALE_VALIDATOR_RESELECTION_PREVENTED=PASS (test_overlapping_bootstrap_does_not_resurrect_old_validator: A bootstrap, B bootstrap, delayed A _real(), active remains B)
+HISTORICAL_PASS_NOT_REAUTHORIZED=PASS (historical SHA-A PASS row -> status_for_episode UNVERIFIED; A's read-only retry_pending returns 0)
+BOOTSTRAP_SELECTOR_PERSISTED=PASS (exclusive bootstrap persists the temporal_validator_active singleton; graphiti_ingest_receipts/temporal_validation_results/temporal_transition_contracts absent)
+IDLE_INGESTION_SCHEMA_DEFERRED=PASS (idle retry creates no optional Graphiti/temporal tables)
+DURABLE_RETRY_NONREGRESSION=PASS (phase4 read-only retry + no-reingest tests)
+CPU_SUITES=PASS (contract PYTHONPATH, all exit 0) focused production-target 9/9, phase3 41/41, phase4 36/36, gate 59/59, receipt 7/7
+TWO_PROCESS_INTERLEAVING=PASS (isolated disposable-DB two-process regression: last-successful-bootstrap wins; historical SHA-A PASS stays UNVERIFIED; A's read-only retry is a no-op)
+PACKAGE_RECONSTRUCTION=PASS candidate graphiti_runtime_bootstrap.py d4cbd16d; phase3 test_production_target_policy 64c5d244 + test_auto_promotion 0e444ce3; phase4 temporal_ledger fc4c3459 + test_temporal_ledger 243e0ccf + test_temporal_status 96062c0f; gate.patch regenerated to ef110f64 (13 entries) against installed base 6ad48a93, byte-exact forward/reverse; openviking-v2.patch (b0ee5faa) + backend.patch (a03ab064) unchanged; source-base-manifest.json (7 identities + gate.patch sha/entries note) + SHA256SUMS (48 entries) + qualification-host-activation.json (new codex_p1_validator_authority section) + ROLLBACK/HANDOFF/friction ledger refreshed
+HISTORICAL_GRAPHITI_PROVENANCE=preserved (real Graphiti episode 1f5ba3bf-a940-44aa-9ef9-a484e0fa45cf, group hostact_iso_group, remains attributed to its original tested SHA and source head; NOT rerun in this campaign)
+COMMAND_SHAPE_FRICTION=encountered=no (no guard rejections, no harness rewrites, no interface-discovery failures; fresh /tmp/opencode/issue70-codexp1 staging; scoped Python hash-refresh)
+PROTECTED_LIVE_SURFACES=live gate/config/database and installed plugin untouched (6ad48a93/6899822e/d22ca3f9); live gate DB never mutated; live graph never mutated
+NO_NEW_PR=no (PR #73 updated in place); MERGE=no; PRODUCTION_DEPLOYMENT=no; ISSUE70_CLOSURE=no; LIVE_GATE_DB_MUTATION=no; LIVE_GRAPH_MUTATION=no
+RECOMMENDED_CENTRAL_ACTION=Independently review this Codex P1 validator-authority closeout on issue/70-host-activation (fast-forward from e97a739); production activation of exclusive-state capture and issue #70 closure remain separate Central decisions.
+```
+
+# Host-activation campaign handback (issue/70-host-activation, source-only, one PR update)
+
+```text
+HOST_ACTIVATION=PASS (host-bound integration + native-runtime qualification + package reconstruction + reversible deployment prep; production activation still disabled)
+BRANCH=issue/70-host-activation
+CENTRAL_BASE_SHA=49577b846664d6c7df477e508130af7ecb85f6c6
+MERGED_MAIN_BASE=4d4825b8151a1d8272af9da89701954d7ab27822
+PR=73 (existing; one coherent fast-forward update)
+TWO_INDEPENDENT_OPT_INS=PASS TOML graphiti_production_approved=true AND operator Git source policy production_activation:true; no fallback permits arbitrary group selection
+LAZY_ADAPTER_FIX=PASS graphiti_runtime_bootstrap.py build_runtime no longer creates graphiti_ingest_receipts at startup (LazyCoreAdapter defers adapter/table creation to first submit/poll; client_factory exposed immediately; validator identity verified eagerly; exposes_retry only when the exclusive category is present); openviking_commit_gate.py imports build_runtime; gate 59/59 including test_positive_setup_is_lazy_and_scoped
+CPU_SUITES=PASS (contract PYTHONPATH) phase2 32/32, phase3 38/38, phase4 36/36, gate 59/59 (re-verified on final candidate files), receipt 7/7, launcher 5/5, cross-process 5/5, openviking-v2 node 21/21, actual-backend 20/20
+FRESH_PROCESS_V2=PASS stock OpenCode v2.2.5 in collision-free disposable env (context events x18, event subscription, compaction started/delta/ended, clean location.shutdown); protected live gate/plugin/shim byte-identical (6ad48a93/6899822e/d22ca3f9); OpenViking context-v4 sibling import preserved
+ISOLATED_GRAPHITI=PASS NEW isolated FalkorDB hostact_iso_group (non-issue70_): episode 1f5ba3bf-a940-44aa-9ef9-a484e0fa45cf persisted with exact readback; duplicate enqueues coalesced to 1 episode; off-policy group stays deferred_unverified (source_authority_unavailable, no graph write); child mismatch rejected exit 1 before graph write (mismatch_group_absent); honest temporal MISSING_STATE fail-closed (no canonical edges extracted; ingestion completed+persisted)
+PACKAGE_RECONSTRUCTION=PASS two installable sources drifted (graphiti_runtime_bootstrap.py 5df884f9->79d9b711; openviking_commit_gate.py 40e7dc91->9d71ac50); gate.patch (13 entries) regenerated to 463b7591 against re-authenticated installed base 6ad48a93, byte-exact forward/reverse; openviking-v2.patch (b0ee5faa, 8 entries) + backend.patch (a03ab064) unchanged; source-base-manifest.json (2 candidate_sha256 + gate.patch sha + entries note) + SHA256SUMS + CHANGED_FILES.txt refreshed; new qualification-host-activation.json added
+DEPLOYMENT_CANDIDATE=disabled bundle (graphiti_enabled=false, graphiti_production_approved=false, production_capture_policy=disabled) + inactive production opt-in proposal; no live replacement
+PROTECTED_LIVE_SURFACES=live gate/config/database and installed plugin untouched; live gate DB never mutated; live graph never mutated
+NO_NEW_PR=no (PR #73 updated in place); MERGE=no; PRODUCTION_DEPLOYMENT=no; ISSUE70_CLOSURE=no; LIVE_GATE_DB_MUTATION=no; LIVE_GRAPH_MUTATION=no
+RECOMMENDED_CENTRAL_ACTION=Independently review this host-activation campaign on issue/70-host-activation (fast-forward from 49577b8); production activation of exclusive-state capture and issue #70 closure remain separate Central decisions.
+```
+
 # Unicode pre-admission closeout handback (final Codex input-preflight, source-only, one PR update)
 
 ```text

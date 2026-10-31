@@ -63,3 +63,50 @@ validation outcome (UNVERIFIED/INCONSISTENT/INCOMPLETE) never erases or
 re-executes the completed Graphiti ingestion receipt; the read-only retry
 is bounded and never replays ingestion. Production exclusive-state
 capture remains disabled in every shipped configuration.
+
+## Host-activation campaign rollback scope
+
+The host-activation campaign (branch `issue/70-host-activation`) changed only
+the installable candidate sources and their package metadata; it installed
+nothing on the live host. To roll back:
+
+- Reverse `patches/gate.patch` (`463b7591`, thirteen entries) on an isolated
+  copy to restore the authenticated installed gate bytes (`6ad48a93`) and remove
+  every patch-introduced file, including the `LazyCoreAdapter` fix in
+  `graphiti_runtime_bootstrap.py` and the `build_runtime` import in
+  `openviking_commit_gate.py`. `openviking-v2.patch` (`b0ee5faa`) and
+  `backend.patch` (`a03ab064`) are unchanged and reverse as before.
+- The deployment candidate is a **disabled** bundle
+  (`graphiti_enabled=false`, `graphiti_production_approved=false`,
+  `production_capture_policy=disabled`) with an **inactive** production opt-in
+  proposal; because both independent opt-ins (TOML `graphiti_production_approved`
+  and the operator Git source policy `production_activation`) are off in the
+  shipped bundle, exclusive-state capture is inert and no fallback permits
+  arbitrary group selection.
+- No live gate database was mutated, no live graph was mutated, the live
+  gate/config/database and installed plugin remain byte-identical, and the
+  isolated Graphiti evidence lives only on the disposable `hostact_iso_group`
+  graph and disposable gate databases. Reverting the candidate sources restores
+  the pre-campaign installable package with no host-side residue to clean up.
+
+## Codex P1 validator-authority rollback scope
+
+The Codex P1 correction (branch `issue/70-host-activation`, central start
+`e97a739`) changed only the installable candidate sources, the Phase 3/4
+source-pinned runtime, and their package metadata; it installed nothing on the
+live host. To roll back:
+
+- Reverse `patches/gate.patch` (`ef110f64`, thirteen entries) on an isolated
+  copy to restore the authenticated installed gate bytes (`6ad48a93`) and remove
+  every patch-introduced file, including the `select_active_validator` bootstrap
+  call in `graphiti_runtime_bootstrap.py`. `openviking-v2.patch` (`b0ee5faa`) and
+  `backend.patch` (`a03ab064`) are unchanged and reverse as before.
+- The validator-authority change is inert when Graphiti is disabled: an
+  exclusive bootstrap persists exactly one `temporal_validator_active`
+  singleton (via `select_active_validator`), and the ledger constructor never
+  reselects the active validator. Reverting the candidate `temporal_ledger.py`
+  (back to the pre-Codex-P1 `080a4224` bytes) restores the prior behavior with
+  no host-side residue.
+- No live gate database was mutated, no live graph was mutated, and the
+  historical real Graphiti evidence remains attributed to its original tested
+  SHA and source head (it was NOT rerun in this campaign).

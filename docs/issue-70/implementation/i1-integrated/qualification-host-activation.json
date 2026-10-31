@@ -1,0 +1,175 @@
+{
+  "record": "qualification-host-activation",
+  "campaign": "issue/70-host-activation",
+  "central_base_sha": "49577b846664d6c7df477e508130af7ecb85f6c6",
+  "merged_main_base": "4d4825b8151a1d8272af9da89701954d7ab27822",
+  "scope": "Host-bound integration, native-runtime qualification, package reconstruction, and reversible deployment preparation for Issue #70 / PR #73. Production source installation NOT authorized; live gate DB and live graph mutation FORBIDDEN; no new PR; merge/issue-closure forbidden. One coherent fast-forward update to existing PR #73.",
+  "host_authority_authentication": {
+    "opencode_binary": "/home/filip/.opencode/bin/opencode",
+    "opencode_version": "v2.2.5",
+    "opencode_class": "stock V2 (no local fork)",
+    "openviking_backend": "0.5.2.1",
+    "graphiti_core": "0.31.2",
+    "falkordb": "live",
+    "scheduler": "ninfer idle (requests_running=0, requests_waiting=0)",
+    "installed_surfaces_auth_hash": {
+      "gate": "/home/filip/.local/share/openviking-commit-gate/openviking_commit_gate.py",
+      "gate_sha256": "6ad48a939d3f52df1c774f87d030986b35022a8c20f15916d82177ccf2094f42",
+      "plugin": "/home/filip/.config/opencode/plugins/openviking-v2/index.mjs",
+      "plugin_sha256": "6899822ec75a16ba05578d4ba165dfe8f913f3d37a4d96717767a170b906766d",
+      "shim": "/home/filip/.local/bin/openviking-agent-run",
+      "shim_sha256": "d22ca3f904924356ee54926276be9b28988646805f5d498aa91e901ef10d1d6a"
+    }
+  },
+  "cpu_regressions": {
+    "note": "CPU-only suites with the contract PYTHONPATH (docs/issue-70/{phase2,phase3,phase4,implementation/i1-integrated/candidate/gate,implementation/i1-integrated/candidate/gate/tests}); gate/service suites use the OpenViking uv python, launcher/actual-backend use /usr/bin/python3.",
+    "phase2": "32/32",
+    "phase3": "40/40 (final-campaign re-run; 38 + the 2 Central final-lifecycle tests in test_production_target_policy.py)",
+    "phase4": "36/36",
+    "gate": "59/59",
+    "receipt_protocol": "7/7",
+    "launcher_admission": "5/5",
+    "cross_process_admission": "5/5",
+    "openviking_v2_node": "21/21",
+    "i1_service_actual_backend": "20/20",
+    "gate_reverified_on_final_candidate": {
+      "command": "/usr/bin/python3 -m unittest discover -s tests",
+      "cwd": "docs/issue-70/implementation/i1-integrated/candidate/gate",
+      "exit_code": 0,
+      "observed": "Ran 59 tests ... OK",
+      "central_lazy_test": "test_positive_setup_is_lazy_and_scoped PASS",
+      "reverified_at": "post lazy-adapter fix, pre publication"
+    }
+  },
+  "final_lifecycle_correction": {
+    "central_start_sha": "463c485bf140c234afd2c15e34ca6bae56a3d7ef",
+    "description": "Two Central-authored lazy-adapter lifecycle corrections, finished and qualified in this campaign (no repeated GPU/Graphiti campaign).",
+    "corrections": {
+      "idle_retry_no_optional_schema": "LazyCoreAdapter.retry_pending now short-circuits to 0 when the temporal_validation_results table is absent, so an idle worker tick creates no optional Graphiti/temporal tables when no work exists (test_idle_retry_does_not_create_optional_graphiti_tables).",
+      "validator_digest_invalidated_at_boot": "build_runtime now invalidates a previously active temporal_validator_active digest at bootstrap (UPDATE only an existing identity table; no optional tables introduced into a fresh database), so a reconfigured validator loses recall authority at boot, not only at first submit/poll (test_reconfigured_validator_invalidates_old_active_digest_at_boot)."
+    },
+    "newly_executed_cpu_regressions": {
+      "focused_production_target": "8/8 (test_production_target_policy.py, including the 2 new Central lifecycle tests)",
+      "phase3": "40/40",
+      "phase4": "36/36",
+      "gate": "59/59",
+      "receipt_protocol": "7/7",
+      "all_exits": 0,
+      "note": "These are freshly executed CPU regressions for the final lifecycle corrections; they are distinct from the historical disposable Graphiti (GPU/real-service) qualification below, which was NOT repeated in this campaign."
+    },
+    "property_verification": {
+      "idle_retry_no_optional_schema": "PASS (test_idle_retry_does_not_create_optional_graphiti_tables)",
+      "validator_digest_invalidated_at_boot": "PASS (test_reconfigured_validator_invalidates_old_active_digest_at_boot)",
+      "durable_retry_nonregression": "PASS (phase4 test_restart_retries_read_only_not_ingestion, test_transient_failure_retries_once_without_reingesting, test_exhausted_attempts_never_reingest_or_loop, test_validator_identity_change_preserves_history_but_blocks_reuse)",
+      "production_target_authorization": "PASS (test_two_operator_opt_ins_required, test_exact_policy_group_required)",
+      "disabled_graphiti_nonregression": "PASS (test_feature_off_no_runtime + gate disabled-mode regressions)",
+      "actual_ingestion_journal": "PASS (phase4 temporal_ledger tests create and drive the graphiti_ingest_receipts durable journal; gate suite ingestion regressions)"
+    }
+  },
+  "codex_p1_validator_authority": {
+    "central_start_sha": "e97a739a412b09f9e69dd5f4d3313f2e884a3847",
+    "description": "Centrally implemented validator-authority correction: the selected validator SHA is now an EXPLICIT bootstrap decision (temporal_ledger.select_active_validator), decoupled from the lazy ledger constructor, fencing overlapping runtimes so an earlier adapter's delayed first poll/submit/retry cannot restore its obsolete SHA.",
+    "corrections": {
+      "explicit_bootstrap_selector": "temporal_ledger.select_active_validator(db, sha) persists exactly one temporal_validator_active singleton (BEGIN IMMEDIATE; CREATE IF NOT EXISTS + upsert) and is called by build_runtime at exclusive bootstrap. Ingestion receipts, temporal result and contract tables remain deferred.",
+      "ledger_constructor_never_selects": "TemporalLedger.__init__ no longer INSERTs the active validator; schema init may create the ordinary tables but never updates validator selection, so an old lazy runtime initializing after a newer bootstrap cannot restore its SHA.",
+      "stale_results_unverified": "status_for_episode/evaluate return UNVERIFIED when the active singleton differs from the row's bound validator_sha256, so a historical SHA-A PASS result is not reauthorized; read-only retry_pending joins on both the row and the active singleton so A's retry is a no-op under B."
+    },
+    "newly_executed_cpu_regressions": {
+      "focused_production_target": "9/9 (test_production_target_policy.py, including test_overlapping_bootstrap_does_not_resurrect_old_validator and the updated test_idle_retry_does_not_create_optional_graphiti_tables)",
+      "phase3": "41/41",
+      "phase4": "36/36",
+      "gate": "59/59",
+      "receipt_protocol": "7/7",
+      "all_exits": 0
+    },
+    "property_verification": {
+      "stale_validator_reselection_prevented": "PASS (test_overlapping_bootstrap_does_not_resurrect_old_validator: A bootstrap, B bootstrap, delayed A _real(), active remains B)",
+      "historical_pass_not_reauthorized": "PASS (historical SHA-A PASS row -> status_for_episode UNVERIFIED; A's read-only retry_pending returns 0)",
+      "bootstrap_selector_persisted": "PASS (test_idle_retry + test_overlapping: temporal_validator_active singleton present after exclusive bootstrap; graphiti_ingest_receipts / temporal_validation_results / temporal_transition_contracts absent)",
+      "idle_ingestion_schema_deferred": "PASS (idle retry creates no optional Graphiti/temporal tables)",
+      "durable_retry_nonregression": "PASS (phase4 test_restart_retries_read_only_not_ingestion, test_transient_failure_retries_once_without_reingesting, test_exhausted_attempts_never_reingest_or_loop, test_validator_identity_change_preserves_history_but_blocks_reuse)",
+      "two_process_interleaving": "PASS (isolated disposable-DB two-process regression: A selects SHA A + seeds historical PASS row, B selects SHA B in a second process, A's delayed lazy init after B cannot restore SHA A, historical PASS stays UNVERIFIED, A's retry is a no-op; last-successful-bootstrap wins)"
+    },
+    "historical_graphiti_provenance": "The real Graphiti/GPU evidence (episode 1f5ba3bf-a940-44aa-9ef9-a484e0fa45cf, group hostact_iso_group) remains attributed to its original tested SHA and source head; it was NOT rerun in this Codex P1 campaign. No new GPU/Graphiti execution was performed."
+  },
+  "two_independent_opt_ins": {
+    "toml_gate_key": "graphiti_production_approved=true (operator TOML)",
+    "git_source_policy": "production_activation:true (operator Git source policy)",
+    "independence": "Both are required; neither alone permits arbitrary group selection. No fallback path was added that permits arbitrary group selection."
+  },
+  "fresh_process_v2_qualification": {
+    "env": "/tmp/opencode/issue70-hostact-081655 (collision-free disposable: isolated HOME/XDG/project, disposable gate DB/lock, private plugin config)",
+    "stock_opencode": "v2.2.5",
+    "model": "smoke/stub (stub model server http://127.0.0.1:19511/v1)",
+    "plugin": "file:///tmp/opencode/issue70-hostact-081655/packages/openviking-v2",
+    "sibling_import_dependency": "authenticated OpenViking openviking-context-v4 sibling package present in the disposable env (packages/openviking-context-v4) and preserved",
+    "event_trace": "state/event-trace.jsonl (202 lines)",
+    "observed": {
+      "context_events": 18,
+      "event_subscription": "active (provider/model/plugin/integration/skill/reference/command/agent updated)",
+      "compaction_lifecycle": "session.compaction.started -> session.compaction.delta -> session.compaction.ended (1 each)",
+      "disposal": "location.shutdown observed (clean disposal)",
+      "single_failed_step": "one session.step.failed/session.execution.failed from the stub model turn (expected smoke behavior, not a plugin defect)"
+    },
+    "protected_live_surfaces_byte_identical": {
+      "gate": "6ad48a939d3f52df1c774f87d030986b35022a8c20f15916d82177ccf2094f42",
+      "plugin": "6899822ec75a16ba05578d4ba165dfe8f913f3d37a4d96717767a170b906766d",
+      "shim": "d22ca3f904924356ee54926276be9b28988646805f5d498aa91e901ef10d1d6a",
+      "note": "Live gate/config/database and installed plugin untouched by the fresh-process run."
+    }
+  },
+  "isolated_graphiti_integration": {
+    "status": "HISTORICAL (qualified in the prior host-activation campaign; NOT repeated in this final-lifecycle campaign per task authority)",
+    "env": "/tmp/opencode/issue70-graphiti-iso (NEW isolated FalkorDB container graphiti-hostact-iso on port 6399; single documented host-adapter 6382->6399 applied only to a disposable execution-tree copy; reviewed repo bytes untouched)",
+    "group": "hostact_iso_group (NEW isolated, non-issue70_ group)",
+    "falkordb_graphs_observed": ["hostact_iso_group"],
+    "repo_commit": "070ba13ac829d4e5a83f27f39cf23c058f906b14",
+    "validator_pin_sha256": "15646a56e0cb9a480589d9e445dde880ed97d79f9c9fc1e486a2f952c7e60d65",
+    "work_key": "37e7a7fe70484740eedaa8af60f2750f7b9f5b3efd6d6ba0c38c4c6a7dfe7805",
+    "episode_uuid": "1f5ba3bf-a940-44aa-9ef9-a484e0fa45cf",
+    "results": {
+      "enqueue_exclusive": "http 202 -> deferred_unverified",
+      "memory_work": "completed (attempt_generation 1)",
+      "ingest_receipt": "completed, episode 1f5ba3bf-a940-44aa-9ef9-a484e0fa45cf in hostact_iso_group",
+      "episode_readback": "exact (name git-source:37e7a7fe70484740eedaa8af, Redis->NATS transition content, group hostact_iso_group)",
+      "falkor_episodes": "count 1 (uuid 1f5ba3bf-a940-44aa-9ef9-a484e0fa45cf)",
+      "duplicate_enqueue": "coalesced; attempt_generation stays 1; episode_count_after_dup 1 (no duplicate ingestion)",
+      "off_policy_group": "off-policy group enqueues to deferred_unverified (error_code source_authority_unavailable); no graph write",
+      "child_mismatch": "exit 1 before graph write (stderr: 'Graphiti child did not produce a provable terminal receipt'); mismatch_group_absent=true",
+      "temporal_result": "honest fail-closed: state done, exit_code 1, disposition MISSING_STATE (coverage edges:0; no outgoing Redis / no incoming NATS edge) because the LLM extraction produced no canonical edges; ingestion itself completed and persisted correctly"
+    }
+  },
+  "lazy_adapter_fix": {
+    "file": "candidate/gate/graphiti_runtime_bootstrap.py",
+    "defect": "build_runtime eagerly constructed AwaitedCoreAdapter, which creates the graphiti_ingest_receipts table at startup and failed the Central test test_positive_setup_is_lazy_and_scoped",
+    "fix": "added a LazyCoreAdapter wrapper that defers concrete adapter/table creation to first submit/poll while exposing client_factory immediately; validator identity verified eagerly; exposes_retry only when the exclusive category is present",
+    "related_change": "candidate/gate/openviking_commit_gate.py (Central) now imports build_runtime from graphiti_runtime_bootstrap",
+    "evidence": "gate suite 59/59 PASS including test_positive_setup_is_lazy_and_scoped"
+  },
+  "package_reconstruction": {
+    "stale_artifacts_regenerated": [
+      "candidate/gate/graphiti_runtime_bootstrap.py (5df884f9 -> 79d9b711 host-activation lazy-adapter -> ec9d96e588723611409cdeee4228290c689f3a09670ea032f9391e90bcb976fd final lifecycle -> d4cbd16d93d71c096afab740946005e7a278d7c2acb2d2efae6cec7ff3c3099f Codex P1 validator-authority)",
+      "candidate/gate/openviking_commit_gate.py (40e7dc91 -> 9d71ac50a3e9e2deb455395ecfb56cb4cacfb09aeadfbad5206ae1f143dcb878)",
+      "patches/gate.patch (7360ea01 -> 463b7591 host-activation -> 4b528bcc9d5767a8a5b294d76760a45fea3b81a15eaee370781208924e30ef8b final lifecycle -> ef110f6412eefc3929a8a49dff89c81ccd1bce374630457180708d3bf94be7e2 Codex P1, thirteen file entries)",
+      "docs/issue-70/phase3/test_production_target_policy.py (04171157 -> 3322fe2d -> 64c5d2443d356ceac822287db10f41b8b34038cf51649c3ef8b660028e65d953, phase3 source-pinned, inventoried in source-base-manifest.json phase3_evidence)",
+      "docs/issue-70/phase3/test_auto_promotion.py (92ada605 -> 0e444ce3bf69174e77b97b39c60006f70e2c0f56e836681ad2b068aad16c8066)",
+      "docs/issue-70/phase4/temporal_ledger.py (080a4224 -> fc4c3459ee4a5e1df4ef2f7f58ccc94bf5882752de9e31f5bd1e3e7a95daad65, adds select_active_validator + decouples ledger constructor from validator selection)",
+      "docs/issue-70/phase4/test_temporal_ledger.py (5445826a -> 243e0ccf57e5777cb54230909c192dfdab736562ed663cb2a0cb06db223da9f0)",
+      "docs/issue-70/phase4/test_temporal_status.py (2ea7c761 -> 96062c0f5859a07d66cd9959fbdd085a5c75b315540a2a2b260fd5d151f9f11d)"
+    ],
+    "gate_patch_forward_reverse": "byte-exact: forward (installed base 6ad48a93 + gate.patch reproduces candidate tree, 14 files) and reverse (candidate tree - gate.patch restores base bytes and removes every patch-introduced file, leaving 3 base files) both verified with diff -r clean, patch exit 0, no .rej/.orig; re-proven for the Codex P1 regeneration (gate.patch ef110f64)",
+    "openviking_v2_patch": "unchanged (b0ee5faa, eight entries)",
+    "backend_patch": "unchanged (a03ab064)"
+  },
+  "deployment_candidate": {
+    "install_bundle": "disabled: graphiti_enabled=false, graphiti_production_approved=false, production_capture_policy=disabled",
+    "production_opt_in": "inactive proposal (two independent opt-ins NOT enabled in the shipped bundle)",
+    "live_replacement": "none performed"
+  },
+  "residual": [
+    "Isolated scenario temporal outcome is an honest MISSING_STATE fail-closed result (LLM extraction produced no canonical edges); ingestion completed and persisted correctly. Not a defect.",
+    "Live protected surfaces remain byte-identical; no production install, no live gate DB mutation, no live graph mutation performed.",
+    "The final-lifecycle corrections (idle retry guard + validator digest invalidation at boot) were qualified via CPU-only regressions (focused production-target 8/8, phase3 40/40, phase4 36/36, gate 59/59, receipt 7/7); the historical disposable GPU/Graphiti campaign was NOT repeated, so no new real-service/GPU evidence was generated in this campaign.",
+    "The Codex P1 validator-authority correction (explicit bootstrap select_active_validator + ledger constructor never reselects) was qualified via CPU-only regressions (focused production-target 9/9, phase3 41/41, phase4 36/36, gate 59/59, receipt 7/7) plus one isolated two-process disposable-DB interleaving regression; the historical real Graphiti evidence remains attributed to its original tested SHA and source head and was NOT rerun in this campaign."
+  ]
+}

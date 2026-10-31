@@ -71,4 +71,21 @@ class TransportTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             ProcessCoreClient(python=sys.executable,worker=str(self.script),group="graphiti_live")
 
+    def test_production_target_requires_explicit_authorization_and_exact_group(self):
+        self.stub()
+        c=ProcessCoreClient(python=sys.executable,worker=str(self.script),
+                            group="graphiti_live",production_approved=True)
+        async def run():
+            result=await c.add_episode(**{**self.payload,"group_id":"graphiti_live"})
+            self.assertEqual(result.episode.uuid,"ep-1")
+            with self.assertRaises(ChildTerminalUnverified):
+                await c.add_episode(**{**self.payload,"group_id":"issue70_other"})
+        asyncio.run(run())
+
+    def test_invalid_group_format_not_authorized_even_with_flag(self):
+        for group in ("", "../graphiti_live", "graphiti/live", "g"*129):
+            with self.subTest(group=group), self.assertRaises(ValueError):
+                ProcessCoreClient(python=sys.executable,worker=str(self.script),
+                                  group=group,production_approved=True)
+
 if __name__=="__main__":unittest.main()

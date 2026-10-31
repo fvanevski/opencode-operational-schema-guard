@@ -2,7 +2,9 @@
 
 No separate inference scheduler: the gate Worker owns EX flock + SQLite.
 Graphiti Core runs only as an awaited subprocess in its configured Python
-environment and only against a disposable issue70_* graph during qualification.
+environment. Non-disposable graph targets require the separate operator policy.
+Exclusive-state bootstrap persists only the active validator identity;
+ingestion and temporal-result tables remain deferred until real work.
 """
 from __future__ import annotations
 import hashlib
@@ -11,6 +13,48 @@ import os
 import re
 from pathlib import Path
 import sys
+
+
+class LazyCoreAdapter:
+    """Expose the exact scoped client factory immediately while deferring the
+    concrete core adapter (and its durable journal/ledger tables) until the
+    first real submit or poll.
+
+    The explicitly authorized validator selector is persisted at exclusive
+    bootstrap, but ingestion receipts and temporal work/results tables remain
+    deferred until actual work. Idle retries never initialize them.
+    """
+
+    def __init__(self, build, client_factory, *, exposes_retry, db):
+        self._build = build
+        self._adapter = None
+        self.db = db
+        self.client_factory = client_factory
+        if exposes_retry:
+            self.retry_pending = self._retry_pending
+
+    def _real(self):
+        if self._adapter is None:
+            self._adapter = self._build()
+        return self._adapter
+
+    def _retry_pending(self, *, max_items=1):
+        # The worker checks read-only retries on every idle tick. Without
+        # this guard, that check alone creates Graphiti/temporal tables even
+        # though no episode was ever nominated or submitted.
+        if self._adapter is None:
+            with self.db.connect() as conn:
+                exists=conn.execute("""SELECT 1 FROM sqlite_master
+                    WHERE type='table' AND name='temporal_validation_results'""").fetchone()
+            if exists is None:
+                return 0
+        return self._real().retry_pending(max_items=max_items)
+
+    def submit(self, candidate):
+        return self._real().submit(candidate)
+
+    def poll(self, backend_identity):
+        return self._real().poll(backend_identity)
 
 
 def build_runtime(cfg,db):
@@ -34,8 +78,20 @@ def build_runtime(cfg,db):
         raise RuntimeError("source authority requires operator opt-in")
     if policy.get("groups") != [cfg.graphiti_group]:
         raise RuntimeError("one exact authorized Graphiti group per gate runtime required")
-    if not cfg.graphiti_group.startswith("issue70_"):
-        raise RuntimeError("non-disposable Graphiti graph requires separate activation review")
+    # The policy helper lives in the operator-selected, reviewed Phase 3 tree.
+    # Make that path importable before using it in the target preflight.
+    sys.path.insert(0,str(root))
+    from graphiti_process_transport import allowed_group
+    production_group=not cfg.graphiti_group.startswith("issue70_")
+    if not allowed_group(cfg.graphiti_group,
+                         production_approved=cfg.graphiti_production_approved):
+        raise RuntimeError("unapproved Graphiti target group")
+    if production_group:
+        if (cfg.graphiti_production_approved is not True
+                or policy.get("production_activation") is not True):
+            raise RuntimeError("non-disposable graph requires explicit operator production authorization")
+    elif cfg.graphiti_production_approved or policy.get("production_activation") is True:
+        raise RuntimeError("disposable qualification must not inherit production activation")
     exclusive="exclusive_state_transition" in policy.get("categories",[])
     if exclusive:
         validator_path=Path(cfg.graphiti_validator_path)
@@ -60,7 +116,6 @@ def build_runtime(cfg,db):
     # Python's import boundary is explicitly operator-specified; the gate and
     # Git/Graphiti modules must be source-pinned by the deployment manifest.
     sys.path.insert(0,str(phase2))
-    sys.path.insert(0,str(root))
     if phase4 is not None:
         sys.path.insert(0,str(phase4))
     from graphiti_terminal import AwaitedCoreAdapter
@@ -71,19 +126,37 @@ def build_runtime(cfg,db):
     resolver=GitFactResolver(policy=policy,work_key_fn=work_key,source_key_fn=source_key)
     factory=make_process_client_factory(
         python=str(python),worker=str(child),group=cfg.graphiti_group,
-        timeout_seconds=cfg.task_timeout_seconds)
-    adapter=AwaitedCoreAdapter(
-        db,resolve=resolver,
-        identity_fn=lambda c:(work_key(c),source_key(c)),
-        client_factory=factory,read_episode=read_process_episode)
+        timeout_seconds=cfg.task_timeout_seconds,
+        production_approved=production_group and cfg.graphiti_production_approved)
+    run_validation=None
     if exclusive:
-        from temporal_ledger import TemporalCheckingAdapter
         from temporal_validator_transport import make_runner
+        # The operator-pinned validator identity is verified EAGERLY: a
+        # drifted or missing validator fails bootstrap before any durable
+        # temporal state is created.
         run_validation=make_runner(
             python=str(python),
             child=str(phase4/"temporal_validator_child.py"),
             validator_path=str(validator_path),
             validator_sha256=expected)
-        adapter=TemporalCheckingAdapter(adapter,db,run_validation,
-                                        validator_sha256=expected)
+        # Select validator authority exactly once during bootstrap.
+        # The singleton is durable even on a fresh gate DB, so a newer
+        # runtime revokes earlier validators BEFORE any deferred adapter
+        # can initialize. Ledger constructors must never alter this choice.
+        # No Graphiti ingestion/temporal-result tables are initialized here.
+        from temporal_ledger import select_active_validator
+        select_active_validator(db,expected)
+    def build_core():
+        core=AwaitedCoreAdapter(
+            db,resolve=resolver,
+            identity_fn=lambda c:(work_key(c),source_key(c)),
+            client_factory=factory,read_episode=read_process_episode)
+        if exclusive:
+            from temporal_ledger import TemporalCheckingAdapter
+            return TemporalCheckingAdapter(core,db,run_validation,
+                                           validator_sha256=expected)
+        return core
+    # Table creation in the gate database follows the first durable work,
+    # never a positive production startup.
+    adapter=LazyCoreAdapter(build_core,factory,exposes_retry=exclusive,db=db)
     return adapter,resolver
