@@ -106,11 +106,15 @@ def receipt_sources(db_path: str, group_id: str, ids: list[str]) -> dict:
         has_results=conn.execute("""SELECT 1 FROM sqlite_master WHERE
             type='table' AND name='temporal_validation_results'""").fetchone() is not None
         temporal_select=(
-            "tv.state AS temporal_state,tv.exit_code AS temporal_exit"
-            if has_results else "NULL AS temporal_state,NULL AS temporal_exit")
+            """tv.state AS temporal_state,tv.exit_code AS temporal_exit,
+               tv.validator_sha256 AS result_validator_sha,
+               va.validator_sha256 AS active_validator_sha"""
+            if has_results else """NULL AS temporal_state,NULL AS temporal_exit,
+               NULL AS result_validator_sha,NULL AS active_validator_sha""")
         temporal_join=(
             """LEFT JOIN temporal_validation_results tv
-              ON tv.work_key=gi.work_key AND tv.episode_uuid=gi.episode_uuid"""
+              ON tv.work_key=gi.work_key AND tv.episode_uuid=gi.episode_uuid
+              LEFT JOIN temporal_validator_active va ON va.singleton=1"""
             if has_results else "")
         query=f"""SELECT gi.episode_uuid, mw.candidate_json,
             {temporal_select}
@@ -130,7 +134,10 @@ def receipt_sources(db_path: str, group_id: str, ids: list[str]) -> dict:
                     exclusive=candidate["category"]=="exclusive_state_transition"
                     statuses={0:"PASS",1:"INCONSISTENT",2:"INCOMPLETE",3:"INVALID_INPUT"}
                     status=(statuses.get(row["temporal_exit"],"UNVERIFIED")
-                            if row["temporal_state"]=="done" else "UNVERIFIED")
+                            if row["temporal_state"]=="done"
+                               and row["result_validator_sha"] is not None
+                               and row["result_validator_sha"]==row["active_validator_sha"]
+                            else "UNVERIFIED")
                     out[row["episode_uuid"]]={"source_ref":ref,
                         "exclusive":exclusive,
                         "validation_status":status if exclusive else "not_required"}

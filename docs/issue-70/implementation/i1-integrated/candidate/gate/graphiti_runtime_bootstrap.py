@@ -75,6 +75,8 @@ def build_runtime(cfg,db):
         run_validation=make_runner(
             python=str(python),
             child=str(phase4/"temporal_validator_child.py"),
-            validator_path=str(validator_path))
-        adapter=TemporalCheckingAdapter(adapter,db,run_validation)
+            validator_path=str(validator_path),
+            validator_sha256=expected)
+        adapter=TemporalCheckingAdapter(adapter,db,run_validation,
+                                        validator_sha256=expected)
     return adapter,resolver

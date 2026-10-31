@@ -339,10 +339,13 @@ class SharedWorkQueue:
             rows = conn.execute(f"""SELECT {columns},mw.candidate_json AS _candidate_json,
                 tc.work_key AS temporal_contract_key,
                 tv.state AS temporal_state,tv.exit_code AS temporal_exit,
-                tv.disposition AS temporal_disposition,tv.episode_uuid AS temporal_episode_uuid
+                tv.disposition AS temporal_disposition,tv.episode_uuid AS temporal_episode_uuid,
+                tv.validator_sha256 AS temporal_validator_sha256,
+                va.validator_sha256 AS _active_validator_sha256
                 FROM memory_work mw
                 LEFT JOIN temporal_transition_contracts tc ON tc.work_key=mw.work_key
                 LEFT JOIN temporal_validation_results tv ON tv.work_key=mw.work_key
+                LEFT JOIN temporal_validator_active va ON va.singleton=1
                 ORDER BY mw.created_at DESC LIMIT ?""",(count,)).fetchall()
             outcomes={0:"PASS",1:"INCONSISTENT",2:"INCOMPLETE",3:"INVALID_INPUT"}
             response=[]
@@ -352,6 +355,8 @@ class SharedWorkQueue:
                 contract=record.pop("temporal_contract_key")
                 state=record.pop("temporal_state")
                 code=record.pop("temporal_exit")
+                result_sha=record.get("temporal_validator_sha256")
+                active_sha=record.pop("_active_validator_sha256")
                 try:
                     category=json.loads(raw_candidate).get("category")
                 except (TypeError,ValueError,AttributeError):
@@ -370,7 +375,8 @@ class SharedWorkQueue:
                     # validation outcome, retaining each result's disposition.
                     record["temporal_validation_status"]=(
                         outcomes.get(code,"UNVERIFIED")
-                        if state=="done" else "UNVERIFIED")
+                        if state=="done" and result_sha is not None
+                            and result_sha==active_sha else "UNVERIFIED")
                 response.append(record)
             return response
 

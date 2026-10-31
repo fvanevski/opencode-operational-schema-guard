@@ -944,6 +944,17 @@ class Worker:
                 self.quiet_since = None
                 self._set_admission_status("blocked_reconcile")
                 return False
+        # The existing worker owns read-only temporal retries after Graphiti
+        # work has already completed; no extra scheduler or graph re-ingestion.
+        retry = getattr(self.graphiti_adapter, "retry_pending", None)
+        if self.shared is not None and callable(retry):
+            handle = self._try_exclusive_lock()
+            if handle is not None:
+                try:
+                    retry(max_items=1)
+                finally:
+                    fcntl.flock(handle.fileno(),fcntl.LOCK_UN)
+                    handle.close()
         candidate = inflight or self.db.next_ready()
         if (self.shared is not None and self.source_resolver is not None
                 and not isinstance(self.graphiti_adapter, DisabledGraphitiAdapter)):

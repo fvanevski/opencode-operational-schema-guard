@@ -7,6 +7,7 @@ module NEVER retries an episode, modifies graph edges or invokes extraction.
 from __future__ import annotations
 import hashlib
 import json
+import re
 import time
 
 EXIT_DISPOSITIONS = {0:"PASS",1:"INCONSISTENT",2:"INCOMPLETE",3:"INVALID_INPUT"}
@@ -46,8 +47,11 @@ def validate_contract(value, group):
     return digest(value)
 
 class TemporalLedger:
-    def __init__(self, db):
+    def __init__(self, db, validator_sha256=None):
+        if validator_sha256 is not None and not re.fullmatch(r"[0-9a-f]{64}",validator_sha256):
+            raise ValueError("verified validator source SHA-256 required")
         self.db=db
+        self.validator_sha256=validator_sha256
         with db.connect() as conn:
             conn.execute("""CREATE TABLE IF NOT EXISTS temporal_transition_contracts(
                 work_key TEXT PRIMARY KEY, group_id TEXT NOT NULL,
@@ -60,15 +64,32 @@ class TemporalLedger:
                 exit_code INTEGER, disposition TEXT,
                 result_digest TEXT, details_json TEXT,
                 attempts INTEGER NOT NULL DEFAULT 0,
-                updated_at REAL NOT NULL)""")
+                updated_at REAL NOT NULL,
+                validator_sha256 TEXT)""")
+            columns={r["name"] for r in conn.execute("PRAGMA table_info(temporal_validation_results)")}
+            if "validator_sha256" not in columns:
+                # Historical outcomes are retained, never silently certified
+                # as produced by the newly selected validator.
+                conn.execute("ALTER TABLE temporal_validation_results ADD COLUMN validator_sha256 TEXT")
+            conn.execute("""CREATE TABLE IF NOT EXISTS temporal_validator_active(
+                singleton INTEGER PRIMARY KEY CHECK(singleton=1),
+                validator_sha256 TEXT NOT NULL)""")
+            if validator_sha256 is not None:
+                conn.execute("""INSERT INTO temporal_validator_active(singleton,validator_sha256)
+                    VALUES (1,?) ON CONFLICT(singleton) DO UPDATE SET
+                    validator_sha256=excluded.validator_sha256""",(validator_sha256,))
 
     def status_for_episode(self,episode_uuid,group):
         with self.db.connect() as conn:
-            row=conn.execute("""SELECT r.state,r.exit_code,r.disposition,c.group_id
+            row=conn.execute("""SELECT r.state,r.exit_code,r.disposition,c.group_id,
+                    r.validator_sha256,v.validator_sha256 AS active_sha
                 FROM temporal_validation_results r
                 JOIN temporal_transition_contracts c ON c.work_key=r.work_key
+                LEFT JOIN temporal_validator_active v ON v.singleton=1
                 WHERE r.episode_uuid=? AND c.group_id=?""",(episode_uuid,group)).fetchone()
-        if row is None or row["state"]!="done":
+        if (row is None or row["state"]!="done" or not self.validator_sha256
+                or row["active_sha"]!=self.validator_sha256
+                or row["validator_sha256"]!=self.validator_sha256):
             return "UNVERIFIED"
         return EXIT_DISPOSITIONS.get(row["exit_code"],"UNVERIFIED")
 
@@ -100,12 +121,15 @@ class TemporalLedger:
                     raise ValueError("changed temporal episode/contract identity")
             else:
                 conn.execute("""INSERT INTO temporal_validation_results(
-                    work_key,episode_uuid,contract_digest,state,updated_at)
-                    VALUES (?,?,?,'pending',?)""",
-                    (work_key,episode_uuid,row["contract_digest"],time.time()))
+                    work_key,episode_uuid,contract_digest,state,updated_at,validator_sha256)
+                    VALUES (?,?,?,'pending',?,?)""",
+                    (work_key,episode_uuid,row["contract_digest"],time.time(),
+                     self.validator_sha256))
             return contract,episode_uuid
 
     def evaluate(self,work_key,runner,*,max_attempts=2):
+        if self.validator_sha256 is None:
+            return "UNVERIFIED"
         result=self.bind_completed(work_key)
         if result is None:return "UNVERIFIED"
         contract,uid=result
@@ -113,8 +137,15 @@ class TemporalLedger:
             conn.execute("BEGIN IMMEDIATE")
             row=conn.execute("SELECT * FROM temporal_validation_results WHERE work_key=?",
                              (work_key,)).fetchone()
+            active=conn.execute("""SELECT validator_sha256
+                FROM temporal_validator_active WHERE singleton=1""").fetchone()
+            if (not active or active["validator_sha256"]!=self.validator_sha256
+                    or row["validator_sha256"]!=self.validator_sha256):
+                # A different or legacy-unbound validator result is historical
+                # evidence, not an authorization for an automatic rerun.
+                return "UNVERIFIED"
             if row["state"]=="done":
-                return EXIT_DISPOSITIONS[row["exit_code"]]
+                return EXIT_DISPOSITIONS.get(row["exit_code"],"UNVERIFIED")
             if row["attempts"]>=max_attempts:
                 return "UNVERIFIED"
             # A process may die after this durable transition. This is a
@@ -178,14 +209,36 @@ class TemporalLedger:
 class TemporalCheckingAdapter:
     """Wraps the EXISTING durable Core adapter; no second work scheduler."""
 
-    def __init__(self,core,db,validator_runner):
+    def __init__(self,core,db,validator_runner,*,validator_sha256):
         self.core=core
-        self.ledger=TemporalLedger(db)
+        self.ledger=TemporalLedger(db,validator_sha256=validator_sha256)
         self.validator_runner=validator_runner
         self.db=db
 
     def submit(self,candidate):
         return self.core.submit(candidate)
+
+    def retry_pending(self,*,max_items=1):
+        """Read-only bounded retries after ingestion has already completed.
+
+        Called by the original worker under its existing EX lease. No
+        Graphiti submit or second queue owner; retry attempts are persistent.
+        """
+        with self.db.connect() as conn:
+            rows=conn.execute("""SELECT tv.work_key FROM temporal_validation_results tv
+                JOIN memory_work mw ON mw.work_key=tv.work_key
+                JOIN graphiti_ingest_receipts gi ON gi.work_key=tv.work_key
+                JOIN temporal_validator_active va ON va.singleton=1
+                WHERE mw.status='completed' AND gi.state='completed'
+                  AND tv.state IN ('pending','running','unverified')
+                  AND tv.attempts<2 AND tv.validator_sha256=?
+                  AND va.validator_sha256=?
+                ORDER BY tv.updated_at,tv.work_key LIMIT ?""",
+                (self.ledger.validator_sha256,self.ledger.validator_sha256,
+                 max(1,min(2,max_items)))).fetchall()
+        for row in rows:
+            self.ledger.evaluate(row["work_key"],self.validator_runner)
+        return len(rows)
 
     def poll(self,backend_identity):
         receipt=self.core.poll(backend_identity)
