@@ -83,3 +83,21 @@ test("missing read proof or secret-bearing Git record never nominates",async t=>
   git(f.root,"add",".");git(f.root,"commit","-qm","sensitive record")
   assert.equal(await proposalFromCompletedRead(f.event,args),null)
 })
+
+test("disposable gate source policy is accepted only without production activation",async t=>{
+  const f=fixture(t)
+  const record={...f.record,group_id:"issue70_read_producer"}
+  writeFileSync(f.path,JSON.stringify(record))
+  git(f.root,"add",".");git(f.root,"commit","-qm","disposable qualified record")
+  const source=JSON.parse(readFileSync(f.sourcePath,"utf8"))
+  source.groups=["issue70_read_producer"]
+  source.production_activation=false
+  writeFileSync(f.sourcePath,JSON.stringify(source))
+  const capture={...f.capture,groups:["issue70_read_producer"]}
+  const args={workspaceID:f.root,capturePolicy:capture,sourcePolicyPath:f.sourcePath}
+  const approved=await proposalFromCompletedRead(f.event,args)
+  assert.equal(approved?.group_id,"issue70_read_producer")
+  source.production_activation=true
+  writeFileSync(f.sourcePath,JSON.stringify(source))
+  assert.equal(await proposalFromCompletedRead(f.event,args),null)
+})
