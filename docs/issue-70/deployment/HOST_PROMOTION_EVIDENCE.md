@@ -1,3 +1,5 @@
+> **2026-10-31 subsequent evidence:** The external fresh OpenCode V2 plugin/callback/model-stub acceptance run occurred, and a sanitized independent audit confirmed its core capability predicates. Full independent operational acceptance remains **PARTIAL** due to missing historical raw graph/health evidence. See [Fresh-process acceptance evidence](FRESH_PROCESS_ACCEPTANCE_EVIDENCE.md). The *PENDING* statements below describe the earlier promotion stage, not current unqualified acceptance.
+
 # Issue #70 / PR #73 — Disabled host promotion & verified deployment evidence
 
 Status: **source-only installation complete; Graphiti capture disabled; fresh-process

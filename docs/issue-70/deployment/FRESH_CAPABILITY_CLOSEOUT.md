@@ -1,3 +1,5 @@
+> **2026-10-31 subsequent evidence:** The corrected private-server acceptance demonstrated installed plugin loading, context and subscribed callbacks, stub routing, and observed shared-lease hold/release. Independent operational audit remains **PARTIAL**, with limits documented in [Fresh-process acceptance evidence](FRESH_PROCESS_ACCEPTANCE_EVIDENCE.md). The command and pending-state narrative below describes the historical initial attempt; it is not current operator launch guidance.
+
 # Issue #70 — Close the real stock-V2 capability acceptance gap
 
 Status: **host promotion remains valid; independent public-capability acceptance PARTIAL**.
