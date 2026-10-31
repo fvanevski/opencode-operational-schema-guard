@@ -5,7 +5,7 @@ from pathlib import Path
 from test_gate import gate
 from shared_work import SharedWorkQueue
 from test_shared_work import candidate
-from temporal_ledger import TemporalLedger
+from temporal_ledger import TemporalLedger, select_active_validator
 
 PIN="a"*64
 class StatusTests(unittest.TestCase):
@@ -18,6 +18,7 @@ class StatusTests(unittest.TestCase):
         original=q.status()
         self.assertEqual(original[0]["status"],"deferred_unverified")
         self.assertNotIn("temporal_validation_status",original[0])
+        select_active_validator(db,PIN)
         TemporalLedger(db,validator_sha256=PIN)
         with db.connect() as c:
             c.execute("""INSERT INTO temporal_transition_contracts

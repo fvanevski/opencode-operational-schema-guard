@@ -46,6 +46,26 @@ def validate_contract(value, group):
         raise ValueError("transition exceeds size bound")
     return digest(value)
 
+def select_active_validator(db, validator_sha256):
+    """Explicit bootstrap authority, never an adapter-constructor side effect.
+
+    A minimal durable selection row is necessary before any work: otherwise
+    two overlapping runtimes could each consider themselves current until
+    their first lazy adapter use. The LAST successful bootstrap selection
+    governs recall and read-only retries.
+    """
+    if not isinstance(validator_sha256,str) or not re.fullmatch(r"[0-9a-f]{64}",validator_sha256):
+        raise ValueError("verified validator source SHA-256 required")
+    with db.connect() as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        conn.execute("""CREATE TABLE IF NOT EXISTS temporal_validator_active(
+            singleton INTEGER PRIMARY KEY CHECK(singleton=1),
+            validator_sha256 TEXT NOT NULL)""")
+        conn.execute("""INSERT INTO temporal_validator_active(singleton,validator_sha256)
+            VALUES (1,?) ON CONFLICT(singleton) DO UPDATE SET
+            validator_sha256=excluded.validator_sha256""",(validator_sha256,))
+
+
 class TemporalLedger:
     def __init__(self, db, validator_sha256=None):
         if validator_sha256 is not None and not re.fullmatch(r"[0-9a-f]{64}",validator_sha256):
@@ -74,10 +94,9 @@ class TemporalLedger:
             conn.execute("""CREATE TABLE IF NOT EXISTS temporal_validator_active(
                 singleton INTEGER PRIMARY KEY CHECK(singleton=1),
                 validator_sha256 TEXT NOT NULL)""")
-            if validator_sha256 is not None:
-                conn.execute("""INSERT INTO temporal_validator_active(singleton,validator_sha256)
-                    VALUES (1,?) ON CONFLICT(singleton) DO UPDATE SET
-                    validator_sha256=excluded.validator_sha256""",(validator_sha256,))
+            # Schema initialization NEVER selects/reselects the active
+            # validator. An old lazy runtime can initialize after a newer
+            # bootstrap without restoring its obsolete recall authority.
 
     def status_for_episode(self,episode_uuid,group):
         with self.db.connect() as conn:

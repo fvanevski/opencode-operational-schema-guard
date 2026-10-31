@@ -137,16 +137,13 @@ def build_runtime(cfg,db):
             child=str(phase4/"temporal_validator_child.py"),
             validator_path=str(validator_path),
             validator_sha256=expected)
-        # A previously selected validator must lose recall authority at
-        # bootstrap, not only when the lazy adapter first submits or polls.
-        # Update only an existing identity table: no optional tables are
-        # introduced into a fresh database without actual work.
-        with db.connect() as conn:
-            active=conn.execute("""SELECT 1 FROM sqlite_master
-                WHERE type='table' AND name='temporal_validator_active'""").fetchone()
-            if active is not None:
-                conn.execute("""UPDATE temporal_validator_active
-                    SET validator_sha256=? WHERE singleton=1""",(expected,))
+        # Select validator authority exactly once during bootstrap.
+        # The singleton is durable even on a fresh gate DB, so a newer
+        # runtime revokes earlier validators BEFORE any deferred adapter
+        # can initialize. Ledger constructors must never alter this choice.
+        # No Graphiti ingestion/temporal-result tables are initialized here.
+        from temporal_ledger import select_active_validator
+        select_active_validator(db,expected)
     def build_core():
         core=AwaitedCoreAdapter(
             db,resolve=resolver,

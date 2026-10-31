@@ -2,7 +2,8 @@
 import json,sqlite3,tempfile,unittest
 from contextlib import contextmanager
 from pathlib import Path
-from temporal_ledger import TemporalLedger,TemporalCheckingAdapter,digest,EXIT_DISPOSITIONS
+from temporal_ledger import (
+    TemporalLedger,TemporalCheckingAdapter,select_active_validator,digest,EXIT_DISPOSITIONS)
 
 CONTRACT={"group_id":"issue70_test","subject":"Service","predicate":"USES",
           "transition":{"from":"Redis","to":"NATS","effective_at":"2026-10-30T00:00:00Z"}}
@@ -37,6 +38,7 @@ class Tests(unittest.TestCase):
                       ("k","issue70_test",json.dumps(CONTRACT),digest(CONTRACT)))
             c.execute("INSERT INTO memory_work VALUES (?,?,?)",
                       ("k",json.dumps({"category":"exclusive_state_transition"}),"completed"))
+        select_active_validator(self.db,self.pin)
         self.ledger=TemporalLedger(self.db,validator_sha256=self.pin)
 
     def run_code(self,exit_code,disposition):
@@ -177,6 +179,7 @@ class Tests(unittest.TestCase):
     def test_validator_identity_change_preserves_history_but_blocks_reuse(self):
         runner,calls=self.run_code(0,"PASS")
         self.assertEqual(self.ledger.evaluate("k",runner),"PASS")
+        select_active_validator(self.db,"b"*64)
         current=TemporalLedger(self.db,validator_sha256="b"*64)
         self.assertEqual(current.status_for_episode("ep-1","issue70_test"),"UNVERIFIED")
         self.assertEqual(current.evaluate("k",runner),"UNVERIFIED")

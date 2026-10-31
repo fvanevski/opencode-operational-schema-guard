@@ -111,9 +111,15 @@ class ProductionTargetTests(unittest.TestCase):
         self.assertTrue(callable(adapter.retry_pending))
         self.assertEqual(adapter.retry_pending(max_items=1), 0)
         with self.db.connect() as conn:
+            # The authority singleton must be recorded at startup, but
+            # ingestion/results/transition tables remain deferred until work.
+            active=conn.execute("""SELECT validator_sha256
+                FROM temporal_validator_active WHERE singleton=1""").fetchone()
+            self.assertEqual(active["validator_sha256"],
+                             self.cfg.graphiti_validator_sha256)
             for table in ("graphiti_ingest_receipts",
                           "temporal_validation_results",
-                          "temporal_validator_active"):
+                          "temporal_transition_contracts"):
                 self.assertIsNone(conn.execute(
                     "SELECT 1 FROM sqlite_master WHERE name=?", (table,)
                 ).fetchone())
@@ -140,6 +146,46 @@ class ProductionTargetTests(unittest.TestCase):
                 WHERE name='graphiti_ingest_receipts'""").fetchone())
         # A disabled worker drain must not be needed to revoke the old pin.
         self.assertTrue(callable(adapter.retry_pending))
+
+    def test_overlapping_bootstrap_does_not_resurrect_old_validator(self):
+        self.policy["categories"]=["exclusive_state_transition"]
+        first=self.policy_path.parent/"validator-a.py"
+        first.write_text("# validator A\n")
+        sha_a=hashlib.sha256(first.read_bytes()).hexdigest()
+        self.cfg.graphiti_validator_path=str(first)
+        self.cfg.graphiti_validator_sha256=sha_a
+        old_adapter,_=self.build()
+
+        second=self.policy_path.parent/"validator-b.py"
+        second.write_text("# validator B\n")
+        sha_b=hashlib.sha256(second.read_bytes()).hexdigest()
+        self.cfg.graphiti_validator_path=str(second)
+        self.cfg.graphiti_validator_sha256=sha_b
+        new_adapter,_=self.build()
+        with self.db.connect() as conn:
+            self.assertEqual(conn.execute("""SELECT validator_sha256 FROM
+                temporal_validator_active WHERE singleton=1""").fetchone()[0],sha_b)
+
+        # Force old deferred adapter construction *after* the newer boot.
+        # Its schema setup must not select SHA A or restore historical PASS.
+        old_adapter._real()
+        with self.db.connect() as conn:
+            self.assertEqual(conn.execute("""SELECT validator_sha256 FROM
+                temporal_validator_active WHERE singleton=1""").fetchone()[0],sha_b)
+            conn.execute("""INSERT INTO temporal_transition_contracts(
+                work_key,group_id,contract_json,contract_digest,attestation_digest,
+                bound_at) VALUES ('old-work','graphiti_live','{}','old','',0)""")
+            conn.execute("""INSERT INTO temporal_validation_results(
+                work_key,episode_uuid,contract_digest,state,exit_code,
+                disposition,attempts,updated_at,validator_sha256)
+                VALUES ('old-work','old-episode','old','done',0,'PASS',1,1,?)""",(sha_a,))
+        self.assertEqual(old_adapter._real().ledger.status_for_episode(
+            "old-episode","graphiti_live"),"UNVERIFIED")
+        self.assertEqual(old_adapter.retry_pending(max_items=1),0)
+        new_adapter._real()
+        with self.db.connect() as conn:
+            self.assertEqual(conn.execute("""SELECT validator_sha256 FROM
+                temporal_validator_active WHERE singleton=1""").fetchone()[0],sha_b)
 
     def test_feature_off_no_runtime(self):
         self.cfg.graphiti_enabled = False

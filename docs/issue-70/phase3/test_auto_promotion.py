@@ -119,7 +119,8 @@ class AutoPromotionTests(unittest.TestCase):
         self.assertEqual(seen,[1])
 
     def test_disabled_worker_clears_active_validator_without_losing_history(self):
-        from temporal_ledger import TemporalLedger
+        from temporal_ledger import TemporalLedger, select_active_validator
+        select_active_validator(self.db,"a"*64)
         TemporalLedger(self.db,validator_sha256="a"*64)
         with self.db.connect() as conn:
             self.assertIsNotNone(conn.execute("SELECT * FROM temporal_validator_active").fetchone())
