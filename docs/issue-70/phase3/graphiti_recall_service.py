@@ -51,7 +51,48 @@ def episode_ids(value) -> list[str]:
         try: value=json.loads(value)
         except (ValueError,TypeError):return []
     if not isinstance(value,list):return []
-    return [str(x) for x in value[:32] if isinstance(x,(str,int))]
+    return list(dict.fromkeys(str(x) for x in value[:32]
+                              if isinstance(x,(str,int))))
+
+
+def episode_overflow(value) -> bool:
+    if isinstance(value,str):
+        try: value=json.loads(value)
+        except (ValueError,TypeError):return True
+    return not isinstance(value,list) or len(value)>32
+
+
+def combined_validation(episodes,receipts,overflow=False):
+    """Every provenance contributor participates; ordering cannot grant PASS."""
+    refs=sorted({receipts[uid]["source_ref"] for uid in episodes
+                 if uid in receipts})
+    if not refs:return None
+    approved=[receipts[uid] for uid in episodes if uid in receipts]
+    exclusive=any(x["exclusive"] for x in approved)
+    statuses=[x["validation_status"] for x in approved if x["exclusive"]]
+    missing=overflow or len(approved)!=len(episodes)
+    # An ordinary episode cannot silently assert validated exclusive state.
+    mixed=exclusive and any(not x["exclusive"] for x in approved)
+    if not exclusive:
+        status="UNVERIFIED" if missing else "not_required"
+    elif missing or mixed or "UNVERIFIED" in statuses:
+        status="UNVERIFIED"
+    elif "INCONSISTENT" in statuses:
+        status="INCONSISTENT"
+    elif "INVALID_INPUT" in statuses:
+        status="INVALID_INPUT"
+    elif "INCOMPLETE" in statuses:
+        status="INCOMPLETE"
+    elif len(statuses)==len(episodes) and all(s=="PASS" for s in statuses):
+        status="PASS"
+    else:
+        status="UNVERIFIED"
+    # A missing record on an otherwise ordinary edge does not give the
+    # caller a provenance-complete fact.
+    if not exclusive and status=="UNVERIFIED":return None
+    return {"source_ref":refs[0],"source_refs":refs[:16],
+            "exclusive":exclusive,"validation_status":status}
+
 
 
 def receipt_sources(db_path: str, group_id: str, ids: list[str]) -> dict:
@@ -104,19 +145,17 @@ def format_rows(rows, receipts, group_id: str, *,limit=4) -> list[dict]:
         name=row.get("fact")
         if not isinstance(name,str) or not name or len(name)>512 or FORBIDDEN.search(name):
             continue
-        for uid in episode_ids(row.get("episode_ids")):
-            approved=receipts.get(uid)
-            if not approved:continue
-            key=(uid,name)
-            if key in seen:continue
-            seen.add(key)
-            facts.append({"group_id":group_id,"fact":name,
-              "source_ref":approved["source_ref"],"exclusive":approved["exclusive"],
-              "validation_status":approved.get("validation_status","UNVERIFIED")
-                 if approved["exclusive"] else "not_required",
-              "valid_at":str(row.get("valid_at") or "")[:64],
-              "invalid_at":str(row.get("invalid_at") or "")[:64]})
-            break
+        episodes=episode_ids(row.get("episode_ids"))
+        if not episodes:continue
+        merged=combined_validation(episodes,receipts,
+                                   overflow=episode_overflow(row.get("episode_ids")))
+        if merged is None:continue
+        key=(name,str(row.get("valid_at") or ""),str(row.get("invalid_at") or ""))
+        if key in seen:continue
+        seen.add(key)
+        facts.append({"group_id":group_id,"fact":name,**merged,
+          "valid_at":str(row.get("valid_at") or "")[:64],
+          "invalid_at":str(row.get("invalid_at") or "")[:64]})
         if len(facts)>=max(1,min(8,limit)):break
     return facts
 

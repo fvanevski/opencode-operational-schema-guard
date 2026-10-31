@@ -50,7 +50,11 @@ export function formatGraphitiFacts(facts, {groupID, maxItems = 4, maxChars = 16
       exclusive && status !== "PASS" ? " [CURRENT STATE UNVERIFIED / CONFLICTED]" : "",
       fact.invalid_at ? " [HISTORICAL / INVALIDATED]" : "",
     ].join("")
-    const source = fact.source_ref
+    const sources = Array.isArray(fact.source_refs) && fact.source_refs.length
+      ? fact.source_refs.filter(s => valid(s,512) && /^git:[0-9a-f]{40}:[-\w./]+$/.test(s))
+      : [fact.source_ref]
+    if (!sources.length || sources.length > 16) continue
+    const source = [...new Set(sources)].sort().join(", ")
     const line = "- " + claim + marker + " (source: " + source + ")"
     if (lines.join("\n").length + line.length > Math.max(200, Math.min(maxChars, 2400))) break
     lines.push(line)

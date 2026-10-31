@@ -219,10 +219,34 @@ class SharedWorkQueue:
                 or not policy["revision"]):
             return {"inspected": 0, "admitted": 0, "deferred": 0}
         authority = "git-record-v1:" + policy["revision"]
+        # Durable, bounded round-robin scan. Rejected nominations stay
+        # deferred (future Git/policy changes may authorize them), but can
+        # never pin the oldest N positions on every tick or after restart.
         with self.legacy_db.connect() as conn:
-            rows = conn.execute("""SELECT candidate_json FROM memory_work
-                WHERE status='deferred_unverified' ORDER BY created_at, work_key LIMIT ?""",
-                (max(1, min(8, max_items)),)).fetchall()
+            conn.execute("BEGIN IMMEDIATE")
+            conn.execute("""CREATE TABLE IF NOT EXISTS memory_source_scan_cursor(
+                singleton INTEGER PRIMARY KEY CHECK(singleton=1),
+                created_at REAL NOT NULL, work_key TEXT NOT NULL)""")
+            cursor=conn.execute("""SELECT created_at,work_key
+                FROM memory_source_scan_cursor WHERE singleton=1""").fetchone()
+            limit=max(1,min(8,max_items))
+            rows=conn.execute("""SELECT candidate_json,created_at,work_key
+                FROM memory_work WHERE status='deferred_unverified'
+                  AND (created_at,work_key) > (?,?)
+                ORDER BY created_at,work_key LIMIT ?""",
+                (cursor["created_at"] if cursor else -1.0,
+                 cursor["work_key"] if cursor else "",limit)).fetchall()
+            if not rows:
+                rows=conn.execute("""SELECT candidate_json,created_at,work_key
+                    FROM memory_work WHERE status='deferred_unverified'
+                    ORDER BY created_at,work_key LIMIT ?""",(limit,)).fetchall()
+            if rows:
+                last=rows[-1]
+                conn.execute("""INSERT INTO memory_source_scan_cursor
+                    (singleton,created_at,work_key) VALUES (1,?,?)
+                    ON CONFLICT(singleton) DO UPDATE SET
+                    created_at=excluded.created_at,work_key=excluded.work_key""",
+                    (last["created_at"],last["work_key"]))
         totals = {"inspected": 0, "admitted": 0, "deferred": 0}
         for row in rows:
             totals["inspected"] += 1
