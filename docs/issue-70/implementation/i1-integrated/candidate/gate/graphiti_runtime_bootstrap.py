@@ -5,8 +5,10 @@ Graphiti Core runs only as an awaited subprocess in its configured Python
 environment and only against a disposable issue70_* graph during qualification.
 """
 from __future__ import annotations
+import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import sys
 
@@ -39,6 +41,10 @@ def build_runtime(cfg,db):
         validator_path=Path(cfg.graphiti_validator_path)
         if (not validator_path.is_absolute() or not validator_path.is_file()):
             raise RuntimeError("automatic exclusive-state ingestion requires exact existing validator script")
+        expected=cfg.graphiti_validator_sha256
+        if (not re.fullmatch(r"[0-9a-f]{64}",expected)
+                or hashlib.sha256(validator_path.read_bytes()).hexdigest()!=expected):
+            raise RuntimeError("temporal validator source has no matching operator-pinned SHA-256")
         phase4=root.parent/"phase4"
         if not (phase4/"temporal_ledger.py").is_file():
             raise RuntimeError("durable temporal ledger implementation unavailable")
