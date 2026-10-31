@@ -170,6 +170,7 @@ def ingest_transition(disposable_root: Path) -> dict:
             identity_fn=lambda event: (work_key(event), source_key(event)),
             client_factory=bridge.make_client_factory(),
             read_episode=bridge.make_read_episode(),
+            close_client=bridge.close_core_client,
             extra_episode_kwargs={"custom_extraction_instructions": EXTRACTION_INSTRUCTIONS},
         )
 

@@ -131,6 +131,7 @@ def run(disposable_root: Path, episode_body: str, fact_ref: str, reference_time:
             identity_fn=lambda event: (work_key(event), source_key(event)),
             client_factory=bridge.make_client_factory(),
             read_episode=bridge.make_read_episode(),
+            close_client=bridge.close_core_client,
         )
 
         # 3) A competing OpenViking job must NOT enter inference before Graphiti.

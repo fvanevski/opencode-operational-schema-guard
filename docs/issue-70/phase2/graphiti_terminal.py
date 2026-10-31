@@ -5,6 +5,7 @@ Caller must hold existing gate flock; sticky unresolved rows protect restart.
 """
 from __future__ import annotations
 import asyncio
+import inspect
 from dataclasses import dataclass
 from datetime import datetime
 import hashlib
@@ -119,34 +120,49 @@ class AwaitedCoreAdapter:
     # Owns exact graph results; never sends to Graphiti MCP's background queue.
     # Resolve callback MUST be backed by independent operator/source evidence.
     def __init__(self,db,*,resolve,identity_fn,client_factory,read_episode,
-                 extra_episode_kwargs=None):
+                 extra_episode_kwargs=None,close_client=None):
         self.journal=IngestJournal(db)
         self.resolve=resolve
         self.identity_fn=identity_fn
         self.client_factory=client_factory
         self.read_episode=read_episode
+        # An optional async/sync client finalizer is invoked before a terminal
+        # receipt is sealed, on both success and failure. The Graphiti bridge
+        # supplies close_core_client; ordinary unit fakes need no finalizer.
+        self.close_client=close_client
         # Bounded extension point: coordinator-owned add_episode extras (e.g.
         # custom_extraction_instructions, edge_types). Backward compatible.
         self.extra_episode_kwargs=extra_episode_kwargs or {}
 
     async def _execute(self,ep):
-        client=self.client_factory()
-        if asyncio.iscoroutine(client): client=await client
-        # Deliberately omit uuid: upstream may read an EXISTING episode for uuid.
-        result=await client.add_episode(
-            name=ep.name,episode_body=ep.episode_body,
-            source_description=ep.source_description,
-            reference_time=ep.reference_time,group_id=ep.group_id,
-            **self.extra_episode_kwargs)
-        item=getattr(result,"episode",None)
-        uuid=getattr(item,"uuid",None)
-        if not isinstance(uuid,str) or not uuid: raise RuntimeError("missing real episode UUID")
-        stored=await self.read_episode(client,uuid,ep.group_id)
-        # UUID and group-scoped exact readback, NEVER ranked search.
-        if not stored or any((getattr(stored,attr,None)!=value) for attr,value in (
-            ("uuid",uuid),("group_id",ep.group_id),("name",ep.name),("content",ep.episode_body))):
-            raise RuntimeError("episode readback does not bind to source")
-        return uuid
+        client = self.client_factory()
+        if inspect.isawaitable(client):
+            client = await client
+        try:
+            # No caller-provided UUID: installed Graphiti may treat it as an
+            # existing episode rather than a new durable insertion.
+            result = await client.add_episode(
+                name=ep.name, episode_body=ep.episode_body,
+                source_description=ep.source_description,
+                reference_time=ep.reference_time, group_id=ep.group_id,
+                **self.extra_episode_kwargs)
+            item = getattr(result,"episode",None)
+            uuid = getattr(item,"uuid",None)
+            if not isinstance(uuid,str) or not uuid:
+                raise RuntimeError("missing real episode UUID")
+            stored = await self.read_episode(client,uuid,ep.group_id)
+            # Exact persisted UUID + group-scoped readback, never ranked
+            # search. Completion cannot be sealed from the add_episode ack.
+            if not stored or any(getattr(stored,attr,None)!=value for attr,value in (
+                ("uuid",uuid),("group_id",ep.group_id),("name",ep.name),
+                ("content",ep.episode_body))):
+                raise RuntimeError("episode readback does not bind to source")
+            return uuid
+        finally:
+            if self.close_client is not None:
+                final = self.close_client(client)
+                if inspect.isawaitable(final):
+                    await final
 
     def submit(self,candidate):
         ep=self.resolve(candidate)

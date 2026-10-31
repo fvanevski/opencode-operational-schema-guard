@@ -103,6 +103,33 @@ class TerminalTests(unittest.TestCase):
         with self.assertRaises(UnverifiedSource):self.adapter.submit(self.candidate)
         self.assertEqual(self.graph.writes,0)
 
+    def test_client_is_closed_after_verified_terminal(self):
+        closed = []
+        async def close(client):
+            closed.append(client)
+        self.adapter.close_client=close
+        self.adapter.submit(self.candidate)
+        self.assertEqual(closed,[self.graph])
+        self.assertEqual(self.adapter.poll("a"*64)["status"],"completed")
+
+    def test_client_is_closed_on_ambiguous_graph_exception(self):
+        closed = []
+        self.graph.drop=True
+        self.adapter.close_client=lambda client: closed.append(client)
+        with self.assertRaises(ConnectionError):
+            self.adapter.submit(self.candidate)
+        self.assertEqual(closed,[self.graph])
+        self.assertEqual(self.adapter.poll("a"*64)["status"],"blocked_reconcile")
+
+    def test_failed_cleanup_blocks_terminal_seal(self):
+        async def failed_cleanup(client):
+            raise RuntimeError("driver close not confirmed")
+        self.adapter.close_client=failed_cleanup
+        with self.assertRaisesRegex(RuntimeError,"driver close not confirmed"):
+            self.adapter.submit(self.candidate)
+        self.assertEqual(self.graph.writes,1)
+        self.assertEqual(self.adapter.poll("a"*64)["status"],"blocked_reconcile")
+
     def test_candidate_mismatched_group_fails_before_extraction(self):
         with self.assertRaises(UnverifiedSource):
             self.adapter.submit({"scope":{"group_id":"cross-group"}})
