@@ -312,7 +312,7 @@ class SharedWorkQueue:
             if not has_temporal:
                 rows = conn.execute(f"SELECT {columns} FROM memory_work mw ORDER BY mw.created_at DESC LIMIT ?",(count,)).fetchall()
                 return [dict(row) for row in rows]
-            rows = conn.execute(f"""SELECT {columns},
+            rows = conn.execute(f"""SELECT {columns},mw.candidate_json AS _candidate_json,
                 tc.work_key AS temporal_contract_key,
                 tv.state AS temporal_state,tv.exit_code AS temporal_exit,
                 tv.disposition AS temporal_disposition,tv.episode_uuid AS temporal_episode_uuid
@@ -324,12 +324,24 @@ class SharedWorkQueue:
             response=[]
             for row in rows:
                 record=dict(row)
+                raw_candidate=record.pop("_candidate_json")
                 contract=record.pop("temporal_contract_key")
                 state=record.pop("temporal_state")
                 code=record.pop("temporal_exit")
-                record["temporal_validation_status"]=(
-                    "not_required" if contract is None else
-                    outcomes.get(code,"UNVERIFIED") if state=="done" else "UNVERIFIED")
+                try:
+                    category=json.loads(raw_candidate).get("category")
+                except (TypeError,ValueError,AttributeError):
+                    category=None
+                if category=="exclusive_state_transition":
+                    # A missing contract is never evidence that validation was
+                    # unnecessary, even if ingestion was already completed.
+                    record["temporal_validation_status"]=(
+                        outcomes.get(code,"UNVERIFIED")
+                        if contract is not None and state=="done" else "UNVERIFIED")
+                else:
+                    record["temporal_validation_status"]=(
+                        "not_required" if category is not None and contract is None
+                        else "UNVERIFIED")
                 response.append(record)
             return response
 

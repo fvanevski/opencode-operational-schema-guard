@@ -34,4 +34,36 @@ class StatusTests(unittest.TestCase):
         self.assertEqual(record["status"],"deferred_unverified")
         self.assertEqual(record["temporal_validation_status"],"INCONSISTENT")
         self.assertEqual(record["temporal_episode_uuid"],"ep-1")
+
+    def test_exclusive_state_without_contract_is_unverified_not_exempt(self):
+        t=tempfile.TemporaryDirectory();self.addCleanup(t.cleanup)
+        db=gate.QueueDB(str(Path(t.name)/"gate.sqlite3"))
+        q=SharedWorkQueue(db)
+        item=candidate("exclusive-status")
+        item["category"]="exclusive_state_transition"
+        nominated=q.enqueue(item)
+        TemporalLedger(db)
+        # An unbound exclusive candidate must not display 'not_required'.
+        before=q.status()[0]
+        self.assertEqual(before["work_key"],nominated["work_key"])
+        self.assertEqual(before["temporal_validation_status"],"UNVERIFIED")
+        self.assertNotIn("candidate_json",before)
+        self.assertNotIn("_candidate_json",before)
+        with db.connect() as conn:
+            conn.execute("""UPDATE memory_work SET status='completed'
+                WHERE work_key=?""",(nominated["work_key"],))
+        after=q.status()[0]
+        self.assertEqual(after["status"],"completed")
+        self.assertEqual(after["temporal_validation_status"],"UNVERIFIED")
+
+    def test_ordinary_fact_without_contract_remains_not_required(self):
+        t=tempfile.TemporaryDirectory();self.addCleanup(t.cleanup)
+        db=gate.QueueDB(str(Path(t.name)/"gate.sqlite3"))
+        q=SharedWorkQueue(db)
+        nominated=q.enqueue(candidate("ordinary-status"))
+        TemporalLedger(db)
+        after=q.status()[0]
+        self.assertEqual(after["work_key"],nominated["work_key"])
+        self.assertEqual(after["temporal_validation_status"],"not_required")
+
 if __name__=="__main__":unittest.main()
