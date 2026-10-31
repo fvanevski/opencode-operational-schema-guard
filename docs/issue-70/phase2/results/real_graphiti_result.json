@@ -1,0 +1,23 @@
+{
+  "backend_identity": "32c6457a0c9b22123e8828753b9fa33f0111800215e489b792f6a463a3a2403c",
+  "candidate_sha256": "5c4a5990888b7d592dda94f240d1d732a357ca2ce0b909d40a978700b176de30",
+  "disposable_episode_count": 1,
+  "dup_memory_work_status": "completed",
+  "dup_submit_returned": "32c6457a0c9b22123e8828753b9fa33f0111800215e489b792f6a463a3a2403c",
+  "episode_uuid": "613f6893-5e2d-4fe6-a298-0576f3964983",
+  "group_id": "issue70_phase2_disposable",
+  "journal_state": "completed",
+  "memory_work_status": "completed",
+  "ov_job_key": "ovcg-07b4fa7ff3983f5d06d1a62e",
+  "ov_job_state": "pending",
+  "processed": true,
+  "readback": {
+    "content_len": 290,
+    "group_id": "issue70_phase2_disposable",
+    "name": "ghdev-source:32c6457a0c9b22123e882875",
+    "uuid": "613f6893-5e2d-4fe6-a298-0576f3964983"
+  },
+  "source_event_key": "072ee2939ec6bc081d8778fbca75e53bcabec894a64654adb3bada1f713318a1",
+  "work_key": "32c6457a0c9b22123e8828753b9fa33f0111800215e489b792f6a463a3a2403c"
+}
+REAL_GRAPHITI_QUALIFICATION=PASS

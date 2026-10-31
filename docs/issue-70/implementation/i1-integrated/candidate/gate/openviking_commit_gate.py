@@ -138,6 +138,12 @@ class Config:
     metrics_fallback_urls: tuple[str, ...] = ()
     graphiti_enabled: bool = False
     receipts_enabled: bool = False
+    graphiti_runtime_dir: str = ""
+    graphiti_source_policy: str = ""
+    graphiti_core_python: str = ""
+    graphiti_group: str = ""
+    graphiti_validator_path: str = ""
+    graphiti_validator_sha256: str = ""
 
     @classmethod
     def load(cls, path: str) -> "Config":
@@ -161,6 +167,12 @@ class Config:
             metrics_waiting=str(gate.get("metrics_waiting", "auto")),
             graphiti_enabled=bool(worker.get("graphiti_enabled", False)),
             receipts_enabled=bool(worker.get("receipts_enabled", False)),
+            graphiti_runtime_dir=_expanded(str(worker.get("graphiti_runtime_dir", ""))),
+            graphiti_source_policy=_expanded(str(worker.get("graphiti_source_policy", ""))),
+            graphiti_core_python=_expanded(str(worker.get("graphiti_core_python", ""))),
+            graphiti_group=str(worker.get("graphiti_group", "")),
+            graphiti_validator_path=_expanded(str(worker.get("graphiti_validator_path", ""))),
+            graphiti_validator_sha256=str(worker.get("graphiti_validator_sha256", "")),
             lock_file=_expanded(str(gate.get("lock_file", "$XDG_RUNTIME_DIR/openviking-agent.lock"))),
             database=_expanded(str(gate.get("database", "~/.local/state/openviking-commit-gate/queue.sqlite3"))),
             drain_enabled=bool(worker.get("drain_enabled", False)),
@@ -804,7 +816,7 @@ def json_request(
 
 
 class Worker:
-    def __init__(self, cfg: Config, db: QueueDB, stop_event: threading.Event, graphiti_adapter=None):
+    def __init__(self, cfg: Config, db: QueueDB, stop_event: threading.Event, graphiti_adapter=None, source_resolver=None):
         self.cfg = cfg
         self.db = db
         self.stop_event = stop_event
@@ -816,7 +828,20 @@ class Worker:
         if cfg.graphiti_enabled:
             capture_preflight()
         self.shared = SharedWorkQueue(db) if cfg.graphiti_enabled else None
+        if not cfg.graphiti_enabled:
+            # Disabling the feature also invalidates the currently active
+            # temporal validation identity without rewriting historical
+            # outcome rows or creating optional tables on legacy gates.
+            with db.connect() as conn:
+                exists=conn.execute("""SELECT 1 FROM sqlite_master
+                    WHERE type='table' AND name='temporal_validator_active'""").fetchone()
+                if exists:
+                    conn.execute("DELETE FROM temporal_validator_active WHERE singleton=1")
         self.graphiti_adapter = graphiti_adapter or DisabledGraphitiAdapter()
+        # Injection-only until the exact installed Graphiti Python environment
+        # and operator policy have been qualified. Never derive authority from
+        # agent-supplied capture metadata or auto-enable in serve().
+        self.source_resolver = source_resolver
         self._last_class = "GRAPHITI_EPISODE_INGEST"
         self._recovery_quiet_since: float | None = None
         self.quiet_since: float | None = None
@@ -851,7 +876,39 @@ class Worker:
                 self.quiet_since = None
                 self._set_admission_status("worker_error")
 
+    def _unresolved_graphiti_from_existing_db(self) -> bool:
+        """The Graphiti opt-in toggle cannot erase a prior producer.
+
+        In particular, cfg.graphiti_enabled=False must not disable global
+        exclusion for Graphiti work already admitted in the shared SQLite.
+        Inspect existing state without creating Graphiti tables in a legacy
+        installation. If the state table exists but is unreadable or has a
+        broken schema, fail closed rather than admitting another producer.
+        """
+        with self.db.connect() as conn:
+            found = conn.execute("""SELECT 1 FROM sqlite_master
+                WHERE type='table' AND name='memory_work'""").fetchone()
+            if not found:
+                return False
+            return conn.execute("""SELECT 1 FROM memory_work
+                WHERE status IN ('admitted','processing','blocked_reconcile')
+                LIMIT 1""").fetchone() is not None
+
     def tick(self) -> bool:
+        # Admission safety survives a later config disable, even though
+        # new Graphiti admissions are disabled and no optional schema is
+        # initialized. Unknown prior producers must remain globally fenced.
+        if not self.cfg.graphiti_enabled:
+            try:
+                unresolved = self._unresolved_graphiti_from_existing_db()
+            except Exception:
+                self.quiet_since = None
+                self._set_admission_status("graphiti_state_unverifiable")
+                return False
+            if unresolved:
+                self.quiet_since = None
+                self._set_admission_status("blocked_reconcile")
+                return False
         if not self.cfg.drain_enabled:
             self.quiet_since = None
             self._set_admission_status("drain_disabled")
@@ -874,10 +931,45 @@ class Worker:
                 handle.close()
         inflight = self.db.inflight()
         if self.shared and self.shared.unresolved():
-            self.quiet_since = None
-            self._set_admission_status("blocked_reconcile")
-            return False
+            # Reconcile a previously sealed OWNED Graphiti receipt read-only;
+            # never retry the old episode on restart or transport ambiguity.
+            unresolved = self.shared.unresolved()
+            if unresolved["status"] == "blocked_reconcile" and unresolved["backend_identity"]:
+                handle = self._try_exclusive_lock()
+                if handle is not None:
+                    try:
+                        receipt = self.graphiti_adapter.poll(unresolved["backend_identity"])
+                        if (isinstance(receipt,dict)
+                                and receipt.get("backend_identity")==unresolved["backend_identity"]
+                                and receipt.get("status")=="completed"
+                                and receipt.get("persisted") is True):
+                            self.shared.reconcile(unresolved["work_key"],unresolved["backend_identity"],"completed")
+                    except Exception:
+                        pass  # Absence of authoritative proof is never safe release.
+                    finally:
+                        fcntl.flock(handle.fileno(),fcntl.LOCK_UN)
+                        handle.close()
+            if self.shared.unresolved():
+                self.quiet_since = None
+                self._set_admission_status("blocked_reconcile")
+                return False
+        # The existing worker owns read-only temporal retries after Graphiti
+        # work has already completed; no extra scheduler or graph re-ingestion.
+        retry = getattr(self.graphiti_adapter, "retry_pending", None)
+        if self.shared is not None and callable(retry):
+            handle = self._try_exclusive_lock()
+            if handle is not None:
+                try:
+                    retry(max_items=1)
+                finally:
+                    fcntl.flock(handle.fileno(),fcntl.LOCK_UN)
+                    handle.close()
         candidate = inflight or self.db.next_ready()
+        if (self.shared is not None and self.source_resolver is not None
+                and not isinstance(self.graphiti_adapter, DisabledGraphitiAdapter)):
+            # Source verification is CPU-only and bounded; candidate selection
+            # remains subject to all global admission + publication barriers.
+            self.shared.auto_admit(self.source_resolver)
         graph_candidate = self.shared.ready() if self.shared else None
         if candidate is None and graph_candidate is None:
             self.quiet_since = None
@@ -903,6 +995,20 @@ class Worker:
             self._set_admission_status("shared_lease_active")
             return False
         try:
+            # The initial Graphiti check is only an early rejection. The
+            # authoritative recheck MUST be under the EX flock: another
+            # coordinator can claim a Graphiti job while we wait for it.
+            # Do not let config disablement release an old producer.
+            try:
+                graphiti_unresolved = self._unresolved_graphiti_from_existing_db()
+            except Exception:
+                self.quiet_since = None
+                self._set_admission_status("graphiti_state_unverifiable")
+                return False
+            if graphiti_unresolved:
+                self.quiet_since = None
+                self._set_admission_status("blocked_reconcile")
+                return False
             if inflight is not None and inflight["task_id"]:
                 # Already submitted: the running scheduler occupancy is this
                 # operation's own activity, not a new pre-admission veto.
@@ -988,13 +1094,15 @@ class Worker:
         generation = int(row["attempt_generation"])
         backend_identity = None
         try:
-            # Claim is durable before submission. A crash here is ambiguous and
-            # will block on restart; the adapter must never blindly resubmit.
-            backend_identity = self.graphiti_adapter.submit(json.loads(row["candidate_json"]))
-            if not isinstance(backend_identity, str) or not backend_identity:
-                self.shared.block(key, "ambiguous_ack")
+            # Persist stable backend identity BEFORE submission. If the
+            # worker dies after Graphiti's graph write but before returning,
+            # the source/work identity is still reconstructible on restart.
+            backend_identity = key
+            self.shared.processing(key,generation,backend_identity)
+            returned = self.graphiti_adapter.submit(json.loads(row["candidate_json"]))
+            if returned != backend_identity:
+                self.shared.block(key,"submit_identity_mismatch")
                 return
-            self.shared.processing(key, generation, backend_identity)
             deadline = time.monotonic() + self.cfg.task_timeout_seconds
             while not self.stop_event.is_set() and time.monotonic() < deadline:
                 result = self.graphiti_adapter.poll(backend_identity)
@@ -1608,7 +1716,11 @@ class GateHandler(BaseHTTPRequestHandler):
 def serve(cfg: Config) -> None:
     db = QueueDB(cfg.database)
     stop_event = threading.Event()
-    worker = Worker(cfg, db, stop_event)
+    graphiti_adapter, source_resolver = (None, None)
+    if cfg.graphiti_enabled:
+        from graphiti_runtime_bootstrap import build_runtime
+        graphiti_adapter, source_resolver = build_runtime(cfg, db)
+    worker = Worker(cfg, db, stop_event, graphiti_adapter, source_resolver)
     server = GateServer(cfg, db, worker)
     worker_thread = threading.Thread(target=worker.run, name="commit-worker", daemon=True)
 

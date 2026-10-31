@@ -1,0 +1,91 @@
+{
+  "campaign": "issue-70 phase-3 one-campaign qualification (automatic Git-source capture, cross-interpreter Graphiti execution, read-only recall)",
+  "branch": "issue/70-automatic-recall",
+  "base_sha": "e430ef70c08f0489cf9a2f6ee5556545f60e5c86",
+  "phase2_source_parent": "56e5d908e9d401791d2bbff09b271f2ec4ec8a16",
+  "pr71": "separate approved Phase 1 source package; unmerged; not duplicated by this campaign",
+  "identities": {
+    "opencode": "v2.2.5, binary /home/filip/.opencode/bin/opencode, plugin SDK @opencode-ai/sdk 1.18.4, plugin package 1.18.16",
+    "live_gate": "/usr/bin/python3 /home/filip/.local/share/openviking-commit-gate/openviking_commit_gate.py (installed base 6ad48a939d3f52df1c774f87d030986b35022a8c20f15916d82177ccf2094f42)",
+    "graphiti_venv": "/workspace/mcp_servers/graphiti/upstream/mcp_server/.venv/bin/python (Python 3.13.15, graphiti-core 0.31.2, falkordb 1.8.1)",
+    "falkordb": "127.0.0.1:6382",
+    "llm": "127.0.0.1:8002 (litellm, model 'chat') - disposable qualification only",
+    "embedder": "127.0.0.1:8004 (uvicorn/TEI, model 'embed', dim 1024) - disposable qualification only",
+    "episode_label": "Episodic"
+  },
+  "cpu_suites": {
+    "phase3_discover": {"command": "PYTHONPATH=\"$PWD/docs/issue-70/phase2:$PWD/docs/issue-70/phase3:$PWD/docs/issue-70/implementation/i1-integrated/candidate/gate:$PWD/docs/issue-70/implementation/i1-integrated/candidate/gate/tests\" python3 -m unittest discover -s docs/issue-70/phase3 -p 'test_*.py'", "result": "22/22 OK (includes 5 extended transport regressions: timeout kill, SIGKILL nonzero exit, malformed terminals, group conflict pre-spawn, duplicate executes child once)"},
+    "graphiti_recall_node": {"command": "node --test docs/issue-70/implementation/i1-integrated/candidate/openviking-v2/tests/graphiti-recall.test.mjs", "result": "5/5 pass"},
+    "phase2_full": {"result": "28/28 OK (includes 12 terminal tests with +3 client-lifecycle regressions)"},
+    "gate_top_level_receipt_protocol": "7/7 OK",
+    "gate_tests": "59/59 OK (test_gate 16, test_shared_work 14, test_corrections 13, test_dual_metrics 7, test_multi_unknown_recovery 5, test_service_corrections 3, test_service_mixed 1)",
+    "ov2_candidate_capture": "7/7 pass (includes installed OpenCode 2.2.5 event-shape regression: session.tool.input.started accepted, unknown name fails closed)",
+    "ov2_capture_isolation": "5/5 pass",
+    "ov2_central_authentication_regressions": "3/3 pass",
+    "i1_launcher_admission": "5/5 OK",
+    "i1_actual_backend_service": "20/20 OK (disposable backend assembled by prepare_backend.py from authenticated installed OpenViking package; fixture interpreter /home/filip/.local/share/uv/tools/openviking/bin/python 3.14.7)"
+  },
+  "a3_integrated_cpu_host": {
+    "result": "PASS",
+    "evidence": "/tmp/opencode/issue70-p3-a3-evidence.json",
+    "summary": "completed native V2 tool event nominates git:<sha>:memory-facts/<name>.json; gate stores deferred_unverified; worker independently verifies the immutable Git blob and promotes to queued via admit_attested (authority git-record-v1:issue70-r1); untrusted commit / wrong group / out-of-prefix / secret content stay deferred; duplicate coalesced; disabled policy refuses bootstrap; no-policy V2 observer inert; no model call or Graphiti write in V2 hooks"
+  },
+  "b_extended_transport": {
+    "result": "PASS",
+    "summary": "test_graphiti_process_transport_extended.py 5/5; real-venv child rejects live (non-disposable) targets, extra fields, naive timestamps and empty input"
+  },
+  "c_real_graphiti_run": {
+    "result": "PASS",
+    "evidence": "/tmp/opencode/issue70-p3-c-evidence.json",
+    "disposable_graph": "issue70_p3_real (fresh; pre-run graph list proves it did not exist before the run)",
+    "git_commit": "9197bb941f6f49b7e7d6832f6c32baa9c0d2b3ea",
+    "episode_uuid": "7eb5dc00-ef29-460f-bd43-68462bf3794b",
+    "readback": "exact UUID/group/content persisted (2 entities + 1 RELATES_TO edge, episode label Episodic)",
+    "lease": "gate EX flock held during the awaited child (timeline /tmp/opencode/issue70-p3-real/timeline.json); a second OpenViking job stayed excluded while the child was active, pending intent committed after release",
+    "idempotency": "duplicate re-nomination produced no second episode/receipt",
+    "failure_injection": "stub failing child (exit 1) via graphiti_core_python in a separate disposable gate -> work blocked_reconcile, 0 submissions on restart"
+  },
+  "d_read_only_recall_v2_coexistence": {
+    "result": "PASS",
+    "evidence": "/tmp/opencode/issue70-p3-d-evidence.json",
+    "service": "graphiti_recall_service.py on 127.0.0.1:9091 against issue70_p3_real + gate DB /tmp/opencode/issue70-p3-real/queue.sqlite3 (bearer token >=16 chars, never committed)",
+    "read_only_proof": "FalkorDriver constructed synchronously outside any running event loop -> _init_task None (in-loop construction schedules build_indices_and_constraints and is rejected by the service guard); graph node/edge state sha256 identical before/after all queries (ec0eacf71256a55e18ecf81ecd03147da36b78f3141900c4237bf647df5f3637)",
+    "no_model_inference": "recall service imports only FalkorDriver (no LLM/embedding surface); V2 client performs one bounded localhost POST; LLM :8002 and embedder :8004 are separate processes never referenced by the recall path",
+    "positive_fact": "graph-relation query returns the coordinator/Git fact with exact citation git:9197bb941f6f49b7e7d6832f6c32baa9c0d2b3ea:memory-facts/decision.json, validation_status not_required",
+    "negatives": "no policy -> no injection; no graph data -> no block; secret-like query -> empty; wrong group -> 403 group not approved; missing/wrong token -> 403; malformed payload -> 400; oversized -> 413; unknown path -> 404; duplicate OV context -> suppressed; exclusive non-PASS -> '[CURRENT STATE UNVERIFIED / CONFLICTED]' marker",
+    "ov_baseline": "openviking-context-v4 libraries load from the install layout; candidate index.mjs module integrity verified (local.openviking-v2); graph block appended after OV context exactly once"
+  },
+  "e_temporal_boundary": {
+    "result": "RECORDED",
+    "evidence": "/tmp/opencode/issue70-p3-e-evidence.json",
+    "exclusive_state_autocapture": "disabled by bootstrap policy: graphiti_runtime_bootstrap.build_runtime raises RuntimeError('automatic exclusive-state ingestion requires integrated validator disposition') when a policy lists the exclusive_state_transition category (CPU proof executed)",
+    "phase2_validator_evidence_retained_at_original_identity": {
+      "docs/issue-70/phase2/results/temporal_validation_result.json": "a27e2bf5d9628774219958d4a65771a493b3275fb2d681506ea6196dee2f90cf",
+      "docs/issue-70/phase2/results/real_graphiti_result.json": "772a3ac9469eefdb19ca12dcb9adeba03e8dde46fdd1dbd781e9e5f9ca7005ea",
+      "docs/issue-70/phase2/results/cross_process_admission_result.json": "52e98600f91fca4276030f60c11dec9ea1d241b0f1fed46aa11663b75da0bb62",
+      "docs/issue-70/phase2/results/graphiti_core_SHA256SUMS.txt": "42d50f7271dd21240d45223b9d6ce0e8e1649fe2af6d30de18c1739c801aa5a8",
+      "note": "manually exercised Phase 2 validator; retained, not misrepresented as automatic production validation"
+    },
+    "remaining_requirements": [
+      "source-derived contract binding before extraction",
+      "durable post-write validator outcome keyed by work/episode",
+      "safe recall interpretation for validator exits 0/1/2/3"
+    ]
+  },
+  "package_reconstruction": {
+    "patches_regenerated": {
+      "patches/gate.patch": {"sha256": "4d145710400ccf03f99151d4bce06c09f8960f16482de812657394fb050217cb", "entries": 13, "forward_reverse": "byte-exact PASS"},
+      "patches/openviking-v2.patch": {"sha256": "f41a2e62fdc757503a87815948260085686dcf2ed13a5336d8c970b0a4513aab", "entries": 8, "forward_reverse": "byte-exact PASS"},
+      "patches/backend.patch": {"sha256": "a03ab064dc6f0d13861ef7b20faf8a4b6b490474f9f2f92cffc740b0cbe1ad61", "note": "unchanged from Phase 2"}
+    },
+    "source_bound_backend": "prepare_backend.py re-authenticated the installed OpenViking package against source-base-manifest.json and assembled a fresh disposable tree; all patched backend files verified against candidate hashes",
+    "nonregression_rerun": "all suites in cpu_suites re-run green after the package update (161 checks)"
+  },
+  "protected_surfaces": {
+    "live_gate_config": "~/.config/openviking/commit-gate.toml unchanged (no graphiti keys; stays disabled)",
+    "live_gate_db": "~/.local/state/openviking-commit-gate/queue.sqlite3 restored to clean state (an accidental A3 gate-run contamination of 1 work row + 1 attestation + 1 admission was repaired by scoped delete; live DB back to 0 rows)",
+    "installed_plugin": "~/.config/opencode/plugins/openviking-v2/index.mjs remains the old version (6899822e); candidate differs only by the capture+recall additions",
+    "production_capture": "not activated",
+    "pr_merge_deploy": "none (no new PR, no merge, no deployment, no live graph mutation)"
+  }
+}

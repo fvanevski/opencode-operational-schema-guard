@@ -6,7 +6,7 @@ from dataclasses import replace
 from unittest import mock
 
 from test_gate import config, gate
-from shared_work import SharedWorkQueue, valid_candidate
+from shared_work import SharedWorkQueue, valid_candidate, work_key
 
 
 def candidate(suffix="1"):
@@ -34,7 +34,7 @@ class SyntheticGraphiti:
         self.timeline.append("submitted")
         if self.ambiguous:
             raise TimeoutError("ack lost after possible submission")
-        return "episode-1"
+        return work_key(item)
 
     def poll(self, backend_identity):
         status = next(self.statuses)
@@ -96,7 +96,7 @@ class SharedWorkTests(unittest.TestCase):
         self.assertEqual(metric_reads, [0, 0, 0])
         self.assertEqual(adapter.timeline, ["submitted", "queued", "processing", "completed"])
         self.assertEqual(self.work.status()[0]["status"], "completed")
-        self.assertEqual(self.work.status()[0]["backend_identity"], "episode-1")
+        self.assertEqual(self.work.status()[0]["backend_identity"], item["work_key"])
         self.assertEqual(item["work_key"], self.work.status()[0]["work_key"])
 
     def test_ambiguous_ack_restart_never_resubmits_and_reconcile_needs_identity(self):
@@ -144,9 +144,9 @@ class SharedWorkTests(unittest.TestCase):
         self.enqueue_synthetic(candidate("2"))
         order = []
         class Adapter:
-            def submit(self, _):
+            def submit(self, item):
                 order.append("graphiti")
-                return "ep-synthetic"
+                return work_key(item)
             def poll(self, backend_identity):
                 return {"backend_identity": backend_identity, "status": "completed", "persisted": True}
         worker = self.worker(Adapter())
@@ -168,6 +168,125 @@ class SharedWorkTests(unittest.TestCase):
             with db.connect() as conn:
                 names = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
             self.assertNotIn("memory_work", names)
+
+    def test_disabling_graphiti_cannot_release_unresolved_global_admission(self):
+        # Create a real unresolved memory row with the feature on, then turn
+        # the feature OFF without erasing SQLite. An independent OV intent
+        # must not enter inference merely because Graphiti is now disabled.
+        item = self.enqueue_synthetic(candidate("disable-unknown"))
+        row = self.work.claim(item["work_key"], "lease-old")
+        self.work.processing(item["work_key"], row["attempt_generation"], item["work_key"])
+        self.db.enqueue({"account": "a", "user_id": "u", "actor_peer": "p"},
+                        "ov-after-disable", 0, {}, "regression")
+        cfg = replace(self.cfg, graphiti_enabled=False)
+        worker = gate.Worker(cfg, self.db, threading.Event())
+        self.assertIsNone(worker.shared)
+        calls = []
+        worker._metrics = lambda: (0, 0)
+        worker._active_harness_processes = lambda: []
+        worker._process = lambda ov: calls.append(ov["session_id"])
+        self.assertFalse(worker.tick())
+        self.assertEqual(worker.admission_status()["state"], "blocked_reconcile")
+        self.assertEqual(calls, [])
+        self.assertEqual(self.db.list_rows()[0]["state"], "pending")
+
+    def test_disabled_graphiti_legacy_without_state_table_stays_available(self):
+        cfg = replace(self.cfg, graphiti_enabled=False)
+        with tempfile.TemporaryDirectory() as root:
+            cfg = replace(cfg, database=f"{root}/queue.sqlite3")
+            db = gate.QueueDB(cfg.database)
+            worker = gate.Worker(cfg, db, threading.Event())
+            self.assertFalse(worker._unresolved_graphiti_from_existing_db())
+            with db.connect() as conn:
+                names = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+            self.assertNotIn("memory_work", names)
+
+    def test_blocked_reconcile_survives_restart_and_graphiti_disable(self):
+        # A process death after an ambiguous Graphiti submit is not a
+        # cancellation; switching the feature off must retain the block.
+        item = self.enqueue_synthetic(candidate("restart-unknown"))
+        row = self.work.claim(item["work_key"], "lease-before-restart")
+        self.work.processing(item["work_key"], row["attempt_generation"], item["work_key"])
+        self.work.recover_after_restart()
+        self.assertEqual(self.work.status()[0]["status"], "blocked_reconcile")
+        self.db.enqueue({"account": "a", "user_id": "u", "actor_peer": "p"},
+                        "ov-after-restart", 0, {}, "regression")
+        worker = gate.Worker(replace(self.cfg, graphiti_enabled=False),
+                             self.db, threading.Event())
+        attempted = []
+        worker._metrics = lambda: (0, 0)
+        worker._active_harness_processes = lambda: []
+        worker._process = lambda row: attempted.append(row["session_id"])
+        self.assertFalse(worker.tick())
+        self.assertEqual(worker.admission_status()["state"], "blocked_reconcile")
+        self.assertEqual(attempted, [])
+        self.assertEqual(self.work.status()[0]["status"], "blocked_reconcile")
+
+    def test_existing_malformed_graphiti_state_fails_closed_when_disabled(self):
+        # Legacy database had no optional Graphiti table, but a table with
+        # that name and wrong schema is NOT proof that no producer exists.
+        cfg = replace(self.cfg, graphiti_enabled=False)
+        with tempfile.TemporaryDirectory() as root:
+            cfg = replace(cfg, database=f"{root}/queue.sqlite3")
+            db = gate.QueueDB(cfg.database)
+            with db.connect() as conn:
+                conn.execute("CREATE TABLE memory_work (unrelated_column TEXT)")
+            db.enqueue({"account": "a", "user_id": "u", "actor_peer": "p"},
+                       "ov-malformed-graphiti-state", 0, {}, "regression")
+            worker = gate.Worker(cfg, db, threading.Event())
+            entered = []
+            worker._metrics = lambda: (0, 0)
+            worker._active_harness_processes = lambda: []
+            worker._process = lambda row: entered.append(row["session_id"])
+            self.assertFalse(worker.tick())
+            self.assertEqual(worker.admission_status()["state"], "graphiti_state_unverifiable")
+            self.assertEqual(entered, [])
+
+    def test_disabled_graphiti_rechecks_after_acquiring_exclusive_lease(self):
+        # The first SQLite check sees a queued Graphiti record. While the
+        # worker is acquiring its lock another coordinator claims it.
+        # The in-lock check must observe that new processing identity.
+        item = self.enqueue_synthetic(candidate("interlock-race"))
+        self.db.enqueue({"account": "a", "user_id": "u", "actor_peer": "p"},
+                        "ov-race", 0, {}, "regression")
+        cfg = replace(self.cfg, graphiti_enabled=False, quiet_grace_seconds=0)
+        worker = gate.Worker(cfg, self.db, threading.Event())
+        worker._metrics = lambda: (0, 0)
+        worker._active_harness_processes = lambda: []
+        entered = []
+        worker._process = lambda row: entered.append(row["session_id"])
+        original_lock = worker._try_exclusive_lock
+        def interleaved_lock():
+            row = self.work.claim(item["work_key"], "lease-another-worker")
+            self.assertIsNotNone(row)
+            self.work.processing(item["work_key"], row["attempt_generation"],
+                                 item["work_key"])
+            return original_lock()
+        worker._try_exclusive_lock = interleaved_lock
+        self.assertFalse(worker.tick())
+        self.assertEqual(worker.admission_status()["state"], "blocked_reconcile")
+        self.assertEqual(entered, [])
+        self.assertEqual(self.work.status()[0]["status"], "processing")
+
+    def test_terminal_graphiti_does_not_indefinitely_block_ov_when_disabled(self):
+        # Source-backed terminal work is not an active inference producer.
+        item = self.enqueue_synthetic(candidate("completed-first"))
+        row = self.work.claim(item["work_key"], "lease-terminal")
+        self.work.processing(item["work_key"], row["attempt_generation"], item["work_key"])
+        self.work.finish(item["work_key"], row["attempt_generation"],
+                         item["work_key"], "completed")
+        cfg = replace(self.cfg, graphiti_enabled=False, quiet_grace_seconds=0)
+        self.db.enqueue({"account": "a", "user_id": "u", "actor_peer": "p"},
+                        "ov-after-terminal", 0, {}, "regression")
+        worker = gate.Worker(cfg, self.db, threading.Event())
+        worker._metrics = lambda: (0, 0)
+        worker._active_harness_processes = lambda: []
+        attempted = []
+        worker._process = lambda row: (attempted.append(row["session_id"]),
+                                      self.db.complete(row))
+        self.assertFalse(worker.tick())
+        self.assertTrue(worker.tick())
+        self.assertEqual(attempted, ["ov-after-terminal"])
 
     def test_legacy_ambiguous_queued_ack_does_not_resubmit(self):
         self.db.enqueue({"account": "a", "user_id": "u", "actor_peer": "p"}, "ov-ambiguous", 0, {}, "mixed")

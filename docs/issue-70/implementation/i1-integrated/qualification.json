@@ -2,8 +2,8 @@
   {
     "suite": "gate",
     "exit_code": 0,
-    "expected_checks": 53,
-    "observed_checks": 53,
+    "expected_checks": 59,
+    "observed_checks": 59,
     "command": [
       "/usr/bin/python3",
       "-m",
@@ -13,14 +13,15 @@
       "tests",
       "-v"
     ],
-    "cwd": "/home/filip/issue70-final-KXvsBo/tracker/docs/issue-70/implementation/i1-integrated/candidate/gate",
+    "cwd": "/home/filip/issue70-admission-9voGQ0/tracker/docs/issue-70/implementation/i1-integrated/candidate/gate",
     "isolation": "read-only root, private /tmp and network, no GPU devices",
-    "output_sha256": "4dc710610f9715d879fbffd2fb2ded467509e2dbc6396bf1b2c39aebe925a031",
+    "output_sha256": "6eb39ab45b4c4f9e93cfd7e0363e24b27d836fac59f95e23670722362e6c6a0e",
     "sanitized_traces": [
       "RECOVERY_SERVICE {\"events\": [\"archive-published\", \"poll\", \"poll\"], \"commit_posts\": 1, \"terminal\": \"complete\"}",
       "QUIESCENCE_GAP_SERVICE {\"publication_pending\": true, \"task_list_empty\": true, \"initial_metrics\": [0, 0], \"independent_admitted\": false, \"commit_posts\": 1}",
-      "MIXED_TIMELINE {\"events_ms\": [[\"graph_submitted\", 0.0], [\"graph_queued\", 0.4], [\"graph_terminal\", 60.8], [\"ov_started\", 98.3]], \"overlap\": false, \"graph_submissions\": 1}"
-    ]
+      "MIXED_TIMELINE {\"events_ms\": [[\"graph_submitted\", 0.0], [\"graph_queued\", 0.0], [\"graph_terminal\", 60.4], [\"ov_started\", 99.1]], \"overlap\": false, \"graph_submissions\": 1}"
+    ],
+    "notes": "59 = 53 previously qualified + six staged disabled-state regressions (test_shared_work.py); test_dual_metrics.py fixture repaired to model the disabled-mode connect() recheck on a legacy database"
   },
   {
     "suite": "central-receipt",
@@ -34,9 +35,9 @@
       "test_receipt_protocol",
       "-v"
     ],
-    "cwd": "/home/filip/issue70-final-KXvsBo/tracker/docs/issue-70/implementation/i1-integrated/candidate/gate",
+    "cwd": "/home/filip/issue70-admission-9voGQ0/tracker/docs/issue-70/implementation/i1-integrated/candidate/gate",
     "isolation": "read-only root, private /tmp and network, no GPU devices",
-    "output_sha256": "bdc40cc2c5905177b106e1a8c88bc40f0f60d26a28a6363037e54274744f4ceb",
+    "output_sha256": "4d60293661ca02969a5f2269af148f1031a658b46c11a0b7ef143f110ca85188",
     "sanitized_traces": []
   },
   {
@@ -51,9 +52,9 @@
       "tests/capture-isolation.test.mjs",
       "tests/central-authentication-regressions.test.mjs"
     ],
-    "cwd": "/home/filip/issue70-final-KXvsBo/tracker/docs/issue-70/implementation/i1-integrated/candidate/openviking-v2",
+    "cwd": "/home/filip/issue70-admission-9voGQ0/tracker/docs/issue-70/implementation/i1-integrated/candidate/openviking-v2",
     "isolation": "read-only root, private /tmp and network, no GPU devices",
-    "output_sha256": "8c1b9bf39f5cff7ab6d24f4bcfca102cc8ebd2c1b51383649cad55234c0b1aec",
+    "output_sha256": "32e6495c7a3aeaece837bf1cee2c0b99b5d33c462898ca933a709eabe2f9334e",
     "sanitized_traces": []
   },
   {
@@ -70,7 +71,7 @@
     ],
     "cwd": "/home/filip/issue70-phase1-n3BNR6J9/candidate/openviking-context-v4",
     "isolation": "read-only root, private /tmp and network, no GPU devices",
-    "output_sha256": "bb0ff4c7cfd5f578e9b8a7a2f40001a80343e9cf798f9478c52ff4cb026c5537",
+    "output_sha256": "be9be8081a6de5aa63b4860dd6983c64ebc27cbdff955100001c64e9b9e48dbb",
     "sanitized_traces": []
   },
   {
@@ -85,7 +86,7 @@
     ],
     "cwd": "/home/filip/issue70-phase1-n3BNR6J9/candidate/operational-schema-v2",
     "isolation": "read-only root, private /tmp and network, no GPU devices",
-    "output_sha256": "6fcd27da9aaf570900aaac2371540a3788a14e2985801fe6c8f87b9a8c914914",
+    "output_sha256": "e62f38d033bee502b611124ac9dcd5f83af326ed314dea32883956ad57b38b24",
     "sanitized_traces": []
   },
   {
@@ -113,9 +114,9 @@
       "tests/test_launcher_admission.py",
       "-v"
     ],
-    "cwd": "/home/filip/issue70-final-KXvsBo/tracker/docs/issue-70/implementation/i1-integrated",
+    "cwd": "/home/filip/issue70-admission-9voGQ0/tracker/docs/issue-70/implementation/i1-integrated",
     "isolation": "read-only root, private /tmp and network, no GPU devices",
-    "output_sha256": "35d2e54ebedb4b51c97d778b1178a910939281459a018afbff117bf14f08f6bb",
+    "output_sha256": "b4835dfed90434c8f64558183753dd8f4c9d03bc143e2676d05cd2f81ad02642",
     "sanitized_traces": []
   },
   {
@@ -128,14 +129,135 @@
       "tests/test_i1_service.py",
       "-v"
     ],
-    "cwd": "/home/filip/issue70-final-KXvsBo/tracker/docs/issue-70/implementation/i1-integrated",
+    "cwd": "/home/filip/issue70-admission-9voGQ0/tracker/docs/issue-70/implementation/i1-integrated",
     "isolation": "read-only root, private /tmp and network, no GPU devices",
-    "output_sha256": "6b458813b85a2303488508ffb5fd228780f1243e79d1dcec693d43350274c162",
+    "output_sha256": "561e32f9ee8c527aff3a7abda50fd7da9752342b4d5b3241be9b9a810836351c",
     "sanitized_traces": [
       "I1_PUBLICATION_TIMELINE {\"actual_native_queuefs\": true, \"publication_empty_task_list\": true, \"idle_metrics\": [0, 0], \"interactive_blocked\": true, \"original_extractions\": 1, \"newer_generation_preserved\": true, \"unrelated_resumed\": true}",
       "MULTI_UNKNOWN_ADMISSION {\"queued_task_blocks_distinct_recovery\": true, \"b_recover_before_a_terminal\": 0, \"b_single_authorized_recovery\": true, \"a_identity_unchanged\": true, \"no_duplicate_extractions\": true, \"restart_persistent_queuefs\": true, \"unrelated_resumed\": true, \"replay_after_seal_noop\": true}",
       "I1_PUBLICATION_TIMELINE {\"actual_native_queuefs\": true, \"publication_empty_task_list\": true, \"idle_metrics\": [0, 0], \"interactive_blocked\": true, \"original_extractions\": 1, \"newer_generation_preserved\": true, \"unrelated_resumed\": true}",
       "MULTI_UNKNOWN_ADMISSION {\"two_ambiguous_fail_closed\": true, \"no_recovery_without_backend_proof\": true, \"evidence_restored_availability\": true, \"b_single_authorized_recovery\": true, \"no_duplicate_extractions\": true}"
-    ]
+    ],
+    "notes": "re-executed for the Phase 2 admission-safety package; same eleven distinct service checks"
+  },
+  {
+    "suite": "phase2-integration",
+    "exit_code": 0,
+    "expected_checks": 20,
+    "observed_checks": 20,
+    "command": [
+      "/usr/bin/python3",
+      "-m",
+      "unittest",
+      "test_graphiti_terminal",
+      "test_source_authority",
+      "test_gate_integration",
+      "-v"
+    ],
+    "cwd": "docs/issue-70/phase2",
+    "isolation": "CPU-only stubs; no live Graphiti calls; includes the two cross-backend exclusion tests",
+    "breakdown": {
+      "test_graphiti_terminal": 9,
+      "test_source_authority": 6,
+      "test_gate_integration": 5
+    },
+    "notes": "re-executed at the Phase 2 admission head; the real-Graphiti and temporal evidence below are retained at their original source identities",
+    "sanitized_traces": []
+  },
+  {
+    "suite": "cross-process-admission",
+    "exit_code": 0,
+    "expected_checks": 5,
+    "observed_checks": 5,
+    "command": [
+      "/usr/bin/python3",
+      "-m",
+      "unittest",
+      "test_cross_process_admission",
+      "-v"
+    ],
+    "cwd": "docs/issue-70/phase2",
+    "isolation": "two independently executing python3 processes per boundary; one disposable SQLite database and one lock file per boundary; real flock path and real launcher admission helper; deterministic idle (0,0) CPU-side scheduler fixture, no scheduler-occupancy evidence invented",
+    "evidence": "docs/issue-70/phase2/results/cross_process_admission_result.json",
+    "boundaries": [
+      "a_holds_exclusive_lease_b_must_not_admit",
+      "ambiguous_exit_keeps_b_blocked",
+      "in_lock_recheck_catches_transition",
+      "terminal_evidence_allows_b_after_grace",
+      "legacy_disabled_db_without_graphiti_state"
+    ],
+    "sanitized_traces": []
+  },
+  {
+    "suite": "source-home",
+    "exit_code": 0,
+    "expected_checks": 10,
+    "observed_checks": 10,
+    "command": [
+      "python3",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "docs/issue-70/source-home",
+      "-p",
+      "test_verify_source_home.py",
+      "-v"
+    ],
+    "cwd": "issue/70 branch worktree at exact Phase 1 code (published separately; this branch does not modify Phase 2 source for it)",
+    "isolation": "read-only root, private /tmp and network, no GPU devices",
+    "published_to": {
+      "branch": "issue/70",
+      "commit": "033b5aae7282665f57700f131661bbd0d59b16ec",
+      "record": "docs/issue-70/source-home/CODEX_P2_QUALIFICATION.md"
+    },
+    "notes": "6 original + 4 Codex-P2 regressions; --host preflight PASS with backend_dependency_checks=8 on the live host",
+    "sanitized_traces": [],
+    "retained_at_original_source_identity": true
+  },
+  {
+    "suite": "real-graphiti",
+    "exit_code": 0,
+    "status": "PASS",
+    "command": [
+      "/workspace/mcp_servers/graphiti/upstream/mcp_server/.venv/bin/python",
+      "real_graphiti_qualification.py"
+    ],
+    "cwd": "docs/issue-70/phase2",
+    "isolation": "disposable FalkorDB graph issue70_phase2_disposable on 127.0.0.1:6382; live graphiti_live not mutated; local LLM 8002 / embedder 8004 (dim 1024); CPU-only host, no GPU used",
+    "evidence": "docs/issue-70/phase2/results/real_graphiti_result.json",
+    "evidence_sha256": "772a3ac9469eefdb19ca12dcb9adeba03e8dde46fdd1dbd781e9e5f9ca7005ea",
+    "key_fields": {
+      "episode_uuid": "613f6893-5e2d-4fe6-a298-0576f3964983",
+      "group_id": "issue70_phase2_disposable",
+      "disposable_episode_count": 1,
+      "memory_work_status": "completed",
+      "journal_state": "completed",
+      "dup_submit_returned": "32c6457a0c9b22123e8828753b9fa33f0111800215e489b792f6a463a3a2403c",
+      "ov_job_state": "pending"
+    },
+    "sanitized_traces": [],
+    "retained_at_original_source_identity": true
+  },
+  {
+    "suite": "temporal-validation",
+    "exit_code": 0,
+    "status": "PASS",
+    "command": [
+      "/workspace/mcp_servers/graphiti/upstream/mcp_server/.venv/bin/python",
+      "temporal_validation_integration.py"
+    ],
+    "cwd": "docs/issue-70/phase2",
+    "isolation": "same disposable graph; read-only qualified graphiti_temporal_validator.py (logic not duplicated); deterministic outcomes exercised without live graph writes",
+    "evidence": "docs/issue-70/phase2/results/temporal_validation_result.json",
+    "evidence_sha256": "a27e2bf5d9628774219958d4a65771a493b3275fb2d681506ea6196dee2f90cf",
+    "key_fields": {
+      "live_validation": "exit 0, PASS, coverage complete, zero findings",
+      "deterministic": "INCONSISTENT=1, INCOMPLETE=2 (INCOMPLETE_EVIDENCE), INVALID_INPUT=3",
+      "transition_episode_uuid": "6ccaf5aa-7008-42d9-9eed-8ada72893c97",
+      "contract_bound_before_extraction": true
+    },
+    "sanitized_traces": [],
+    "retained_at_original_source_identity": true
   }
 ]

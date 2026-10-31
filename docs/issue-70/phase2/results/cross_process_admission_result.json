@@ -1,0 +1,60 @@
+{
+  "suite": "cross-process-admission",
+  "ran": 5,
+  "failures": 0,
+  "errors": 0,
+  "status": "PASS",
+  "processes": "two independently executing python3 processes per boundary (gate producer + disabled-mode coordinator) sharing one disposable SQLite database and one lock file",
+  "scheduler_fixture": "deterministic idle (0,0) CPU-side metrics; no scheduler-occupancy evidence invented",
+  "real_paths_exercised": [
+    "Worker._try_exclusive_lock (fcntl.flock EX, non-blocking)",
+    "blocking fcntl.flock EX on the shared lock file",
+    "flock -s --close + admission_exec.py launcher helper"
+  ],
+  "gate_source_sha256": "3b3596bdac87418ba12d4c59333ee346ce775356c4ec81424a086cedcf2f1250",
+  "boundaries": [
+    {
+      "boundary": "a_holds_exclusive_lease_b_must_not_admit",
+      "b_state": "blocked_reconcile",
+      "b_admitted": false,
+      "a_status": "processing",
+      "shared_db_identity": "/tmp/tmps22zzozk/queue.sqlite3",
+      "shared_lock_identity": "/tmp/tmps22zzozk/agent.lock",
+      "same_identity_across_processes": true
+    },
+    {
+      "boundary": "ambiguous_exit_keeps_b_blocked",
+      "b_state": "blocked_reconcile",
+      "launcher_exit": 75,
+      "launcher_mark": "OPENVIKING_ADMISSION=blocked_reconcile",
+      "shared_db_identity": "/tmp/tmpuqff2nn4/queue.sqlite3",
+      "shared_lock_identity": "/tmp/tmpuqff2nn4/agent.lock"
+    },
+    {
+      "boundary": "in_lock_recheck_catches_transition",
+      "pre_lock_unresolved": false,
+      "in_lock_unresolved": true,
+      "b_state": "blocked_reconcile",
+      "shared_db_identity": "/tmp/tmpdmg5_2jy/queue.sqlite3",
+      "shared_lock_identity": "/tmp/tmpdmg5_2jy/agent.lock"
+    },
+    {
+      "boundary": "legacy_disabled_db_without_graphiti_state",
+      "b_second_admitted": true,
+      "memory_work_table_created": false,
+      "launcher_exit": 0,
+      "shared_db_identity": "/tmp/tmpvnlh4yl5/legacy/queue.sqlite3",
+      "shared_lock_identity": "/tmp/tmpvnlh4yl5/legacy/agent.lock"
+    },
+    {
+      "boundary": "terminal_evidence_allows_b_after_grace",
+      "b_first_state": "quiet_grace",
+      "b_second_admitted": true,
+      "a_status": "completed",
+      "launcher_exit": 0,
+      "interactive_launcher_admission": "PASS",
+      "shared_db_identity": "/tmp/tmpczpc_pm7/queue.sqlite3",
+      "shared_lock_identity": "/tmp/tmpczpc_pm7/agent.lock"
+    }
+  ]
+}

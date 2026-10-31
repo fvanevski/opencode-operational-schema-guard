@@ -12,6 +12,7 @@ import { createHybridLexicalIndex } from "../openviking-context-v4/lib/shared/hy
 import { createHybridRecall, loadVikingCorpus, DEFAULT_CORPUS_ROOT } from "../openviking-context-v4/lib/shared/hybrid-recall.mjs"
 import { normalizeToolName } from "../openviking-context-v4/lib/shared/uri-guard.mjs"
 import { createCaptureObserver } from "./candidate-capture.mjs"
+import { createGraphitiRecall } from "./graphiti-recall.mjs"
 
 const pluginRoot = dirname(fileURLToPath(new URL("../openviking-context-v4/index.mjs", import.meta.url)))
 const parts = (message) => message.type === "user"
@@ -72,6 +73,12 @@ export default {
       url: process.env.GRAPHITI_CAPTURE_GATE_URL ?? "http://127.0.0.1:1933",
       token: process.env.GRAPHITI_CAPTURE_TOKEN ?? "",
     })
+    const recallGraphiti = createGraphitiRecall({
+      workspaceID: directory,
+      policyPath: process.env.GRAPHITI_RECALL_POLICY_PATH,
+      url: process.env.GRAPHITI_RECALL_URL ?? "",
+      token: process.env.GRAPHITI_RECALL_TOKEN ?? "",
+    })
     let stopped = false
     const consumeCanonical = async (sessionID) => {
       const messages = await canonicalMessages(ctx, sessionID, directory)
@@ -112,6 +119,16 @@ export default {
       const extra = [...output.parts, ...recalled.parts].filter((part) => part.synthetic && typeof part.text === "string")
       for (const part of extra.toReversed()) if (!event.system.some((item) => item.type === "text" && item.text === part.text))
         event.system.push({ type: "text", text: part.text })
+      // Graph recall is optional, bounded and read-only. It never performs
+      // Graphiti extraction or waits on the global inference scheduler.
+      // OpenViking remains the default broad-context baseline.
+      try {
+        const graphText = await recallGraphiti(latest.text, extra.map(part => part.text))
+        if (graphText && !event.system.some(item => item.type === "text" && item.text === graphText))
+          event.system.push({ type: "text", text: graphText })
+      } catch (error) {
+        log("WARN", "graphiti-recall", "Optional Graphiti recall skipped", { error: String(error?.message ?? error) })
+      }
       const repo = repository.getRepoSystemPrompt()
       if (repo && !event.system.some((item) => item.type === "text" && item.text === repo)) event.system.push({ type: "text", text: repo })
     })

@@ -100,10 +100,16 @@ export function createCaptureObserver({ workspaceID, policyPath, url, token, pol
       const data = event?.data
       if (!id(data?.sessionID) || !id(data.id)) return null
       const key = JSON.stringify([data.sessionID, data.id])
-      if (event.type === "session.tool.called") {
-        if (!id(data.name)) return null
-        calls.set(key, data.name)
-        if (calls.size > 1024) { calls.delete(calls.keys().next().value); stats.deferred++ }
+      if (event.type === "session.tool.input.started" || event.type === "session.tool.called") {
+        // OpenCode 2.2.5 delivers the tool name on session.tool.input.started;
+        // a future version may also repeat it on session.tool.called. Record
+        // the trusted name when present; without it the allowlist cannot be
+        // applied and the nomination fails closed.
+        const toolName = typeof data.name === "string" ? data.name : ""
+        if (toolName && id(toolName)) {
+          calls.set(key, toolName)
+          if (calls.size > 1024) { calls.delete(calls.keys().next().value); stats.deferred++ }
+        }
         return null
       }
       if (event.type !== "session.tool.success" && event.type !== "session.tool.failed") return null

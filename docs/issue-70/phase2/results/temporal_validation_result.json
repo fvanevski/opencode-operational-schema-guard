@@ -1,0 +1,48 @@
+{
+  "deterministic_outcomes": {
+    "incomplete": {
+      "disposition": "INCOMPLETE_EVIDENCE",
+      "exit": 2
+    },
+    "inconsistent": {
+      "disposition": "TEMPORAL_CONFLICT",
+      "exit": 1
+    },
+    "invalid_input": {
+      "exit": 3
+    }
+  },
+  "exit_outcomes_expected": {
+    "INCOMPLETE": 2,
+    "INCONSISTENT": 1,
+    "INVALID_INPUT": 3,
+    "PASS": 0
+  },
+  "ingestion": {
+    "contract": {
+      "group_id": "issue70_phase2_disposable",
+      "predicate": "USES_AS_JOB_QUEUE_BACKEND",
+      "subject": "Phase2 Service",
+      "transition": {
+        "effective_at": "2026-10-30T00:00:00Z",
+        "from": "Redis",
+        "to": "NATS"
+      }
+    },
+    "contract_bound_before_extraction": true,
+    "episode_uuid": "6ccaf5aa-7008-42d9-9eed-8ada72893c97",
+    "journal_state": "completed",
+    "memory_work_status": "completed",
+    "processed": true,
+    "work_key": "dbe7aee08211b0983d9c3804a7a23660d7cf9b6982cc4ef9de5d768a61c6abf4"
+  },
+  "live_validation": {
+    "coverage": "complete",
+    "disposition": "PASS",
+    "exit": 0,
+    "findings": [],
+    "mode": "live"
+  }
+}
+TEMPORAL_VALIDATOR_LIVE_EXIT=0
+TEMPORAL_VALIDATOR_DETERMINISTIC=INCONSISTENT=1,INCOMPLETE=2,INVALID_INPUT=3

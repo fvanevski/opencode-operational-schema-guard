@@ -76,6 +76,36 @@ test("native called/success sequence, duplicate replay and restart retain identi
   assert.equal(accepted.size, 1)
 })
 
+test("installed OpenCode 2.2.5 event shape: name arrives on input.started only", async () => {
+  const accepted = new Map()
+  const options = {
+    workspaceID: "/work", policyPath: "test-policy", url: "http://127.0.0.1:1933", token: "test-token",
+    policyLoader: () => policy,
+    enqueue: async (candidate) => { accepted.set(candidate.event_id, candidate); return true },
+  }
+  const inputStarted = { type: "session.tool.input.started", data: { sessionID: "s1", assistantMessageID: "m1", id: "t1", name: "verified_source_tool" } }
+  const called = { type: "session.tool.called", data: { sessionID: "s1", assistantMessageID: "m1", id: "t1", input: {}, executed: true } }
+  const success = {
+    type: "session.tool.success",
+    data: { sessionID: "s1", assistantMessageID: "m1", id: "t1", executed: true,
+      metadata: { memory_candidate_v1: {
+        group_id: "approved", category: "verified_architecture_fact", fact_ref: "git:" + "a".repeat(40) + ":memory-facts/f.json",
+        observed_at: "2026-10-30T00:00:00Z" } } },
+  }
+  const observer = createCaptureObserver(options)
+  assert.equal(await observer(inputStarted), null)
+  assert.equal(await observer(called), null)
+  const id = await observer(success)
+  assert.match(id, /^[0-9a-f]{64}$/)
+  await observer.flush()
+  assert.equal(accepted.size, 1)
+  // No recorded tool name: the allowlist cannot be applied, nomination fails closed.
+  const anonymous = createCaptureObserver(options)
+  assert.equal(await anonymous({ ...success, data: { ...success.data, id: "t2", sessionID: "s2" } }), null)
+  await anonymous.flush()
+  assert.equal(anonymous.status().pending, 0)
+})
+
 test("secrets fixtures raw logs unsupported and unstructured claims are rejected", () => {
   for (const fact_ref of ["tests/fixture", "logs/run.log", "password=secret", "raw conversation text", "sk-abcdefghijklmnopqrstuvwxyz123456"]) {
     const changed = structuredClone(event)

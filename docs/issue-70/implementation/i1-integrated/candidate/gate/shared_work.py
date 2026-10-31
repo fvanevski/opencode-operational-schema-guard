@@ -143,6 +143,126 @@ class SharedWorkQueue:
             conn.execute("INSERT INTO memory_source_admissions VALUES (?, ?, ?, ?)", (*identity, candidate["logical_digest"], key))
             return {"work_key": key, "status": "deferred_unverified"}
 
+    def admit_attested(self, candidate, envelope, *, source_authority):
+        """Queue a previously deferred event ONLY after trusted source verification.
+
+        The supplied envelope is produced by a separate authenticated source
+        resolver, not by metadata in the OpenCode tool event. The caller is
+        responsible for verifying real source ownership and operator opt-in.
+        """
+        if not isinstance(source_authority, str) or not source_authority:
+            raise SourceAuthorityUnavailable("trusted authority identity missing")
+        if not valid_candidate(candidate):
+            raise ValueError("invalid original source candidate")
+        item = normalized_candidate(candidate)
+        key = work_key(item)
+        if (envelope.work_key != key or envelope.source_event_key != source_key(item)
+                or envelope.group_id != item["scope"]["group_id"]):
+            raise SourceAuthorityUnavailable("source attestation identity mismatch")
+        envelope.validate()
+        exclusive=item["category"]=="exclusive_state_transition"
+        if exclusive != (envelope.transition_contract is not None):
+            raise SourceAuthorityUnavailable("exclusive state requires trusted bound contract")
+        if exclusive:
+            from temporal_ledger import validate_contract, digest as contract_digest
+            contract_sha=validate_contract(envelope.transition_contract,item["scope"]["group_id"])
+        with self.legacy_db.connect() as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            conn.execute("""CREATE TABLE IF NOT EXISTS memory_source_attestations(
+                work_key TEXT PRIMARY KEY, source_authority TEXT NOT NULL,
+                attestation_digest TEXT NOT NULL, episode_digest TEXT NOT NULL,
+                created_at REAL NOT NULL)""")
+            row = conn.execute("SELECT * FROM memory_work WHERE work_key=?", (key,)).fetchone()
+            if row is None or row["logical_digest"] != item["logical_digest"]:
+                raise SourceEventConflict("source event was not durably nominated")
+            prior = conn.execute("SELECT * FROM memory_source_attestations WHERE work_key=?", (key,)).fetchone()
+            if prior is not None:
+                if (prior["source_authority"] != source_authority
+                        or prior["attestation_digest"] != envelope.attestation_digest
+                        or prior["episode_digest"] != envelope.payload_hash()):
+                    raise SourceEventConflict("source attestation changed after admission")
+                return {"work_key":key,"status":row["status"]}
+            if row["status"] != "deferred_unverified":
+                raise SourceAuthorityUnavailable("source event is not awaiting verification")
+            if exclusive:
+                conn.execute("""CREATE TABLE IF NOT EXISTS temporal_transition_contracts(
+                    work_key TEXT PRIMARY KEY, group_id TEXT NOT NULL,
+                    contract_json TEXT NOT NULL, contract_digest TEXT NOT NULL,
+                    attestation_digest TEXT NOT NULL, bound_at REAL NOT NULL)""")
+                conn.execute("""INSERT INTO temporal_transition_contracts
+                    VALUES (?,?,?,?,?,?)""",(key,item["scope"]["group_id"],
+                    json.dumps(envelope.transition_contract,sort_keys=True),
+                    contract_sha,envelope.attestation_digest,time.time()))
+            conn.execute("""INSERT INTO memory_source_attestations
+                VALUES (?,?,?,?,?)""",(key,source_authority,envelope.attestation_digest,
+                                        envelope.payload_hash(),time.time()))
+            changed = conn.execute("""UPDATE memory_work
+                SET status='queued', error_code=NULL, updated_at=?
+                WHERE work_key=? AND status='deferred_unverified'""",(time.time(),key))
+            if changed.rowcount!=1: raise RuntimeError("attested admission race")
+            return {"work_key":key,"status":"queued"}
+
+    def auto_admit(self, source_resolver, *, max_items: int = 2) -> dict:
+        """Verify already nominated events using an operator-owned authority.
+
+        This runs in the existing coordinator worker, not an OpenCode context
+        hook or a competing inference scheduler. It only promotes durable
+        source nominations; actual Graphiti inference still requires the
+        shared exclusive lock and all existing admission checks.
+        """
+        if source_resolver is None:
+            return {"inspected": 0, "admitted": 0, "deferred": 0}
+        policy = getattr(source_resolver, "policy", None)
+        if (not isinstance(policy, dict) or policy.get("enabled") is not True
+                or policy.get("source_type") != "git-record-v1"
+                or not isinstance(policy.get("revision"), str)
+                or not policy["revision"]):
+            return {"inspected": 0, "admitted": 0, "deferred": 0}
+        authority = "git-record-v1:" + policy["revision"]
+        # Durable, bounded round-robin scan. Rejected nominations stay
+        # deferred (future Git/policy changes may authorize them), but can
+        # never pin the oldest N positions on every tick or after restart.
+        with self.legacy_db.connect() as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            conn.execute("""CREATE TABLE IF NOT EXISTS memory_source_scan_cursor(
+                singleton INTEGER PRIMARY KEY CHECK(singleton=1),
+                created_at REAL NOT NULL, work_key TEXT NOT NULL)""")
+            cursor=conn.execute("""SELECT created_at,work_key
+                FROM memory_source_scan_cursor WHERE singleton=1""").fetchone()
+            limit=max(1,min(8,max_items))
+            rows=conn.execute("""SELECT candidate_json,created_at,work_key
+                FROM memory_work WHERE status='deferred_unverified'
+                  AND (created_at,work_key) > (?,?)
+                ORDER BY created_at,work_key LIMIT ?""",
+                (cursor["created_at"] if cursor else -1.0,
+                 cursor["work_key"] if cursor else "",limit)).fetchall()
+            if not rows:
+                rows=conn.execute("""SELECT candidate_json,created_at,work_key
+                    FROM memory_work WHERE status='deferred_unverified'
+                    ORDER BY created_at,work_key LIMIT ?""",(limit,)).fetchall()
+            if rows:
+                last=rows[-1]
+                conn.execute("""INSERT INTO memory_source_scan_cursor
+                    (singleton,created_at,work_key) VALUES (1,?,?)
+                    ON CONFLICT(singleton) DO UPDATE SET
+                    created_at=excluded.created_at,work_key=excluded.work_key""",
+                    (last["created_at"],last["work_key"]))
+        totals = {"inspected": 0, "admitted": 0, "deferred": 0}
+        for row in rows:
+            totals["inspected"] += 1
+            candidate = json.loads(row["candidate_json"])
+            try:
+                envelope = source_resolver(candidate)
+            except ValueError:
+                # Ineligible/unverified tool nominations never become runnable.
+                # No permanent failure marking: a later authorized Git commit
+                # or policy revision may make the source independently valid.
+                totals["deferred"] += 1
+                continue
+            self.admit_attested(candidate, envelope, source_authority=authority)
+            totals["admitted"] += 1
+        return totals
+
     def ready(self):
         with self.legacy_db.connect() as conn:
             return conn.execute("SELECT * FROM memory_work WHERE status='queued' ORDER BY created_at, work_key LIMIT 1").fetchone()
@@ -207,10 +327,67 @@ class SharedWorkQueue:
 
     def status(self, limit: int = 50):
         with self.legacy_db.connect() as conn:
-            rows = conn.execute("""SELECT work_key, work_class, source_event_id, destination_scope,
-                status, attempt_generation, backend_identity, lease_identity, created_at, updated_at, error_code
-                FROM memory_work ORDER BY created_at DESC LIMIT ?""", (min(max(limit, 1), 100),)).fetchall()
-            return [dict(row) for row in rows]
+            count = min(max(limit, 1), 100)
+            columns = ("mw.work_key,mw.work_class,mw.source_event_id,mw.destination_scope,"
+                       "mw.status,mw.attempt_generation,mw.backend_identity,"
+                       "mw.lease_identity,mw.created_at,mw.updated_at,mw.error_code")
+            has_temporal = conn.execute("""SELECT 1 FROM sqlite_master WHERE
+                type='table' AND name='temporal_validation_results'""").fetchone()
+            if not has_temporal:
+                rows = conn.execute(f"SELECT {columns} FROM memory_work mw ORDER BY mw.created_at DESC LIMIT ?",(count,)).fetchall()
+                return [dict(row) for row in rows]
+            has_validator_column="validator_sha256" in {
+                c["name"] for c in conn.execute("PRAGMA table_info(temporal_validation_results)")}
+            has_active=conn.execute("""SELECT 1 FROM sqlite_master WHERE
+                type='table' AND name='temporal_validator_active'""").fetchone() is not None
+            digest_column=("tv.validator_sha256 AS temporal_validator_sha256"
+                           if has_validator_column else "NULL AS temporal_validator_sha256")
+            active_column=("va.validator_sha256 AS _active_validator_sha256"
+                           if has_active else "NULL AS _active_validator_sha256")
+            active_join=("LEFT JOIN temporal_validator_active va ON va.singleton=1"
+                         if has_active else "")
+            rows = conn.execute(f"""SELECT {columns},mw.candidate_json AS _candidate_json,
+                tc.work_key AS temporal_contract_key,
+                tv.state AS temporal_state,tv.exit_code AS temporal_exit,
+                tv.disposition AS temporal_disposition,tv.episode_uuid AS temporal_episode_uuid,
+                {digest_column},{active_column}
+                FROM memory_work mw
+                LEFT JOIN temporal_transition_contracts tc ON tc.work_key=mw.work_key
+                LEFT JOIN temporal_validation_results tv ON tv.work_key=mw.work_key
+                {active_join}
+                ORDER BY mw.created_at DESC LIMIT ?""",(count,)).fetchall()
+            outcomes={0:"PASS",1:"INCONSISTENT",2:"INCOMPLETE",3:"INVALID_INPUT"}
+            response=[]
+            for row in rows:
+                record=dict(row)
+                raw_candidate=record.pop("_candidate_json")
+                contract=record.pop("temporal_contract_key")
+                state=record.pop("temporal_state")
+                code=record.pop("temporal_exit")
+                result_sha=record.get("temporal_validator_sha256")
+                active_sha=record.pop("_active_validator_sha256")
+                try:
+                    category=json.loads(raw_candidate).get("category")
+                except (TypeError,ValueError,AttributeError):
+                    category=None
+                if contract is None:
+                    # A trusted bound contract is required for any temporal
+                    # check. An exclusive transition can never be
+                    # validation-exempt (never 'not_required'), even when its
+                    # ingestion is already completed; an ordinary fact needs no
+                    # temporal validation.
+                    record["temporal_validation_status"]=(
+                        "UNVERIFIED" if category in ("exclusive_state_transition", None)
+                        else "not_required")
+                else:
+                    # A trusted bound contract exists; report the durable
+                    # validation outcome, retaining each result's disposition.
+                    record["temporal_validation_status"]=(
+                        outcomes.get(code,"UNVERIFIED")
+                        if state=="done" and result_sha is not None
+                            and result_sha==active_sha else "UNVERIFIED")
+                response.append(record)
+            return response
 
 
 class DisabledGraphitiAdapter:
