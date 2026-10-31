@@ -53,7 +53,7 @@
   "correction_archive_sha256": "08442b4b6fc89173314cc0a48ef12982487fb42e38c6fc15e69173ed9fc3d00c",
   "files": [
     {
-      "candidate_sha256": "1a5c5aef1aec7e34313e8357523f2a24e21fe1a6a4d1f6e766f2246f594a392c",
+      "candidate_sha256": "fc753d510515f5560e7a4fc41f7979a05bf963979df43f6cd7520badd30f3eb6",
       "component": "gate",
       "path": "shared_work.py",
       "source_base_sha256": null
@@ -83,13 +83,13 @@
       "source_base_sha256": null
     },
     {
-      "candidate_sha256": "ff496619ea7aed43dc00d30878be250b477c1629dbf8856e52ddf6eb8e23ac69",
+      "candidate_sha256": "f38e0501af57da66a62b83534dbbddf582d0be9921a52c7ad3e2ae8f62edca7a",
       "component": "gate",
       "path": "openviking_commit_gate.py",
       "source_base_sha256": "6ad48a939d3f52df1c774f87d030986b35022a8c20f15916d82177ccf2094f42"
     },
     {
-      "candidate_sha256": "aa8a4feb223533022ab1ace5e7f25a34531653b1212e598fba67e326da7bc789",
+      "candidate_sha256": "cb7eb478ecb773601df2be1b50047428c0e9b293f7df2186a78cc9f93f182682",
       "component": "gate",
       "path": "graphiti_runtime_bootstrap.py",
       "source_base_sha256": null
@@ -161,7 +161,7 @@
       "source_base_sha256": null
     },
     {
-      "candidate_sha256": "579c4385b4e02d6ebbc57ec894d304378e4337fab99134747bd429d6cbea2d11",
+      "candidate_sha256": "c1eab9e9489a9f506ff197bfd1ba2dfce6922dd8ce5a1e3eefd65ba8dd95af70",
       "component": "openviking-v2",
       "path": "graphiti-recall.mjs",
       "source_base_sha256": null
@@ -389,20 +389,21 @@
     "candidate/shim/admission_exec.py": "~/.local/share/openviking-commit-gate/admission_exec.py",
     "candidate/shim/openviking-agent-run": "~/.local/bin/openviking-agent-run",
     "docs/issue-70/phase3": "source-pinned runtime: no install-root copy. Executed from the reviewed checkout via the gate config keys graphiti_runtime_dir (this directory) and graphiti_core_python (operator-named Graphiti 0.31.2-compatible venv interpreter); graphiti_recall_service.py is served from the same reviewed source under the same interpreter",
-    "patches/backend.patch": "authenticated OpenViking site-packages root; apply only in isolated copies until separately authorized"
+    "patches/backend.patch": "authenticated OpenViking site-packages root; apply only in isolated copies until separately authorized",
+    "docs/issue-70/phase4": "source-pinned runtime: no install-root copy. Executed from the reviewed checkout via the gate config keys graphiti_runtime_dir (this directory) and graphiti_core_python (operator-named Graphiti 0.31.2-compatible venv interpreter); the read-only validator runs from the operator-pinned graphiti_validator_path under the same interpreter, pinned by graphiti_validator_sha256; temporal_ledger.py persists validator outcomes in the existing gate SQLite database"
   },
   "patches": [
     {
       "apply_and_reverse": "PASS",
       "path": "patches/gate.patch",
-      "sha256": "4d145710400ccf03f99151d4bce06c09f8960f16482de812657394fb050217cb",
-      "entries": "thirteen file entries: Phase 1/2 gate files plus Phase 3 graphiti_runtime_bootstrap.py; regenerated against installed base 6ad48a93"
+      "sha256": "669654115dcd78d88a901f98d91a28878b15b66398368641b74741350f70556d",
+      "entries": "thirteen file entries: Phase 1/2 gate files plus Phase 3 graphiti_runtime_bootstrap.py and the Phase 4 shared_work.py transactional contract binding (temporal_transition_contracts) and bootstrap validator pin (graphiti_validator_path/sha256); regenerated against installed base 6ad48a93"
     },
     {
       "apply_and_reverse": "PASS",
       "path": "patches/openviking-v2.patch",
-      "sha256": "f41a2e62fdc757503a87815948260085686dcf2ed13a5336d8c970b0a4513aab",
-      "entries": "eight file entries: capture/recall additions (graphiti-recall.mjs + tests), 2.2.5 event-shape compatibility in candidate-capture.mjs, index.mjs recall wiring; regenerated against installed base 6899822e"
+      "sha256": "2ec04e90ee76f70550e221b1ccf4f9376ecd76f54130bace10cef4c735a387cd",
+      "entries": "eight file entries: capture/recall additions (graphiti-recall.mjs + tests), 2.2.5 event-shape compatibility in candidate-capture.mjs, index.mjs recall wiring, and the Phase 4 temporal label semantics in graphiti-recall.mjs (CURRENT STATE UNVERIFIED / CONFLICTED, HISTORICAL / INVALIDATED); regenerated against installed base 6899822e"
     },
     {
       "apply_and_reverse": "PASS",
@@ -411,5 +412,66 @@
     }
   ],
   "publication_parent_sha": "c4714d33f30ce6f3aa81eac1c9caabcdefd6a3b9",
-  "tracker_base": "c4714d33f30ce6f3aa81eac1c9caabcdefd6a3b9"
+  "tracker_base": "c4714d33f30ce6f3aa81eac1c9caabcdefd6a3b9",
+  "phase4_evidence": {
+    "note": "Branch-level Phase 4 automatic temporal validation, durable work/episode-keyed validator outcomes, and operator-visible status evidence. Phase 4 modules are source-pinned like Phase 3: they execute from the reviewed checkout under the operator-named Graphiti 0.31.2-compatible venv interpreter via the gate config's graphiti_runtime_dir; the read-only validator is the operator-pinned script passed by exact path + SHA-256 (graphiti_validator_path/graphiti_validator_sha256). No install-root copy exists for phase4/. temporal_ledger.py and test_temporal_ledger.py identities below include the in-campaign repairs (detailed-disposition allowlist and bounded findings projection) required by the pinned validator's live dispositions. The three phase2/phase3 files listed here were intentionally modified by the Phase 4 commits (source envelope contract binding, git_source_authority transition_contract, recall service temporal join); their earlier identities remain in phase2_evidence/phase3_evidence above.",
+    "files": [
+      {
+        "path": "docs/issue-70/phase4/INTEGRATION_CONTRACT.md",
+        "sha256": "352442ea4ccb44f0cc82d9e53bc6cf5f14d5d8d5f6137911a344b46ff3ad7baa"
+      },
+      {
+        "path": "docs/issue-70/phase4/safe_test_paths.py",
+        "sha256": "bccaa8592dfdd1557481f23dc38e98b8bbabdabe0696d9b11a6cb55e19d732ac"
+      },
+      {
+        "path": "docs/issue-70/phase4/temporal_ledger.py",
+        "sha256": "8624f9f72fa0768f262b47bb56864c46673598ed76850e44485168b6642faf4c"
+      },
+      {
+        "path": "docs/issue-70/phase4/temporal_validator_child.py",
+        "sha256": "922179d6cc1b6bc1b503f14863ab60730223107f77223315c8030107ea3d1d74"
+      },
+      {
+        "path": "docs/issue-70/phase4/temporal_validator_transport.py",
+        "sha256": "b156fa8a60ff4e676c4df75f17c2f609b024552b13a4d2c477fa49ddfbc9fbf6"
+      },
+      {
+        "path": "docs/issue-70/phase4/test_safe_test_paths.py",
+        "sha256": "5c83f9ac5b88adc3135aab0db48ffc6bf6ca6b862fd313760ed9e93e23cf8f79"
+      },
+      {
+        "path": "docs/issue-70/phase4/test_temporal_ledger.py",
+        "sha256": "db631c5c5cd6115832fdaac30a574378f392f3f852132183b445f2e4190eb602"
+      },
+      {
+        "path": "docs/issue-70/phase4/test_temporal_recall.py",
+        "sha256": "7e2e342d6c64e2c1efeaa3dde1a5a45c20e3b55776472247d2f7f9113a62c291"
+      },
+      {
+        "path": "docs/issue-70/phase4/test_temporal_source_contract.py",
+        "sha256": "a5dda1127c0e8d2cb0de93e7e7ed685151266e5ef6f0a0204abbebec90db2611"
+      },
+      {
+        "path": "docs/issue-70/phase4/test_temporal_status.py",
+        "sha256": "037601cc00a6825ac0cb30f9ba1231df58c39c6805a713b71dbcf2a78ca2cef9"
+      },
+      {
+        "path": "docs/issue-70/phase4/test_temporal_validator_transport.py",
+        "sha256": "868e2c46946f92e340a4b0794ee3758a7beab46c69c4165277784b28f7a99188"
+      },
+      {
+        "path": "docs/issue-70/phase2/graphiti_terminal.py",
+        "sha256": "fbdd6cf94c056ea74277dfb7f2f54bd14d798aac3174fbb093d33ec5ed86f1b2"
+      },
+      {
+        "path": "docs/issue-70/phase3/git_source_authority.py",
+        "sha256": "3ca7b5a7c8afb9fa2ae186ede3a4c451657bc9d81a1a3d936f6fa647bff8e8c7"
+      },
+      {
+        "path": "docs/issue-70/phase3/graphiti_recall_service.py",
+        "sha256": "84969f013ce8ff9244c6e4693cd2d225d959412bd268d1d1c7eec7d359dbb178"
+      }
+    ]
+  }
 }

@@ -40,6 +40,40 @@ Two distinct ambiguous commit identities are now admitted as a pair: while one i
 
 No task command changed protected live code, configuration, services, memory or FalkorDB. Source and config hashes were re-read unchanged. Byte-level live database invariance remains unverified because services continued running; this is not upgraded to a snapshot guarantee.
 
+# Phase 4 campaign handback (automatic temporal validation, source-only integration)
+
+```text
+ISSUE70_PHASE4_RESULT=PASS (disposable-qualification scope; review-ready source-only candidate; real transitions honestly non-PASS)
+BRANCH=issue/70-temporal-final
+TRACKER_BASE_SHA=1834ddcd0f92d135e128f4e029bf027813ade860
+CENTRAL_AUTHORIZATION_BASE=e60cb222e073f8042750ac620b1227a5a8c2b804
+GITHUB_PUBLICATION=exact remote fast-forward/readback returned in the final local handback
+IDENTITY_PREFLIGHT=PASS (OpenCode v2.2.5 2.2.5 event shape; graphiti-core 0.31.2 / falkordb 1.8.1 venv; FalkorDB :6382; LLM :8002 / embedder :8004 disposable; MCP :8766; pinned validator aa4f048dd4add8a0916e18e49ea90a2d89639ab8a9d08810c6181882aeaa8550 re-verified byte-identical)
+PHASE4_CPU_TESTS=25/25 OK (after in-campaign temporal_ledger.py + test_temporal_ledger.py repair; 23/23 pre-repair; includes 2 new regression tests)
+PHASE3_REGRESSION=22/22 OK
+PHASE2_REGRESSION=28/28 OK
+GATE_AND_LAUNCHER=59/59 gate + 7/7 receipt protocol + 5/5 launcher + 5/5 cross-process admission (76 checks)
+OV2_NODE_SUITES=graphiti-recall 5/5, candidate-capture 7/7, capture-isolation 5/5, central-auth 3/3 (20 checks)
+ACTUAL_BACKEND=20/20 OK (prepare_backend.py-assembled disposable tree /tmp/opencode/issue70-p4-backend-a; fixture interpreter uv openviking 3.14)
+CONTRACT_BINDING=PASS operator-allowlisted Git transition_contract bound in the same SQLite transaction as the queued promotion (temporal_transition_contracts; attestation digests recorded); no Graphiti operation starts without its trusted pre-extraction declaration
+DURABLE_VALIDATOR_OUTCOMES=PASS work/episode/contract-keyed rows in the existing gate SQLite DB; attempts bounded; retry read-only; ingestion never re-executed
+DUPLICATE_REPLAY=PASS second nomination of the same source event coalesced; no second episode/receipt
+REAL_TRANSITION_1=INCOMPLETE_EVIDENCE (honest non-PASS) fresh graph issue70_p4_real; git c0009690; work 6e403410...; episode ff1bb4c8-7bda-4c6f-b3a5-1a7c3a3ecf20; validator exit 2, attempts 1; ingestion completed intact
+REAL_TRANSITION_2=MISSING_STATE (honest non-PASS; INCONSISTENT class) git f835cd23; work 54c00a3a...; episode ce04238f-fb6f-42c0-bc78-f43f32fcd6a2; validator exit 1 after bounded read-only retry (attempts 1->2) following the ledger repair; no re-ingestion; root cause = model extracted non-canonical predicate names; validator correctly failed closed
+CROSS_BACKEND_ADMISSION_EXCLUSION=PASS competing OpenViking intent unknown (dead backend) kept graphiti admission fail-closed (unknown_quiescence_unavailable); no child started
+INTERRUPTION_RESTART=PASS SIGKILL during processing -> sticky blocked_reconcile / owner_restart, 0 re-submissions, temporal status UNVERIFIED
+NEGATIVE_VALIDATOR_PIN=PASS mismatched graphiti_validator_sha256 -> bootstrap RuntimeError before work tables created
+READ_ONLY_RECALL=PASS service 127.0.0.1:29745; token 403, wrong-group 403, secret query rejected; valid query returned source-attributed facts labeled [CURRENT STATE UNVERIFIED / CONFLICTED] + [HISTORICAL / INVALIDATED]; V2 client demo verified PASS/INCONSISTENT/UNVERIFIED/ordinary/dedupe label semantics
+OPERATOR_VISIBLE_STATUS=PASS SharedWorkQueue.status() exposes temporal_validation_status (INCOMPLETE / INCONSISTENT / UNVERIFIED) distinct from ingestion status completed
+PACKAGE_RECONSTRUCTION=PASS gate.patch (13 entries, + Phase 4 shared_work/bootstrap content) and openviking-v2.patch (8 entries, + Phase 4 temporal labels) regenerated against re-verified installed bases 6ad48a93/6899822e, byte-exact forward/reverse; backend.patch unchanged (a03ab064...); SHA256SUMS (47 entries), CHANGED_FILES.txt (48 files), source-base-manifest.json (phase4_evidence + refreshed candidate identities + installation mapping), qualification-phase4.json, README/ROLLBACK/friction ledger updated
+GHDEV10_FRICTION=encountered (see COMMAND_SHAPE_FRICTION.json phase4_events: rm -rf compound rejection, zsh '== not found' cosmetic glob, receipt-protocol module-name shape, node summary marker grep, 120s foreground timeout on the 175s backend suite)
+PROTECTED_LIVE_SURFACES=live gate config has no graphiti keys (stays disabled); live gate DB never accessed by tests (LIVE_GATE_DB_ACCESSED_BY_TESTS=no); installed plugin remains pre-Phase 4 (6899822e); pinned validator byte-identical (aa4f048d...); no production capture activation
+LIVE_GRAPH_MUTATION=no (disposable issue70_p4_real graph only; pre-existing issue70_*/graphiti_*_20261029 graphs untouched)
+NO_NEW_PR=no; PHASE1_MERGE=no; PRODUCTION_DEPLOYMENT=no; BRANCHES_PHASE1_2_3=unchanged
+OPEN_BLOCKERS=none within the disposable-qualification scope; a genuine live PASS remains unattainable while the local model emits non-canonical predicate names - correctly not forced; production activation of exclusive-state capture and the consolidated Phase 2-4 PR remain separately authorized
+RECOMMENDED_CENTRAL_ACTION=Independently review this single source-only Phase 4 implementation commit on issue/70-temporal-final (fast-forward from 1834ddcd); production activation and PR #71/consolidated PR decisions remain separate
+```
+
 # Phase 3 campaign handback (automatic capture + read-only recall)
 
 ```text

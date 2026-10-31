@@ -1,5 +1,5 @@
 --- /dev/null	2026-10-28 17:12:09.262798232 -0700
-+++ b/candidate-capture.mjs	2026-10-30 18:26:03.086228064 -0700
++++ b/candidate-capture.mjs	2026-10-30 19:28:40.865216405 -0700
 @@ -0,0 +1,136 @@
 +import { createHash } from "node:crypto"
 +import { readFileSync } from "node:fs"
@@ -138,8 +138,8 @@
 +  return observe
 +}
 --- /dev/null	2026-10-28 17:12:09.262798232 -0700
-+++ b/graphiti-recall.mjs	2026-10-30 18:26:03.086326696 -0700
-@@ -0,0 +1,86 @@
++++ b/graphiti-recall.mjs	2026-10-30 19:28:40.865249306 -0700
+@@ -0,0 +1,89 @@
 +/** Optional, bounded, read-only Graphiti recall alongside existing OpenViking.
 + * The configured localhost service must use CPU/graph-only lookups: no LLM or
 + * embedding calls in context hooks, and never a broad per-turn graph scan.
@@ -188,7 +188,10 @@
 +    const claim = fact.fact.replace(/[\r\n\t]+/g, " ").slice(0, 400)
 +    // Post-write temporal PASS alone is not a warrant of truth. Flag missing
 +    // or conflicting exclusive-state validation instead of asserting a winner.
-+    const marker = exclusive && status !== "PASS" ? " [CURRENT STATE UNVERIFIED / CONFLICTED]" : ""
++    const marker = [
++      exclusive && status !== "PASS" ? " [CURRENT STATE UNVERIFIED / CONFLICTED]" : "",
++      fact.invalid_at ? " [HISTORICAL / INVALIDATED]" : "",
++    ].join("")
 +    const source = fact.source_ref
 +    const line = "- " + claim + marker + " (source: " + source + ")"
 +    if (lines.join("\n").length + line.length > Math.max(200, Math.min(maxChars, 2400))) break
@@ -226,8 +229,8 @@
 +  }
 +  return recall
 +}
---- a/index.mjs	2026-10-30 18:26:03.084820054 -0700
-+++ b/index.mjs	2026-10-30 18:26:03.086440068 -0700
+--- a/index.mjs	2026-10-30 19:28:40.864218177 -0700
++++ b/index.mjs	2026-10-30 19:28:40.865281126 -0700
 @@ -11,6 +11,8 @@
  import { createHybridLexicalIndex } from "../openviking-context-v4/lib/shared/hybrid-lexical.mjs"
  import { createHybridRecall, loadVikingCorpus, DEFAULT_CORPUS_ROOT } from "../openviking-context-v4/lib/shared/hybrid-recall.mjs"
@@ -284,7 +287,7 @@
            if (!sessionID) continue
            try {
 --- /dev/null	2026-10-28 17:12:09.262798232 -0700
-+++ b/memory-candidate-v1.schema.json	2026-10-30 18:26:03.086624622 -0700
++++ b/memory-candidate-v1.schema.json	2026-10-30 19:28:40.865308046 -0700
 @@ -0,0 +1,226 @@
 +{
 +  "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -513,7 +516,7 @@
 +  ]
 +}
 --- /dev/null	2026-10-28 17:12:09.262798232 -0700
-+++ b/tests/candidate-capture.test.mjs	2026-10-30 18:26:03.086724714 -0700
++++ b/tests/candidate-capture.test.mjs	2026-10-30 19:28:40.865366427 -0700
 @@ -0,0 +1,137 @@
 +import test from "node:test"
 +import assert from "node:assert/strict"
@@ -653,7 +656,7 @@
 +  } finally { globalThis.fetch = original }
 +})
 --- /dev/null	2026-10-28 17:12:09.262798232 -0700
-+++ b/tests/capture-isolation.test.mjs	2026-10-30 18:26:03.086877858 -0700
++++ b/tests/capture-isolation.test.mjs	2026-10-30 19:28:40.865403827 -0700
 @@ -0,0 +1,91 @@
 +import test from "node:test"
 +import assert from "node:assert/strict"
@@ -747,7 +750,7 @@
 +  assert.equal(candidateFromToolEvent(continued, policy, "/work").event_id, id)
 +})
 --- /dev/null	2026-10-28 17:12:09.262798232 -0700
-+++ b/tests/central-authentication-regressions.test.mjs	2026-10-30 18:26:03.086919889 -0700
++++ b/tests/central-authentication-regressions.test.mjs	2026-10-30 19:28:40.865428777 -0700
 @@ -0,0 +1,52 @@
 +// Issue #70. Copy this file to the authenticated openviking-v2 source's
 +// tests/ directory, alongside candidate-capture.test.mjs, before running.
@@ -802,7 +805,7 @@
 +  await assert.doesNotReject(observer(candidateEvent()))
 +})
 --- /dev/null	2026-10-28 17:12:09.262798232 -0700
-+++ b/tests/graphiti-recall.test.mjs	2026-10-30 18:26:03.086954039 -0700
++++ b/tests/graphiti-recall.test.mjs	2026-10-30 19:28:40.865450067 -0700
 @@ -0,0 +1,52 @@
 +import test from "node:test"
 +import assert from "node:assert/strict"

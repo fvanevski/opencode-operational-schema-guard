@@ -36,6 +36,7 @@ patches/openviking-v2.patch
 prepare_backend.py
 qualification.json
 qualification-phase3.json
+qualification-phase4.json
 README.md
 ROLLBACK.md
 run_qualification.py

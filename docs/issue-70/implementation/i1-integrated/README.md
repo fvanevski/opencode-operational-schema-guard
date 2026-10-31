@@ -125,6 +125,67 @@ temporal results are reused only at their original committed identities
 bases and proven byte-exact forward and reverse, including cleanup of
 patch-introduced files. `patches/backend.patch` is unchanged from Phase 2.
 
+## Phase 4 automatic temporal validation update
+
+The package now includes the Phase 4 consolidated candidate (branch
+`issue/70-temporal-final`, base `1834ddcd0f92d135e128f4e029bf027813ade860`,
+central implementation base `e60cb222e073f8042750ac620b1227a5a8c2b804`):
+
+- `candidate/gate/shared_work.py`: the trusted Git-source
+  `transition_contract` (operator-allowlisted, exact canonical
+  subject/predicate/states/effective time, category
+  `exclusive_state_transition` only) is inserted into the new
+  `temporal_transition_contracts` table inside the same SQLite transaction
+  that promotes independently attested work to queued, so no Graphiti
+  operation can begin without its trusted pre-extraction declaration.
+  `SharedWorkQueue.status()` now returns the separate
+  `temporal_validation_status` (PASS/INCONSISTENT/INCOMPLETE/INVALID_INPUT/UNVERIFIED)
+  distinct from the ingestion status.
+- `candidate/gate/graphiti_runtime_bootstrap.py`: the exclusive-state
+  category is permitted only with an explicitly configured existing
+  validator file and its exact operator-provided SHA-256
+  (`graphiti_validator_path` + `graphiti_validator_sha256`); a mismatched
+  pin fails closed at bootstrap with a `RuntimeError` before any work
+  table is created. Default stays disabled.
+- `docs/issue-70/phase4/` (source-pinned, no install-root copy):
+  `temporal_ledger.py` (durable work/episode/contract-keyed validator
+  outcomes in the existing gate SQLite database, bounded read-only
+  retries, ingestion never repeated), `temporal_validator_child.py` /
+  `temporal_validator_transport.py` (loads the operator-pinned existing
+  read-only validator and runs its proven `run_transition()` in the
+  correct Graphiti venv) and `safe_test_paths.py` (preflights every
+  disposable gate TOML: explicit `[gate].database`/`lock_file` inside the
+  declared disposable root, disposable graph target only; run before every
+  disposable gate start).
+- `candidate/openviking-v2/graphiti-recall.mjs` temporal labels: exclusive
+  facts render `[CURRENT STATE UNVERIFIED / CONFLICTED]` for any non-PASS
+  disposition and `[HISTORICAL / INVALIDATED]` for invalidated outgoing
+  edges; unknown/missing/disputed statuses never render as a current state.
+
+`qualification-phase4.json` records the one-campaign evidence: identity
+preflights, all CPU suites re-executed (phase4 25/25 including the two
+regression tests for the in-campaign ledger repair, phase3 22/22, phase2
+28/28, gate 59/59, receipt protocol 7/7, launcher 5/5, cross-process
+admission 5/5, ov2 20/20, actual-backend 20/20), two genuine disposable
+transitions on fresh graph `issue70_p4_real` captured honestly as
+non-PASS (episode `ff1bb4c8-7bda-4c6f-b3a5-1a7c3a3ecf20` → exit 2
+INCOMPLETE_EVIDENCE; episode `ce04238f-fb6f-42c0-bc78-f43f32fcd6a2` → exit
+1 MISSING_STATE after a bounded read-only retry, attempts 1→2, no
+re-ingestion), duplicate-replay coalescing, cross-backend admission
+exclusion, SIGKILL interruption/restart with sticky `blocked_reconcile`
+(`owner_restart`) and zero re-submissions, the mismatched-validator-pin
+negative, and the read-only recall qualification (token/group/secret
+negatives, source-attributed facts with the unverified/historical labels,
+V2 client label semantics).
+
+`patches/gate.patch` (thirteen file entries, now including the Phase 4
+`shared_work.py` contract binding and bootstrap validator pin) and
+`patches/openviking-v2.patch` (eight file entries, now including the Phase
+4 temporal label semantics) were regenerated against the re-verified
+installed bases and proven byte-exact forward and reverse, including
+cleanup of patch-introduced files. `patches/backend.patch` is unchanged
+from Phase 2.
+
 ## Reproduction
 
 Use a Python environment matching the authenticated OpenViking/native RAGFS installation, Python 3.14 for gate tests, Node, patch and bwrap. The optional queue tests use requirements-phase1.txt; disabled gate startup is also tested with jsonschema deliberately unavailable. No dependency was installed into the protected host.
@@ -154,6 +215,21 @@ require the operator's Graphiti venv, a disposable FalkorDB graph named
 endpoints; they are qualification-only and never activate the live gate
 (see `docs/issue-70/phase3/INTEGRATION_CONTRACT.md`).
 
+Phase 4 CPU suites add the phase4 directory to the contract PYTHONPATH
+and run the same preflight discipline (`docs/issue-70/phase4/safe_test_paths.py`
+against every disposable gate TOML before start):
+
+```sh
+PYTHONPATH="$PWD/docs/issue-70/phase2:$PWD/docs/issue-70/phase3:$PWD/docs/issue-70/phase4:$PWD/docs/issue-70/implementation/i1-integrated/candidate/gate:$PWD/docs/issue-70/implementation/i1-integrated/candidate/gate/tests" \
+  python3 -m unittest discover -s docs/issue-70/phase4 -p 'test_*.py'
+```
+
+The real Phase 4 transitions additionally require the operator-pinned
+read-only validator (passed by exact path and SHA-256 through
+`graphiti_validator_path`/`graphiti_validator_sha256`) and the committed
+operator-approved Git transition records (see
+`docs/issue-70/phase4/INTEGRATION_CONTRACT.md`).
+
 ## Disabled configuration and limits
 
 Keep gate [worker] receipts_enabled=false and graphiti_enabled=false. Leave backend OPENVIKING_COMMIT_RECEIPT_DB unset; leave capture policy/token unset. Real Graphiti adapter stays disabled. Capture remains source-unverified structured nomination; no invented source verifier was added.
@@ -162,4 +238,4 @@ Later authorized activation must install the matching gate/protocol, backend pat
 
 Historical keyless unknowns and rare incomplete/unprovable operations intentionally remain blocked. Missing/corrupt receipts, archive metadata, task state, queue snapshots or an unavailable publication lease never establish nonacceptance. See ROLLBACK.md.
 
-Real Graphiti terminal completion, ingestion and read-only recall are now qualified on disposable graphs only (Phase 3, this package); the automatic exclusive-state category stays disabled by bootstrap policy until a durable post-write validator outcome can be keyed by work/episode, and production rollout, exclusive-state recall and fresh installed OpenCode activation remain separate later qualifications. Central owns independent review, source-home staging and PR decisions. No PR, merge or production activation occurred.
+Real Graphiti terminal completion, ingestion and read-only recall are qualified on disposable graphs only (Phase 3); the durable post-write validator outcome is now keyed by work/episode and surfaced as the separate `temporal_validation_status` (Phase 4, this package), while the automatic exclusive-state category stays disabled by bootstrap policy in all shipped configuration and production rollout, exclusive-state recall activation and fresh installed OpenCode activation remain separate later qualifications. Central owns independent review, source-home staging and PR decisions. No PR, merge or production activation occurred.

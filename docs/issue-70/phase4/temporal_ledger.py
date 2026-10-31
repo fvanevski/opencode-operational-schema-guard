@@ -10,8 +10,12 @@ import json
 import time
 
 EXIT_DISPOSITIONS = {0:"PASS",1:"INCONSISTENT",2:"INCOMPLETE",3:"INVALID_INPUT"}
+# Detailed dispositions the pinned read-only validator can return
+# (run_transition live/in-memory modes), mapped to their exit classes.
+# Every value is preserved; the ledger never re-derives a disposition.
 VALIDATOR_DISPOSITIONS = {
-    0:{"PASS"},1:{"TEMPORAL_CONFLICT","INCONSISTENT"},
+    0:{"PASS"},
+    1:{"TEMPORAL_CONFLICT","MISSING_STATE","INCORRECT_BOUNDARY","INCONSISTENT"},
     2:{"INCOMPLETE_EVIDENCE","INCOMPLETE"},3:{"INVALID_INPUT"},
 }
 
@@ -139,9 +143,19 @@ class TemporalLedger:
             safe=[]
             for f in findings[:16]:
                 if not isinstance(f,dict):continue
-                safe.append({k:str(f[k])[:128] for k in
-                             ("code","edge_id","source_id","episode_uuid")
-                             if k in f and isinstance(f[k],(str,int))})
+                item={"type":str(f.get("type",""))[:64]}
+                if f.get("state") is not None:
+                    item["state"]=str(f["state"])[:128]
+                if f.get("detail"):
+                    item["detail"]=str(f["detail"])[:128]
+                edges=f.get("edges")
+                if isinstance(edges,list):
+                    item["edges"]=[str(e)[:64] for e in edges[:8]
+                                   if isinstance(e,str)]
+                for k in ("code","edge_id","source_id","episode_uuid"):
+                    if k in f and isinstance(f[k],(str,int)):
+                        item[k]=str(f[k])[:128]
+                safe.append(item)
             details={"coverage":str(value.get("coverage",""))[:128],"findings":safe}
             packed=json.dumps(details,separators=(",",":"))
             if len(packed)>4096:raise ValueError("validator result too large")

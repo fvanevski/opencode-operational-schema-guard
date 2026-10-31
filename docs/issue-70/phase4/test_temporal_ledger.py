@@ -60,6 +60,43 @@ class Tests(unittest.TestCase):
                 self.ledger.evaluate("k",runner)
                 self.assertEqual(len(calls),1)
 
+    def test_all_detailed_dispositions_of_the_pinned_validator_are_durable(self):
+        # The pinned validator's run_transition can return these exact
+        # detailed dispositions; each must persist, not degrade to UNVERIFIED.
+        for exit_code,disposition in (
+            (1,"MISSING_STATE"),(1,"INCORRECT_BOUNDARY"),
+            (2,"INCOMPLETE_EVIDENCE"),(1,"TEMPORAL_CONFLICT")):
+            with self.subTest(disposition=disposition):
+                with self.db.connect() as c:
+                    c.execute("DELETE FROM temporal_validation_results")
+                runner,calls=self.run_code(exit_code,disposition)
+                self.assertEqual(self.ledger.evaluate("k",runner),EXIT_DISPOSITIONS[exit_code])
+                with self.db.connect() as c:
+                    row=c.execute("SELECT disposition,exit_code,state FROM temporal_validation_results").fetchone()
+                self.assertEqual(row["disposition"],disposition)
+                self.assertEqual(row["exit_code"],exit_code)
+                self.assertEqual(row["state"],"done")
+
+    def test_findings_projection_keeps_bounded_diagnostic_fields(self):
+        def runner(_):
+            return {"exit":1,"disposition":"MISSING_STATE","mode":"live",
+                    "coverage":"complete",
+                    "findings":[{"type":"MISSING_STATE","state":"NATS",
+                                 "detail":"no outgoing current-state edge for 'NATS'",
+                                 "edges":["edge-uuid-1","edge-uuid-2"]},
+                               {"type":"TEMPORAL_CONFLICT",
+                                 "detail":"overlap",
+                                 "edges":["e3"]*20}]}
+        with self.db.connect() as c:
+            c.execute("DELETE FROM temporal_validation_results")
+        self.assertEqual(self.ledger.evaluate("k",runner),"INCONSISTENT")
+        with self.db.connect() as c:
+            details=json.loads(c.execute(
+                "SELECT details_json FROM temporal_validation_results").fetchone()[0])
+        self.assertEqual(details["findings"][0]["type"],"MISSING_STATE")
+        self.assertEqual(details["findings"][0]["edges"],["edge-uuid-1","edge-uuid-2"])
+        self.assertEqual(len(details["findings"][1]["edges"]),8)
+
     def test_graph_persistence_not_erased_by_unavailable_validator(self):
         def broken(_):raise RuntimeError("validator unavailable")
         self.assertEqual(self.ledger.evaluate("k",broken),"UNVERIFIED")

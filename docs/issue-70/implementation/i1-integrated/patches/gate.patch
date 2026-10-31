@@ -1,6 +1,6 @@
 --- a/graphiti_runtime_bootstrap.py	1969-12-31 16:00:00.000000000 -0800
 +++ b/graphiti_runtime_bootstrap.py	1969-12-31 16:00:00.000000000 -0800
-@@ -0,0 +1,56 @@
+@@ -0,0 +1,80 @@
 +"""Explicit, opt-in Graphiti Core runtime wiring for the existing gate.
 +
 +No separate inference scheduler: the gate Worker owns EX flock + SQLite.
@@ -8,8 +8,10 @@
 +environment and only against a disposable issue70_* graph during qualification.
 +"""
 +from __future__ import annotations
++import hashlib
 +import json
 +import os
++import re
 +from pathlib import Path
 +import sys
 +
@@ -37,12 +39,26 @@
 +        raise RuntimeError("one exact authorized Graphiti group per gate runtime required")
 +    if not cfg.graphiti_group.startswith("issue70_"):
 +        raise RuntimeError("non-disposable Graphiti graph requires separate activation review")
-+    if "exclusive_state_transition" in policy.get("categories",[]):
-+        raise RuntimeError("automatic exclusive-state ingestion requires integrated validator disposition")
++    exclusive="exclusive_state_transition" in policy.get("categories",[])
++    if exclusive:
++        validator_path=Path(cfg.graphiti_validator_path)
++        if (not validator_path.is_absolute() or not validator_path.is_file()):
++            raise RuntimeError("automatic exclusive-state ingestion requires exact existing validator script")
++        expected=cfg.graphiti_validator_sha256
++        if (not re.fullmatch(r"[0-9a-f]{64}",expected)
++                or hashlib.sha256(validator_path.read_bytes()).hexdigest()!=expected):
++            raise RuntimeError("temporal validator source has no matching operator-pinned SHA-256")
++        phase4=root.parent/"phase4"
++        if not (phase4/"temporal_ledger.py").is_file():
++            raise RuntimeError("durable temporal ledger implementation unavailable")
++    else:
++        phase4=None
 +    # Python's import boundary is explicitly operator-specified; the gate and
 +    # Git/Graphiti modules must be source-pinned by the deployment manifest.
 +    sys.path.insert(0,str(phase2))
 +    sys.path.insert(0,str(root))
++    if phase4 is not None:
++        sys.path.insert(0,str(phase4))
 +    from graphiti_terminal import AwaitedCoreAdapter
 +    from git_source_authority import GitFactResolver
 +    from graphiti_process_transport import (make_process_client_factory,
@@ -56,6 +72,14 @@
 +        db,resolve=resolver,
 +        identity_fn=lambda c:(work_key(c),source_key(c)),
 +        client_factory=factory,read_episode=read_process_episode)
++    if exclusive:
++        from temporal_ledger import TemporalCheckingAdapter
++        from temporal_validator_transport import make_runner
++        run_validation=make_runner(
++            python=str(python),
++            child=str(phase4/"temporal_validator_child.py"),
++            validator_path=str(validator_path))
++        adapter=TemporalCheckingAdapter(adapter,db,run_validation)
 +    return adapter,resolver
 --- a/memory-candidate-v1.schema.json	1969-12-31 16:00:00.000000000 -0800
 +++ b/memory-candidate-v1.schema.json	1969-12-31 16:00:00.000000000 -0800
@@ -286,8 +310,8 @@
 +    }
 +  ]
 +}
---- a/openviking_commit_gate.py	2026-10-30 18:26:03.079516661 -0700
-+++ b/openviking_commit_gate.py	2026-10-30 18:26:03.082110426 -0700
+--- a/openviking_commit_gate.py	2026-10-30 19:28:40.858317331 -0700
++++ b/openviking_commit_gate.py	2026-10-30 19:28:40.860925201 -0700
 @@ -32,6 +32,8 @@
  from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
  from pathlib import Path
@@ -297,7 +321,7 @@
  
  
  LOG = logging.getLogger("openviking-commit-gate")
-@@ -134,6 +136,12 @@
+@@ -134,6 +136,14 @@
      metrics_running: str = "auto"
      metrics_waiting: str = "auto"
      metrics_fallback_urls: tuple[str, ...] = ()
@@ -307,10 +331,12 @@
 +    graphiti_source_policy: str = ""
 +    graphiti_core_python: str = ""
 +    graphiti_group: str = ""
++    graphiti_validator_path: str = ""
++    graphiti_validator_sha256: str = ""
  
      @classmethod
      def load(cls, path: str) -> "Config":
-@@ -155,6 +163,12 @@
+@@ -155,6 +165,14 @@
              ),
              metrics_running=str(gate.get("metrics_running", "auto")),
              metrics_waiting=str(gate.get("metrics_waiting", "auto")),
@@ -320,10 +346,12 @@
 +            graphiti_source_policy=_expanded(str(worker.get("graphiti_source_policy", ""))),
 +            graphiti_core_python=_expanded(str(worker.get("graphiti_core_python", ""))),
 +            graphiti_group=str(worker.get("graphiti_group", "")),
++            graphiti_validator_path=_expanded(str(worker.get("graphiti_validator_path", ""))),
++            graphiti_validator_sha256=str(worker.get("graphiti_validator_sha256", "")),
              lock_file=_expanded(str(gate.get("lock_file", "$XDG_RUNTIME_DIR/openviking-agent.lock"))),
              database=_expanded(str(gate.get("database", "~/.local/state/openviking-commit-gate/queue.sqlite3"))),
              drain_enabled=bool(worker.get("drain_enabled", False)),
-@@ -267,6 +281,19 @@
+@@ -267,6 +285,19 @@
                  "CREATE UNIQUE INDEX IF NOT EXISTS failed_tasks_generation_unique "
                  "ON failed_tasks(account, user_id, actor_peer, session_id, generation)"
              )
@@ -343,7 +371,7 @@
          os.chmod(self.path, 0o600)
  
      @staticmethod
-@@ -315,7 +342,7 @@
+@@ -315,7 +346,7 @@
                  if reason and reason not in reasons:
                      reasons = (reasons + [reason])[-20:]
                  generation = int(row["requested_generation"]) + 1
@@ -352,7 +380,7 @@
                  stored_body = dict(commit_body)
                  stored_body["keep_recent_count"] = max(
                      int(row["keep_recent_count"]), keep_recent_count
-@@ -325,8 +352,8 @@
+@@ -325,8 +356,8 @@
                      UPDATE intents
                      SET requested_generation=?, keep_recent_count=?, commit_body_json=?, reasons_json=?,
                          last_requested_at=?, state=?,
@@ -363,7 +391,7 @@
                      WHERE account=? AND user_id=? AND actor_peer=? AND session_id=?
                      """,
                      (
-@@ -367,6 +394,27 @@
+@@ -367,6 +398,27 @@
                  "SELECT * FROM intents WHERE state='inflight' ORDER BY first_requested_at LIMIT 1"
              ).fetchone()
  
@@ -391,7 +419,7 @@
      def claim(self, row: sqlite3.Row) -> sqlite3.Row | None:
          key = (row["account"], row["user_id"], row["actor_peer"], row["session_id"])
          with self.connect() as conn:
-@@ -378,6 +426,17 @@
+@@ -378,6 +430,17 @@
              if current is None or current["state"] != "pending":
                  return None
              generation = int(current["requested_generation"])
@@ -409,7 +437,7 @@
              conn.execute(
                  """
                  UPDATE intents SET state='inflight', claimed_generation=?, task_id=NULL
-@@ -584,6 +643,13 @@
+@@ -584,6 +647,13 @@
                  """
              )
  
@@ -423,7 +451,7 @@
      def list_rows(self) -> list[dict[str, Any]]:
          with self.connect() as conn:
              rows = conn.execute(
-@@ -746,10 +812,25 @@
+@@ -746,10 +816,25 @@
  
  
  class Worker:
@@ -450,7 +478,7 @@
          self.quiet_since: float | None = None
          self._status_lock = threading.Lock()
          self._admission_status: dict[str, Any] = {
-@@ -771,6 +852,8 @@
+@@ -771,6 +856,8 @@
  
      def run(self) -> None:
          self.db.mark_unknown_claims()
@@ -459,7 +487,7 @@
          LOG.info("worker started drain_enabled=%s", self.cfg.drain_enabled)
          while not self.stop_event.wait(self.cfg.poll_seconds):
              try:
-@@ -780,17 +863,102 @@
+@@ -780,17 +867,102 @@
                  self.quiet_since = None
                  self._set_admission_status("worker_error")
  
@@ -563,7 +591,7 @@
          harnesses = self._active_harness_processes()
          if harnesses:
              self.quiet_since = None
-@@ -798,10 +966,36 @@
+@@ -798,10 +970,36 @@
              return False
          lock_handle = self._try_exclusive_lock()
          if lock_handle is None:
@@ -600,7 +628,7 @@
              running, waiting = self._metrics()
              if running != 0 or waiting != 0:
                  self.quiet_since = None
-@@ -827,6 +1021,10 @@
+@@ -827,6 +1025,10 @@
                  return False
              # The lock has remained exclusively obtainable and vLLM idle for the
              # grace period. Re-check metrics while retaining this lock.
@@ -611,7 +639,7 @@
              running, waiting = self._metrics()
              if running != 0 or waiting != 0:
                  self.quiet_since = None
-@@ -834,6 +1032,17 @@
+@@ -834,6 +1036,17 @@
                      "vllm_busy", requests_running=running, requests_waiting=waiting
                  )
                  return False
@@ -629,7 +657,7 @@
              row = candidate if candidate["state"] == "inflight" else self.db.claim(candidate)
              if row is None:
                  self.quiet_since = None
-@@ -841,12 +1050,56 @@
+@@ -841,12 +1054,56 @@
                  return False
              self._set_admission_status("committing", session_id=str(row["session_id"]))
              self._process(row)
@@ -686,7 +714,7 @@
      def _active_harness_processes(self, proc_root: str = "/proc") -> list[dict[str, Any]]:
          """Return interactive harnesses, excluding persistent editor/server helpers."""
          wanted = set(self.cfg.process_names)
-@@ -966,33 +1219,66 @@
+@@ -966,33 +1223,66 @@
          return headers
  
      def _process(self, row: sqlite3.Row) -> None:
@@ -760,7 +788,7 @@
              self.db.set_task(row, str(task_id))
              row = self.db.inflight() or row
              LOG.info("commit accepted session=%s task=%s", row["session_id"], task_id)
-@@ -1019,8 +1305,102 @@
+@@ -1019,8 +1309,102 @@
              if current is not None and current["task_id"]:
                  # Preserve a known in-flight task for later status polling.
                  return
@@ -863,7 +891,7 @@
      def _wait_task(self, row: sqlite3.Row, task_id: str) -> None:
          deadline = time.monotonic() + self.cfg.task_timeout_seconds
          quoted = urllib.parse.quote(task_id, safe="")
-@@ -1100,6 +1480,13 @@
+@@ -1100,6 +1484,13 @@
                  },
              )
              return
@@ -877,7 +905,7 @@
          if path in {"/__commit_gate/failures", "/__commit_gate/unresolved"}:
              if not self._admin_authorized():
                  self._json(401, {"status": "error", "error": {"message": "Unauthorized"}})
-@@ -1121,6 +1508,25 @@
+@@ -1121,6 +1512,25 @@
  
      def do_POST(self):
          path = urllib.parse.urlsplit(self.path).path
@@ -903,7 +931,7 @@
          match = COMMIT_RE.match(path)
          if match:
              self._enqueue(match.group(1))
-@@ -1144,7 +1550,7 @@
+@@ -1144,7 +1554,7 @@
  
      def _read_body(self, limit: int | None = None) -> bytes:
          length = int(self.headers.get("Content-Length", "0") or 0)
@@ -912,7 +940,7 @@
              raise ValueError("request body exceeds configured limit")
          return self.rfile.read(length) if length else b""
  
-@@ -1155,7 +1561,22 @@
+@@ -1155,7 +1565,22 @@
              "actor_peer": self.headers.get("X-OpenViking-Actor-Peer", "").strip(),
          }
  
@@ -935,7 +963,7 @@
          api_key = os.environ.get("OPENVIKING_ROOT_API_KEY") or os.environ.get(
              "OPENVIKING_API_KEY", ""
          )
-@@ -1163,6 +1584,9 @@
+@@ -1163,6 +1588,9 @@
          return bool(api_key) and hmac.compare_digest(supplied, f"Bearer {api_key}")
  
      def _enqueue(self, encoded_session: str) -> None:
@@ -945,7 +973,7 @@
          try:
              session_id = urllib.parse.unquote(encoded_session).strip()
              if not session_id or "/" in session_id or len(session_id) > 255:
-@@ -1203,6 +1627,9 @@
+@@ -1203,6 +1631,9 @@
              self._json(503, {"status": "error", "error": {"message": str(exc)}})
  
      def _proxy(self) -> None:
@@ -955,7 +983,7 @@
          cfg = self.server.cfg
          response_started = False
          try:
-@@ -1265,7 +1692,11 @@
+@@ -1265,7 +1696,11 @@
  def serve(cfg: Config) -> None:
      db = QueueDB(cfg.database)
      stop_event = threading.Event()
@@ -1142,7 +1170,7 @@
 +jsonschema>=4.26,<5
 --- a/shared_work.py	1969-12-31 16:00:00.000000000 -0800
 +++ b/shared_work.py	1969-12-31 16:00:00.000000000 -0800
-@@ -0,0 +1,302 @@
+@@ -0,0 +1,342 @@
 +"""Phase 1 typed work in the existing commit-gate SQLite and worker owner.
 +
 +The real Graphiti adapter is deliberately unavailable until a durable terminal
@@ -1305,6 +1333,12 @@
 +                or envelope.group_id != item["scope"]["group_id"]):
 +            raise SourceAuthorityUnavailable("source attestation identity mismatch")
 +        envelope.validate()
++        exclusive=item["category"]=="exclusive_state_transition"
++        if exclusive != (envelope.transition_contract is not None):
++            raise SourceAuthorityUnavailable("exclusive state requires trusted bound contract")
++        if exclusive:
++            from temporal_ledger import validate_contract, digest as contract_digest
++            contract_sha=validate_contract(envelope.transition_contract,item["scope"]["group_id"])
 +        with self.legacy_db.connect() as conn:
 +            conn.execute("BEGIN IMMEDIATE")
 +            conn.execute("""CREATE TABLE IF NOT EXISTS memory_source_attestations(
@@ -1323,6 +1357,15 @@
 +                return {"work_key":key,"status":row["status"]}
 +            if row["status"] != "deferred_unverified":
 +                raise SourceAuthorityUnavailable("source event is not awaiting verification")
++            if exclusive:
++                conn.execute("""CREATE TABLE IF NOT EXISTS temporal_transition_contracts(
++                    work_key TEXT PRIMARY KEY, group_id TEXT NOT NULL,
++                    contract_json TEXT NOT NULL, contract_digest TEXT NOT NULL,
++                    attestation_digest TEXT NOT NULL, bound_at REAL NOT NULL)""")
++                conn.execute("""INSERT INTO temporal_transition_contracts
++                    VALUES (?,?,?,?,?,?)""",(key,item["scope"]["group_id"],
++                    json.dumps(envelope.transition_contract,sort_keys=True),
++                    contract_sha,envelope.attestation_digest,time.time()))
 +            conn.execute("""INSERT INTO memory_source_attestations
 +                VALUES (?,?,?,?,?)""",(key,source_authority,envelope.attestation_digest,
 +                                        envelope.payload_hash(),time.time()))
@@ -1433,10 +1476,35 @@
 +
 +    def status(self, limit: int = 50):
 +        with self.legacy_db.connect() as conn:
-+            rows = conn.execute("""SELECT work_key, work_class, source_event_id, destination_scope,
-+                status, attempt_generation, backend_identity, lease_identity, created_at, updated_at, error_code
-+                FROM memory_work ORDER BY created_at DESC LIMIT ?""", (min(max(limit, 1), 100),)).fetchall()
-+            return [dict(row) for row in rows]
++            count = min(max(limit, 1), 100)
++            columns = ("mw.work_key,mw.work_class,mw.source_event_id,mw.destination_scope,"
++                       "mw.status,mw.attempt_generation,mw.backend_identity,"
++                       "mw.lease_identity,mw.created_at,mw.updated_at,mw.error_code")
++            has_temporal = conn.execute("""SELECT 1 FROM sqlite_master WHERE
++                type='table' AND name='temporal_validation_results'""").fetchone()
++            if not has_temporal:
++                rows = conn.execute(f"SELECT {columns} FROM memory_work mw ORDER BY mw.created_at DESC LIMIT ?",(count,)).fetchall()
++                return [dict(row) for row in rows]
++            rows = conn.execute(f"""SELECT {columns},
++                tc.work_key AS temporal_contract_key,
++                tv.state AS temporal_state,tv.exit_code AS temporal_exit,
++                tv.disposition AS temporal_disposition,tv.episode_uuid AS temporal_episode_uuid
++                FROM memory_work mw
++                LEFT JOIN temporal_transition_contracts tc ON tc.work_key=mw.work_key
++                LEFT JOIN temporal_validation_results tv ON tv.work_key=mw.work_key
++                ORDER BY mw.created_at DESC LIMIT ?""",(count,)).fetchall()
++            outcomes={0:"PASS",1:"INCONSISTENT",2:"INCOMPLETE",3:"INVALID_INPUT"}
++            response=[]
++            for row in rows:
++                record=dict(row)
++                contract=record.pop("temporal_contract_key")
++                state=record.pop("temporal_state")
++                code=record.pop("temporal_exit")
++                record["temporal_validation_status"]=(
++                    "not_required" if contract is None else
++                    outcomes.get(code,"UNVERIFIED") if state=="done" else "UNVERIFIED")
++                response.append(record)
++            return response
 +
 +
 +class DisabledGraphitiAdapter:
@@ -1750,8 +1818,8 @@
 +
 +if __name__ == '__main__':
 +    unittest.main()
---- a/tests/test_dual_metrics.py	2026-10-30 18:26:03.080895870 -0700
-+++ b/tests/test_dual_metrics.py	2026-10-30 18:26:03.082717539 -0700
+--- a/tests/test_dual_metrics.py	2026-10-30 19:28:40.859698862 -0700
++++ b/tests/test_dual_metrics.py	2026-10-30 19:28:40.861201404 -0700
 @@ -99,7 +99,11 @@
  
      def test_each_provider_busy_blocks_and_idle_keeps_grace(self):
