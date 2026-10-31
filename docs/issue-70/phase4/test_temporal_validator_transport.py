@@ -1,5 +1,5 @@
 """Validate subprocess protocol without running actual graph queries."""
-import json,tempfile,unittest,sys
+import hashlib,json,tempfile,unittest,sys
 from pathlib import Path
 from temporal_validator_transport import make_runner,ValidatorUnavailable
 
@@ -13,9 +13,11 @@ class RunnerTests(unittest.TestCase):
             f"print('ISSUE70_VALIDATION='+{answer!r})\n"+
             f"sys.exit({returncode})\n")
         return make_runner(python=sys.executable,child=str(self.script),
-                           validator_path=str(self.validator))
+                           validator_path=str(self.validator),
+                           validator_sha256=hashlib.sha256(self.validator.read_bytes()).hexdigest())
     def test_exact_shape(self):
-        result={"exit":1,"disposition":"TEMPORAL_CONFLICT","mode":"live",
+        result={"validator_sha256":hashlib.sha256(self.validator.read_bytes()).hexdigest(),
+                "exit":1,"disposition":"TEMPORAL_CONFLICT","mode":"live",
                 "coverage":"complete","findings":[]}
         run=self.stub(json.dumps(result))
         self.assertEqual(run({"transition":{"from":"Redis"}})["exit"],1)
@@ -24,6 +26,14 @@ class RunnerTests(unittest.TestCase):
             with self.subTest(response=response):
                 with self.assertRaises(ValidatorUnavailable):
                     self.stub(response)({})
+    def test_validator_changes_after_configuration_fail_closed(self):
+        pin=hashlib.sha256(self.validator.read_bytes()).hexdigest()
+        result={"validator_sha256":pin,"exit":0,"disposition":"PASS",
+                "mode":"live","coverage":"complete","findings":[]}
+        run=self.stub(json.dumps(result))
+        self.validator.write_text("# changed validator implementation\n")
+        with self.assertRaises(ValidatorUnavailable):run({})
+
     def test_nonzero_exit_fail(self):
         with self.assertRaises(ValidatorUnavailable):
             self.stub("{}",returncode=1)({})

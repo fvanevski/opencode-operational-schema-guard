@@ -7,6 +7,7 @@ from shared_work import SharedWorkQueue
 from test_shared_work import candidate
 from temporal_ledger import TemporalLedger
 
+PIN="a"*64
 class StatusTests(unittest.TestCase):
     def test_legacy_status_unchanged_and_opted_in_status_is_distinct(self):
         t=tempfile.TemporaryDirectory();self.addCleanup(t.cleanup)
@@ -17,7 +18,7 @@ class StatusTests(unittest.TestCase):
         original=q.status()
         self.assertEqual(original[0]["status"],"deferred_unverified")
         self.assertNotIn("temporal_validation_status",original[0])
-        TemporalLedger(db)
+        TemporalLedger(db,validator_sha256=PIN)
         with db.connect() as c:
             c.execute("""INSERT INTO temporal_transition_contracts
                 (work_key,group_id,contract_json,contract_digest,attestation_digest,bound_at)
@@ -27,13 +28,17 @@ class StatusTests(unittest.TestCase):
         with db.connect() as c:
             c.execute("""INSERT INTO temporal_validation_results(
                 work_key,episode_uuid,contract_digest,state,exit_code,
-                disposition,attempts,updated_at)
-                VALUES (?,?,?,'done',1,'TEMPORAL_CONFLICT',1,1)""",
-                (admitted["work_key"],"ep-1","digest"))
+                disposition,attempts,updated_at,validator_sha256)
+                VALUES (?,?,?,'done',1,'TEMPORAL_CONFLICT',1,1,?)""",
+                (admitted["work_key"],"ep-1","digest",PIN))
         record=q.status()[0]
         self.assertEqual(record["status"],"deferred_unverified")
         self.assertEqual(record["temporal_validation_status"],"INCONSISTENT")
         self.assertEqual(record["temporal_episode_uuid"],"ep-1")
+        self.assertEqual(record["temporal_validator_sha256"],PIN)
+        with db.connect() as c:
+            c.execute("UPDATE temporal_validator_active SET validator_sha256=?",("b"*64,))
+        self.assertEqual(q.status()[0]["temporal_validation_status"],"UNVERIFIED")
 
     def test_exclusive_state_without_contract_is_unverified_not_exempt(self):
         t=tempfile.TemporaryDirectory();self.addCleanup(t.cleanup)

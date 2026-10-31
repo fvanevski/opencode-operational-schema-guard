@@ -23,20 +23,21 @@ class Tests(unittest.TestCase):
     def setUp(self):
         t=tempfile.TemporaryDirectory();self.addCleanup(t.cleanup)
         self.db=DB(str(Path(t.name)/"queue.sqlite3"))
+        self.pin="a"*64
         with self.db.connect() as c:
             c.execute("""CREATE TABLE graphiti_ingest_receipts (
                 work_key TEXT,episode_uuid TEXT,state TEXT,group_id TEXT)""")
             c.execute("""CREATE TABLE temporal_transition_contracts(
                 work_key TEXT,group_id TEXT,contract_json TEXT,contract_digest TEXT)""")
             c.execute("""CREATE TABLE memory_work(
-                work_key TEXT,candidate_json TEXT)""")
+                work_key TEXT,candidate_json TEXT,status TEXT)""")
             c.execute("INSERT INTO graphiti_ingest_receipts VALUES (?,?,?,?)",
                       ("k","ep-1","completed","issue70_test"))
             c.execute("INSERT INTO temporal_transition_contracts VALUES (?,?,?,?)",
                       ("k","issue70_test",json.dumps(CONTRACT),digest(CONTRACT)))
-            c.execute("INSERT INTO memory_work VALUES (?,?)",
-                      ("k",json.dumps({"category":"exclusive_state_transition"})))
-        self.ledger=TemporalLedger(self.db)
+            c.execute("INSERT INTO memory_work VALUES (?,?,?)",
+                      ("k",json.dumps({"category":"exclusive_state_transition"}),"completed"))
+        self.ledger=TemporalLedger(self.db,validator_sha256=self.pin)
 
     def run_code(self,exit_code,disposition):
         count=[]
@@ -109,6 +110,7 @@ class Tests(unittest.TestCase):
             c.execute("""INSERT INTO temporal_validation_results(
                 work_key,episode_uuid,contract_digest,state,attempts,updated_at)
                 VALUES (?,?,?,'running',1,1)""",("k","ep-1",digest(CONTRACT)))
+            c.execute("UPDATE temporal_validation_results SET validator_sha256=?",(self.pin,))
         runner,calls=self.run_code(0,"PASS")
         self.assertEqual(self.ledger.evaluate("k",runner),"PASS")
         self.assertEqual(len(calls),1)
@@ -123,9 +125,56 @@ class Tests(unittest.TestCase):
             def poll(self,key):
                 return {"status":"completed","persisted":True,"backend_identity":key}
         adapter=TemporalCheckingAdapter(Core(),self.db,lambda _:{"exit":1,
-            "disposition":"TEMPORAL_CONFLICT","mode":"live","findings":[]})
+            "disposition":"TEMPORAL_CONFLICT","mode":"live","findings":[]},
+            validator_sha256=self.pin)
         self.assertEqual(adapter.poll("k")["status"],"completed")
         self.assertEqual(self.ledger.status_for_episode("ep-1","issue70_test"),"INCONSISTENT")
+
+    def test_transient_failure_retries_once_without_reingesting(self):
+        submitted=[]
+        class Core:
+            def submit(self,item):
+                submitted.append(item)
+                raise AssertionError("must never re-ingest")
+            def poll(self,key):
+                raise AssertionError("retry must not poll the ingestion backend")
+        calls=[]
+        def runner(_):
+            calls.append(True)
+            if len(calls)==1:raise TimeoutError("transient read-only outage")
+            return {"exit":0,"disposition":"PASS","mode":"live",
+                    "coverage":"complete","findings":[]}
+        adapter=TemporalCheckingAdapter(Core(),self.db,runner,validator_sha256=self.pin)
+        self.assertEqual(adapter.ledger.evaluate("k",runner),"UNVERIFIED")
+        self.assertEqual(adapter.retry_pending(max_items=1),1)
+        self.assertEqual(adapter.ledger.status_for_episode("ep-1","issue70_test"),"PASS")
+        self.assertEqual(adapter.retry_pending(max_items=1),0)
+        self.assertEqual(len(calls),2)
+        self.assertEqual(len(submitted),0)
+        with self.db.connect() as c:
+            self.assertEqual(c.execute("SELECT attempts FROM temporal_validation_results").fetchone()[0],2)
+
+    def test_exhausted_attempts_never_reingest_or_loop(self):
+        def broken(_):raise TimeoutError("unavailable")
+        adapter=TemporalCheckingAdapter(object(),self.db,broken,validator_sha256=self.pin)
+        self.assertEqual(adapter.ledger.evaluate("k",broken),"UNVERIFIED")
+        self.assertEqual(adapter.retry_pending(),1)
+        self.assertEqual(adapter.retry_pending(),0)
+        with self.db.connect() as c:
+            r=c.execute("SELECT attempts,state FROM temporal_validation_results").fetchone()
+        self.assertEqual((r["attempts"],r["state"]),(2,"unverified"))
+
+    def test_validator_identity_change_preserves_history_but_blocks_reuse(self):
+        runner,calls=self.run_code(0,"PASS")
+        self.assertEqual(self.ledger.evaluate("k",runner),"PASS")
+        current=TemporalLedger(self.db,validator_sha256="b"*64)
+        self.assertEqual(current.status_for_episode("ep-1","issue70_test"),"UNVERIFIED")
+        self.assertEqual(current.evaluate("k",runner),"UNVERIFIED")
+        self.assertEqual(len(calls),1)
+        with self.db.connect() as c:
+            row=c.execute("SELECT validator_sha256,state FROM temporal_validation_results").fetchone()
+        self.assertEqual(row["validator_sha256"],self.pin)
+        self.assertEqual(row["state"],"done")
 
     def test_no_contract_cannot_release_exclusive_ingest(self):
         with self.db.connect() as c:
@@ -133,7 +182,8 @@ class Tests(unittest.TestCase):
         class Core:
             def poll(self,key):return {"status":"completed","persisted":True,
                                        "backend_identity":key}
-        adapter=TemporalCheckingAdapter(Core(),self.db,lambda _:None)
+        adapter=TemporalCheckingAdapter(Core(),self.db,lambda _:None,
+            validator_sha256=self.pin)
         self.assertEqual(adapter.poll("k")["status"],"blocked_reconcile")
 
 if __name__=="__main__":unittest.main()

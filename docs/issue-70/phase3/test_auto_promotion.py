@@ -87,6 +87,24 @@ class AutoPromotionTests(unittest.TestCase):
         self.assertIsNone(self.shared.ready())
         self.assertEqual(self.adapter.submissions,0)
 
+    def test_rejected_old_nominations_do_not_starve_later_valid_source(self):
+        for suffix in ("invalid-first","invalid-second"):
+            item=candidate(suffix)
+            item["fact_ref"]="git:"+"f"*40+":memory-facts/unreachable.json"
+            self.shared.enqueue(item)
+        self.shared.enqueue(self.item)
+        first=self.shared.auto_admit(self.resolver,max_items=2)
+        self.assertEqual(first["admitted"],0)
+        self.assertEqual(first["deferred"],2)
+        # Cursor must be durable when the worker/queue restarts.
+        reopened=SharedWorkQueue(self.db)
+        second=reopened.auto_admit(self.resolver,max_items=2)
+        self.assertEqual(second["admitted"],1)
+        self.assertEqual(reopened.ready()["work_key"],work_key(self.item))
+        with self.db.connect() as conn:
+            self.assertEqual(conn.execute("""SELECT COUNT(*) FROM memory_work
+                WHERE status='deferred_unverified'""").fetchone()[0],2)
+
     def test_feature_disabled_has_no_auto_promotion(self):
         self.shared.enqueue(self.item)
         cfg=replace(self.cfg,graphiti_enabled=False)
