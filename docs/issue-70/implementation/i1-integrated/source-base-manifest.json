@@ -143,7 +143,7 @@
    "source_base_sha256": "ac54e32016b2c29d38c302f116a69110395a579d82b602d2cbf7cbf416d63e4a"
   },
   {
-   "candidate_sha256": "6ae7cf5dc18e178a9f518240a45d77e57528fa6f9648ddfbd51d10a5cecf8d24",
+   "candidate_sha256": "410129383ca7d4896d78fa0a6e2393fac9374135990788af83671e7523235fed",
    "component": "openviking-v2",
    "path": "index.mjs",
    "source_base_sha256": "6899822ec75a16ba05578d4ba165dfe8f913f3d37a4d96717767a170b906766d"
@@ -155,7 +155,7 @@
    "source_base_sha256": null
   },
   {
-   "candidate_sha256": "335537a9342201b681d737aa3149705b826eb21dbef942174de3c56896dcb3b7",
+   "candidate_sha256": "dea00b72af7f476612d6b997d69ba8a8b640ae4d349f1954e61014f1f351b57b",
    "component": "openviking-v2",
    "path": "candidate-capture.mjs",
    "source_base_sha256": null
@@ -167,7 +167,7 @@
    "source_base_sha256": null
   },
   {
-   "candidate_sha256": "632b753d94d1794f41578d24f3a456e7dfd7d706293e7d02693b1e700be502ef",
+   "candidate_sha256": "0a124d2ef8f3f081cb759f938a1be3c620dfc4c46eb700ea5a8142d02bca1c85",
    "component": "openviking-v2",
    "path": "tests/candidate-capture.test.mjs",
    "source_base_sha256": null
@@ -243,6 +243,18 @@
    "component": "shim",
    "path": "admission_exec.py",
    "source_base_sha256": null
+  },
+  {
+   "component": "openviking-v2",
+   "path": "read-source-producer.mjs",
+   "source_base_sha256": null,
+   "candidate_sha256": "b7553772cdc2308ec8ca250610f6bf16e501d514f2221f76a1fe7b541dad05e6"
+  },
+  {
+   "component": "openviking-v2",
+   "path": "tests/read-source-producer.test.mjs",
+   "source_base_sha256": null,
+   "candidate_sha256": "01e7ba5436609ac668e939e0be896520bcf5334257e6218f57d9dddaff5f1ff2"
   }
  ],
  "phase2_evidence": {
@@ -406,8 +418,8 @@
   {
    "apply_and_reverse": "PASS",
    "path": "patches/openviking-v2.patch",
-   "sha256": "b0ee5faae46ccaf8c9201f9a0bdd46d8f4c20a285e38e27832707b1b5ef2b321",
-   "entries": "eight file entries: capture/recall additions (graphiti-recall.mjs + tests), 2.2.5 event-shape compatibility in candidate-capture.mjs, index.mjs recall wiring, and the Phase 4 temporal label semantics in graphiti-recall.mjs (CURRENT STATE UNVERIFIED / CONFLICTED, HISTORICAL / INVALIDATED); regenerated against installed base 6899822e"
+   "sha256": "849c6cb9acb12b28c6c917354638175638a96465cee75adaf1e60030fc315549",
+   "entries": "10 changed-file entries; 11 candidate files including unchanged package.json. Native read producer module, hooks and tests; authenticated historical index base 6899822e. Exact forward/reverse; new files removed in disposable reverse copy."
   },
   {
    "apply_and_reverse": "PASS",

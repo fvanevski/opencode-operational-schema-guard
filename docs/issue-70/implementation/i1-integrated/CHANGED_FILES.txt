@@ -19,10 +19,12 @@ candidate/openviking-v2/graphiti-recall.mjs
 candidate/openviking-v2/index.mjs
 candidate/openviking-v2/memory-candidate-v1.schema.json
 candidate/openviking-v2/package.json
+candidate/openviking-v2/read-source-producer.mjs
 candidate/openviking-v2/tests/candidate-capture.test.mjs
 candidate/openviking-v2/tests/capture-isolation.test.mjs
 candidate/openviking-v2/tests/central-authentication-regressions.test.mjs
 candidate/openviking-v2/tests/graphiti-recall.test.mjs
+candidate/openviking-v2/tests/read-source-producer.test.mjs
 candidate/shim/admission_exec.py
 candidate/shim/openviking-agent-run
 CHANGED_FILES.txt
@@ -47,3 +49,4 @@ source-ownership.json
 tests/backend_service_fixture.py
 tests/test_i1_service.py
 tests/test_launcher_admission.py
+qualification-native-read.json

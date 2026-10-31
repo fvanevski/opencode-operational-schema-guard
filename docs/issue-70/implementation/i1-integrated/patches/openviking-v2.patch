@@ -1,7 +1,6 @@
-diff -ruN a/candidate-capture.mjs b/candidate-capture.mjs
---- a/candidate-capture.mjs	1969-12-31 16:00:00.000000000 -0800
-+++ b/candidate-capture.mjs	2026-10-30 22:12:49.775631440 -0700
-@@ -0,0 +1,136 @@
+--- /dev/null
++++ b/candidate-capture.mjs
+@@ -0,0 +1,150 @@
 +import { createHash } from "node:crypto"
 +import { readFileSync } from "node:fs"
 +
@@ -49,7 +48,7 @@ diff -ruN a/candidate-capture.mjs b/candidate-capture.mjs
 +// Only structured metadata from an operator-allowlisted completed tool is considered.
 +// No transcript, tool body, model proposal, or compaction context is parsed.
 +export function candidateFromToolEvent(event, policy, workspaceID) {
-+  if (!policy?.enabled || event?.type !== "session.tool.success" || event.data?.executed !== true) return null
++  if (!policy?.enabled || event?.type !== "session.tool.success" || typeof event.data?.executed !== "boolean") return null
 +  const data = event.data
 +  if (!id(workspaceID) || !policy.workspaces.includes(workspaceID) || !policy.tools.includes(data.name)) return null
 +  const proposal = data.metadata?.memory_candidate_v1
@@ -99,6 +98,16 @@ diff -ruN a/candidate-capture.mjs b/candidate-capture.mjs
 +  const calls = new Map()
 +  const pending = new Map()
 +  const stats = { deferred: 0, failed: 0 }
++  const schedule = (candidate) => {
++    if (!candidate) return null
++    if (pending.has(candidate.event_id)) return candidate.event_id
++    if (pending.size >= Math.max(1, Math.min(64, maxPending))) { stats.deferred++; return null }
++    const task = Promise.resolve().then(() => enqueue(candidate, { url, token, timeoutMs }))
++      .then((ok) => { if (!ok) stats.failed++ }, () => { stats.failed++ })
++      .finally(() => pending.delete(candidate.event_id))
++    pending.set(candidate.event_id, task)
++    return candidate.event_id
++  }
 +  const observe = async (event) => {
 +    try {
 +      const data = event?.data
@@ -121,26 +130,29 @@ diff -ruN a/candidate-capture.mjs b/candidate-capture.mjs
 +      calls.delete(key)
 +      if (event.type !== "session.tool.success" || !name) return null
 +      const candidate = candidateFromToolEvent({ ...event, data: { ...data, name } }, policyLoader(policyPath), workspaceID)
-+      if (!candidate) return null
-+      if (pending.has(candidate.event_id)) return candidate.event_id
-+      if (pending.size >= Math.max(1, Math.min(64, maxPending))) { stats.deferred++; return null }
-+      // enqueueCandidate aborts its actual network operation on timeout. Do not
-+      // release a slot until the operation settles, including injected senders.
-+      const task = Promise.resolve().then(() => enqueue(candidate, { url, token, timeoutMs }))
-+        .then((ok) => { if (!ok) stats.failed++ }, () => { stats.failed++ })
-+        .finally(() => pending.delete(candidate.event_id))
-+      pending.set(candidate.event_id, task)
-+      return candidate.event_id
++      return schedule(candidate)
 +    } catch { stats.failed++; return null }
 +  }
 +  // Tests/owners may drain explicitly; the event loop never awaits this.
++  // A completed native V2 local tool hook authenticates execution; the
++  // native "executed" field is a provider-execution flag, not a success flag.
++  observe.fromCompletedHook = (hook, proposal) => {
++    if (hook?.status !== "completed" || hook.tool !== "read" ||
++        !id(hook.sessionID) || !id(hook.messageID) || !id(hook.id) ||
++        !proposal || typeof proposal !== "object") return null
++    const policy = policyLoader(policyPath)
++    return schedule(candidateFromToolEvent({ type: "session.tool.success", data: {
++      sessionID: hook.sessionID, assistantMessageID: hook.messageID,
++      id: hook.id, name: hook.tool, executed: false,
++      metadata: { memory_candidate_v1: proposal },
++    } }, policy, workspaceID))
++  }
 +  observe.flush = () => Promise.allSettled([...pending.values()])
 +  observe.status = () => ({ ...stats, pending: pending.size, calls: calls.size })
 +  return observe
 +}
-diff -ruN a/graphiti-recall.mjs b/graphiti-recall.mjs
---- a/graphiti-recall.mjs	1969-12-31 16:00:00.000000000 -0800
-+++ b/graphiti-recall.mjs	2026-10-30 22:12:49.776756569 -0700
+--- /dev/null
++++ b/graphiti-recall.mjs
 @@ -0,0 +1,96 @@
 +/** Optional, bounded, read-only Graphiti recall alongside existing OpenViking.
 + * The configured localhost service must use CPU/graph-only lookups: no LLM or
@@ -238,19 +250,19 @@ diff -ruN a/graphiti-recall.mjs b/graphiti-recall.mjs
 +  }
 +  return recall
 +}
-diff -ruN a/index.mjs b/index.mjs
---- a/index.mjs	2026-10-30 22:12:49.772719618 -0700
-+++ b/index.mjs	2026-10-30 22:12:49.777905707 -0700
-@@ -11,6 +11,8 @@
+--- a/index.mjs
++++ b/index.mjs
+@@ -11,6 +11,9 @@
  import { createHybridLexicalIndex } from "../openviking-context-v4/lib/shared/hybrid-lexical.mjs"
  import { createHybridRecall, loadVikingCorpus, DEFAULT_CORPUS_ROOT } from "../openviking-context-v4/lib/shared/hybrid-recall.mjs"
  import { normalizeToolName } from "../openviking-context-v4/lib/shared/uri-guard.mjs"
-+import { createCaptureObserver } from "./candidate-capture.mjs"
++import { createCaptureObserver, loadCapturePolicy } from "./candidate-capture.mjs"
++import { createReadSourceProducer } from "./read-source-producer.mjs"
 +import { createGraphitiRecall } from "./graphiti-recall.mjs"
  
  const pluginRoot = dirname(fileURLToPath(new URL("../openviking-context-v4/index.mjs", import.meta.url)))
  const parts = (message) => message.type === "user"
-@@ -65,6 +67,18 @@
+@@ -65,6 +68,25 @@
      const uriGuard = createVikingUriGuard()
      const controller = new AbortController()
      const owned = new Set()
@@ -259,6 +271,13 @@ diff -ruN a/index.mjs b/index.mjs
 +      policyPath: process.env.GRAPHITI_CAPTURE_POLICY_PATH,
 +      url: process.env.GRAPHITI_CAPTURE_GATE_URL ?? "http://127.0.0.1:1933",
 +      token: process.env.GRAPHITI_CAPTURE_TOKEN ?? "",
++    })
++    const readProducer = createReadSourceProducer({
++      workspaceID: directory,
++      capturePolicyPath: process.env.GRAPHITI_CAPTURE_POLICY_PATH,
++      sourcePolicyPath: process.env.GRAPHITI_CAPTURE_SOURCE_POLICY_PATH,
++      observer: observeCandidate,
++      policyLoader: loadCapturePolicy,
 +    })
 +    const recallGraphiti = createGraphitiRecall({
 +      workspaceID: directory,
@@ -269,7 +288,7 @@ diff -ruN a/index.mjs b/index.mjs
      let stopped = false
      const consumeCanonical = async (sessionID) => {
        const messages = await canonicalMessages(ctx, sessionID, directory)
-@@ -105,6 +119,16 @@
+@@ -105,6 +127,16 @@
        const extra = [...output.parts, ...recalled.parts].filter((part) => part.synthetic && typeof part.text === "string")
        for (const part of extra.toReversed()) if (!event.system.some((item) => item.type === "text" && item.text === part.text))
          event.system.push({ type: "text", text: part.text })
@@ -286,7 +305,16 @@ diff -ruN a/index.mjs b/index.mjs
        const repo = repository.getRepoSystemPrompt()
        if (repo && !event.system.some((item) => item.type === "text" && item.text === repo)) event.system.push({ type: "text", text: repo })
      })
-@@ -126,6 +150,9 @@
+@@ -112,6 +144,8 @@
+       if (await consumeCanonical(event.sessionID)) await manager.flushSession(event.sessionID, { commit: true, reason: "session.compacting" })
+     })
+     const before = await ctx.tool.hook("execute.before", (event) => uriGuard({ tool: event.tool, args: event.input }, { args: event.input }))
++    const readBefore = await ctx.tool.hook("execute.before", (event) => readProducer.before(event))
++    const readAfter = await ctx.tool.hook("execute.after", (event) => readProducer.after(event))
+     const after = lexical ? await ctx.tool.hook("execute.after", (event) => {
+       if (event.status !== "completed") return
+       const name = normalizeToolName(event.tool)
+@@ -126,6 +160,9 @@
        try {
          for await (const event of ctx.event.subscribe({ signal: controller.signal })) {
            const sessionID = event.data?.sessionID
@@ -296,9 +324,19 @@ diff -ruN a/index.mjs b/index.mjs
            if (process.env.PHASE_B_OV_EVENT_TRACE) appendFileSync(process.env.PHASE_B_OV_EVENT_TRACE, `${JSON.stringify({ type: event.type, session: Boolean(sessionID) })}\n`)
            if (!sessionID) continue
            try {
-diff -ruN a/memory-candidate-v1.schema.json b/memory-candidate-v1.schema.json
---- a/memory-candidate-v1.schema.json	1969-12-31 16:00:00.000000000 -0800
-+++ b/memory-candidate-v1.schema.json	2026-10-30 22:12:49.778820320 -0700
+@@ -147,7 +184,9 @@
+     return async () => {
+       stopped = true
+       controller.abort()
+-      await Promise.allSettled([subscriber, context.dispose(), compaction.dispose(), before.dispose(), after?.dispose(), mcp?.dispose()])
++      await Promise.allSettled([subscriber, context.dispose(), compaction.dispose(), before.dispose(), readBefore.dispose(), readAfter.dispose(), after?.dispose(), mcp?.dispose()])
++      await readProducer.flush()
++      await observeCandidate.flush()
+       await manager.flushAll({ commit: true })
+     }
+   },
+--- /dev/null
++++ b/memory-candidate-v1.schema.json
 @@ -0,0 +1,226 @@
 +{
 +  "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -526,10 +564,152 @@ diff -ruN a/memory-candidate-v1.schema.json b/memory-candidate-v1.schema.json
 +    }
 +  ]
 +}
-diff -ruN a/tests/candidate-capture.test.mjs b/tests/candidate-capture.test.mjs
---- a/tests/candidate-capture.test.mjs	1969-12-31 16:00:00.000000000 -0800
-+++ b/tests/candidate-capture.test.mjs	2026-10-30 22:12:49.780753649 -0700
-@@ -0,0 +1,137 @@
+--- /dev/null
++++ b/read-source-producer.mjs
+@@ -0,0 +1,140 @@
++/** Produce source-backed Graphiti nominations from successful local V2 reads.
++ * This is only a nomination. The gate independently attests the Git record
++ * under its configured source authority and decides whether to admit work.
++ */
++import { execFile } from "node:child_process"
++import { promisify } from "node:util"
++import { readFile, realpath, stat } from "node:fs/promises"
++import { isAbsolute, relative, sep } from "node:path"
++
++const exec = promisify(execFile)
++const LIMIT = 65536
++const NAME = /^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/
++const BRANCH = /^refs\/heads\/[A-Za-z0-9_./-]+$/
++const HASH = /^[a-f0-9]{40}$/
++const FORBIDDEN = /(?:-----BEGIN [A-Z ]*PRIVATE KEY-----|\bsk-[A-Za-z0-9]{16,}|\bgh[pousr]_[A-Za-z0-9]{20,}|Bearer\s+\S+|password\s*[:=])/i
++const valid = (s) => typeof s === "string" && s.length > 0 && s.length <= 256
++const shape = (x, keys) => x && typeof x === "object" && !Array.isArray(x) &&
++  Object.keys(x).every((key) => keys.includes(key))
++const within = (path, root) => path !== root &&
++  !relative(root, path).startsWith(".." + sep) &&
++  relative(root, path) !== ".." && !isAbsolute(relative(root, path))
++
++async function git(repo, ...args) {
++  const { stdout } = await exec("git", ["-c", "core.hooksPath=/dev/null", "-C", repo, ...args],
++    { timeout: 2000, maxBuffer: LIMIT + 1024, encoding: "buffer", windowsHide: true })
++  if (stdout.length > LIMIT) throw Error("oversized Git record")
++  return stdout
++}
++
++/** Strictly sourced from the operator's existing Git policy; no agent-provided
++ * repo, group, category or source content is accepted as authority.
++ */
++export async function proposalFromCompletedRead(event, {
++  workspaceID, capturePolicy, sourcePolicyPath, now = () => new Date(), gitReader = git,
++} = {}) {
++  if (event?.tool !== "read" || event.status !== "completed" || !valid(event.sessionID) ||
++      !valid(event.messageID) || !valid(event.id) || !capturePolicy?.enabled ||
++      !capturePolicy.tools?.includes("read") || !capturePolicy.workspaces?.includes(workspaceID)) return null
++  const input = event.input
++  const display = event.result?.metadata?.display
++  if (!shape(input, ["filePath", "offset", "limit"]) || !isAbsolute(input.filePath ?? "") ||
++      (input.offset !== undefined && input.offset !== 1) || input.limit !== undefined ||
++      display?.type !== "file" || display?.truncated !== false ||
++      display.path !== input.filePath || event.result?.metadata?.truncated !== false ||
++      !isAbsolute(sourcePolicyPath ?? "")) return null
++  try {
++    const source = JSON.parse(await readFile(sourcePolicyPath, "utf8"))
++    if (source.enabled !== true || source.source_type !== "git-record-v1" ||
++        !Array.isArray(source.groups) || source.groups.length !== 1 ||
++        !NAME.test(source.groups[0]) ||
++        (source.groups[0].startsWith("issue70_") ? source.production_activation === true : source.production_activation !== true) ||
++        !capturePolicy.groups.includes(source.groups[0]) ||
++        !Array.isArray(source.categories) || !Array.isArray(source.workspaces) ||
++        !source.workspaces.includes(workspaceID) || !isAbsolute(source.repository ?? "") ||
++        !BRANCH.test(source.trusted_ref) ||
++        !source.trusted_ref.split("/").slice(2).every(s => s && s !== "." && s !== "..") ||
++        typeof source.source_prefix !== "string" ||
++        !/^[A-Za-z0-9_./-]+$/.test(source.source_prefix) ||
++        !source.source_prefix.split("/").every(s => s && s !== "." && s !== "..")) return null
++    const root = await realpath(source.repository)
++    if (root !== source.repository || root !== workspaceID) return null
++    const path = await realpath(input.filePath)
++    if (path !== input.filePath || !within(path, root)) return null
++    const rel = relative(root, path).split(sep).join("/")
++    if (!rel.startsWith(source.source_prefix + "/") || !rel.endsWith(".json") ||
++        /(?:^|\/)(?:tests?|fixtures?)(?:\/|$)/i.test(rel)) return null
++    const info = await stat(path)
++    if (!info.isFile() || info.size < 1 || info.size > LIMIT) return null
++    const sha = (await gitReader(root, "rev-parse", "--verify",
++      source.trusted_ref + "^{commit}")).toString().trim()
++    if (!HASH.test(sha)) return null
++    const pinned = await gitReader(root, "show", sha + ":" + rel)
++    if (pinned.length !== info.size || !pinned.equals(await readFile(path))) return null
++    const record = JSON.parse(pinned.toString("utf8"))
++    const fields = ["schema_version","workspace_id","group_id","category","episode_body","reference_time"]
++    const exclusive = record?.category === "exclusive_state_transition"
++    if (!shape(record, exclusive ? [...fields, "transition_contract"] : fields) ||
++        record.schema_version !== 1 || record.workspace_id !== workspaceID ||
++        record.group_id !== source.groups[0] ||
++        !source.categories.includes(record.category) || !capturePolicy.categories.includes(record.category) ||
++        typeof record.episode_body !== "string" || !record.episode_body.trim() ||
++        Buffer.byteLength(record.episode_body) > LIMIT || FORBIDDEN.test(record.episode_body) ||
++        !Number.isFinite(Date.parse(record.reference_time)) ||
++        !/(?:Z|[+-]\d\d:\d\d)$/.test(record.reference_time)) return null
++    const proposal = { group_id: source.groups[0], category: record.category,
++      fact_ref: "git:" + sha + ":" + rel, observed_at: now().toISOString() }
++    if (exclusive) {
++      const contract = record.transition_contract
++      if (!shape(contract, ["group_id","subject","predicate","transition"]) ||
++          contract.group_id !== record.group_id ||
++          !shape(contract.transition, ["from","to","effective_at"]) ||
++          ![contract.subject,contract.predicate,contract.transition.from,contract.transition.to].every(valid) ||
++          contract.transition.from === contract.transition.to ||
++          !Number.isFinite(Date.parse(contract.transition.effective_at))) return null
++      proposal.transition = {
++        subject_ref: contract.subject, predicate: contract.predicate,
++        outgoing_state_ref: contract.transition.from,
++        incoming_state_ref: contract.transition.to,
++        effective_at: contract.transition.effective_at,
++      }
++      proposal.effective_at = contract.transition.effective_at
++    }
++    return proposal
++  } catch { return null }
++}
++
++/** Correlate actual execute.before/after identity. Git inspection and enqueue
++ * happen in a bounded background task, never on the interactive hook path.
++ */
++export function createReadSourceProducer({ workspaceID, capturePolicyPath,
++  sourcePolicyPath, observer, policyLoader, makeProposal = proposalFromCompletedRead,
++  maxPending = 8 } = {}) {
++  const started = new Map()
++  const pending = new Set()
++  const stats = { deferred: 0, failed: 0 }
++  const key = event => JSON.stringify([event?.sessionID,event?.id])
++  const before = event => {
++    if (event?.tool !== "read" || !valid(event.sessionID) ||
++        !valid(event.messageID) || !valid(event.id)) return
++    started.set(key(event), { messageID:event.messageID, path:event.input?.filePath })
++    if (started.size > 1024) { started.delete(started.keys().next().value); stats.deferred++ }
++  }
++  const after = event => {
++    const prior = started.get(key(event))
++    started.delete(key(event))
++    if (!prior || event?.tool !== "read" || event.status !== "completed" ||
++        prior.messageID !== event.messageID || prior.path !== event.input?.filePath) return
++    if (pending.size >= Math.max(1, Math.min(64, maxPending))) { stats.deferred++; return }
++    const task = Promise.resolve().then(async () => {
++      const policy = policyLoader(capturePolicyPath)
++      if (!policy) return
++      const proposal = await makeProposal(event, { workspaceID,
++        capturePolicy:policy, sourcePolicyPath })
++      if (proposal) await observer.fromCompletedHook(event, proposal)
++    }).catch(() => { stats.failed++ }).finally(() => pending.delete(task))
++    pending.add(task)
++  }
++  return { before, after, flush:() => Promise.allSettled([...pending]),
++    status:() => ({ ...stats, pending:pending.size, started:started.size }) }
++}
+--- /dev/null
++++ b/tests/candidate-capture.test.mjs
+@@ -0,0 +1,162 @@
 +import test from "node:test"
 +import assert from "node:assert/strict"
 +import { mkdtempSync, writeFileSync, rmSync } from "node:fs"
@@ -638,6 +818,31 @@ diff -ruN a/tests/candidate-capture.test.mjs b/tests/candidate-capture.test.mjs
 +  assert.equal(anonymous.status().pending, 0)
 +})
 +
++test("native local success uses executed=false; absent execution provenance is rejected", () => {
++  const local = structuredClone(event)
++  local.data.executed = false
++  assert.ok(candidateFromToolEvent(local, policy, "/work"))
++  delete local.data.executed
++  assert.equal(candidateFromToolEvent(local, policy, "/work"), null)
++})
++
++test("completed local hook shares exact candidate identity and bounded enqueue", async () => {
++  const seen = []
++  const observer = createCaptureObserver({
++    workspaceID: "/work", policyPath: "test", policyLoader: () => ({ ...policy, tools: ["read"] }),
++    url: "http://127.0.0.1:1", token: "fixture", enqueue: async item => { seen.push(item); return true },
++  })
++  const hook = { tool: "read", status: "completed", sessionID: "s1", messageID: "m1", id: "t1" }
++  const proposal = { group_id: "approved", category: "verified_architecture_fact",
++    fact_ref: "git:" + "a".repeat(40) + ":docs/memory-records/ghdev/f.json",
++    observed_at: "2026-10-31T21:41:00Z" }
++  const id = observer.fromCompletedHook(hook, proposal)
++  assert.match(id, /^[a-f0-9]{64}$/)
++  await observer.flush()
++  assert.equal(seen.length, 1)
++  assert.equal(observer.fromCompletedHook({ ...hook, status: "error" }, proposal), null)
++})
++
 +test("secrets fixtures raw logs unsupported and unstructured claims are rejected", () => {
 +  for (const fact_ref of ["tests/fixture", "logs/run.log", "password=secret", "raw conversation text", "sk-abcdefghijklmnopqrstuvwxyz123456"]) {
 +    const changed = structuredClone(event)
@@ -667,9 +872,8 @@ diff -ruN a/tests/candidate-capture.test.mjs b/tests/candidate-capture.test.mjs
 +    assert.equal(calls, 1)
 +  } finally { globalThis.fetch = original }
 +})
-diff -ruN a/tests/capture-isolation.test.mjs b/tests/capture-isolation.test.mjs
---- a/tests/capture-isolation.test.mjs	1969-12-31 16:00:00.000000000 -0800
-+++ b/tests/capture-isolation.test.mjs	2026-10-30 22:12:49.781974959 -0700
+--- /dev/null
++++ b/tests/capture-isolation.test.mjs
 @@ -0,0 +1,91 @@
 +import test from "node:test"
 +import assert from "node:assert/strict"
@@ -762,9 +966,8 @@ diff -ruN a/tests/capture-isolation.test.mjs b/tests/capture-isolation.test.mjs
 +  const continued = success(); continued.data.assistantMessageID = "continued-message"
 +  assert.equal(candidateFromToolEvent(continued, policy, "/work").event_id, id)
 +})
-diff -ruN a/tests/central-authentication-regressions.test.mjs b/tests/central-authentication-regressions.test.mjs
---- a/tests/central-authentication-regressions.test.mjs	1969-12-31 16:00:00.000000000 -0800
-+++ b/tests/central-authentication-regressions.test.mjs	2026-10-30 22:12:49.782990095 -0700
+--- /dev/null
++++ b/tests/central-authentication-regressions.test.mjs
 @@ -0,0 +1,52 @@
 +// Issue #70. Copy this file to the authenticated openviking-v2 source's
 +// tests/ directory, alongside candidate-capture.test.mjs, before running.
@@ -818,9 +1021,8 @@ diff -ruN a/tests/central-authentication-regressions.test.mjs b/tests/central-au
 +  }})
 +  await assert.doesNotReject(observer(candidateEvent()))
 +})
-diff -ruN a/tests/graphiti-recall.test.mjs b/tests/graphiti-recall.test.mjs
---- a/tests/graphiti-recall.test.mjs	1969-12-31 16:00:00.000000000 -0800
-+++ b/tests/graphiti-recall.test.mjs	2026-10-30 22:12:49.783944639 -0700
+--- /dev/null
++++ b/tests/graphiti-recall.test.mjs
 @@ -0,0 +1,65 @@
 +import test from "node:test"
 +import assert from "node:assert/strict"
@@ -886,4 +1088,110 @@ diff -ruN a/tests/graphiti-recall.test.mjs b/tests/graphiti-recall.test.mjs
 +  const text=formatGraphitiFacts([item,{...item,fact:"password=secret"}],{groupID:"grp",maxItems:1})
 +  assert.ok(!text.includes("password=secret"))
 +  assert.equal(text.split("\n").length,2)
++})
+--- /dev/null
++++ b/tests/read-source-producer.test.mjs
+@@ -0,0 +1,103 @@
++import test from "node:test"
++import assert from "node:assert/strict"
++import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from "node:fs"
++import { execFileSync } from "node:child_process"
++import { join } from "node:path"
++import { tmpdir } from "node:os"
++import { proposalFromCompletedRead, createReadSourceProducer } from "../read-source-producer.mjs"
++import { createCaptureObserver } from "../candidate-capture.mjs"
++const git = (repo,...args) => execFileSync("git",["-C",repo,...args],{encoding:"utf8"}).trim()
++function fixture(t) {
++  const root=mkdtempSync(join(tmpdir(),"issue70-read-producer-"))
++  t.after(()=>rmSync(root,{recursive:true,force:true}))
++  git(root,"init","-q");git(root,"config","user.name","Fixture")
++  git(root,"config","user.email","fixture@example.invalid")
++  const dir=join(root,"docs","memory-records","ghdev")
++  mkdirSync(dir,{recursive:true})
++  const path=join(dir,"decision.json")
++  const record={schema_version:1,workspace_id:root,group_id:"ghdev_gh_mcp",
++    category:"verified_architecture_fact",episode_body:"The gate owns durable memory work.",
++    reference_time:"2026-10-31T21:41:00Z"}
++  writeFileSync(path,JSON.stringify(record)+"\n")
++  git(root,"add",".");git(root,"commit","-qm","approved fact")
++  const source={enabled:true,source_type:"git-record-v1",
++    production_activation:true,repository:root,trusted_ref:git(root,"symbolic-ref","HEAD"),
++    source_prefix:"docs/memory-records/ghdev",workspaces:[root],
++    groups:["ghdev_gh_mcp"],categories:["verified_architecture_fact"]}
++  const sourcePath=join(root,"source-policy.json");writeFileSync(sourcePath,JSON.stringify(source))
++  const capture={enabled:true,revision:"r1",workspaces:[root],
++    groups:["ghdev_gh_mcp"],categories:["verified_architecture_fact"],tools:["read"]}
++  const event={tool:"read",status:"completed",sessionID:"s",messageID:"m",id:"t",
++    input:{filePath:path},result:{metadata:{truncated:false,
++      display:{type:"file",truncated:false,path}}}}
++  return {root,path,record,capture,sourcePath,event}
++}
++test("successful stock-V2 local read nominates only matching Git source",async t=>{
++  const f=fixture(t)
++  const p=await proposalFromCompletedRead(f.event,{workspaceID:f.root,
++    capturePolicy:f.capture,sourcePolicyPath:f.sourcePath})
++  assert.equal(p.group_id,"ghdev_gh_mcp")
++  assert.equal(p.fact_ref,"git:"+git(f.root,"rev-parse","HEAD")+
++    ":docs/memory-records/ghdev/decision.json")
++})
++test("authenticated completed hook uses executed=false and delivers once",async t=>{
++  const f=fixture(t),sent=[]
++  const observer=createCaptureObserver({workspaceID:f.root,policyPath:"fixture",
++    policyLoader:()=>f.capture,url:"http://127.0.0.1:1",token:"fixture-token",
++    enqueue:async c=>{sent.push(c);return true}})
++  const producer=createReadSourceProducer({workspaceID:f.root,
++    capturePolicyPath:"fixture",sourcePolicyPath:f.sourcePath,
++    observer,policyLoader:()=>f.capture})
++  producer.before(f.event)
++  producer.after({...f.event,executed:false})
++  await producer.flush();await observer.flush()
++  assert.equal(sent.length,1)
++  assert.equal(sent[0].source.tool_event_id,"t")
++  assert.equal(sent[0].source.message_id,"m")
++})
++test("failed, orphaned and mismatched hook calls fail closed",async t=>{
++  const f=fixture(t),sent=[]
++  const observer={fromCompletedHook:()=>sent.push(1)}
++  const producer=createReadSourceProducer({workspaceID:f.root,
++    capturePolicyPath:"fixture",sourcePolicyPath:f.sourcePath,
++    observer,policyLoader:()=>f.capture})
++  producer.after(f.event)
++  producer.before(f.event);producer.after({...f.event,status:"error"})
++  producer.before(f.event);producer.after({...f.event,messageID:"other"})
++  await producer.flush()
++  assert.equal(sent.length,0)
++})
++test("dirty source, partial reads, disabled policy and untrusted workspace fail closed",async t=>{
++  const f=fixture(t)
++  const args={workspaceID:f.root,capturePolicy:f.capture,sourcePolicyPath:f.sourcePath}
++  assert.equal(await proposalFromCompletedRead({...f.event,input:{...f.event.input,limit:1}},args),null)
++  assert.equal(await proposalFromCompletedRead(f.event,{...args,workspaceID:"/other"}),null)
++  assert.equal(await proposalFromCompletedRead(f.event,{...args,capturePolicy:{...f.capture,enabled:false}}),null)
++  writeFileSync(f.path,readFileSync(f.path,"utf8").replace("durable","transient"))
++  assert.equal(await proposalFromCompletedRead(f.event,args),null)
++})
++test("missing read proof or secret-bearing Git record never nominates",async t=>{
++  const f=fixture(t),args={workspaceID:f.root,capturePolicy:f.capture,sourcePolicyPath:f.sourcePath}
++  assert.equal(await proposalFromCompletedRead({...f.event,result:{metadata:{truncated:false}}},args),null)
++  writeFileSync(f.path,JSON.stringify({...f.record,episode_body:"password=not allowed"}))
++  git(f.root,"add",".");git(f.root,"commit","-qm","sensitive record")
++  assert.equal(await proposalFromCompletedRead(f.event,args),null)
++})
++
++test("disposable gate source policy is accepted only without production activation",async t=>{
++  const f=fixture(t)
++  const record={...f.record,group_id:"issue70_read_producer"}
++  writeFileSync(f.path,JSON.stringify(record))
++  git(f.root,"add",".");git(f.root,"commit","-qm","disposable qualified record")
++  const source=JSON.parse(readFileSync(f.sourcePath,"utf8"))
++  source.groups=["issue70_read_producer"]
++  source.production_activation=false
++  writeFileSync(f.sourcePath,JSON.stringify(source))
++  const capture={...f.capture,groups:["issue70_read_producer"]}
++  const args={workspaceID:f.root,capturePolicy:capture,sourcePolicyPath:f.sourcePath}
++  const approved=await proposalFromCompletedRead(f.event,args)
++  assert.equal(approved?.group_id,"issue70_read_producer")
++  source.production_activation=true
++  writeFileSync(f.sourcePath,JSON.stringify(source))
++  assert.equal(await proposalFromCompletedRead(f.event,args),null)
 +})
