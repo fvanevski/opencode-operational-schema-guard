@@ -30,8 +30,8 @@ def build_runtime(cfg,db):
     policy=json.loads(policy_path.read_text())
     if policy.get("enabled") is not True or policy.get("source_type")!="git-record-v1":
         raise RuntimeError("source authority requires operator opt-in")
-    if cfg.graphiti_group not in policy.get("groups",[]):
-        raise RuntimeError("Graphiti target group not authorized by source policy")
+    if policy.get("groups") != [cfg.graphiti_group]:
+        raise RuntimeError("one exact authorized Graphiti group per gate runtime required")
     if not cfg.graphiti_group.startswith("issue70_"):
         raise RuntimeError("non-disposable Graphiti graph requires separate activation review")
     if "exclusive_state_transition" in policy.get("categories",[]):

@@ -13,6 +13,11 @@ from datetime import datetime
 import json
 import os
 import sys
+from pathlib import Path
+
+# In the qualified source package, phase2 and phase3 are sibling directories.
+# The host bundle must preserve that relative import identity.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "phase2"))
 
 from graphiti_core_bridge import build_core_client,prepare_core_client,close_core_client,read_episode_by_uuid
 
