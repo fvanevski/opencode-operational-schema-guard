@@ -160,6 +160,12 @@ class SharedWorkQueue:
                 or envelope.group_id != item["scope"]["group_id"]):
             raise SourceAuthorityUnavailable("source attestation identity mismatch")
         envelope.validate()
+        exclusive=item["category"]=="exclusive_state_transition"
+        if exclusive != (envelope.transition_contract is not None):
+            raise SourceAuthorityUnavailable("exclusive state requires trusted bound contract")
+        if exclusive:
+            from temporal_ledger import validate_contract, digest as contract_digest
+            contract_sha=validate_contract(envelope.transition_contract,item["scope"]["group_id"])
         with self.legacy_db.connect() as conn:
             conn.execute("BEGIN IMMEDIATE")
             conn.execute("""CREATE TABLE IF NOT EXISTS memory_source_attestations(
@@ -178,6 +184,15 @@ class SharedWorkQueue:
                 return {"work_key":key,"status":row["status"]}
             if row["status"] != "deferred_unverified":
                 raise SourceAuthorityUnavailable("source event is not awaiting verification")
+            if exclusive:
+                conn.execute("""CREATE TABLE IF NOT EXISTS temporal_transition_contracts(
+                    work_key TEXT PRIMARY KEY, group_id TEXT NOT NULL,
+                    contract_json TEXT NOT NULL, contract_digest TEXT NOT NULL,
+                    attestation_digest TEXT NOT NULL, bound_at REAL NOT NULL)""")
+                conn.execute("""INSERT INTO temporal_transition_contracts
+                    VALUES (?,?,?,?,?,?)""",(key,item["scope"]["group_id"],
+                    json.dumps(envelope.transition_contract,sort_keys=True),
+                    contract_sha,envelope.attestation_digest,time.time()))
             conn.execute("""INSERT INTO memory_source_attestations
                 VALUES (?,?,?,?,?)""",(key,source_authority,envelope.attestation_digest,
                                         envelope.payload_hash(),time.time()))

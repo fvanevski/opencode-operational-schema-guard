@@ -33,6 +33,7 @@ class EpisodeEnvelope:
     source_description: str
     reference_time: datetime
     attestation_digest: str
+    transition_contract: dict | None = None
 
     def validate(self):
         for field in ("work_key","source_event_key","group_id","name","episode_body",
@@ -46,12 +47,16 @@ class EpisodeEnvelope:
             raise UnverifiedSource("reference time must be timezone-aware")
         if len(self.episode_body.encode())>65536:
             raise UnverifiedSource("episode input limit")
+        if self.transition_contract is not None:
+            from temporal_ledger import validate_contract
+            validate_contract(self.transition_contract,self.group_id)
 
     def payload_hash(self):
         self.validate()
         return digest((self.work_key,self.source_event_key,self.group_id,self.name,
                        self.episode_body,self.source_description,self.reference_time.isoformat(),
-                       self.attestation_digest))
+                       self.attestation_digest) + (
+                       (self.transition_contract,) if self.transition_contract is not None else ()))
 
 
 class IngestJournal:

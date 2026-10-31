@@ -99,9 +99,11 @@ class GitFactResolver:
             raise UnverifiedSource("source exceeds size bound")
         try:
             record = json.loads(raw)
-            if not isinstance(record, dict) or set(record) != {
-                "schema_version", "workspace_id", "group_id", "category",
-                "episode_body", "reference_time"}:
+            ordinary={"schema_version","workspace_id","group_id","category",
+                      "episode_body","reference_time"}
+            exclusive=candidate["category"]=="exclusive_state_transition"
+            expected=ordinary | ({"transition_contract"} if exclusive else set())
+            if not isinstance(record,dict) or set(record)!=expected:
                 raise ValueError("Git record shape")
             if (record["schema_version"] != 1 or record["workspace_id"] != workspace
                     or record["group_id"] != group or record["category"] != candidate["category"]):
@@ -112,6 +114,22 @@ class GitFactResolver:
             moment = datetime.fromisoformat(record["reference_time"].replace("Z", "+00:00"))
             if moment.tzinfo is None:
                 raise UnverifiedSource("source time missing timezone")
+            declared=None
+            if exclusive:
+                from temporal_ledger import validate_contract
+                declared=record["transition_contract"]
+                validate_contract(declared,group)
+                hint=candidate.get("transition")
+                if not isinstance(hint,dict) or any((
+                    hint.get("subject_ref")!=declared["subject"],
+                    hint.get("predicate")!=declared["predicate"],
+                    hint.get("outgoing_state_ref")!=declared["transition"]["from"],
+                    hint.get("incoming_state_ref")!=declared["transition"]["to"],
+                    hint.get("effective_at")!=declared["transition"]["effective_at"],
+                )):
+                    raise UnverifiedSource("source transition contradicts nomination")
+            elif candidate.get("transition") is not None:
+                raise UnverifiedSource("ordinary fact unexpectedly carries transition")
         except (TypeError, KeyError, ValueError, UnicodeDecodeError) as exc:
             raise UnverifiedSource("invalid authenticated Git fact record") from exc
 
@@ -126,4 +144,5 @@ class GitFactResolver:
                 "git-record-v1", policy.get("revision"), str(repo), commit,
                 blob, workspace, group, source_key,
             ]),
+            transition_contract=declared,
         )
