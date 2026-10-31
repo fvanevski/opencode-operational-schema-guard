@@ -1,4 +1,5 @@
 """CPU-only tests of explicit production target authorization."""
+import hashlib
 import json
 import sqlite3
 import sys
@@ -98,6 +99,47 @@ class ProductionTargetTests(unittest.TestCase):
         self.assertFalse(allowed_group("graphiti_live"))
         self.assertTrue(allowed_group("graphiti_live", production_approved=True))
         self.assertTrue(allowed_group("issue70_test"))
+
+    def test_idle_retry_does_not_create_optional_graphiti_tables(self):
+        self.policy["categories"] = ["exclusive_state_transition"]
+        validator = self.policy_path.parent / "validator.py"
+        validator.write_text("# isolated fixture validator identity\n")
+        self.cfg.graphiti_validator_path = str(validator)
+        self.cfg.graphiti_validator_sha256 = hashlib.sha256(
+            validator.read_bytes()).hexdigest()
+        adapter, _ = self.build()
+        self.assertTrue(callable(adapter.retry_pending))
+        self.assertEqual(adapter.retry_pending(max_items=1), 0)
+        with self.db.connect() as conn:
+            for table in ("graphiti_ingest_receipts",
+                          "temporal_validation_results",
+                          "temporal_validator_active"):
+                self.assertIsNone(conn.execute(
+                    "SELECT 1 FROM sqlite_master WHERE name=?", (table,)
+                ).fetchone())
+
+    def test_reconfigured_validator_invalidates_old_active_digest_at_boot(self):
+        self.policy["categories"] = ["exclusive_state_transition"]
+        validator = self.policy_path.parent / "validator.py"
+        validator.write_text("# new pinned source identity\n")
+        expected = hashlib.sha256(validator.read_bytes()).hexdigest()
+        self.cfg.graphiti_validator_path = str(validator)
+        self.cfg.graphiti_validator_sha256 = expected
+        with self.db.connect() as conn:
+            conn.execute("""CREATE TABLE temporal_validator_active(
+                singleton INTEGER PRIMARY KEY,
+                validator_sha256 TEXT NOT NULL)""")
+            conn.execute("INSERT INTO temporal_validator_active VALUES(1,?)",
+                         ("a" * 64,))
+        adapter, _ = self.build()
+        with self.db.connect() as conn:
+            observed = conn.execute("""SELECT validator_sha256
+                FROM temporal_validator_active WHERE singleton=1""").fetchone()[0]
+            self.assertEqual(observed, expected)
+            self.assertIsNone(conn.execute("""SELECT 1 FROM sqlite_master
+                WHERE name='graphiti_ingest_receipts'""").fetchone())
+        # A disabled worker drain must not be needed to revoke the old pin.
+        self.assertTrue(callable(adapter.retry_pending))
 
     def test_feature_off_no_runtime(self):
         self.cfg.graphiti_enabled = False
