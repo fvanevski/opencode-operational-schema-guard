@@ -39,3 +39,24 @@ A paused real archive publication produces no TaskTracker entry or scheduler occ
 Two distinct ambiguous commit identities are now admitted as a pair: while one identity can still produce inference (queued, not executing), the other's recovery stays read-only and cannot enqueue; after the first reaches a verified terminal, non-replayable state, the second undergoes exactly one authorized recovery GET, registers/enqueues its exact durable task once (no duplicate extraction), and seals terminal. With two simultaneous ambiguous unknowns and no authoritative terminal proof, the guard stays fail-closed even under empty task lists and idle metrics; backend-authoritative evidence (a registered task) restores one identity before the other may recover. The recovery path requires the per-key publication fence to be free, so a paused original publication must complete registration/enqueue before its recovery GET can observe the archive; the fixture models that boundary explicitly.
 
 No task command changed protected live code, configuration, services, memory or FalkorDB. Source and config hashes were re-read unchanged. Byte-level live database invariance remains unverified because services continued running; this is not upgraded to a snapshot guarantee.
+
+# Phase 3 campaign handback (automatic capture + read-only recall)
+
+```text
+ISSUE70_PHASE3_RESULT=PASS (disposable-qualification scope; review-ready source-only candidate)
+BRANCH=issue/70-automatic-recall
+TRACKER_BASE_SHA=e430ef70c08f0489cf9a2f6ee5556545f60e5c86
+PHASE2_SOURCE_PARENT=56e5d908e9d401791d2bbff09b271f2ec4ec8a16
+IDENTITY_PREFLIGHT=PASS (OpenCode v2.2.5 2.2.5 event shape; graphiti-core 0.31.2 / falkordb 1.8.1 venv; FalkorDB :6382; LLM :8002 / embedder :8004 disposable; episode label Episodic)
+CPU_SUITES=PASS phase3 22/22; phase2 28/28; gate 66/66; ov2 15/15; graphiti-recall 5/5; launcher 5/5; actual-backend 20/20 (161 checks)
+INTEGRATED_CPU_HOST=PASS git:<sha>:memory-facts/<name>.json nomination -> deferred_unverified -> verified Git blob -> queued (authority git-record-v1); untrusted/wrong-group/out-of-prefix/secret sources stay deferred; duplicate coalesced; disabled policy refuses bootstrap; no model call or graph write in V2 hooks
+REAL_GRAPHITI_TERMINAL=PASS separate-interpreter run on fresh disposable graph issue70_p3_real; episode 7eb5dc00-ef29-460f-bd43-68462bf3794b persisted with exact UUID/group/content readback; EX lease held during child; duplicate idempotent; failing child -> blocked_reconcile with 0 restart submissions
+READ_ONLY_RECALL=PASS service on 127.0.0.1:9091; synchronous driver construction leaves _init_task None; graph state sha256 invariant before/after; exact source citation in V2 context hook; no-policy/no-data/wrong-group/duplicate/secret/wrong-token cases fail closed; exclusive non-PASS renders CURRENT STATE UNVERIFIED / CONFLICTED
+TEMPORAL_BOUNDARY=RECORDED exclusive_state_transition auto-ingestion disabled by bootstrap policy (CPU-proofed); Phase 2 validator results retained at original identities (docs/issue-70/phase2/results/, a27e2bf5/772a3ac9/52e98600/42d50f72); remaining issue-70 requirements recorded (source-derived contract binding, durable work/episode-keyed validator outcome, exit 0/1/2/3 recall interpretation)
+PACKAGE_RECONSTRUCTION=PASS gate.patch 13 entries + openviking-v2.patch 8 entries regenerated against installed bases 6ad48a93/6899822e, byte-exact forward and reverse; backend.patch unchanged; SHA256SUMS (46 entries), CHANGED_FILES.txt (47 files), source-base-manifest.json (phase3_evidence + source-pinned install mapping), qualification-phase3.json, ROLLBACK.md and friction ledger updated
+GHDEV10_FRICTION=encountered (see COMMAND_SHAPE_FRICTION.json phase3_events: rm -rf compound rejection, live-DB contamination incident (repaired), zsh loop/harness shape, grep/node-summary interface discoveries, i1-service precondition discovery, patch-label artifact correction)
+PROTECTED_LIVE_SURFACES=live gate config has no graphiti keys (stays disabled); live gate DB restored clean after the disclosed A3 contamination repair; installed plugin remains pre-Phase 3 (6899822e); no production capture activation
+NO_NEW_PR=no; PHASE1_MERGE=no; PRODUCTION_DEPLOYMENT=no; LIVE_GRAPH_MUTATION=no (disposable issue70_* graphs only)
+OPEN_BLOCKERS=none within the disposable-qualification scope; automatic exclusive-state recall and production activation remain separate, separately-authorized campaigns
+RECOMMENDED_CENTRAL_ACTION=Independently review this single source-only Phase 3 implementation commit on issue/70-automatic-recall (fast-forward from e430ef70); production activation requires later explicit operator authorization with an exact reviewed host configuration
+```

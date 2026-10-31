@@ -53,7 +53,7 @@
   "correction_archive_sha256": "08442b4b6fc89173314cc0a48ef12982487fb42e38c6fc15e69173ed9fc3d00c",
   "files": [
     {
-      "candidate_sha256": "8de0f371eefbf04c9f4c0f0fc4910e18c662a7e9309f4a30fd07b17229a55fce",
+      "candidate_sha256": "1a5c5aef1aec7e34313e8357523f2a24e21fe1a6a4d1f6e766f2246f594a392c",
       "component": "gate",
       "path": "shared_work.py",
       "source_base_sha256": null
@@ -83,10 +83,16 @@
       "source_base_sha256": null
     },
     {
-      "candidate_sha256": "3b3596bdac87418ba12d4c59333ee346ce775356c4ec81424a086cedcf2f1250",
+      "candidate_sha256": "ff496619ea7aed43dc00d30878be250b477c1629dbf8856e52ddf6eb8e23ac69",
       "component": "gate",
       "path": "openviking_commit_gate.py",
       "source_base_sha256": "6ad48a939d3f52df1c774f87d030986b35022a8c20f15916d82177ccf2094f42"
+    },
+    {
+      "candidate_sha256": "aa8a4feb223533022ab1ace5e7f25a34531653b1212e598fba67e326da7bc789",
+      "component": "gate",
+      "path": "graphiti_runtime_bootstrap.py",
+      "source_base_sha256": null
     },
     {
       "candidate_sha256": "4e2234f65a4e3bd86d1aaf9fbe5a27983c5538a2a65bc381f814422f102de4e5",
@@ -137,7 +143,7 @@
       "source_base_sha256": "ac54e32016b2c29d38c302f116a69110395a579d82b602d2cbf7cbf416d63e4a"
     },
     {
-      "candidate_sha256": "f017a8f04dbd33f87fae71c0be9a29f8748bc1a16a29a64782c987dba247adee",
+      "candidate_sha256": "6ae7cf5dc18e178a9f518240a45d77e57528fa6f9648ddfbd51d10a5cecf8d24",
       "component": "openviking-v2",
       "path": "index.mjs",
       "source_base_sha256": "6899822ec75a16ba05578d4ba165dfe8f913f3d37a4d96717767a170b906766d"
@@ -149,15 +155,27 @@
       "source_base_sha256": null
     },
     {
-      "candidate_sha256": "138d82f483a641f61b0a9330beb45ce1fb64fe103ae562887845372cbc646e4d",
+      "candidate_sha256": "335537a9342201b681d737aa3149705b826eb21dbef942174de3c56896dcb3b7",
       "component": "openviking-v2",
       "path": "candidate-capture.mjs",
       "source_base_sha256": null
     },
     {
-      "candidate_sha256": "d8e57bd53294d692a91fc681ca1c6920ee0b09cb684c1142dadaede3fb6f541d",
+      "candidate_sha256": "579c4385b4e02d6ebbc57ec894d304378e4337fab99134747bd429d6cbea2d11",
+      "component": "openviking-v2",
+      "path": "graphiti-recall.mjs",
+      "source_base_sha256": null
+    },
+    {
+      "candidate_sha256": "632b753d94d1794f41578d24f3a456e7dfd7d706293e7d02693b1e700be502ef",
       "component": "openviking-v2",
       "path": "tests/candidate-capture.test.mjs",
+      "source_base_sha256": null
+    },
+    {
+      "candidate_sha256": "4a4ace916a5db5bd525cabd62e1ab41f522cc362223ce84241271728fff364a6",
+      "component": "openviking-v2",
+      "path": "tests/graphiti-recall.test.mjs",
       "source_base_sha256": null
     },
     {
@@ -304,23 +322,87 @@
       }
     ]
   },
+  "phase3_evidence": {
+    "note": "Branch-level Phase 3 automatic Git-source capture, cross-interpreter Graphiti execution, and read-only recall evidence. Phase 3 modules are source-pinned: they execute from the reviewed checkout via the gate config's graphiti_runtime_dir under the operator-named Graphiti 0.31.2-compatible venv interpreter (graphiti_core_python); the recall service runs from the same reviewed source in that interpreter. No install-root copy exists for phase3/. Phase 2 files listed here were intentionally modified by the Phase 3 commits (client finalizer in graphiti_terminal.py, sibling-import pinning, source-only qualifier updates); their Phase 2 identities remain in phase2_evidence above.",
+    "files": [
+      {
+        "path": "docs/issue-70/phase3/INTEGRATION_CONTRACT.md",
+        "sha256": "553a210676008a22d27288a9555a7b6c8ab2e5f082d693ba92deed17eca5fc96"
+      },
+      {
+        "path": "docs/issue-70/phase3/git_source_authority.py",
+        "sha256": "90e16fafea4a83d6d39cad5d7084e7cab5b5244187765fadd60acbbf910facf3"
+      },
+      {
+        "path": "docs/issue-70/phase3/graphiti_process_transport.py",
+        "sha256": "52b704f561db73fc998b674fb5e6a4df881dc6e54174f4214f3b046f63f3b721"
+      },
+      {
+        "path": "docs/issue-70/phase3/graphiti_core_worker.py",
+        "sha256": "997c9f0519a4c2d3fcd76a87af881b7de3bb4c15f402ee85d19616f220ced589"
+      },
+      {
+        "path": "docs/issue-70/phase3/graphiti_recall_service.py",
+        "sha256": "c153e7684ec6a2d44ab178f3ebafbe7ca0df4e81f7624daa7ac0759013e6bf5f"
+      },
+      {
+        "path": "docs/issue-70/phase3/test_git_source_authority.py",
+        "sha256": "559bd170c9586093adf17ab654dd914a59055993f5e7fb57092977cd01faf3be"
+      },
+      {
+        "path": "docs/issue-70/phase3/test_auto_promotion.py",
+        "sha256": "532d3e22d425c75c5e2e4ae8800e59511dab79b79e665e8c5591e84c31093b89"
+      },
+      {
+        "path": "docs/issue-70/phase3/test_graphiti_process_transport.py",
+        "sha256": "bebb98038512c52a4fcc82a5ba8cc8fd2f20eb8da4d8d2e12fd83952fd278985"
+      },
+      {
+        "path": "docs/issue-70/phase3/test_graphiti_process_transport_extended.py",
+        "sha256": "9bfffea523ba4450fae51871a065e5464ecef2034f7e973417d350c7948d4d25"
+      },
+      {
+        "path": "docs/issue-70/phase3/test_graphiti_recall_service.py",
+        "sha256": "73728b317aeea46268c44f730a303dc1a960cfd6e06eb0a5453fdfed133a0c47"
+      },
+      {
+        "path": "docs/issue-70/phase2/graphiti_terminal.py",
+        "sha256": "d4157e2fe7791d02d1531e9ff57aedcd742a408d9be6029886c2da5c32178f33"
+      },
+      {
+        "path": "docs/issue-70/phase2/test_graphiti_terminal.py",
+        "sha256": "dc702404aa7eedc10859525f26a63305901712de8ed05041d6ebfde6dd2e07c2"
+      },
+      {
+        "path": "docs/issue-70/phase2/real_graphiti_qualification.py",
+        "sha256": "ed1684fae0663b79fdb89f59d066167e0f9249ad9454f79313e62123448ee96e"
+      },
+      {
+        "path": "docs/issue-70/phase2/temporal_validation_integration.py",
+        "sha256": "85275e5480590f30727b66ea71a08f26802d71b24f0b2737152659759632f0e"
+      }
+    ]
+  },
   "installation_mapping": {
     "candidate/gate": "~/.local/share/openviking-commit-gate",
     "candidate/openviking-v2": "~/.config/opencode/plugins/openviking-v2",
     "candidate/shim/admission_exec.py": "~/.local/share/openviking-commit-gate/admission_exec.py",
     "candidate/shim/openviking-agent-run": "~/.local/bin/openviking-agent-run",
+    "docs/issue-70/phase3": "source-pinned runtime: no install-root copy. Executed from the reviewed checkout via the gate config keys graphiti_runtime_dir (this directory) and graphiti_core_python (operator-named Graphiti 0.31.2-compatible venv interpreter); graphiti_recall_service.py is served from the same reviewed source under the same interpreter",
     "patches/backend.patch": "authenticated OpenViking site-packages root; apply only in isolated copies until separately authorized"
   },
   "patches": [
     {
       "apply_and_reverse": "PASS",
       "path": "patches/gate.patch",
-      "sha256": "bf5a19328f91c0430a86b8be2633a49ae89438ef8d3db248d19c13b657452709"
+      "sha256": "4d145710400ccf03f99151d4bce06c09f8960f16482de812657394fb050217cb",
+      "entries": "thirteen file entries: Phase 1/2 gate files plus Phase 3 graphiti_runtime_bootstrap.py; regenerated against installed base 6ad48a93"
     },
     {
       "apply_and_reverse": "PASS",
       "path": "patches/openviking-v2.patch",
-      "sha256": "aded0966c4f2f155d31a2825c4f56e3aab0f5e24dc55e51a2178aaacc92a3dce"
+      "sha256": "f41a2e62fdc757503a87815948260085686dcf2ed13a5336d8c970b0a4513aab",
+      "entries": "eight file entries: capture/recall additions (graphiti-recall.mjs + tests), 2.2.5 event-shape compatibility in candidate-capture.mjs, index.mjs recall wiring; regenerated against installed base 6899822e"
     },
     {
       "apply_and_reverse": "PASS",

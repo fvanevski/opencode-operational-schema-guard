@@ -29,7 +29,8 @@ test("workspace group isolation and bounded verified-source formatting", async (
       return {status:200,json:async()=>({group_id:"grp",facts:[item,
         {...item,group_id:"other",fact:"Wrong workspace"},
         {...item,source_ref:"untrusted:unknown",fact:"No citation"}]})}
-    })
+    }
+  })
   const value=await recall("What changed in System A?")
   assert.equal(request.group_id,"grp")
   assert.ok(value.includes("System A replaced Redis"))
