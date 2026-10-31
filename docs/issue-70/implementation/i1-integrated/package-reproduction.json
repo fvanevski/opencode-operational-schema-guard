@@ -1,0 +1,7 @@
+{
+  "source_mismatch_rejected_before_copy": true,
+  "source_bound_apply_and_final_hashes": "PASS",
+  "final_packaged_actual_backend_auth_smoke": "PASS",
+  "raw_log_published": false,
+  "isolation": "read-only root; private network/tmp; no GPU devices"
+}

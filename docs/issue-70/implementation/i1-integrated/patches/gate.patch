@@ -1,0 +1,1973 @@
+--- /dev/null
++++ b/memory-candidate-v1.schema.json
+@@ -0,0 +1,226 @@
++{
++  "$schema": "https://json-schema.org/draft/2020-12/schema",
++  "$id": "https://github.com/fvanevski/opencode-operational-schema-guard/blob/issue/70/contracts/memory-candidate-v1.schema.json",
++  "title": "Issue 70 selective memory candidate envelope, phase-one proposed internal wire contract",
++  "description": "Internal source-backed candidate envelope. No unrestricted content, credentials or raw transcripts. Runtime owners must authenticate API compatibility before installation.",
++  "type": "object",
++  "additionalProperties": false,
++  "required": [
++    "schema_version",
++    "event_id",
++    "source",
++    "scope",
++    "observed_at",
++    "category",
++    "authority",
++    "policy_revision",
++    "destination",
++    "fact_ref"
++  ],
++  "properties": {
++    "schema_version": {
++      "const": 1
++    },
++    "event_id": {
++      "type": "string",
++      "pattern": "^[0-9a-f]{64}$",
++      "description": "Deterministic namespaced SHA-256 of stable source/fact identity, not transcript content"
++    },
++    "source": {
++      "type": "object",
++      "additionalProperties": false,
++      "required": [
++        "system",
++        "session_id",
++        "event_id"
++      ],
++      "properties": {
++        "system": {
++          "const": "opencode-v2"
++        },
++        "session_id": {
++          "type": "string",
++          "minLength": 1,
++          "maxLength": 256
++        },
++        "message_id": {
++          "type": "string",
++          "minLength": 1,
++          "maxLength": 256
++        },
++        "tool_event_id": {
++          "type": "string",
++          "minLength": 1,
++          "maxLength": 256
++        },
++        "event_id": {
++          "type": "string",
++          "minLength": 1,
++          "maxLength": 256
++        },
++        "cursor_id": {
++          "type": "string",
++          "minLength": 1,
++          "maxLength": 256
++        }
++      }
++    },
++    "scope": {
++      "type": "object",
++      "additionalProperties": false,
++      "required": [
++        "workspace_id",
++        "group_id"
++      ],
++      "properties": {
++        "workspace_id": {
++          "type": "string",
++          "minLength": 1,
++          "maxLength": 256
++        },
++        "group_id": {
++          "type": "string",
++          "minLength": 1,
++          "maxLength": 256
++        }
++      }
++    },
++    "observed_at": {
++      "type": "string",
++      "format": "date-time"
++    },
++    "effective_at": {
++      "type": "string",
++      "format": "date-time"
++    },
++    "category": {
++      "enum": [
++        "durable_decision",
++        "verified_architecture_fact",
++        "entity_relationship",
++        "exclusive_state_transition"
++      ]
++    },
++    "authority": {
++      "type": "object",
++      "additionalProperties": false,
++      "required": [
++        "basis",
++        "confidence"
++      ],
++      "properties": {
++        "basis": {
++          "enum": [
++            "operator_declared",
++            "source_verified",
++            "agent_candidate"
++          ]
++        },
++        "confidence": {
++          "type": "number",
++          "minimum": 0,
++          "maximum": 1
++        },
++        "evidence_ref": {
++          "type": "string",
++          "minLength": 1,
++          "maxLength": 512
++        }
++      }
++    },
++    "policy_revision": {
++      "type": "string",
++      "minLength": 1,
++      "maxLength": 128
++    },
++    "destination": {
++      "enum": [
++        "graphiti",
++        "openviking"
++      ]
++    },
++    "fact_ref": {
++      "type": "string",
++      "minLength": 1,
++      "maxLength": 512,
++      "description": "Opaque canonical fact/source reference, not freeform text"
++    },
++    "logical_digest": {
++      "type": "string",
++      "pattern": "^[0-9a-f]{64}$"
++    },
++    "transition": {
++      "type": "object",
++      "additionalProperties": false,
++      "required": [
++        "subject_ref",
++        "predicate",
++        "outgoing_state_ref",
++        "incoming_state_ref",
++        "effective_at"
++      ],
++      "properties": {
++        "subject_ref": {
++          "type": "string",
++          "minLength": 1,
++          "maxLength": 256
++        },
++        "predicate": {
++          "type": "string",
++          "minLength": 1,
++          "maxLength": 128
++        },
++        "outgoing_state_ref": {
++          "type": "string",
++          "minLength": 1,
++          "maxLength": 256
++        },
++        "incoming_state_ref": {
++          "type": "string",
++          "minLength": 1,
++          "maxLength": 256
++        },
++        "effective_at": {
++          "type": "string",
++          "format": "date-time"
++        }
++      }
++    }
++  },
++  "allOf": [
++    {
++      "if": {
++        "properties": {
++          "category": {
++            "const": "exclusive_state_transition"
++          }
++        }
++      },
++      "then": {
++        "required": [
++          "transition"
++        ]
++      }
++    },
++    {
++      "if": {
++        "properties": {
++          "category": {
++            "enum": [
++              "durable_decision",
++              "verified_architecture_fact",
++              "entity_relationship"
++            ]
++          }
++        }
++      },
++      "then": {
++        "not": {
++          "required": [
++            "transition"
++          ]
++        }
++      }
++    }
++  ]
++}
+--- a/openviking_commit_gate.py
++++ b/openviking_commit_gate.py
+@@ -32,6 +32,8 @@
+ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+ from pathlib import Path
+ from typing import Any, Iterator
++from receipt_protocol import canonical_digest as request_digest, request_key, gate_decision
++from shared_work import validator as capture_preflight, SourceAuthorityUnavailable, SourceEventConflict, DisabledGraphitiAdapter, SharedWorkQueue
+ 
+ 
+ LOG = logging.getLogger("openviking-commit-gate")
+@@ -134,6 +136,8 @@
+     metrics_running: str = "auto"
+     metrics_waiting: str = "auto"
+     metrics_fallback_urls: tuple[str, ...] = ()
++    graphiti_enabled: bool = False
++    receipts_enabled: bool = False
+ 
+     @classmethod
+     def load(cls, path: str) -> "Config":
+@@ -155,6 +159,8 @@
+             ),
+             metrics_running=str(gate.get("metrics_running", "auto")),
+             metrics_waiting=str(gate.get("metrics_waiting", "auto")),
++            graphiti_enabled=bool(worker.get("graphiti_enabled", False)),
++            receipts_enabled=bool(worker.get("receipts_enabled", False)),
+             lock_file=_expanded(str(gate.get("lock_file", "$XDG_RUNTIME_DIR/openviking-agent.lock"))),
+             database=_expanded(str(gate.get("database", "~/.local/state/openviking-commit-gate/queue.sqlite3"))),
+             drain_enabled=bool(worker.get("drain_enabled", False)),
+@@ -267,6 +273,19 @@
+                 "CREATE UNIQUE INDEX IF NOT EXISTS failed_tasks_generation_unique "
+                 "ON failed_tasks(account, user_id, actor_peer, session_id, generation)"
+             )
++            conn.execute("CREATE TABLE IF NOT EXISTS admission_contract (version INTEGER PRIMARY KEY, required INTEGER NOT NULL)")
++            conn.execute("INSERT OR IGNORE INTO admission_contract VALUES (1,0)")
++            conn.execute("""CREATE TABLE IF NOT EXISTS commit_attempts (
++                request_key TEXT PRIMARY KEY, account TEXT NOT NULL, user_id TEXT NOT NULL,
++                actor_peer TEXT NOT NULL, session_id TEXT NOT NULL, generation INTEGER NOT NULL,
++                body_json TEXT NOT NULL, body_digest TEXT NOT NULL,
++                submitted INTEGER NOT NULL DEFAULT 0, resolved INTEGER NOT NULL DEFAULT 0,
++                UNIQUE(account,user_id,actor_peer,session_id,generation))""")
++            conn.execute("""CREATE TRIGGER IF NOT EXISTS commit_attempt_resolved AFTER UPDATE OF state ON intents
++                WHEN OLD.state='inflight' AND NEW.state NOT IN ('inflight','unknown')
++                BEGIN UPDATE commit_attempts SET resolved=1
++                WHERE account=OLD.account AND user_id=OLD.user_id AND actor_peer=OLD.actor_peer
++                    AND session_id=OLD.session_id AND generation=OLD.claimed_generation; END""")
+         os.chmod(self.path, 0o600)
+ 
+     @staticmethod
+@@ -315,7 +334,7 @@
+                 if reason and reason not in reasons:
+                     reasons = (reasons + [reason])[-20:]
+                 generation = int(row["requested_generation"]) + 1
+-                state = row["state"] if row["state"] == "inflight" else "pending"
++                state = row["state"] if row["state"] in {"inflight", "unknown"} else "pending"
+                 stored_body = dict(commit_body)
+                 stored_body["keep_recent_count"] = max(
+                     int(row["keep_recent_count"]), keep_recent_count
+@@ -325,8 +344,8 @@
+                     UPDATE intents
+                     SET requested_generation=?, keep_recent_count=?, commit_body_json=?, reasons_json=?,
+                         last_requested_at=?, state=?,
+-                        next_attempt_at=CASE WHEN state='inflight' THEN next_attempt_at ELSE 0 END,
+-                        last_error=CASE WHEN state='inflight' THEN last_error ELSE NULL END
++                        next_attempt_at=CASE WHEN state IN ('inflight','unknown') THEN next_attempt_at ELSE 0 END,
++                        last_error=CASE WHEN state IN ('inflight','unknown') THEN last_error ELSE NULL END
+                     WHERE account=? AND user_id=? AND actor_peer=? AND session_id=?
+                     """,
+                     (
+@@ -367,6 +386,27 @@
+                 "SELECT * FROM intents WHERE state='inflight' ORDER BY first_requested_at LIMIT 1"
+             ).fetchone()
+ 
++    def attempt(self, row):
++        with self.connect() as conn:
++            return conn.execute("SELECT * FROM commit_attempts WHERE account=? AND user_id=? AND actor_peer=? AND session_id=? AND generation=?",
++                (*(row[k] for k in ("account","user_id","actor_peer","session_id")),row["claimed_generation"])).fetchone()
++
++    def unknown_rows(self):
++        with self.connect() as conn:
++            return conn.execute("SELECT * FROM intents WHERE state='unknown'").fetchall()
++
++    def adopt_receipt_task(self, row, task_id):
++        with self.connect() as conn:
++            updated=conn.execute("""UPDATE intents SET state='inflight',task_id=?
++                WHERE account=? AND user_id=? AND actor_peer=? AND session_id=?
++                AND claimed_generation=? AND state IN ('unknown','inflight') AND (task_id IS NULL OR task_id=?)""",
++                (task_id,*(row[k] for k in ("account","user_id","actor_peer","session_id")),row["claimed_generation"],task_id))
++            if updated.rowcount != 1: raise RuntimeError("receipt task identity changed")
++
++    def has_unknown_claim(self) -> bool:
++        with self.connect() as conn:
++            return conn.execute("SELECT 1 FROM intents WHERE state='unknown' LIMIT 1").fetchone() is not None
++
+     def claim(self, row: sqlite3.Row) -> sqlite3.Row | None:
+         key = (row["account"], row["user_id"], row["actor_peer"], row["session_id"])
+         with self.connect() as conn:
+@@ -378,6 +418,17 @@
+             if current is None or current["state"] != "pending":
+                 return None
+             generation = int(current["requested_generation"])
++            scope = {k: str(current[k]) for k in ("account","user_id","actor_peer","session_id")}
++            frozen = json.loads(current["commit_body_json"] or "{}")
++            digest = request_digest(frozen)
++            req = request_key(scope,generation)
++            prior = conn.execute("SELECT * FROM commit_attempts WHERE request_key=?",(req,)).fetchone()
++            if prior and (prior["body_digest"] != digest or prior["submitted"]):
++                raise RuntimeError("claimed attempt is immutable or already submitted")
++            conn.execute("""INSERT OR IGNORE INTO commit_attempts
++                (request_key,account,user_id,actor_peer,session_id,generation,body_json,body_digest)
++                VALUES (?,?,?,?,?,?,?,?)""",(req,*key,generation,json.dumps(frozen,sort_keys=True),digest))
++            conn.execute("UPDATE commit_attempts SET resolved=0 WHERE request_key=?",(req,))
+             conn.execute(
+                 """
+                 UPDATE intents SET state='inflight', claimed_generation=?, task_id=NULL
+@@ -584,6 +635,13 @@
+                 """
+             )
+ 
++    def mark_unknown(self, row: sqlite3.Row) -> None:
++        key = (row["account"], row["user_id"], row["actor_peer"], row["session_id"])
++        with self.connect() as conn:
++            conn.execute("""UPDATE intents SET state='unknown', last_error='ambiguous backend acknowledgment'
++                WHERE account=? AND user_id=? AND actor_peer=? AND session_id=?
++                  AND state='inflight'""", key)
++
+     def list_rows(self) -> list[dict[str, Any]]:
+         with self.connect() as conn:
+             rows = conn.execute(
+@@ -746,10 +804,21 @@
+ 
+ 
+ class Worker:
+-    def __init__(self, cfg: Config, db: QueueDB, stop_event: threading.Event):
++    def __init__(self, cfg: Config, db: QueueDB, stop_event: threading.Event, graphiti_adapter=None):
+         self.cfg = cfg
+         self.db = db
+         self.stop_event = stop_event
++        if cfg.receipts_enabled or cfg.graphiti_enabled:
++            # Sticky activation: disabling config cannot erase unresolved work
++            # from launcher admission. Observers read this inside the SH lease.
++            with db.connect() as conn:
++                conn.execute("UPDATE admission_contract SET required=1 WHERE version=1")
++        if cfg.graphiti_enabled:
++            capture_preflight()
++        self.shared = SharedWorkQueue(db) if cfg.graphiti_enabled else None
++        self.graphiti_adapter = graphiti_adapter or DisabledGraphitiAdapter()
++        self._last_class = "GRAPHITI_EPISODE_INGEST"
++        self._recovery_quiet_since: float | None = None
+         self.quiet_since: float | None = None
+         self._status_lock = threading.Lock()
+         self._admission_status: dict[str, Any] = {
+@@ -771,6 +840,8 @@
+ 
+     def run(self) -> None:
+         self.db.mark_unknown_claims()
++        if self.shared:
++            self.shared.recover_after_restart()
+         LOG.info("worker started drain_enabled=%s", self.cfg.drain_enabled)
+         while not self.stop_event.wait(self.cfg.poll_seconds):
+             try:
+@@ -785,12 +856,41 @@
+             self.quiet_since = None
+             self._set_admission_status("drain_disabled")
+             return False
++        if self.cfg.receipts_enabled and self.db.has_unknown_claim():
++            harnesses=self._active_harness_processes()
++            if harnesses:
++                self._recovery_quiet_since=None
++                self._set_admission_status("harness_active",harnesses=harnesses)
++                return False
++            handle = self._try_exclusive_lock()
++            if handle is None:
++                self._recovery_quiet_since=None
++                self._set_admission_status("shared_lease_active")
++                return False
++            try:
++                for unknown in self.db.unknown_rows():
++                    self._receipt_observation(unknown,allow_recovery=self._receipt_recovery_admitted(unknown))
++            finally:
++                handle.close()
+         inflight = self.db.inflight()
++        if self.shared and self.shared.unresolved():
++            self.quiet_since = None
++            self._set_admission_status("blocked_reconcile")
++            return False
+         candidate = inflight or self.db.next_ready()
+-        if candidate is None:
++        graph_candidate = self.shared.ready() if self.shared else None
++        if candidate is None and graph_candidate is None:
+             self.quiet_since = None
+             self._set_admission_status("queue_empty")
+             return False
++        if isinstance(self.graphiti_adapter, DisabledGraphitiAdapter):
++            graph_candidate = None
++            if candidate is None:
++                self._set_admission_status("graphiti_disabled")
++                return False
++        selected_graphiti = False
++        if not inflight and graph_candidate is not None:
++            selected_graphiti = candidate is None or self._last_class == "OPENVIKING_SESSION_COMMIT"
+         harnesses = self._active_harness_processes()
+         if harnesses:
+             self.quiet_since = None
+@@ -798,10 +898,22 @@
+             return False
+         lock_handle = self._try_exclusive_lock()
+         if lock_handle is None:
++            self._recovery_quiet_since=None
+             self.quiet_since = None
+             self._set_admission_status("shared_lease_active")
+             return False
+         try:
++            if inflight is not None and inflight["task_id"]:
++                # Already submitted: the running scheduler occupancy is this
++                # operation's own activity, not a new pre-admission veto.
++                self._set_admission_status("reconciling_commit")
++                self._process(inflight)
++                self.quiet_since = None
++                return True
++            if self.db.has_unknown_claim() is True and not self._unknown_quiescent():
++                self.quiet_since = None
++                self._set_admission_status("unknown_quiescence_unavailable")
++                return False
+             running, waiting = self._metrics()
+             if running != 0 or waiting != 0:
+                 self.quiet_since = None
+@@ -827,6 +939,10 @@
+                 return False
+             # The lock has remained exclusively obtainable and vLLM idle for the
+             # grace period. Re-check metrics while retaining this lock.
++            if self.db.has_unknown_claim() is True and not self._unknown_quiescent():
++                self.quiet_since = None
++                self._set_admission_status("unknown_quiescence_unavailable")
++                return False
+             running, waiting = self._metrics()
+             if running != 0 or waiting != 0:
+                 self.quiet_since = None
+@@ -834,6 +950,17 @@
+                     "vllm_busy", requests_running=running, requests_waiting=waiting
+                 )
+                 return False
++            if selected_graphiti:
++                row = self.shared.claim(graph_candidate["work_key"], f"gate:{os.getpid()}:{time.time_ns()}")
++                if row is None:
++                    self.quiet_since = None
++                    self._set_admission_status("candidate_changed")
++                    return False
++                self._set_admission_status("processing_graphiti", work_key=row["work_key"])
++                self._process_graphiti(row)
++                self._last_class = "GRAPHITI_EPISODE_INGEST"
++                self.quiet_since = None
++                return True
+             row = candidate if candidate["state"] == "inflight" else self.db.claim(candidate)
+             if row is None:
+                 self.quiet_since = None
+@@ -841,12 +968,54 @@
+                 return False
+             self._set_admission_status("committing", session_id=str(row["session_id"]))
+             self._process(row)
++            self._last_class = "OPENVIKING_SESSION_COMMIT"
+             self.quiet_since = None
+             return True
+         finally:
+             fcntl.flock(lock_handle.fileno(), fcntl.LOCK_UN)
+             lock_handle.close()
+ 
++    def _unknown_quiescent(self) -> bool:
++        # Installed commit_async publishes a durable archive marker BEFORE task
++        # registration. A timed-out request can still enqueue extraction later,
++        # even while the task list and scheduler are empty. Neither observation
++        # proves quiescence. No authoritative combined publication/task/queue
++        # barrier is available to this coordinator; retain the unknown claim.
++        return False
++
++    def _process_graphiti(self, row: sqlite3.Row) -> None:
++        key = str(row["work_key"])
++        generation = int(row["attempt_generation"])
++        backend_identity = None
++        try:
++            # Claim is durable before submission. A crash here is ambiguous and
++            # will block on restart; the adapter must never blindly resubmit.
++            backend_identity = self.graphiti_adapter.submit(json.loads(row["candidate_json"]))
++            if not isinstance(backend_identity, str) or not backend_identity:
++                self.shared.block(key, "ambiguous_ack")
++                return
++            self.shared.processing(key, generation, backend_identity)
++            deadline = time.monotonic() + self.cfg.task_timeout_seconds
++            while not self.stop_event.is_set() and time.monotonic() < deadline:
++                result = self.graphiti_adapter.poll(backend_identity)
++                if not isinstance(result, dict) or result.get("backend_identity") != backend_identity:
++                    self.shared.block(key, "observer_identity_mismatch")
++                    return
++                status = result.get("status")
++                if status == "completed" and result.get("persisted") is True:
++                    self.shared.finish(key, generation, backend_identity, "completed")
++                    return
++                if status == "failed":
++                    self.shared.finish(key, generation, backend_identity, "failed")
++                    return
++                if status not in ("queued", "processing"):
++                    self.shared.block(key, "observer_unknown_status")
++                    return
++                self.stop_event.wait(self.cfg.task_poll_seconds)
++            self.shared.block(key, "observer_interrupted")
++        except Exception:
++            self.shared.block(key, "submit_or_observer_ambiguous")
++
+     def _active_harness_processes(self, proc_root: str = "/proc") -> list[dict[str, Any]]:
+         """Return interactive harnesses, excluding persistent editor/server helpers."""
+         wanted = set(self.cfg.process_names)
+@@ -966,33 +1135,66 @@
+         return headers
+ 
+     def _process(self, row: sqlite3.Row) -> None:
++        if self.cfg.receipts_enabled:
++            self._process_receipted(row)
++            return
++        submission_started = False
++        status_received = False
++        ambiguous_ack = False
+         try:
+             if row["task_id"]:
+                 self._wait_task(row, str(row["task_id"]))
+                 return
+             session = urllib.parse.quote(str(row["session_id"]), safe="")
+             url = f"http://{self.cfg.backend_host}:{self.cfg.backend_port}/api/v1/sessions/{session}/commit"
++            headers = self._auth_headers(row)
++            body = json.loads(row["commit_body_json"] or "{}")
++            submission_started = True
+             status, payload = json_request(
+                 "POST",
+                 url,
+-                headers=self._auth_headers(row),
+-                body=json.loads(row["commit_body_json"] or "{}"),
++                headers=headers,
++                body=body,
+                 timeout=self.cfg.request_timeout_seconds,
+             )
++            status_received = True
+             if status < 200 or status >= 300:
+                 message = f"commit HTTP {status}: {payload.get('error', payload)}"
+-                if status in {404, 410}:
++                ambiguous_ack = True
++                error = payload.get("error")
++                details = error.get("details", {}) if isinstance(error, dict) else {}
++                if details.get("task_id"):
++                    # Installed backend reports archived=True and task_id on
++                    # task-store/enqueue errors after Phase 1 publication.
++                    self.db.set_task(row, str(details["task_id"]))
++                    self._wait_task(self.db.inflight() or row, str(details["task_id"]))
++                    return
++                missing_session = error == "Session not found" or (
++                    isinstance(error, dict) and error.get("code") == "NOT_FOUND"
++                    and details.get("type") == "session"
++                    and details.get("resource") == str(row["session_id"])
++                )
++                if status == 404 and missing_session and not details.get("archived"):
+                     raise TerminalCommitError(message)
++                ambiguous_ack = True  # HTTP error is not proof of non-acceptance.
+                 raise RuntimeError(message)
++            ambiguous_ack = True  # Every acknowledged POST needs terminal/task proof.
+             result = payload.get("result") or {}
+             task_id = result.get("task_id")
+-            commit_status = str(result.get("status") or payload.get("status") or "").lower()
++            commit_status = str(result.get("status") or "").lower()
+             if not task_id:
+-                if commit_status in {"skipped", "complete", "completed", "ok"}:
++                # Installed commit_async uses `skipped` for an operation that did
++                # not publish an archive or enqueue extraction. Generic `ok`,
++                # `complete`, and `completed` without a task ID are not durable
++                # terminal evidence and must never release the inference gate.
++                if (status == 200 and commit_status == "skipped"
++                        and result.get("archived") is False
++                        and result.get("archive_uri") is None):
+                     self.db.complete(row, outcome=commit_status)
+-                    LOG.info("commit terminal without task session=%s status=%s", row["session_id"], commit_status)
++                    LOG.info("commit skipped without task session=%s", row["session_id"])
+                     return
+-                raise RuntimeError(f"accepted commit did not return task_id: status={commit_status!r}")
++                ambiguous_ack = True
++                raise RuntimeError(f"commit response has no verified terminal or task identity: status={commit_status!r}")
+             self.db.set_task(row, str(task_id))
+             row = self.db.inflight() or row
+             LOG.info("commit accepted session=%s task=%s", row["session_id"], task_id)
+@@ -1019,8 +1221,102 @@
+             if current is not None and current["task_id"]:
+                 # Preserve a known in-flight task for later status polling.
+                 return
++            if (submission_started and not status_received) or ambiguous_ack:
++                self.db.mark_unknown(current or row)
++                return
+             self.db.retry(current or row, str(exc), self.cfg)
+ 
++    def _receipt_url(self, row, attempt):
++        session = urllib.parse.quote(str(row["session_id"]),safe="")
++        return f"http://{self.cfg.backend_host}:{self.cfg.backend_port}/api/v1/admin/commit_receipts/{session}/{attempt['request_key']}"
++
++    def _receipt_recovery_admitted(self, row):
++        # The backend's per-request fence does not serialize different keys.
++        # Another unproven/queued task can exist while metrics report idle.
++        # Read-only receipt polling remains permitted; this only guards
++        # recovery that can enqueue extraction under the exclusive gate flock.
++        with self.db.connect() as conn:
++            other = conn.execute("""
++                SELECT 1 FROM intents
++                 WHERE state IN ('unknown','inflight')
++                   AND NOT (account=? AND user_id=? AND actor_peer=?
++                            AND session_id=? AND claimed_generation=?)
++                 LIMIT 1
++            """, (row["account"],row["user_id"],row["actor_peer"],
++                  row["session_id"],row["claimed_generation"])).fetchone()
++        if other is not None:
++            self._recovery_quiet_since = None
++            return False
++        # Recovery may enqueue the exact old task. It is an inference-producing
++        # action and needs independent idle/grace admission under the EX lease.
++        try:
++            if self._metrics() != (0,0):
++                self._recovery_quiet_since=None
++                return False
++            now=time.monotonic()
++            if self._recovery_quiet_since is None:
++                self._recovery_quiet_since=now
++                return False
++            if now-self._recovery_quiet_since < self.cfg.quiet_grace_seconds:return False
++            admitted=self._metrics()==(0,0)
++            self._recovery_quiet_since=None
++            return admitted
++        except Exception:
++            self._recovery_quiet_since=None
++            return False
++
++    def _receipt_observation(self, row, payload=None, *, allow_recovery=False):
++        attempt = self.db.attempt(row)
++        if attempt is None: return False  # Historical unknowns have no invented key.
++        try:
++            if payload is None:
++                status,payload=json_request("GET",self._receipt_url(row,attempt)+("?recover=true" if allow_recovery else ""),headers=self._auth_headers(row),timeout=self.cfg.request_timeout_seconds)
++                if status != 200: return False
++            scope={k:str(row[k]) for k in ("account","user_id","actor_peer","session_id")}
++            receipt=payload.get("result")
++            decision,value=gate_decision(receipt,key=attempt["request_key"],scope=scope,body_digest=attempt["body_digest"])
++            if decision == "TRACK":
++                self.db.adopt_receipt_task(row,value)
++                return False
++            if decision == "RELEASE":
++                if value == "skipped" or value == "completed":
++                    if row["state"] == "unknown": self.db.adopt_receipt_task(row,receipt.get("task_id"))
++                    self.db.complete(row,outcome=value)
++                else:
++                    self.db.adopt_receipt_task(row,receipt["task_id"])
++                    current=self.db.inflight()
++                    self.db.task_failed(current,error=f"receipt terminal {value}",task_id=receipt["task_id"],failure_kind=value)
++                return True
++        except Exception:
++            return False
++        return False
++
++    def _process_receipted(self, row):
++        attempt=self.db.attempt(row)
++        if attempt is None:
++            self.db.mark_unknown(row)
++            return
++        try:
++            headers=self._auth_headers(row)
++            if not attempt["submitted"]:
++                envelope={"scope":{k:str(row[k]) for k in ("account","user_id","actor_peer","session_id")},
++                    "generation":attempt["generation"],"body":json.loads(attempt["body_json"]),"body_digest":attempt["body_digest"]}
++                with self.db.connect() as conn:
++                    conn.execute("UPDATE commit_attempts SET submitted=1 WHERE request_key=?",(attempt["request_key"],))
++                status,payload=json_request("POST",self._receipt_url(row,attempt),headers=headers,body=envelope,timeout=self.cfg.request_timeout_seconds)
++                if status != 200:
++                    self.db.mark_unknown(self.db.inflight() or row)
++                    return
++                if self._receipt_observation(row,payload): return
++            deadline=time.monotonic()+self.cfg.task_timeout_seconds
++            while not self.stop_event.is_set() and time.monotonic()<deadline:
++                current = self.db.inflight() or row
++                if self._receipt_observation(current,allow_recovery=self._receipt_recovery_admitted(current)): return
++                self.stop_event.wait(self.cfg.task_poll_seconds)
++            self.db.mark_unknown(self.db.inflight() or row)
++        except Exception:
++            self.db.mark_unknown(self.db.inflight() or row)
++
+     def _wait_task(self, row: sqlite3.Row, task_id: str) -> None:
+         deadline = time.monotonic() + self.cfg.task_timeout_seconds
+         quoted = urllib.parse.quote(task_id, safe="")
+@@ -1100,6 +1396,13 @@
+                 },
+             )
+             return
++        if path == "/__commit_gate/memory_work":
++            if not self._admin_authorized():
++                self._json(401, {"status": "error", "error": {"message": "Unauthorized"}})
++                return
++            work = self.server.worker.shared if self.server.worker else None
++            self._json(200, {"status": "ok", "result": {"work": work.status() if work else []}})
++            return
+         if path in {"/__commit_gate/failures", "/__commit_gate/unresolved"}:
+             if not self._admin_authorized():
+                 self._json(401, {"status": "error", "error": {"message": "Unauthorized"}})
+@@ -1121,6 +1424,25 @@
+ 
+     def do_POST(self):
+         path = urllib.parse.urlsplit(self.path).path
++        if path == "/__commit_gate/memory_candidates":
++            if not self._capture_authorized():
++                self._json(401, {"status": "error", "error": {"message": "Unauthorized"}})
++                return
++            work = self.server.worker.shared if self.server.worker else None
++            if work is None:
++                self._json(409, {"status": "disabled"})
++                return
++            try:
++                candidate = json.loads(self._read_body(8192))
++                queued = work.enqueue(candidate)
++                self._json(202, {"status": "ok", "result": queued})
++            except SourceEventConflict as exc:
++                self._json(409, {"status": "conflict", "error": {"code": exc.code}})
++            except SourceAuthorityUnavailable as exc:
++                self._json(422, {"status": "deferred", "error": {"code": exc.code}})
++            except (ValueError, json.JSONDecodeError):
++                self._json(400, {"status": "error", "error": {"message": "Invalid candidate"}})
++            return
+         match = COMMIT_RE.match(path)
+         if match:
+             self._enqueue(match.group(1))
+@@ -1144,7 +1466,7 @@
+ 
+     def _read_body(self, limit: int | None = None) -> bytes:
+         length = int(self.headers.get("Content-Length", "0") or 0)
+-        if limit is not None and length > limit:
++        if length < 0 or (limit is not None and length > limit):
+             raise ValueError("request body exceeds configured limit")
+         return self.rfile.read(length) if length else b""
+ 
+@@ -1155,7 +1477,22 @@
+             "actor_peer": self.headers.get("X-OpenViking-Actor-Peer", "").strip(),
+         }
+ 
++    def _capture_credential_supplied(self) -> bool:
++        token = os.environ.get("GRAPHITI_CAPTURE_TOKEN", "")
++        return bool(token) and hmac.compare_digest(self.headers.get("Authorization", ""), f"Bearer {token}")
++
++    def _capture_authorized(self) -> bool:
++        # This credential permits bounded, unverified proposals only. It cannot
++        # proxy, read admin state, commit, attest facts or schedule inference.
++        token = os.environ.get("GRAPHITI_CAPTURE_TOKEN", "")
++        root = os.environ.get("OPENVIKING_ROOT_API_KEY") or os.environ.get("OPENVIKING_API_KEY", "")
++        if not token or (root and hmac.compare_digest(token, root)):
++            return False
++        return hmac.compare_digest(self.headers.get("Authorization", ""), f"Bearer {token}")
++
+     def _admin_authorized(self) -> bool:
++        if self._capture_credential_supplied():
++            return False
+         api_key = os.environ.get("OPENVIKING_ROOT_API_KEY") or os.environ.get(
+             "OPENVIKING_API_KEY", ""
+         )
+@@ -1163,6 +1500,9 @@
+         return bool(api_key) and hmac.compare_digest(supplied, f"Bearer {api_key}")
+ 
+     def _enqueue(self, encoded_session: str) -> None:
++        if self._capture_credential_supplied():
++            self._json(401, {"status": "error", "error": {"message": "Capture credential has no commit authority"}})
++            return
+         try:
+             session_id = urllib.parse.unquote(encoded_session).strip()
+             if not session_id or "/" in session_id or len(session_id) > 255:
+@@ -1203,6 +1543,9 @@
+             self._json(503, {"status": "error", "error": {"message": str(exc)}})
+ 
+     def _proxy(self) -> None:
++        if self._capture_credential_supplied():
++            self._json(401, {"status": "error", "error": {"message": "Capture credential has no proxy authority"}})
++            return
+         cfg = self.server.cfg
+         response_started = False
+         try:
+--- /dev/null
++++ b/receipt_protocol.py
+@@ -0,0 +1,165 @@
++"""Issue 70: durable OpenViking commit receipt core (disabled until integrated).
++
++Backend-owned storage and conservative gate parsing. This file is not an HTTP
++endpoint and does not itself attest to QueueFS quiescence or launch shims.
++"""
++from __future__ import annotations
++
++import hashlib
++import os
++from contextlib import contextmanager
++import json
++import sqlite3
++from pathlib import Path
++from typing import Any, Mapping
++
++PROTOCOL = "openviking-commit-receipt-v1"
++TERMINAL = frozenset(("completed", "failed", "cancelled", "skipped"))
++
++
++class ReceiptConflict(ValueError):
++    pass
++
++
++def canonical_digest(body: Mapping[str, Any]) -> str:
++    return hashlib.sha256(json.dumps(body, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()).hexdigest()
++
++
++def request_key(identity: Mapping[str, Any], claimed_generation: int) -> str:
++    """Bind only immutable claimed generation + scope, not mutable retry payload."""
++    if not isinstance(claimed_generation, int) or claimed_generation < 1:
++        raise ValueError("claimed_generation must be a positive integer")
++    required = ("account", "user_id", "actor_peer", "session_id")
++    if not all(isinstance(identity.get(k), str) for k in required) or not identity["session_id"]:
++        raise ValueError("missing immutable scope")
++    return canonical_digest({"scope": {k: identity[k] for k in required}, "generation": claimed_generation})
++
++
++class ReceiptLedger:
++    """Backend-only journal; never expose mutation methods to plugin/gate clients.
++
++    All status changes are sync, durable local SQLite transactions. Incomplete
++    begin() survives backend restart as PREPARING and cannot be replayed.
++    """
++    def __init__(self, path: str):
++        self.path = path
++        Path(path).parent.mkdir(parents=True, exist_ok=True, mode=0o700)
++        with self._connect() as db:
++            db.execute("""CREATE TABLE IF NOT EXISTS commit_receipts (
++                request_key TEXT PRIMARY KEY,
++                scope_json TEXT NOT NULL,
++                body_digest TEXT NOT NULL,
++                state TEXT NOT NULL,
++                task_id TEXT,
++                outcome TEXT,
++                release_proven INTEGER NOT NULL DEFAULT 0
++            )""")
++        os.chmod(path, 0o600)
++
++    @contextmanager
++    def _connect(self):
++        db = sqlite3.connect(self.path, timeout=10, isolation_level=None)
++        try:
++            db.row_factory = sqlite3.Row
++            db.execute("PRAGMA busy_timeout=10000")
++            db.execute("PRAGMA journal_mode=WAL")
++            db.execute("PRAGMA synchronous=FULL")
++            yield db
++        finally:
++            db.close()
++
++    def _read(self, db, key):
++        found = db.execute("SELECT * FROM commit_receipts WHERE request_key=?", (key,)).fetchone()
++        return {"protocol": PROTOCOL, **dict(found)} if found else None
++
++    def begin(self, key: str, scope: Mapping[str, Any], body_digest: str) -> tuple[dict, bool]:
++        if not isinstance(key, str) or len(key) != 64 or not isinstance(body_digest, str) or len(body_digest) != 64:
++            raise ValueError("invalid request or body digest")
++        scope_json = json.dumps(scope, sort_keys=True, separators=(",", ":"), allow_nan=False)
++        with self._connect() as db:
++            try:
++                db.execute("BEGIN IMMEDIATE")
++                old = self._read(db, key)
++                if old is not None:
++                    if old["scope_json"] != scope_json or old["body_digest"] != body_digest:
++                        raise ReceiptConflict("same request key with contradictory input")
++                    db.execute("COMMIT")
++                    return old, False  # Existing receipt: DO NOT execute commit_async again.
++                db.execute("INSERT INTO commit_receipts(request_key,scope_json,body_digest,state) VALUES(?,?,?,'preparing')",
++                           (key, scope_json, body_digest))
++                new = self._read(db, key)
++                db.execute("COMMIT")
++                return new, True
++            except BaseException:
++                if db.in_transaction:
++                    db.execute("ROLLBACK")
++                raise
++
++    def accepted(self, key: str, task_id: str) -> dict:
++        if not isinstance(task_id, str) or not task_id:
++            raise ValueError("a queued extraction needs a real task id")
++        with self._connect() as db:
++            db.execute("BEGIN IMMEDIATE")
++            row = self._read(db, key)
++            if row is None or row["state"] not in ("preparing", "accepted") or (row["task_id"] not in (None, task_id)):
++                db.execute("ROLLBACK")
++                raise ReceiptConflict("not the unique accepted task")
++            db.execute("UPDATE commit_receipts SET state='accepted',task_id=? WHERE request_key=?", (task_id, key))
++            new = self._read(db, key)
++            db.execute("COMMIT")
++            return new
++
++    def sealed_terminal(self, key: str, outcome: str, *, backend_quiescence_verified: bool) -> dict:
++        """Only backend owner calls after verifying the exact task is non-replayable.
++
++        Cannot infer this boolean from an HTTP response, task list or idle metrics.
++        Backend integration MUST implement the proof before making this call.
++        """
++        if outcome not in TERMINAL or backend_quiescence_verified is not True:
++            raise ValueError("backend terminal/quiescence proof required")
++        with self._connect() as db:
++            db.execute("BEGIN IMMEDIATE")
++            row = self._read(db, key)
++            if row is None or row["state"] not in ("preparing", "accepted", "terminal"):
++                db.execute("ROLLBACK")
++                raise ReceiptConflict("no matching operation")
++            if outcome != "skipped" and not row["task_id"]:
++                db.execute("ROLLBACK")
++                raise ReceiptConflict("task terminal requires matched task id")
++            if outcome == "skipped" and row["task_id"]:
++                db.execute("ROLLBACK")
++                raise ReceiptConflict("skipped cannot have queued task")
++            if row["state"] == "terminal" and row["outcome"] != outcome:
++                db.execute("ROLLBACK")
++                raise ReceiptConflict("conflicting terminal evidence")
++            db.execute("UPDATE commit_receipts SET state='terminal',outcome=?,release_proven=1 WHERE request_key=?", (outcome, key))
++            new = self._read(db, key)
++            db.execute("COMMIT")
++            return new
++
++    def read(self, key: str) -> dict | None:
++        with self._connect() as db:
++            return self._read(db, key)
++
++
++def gate_decision(receipt: Mapping[str, Any] | None, *, key: str, scope: Mapping[str, Any], body_digest: str) -> tuple[str, str | None]:
++    """Return BLOCK, TRACK or RELEASE. Authenticated backend transport required.
++
++    Caller must keep the cross-process admission fence until a RELEASE is
++    durably reconciled while holding the existing exclusive gate lease.
++    """
++    if not isinstance(receipt, Mapping) or receipt.get("protocol") != PROTOCOL or receipt.get("request_key") != key or receipt.get("body_digest") != body_digest:
++        return "BLOCK", None
++    expected = json.dumps(scope, sort_keys=True, separators=(",", ":"), allow_nan=False)
++    if receipt.get("scope_json") != expected:
++        return "BLOCK", None
++    state = receipt.get("state")
++    task_id = receipt.get("task_id")
++    if state == "terminal" and receipt.get("release_proven") == 1 and receipt.get("outcome") in TERMINAL:
++        if receipt["outcome"] == "skipped" and task_id is None:
++            return "RELEASE", receipt["outcome"]
++        if receipt["outcome"] != "skipped" and isinstance(task_id, str) and task_id:
++            return "RELEASE", receipt["outcome"]
++    if state == "accepted" and isinstance(task_id, str) and task_id:
++        return "TRACK", task_id
++    return "BLOCK", None
+--- /dev/null
++++ b/requirements-phase1.txt
+@@ -0,0 +1 @@
++jsonschema>=4.26,<5
+--- /dev/null
++++ b/shared_work.py
+@@ -0,0 +1,221 @@
++"""Phase 1 typed work in the existing commit-gate SQLite and worker owner.
++
++The real Graphiti adapter is deliberately unavailable until a durable terminal
++observer exists. Tests inject a synthetic adapter with submit/poll methods.
++"""
++from __future__ import annotations
++
++import hashlib
++import json
++import re
++import sqlite3
++import time
++from pathlib import Path
++from typing import Any
++
++GRAPHITI = "GRAPHITI_EPISODE_INGEST"
++OPENVIKING = "OPENVIKING_SESSION_COMMIT"
++ACTIVE = ("admitted", "processing", "blocked_reconcile")
++TERMINAL = ("completed", "failed", "cancelled")
++SCHEMA = json.loads(Path(__file__).with_name("memory-candidate-v1.schema.json").read_text())
++VALIDATOR = None
++
++
++class SourceAuthorityUnavailable(ValueError):
++    code = "source_authority_unavailable"
++
++
++class SourceEventConflict(ValueError):
++    code = "source_event_conflict"
++
++
++def validator():
++    global VALIDATOR
++    if VALIDATOR is None:
++        try:
++            import jsonschema
++        except ImportError as exc:
++            raise RuntimeError("Optional capture requires requirements-phase1.txt; legacy gate needs no jsonschema") from exc
++        VALIDATOR = jsonschema.Draft202012Validator(SCHEMA, format_checker=jsonschema.FormatChecker())
++    return VALIDATOR
++
++
++def canonical_digest(value):
++    return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False).encode()).hexdigest()
++
++
++def source_key(candidate):
++    source, scope = candidate["source"], candidate["scope"]
++    return canonical_digest(["memory-source-event-v1", scope["workspace_id"], source["system"], source["session_id"], source["event_id"]])
++
++
++def normalized_candidate(candidate):
++    # Identity and payload digest are local calculations. No supplied hash is
++    # authority. Without source attestation this envelope remains unverified.
++    item = json.loads(json.dumps(candidate))
++    item["event_id"] = source_key(item)
++    item.pop("logical_digest", None)
++    item["logical_digest"] = canonical_digest(item)
++    return item
++FORBIDDEN = re.compile(r"(?:-----BEGIN [A-Z ]*PRIVATE KEY-----|\bsk-[A-Za-z0-9]{16,}|gh[pousr]_[A-Za-z0-9]{20,}|Bearer\s+\S+|password\s*[:=]|\bfixtures?/|\btests?/|\.(?:log|trace)\b)", re.I)
++
++
++def work_key(candidate: dict[str, Any]) -> str:
++    return canonical_digest([1, GRAPHITI, source_key(candidate), candidate["scope"]["group_id"]])
++
++
++def valid_candidate(x: Any) -> bool:
++    """Validate the exact staged schema and reject content-like or secret refs."""
++    if not isinstance(x, dict):
++        return False
++    try:
++        encoded = json.dumps(x, separators=(",", ":"))
++        if len(encoded) > 8192 or FORBIDDEN.search(encoded) or not re.fullmatch(r"[-\w./:@]+", x["fact_ref"]):
++            return False
++        errors = list(validator().iter_errors(x))
++        if errors:
++            return False
++        return (
++            x["destination"] == "graphiti" and "logical_digest" in x
++            and x["authority"]["basis"] in ("operator_declared", "source_verified", "agent_candidate")
++            and ("evidence_ref" not in x["authority"] or re.fullmatch(r"[-\w./:@]+", x["authority"]["evidence_ref"]) is not None)
++        )
++    except (KeyError, TypeError, ValueError):
++        return False
++
++
++class SharedWorkQueue:
++    def __init__(self, legacy_db):
++        self.legacy_db = legacy_db
++        with legacy_db.connect() as conn:
++            conn.execute("BEGIN IMMEDIATE")
++            conn.execute("""CREATE TABLE IF NOT EXISTS memory_work (
++                work_key TEXT PRIMARY KEY, work_class TEXT NOT NULL,
++                source_event_id TEXT NOT NULL, source_session_id TEXT NOT NULL,
++                source_message_id TEXT, destination_scope TEXT NOT NULL,
++                logical_digest TEXT NOT NULL, candidate_json TEXT NOT NULL,
++                status TEXT NOT NULL, attempt_generation INTEGER NOT NULL DEFAULT 0,
++                backend_identity TEXT, lease_identity TEXT, created_at REAL NOT NULL,
++                updated_at REAL NOT NULL, error_code TEXT
++            )""")
++            conn.execute("CREATE INDEX IF NOT EXISTS memory_work_ready ON memory_work(status, created_at)")
++            migrating = conn.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='memory_source_admissions'").fetchone() is None
++            # Separate index preserves historical work keys and original envelopes.
++            conn.execute("""CREATE TABLE IF NOT EXISTS memory_source_admissions (
++                source_key TEXT NOT NULL, destination_scope TEXT NOT NULL,
++                payload_digest TEXT NOT NULL, work_key TEXT NOT NULL,
++                PRIMARY KEY(source_key, destination_scope))""")
++            for row in conn.execute("SELECT * FROM memory_work").fetchall():
++                item = normalized_candidate(json.loads(row["candidate_json"]))
++                identity = (source_key(item), item["scope"]["group_id"])
++                prior = conn.execute("SELECT * FROM memory_source_admissions WHERE source_key=? AND destination_scope=?", identity).fetchone()
++                if prior and prior["work_key"] != row["work_key"]:
++                    raise SourceEventConflict("historical source identity collision; reconciliation required")
++                conn.execute("INSERT OR IGNORE INTO memory_source_admissions VALUES (?, ?, ?, ?)", (*identity, item["logical_digest"], row["work_key"]))
++            # Previously queued metadata never acquired independent attestation.
++            if migrating:
++                conn.execute("UPDATE memory_work SET status='deferred_unverified', error_code='source_authority_unavailable' WHERE status='queued'")
++
++    def enqueue(self, candidate: dict[str, Any]) -> dict[str, Any]:
++        if not valid_candidate(candidate):
++            raise ValueError("invalid bounded candidate envelope")
++        if candidate["authority"]["basis"] != "agent_candidate":
++            raise SourceAuthorityUnavailable("No authenticated V2 source-attestation interface")
++        candidate = normalized_candidate(candidate)
++        key = work_key(candidate)
++        identity = (source_key(candidate), candidate["scope"]["group_id"])
++        now = time.time()
++        with self.legacy_db.connect() as conn:
++            conn.execute("BEGIN IMMEDIATE")
++            prior = conn.execute("SELECT * FROM memory_source_admissions WHERE source_key=? AND destination_scope=?", identity).fetchone()
++            if prior:
++                if prior["payload_digest"] != candidate["logical_digest"]:
++                    raise SourceEventConflict("source event already recorded with contradictory payload")
++                return dict(conn.execute("SELECT work_key, status FROM memory_work WHERE work_key=?", (prior["work_key"],)).fetchone())
++            conn.execute("""INSERT INTO memory_work
++                (work_key, work_class, source_event_id, source_session_id,
++                 source_message_id, destination_scope, logical_digest, candidate_json,
++                 status, created_at, updated_at, error_code)
++                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'deferred_unverified', ?, ?, 'source_authority_unavailable')""",
++                (key, GRAPHITI, candidate["event_id"], candidate["source"]["session_id"],
++                 candidate["source"].get("message_id"), candidate["scope"]["group_id"],
++                 candidate["logical_digest"], json.dumps(candidate, sort_keys=True), now, now))
++            conn.execute("INSERT INTO memory_source_admissions VALUES (?, ?, ?, ?)", (*identity, candidate["logical_digest"], key))
++            return {"work_key": key, "status": "deferred_unverified"}
++
++    def ready(self):
++        with self.legacy_db.connect() as conn:
++            return conn.execute("SELECT * FROM memory_work WHERE status='queued' ORDER BY created_at, work_key LIMIT 1").fetchone()
++
++    def unresolved(self):
++        with self.legacy_db.connect() as conn:
++            return conn.execute("SELECT * FROM memory_work WHERE status IN ('admitted','processing','blocked_reconcile') ORDER BY created_at LIMIT 1").fetchone()
++
++    def claim(self, key: str, lease: str):
++        with self.legacy_db.connect() as conn:
++            conn.execute("BEGIN IMMEDIATE")
++            updated = conn.execute("""UPDATE memory_work SET status='admitted', attempt_generation=attempt_generation+1,
++                lease_identity=?, updated_at=? WHERE work_key=? AND status='queued'""", (lease, time.time(), key))
++            if updated.rowcount != 1:
++                return None
++            return conn.execute("SELECT * FROM memory_work WHERE work_key=?", (key,)).fetchone()
++
++    def processing(self, key: str, generation: int, backend_identity: str):
++        if not backend_identity or len(backend_identity) > 256:
++            raise ValueError("bounded backend identity required")
++        with self.legacy_db.connect() as conn:
++            updated = conn.execute("""UPDATE memory_work SET status='processing', backend_identity=?, updated_at=?
++                WHERE work_key=? AND attempt_generation=? AND status='admitted'""",
++                (backend_identity, time.time(), key, generation))
++            if updated.rowcount != 1:
++                raise RuntimeError("processing identity mismatch")
++
++    def finish(self, key: str, generation: int, backend_identity: str, terminal: str):
++        if terminal not in ("completed", "failed") or not backend_identity:
++            raise ValueError("terminal proof required")
++        with self.legacy_db.connect() as conn:
++            updated = conn.execute("""UPDATE memory_work SET status=?, updated_at=?, error_code=?
++                WHERE work_key=? AND attempt_generation=? AND backend_identity=? AND status='processing'""",
++                (terminal, time.time(), "backend_failed" if terminal == "failed" else None,
++                 key, generation, backend_identity))
++            if updated.rowcount != 1:
++                raise RuntimeError("terminal identity mismatch")
++
++    def block(self, key: str, code: str):
++        with self.legacy_db.connect() as conn:
++            conn.execute("""UPDATE memory_work SET status='blocked_reconcile', error_code=?, updated_at=?
++                WHERE work_key=? AND status IN ('admitted','processing')""", (code[:80], time.time(), key))
++
++    def recover_after_restart(self):
++        with self.legacy_db.connect() as conn:
++            conn.execute("""UPDATE memory_work SET status='blocked_reconcile', error_code='owner_restart', updated_at=?
++                WHERE status IN ('admitted','processing')""", (time.time(),))
++
++    def cancel(self, key: str):
++        with self.legacy_db.connect() as conn:
++            return conn.execute("UPDATE memory_work SET status='cancelled', updated_at=? WHERE work_key=? AND status='queued'", (time.time(), key)).rowcount == 1
++
++    def reconcile(self, key: str, backend_identity: str, terminal: str):
++        if terminal not in ("completed", "failed") or not backend_identity:
++            raise ValueError("independent terminal proof required")
++        with self.legacy_db.connect() as conn:
++            updated = conn.execute("""UPDATE memory_work SET status=?, error_code=NULL, updated_at=?
++                WHERE work_key=? AND status='blocked_reconcile' AND backend_identity=?""",
++                (terminal, time.time(), key, backend_identity))
++            if updated.rowcount != 1:
++                raise RuntimeError("reconciliation identity mismatch")
++
++    def status(self, limit: int = 50):
++        with self.legacy_db.connect() as conn:
++            rows = conn.execute("""SELECT work_key, work_class, source_event_id, destination_scope,
++                status, attempt_generation, backend_identity, lease_identity, created_at, updated_at, error_code
++                FROM memory_work ORDER BY created_at DESC LIMIT ?""", (min(max(limit, 1), 100),)).fetchall()
++            return [dict(row) for row in rows]
++
++
++class DisabledGraphitiAdapter:
++    def submit(self, candidate):
++        raise RuntimeError("Graphiti terminal observation interface unavailable")
++
++    def poll(self, backend_identity):
++        raise RuntimeError("Graphiti terminal observation interface unavailable")
+--- /dev/null
++++ b/test_receipt_protocol.py
+@@ -0,0 +1,59 @@
++import tempfile
++import unittest
++from pathlib import Path
++from receipt_protocol import ReceiptLedger, ReceiptConflict, canonical_digest, request_key, gate_decision
++
++SCOPE = {"account":"a", "user_id":"u", "actor_peer":"p", "session_id":"s"}
++BODY = canonical_digest({"keep_recent_count":0})
++KEY = request_key(SCOPE, 7)
++
++class ReceiptTests(unittest.TestCase):
++    def setUp(self):
++        self.temp = tempfile.TemporaryDirectory()
++        self.db = str(Path(self.temp.name)/"backend-receipts.sqlite3")
++        self.ledger = ReceiptLedger(self.db)
++    def tearDown(self):
++        self.temp.cleanup()
++    def test_durable_first_writer_wins_and_frozen_digest(self):
++        one, fresh = self.ledger.begin(KEY, SCOPE, BODY)
++        self.assertTrue(fresh)
++        again, fresh = ReceiptLedger(self.db).begin(KEY, SCOPE, BODY)
++        self.assertFalse(fresh)
++        self.assertEqual(one, again)
++        with self.assertRaises(ReceiptConflict):
++            self.ledger.begin(KEY, SCOPE, canonical_digest({"keep_recent_count":1}))
++    def test_publication_window_never_releases(self):
++        self.ledger.begin(KEY, SCOPE, BODY)
++        self.assertEqual(gate_decision(self.ledger.read(KEY),key=KEY,scope=SCOPE,body_digest=BODY), ("BLOCK",None))
++    def test_task_identity_survives_restart_and_requires_terminal(self):
++        self.ledger.begin(KEY, SCOPE, BODY)
++        self.ledger.accepted(KEY, "task-1")
++        fresh = ReceiptLedger(self.db)
++        self.assertEqual(gate_decision(fresh.read(KEY),key=KEY,scope=SCOPE,body_digest=BODY), ("TRACK","task-1"))
++        with self.assertRaises(ValueError):
++            fresh.sealed_terminal(KEY,"completed",backend_quiescence_verified=False)
++        self.assertEqual(gate_decision(fresh.read(KEY),key=KEY,scope=SCOPE,body_digest=BODY), ("TRACK","task-1"))
++        fresh.sealed_terminal(KEY,"completed",backend_quiescence_verified=True)
++        self.assertEqual(gate_decision(fresh.read(KEY),key=KEY,scope=SCOPE,body_digest=BODY), ("RELEASE","completed"))
++    def test_ambiguous_absence_or_mismatch_never_releases(self):
++        self.ledger.begin(KEY, SCOPE, BODY)
++        self.assertEqual(gate_decision(None,key=KEY,scope=SCOPE,body_digest=BODY), ("BLOCK",None))
++        row=self.ledger.read(KEY)
++        for k,v in (("request_key","e"*64),("scope_json","{}"),("body_digest","f"*64),("protocol","wrong")):
++            tampered=dict(row); tampered[k]=v
++            self.assertEqual(gate_decision(tampered,key=KEY,scope=SCOPE,body_digest=BODY), ("BLOCK",None))
++    def test_skipped_only_without_task_and_with_positive_backend_proof(self):
++        self.ledger.begin(KEY, SCOPE, BODY)
++        self.ledger.sealed_terminal(KEY,"skipped",backend_quiescence_verified=True)
++        self.assertEqual(gate_decision(self.ledger.read(KEY),key=KEY,scope=SCOPE,body_digest=BODY), ("RELEASE","skipped"))
++        with self.assertRaises(ReceiptConflict):
++            self.ledger.sealed_terminal(KEY,"failed",backend_quiescence_verified=True)
++    def test_no_task_cannot_invent_terminal_extraction(self):
++        self.ledger.begin(KEY, SCOPE, BODY)
++        with self.assertRaises(ReceiptConflict):
++            self.ledger.sealed_terminal(KEY,"completed",backend_quiescence_verified=True)
++    def test_scope_and_generation_bind_request(self):
++        self.assertNotEqual(KEY, request_key(SCOPE, 8))
++        self.assertNotEqual(KEY, request_key({**SCOPE,"user_id":"other"},7))
++        self.assertEqual(BODY, canonical_digest({"keep_recent_count":0}))
++if __name__ == '__main__': unittest.main()
+--- /dev/null
++++ b/tests/test_corrections.py
+@@ -0,0 +1,240 @@
++"""Issue 70 corrections, disposable state only; never talks to installed services."""
++import copy
++import fcntl
++import json
++import os
++from pathlib import Path
++import sqlite3
++import subprocess
++import sys
++import tempfile
++import threading
++import unittest
++from concurrent.futures import ThreadPoolExecutor
++from dataclasses import replace
++from unittest import mock
++
++from test_gate import gate, config
++from test_shared_work import candidate
++from shared_work import SharedWorkQueue, SourceEventConflict, SourceAuthorityUnavailable, normalized_candidate, work_key
++
++
++class Corrections(unittest.TestCase):
++    def setUp(self):
++        self.root = tempfile.TemporaryDirectory()
++        self.addCleanup(self.root.cleanup)
++        self.cfg = replace(config(self.root.name), drain_enabled=True, process_names=())
++        self.db = gate.QueueDB(self.cfg.database)
++        self.worker = gate.Worker(self.cfg, self.db, threading.Event())
++        self.worker._metrics = lambda: (0, 0)
++        self.identity = {"account": "a", "user_id": "u", "actor_peer": "p"}
++
++    def intent(self, name="one"):
++        self.db.enqueue(self.identity, name, 0, {}, "test")
++        return self.db.claim(self.db.next_ready())
++
++    def test_known_inflight_competing_lease_restart_and_own_busy_metrics(self):
++        row = self.intent()
++        self.db.set_task(row, "durable-task")
++        self.db.mark_unknown_claims()
++        self.worker = gate.Worker(self.cfg, gate.QueueDB(self.cfg.database), threading.Event())
++        self.worker._metrics = mock.Mock(side_effect=AssertionError("own occupancy must not veto polling"))
++        with open(self.cfg.lock_file, "a+") as holder:
++            fcntl.flock(holder, fcntl.LOCK_SH | fcntl.LOCK_NB)
++            with mock.patch.object(gate, "json_request") as request:
++                self.assertFalse(self.worker.tick())
++                request.assert_not_called()
++            self.assertEqual(self.db.inflight()["task_id"], "durable-task")
++            fcntl.flock(holder, fcntl.LOCK_UN)
++        def poll(method, url, **kw):
++            self.assertEqual(method, "GET")
++            self.assertIn("durable-task", url)
++            # Poll and terminal reconciliation actually retain the OS lease.
++            with open(self.cfg.lock_file, "a+") as other:
++                with self.assertRaises(BlockingIOError):
++                    fcntl.flock(other, fcntl.LOCK_SH | fcntl.LOCK_NB)
++            return 200, {"result": {"status": "completed"}}
++        with mock.patch.dict(os.environ, {"OPENVIKING_ROOT_API_KEY": "test-only"}), mock.patch.object(gate, "json_request", side_effect=poll) as request:
++            self.assertTrue(self.worker.tick())
++            self.assertEqual(request.call_count, 1)
++        self.assertEqual(self.db.list_rows()[0]["state"], "complete")
++        self.worker._metrics.assert_not_called()
++
++    def test_unrelated_busy_scheduler_still_blocks_new_commit(self):
++        self.db.enqueue(self.identity, "new", 0, {}, "test")
++        self.worker._metrics = lambda: (1, 0)
++        with mock.patch.object(self.worker, "_process") as process:
++            self.assertFalse(self.worker.tick())
++            process.assert_not_called()
++
++    def test_unknown_cannot_be_revived_and_independent_work_fails_closed_without_barrier(self):
++        row = self.intent("ambiguous")
++        self.db.mark_unknown(row)
++        before = self.db.list_rows()[0]
++        self.db.enqueue(self.identity, "ambiguous", 0, {}, "retry")
++        after = self.db.list_rows()[0]
++        self.assertEqual(after["state"], "unknown")
++        self.assertEqual(after["claimed_generation"], before["claimed_generation"])
++        self.db.enqueue(self.identity, "independent", 0, {}, "test")
++        with mock.patch.object(self.worker, "_process") as process:
++            self.assertFalse(self.worker.tick())
++            self.assertFalse(self.worker.tick())
++            process.assert_not_called()
++        self.assertEqual(self.worker.admission_status()["state"], "unknown_quiescence_unavailable")
++        self.assertEqual(self.db.list_rows()[0]["state"], "unknown")
++        self.assertEqual(self.db.list_rows()[1]["state"], "pending")
++
++    def test_idle_task_list_is_not_an_authoritative_publication_barrier(self):
++        with mock.patch.dict(os.environ, {"OPENVIKING_ROOT_API_KEY": "test-only"}), mock.patch.object(gate, "json_request", return_value=(200, {"status": "ok", "result": []})) as request:
++            self.assertFalse(self.worker._unknown_quiescent())
++            request.assert_not_called()  # The installed list API cannot prove this claim.
++
++    def test_error_after_submission_unknown_across_restart_no_duplicate(self):
++        for status, payload in [(500, {"error": {"code": "INTERNAL"}}), (503, {}), (200, {"status": "ok"}), (202, {"result": {"status": "queued"}})]:
++            with self.subTest(status=status, payload=payload):
++                row = self.intent(str(status) + json.dumps(payload))
++                with mock.patch.dict(os.environ, {"OPENVIKING_ROOT_API_KEY": "test-only"}), mock.patch.object(gate, "json_request", return_value=(status, payload)) as request:
++                    self.worker._process(row)
++                    self.assertEqual(request.call_count, 1)
++                self.db.mark_unknown_claims()
++                self.assertIsNone(self.db.next_ready())
++                self.assertEqual(self.db.list_rows()[-1]["state"], "unknown")
++
++    def test_error_task_identity_recovers_and_polls_without_resubmit(self):
++        row = self.intent()
++        with mock.patch.dict(os.environ, {"OPENVIKING_ROOT_API_KEY": "test-only"}), mock.patch.object(gate, "json_request", side_effect=[(500, {"error": {"details": {"task_id": "recovered-id", "archived": True, "stage": "queue_enqueue"}}}), TimeoutError("poll lost")]) as request:
++            self.worker._process(row)
++            self.assertEqual([c.args[0] for c in request.call_args_list], ["POST", "GET"])
++        self.assertEqual(self.db.inflight()["task_id"], "recovered-id")
++        with mock.patch.dict(os.environ, {"OPENVIKING_ROOT_API_KEY": "test-only"}), mock.patch.object(gate, "json_request", return_value=(200, {"result": {"status": "completed"}})) as request:
++            restarted = gate.Worker(self.cfg, gate.QueueDB(self.cfg.database), threading.Event())
++            self.assertTrue(restarted.tick())
++            self.assertEqual(request.call_args.args[0], "GET")
++        self.assertEqual(self.db.list_rows()[0]["state"], "complete")
++
++    def test_unproven_no_task_success_is_not_terminal(self):
++        cases = (
++            (200, {"status": "ok", "result": {"status": "ok"}}, "unknown"),
++            (200, {"status": "ok", "result": {"status": "complete"}}, "unknown"),
++            (200, {"status": "ok", "result": {"status": "completed"}}, "unknown"),
++            (202, {"status": "ok", "result": {"status": "skipped", "archived": False, "archive_uri": None}}, "unknown"),
++            (200, {"status": "ok", "result": {"status": "skipped", "archived": True, "archive_uri": "viking://archive"}}, "unknown"),
++            (200, {"status": "ok", "result": {"status": "skipped", "archived": False, "archive_uri": None}}, "complete"),
++        )
++        for status, payload, expected in cases:
++            with self.subTest(status=status, payload=payload):
++                with tempfile.TemporaryDirectory() as root:
++                    cfg = replace(config(root), process_names=())
++                    db = gate.QueueDB(cfg.database)
++                    db.enqueue(self.identity, "single", 0, {}, "test")
++                    row = db.claim(db.next_ready())
++                    worker = gate.Worker(cfg, db, threading.Event())
++                    with mock.patch.dict(os.environ, {"OPENVIKING_ROOT_API_KEY": "disposable-only"}), mock.patch.object(gate, "json_request", return_value=(status, payload)) as request:
++                        worker._process(row)
++                    self.assertEqual(request.call_count, 1)
++                    self.assertEqual(db.list_rows()[0]["state"], expected)
++                    self.assertIsNone(db.list_rows()[0]["task_id"])
++
++    def test_pre_submission_auth_failure_is_retryable(self):
++        row = self.intent()
++        with mock.patch.dict(os.environ, {}, clear=True), mock.patch.object(gate, "json_request") as request:
++            self.worker._process(row)
++            request.assert_not_called()
++        self.assertEqual(self.db.list_rows()[0]["state"], "pending")
++
++    def test_shape_is_not_source_authority_and_no_inference_is_eligible(self):
++        work = SharedWorkQueue(self.db)
++        for basis in ("source_verified", "operator_declared"):
++            item = candidate()
++            item["authority"]["basis"] = basis
++            with self.assertRaises(SourceAuthorityUnavailable):
++                work.enqueue(item)
++        admitted = work.enqueue(candidate())
++        self.assertEqual(admitted["status"], "deferred_unverified")
++        self.assertIsNone(work.ready())
++        self.assertIsNone(work.claim(admitted["work_key"], "lease"))
++
++    def test_digest_replay_conflict_restart_and_concurrent_uniqueness(self):
++        work = SharedWorkQueue(self.db)
++        a = candidate()
++        b = copy.deepcopy(a)
++        b["event_id"] = "1" * 64
++        b["logical_digest"] = "2" * 64
++        self.assertEqual(work_key(a), work_key(b))
++        first = work.enqueue(a)
++        self.assertEqual(first, work.enqueue(b))
++        restarted = SharedWorkQueue(gate.QueueDB(self.cfg.database))
++        self.assertEqual(first, restarted.enqueue(b))
++        with ThreadPoolExecutor(max_workers=4) as pool:
++            self.assertTrue(all(x == first for x in pool.map(restarted.enqueue, [a, b, a, b])))
++        for change in ({"fact_ref": "repo:contradiction"}, {"observed_at": "2025-01-01T00:00:00Z"}, {"category": "entity_relationship"}):
++            with self.assertRaises(SourceEventConflict):
++                restarted.enqueue({**a, **change})
++        self.assertEqual(len(work.status()), 1)
++        # Different destination is a different identity; source hash stays bound.
++        b["scope"]["group_id"] = "other"
++        self.assertNotEqual(first["work_key"], work.enqueue(b)["work_key"])
++
++    def test_admitted_processing_and_terminal_identities_reject_conflicting_payload(self):
++        work = SharedWorkQueue(self.db)
++        first = work.enqueue(candidate())
++        with self.db.connect() as conn:
++            conn.execute("UPDATE memory_work SET status='queued' WHERE work_key=?", (first["work_key"],))
++        row = work.claim(first["work_key"], "disposable-fixture-lease")
++        bad = candidate(); bad["fact_ref"] = "repo:conflicting"
++        with self.assertRaises(SourceEventConflict): work.enqueue(bad)
++        work.processing(first["work_key"], row["attempt_generation"], "synthetic-episode")
++        with self.assertRaises(SourceEventConflict): work.enqueue(bad)
++        work.finish(first["work_key"], row["attempt_generation"], "synthetic-episode", "completed")
++        with self.assertRaises(SourceEventConflict): SharedWorkQueue(self.db).enqueue(bad)
++        self.assertEqual(work.enqueue(candidate())["status"], "completed")
++        self.assertEqual(len(work.status()), 1)
++
++    def test_historical_collision_migration_rolls_back_without_rewriting_records(self):
++        work = SharedWorkQueue(self.db)
++        first = work.enqueue(candidate())
++        with self.db.connect() as conn:
++            row = dict(conn.execute("SELECT * FROM memory_work").fetchone())
++            item = json.loads(row["candidate_json"])
++            item["logical_digest"] = "f" * 64
++            row["work_key"] = "e" * 64
++            row["candidate_json"] = json.dumps(item)
++            columns = list(row)
++            conn.execute("INSERT INTO memory_work (" + ",".join(columns) + ") VALUES (" + ",".join("?" for _ in columns) + ")", list(row.values()))
++            conn.execute("DROP TABLE memory_source_admissions")
++            before = [dict(r) for r in conn.execute("SELECT * FROM memory_work ORDER BY work_key")]
++        with self.assertRaises(SourceEventConflict):
++            SharedWorkQueue(self.db)
++        with self.db.connect() as conn:
++            self.assertEqual(before, [dict(r) for r in conn.execute("SELECT * FROM memory_work ORDER BY work_key")])
++            self.assertIsNone(conn.execute("SELECT name FROM sqlite_master WHERE name='memory_source_admissions'").fetchone())
++
++    def test_missing_jsonschema_disabled_startup_and_enabled_preflight(self):
++        script = r"""
++import importlib.abc, sys, tempfile, threading
++from dataclasses import replace
++class Block(importlib.abc.MetaPathFinder):
++    def find_spec(self, fullname, *args):
++        if fullname == 'jsonschema' or fullname.startswith('jsonschema.'):
++            raise ModuleNotFoundError('deliberately absent jsonschema')
++sys.meta_path.insert(0, Block())
++from test_gate import gate, config
++with tempfile.TemporaryDirectory() as root:
++    cfg = config(root)
++    db = gate.QueueDB(cfg.database)
++    worker = gate.Worker(cfg, db, threading.Event())
++    assert worker.shared is None
++    assert worker.tick() is False
++    try:
++        gate.Worker(replace(cfg, graphiti_enabled=True), db, threading.Event())
++    except RuntimeError as exc:
++        assert 'requirements-phase1.txt' in str(exc)
++    else:
++        raise AssertionError('optional dependency must produce explicit preflight error')
++"""
++        result = subprocess.run([sys.executable, "-c", script], cwd=Path(__file__).parent, env={**os.environ, "PYTHONPATH": str(Path(__file__).parents[1]), "PYTHONDONTWRITEBYTECODE": "1"}, capture_output=True, text=True)
++        self.assertEqual(result.returncode, 0, result.stderr)
++
++
++if __name__ == '__main__':
++    unittest.main()
+--- /dev/null
++++ b/tests/test_service_corrections.py
+@@ -0,0 +1,144 @@
++"""Service-backed contract tests, loopback ephemeral ports and disposable DB."""
++import copy
++import fcntl
++import http.client
++import json
++import os
++import tempfile
++import threading
++import unittest
++from dataclasses import replace
++from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
++from unittest import mock
++
++from test_gate import gate, config
++from test_shared_work import candidate
++
++
++class Backend(BaseHTTPRequestHandler):
++    def log_message(self, *_): pass
++    def reply(self, code, body):
++        data = json.dumps(body).encode()
++        self.send_response(code)
++        self.send_header("Content-Length", str(len(data)))
++        self.end_headers(); self.wfile.write(data)
++    def do_POST(self):
++        self.rfile.read(int(self.headers.get("Content-Length", 0)))
++        self.server.posts += 1
++        self.server.events.append("archive-published")
++        # Faithful installed contract: failure after publication carries task identity.
++        if getattr(self.server, "lose_identity", False):
++            self.server.publication_pending = True
++            self.reply(503, {"status": "error"})
++            return
++        self.reply(500, {"status": "error", "error": {"code": "INTERNAL", "details": {"task_id": "task-recovered", "archived": True, "stage": "queue_enqueue"}}})
++    def do_GET(self):
++        if self.path == "/metrics":
++            data = f"ninfer_requests_running {self.server.running}\nninfer_requests_waiting 0\n".encode()
++            self.send_response(200); self.send_header("Content-Length", str(len(data))); self.end_headers(); self.wfile.write(data)
++        elif self.path.startswith("/api/v1/tasks?"):
++            self.reply(200, {"status": "ok", "result": [{"task_id": "external"}] if self.server.external else []})
++        elif self.path == "/api/v1/tasks/task-recovered":
++            self.server.events.append("poll")
++            self.reply(200 if self.server.terminal else 503, {"result": {"status": "completed"}} if self.server.terminal else {"status": "error"})
++        else: self.reply(404, {})
++
++
++class ServiceCorrections(unittest.TestCase):
++    def test_post_side_effect_error_restart_competing_lease_and_known_task(self):
++        with tempfile.TemporaryDirectory() as root:
++            backend = ThreadingHTTPServer(("127.0.0.1", 0), Backend)
++            backend.posts = 0; backend.events = []; backend.running = 0; backend.external = False; backend.terminal = False
++            thread = threading.Thread(target=backend.serve_forever, daemon=True); thread.start()
++            cfg = replace(config(root), backend_port=backend.server_port, drain_enabled=True, process_names=(), metrics_url=f"http://127.0.0.1:{backend.server_port}/metrics")
++            db = gate.QueueDB(cfg.database)
++            db.enqueue({"account": "a", "user_id": "u", "actor_peer": "p"}, "ov", 0, {}, "service")
++            try:
++                with mock.patch.dict(os.environ, {"OPENVIKING_ROOT_API_KEY": "disposable-root"}):
++                    worker = gate.Worker(cfg, db, threading.Event())
++                    self.assertFalse(worker.tick()); self.assertTrue(worker.tick())
++                    self.assertEqual(db.inflight()["task_id"], "task-recovered")
++                    self.assertEqual(backend.posts, 1)
++                    db.mark_unknown_claims()
++                    restarted = gate.Worker(cfg, gate.QueueDB(cfg.database), threading.Event())
++                    with open(cfg.lock_file, "a+") as interactive:
++                        fcntl.flock(interactive, fcntl.LOCK_SH | fcntl.LOCK_NB)
++                        before = list(backend.events)
++                        self.assertFalse(restarted.tick()); self.assertEqual(backend.events, before)
++                        fcntl.flock(interactive, fcntl.LOCK_UN)
++                    backend.running = 1; backend.terminal = True
++                    self.assertTrue(restarted.tick())
++                    self.assertEqual(backend.posts, 1)
++                    self.assertEqual(db.list_rows()[0]["state"], "complete")
++                    print("RECOVERY_SERVICE " + json.dumps({"events": backend.events, "commit_posts": backend.posts, "terminal": "complete"}))
++            finally:
++                backend.shutdown(); thread.join(2); backend.server_close()
++
++    def test_publication_gap_demonstrates_unavailable_quiescence_and_blocks_admission(self):
++        with tempfile.TemporaryDirectory() as root:
++            backend = ThreadingHTTPServer(("127.0.0.1", 0), Backend)
++            backend.posts = 0; backend.events = []; backend.running = 0; backend.external = False
++            backend.lose_identity = True; backend.publication_pending = False
++            thread = threading.Thread(target=backend.serve_forever, daemon=True); thread.start()
++            cfg = replace(config(root), backend_port=backend.server_port, drain_enabled=True, process_names=(), metrics_url=f"http://127.0.0.1:{backend.server_port}/metrics")
++            db = gate.QueueDB(cfg.database)
++            identity = {"account": "a", "user_id": "u", "actor_peer": "p"}
++            db.enqueue(identity, "ambiguous", 0, {}, "service")
++            worker = gate.Worker(cfg, db, threading.Event())
++            try:
++                with mock.patch.dict(os.environ, {"OPENVIKING_ROOT_API_KEY": "disposable-root"}):
++                    self.assertFalse(worker.tick()); self.assertTrue(worker.tick())
++                    self.assertEqual(db.list_rows()[0]["state"], "unknown")
++                    db.enqueue(identity, "independent", 0, {}, "service")
++                    # Actual installed ordering: publication exists but task
++                    # registration and scheduler occupancy have not begun yet.
++                    self.assertTrue(backend.publication_pending)
++                    code, listing = gate.json_request("GET", f"http://127.0.0.1:{backend.server_port}/api/v1/tasks?status=pending")
++                    self.assertEqual(listing["result"], [])
++                    self.assertEqual(worker._metrics(), (0, 0))
++                    self.assertFalse(worker.tick())
++                    backend.running = 1  # Delayed registration/extraction may now start.
++                    self.assertFalse(worker.tick())
++                    self.assertEqual(backend.posts, 1)
++                    self.assertEqual(db.list_rows()[1]["state"], "pending")
++                    print("QUIESCENCE_GAP_SERVICE " + json.dumps({"publication_pending": True, "task_list_empty": True, "initial_metrics": [0, 0], "independent_admitted": False, "commit_posts": backend.posts}))
++            finally:
++                backend.shutdown(); thread.join(2); backend.server_close()
++
++    def test_bounded_capture_credential_conflict_and_source_authority_routes(self):
++        with tempfile.TemporaryDirectory() as root:
++            cfg = replace(config(root), graphiti_enabled=True)
++            db = gate.QueueDB(cfg.database)
++            worker = gate.Worker(cfg, db, threading.Event())
++            server = gate.GateServer(cfg, db, worker)
++            thread = threading.Thread(target=server.serve_forever, daemon=True); thread.start()
++            def request(method, path, token, body=None):
++                conn = http.client.HTTPConnection("127.0.0.1", server.server_port, timeout=2)
++                conn.request(method, path, body=json.dumps(body) if body is not None else None, headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"})
++                response = conn.getresponse(); result = response.status, json.loads(response.read()); conn.close(); return result
++            try:
++                with mock.patch.dict(os.environ, {"OPENVIKING_ROOT_API_KEY": "root-only", "GRAPHITI_CAPTURE_TOKEN": "capture-only"}):
++                    path = "/__commit_gate/memory_candidates"
++                    self.assertEqual(request("POST", path, "root-only", candidate())[0], 401)
++                    self.assertEqual(request("GET", "/__commit_gate/queue", "capture-only")[0], 401)
++                    self.assertEqual(request("POST", "/api/v1/sessions/forbidden/commit", "capture-only", {})[0], 401)
++                    self.assertEqual(request("POST", "/api/v1/sessions", "capture-only", {})[0], 401)
++                    self.assertEqual(db.list_rows(), [])
++                    first = request("POST", path, "capture-only", candidate())
++                    self.assertEqual(first[0], 202); self.assertEqual(first[1]["result"]["status"], "deferred_unverified")
++                    replay = candidate(); replay["logical_digest"] = "f" * 64
++                    self.assertEqual(request("POST", path, "capture-only", replay), first)
++                    replay["fact_ref"] = "repo:contradiction"
++                    conflict = request("POST", path, "capture-only", replay)
++                    self.assertEqual(conflict[0], 409); self.assertEqual(conflict[1]["error"]["code"], "source_event_conflict")
++                    verified = candidate(); verified["authority"]["basis"] = "source_verified"
++                    authority = request("POST", path, "capture-only", verified)
++                    self.assertEqual(authority[0], 422); self.assertEqual(authority[1]["error"]["code"], "source_authority_unavailable")
++                    self.assertIsNone(worker.shared.ready())
++                    with mock.patch.dict(os.environ, {"GRAPHITI_CAPTURE_TOKEN": "root-only"}):
++                        self.assertEqual(request("POST", path, "root-only", candidate())[0], 401)
++            finally:
++                server.shutdown(); thread.join(2); server.server_close()
++
++
++if __name__ == '__main__': unittest.main()
+--- /dev/null
++++ b/tests/test_service_mixed.py
+@@ -0,0 +1,126 @@
++import json
++import os
++import tempfile
++import threading
++import time
++import unittest
++import urllib.request
++from dataclasses import replace
++from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
++from unittest import mock
++
++from test_gate import config, gate
++from test_shared_work import candidate
++
++
++def until(predicate, timeout=3):
++    end = time.monotonic() + timeout
++    while time.monotonic() < end:
++        if predicate():
++            return True
++        time.sleep(0.01)
++    return False
++
++
++class Scheduler(BaseHTTPRequestHandler):
++    running = 0
++    def do_GET(self):
++        data = f"ninfer_requests_running {self.running}\nninfer_requests_waiting 0\n".encode()
++        self.send_response(200)
++        self.send_header("Content-Length", str(len(data)))
++        self.end_headers()
++        self.wfile.write(data)
++    def log_message(self, *_):
++        pass
++
++
++class DelayedGraphiti:
++    def __init__(self, release):
++        self.release = release
++        self.started = threading.Event()
++        self.timeline = []
++        self.submissions = 0
++    def submit(self, _candidate):
++        self.submissions += 1
++        self.timeline.append(("graph_submitted", time.monotonic()))
++        self.started.set()
++        return "episode-synthetic-1"
++    def poll(self, backend_identity):
++        status = "completed" if self.release.is_set() else "queued"
++        if status == "queued" and not any(name == "graph_queued" for name, _ in self.timeline):
++            self.timeline.append(("graph_queued", time.monotonic()))
++        if status == "completed":
++            self.timeline.append(("graph_terminal", time.monotonic()))
++        return {"backend_identity": backend_identity, "status": status, "persisted": status == "completed"}
++
++
++class MixedServiceTest(unittest.TestCase):
++    def test_disposable_http_scheduler_and_gate_one_owner_timeline(self):
++        with tempfile.TemporaryDirectory() as root:
++            scheduler = ThreadingHTTPServer(("127.0.0.1", 0), Scheduler)
++            scheduler_thread = threading.Thread(target=scheduler.serve_forever, daemon=True)
++            scheduler_thread.start()
++            cfg = replace(config(root), graphiti_enabled=True, drain_enabled=True,
++                          quiet_grace_seconds=0.02, poll_seconds=0.01, task_poll_seconds=0.01,
++                          process_names=(), metrics_url=f"http://127.0.0.1:{scheduler.server_port}/metrics")
++            db = gate.QueueDB(cfg.database)
++            stop = threading.Event()
++            release = threading.Event()
++            adapter = DelayedGraphiti(release)
++            worker = gate.Worker(cfg, db, stop, adapter)
++            worker._active_harness_processes = lambda: []
++            ov_timeline = []
++            def finish_ov(row):
++                ov_timeline.append(("ov_started", time.monotonic()))
++                db.complete(row)
++            worker._process = finish_ov
++            server = gate.GateServer(cfg, db, worker)
++            server_thread = threading.Thread(target=server.serve_forever, daemon=True)
++            worker_thread = threading.Thread(target=worker.run, daemon=True)
++            with mock.patch.dict(os.environ, {"OPENVIKING_ROOT_API_KEY": "test-only-key", "GRAPHITI_CAPTURE_TOKEN": "capture-only-key"}):
++                server_thread.start()
++                worker_thread.start()
++                try:
++                    req = urllib.request.Request(
++                        f"http://127.0.0.1:{server.server_port}/__commit_gate/memory_candidates",
++                        data=json.dumps(candidate()).encode(), method="POST",
++                        headers={"Authorization": "Bearer capture-only-key", "Content-Type": "application/json"},
++                    )
++                    with urllib.request.urlopen(req, timeout=2) as response:
++                        self.assertEqual(response.status, 202)
++                        self.assertEqual(json.load(response)["result"]["status"], "deferred_unverified")
++                    # Synthetic coordinator exercise only: no production promotion interface.
++                    with db.connect() as conn:
++                        conn.execute("UPDATE memory_work SET status='queued'")
++                    self.assertTrue(adapter.started.wait(2))
++                    Scheduler.running = 1  # Own inference activity after admission.
++                    db.enqueue({"account": "a", "user_id": "u", "actor_peer": "p"}, "s-ov", 0, {}, "mixed")
++                    time.sleep(0.05)
++                    self.assertEqual(ov_timeline, [])
++                    self.assertEqual(worker.shared.status()[0]["status"], "processing")
++                    release.set()
++                    self.assertTrue(until(lambda: worker.shared.status()[0]["status"] == "completed"))
++                    self.assertEqual(ov_timeline, [])  # External busy metric still blocks new work.
++                    Scheduler.running = 0
++                    self.assertTrue(until(lambda: len(ov_timeline) == 1))
++                    self.assertLess(adapter.timeline[-1][1], ov_timeline[0][1])
++                    self.assertEqual(adapter.submissions, 1)
++                    origin = adapter.timeline[0][1]
++                    print("MIXED_TIMELINE " + json.dumps({
++                        "events_ms": [(name, round((stamp - origin) * 1000, 1)) for name, stamp in adapter.timeline + ov_timeline],
++                        "overlap": False, "graph_submissions": adapter.submissions,
++                    }))
++                finally:
++                    stop.set()
++                    server.shutdown()
++                    scheduler.shutdown()
++                    worker_thread.join(2)
++                    server_thread.join(2)
++                    scheduler_thread.join(2)
++                    server.server_close()
++                    scheduler.server_close()
++                    Scheduler.running = 0
++
++
++if __name__ == "__main__":
++    unittest.main()
+--- /dev/null
++++ b/tests/test_shared_work.py
+@@ -0,0 +1,184 @@
++import hashlib
++import tempfile
++import threading
++import unittest
++from dataclasses import replace
++from unittest import mock
++
++from test_gate import config, gate
++from shared_work import SharedWorkQueue, valid_candidate
++
++
++def candidate(suffix="1"):
++    digest = hashlib.sha256(suffix.encode()).hexdigest()
++    return {
++        "schema_version": 1, "event_id": digest,
++        "source": {"system": "opencode-v2", "session_id": "s1", "message_id": "m1", "tool_event_id": "t" + suffix, "event_id": "t" + suffix, "cursor_id": "m1"},
++        "scope": {"workspace_id": "/work", "group_id": "approved"},
++        "observed_at": "2026-10-30T00:00:00Z", "category": "verified_architecture_fact",
++        "authority": {"basis": "agent_candidate", "confidence": 0, "evidence_ref": "repo:commit:file"},
++        "policy_revision": "operator-r1", "destination": "graphiti", "fact_ref": "repo:commit:fact-1",
++        "logical_digest": digest,
++    }
++
++
++class SyntheticGraphiti:
++    def __init__(self, statuses=None, ambiguous=False):
++        self.statuses = iter(statuses or ["queued", "processing", "completed"])
++        self.ambiguous = ambiguous
++        self.submissions = 0
++        self.timeline = []
++
++    def submit(self, item):
++        self.submissions += 1
++        self.timeline.append("submitted")
++        if self.ambiguous:
++            raise TimeoutError("ack lost after possible submission")
++        return "episode-1"
++
++    def poll(self, backend_identity):
++        status = next(self.statuses)
++        self.timeline.append(status)
++        return {"backend_identity": backend_identity, "status": status, "persisted": status == "completed"}
++
++
++class SharedWorkTests(unittest.TestCase):
++    def setUp(self):
++        self.tmp = tempfile.TemporaryDirectory()
++        self.cfg = replace(config(self.tmp.name), drain_enabled=True, graphiti_enabled=True, process_names=(), task_poll_seconds=0)
++        self.db = gate.QueueDB(self.cfg.database)
++        self.work = SharedWorkQueue(self.db)
++
++    def tearDown(self):
++        self.tmp.cleanup()
++
++    def enqueue_synthetic(self, item):
++        # Explicit disposable scheduling fixture. There is no production
++        # promotion API; all ordinary admissions remain deferred_unverified.
++        result = self.work.enqueue(item)
++        with self.db.connect() as conn:
++            conn.execute("UPDATE memory_work SET status='queued' WHERE work_key=?", (result["work_key"],))
++        return result
++
++    def worker(self, adapter):
++        worker = gate.Worker(self.cfg, self.db, threading.Event(), adapter)
++        worker._active_harness_processes = lambda: []
++        worker._metrics = lambda: (0, 0)
++        return worker
++
++    def run_ready(self, worker):
++        self.assertFalse(worker.tick())  # first clean observation starts quiet grace
++        self.assertTrue(worker.tick())
++
++    def test_schema_rejection_and_durable_coalescing(self):
++        item = candidate()
++        self.assertTrue(valid_candidate(item))
++        first = self.work.enqueue(item)
++        self.assertEqual(first, self.work.enqueue(item))
++        self.assertEqual(len(self.work.status()), 1)
++        for change in ({"fact_ref": "tests/fixture"}, {"fact_ref": "password=secret"}, {"category": "unsupported"}):
++            bad = {**item, **change}
++            self.assertFalse(valid_candidate(bad))
++            with self.assertRaises(ValueError):
++                self.work.enqueue(bad)
++        self.assertNotIn("candidate_json", self.work.status()[0])
++
++    def test_queued_ack_holds_full_reservation_and_ignores_own_metrics(self):
++        item = self.enqueue_synthetic(candidate())
++        adapter = SyntheticGraphiti()
++        worker = self.worker(adapter)
++        metric_reads = []
++        def metrics():
++            metric_reads.append(adapter.submissions)
++            return (0, 0) if adapter.submissions == 0 else (1, 0)
++        worker._metrics = metrics
++        self.run_ready(worker)
++        self.assertEqual(metric_reads, [0, 0, 0])
++        self.assertEqual(adapter.timeline, ["submitted", "queued", "processing", "completed"])
++        self.assertEqual(self.work.status()[0]["status"], "completed")
++        self.assertEqual(self.work.status()[0]["backend_identity"], "episode-1")
++        self.assertEqual(item["work_key"], self.work.status()[0]["work_key"])
++
++    def test_ambiguous_ack_restart_never_resubmits_and_reconcile_needs_identity(self):
++        key = self.enqueue_synthetic(candidate())["work_key"]
++        adapter = SyntheticGraphiti(ambiguous=True)
++        self.run_ready(self.worker(adapter))
++        self.assertEqual(adapter.submissions, 1)
++        self.assertEqual(self.work.status()[0]["status"], "blocked_reconcile")
++        self.assertFalse(self.worker(adapter).tick())
++        self.assertEqual(adapter.submissions, 1)
++        with self.assertRaises(RuntimeError):
++            self.work.reconcile(key, "invented-id", "completed")
++
++    def test_restart_processing_and_cancel_queued(self):
++        key = self.enqueue_synthetic(candidate())["work_key"]
++        row = self.work.claim(key, "lease-1")
++        self.work.processing(key, row["attempt_generation"], "episode-1")
++        self.work.recover_after_restart()
++        self.assertEqual(self.work.status()[0]["status"], "blocked_reconcile")
++        self.work.reconcile(key, "episode-1", "completed")
++        self.assertEqual(self.work.status()[0]["status"], "completed")
++        next_key = self.enqueue_synthetic(candidate("2"))["work_key"]
++        self.assertTrue(self.work.cancel(next_key))
++        self.assertFalse(self.work.cancel(next_key))
++
++    def test_metrics_and_shared_lease_block_admission(self):
++        self.enqueue_synthetic(candidate())
++        worker = self.worker(SyntheticGraphiti())
++        worker._metrics = lambda: (1, 0)
++        self.assertFalse(worker.tick())
++        self.assertEqual(worker.admission_status()["state"], "vllm_busy")
++        self.assertEqual(self.work.status()[0]["status"], "queued")
++        worker._metrics = mock.Mock(side_effect=ValueError("malformed metrics"))
++        with self.assertRaises(ValueError):
++            worker.tick()
++        worker._metrics.assert_called_once()
++        worker._try_exclusive_lock = lambda: None
++        self.assertFalse(worker.tick())
++        self.assertEqual(worker.admission_status()["state"], "shared_lease_active")
++
++    def test_alternating_classes_preserves_legacy_turns(self):
++        self.db.enqueue({"account": "a", "user_id": "u", "actor_peer": "p"}, "ov-1", 0, {}, "mixed")
++        self.db.enqueue({"account": "a", "user_id": "u", "actor_peer": "p"}, "ov-2", 0, {}, "mixed")
++        self.enqueue_synthetic(candidate("1"))
++        self.enqueue_synthetic(candidate("2"))
++        order = []
++        class Adapter:
++            def submit(self, _):
++                order.append("graphiti")
++                return "ep-synthetic"
++            def poll(self, backend_identity):
++                return {"backend_identity": backend_identity, "status": "completed", "persisted": True}
++        worker = self.worker(Adapter())
++        def ov(row):
++            order.append("openviking")
++            self.db.complete(row)
++        worker._process = ov
++        for _ in range(4):
++            self.run_ready(worker)
++        self.assertEqual(order, ["openviking", "graphiti", "openviking", "graphiti"])
++
++    def test_feature_disabled_does_not_migrate_or_submit(self):
++        cfg = replace(self.cfg, graphiti_enabled=False)
++        with tempfile.TemporaryDirectory() as root:
++            cfg = replace(cfg, database=f"{root}/queue.sqlite3")
++            db = gate.QueueDB(cfg.database)
++            worker = gate.Worker(cfg, db, threading.Event())
++            self.assertIsNone(worker.shared)
++            with db.connect() as conn:
++                names = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
++            self.assertNotIn("memory_work", names)
++
++    def test_legacy_ambiguous_queued_ack_does_not_resubmit(self):
++        self.db.enqueue({"account": "a", "user_id": "u", "actor_peer": "p"}, "ov-ambiguous", 0, {}, "mixed")
++        row = self.db.claim(self.db.next_ready())
++        worker = self.worker(SyntheticGraphiti())
++        with mock.patch.object(gate, "json_request", return_value=(202, {"result": {"status": "queued"}})) as request:
++            worker._process(row)
++        self.assertEqual(request.call_count, 1)
++        self.assertEqual(self.db.list_rows()[0]["state"], "unknown")
++        self.assertTrue(self.db.has_unknown_claim())
++
++
++if __name__ == "__main__":
++    unittest.main()

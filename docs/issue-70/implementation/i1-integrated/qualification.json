@@ -1,0 +1,141 @@
+[
+  {
+    "suite": "gate",
+    "exit_code": 0,
+    "expected_checks": 53,
+    "observed_checks": 53,
+    "command": [
+      "/usr/bin/python3",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "tests",
+      "-v"
+    ],
+    "cwd": "/home/filip/issue70-final-KXvsBo/tracker/docs/issue-70/implementation/i1-integrated/candidate/gate",
+    "isolation": "read-only root, private /tmp and network, no GPU devices",
+    "output_sha256": "4dc710610f9715d879fbffd2fb2ded467509e2dbc6396bf1b2c39aebe925a031",
+    "sanitized_traces": [
+      "RECOVERY_SERVICE {\"events\": [\"archive-published\", \"poll\", \"poll\"], \"commit_posts\": 1, \"terminal\": \"complete\"}",
+      "QUIESCENCE_GAP_SERVICE {\"publication_pending\": true, \"task_list_empty\": true, \"initial_metrics\": [0, 0], \"independent_admitted\": false, \"commit_posts\": 1}",
+      "MIXED_TIMELINE {\"events_ms\": [[\"graph_submitted\", 0.0], [\"graph_queued\", 0.4], [\"graph_terminal\", 60.8], [\"ov_started\", 98.3]], \"overlap\": false, \"graph_submissions\": 1}"
+    ]
+  },
+  {
+    "suite": "central-receipt",
+    "exit_code": 0,
+    "expected_checks": 7,
+    "observed_checks": 7,
+    "command": [
+      "/usr/bin/python3",
+      "-m",
+      "unittest",
+      "test_receipt_protocol",
+      "-v"
+    ],
+    "cwd": "/home/filip/issue70-final-KXvsBo/tracker/docs/issue-70/implementation/i1-integrated/candidate/gate",
+    "isolation": "read-only root, private /tmp and network, no GPU devices",
+    "output_sha256": "bdc40cc2c5905177b106e1a8c88bc40f0f60d26a28a6363037e54274744f4ceb",
+    "sanitized_traces": []
+  },
+  {
+    "suite": "capture",
+    "exit_code": 0,
+    "expected_checks": 14,
+    "observed_checks": 14,
+    "command": [
+      "/run/user/1000/fnm_multishells/72294_1793388729155/bin/node",
+      "--test",
+      "tests/candidate-capture.test.mjs",
+      "tests/capture-isolation.test.mjs",
+      "tests/central-authentication-regressions.test.mjs"
+    ],
+    "cwd": "/home/filip/issue70-final-KXvsBo/tracker/docs/issue-70/implementation/i1-integrated/candidate/openviking-v2",
+    "isolation": "read-only root, private /tmp and network, no GPU devices",
+    "output_sha256": "8c1b9bf39f5cff7ab6d24f4bcfca102cc8ebd2c1b51383649cad55234c0b1aec",
+    "sanitized_traces": []
+  },
+  {
+    "suite": "legacy-openviking",
+    "exit_code": 0,
+    "expected_checks": 24,
+    "observed_checks": 24,
+    "command": [
+      "/run/user/1000/fnm_multishells/72294_1793388729155/bin/node",
+      "--test",
+      "tests/memory-session.test.mjs",
+      "tests/r3b-manager-integration.test.mjs",
+      "tests/hybrid-recall.test.mjs"
+    ],
+    "cwd": "/home/filip/issue70-phase1-n3BNR6J9/candidate/openviking-context-v4",
+    "isolation": "read-only root, private /tmp and network, no GPU devices",
+    "output_sha256": "bb0ff4c7cfd5f578e9b8a7a2f40001a80343e9cf798f9478c52ff4cb026c5537",
+    "sanitized_traces": []
+  },
+  {
+    "suite": "compaction",
+    "exit_code": 0,
+    "expected_checks": 7,
+    "observed_checks": 7,
+    "command": [
+      "/run/user/1000/fnm_multishells/72294_1793388729155/bin/node",
+      "--test",
+      "tests/compaction-adapter.test.mjs"
+    ],
+    "cwd": "/home/filip/issue70-phase1-n3BNR6J9/candidate/operational-schema-v2",
+    "isolation": "read-only root, private /tmp and network, no GPU devices",
+    "output_sha256": "6fcd27da9aaf570900aaac2371540a3788a14e2985801fe6c8f87b9a8c914914",
+    "sanitized_traces": []
+  },
+  {
+    "suite": "validator-offline",
+    "exit_code": 0,
+    "expected_checks": 6,
+    "observed_checks": 6,
+    "command": [
+      "/home/filip/.local/share/uv/tools/openviking/bin/python",
+      "tests/test_validator.py",
+      "--no-live"
+    ],
+    "cwd": "/home/filip/issue70-phase1-n3BNR6J9/candidate/validator",
+    "isolation": "read-only root, private /tmp and network, no GPU devices",
+    "output_sha256": "1cf32918149ca7de70c845678de11564e753cdd040e80aa60b372eaad769c175",
+    "sanitized_traces": []
+  },
+  {
+    "suite": "launcher",
+    "exit_code": 0,
+    "expected_checks": 5,
+    "observed_checks": 5,
+    "command": [
+      "/usr/bin/python3",
+      "tests/test_launcher_admission.py",
+      "-v"
+    ],
+    "cwd": "/home/filip/issue70-final-KXvsBo/tracker/docs/issue-70/implementation/i1-integrated",
+    "isolation": "read-only root, private /tmp and network, no GPU devices",
+    "output_sha256": "35d2e54ebedb4b51c97d778b1178a910939281459a018afbff117bf14f08f6bb",
+    "sanitized_traces": []
+  },
+  {
+    "suite": "actual-backend",
+    "exit_code": 0,
+    "expected_checks": 20,
+    "observed_checks": 20,
+    "command": [
+      "/usr/bin/python3",
+      "tests/test_i1_service.py",
+      "-v"
+    ],
+    "cwd": "/home/filip/issue70-final-KXvsBo/tracker/docs/issue-70/implementation/i1-integrated",
+    "isolation": "read-only root, private /tmp and network, no GPU devices",
+    "output_sha256": "6b458813b85a2303488508ffb5fd228780f1243e79d1dcec693d43350274c162",
+    "sanitized_traces": [
+      "I1_PUBLICATION_TIMELINE {\"actual_native_queuefs\": true, \"publication_empty_task_list\": true, \"idle_metrics\": [0, 0], \"interactive_blocked\": true, \"original_extractions\": 1, \"newer_generation_preserved\": true, \"unrelated_resumed\": true}",
+      "MULTI_UNKNOWN_ADMISSION {\"queued_task_blocks_distinct_recovery\": true, \"b_recover_before_a_terminal\": 0, \"b_single_authorized_recovery\": true, \"a_identity_unchanged\": true, \"no_duplicate_extractions\": true, \"restart_persistent_queuefs\": true, \"unrelated_resumed\": true, \"replay_after_seal_noop\": true}",
+      "I1_PUBLICATION_TIMELINE {\"actual_native_queuefs\": true, \"publication_empty_task_list\": true, \"idle_metrics\": [0, 0], \"interactive_blocked\": true, \"original_extractions\": 1, \"newer_generation_preserved\": true, \"unrelated_resumed\": true}",
+      "MULTI_UNKNOWN_ADMISSION {\"two_ambiguous_fail_closed\": true, \"no_recovery_without_backend_proof\": true, \"evidence_restored_availability\": true, \"b_single_authorized_recovery\": true, \"no_duplicate_extractions\": true}"
+    ]
+  }
+]

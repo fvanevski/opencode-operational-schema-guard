@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if (($# < 1)); then
+  echo "usage: openviking-agent-run /absolute/path/to/harness [args...]" >&2
+  exit 64
+fi
+
+agent_executable=$1
+shift
+runtime_dir=${XDG_RUNTIME_DIR:-/run/user/${UID}}
+lock_file=${runtime_dir}/openviking-agent.lock
+
+if [[ ! -x ${agent_executable} ]]; then
+  echo "openviking-agent-run: executable not found: ${agent_executable}" >&2
+  exit 127
+fi
+if [[ ! -d ${runtime_dir} ]]; then
+  echo "openviking-agent-run: runtime directory not found: ${runtime_dir}" >&2
+  exit 70
+fi
+
+admission_helper=${OPENVIKING_ADMISSION_HELPER:-${HOME}/.local/share/openviking-commit-gate/admission_exec.py}
+admission_database=${OPENVIKING_ADMISSION_DB:-${HOME}/.local/state/openviking-commit-gate/queue.sqlite3}
+admission_mode=--legacy-compatible
+if [[ -n ${OPENVIKING_ADMISSION_DB:-} ]]; then admission_mode=--required; fi
+exec /usr/bin/flock -s --close "${lock_file}" /usr/bin/python3 "${admission_helper}" --database "${admission_database}" "${admission_mode}" -- "${agent_executable}" "$@"
