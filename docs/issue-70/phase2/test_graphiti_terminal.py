@@ -57,6 +57,42 @@ class TerminalTests(unittest.TestCase):
             identity_fn=lambda _:("a"*64,"e"*64),
             client_factory=lambda:self.graph,read_episode=get_by_uuid)
 
+    def test_trusted_transition_generates_canonical_predicate_instruction(self):
+        from dataclasses import replace
+        from graphiti_terminal import transition_extraction_instructions
+        contract={"group_id":"group-a","subject":"Service",
+                  "predicate":"USES_AS_JOB_QUEUE_BACKEND",
+                  "transition":{"from":"Redis","to":"NATS",
+                                "effective_at":"2026-10-30T00:00:00Z"}}
+        self.ep=replace(self.ep,transition_contract=contract)
+        submitted=[]
+        original=self.graph.add_episode
+        async def capture(**kwargs):
+            submitted.append(kwargs)
+            return await original(**kwargs)
+        self.graph.add_episode=capture
+        self.assertEqual(self.adapter.submit(self.candidate),"a"*64)
+        self.assertEqual(self.adapter.poll("a"*64)["status"],"completed")
+        self.assertEqual(len(submitted),1)
+        opts=submitted[0]
+        self.assertIn("custom_extraction_instructions",opts)
+        self.assertIn("USES_AS_JOB_QUEUE_BACKEND",opts["custom_extraction_instructions"])
+        self.assertIn("invalid_at",opts["custom_extraction_instructions"])
+        self.assertEqual(opts["group_id"],"group-a")
+        self.assertLessEqual(len(opts["custom_extraction_instructions"].encode()),2048)
+        self.assertIn("USES_AS_JOB_QUEUE_BACKEND",
+                      transition_extraction_instructions(contract))
+
+    def test_ordinary_episode_does_not_inject_temporal_instructions(self):
+        submitted=[]
+        original=self.graph.add_episode
+        async def capture(**kwargs):
+            submitted.append(kwargs)
+            return await original(**kwargs)
+        self.graph.add_episode=capture
+        self.adapter.submit(self.candidate)
+        self.assertNotIn("custom_extraction_instructions",submitted[0])
+
     def test_awaited_persistence_exact_readback_and_duplicate(self):
         self.assertEqual(self.adapter.submit(self.candidate),"a"*64)
         self.assertEqual(self.adapter.poll("a"*64)["status"],"completed")

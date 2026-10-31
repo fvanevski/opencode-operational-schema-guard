@@ -26,9 +26,13 @@ async def run(request):
     group=request.get("group_id")
     if not isinstance(group,str) or not group.startswith("issue70_") or len(group)>128:
         raise ValueError("non-disposable graph target refused")
-    if set(request)!={
-        "name","episode_body","source_description","reference_time","group_id"}:
+    required={"name","episode_body","source_description","reference_time","group_id"}
+    if not required.issubset(request) or set(request)-required-{"custom_extraction_instructions"}:
         raise ValueError("unexpected ingestion request fields")
+    instructions=request.get("custom_extraction_instructions")
+    if instructions is not None and (not isinstance(instructions,str)
+            or not instructions.strip() or len(instructions.encode())>2048):
+        raise ValueError("invalid bounded extraction instructions")
     for key in ("name","episode_body","source_description"):
         value=request[key]
         if not isinstance(value,str) or not value or len(value.encode())>65536:
@@ -42,7 +46,9 @@ async def run(request):
         result=await client.add_episode(
             name=request["name"],episode_body=request["episode_body"],
             source_description=request["source_description"],
-            reference_time=when,group_id=group)
+            reference_time=when,group_id=group,
+            **({"custom_extraction_instructions":instructions}
+               if instructions is not None else {}))
         uid=getattr(getattr(result,"episode",None),"uuid",None)
         if not isinstance(uid,str) or not uid:
             raise RuntimeError("no authoritative Graphiti episode UUID")

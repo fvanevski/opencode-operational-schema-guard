@@ -30,8 +30,13 @@ class ProcessCoreClient:
         if kwargs.get("group_id")!=self.group:
             raise ChildTerminalUnverified("source and target group conflict")
         request={k:v.isoformat() if hasattr(v,"isoformat") else v for k,v in kwargs.items()}
-        if set(request)!={"name","episode_body","source_description","reference_time","group_id"}:
+        required={"name","episode_body","source_description","reference_time","group_id"}
+        if not required.issubset(request) or set(request)-required-{"custom_extraction_instructions"}:
             raise ChildTerminalUnverified("unsupported episode parameter shape")
+        instruction=request.get("custom_extraction_instructions")
+        if instruction is not None and (not isinstance(instruction,str)
+                or not instruction.strip() or len(instruction.encode())>2048):
+            raise ChildTerminalUnverified("invalid bounded extraction instruction")
         raw=json.dumps(request,separators=(",",":"),ensure_ascii=False).encode()
         if len(raw)>65536:raise ChildTerminalUnverified("request exceeds child input bound")
         child=await asyncio.create_subprocess_exec(

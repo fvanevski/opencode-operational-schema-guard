@@ -59,6 +59,34 @@ class EpisodeEnvelope:
                        (self.transition_contract,) if self.transition_contract is not None else ()))
 
 
+def transition_extraction_instructions(contract):
+    """Canonical Graphiti extraction hint derived solely from attested Git facts.
+
+    Uses Graphiti Core's already-qualified custom_extraction_instructions API.
+    This helps extraction fidelity; it NEVER substitutes for the independent
+    post-write temporal validator or authorizes a PASS.
+    """
+    from temporal_ledger import validate_contract
+    validate_contract(contract,contract["group_id"])
+    t=contract["transition"]
+    enc=lambda x: json.dumps(x,ensure_ascii=True)
+    prompt=(
+        "For this source-declared mutually exclusive state transition, "
+        "use exactly the canonical relationship predicate "
+        +enc(contract["predicate"])+", not a synonym or alternate edge name. "
+        "The canonical subject is "+enc(contract["subject"])+". "
+        "Its outgoing state is "+enc(t["from"])+
+        " and its incoming state is "+enc(t["to"])+". "
+        "Use the effective time "+enc(t["effective_at"])+
+        " as the outgoing edge invalid_at and incoming edge valid_at. "
+        "Preserve the outgoing historical relationship and causal context. "
+        "Do not assert a temporal PASS; the separate read-only validator "
+        "will check the persisted graph independently."
+    )
+    if len(prompt.encode())>2048:
+        raise UnverifiedSource("canonical Graphiti extraction instructions exceed bound")
+    return prompt
+
 class IngestJournal:
     # Reuse the gate's SQLite connector and state DB: not a second store.
     def __init__(self,db):
@@ -146,11 +174,17 @@ class AwaitedCoreAdapter:
         try:
             # No caller-provided UUID: installed Graphiti may treat it as an
             # existing episode rather than a new durable insertion.
+            episode_kwargs=dict(self.extra_episode_kwargs)
+            if ep.transition_contract is not None:
+                # Authenticated source, not agent-proposed free-form prompt.
+                # Explicit contract policy wins over generic instruction extras.
+                episode_kwargs["custom_extraction_instructions"]=(
+                    transition_extraction_instructions(ep.transition_contract))
             result = await client.add_episode(
                 name=ep.name, episode_body=ep.episode_body,
                 source_description=ep.source_description,
                 reference_time=ep.reference_time, group_id=ep.group_id,
-                **self.extra_episode_kwargs)
+                **episode_kwargs)
             item = getattr(result,"episode",None)
             uuid = getattr(item,"uuid",None)
             if not isinstance(uuid,str) or not uuid:
