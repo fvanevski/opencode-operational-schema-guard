@@ -56,6 +56,11 @@ class TemporalRecallTests(unittest.TestCase):
             c.execute("UPDATE temporal_validation_results SET validator_sha256=NULL")
         self.assertEqual(self.read()[self.ep]["validation_status"],"UNVERIFIED")
 
+    def test_pre_migration_validator_outcome_fails_closed_without_http_error(self):
+        with sqlite3.connect(self.path) as c:
+            c.execute("DROP TABLE temporal_validator_active")
+        self.assertEqual(self.read()[self.ep]["validation_status"],"UNVERIFIED")
+
     def test_invalid_attestation_blocks_recall(self):
         with sqlite3.connect(self.path) as c:
             c.execute("UPDATE memory_source_attestations SET source_authority='agent_candidate'")

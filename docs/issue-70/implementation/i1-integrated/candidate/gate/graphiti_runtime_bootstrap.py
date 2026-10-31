@@ -50,6 +50,13 @@ def build_runtime(cfg,db):
             raise RuntimeError("durable temporal ledger implementation unavailable")
     else:
         phase4=None
+        # The currently selected nonexclusive policy must not reuse a
+        # historical exclusive validator identity from a previous runtime.
+        with db.connect() as conn:
+            found=conn.execute("""SELECT 1 FROM sqlite_master WHERE
+                type='table' AND name='temporal_validator_active'""").fetchone()
+            if found:
+                conn.execute("DELETE FROM temporal_validator_active WHERE singleton=1")
     # Python's import boundary is explicitly operator-specified; the gate and
     # Git/Graphiti modules must be source-pinned by the deployment manifest.
     sys.path.insert(0,str(phase2))

@@ -105,17 +105,23 @@ def receipt_sources(db_path: str, group_id: str, ids: list[str]) -> dict:
         conn.row_factory=sqlite3.Row
         has_results=conn.execute("""SELECT 1 FROM sqlite_master WHERE
             type='table' AND name='temporal_validation_results'""").fetchone() is not None
+        has_active=conn.execute("""SELECT 1 FROM sqlite_master WHERE
+            type='table' AND name='temporal_validator_active'""").fetchone() is not None
+        has_digest=(has_results and "validator_sha256" in {
+            r["name"] for r in conn.execute("PRAGMA table_info(temporal_validation_results)")})
         temporal_select=(
             """tv.state AS temporal_state,tv.exit_code AS temporal_exit,
-               tv.validator_sha256 AS result_validator_sha,
-               va.validator_sha256 AS active_validator_sha"""
-            if has_results else """NULL AS temporal_state,NULL AS temporal_exit,
-               NULL AS result_validator_sha,NULL AS active_validator_sha""")
+               tv.validator_sha256 AS result_validator_sha"""
+            if has_digest else """NULL AS temporal_state,NULL AS temporal_exit,
+               NULL AS result_validator_sha""")
+        temporal_select += (",va.validator_sha256 AS active_validator_sha"
+                            if has_active else ",NULL AS active_validator_sha")
         temporal_join=(
             """LEFT JOIN temporal_validation_results tv
-              ON tv.work_key=gi.work_key AND tv.episode_uuid=gi.episode_uuid
-              LEFT JOIN temporal_validator_active va ON va.singleton=1"""
-            if has_results else "")
+              ON tv.work_key=gi.work_key AND tv.episode_uuid=gi.episode_uuid"""
+            if has_digest else "")
+        if has_active:
+            temporal_join+=" LEFT JOIN temporal_validator_active va ON va.singleton=1"
         query=f"""SELECT gi.episode_uuid, mw.candidate_json,
             {temporal_select}
             FROM graphiti_ingest_receipts gi
