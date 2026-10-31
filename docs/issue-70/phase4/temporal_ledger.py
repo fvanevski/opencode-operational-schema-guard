@@ -45,6 +45,11 @@ class TemporalLedger:
     def __init__(self, db):
         self.db=db
         with db.connect() as conn:
+            conn.execute("""CREATE TABLE IF NOT EXISTS temporal_transition_contracts(
+                work_key TEXT PRIMARY KEY, group_id TEXT NOT NULL,
+                contract_json TEXT NOT NULL, contract_digest TEXT NOT NULL,
+                attestation_digest TEXT NOT NULL DEFAULT '',
+                bound_at REAL NOT NULL DEFAULT 0)""")
             conn.execute("""CREATE TABLE IF NOT EXISTS temporal_validation_results(
                 work_key TEXT PRIMARY KEY, episode_uuid TEXT NOT NULL,
                 contract_digest TEXT NOT NULL, state TEXT NOT NULL,
