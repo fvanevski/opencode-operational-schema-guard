@@ -288,6 +288,54 @@ corrected source.
 Production exclusive-state capture remains **disabled**; the genuine PASS is
 a product-confidence prerequisite, not an activation.
 
+## Host-activation campaign (issue/70-host-activation, one consolidated PR)
+
+Host-bound integration, native-runtime qualification, package reconstruction,
+and reversible deployment preparation (central base `49577b846664d6c7df477e508130af7ecb85f6c6`).
+
+- **Lazy-adapter fix** in `candidate/gate/graphiti_runtime_bootstrap.py`:
+  `build_runtime` no longer eagerly constructs the `AwaitedCoreAdapter` (which
+  created the `graphiti_ingest_receipts` table at startup and broke the
+  Central `test_positive_setup_is_lazy_and_scoped`). A `LazyCoreAdapter` wrapper
+  defers concrete adapter/table creation to the first submit/poll while exposing
+  `client_factory` immediately; validator identity is verified eagerly and
+  `exposes_retry` only when the exclusive category is present.
+  `candidate/gate/openviking_commit_gate.py` (Central) imports `build_runtime`.
+- **Two independent opt-ins** are required to arm production: TOML
+  `graphiti_production_approved=true` **and** the operator Git source policy
+  `production_activation:true`. No fallback path permits arbitrary group
+  selection.
+- **CPU regressions** (contract PYTHONPATH): phase2 32/32, phase3 38/38,
+  phase4 36/36, gate 59/59 (re-verified on the final candidate files),
+  receipt 7/7, launcher 5/5, cross-process 5/5, openviking-v2 node 21/21,
+  actual-backend 20/20.
+- **Fresh-process stock OpenCode v2.2.5** in a collision-free disposable env
+  (isolated HOME/XDG/project, disposable gate DB/lock, private plugin config):
+  plugin load, context events ×18, event subscription, compaction
+  started/delta/ended, clean `location.shutdown` disposal; protected live
+  gate/plugin/shim bytes stayed identical and the OpenViking context-v4 sibling
+  import dependency is preserved.
+- **Isolated Graphiti integration** on a NEW isolated FalkorDB
+  (`hostact_iso_group`, a non-`issue70_` group): episode
+  `1f5ba3bf-a940-44aa-9ef9-a484e0fa45cf` persisted with exact readback;
+  duplicate enqueues coalesced to one episode; an off-policy group stays
+  `deferred_unverified` (`source_authority_unavailable`) with no graph write; a
+  child mismatch is rejected exit 1 before any graph write
+  (`mismatch_group_absent`); the temporal outcome is an honest `MISSING_STATE`
+  fail-closed result (the LLM extraction produced no canonical edges) while
+  ingestion itself completed and persisted correctly.
+- **Package reconstruction**: `patches/gate.patch` (13 entries) regenerated to
+  `463b7591` against the re-authenticated installed base `6ad48a93`, proven
+  byte-exact forward and reverse; `openviking-v2.patch` (`b0ee5faa`) and
+  `backend.patch` (`a03ab064`) unchanged. `SHA256SUMS`,
+  `source-base-manifest.json`, `CHANGED_FILES.txt` and a new
+  `qualification-host-activation.json` refreshed.
+- **Deployment candidate** is a disabled install bundle
+  (`graphiti_enabled=false`, `graphiti_production_approved=false`,
+  `production_capture_policy=disabled`) with an inactive production opt-in
+  proposal. No live replacement, no production install, no live gate DB
+  mutation, no live graph mutation.
+
 ## Reproduction
 
 Use a Python environment matching the authenticated OpenViking/native RAGFS installation, Python 3.14 for gate tests, Node, patch and bwrap. The optional queue tests use requirements-phase1.txt; disabled gate startup is also tested with jsonschema deliberately unavailable. No dependency was installed into the protected host.

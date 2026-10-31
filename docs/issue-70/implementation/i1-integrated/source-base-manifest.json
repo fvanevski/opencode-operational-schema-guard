@@ -83,13 +83,13 @@
    "source_base_sha256": null
   },
   {
-   "candidate_sha256": "40e7dc91f3427c2195be38567e177fc02c72c84836cd7a95480b99153e1bbd0f",
+   "candidate_sha256": "9d71ac50a3e9e2deb455395ecfb56cb4cacfb09aeadfbad5206ae1f143dcb878",
    "component": "gate",
    "path": "openviking_commit_gate.py",
    "source_base_sha256": "6ad48a939d3f52df1c774f87d030986b35022a8c20f15916d82177ccf2094f42"
   },
   {
-   "candidate_sha256": "5df884f94586222a99fe03cafec7cc0c03d792e5ca567e6f4d666967ff9e96e1",
+   "candidate_sha256": "79d9b711c46a0e28a52f82c10c018420d724c397373eb113c3df250e61aec24a",
    "component": "gate",
    "path": "graphiti_runtime_bootstrap.py",
    "source_base_sha256": null
@@ -396,8 +396,8 @@
   {
    "apply_and_reverse": "PASS",
    "path": "patches/gate.patch",
-   "sha256": "7360ea0132b78ff6a4f4eeaac3f6b09e71d3b989146ccefcce5ebd5856e62cab",
-   "entries": "thirteen file entries: Phase 1/2 gate files plus Phase 3 graphiti_runtime_bootstrap.py and the Phase 4 shared_work.py transactional contract binding (temporal_transition_contracts) and bootstrap validator pin (graphiti_validator_path/sha256); regenerated against installed base 6ad48a93"
+   "sha256": "463b759197ecd2efaa3c162b78c828f20f79e0989ccfa7529aa4c3055fdcf0fa",
+   "entries": "thirteen file entries: Phase 1/2 gate files plus Phase 3 graphiti_runtime_bootstrap.py and the Phase 4 shared_work.py transactional contract binding (temporal_transition_contracts) and bootstrap validator pin (graphiti_validator_path/sha256); host-activation regeneration: graphiti_runtime_bootstrap.py now carries the LazyCoreAdapter fix (defers concrete adapter/table creation to first submit/poll; client_factory exposed immediately; validator identity verified eagerly; exposes_retry only when the exclusive category is present) so build_runtime no longer creates graphiti_ingest_receipts at startup (test_positive_setup_is_lazy_and_scoped), and openviking_commit_gate.py imports build_runtime; regenerated against installed base 6ad48a93, byte-exact forward/reverse"
   },
   {
    "apply_and_reverse": "PASS",

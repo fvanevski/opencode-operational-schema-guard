@@ -13,6 +13,38 @@ from pathlib import Path
 import sys
 
 
+class LazyCoreAdapter:
+    """Expose the exact scoped client factory immediately while deferring the
+    concrete core adapter (and its durable journal/ledger tables) until the
+    first real submit or poll.
+
+    A positive production setup must not create optional Graphiti tables in
+    the gate database at startup; table creation follows the first durable
+    work, preserving the legacy-database non-intrusion invariant.
+    """
+
+    def __init__(self, build, client_factory, *, exposes_retry):
+        self._build = build
+        self._adapter = None
+        self.client_factory = client_factory
+        if exposes_retry:
+            self.retry_pending = self._retry_pending
+
+    def _real(self):
+        if self._adapter is None:
+            self._adapter = self._build()
+        return self._adapter
+
+    def _retry_pending(self, *, max_items=1):
+        return self._real().retry_pending(max_items=max_items)
+
+    def submit(self, candidate):
+        return self._real().submit(candidate)
+
+    def poll(self, backend_identity):
+        return self._real().poll(backend_identity)
+
+
 def build_runtime(cfg,db):
     if not cfg.graphiti_enabled:
         return None,None
@@ -84,18 +116,28 @@ def build_runtime(cfg,db):
         python=str(python),worker=str(child),group=cfg.graphiti_group,
         timeout_seconds=cfg.task_timeout_seconds,
         production_approved=production_group and cfg.graphiti_production_approved)
-    adapter=AwaitedCoreAdapter(
-        db,resolve=resolver,
-        identity_fn=lambda c:(work_key(c),source_key(c)),
-        client_factory=factory,read_episode=read_process_episode)
+    run_validation=None
     if exclusive:
-        from temporal_ledger import TemporalCheckingAdapter
         from temporal_validator_transport import make_runner
+        # The operator-pinned validator identity is verified EAGERLY: a
+        # drifted or missing validator fails bootstrap before any durable
+        # temporal state is created.
         run_validation=make_runner(
             python=str(python),
             child=str(phase4/"temporal_validator_child.py"),
             validator_path=str(validator_path),
             validator_sha256=expected)
-        adapter=TemporalCheckingAdapter(adapter,db,run_validation,
-                                        validator_sha256=expected)
+    def build_core():
+        core=AwaitedCoreAdapter(
+            db,resolve=resolver,
+            identity_fn=lambda c:(work_key(c),source_key(c)),
+            client_factory=factory,read_episode=read_process_episode)
+        if exclusive:
+            from temporal_ledger import TemporalCheckingAdapter
+            return TemporalCheckingAdapter(core,db,run_validation,
+                                           validator_sha256=expected)
+        return core
+    # Table creation in the gate database follows the first durable work,
+    # never a positive production startup.
+    adapter=LazyCoreAdapter(build_core,factory,exposes_retry=exclusive)
     return adapter,resolver

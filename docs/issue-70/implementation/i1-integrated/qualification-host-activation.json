@@ -1,0 +1,116 @@
+{
+  "record": "qualification-host-activation",
+  "campaign": "issue/70-host-activation",
+  "central_base_sha": "49577b846664d6c7df477e508130af7ecb85f6c6",
+  "merged_main_base": "4d4825b8151a1d8272af9da89701954d7ab27822",
+  "scope": "Host-bound integration, native-runtime qualification, package reconstruction, and reversible deployment preparation for Issue #70 / PR #73. Production source installation NOT authorized; live gate DB and live graph mutation FORBIDDEN; no new PR; merge/issue-closure forbidden. One coherent fast-forward update to existing PR #73.",
+  "host_authority_authentication": {
+    "opencode_binary": "/home/filip/.opencode/bin/opencode",
+    "opencode_version": "v2.2.5",
+    "opencode_class": "stock V2 (no local fork)",
+    "openviking_backend": "0.5.2.1",
+    "graphiti_core": "0.31.2",
+    "falkordb": "live",
+    "scheduler": "ninfer idle (requests_running=0, requests_waiting=0)",
+    "installed_surfaces_auth_hash": {
+      "gate": "/home/filip/.local/share/openviking-commit-gate/openviking_commit_gate.py",
+      "gate_sha256": "6ad48a939d3f52df1c774f87d030986b35022a8c20f15916d82177ccf2094f42",
+      "plugin": "/home/filip/.config/opencode/plugins/openviking-v2/index.mjs",
+      "plugin_sha256": "6899822ec75a16ba05578d4ba165dfe8f913f3d37a4d96717767a170b906766d",
+      "shim": "/home/filip/.local/bin/openviking-agent-run",
+      "shim_sha256": "d22ca3f904924356ee54926276be9b28988646805f5d498aa91e901ef10d1d6a"
+    }
+  },
+  "cpu_regressions": {
+    "note": "CPU-only suites with the contract PYTHONPATH (docs/issue-70/{phase2,phase3,phase4,implementation/i1-integrated/candidate/gate,implementation/i1-integrated/candidate/gate/tests}); gate/service suites use the OpenViking uv python, launcher/actual-backend use /usr/bin/python3.",
+    "phase2": "32/32",
+    "phase3": "38/38",
+    "phase4": "36/36",
+    "gate": "59/59",
+    "receipt_protocol": "7/7",
+    "launcher_admission": "5/5",
+    "cross_process_admission": "5/5",
+    "openviking_v2_node": "21/21",
+    "i1_service_actual_backend": "20/20",
+    "gate_reverified_on_final_candidate": {
+      "command": "/usr/bin/python3 -m unittest discover -s tests",
+      "cwd": "docs/issue-70/implementation/i1-integrated/candidate/gate",
+      "exit_code": 0,
+      "observed": "Ran 59 tests ... OK",
+      "central_lazy_test": "test_positive_setup_is_lazy_and_scoped PASS",
+      "reverified_at": "post lazy-adapter fix, pre publication"
+    }
+  },
+  "two_independent_opt_ins": {
+    "toml_gate_key": "graphiti_production_approved=true (operator TOML)",
+    "git_source_policy": "production_activation:true (operator Git source policy)",
+    "independence": "Both are required; neither alone permits arbitrary group selection. No fallback path was added that permits arbitrary group selection."
+  },
+  "fresh_process_v2_qualification": {
+    "env": "/tmp/opencode/issue70-hostact-081655 (collision-free disposable: isolated HOME/XDG/project, disposable gate DB/lock, private plugin config)",
+    "stock_opencode": "v2.2.5",
+    "model": "smoke/stub (stub model server http://127.0.0.1:19511/v1)",
+    "plugin": "file:///tmp/opencode/issue70-hostact-081655/packages/openviking-v2",
+    "sibling_import_dependency": "authenticated OpenViking openviking-context-v4 sibling package present in the disposable env (packages/openviking-context-v4) and preserved",
+    "event_trace": "state/event-trace.jsonl (202 lines)",
+    "observed": {
+      "context_events": 18,
+      "event_subscription": "active (provider/model/plugin/integration/skill/reference/command/agent updated)",
+      "compaction_lifecycle": "session.compaction.started -> session.compaction.delta -> session.compaction.ended (1 each)",
+      "disposal": "location.shutdown observed (clean disposal)",
+      "single_failed_step": "one session.step.failed/session.execution.failed from the stub model turn (expected smoke behavior, not a plugin defect)"
+    },
+    "protected_live_surfaces_byte_identical": {
+      "gate": "6ad48a939d3f52df1c774f87d030986b35022a8c20f15916d82177ccf2094f42",
+      "plugin": "6899822ec75a16ba05578d4ba165dfe8f913f3d37a4d96717767a170b906766d",
+      "shim": "d22ca3f904924356ee54926276be9b28988646805f5d498aa91e901ef10d1d6a",
+      "note": "Live gate/config/database and installed plugin untouched by the fresh-process run."
+    }
+  },
+  "isolated_graphiti_integration": {
+    "env": "/tmp/opencode/issue70-graphiti-iso (NEW isolated FalkorDB container graphiti-hostact-iso on port 6399; single documented host-adapter 6382->6399 applied only to a disposable execution-tree copy; reviewed repo bytes untouched)",
+    "group": "hostact_iso_group (NEW isolated, non-issue70_ group)",
+    "falkordb_graphs_observed": ["hostact_iso_group"],
+    "repo_commit": "070ba13ac829d4e5a83f27f39cf23c058f906b14",
+    "validator_pin_sha256": "15646a56e0cb9a480589d9e445dde880ed97d79f9c9fc1e486a2f952c7e60d65",
+    "work_key": "37e7a7fe70484740eedaa8af60f2750f7b9f5b3efd6d6ba0c38c4c6a7dfe7805",
+    "episode_uuid": "1f5ba3bf-a940-44aa-9ef9-a484e0fa45cf",
+    "results": {
+      "enqueue_exclusive": "http 202 -> deferred_unverified",
+      "memory_work": "completed (attempt_generation 1)",
+      "ingest_receipt": "completed, episode 1f5ba3bf-a940-44aa-9ef9-a484e0fa45cf in hostact_iso_group",
+      "episode_readback": "exact (name git-source:37e7a7fe70484740eedaa8af, Redis->NATS transition content, group hostact_iso_group)",
+      "falkor_episodes": "count 1 (uuid 1f5ba3bf-a940-44aa-9ef9-a484e0fa45cf)",
+      "duplicate_enqueue": "coalesced; attempt_generation stays 1; episode_count_after_dup 1 (no duplicate ingestion)",
+      "off_policy_group": "off-policy group enqueues to deferred_unverified (error_code source_authority_unavailable); no graph write",
+      "child_mismatch": "exit 1 before graph write (stderr: 'Graphiti child did not produce a provable terminal receipt'); mismatch_group_absent=true",
+      "temporal_result": "honest fail-closed: state done, exit_code 1, disposition MISSING_STATE (coverage edges:0; no outgoing Redis / no incoming NATS edge) because the LLM extraction produced no canonical edges; ingestion itself completed and persisted correctly"
+    }
+  },
+  "lazy_adapter_fix": {
+    "file": "candidate/gate/graphiti_runtime_bootstrap.py",
+    "defect": "build_runtime eagerly constructed AwaitedCoreAdapter, which creates the graphiti_ingest_receipts table at startup and failed the Central test test_positive_setup_is_lazy_and_scoped",
+    "fix": "added a LazyCoreAdapter wrapper that defers concrete adapter/table creation to first submit/poll while exposing client_factory immediately; validator identity verified eagerly; exposes_retry only when the exclusive category is present",
+    "related_change": "candidate/gate/openviking_commit_gate.py (Central) now imports build_runtime from graphiti_runtime_bootstrap",
+    "evidence": "gate suite 59/59 PASS including test_positive_setup_is_lazy_and_scoped"
+  },
+  "package_reconstruction": {
+    "stale_artifacts_regenerated": [
+      "candidate/gate/graphiti_runtime_bootstrap.py (5df884f9 -> 79d9b711c46a0e28a52f82c10c018420d724c397373eb113c3df250e61aec24a)",
+      "candidate/gate/openviking_commit_gate.py (40e7dc91 -> 9d71ac50a3e9e2deb455395ecfb56cb4cacfb09aeadfbad5206ae1f143dcb878)",
+      "patches/gate.patch (7360ea01 -> 463b759197ecd2efaa3c162b78c828f20f79e0989ccfa7529aa4c3055fdcf0fa, thirteen file entries)"
+    ],
+    "gate_patch_forward_reverse": "byte-exact: forward (installed base 6ad48a93 + gate.patch reproduces candidate tree, 14 files) and reverse (candidate tree - gate.patch restores base bytes and removes every patch-introduced file, leaving 3 base files) both verified with diff -r clean, patch exit 0, no .rej/.orig",
+    "openviking_v2_patch": "unchanged (b0ee5faa, eight entries)",
+    "backend_patch": "unchanged (a03ab064)"
+  },
+  "deployment_candidate": {
+    "install_bundle": "disabled: graphiti_enabled=false, graphiti_production_approved=false, production_capture_policy=disabled",
+    "production_opt_in": "inactive proposal (two independent opt-ins NOT enabled in the shipped bundle)",
+    "live_replacement": "none performed"
+  },
+  "residual": [
+    "Isolated scenario temporal outcome is an honest MISSING_STATE fail-closed result (LLM extraction produced no canonical edges); ingestion completed and persisted correctly. Not a defect.",
+    "Live protected surfaces remain byte-identical; no production install, no live gate DB mutation, no live graph mutation performed."
+  ]
+}
