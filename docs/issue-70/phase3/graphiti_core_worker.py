@@ -4,8 +4,9 @@ The coordinator retains its EX flock for the entire child process and its
 readback. The subprocess performs direct awaited Graphiti Core ingestion and
 returns a terminal result; no MCP queued acknowledgment is accepted.
 
-Qualification-only target policy: a dedicated issue70_* graph is required.
-Production target changes require a separately reviewed activation policy.
+Disposable targets are issue70_* by default. Any non-disposable target
+must match the independently configured parent process group and require an
+explicit --allow-production-group flag from the reviewed gate bootstrap.
 """
 from __future__ import annotations
 import asyncio
@@ -20,12 +21,15 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "phase2"))
 
 from graphiti_core_bridge import build_core_client,prepare_core_client,close_core_client,read_episode_by_uuid
+from graphiti_process_transport import allowed_group
 
 
-async def run(request):
+async def run(request, *, expected_group=None, production_approved=False):
     group=request.get("group_id")
-    if not isinstance(group,str) or not group.startswith("issue70_") or len(group)>128:
-        raise ValueError("non-disposable graph target refused")
+    if (not isinstance(request,dict)
+            or not allowed_group(group,production_approved=production_approved)
+            or (expected_group is not None and group!=expected_group)):
+        raise ValueError("unapproved or mismatched graph target")
     required={"name","episode_body","source_description","reference_time","group_id"}
     if not required.issubset(request) or set(request)-required-{"custom_extraction_instructions"}:
         raise ValueError("unexpected ingestion request fields")
@@ -65,11 +69,20 @@ async def run(request):
 
 def main():
     try:
+        import argparse
+        parser=argparse.ArgumentParser()
+        parser.add_argument("--expected-group",default=None)
+        parser.add_argument("--allow-production-group",action="store_true")
+        args=parser.parse_args()
+        # A bare child invocation remains restricted to disposable groups.
+        if args.allow_production_group and not args.expected_group:
+            raise ValueError("production target must be bound to an exact group")
         raw=sys.stdin.buffer.read(65537)
         if not raw or len(raw)>65536:
             raise ValueError("invalid bounded request")
         request=json.loads(raw)
-        value=asyncio.run(run(request))
+        value=asyncio.run(run(request,expected_group=args.expected_group,
+                          production_approved=args.allow_production_group))
         sys.stdout.write("ISSUE70_TERMINAL="+json.dumps(value,separators=(",",":"))+"\n")
         return 0
     except Exception:

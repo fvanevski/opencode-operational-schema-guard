@@ -34,8 +34,17 @@ def build_runtime(cfg,db):
         raise RuntimeError("source authority requires operator opt-in")
     if policy.get("groups") != [cfg.graphiti_group]:
         raise RuntimeError("one exact authorized Graphiti group per gate runtime required")
-    if not cfg.graphiti_group.startswith("issue70_"):
-        raise RuntimeError("non-disposable Graphiti graph requires separate activation review")
+    from graphiti_process_transport import allowed_group
+    production_group=not cfg.graphiti_group.startswith("issue70_")
+    if not allowed_group(cfg.graphiti_group,
+                         production_approved=cfg.graphiti_production_approved):
+        raise RuntimeError("unapproved Graphiti target group")
+    if production_group:
+        if (cfg.graphiti_production_approved is not True
+                or policy.get("production_activation") is not True):
+            raise RuntimeError("non-disposable graph requires explicit operator production authorization")
+    elif cfg.graphiti_production_approved or policy.get("production_activation") is True:
+        raise RuntimeError("disposable qualification must not inherit production activation")
     exclusive="exclusive_state_transition" in policy.get("categories",[])
     if exclusive:
         validator_path=Path(cfg.graphiti_validator_path)
@@ -71,7 +80,8 @@ def build_runtime(cfg,db):
     resolver=GitFactResolver(policy=policy,work_key_fn=work_key,source_key_fn=source_key)
     factory=make_process_client_factory(
         python=str(python),worker=str(child),group=cfg.graphiti_group,
-        timeout_seconds=cfg.task_timeout_seconds)
+        timeout_seconds=cfg.task_timeout_seconds,
+        production_approved=production_group and cfg.graphiti_production_approved)
     adapter=AwaitedCoreAdapter(
         db,resolve=resolver,
         identity_fn=lambda c:(work_key(c),source_key(c)),

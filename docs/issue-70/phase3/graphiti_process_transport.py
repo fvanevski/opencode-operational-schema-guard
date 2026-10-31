@@ -8,17 +8,27 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import re
 from pathlib import Path
 from types import SimpleNamespace
 
 class ChildTerminalUnverified(RuntimeError):pass
 
+def allowed_group(group, *, production_approved=False):
+    # A production graph is never enabled by choosing a convenient prefix.
+    # It needs both operator-approved runtime config AND the exact group
+    # match enforced again in the child process.
+    return (isinstance(group,str) and bool(re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]{0,127}",group))
+            and (group.startswith("issue70_") or production_approved is True))
+
 class ProcessCoreClient:
-    def __init__(self, *,python,worker,group,timeout_seconds=600,env=None):
+    def __init__(self, *,python,worker,group,timeout_seconds=600,env=None,
+                 production_approved=False):
         if not Path(python).is_file() or not Path(worker).is_file():
             raise ValueError("exact Graphiti interpreter/worker paths required")
-        if not isinstance(group,str) or not group.startswith("issue70_"):
-            raise ValueError("qualification graph only; production requires a separate reviewed policy")
+        if not allowed_group(group,production_approved=production_approved):
+            raise ValueError("graph group requires exact approved production policy")
+        self.production_approved=(production_approved is True)
         self.python=python
         self.worker=worker
         self.group=group
@@ -40,7 +50,8 @@ class ProcessCoreClient:
         raw=json.dumps(request,separators=(",",":"),ensure_ascii=False).encode()
         if len(raw)>65536:raise ChildTerminalUnverified("request exceeds child input bound")
         child=await asyncio.create_subprocess_exec(
-            self.python,self.worker,
+            self.python,self.worker,"--expected-group",self.group,
+            *(["--allow-production-group"] if self.production_approved else []),
             stdin=asyncio.subprocess.PIPE,stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,env=self.env)
         try:
@@ -79,10 +90,12 @@ class ProcessCoreClient:
         return self._persisted
 
 
-def make_process_client_factory(*,python,worker,group,timeout_seconds=600,env=None):
+def make_process_client_factory(*,python,worker,group,timeout_seconds=600,
+                                env=None,production_approved=False):
     def factory():
         return ProcessCoreClient(python=python,worker=worker,group=group,
-                                 timeout_seconds=timeout_seconds,env=env)
+                                 timeout_seconds=timeout_seconds,env=env,
+                                 production_approved=production_approved)
     return factory
 
 async def read_process_episode(client,uid,group):
