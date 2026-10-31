@@ -153,22 +153,29 @@ def receipt_sources(db_path: str, group_id: str, ids: list[str]) -> dict:
 
 def format_rows(rows, receipts, group_id: str, *,limit=4) -> list[dict]:
     facts=[]
-    seen=set()
+    # Aggregate identical returned facts/temporal intervals before assigning
+    # one disposition. Otherwise duplicate graph edges can reintroduce
+    # provenance-order dependence even when each edge is reconciled.
+    grouped={}
     for row in rows[:24]:
         name=row.get("fact")
         if not isinstance(name,str) or not name or len(name)>512 or FORBIDDEN.search(name):
             continue
-        episodes=episode_ids(row.get("episode_ids"))
-        if not episodes:continue
-        merged=combined_validation(episodes,receipts,
-                                   overflow=episode_overflow(row.get("episode_ids")))
-        if merged is None:continue
         key=(name,str(row.get("valid_at") or ""),str(row.get("invalid_at") or ""))
-        if key in seen:continue
-        seen.add(key)
+        state=grouped.setdefault(key,{"episodes":[],"overflow":False})
+        ids=episode_ids(row.get("episode_ids"))
+        state["overflow"]|=episode_overflow(row.get("episode_ids"))
+        for uid in ids:
+            if uid not in state["episodes"]:
+                state["episodes"].append(uid)
+    for key,state in grouped.items():
+        if not state["episodes"]:continue
+        merged=combined_validation(state["episodes"],receipts,
+                                   overflow=state["overflow"])
+        if merged is None:continue
+        name,valid_at,invalid_at=key
         facts.append({"group_id":group_id,"fact":name,**merged,
-          "valid_at":str(row.get("valid_at") or "")[:64],
-          "invalid_at":str(row.get("invalid_at") or "")[:64]})
+          "valid_at":valid_at[:64],"invalid_at":invalid_at[:64]})
         if len(facts)>=max(1,min(8,limit)):break
     return facts
 

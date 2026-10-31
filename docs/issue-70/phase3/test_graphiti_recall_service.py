@@ -56,6 +56,21 @@ class RecallTests(unittest.TestCase):
         approved["b"]["validation_status"]="UNVERIFIED"
         self.assertEqual(format_rows([row],approved,"grp")[0]["validation_status"],"UNVERIFIED")
 
+    def test_duplicate_graph_edges_cannot_mask_disputed_episode(self):
+        receipts={
+            "p":{"source_ref":"git:"+"a"*40+":memory-facts/p.json",
+                 "exclusive":True,"validation_status":"PASS"},
+            "x":{"source_ref":"git:"+"b"*40+":memory-facts/x.json",
+                 "exclusive":True,"validation_status":"INCONSISTENT"},
+        }
+        first={"fact":"Service uses NATS","episode_ids":["p"]}
+        second={"fact":"Service uses NATS","episode_ids":["x"]}
+        for edges in ([first,second],[second,first]):
+            x=format_rows(edges,receipts,"grp")
+            self.assertEqual(len(x),1)
+            self.assertEqual(x[0]["validation_status"],"INCONSISTENT")
+            self.assertEqual(len(x[0]["source_refs"]),2)
+
     def test_episode_overflow_never_grants_pass(self):
         approved={f"e{i}":{"source_ref":"git:"+"a"*40+":memory-facts/a.json",
                           "exclusive":True,"validation_status":"PASS"} for i in range(33)}
