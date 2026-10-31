@@ -23,9 +23,10 @@ class LazyCoreAdapter:
     work, preserving the legacy-database non-intrusion invariant.
     """
 
-    def __init__(self, build, client_factory, *, exposes_retry):
+    def __init__(self, build, client_factory, *, exposes_retry, db):
         self._build = build
         self._adapter = None
+        self.db = db
         self.client_factory = client_factory
         if exposes_retry:
             self.retry_pending = self._retry_pending
@@ -36,6 +37,15 @@ class LazyCoreAdapter:
         return self._adapter
 
     def _retry_pending(self, *, max_items=1):
+        # The worker checks read-only retries on every idle tick. Without
+        # this guard, that check alone creates Graphiti/temporal tables even
+        # though no episode was ever nominated or submitted.
+        if self._adapter is None:
+            with self.db.connect() as conn:
+                exists=conn.execute("""SELECT 1 FROM sqlite_master
+                    WHERE type='table' AND name='temporal_validation_results'""").fetchone()
+            if exists is None:
+                return 0
         return self._real().retry_pending(max_items=max_items)
 
     def submit(self, candidate):
@@ -127,6 +137,16 @@ def build_runtime(cfg,db):
             child=str(phase4/"temporal_validator_child.py"),
             validator_path=str(validator_path),
             validator_sha256=expected)
+        # A previously selected validator must lose recall authority at
+        # bootstrap, not only when the lazy adapter first submits or polls.
+        # Update only an existing identity table: no optional tables are
+        # introduced into a fresh database without actual work.
+        with db.connect() as conn:
+            active=conn.execute("""SELECT 1 FROM sqlite_master
+                WHERE type='table' AND name='temporal_validator_active'""").fetchone()
+            if active is not None:
+                conn.execute("""UPDATE temporal_validator_active
+                    SET validator_sha256=? WHERE singleton=1""",(expected,))
     def build_core():
         core=AwaitedCoreAdapter(
             db,resolve=resolver,
@@ -139,5 +159,5 @@ def build_runtime(cfg,db):
         return core
     # Table creation in the gate database follows the first durable work,
     # never a positive production startup.
-    adapter=LazyCoreAdapter(build_core,factory,exposes_retry=exclusive)
+    adapter=LazyCoreAdapter(build_core,factory,exposes_retry=exclusive,db=db)
     return adapter,resolver
