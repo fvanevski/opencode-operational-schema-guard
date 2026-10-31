@@ -804,7 +804,7 @@ def json_request(
 
 
 class Worker:
-    def __init__(self, cfg: Config, db: QueueDB, stop_event: threading.Event, graphiti_adapter=None):
+    def __init__(self, cfg: Config, db: QueueDB, stop_event: threading.Event, graphiti_adapter=None, source_resolver=None):
         self.cfg = cfg
         self.db = db
         self.stop_event = stop_event
@@ -817,6 +817,10 @@ class Worker:
             capture_preflight()
         self.shared = SharedWorkQueue(db) if cfg.graphiti_enabled else None
         self.graphiti_adapter = graphiti_adapter or DisabledGraphitiAdapter()
+        # Injection-only until the exact installed Graphiti Python environment
+        # and operator policy have been qualified. Never derive authority from
+        # agent-supplied capture metadata or auto-enable in serve().
+        self.source_resolver = source_resolver
         self._last_class = "GRAPHITI_EPISODE_INGEST"
         self._recovery_quiet_since: float | None = None
         self.quiet_since: float | None = None
@@ -929,6 +933,11 @@ class Worker:
                 self._set_admission_status("blocked_reconcile")
                 return False
         candidate = inflight or self.db.next_ready()
+        if (self.shared is not None and self.source_resolver is not None
+                and not isinstance(self.graphiti_adapter, DisabledGraphitiAdapter)):
+            # Source verification is CPU-only and bounded; candidate selection
+            # remains subject to all global admission + publication barriers.
+            self.shared.auto_admit(self.source_resolver)
         graph_candidate = self.shared.ready() if self.shared else None
         if candidate is None and graph_candidate is None:
             self.quiet_since = None

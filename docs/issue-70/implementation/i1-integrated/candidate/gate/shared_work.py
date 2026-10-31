@@ -187,6 +187,43 @@ class SharedWorkQueue:
             if changed.rowcount!=1: raise RuntimeError("attested admission race")
             return {"work_key":key,"status":"queued"}
 
+    def auto_admit(self, source_resolver, *, max_items: int = 2) -> dict:
+        """Verify already nominated events using an operator-owned authority.
+
+        This runs in the existing coordinator worker, not an OpenCode context
+        hook or a competing inference scheduler. It only promotes durable
+        source nominations; actual Graphiti inference still requires the
+        shared exclusive lock and all existing admission checks.
+        """
+        if source_resolver is None:
+            return {"inspected": 0, "admitted": 0, "deferred": 0}
+        policy = getattr(source_resolver, "policy", None)
+        if (not isinstance(policy, dict) or policy.get("enabled") is not True
+                or policy.get("source_type") != "git-record-v1"
+                or not isinstance(policy.get("revision"), str)
+                or not policy["revision"]):
+            return {"inspected": 0, "admitted": 0, "deferred": 0}
+        authority = "git-record-v1:" + policy["revision"]
+        with self.legacy_db.connect() as conn:
+            rows = conn.execute("""SELECT candidate_json FROM memory_work
+                WHERE status='deferred_unverified' ORDER BY created_at, work_key LIMIT ?""",
+                (max(1, min(8, max_items)),)).fetchall()
+        totals = {"inspected": 0, "admitted": 0, "deferred": 0}
+        for row in rows:
+            totals["inspected"] += 1
+            candidate = json.loads(row["candidate_json"])
+            try:
+                envelope = source_resolver(candidate)
+            except ValueError:
+                # Ineligible/unverified tool nominations never become runnable.
+                # No permanent failure marking: a later authorized Git commit
+                # or policy revision may make the source independently valid.
+                totals["deferred"] += 1
+                continue
+            self.admit_attested(candidate, envelope, source_authority=authority)
+            totals["admitted"] += 1
+        return totals
+
     def ready(self):
         with self.legacy_db.connect() as conn:
             return conn.execute("SELECT * FROM memory_work WHERE status='queued' ORDER BY created_at, work_key LIMIT 1").fetchone()
