@@ -336,16 +336,25 @@ class SharedWorkQueue:
             if not has_temporal:
                 rows = conn.execute(f"SELECT {columns} FROM memory_work mw ORDER BY mw.created_at DESC LIMIT ?",(count,)).fetchall()
                 return [dict(row) for row in rows]
+            has_validator_column="validator_sha256" in {
+                c["name"] for c in conn.execute("PRAGMA table_info(temporal_validation_results)")}
+            has_active=conn.execute("""SELECT 1 FROM sqlite_master WHERE
+                type='table' AND name='temporal_validator_active'""").fetchone() is not None
+            digest_column=("tv.validator_sha256 AS temporal_validator_sha256"
+                           if has_validator_column else "NULL AS temporal_validator_sha256")
+            active_column=("va.validator_sha256 AS _active_validator_sha256"
+                           if has_active else "NULL AS _active_validator_sha256")
+            active_join=("LEFT JOIN temporal_validator_active va ON va.singleton=1"
+                         if has_active else "")
             rows = conn.execute(f"""SELECT {columns},mw.candidate_json AS _candidate_json,
                 tc.work_key AS temporal_contract_key,
                 tv.state AS temporal_state,tv.exit_code AS temporal_exit,
                 tv.disposition AS temporal_disposition,tv.episode_uuid AS temporal_episode_uuid,
-                tv.validator_sha256 AS temporal_validator_sha256,
-                va.validator_sha256 AS _active_validator_sha256
+                {digest_column},{active_column}
                 FROM memory_work mw
                 LEFT JOIN temporal_transition_contracts tc ON tc.work_key=mw.work_key
                 LEFT JOIN temporal_validation_results tv ON tv.work_key=mw.work_key
-                LEFT JOIN temporal_validator_active va ON va.singleton=1
+                {active_join}
                 ORDER BY mw.created_at DESC LIMIT ?""",(count,)).fetchall()
             outcomes={0:"PASS",1:"INCONSISTENT",2:"INCOMPLETE",3:"INVALID_INPUT"}
             response=[]

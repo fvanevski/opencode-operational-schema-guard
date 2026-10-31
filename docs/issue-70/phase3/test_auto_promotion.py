@@ -105,6 +105,30 @@ class AutoPromotionTests(unittest.TestCase):
             self.assertEqual(conn.execute("""SELECT COUNT(*) FROM memory_work
                 WHERE status='deferred_unverified'""").fetchone()[0],2)
 
+    def test_existing_gate_tick_processes_read_only_retry_on_empty_queue(self):
+        seen=[]
+        class Adapter:
+            def retry_pending(self,*,max_items):
+                seen.append(max_items)
+                return 0
+            def submit(self,_):
+                raise AssertionError("no graph re-ingestion during validator retry")
+        worker=gate.Worker(self.cfg,self.db,threading.Event(),Adapter(),self.resolver)
+        worker._active_harness_processes=lambda:[]
+        self.assertFalse(worker.tick())
+        self.assertEqual(seen,[1])
+
+    def test_disabled_worker_clears_active_validator_without_losing_history(self):
+        from temporal_ledger import TemporalLedger
+        TemporalLedger(self.db,validator_sha256="a"*64)
+        with self.db.connect() as conn:
+            self.assertIsNotNone(conn.execute("SELECT * FROM temporal_validator_active").fetchone())
+        worker=gate.Worker(replace(self.cfg,graphiti_enabled=False),
+                           self.db,threading.Event(),self.adapter,self.resolver)
+        self.assertFalse(worker.cfg.graphiti_enabled)
+        with self.db.connect() as conn:
+            self.assertIsNone(conn.execute("SELECT * FROM temporal_validator_active").fetchone())
+
     def test_feature_disabled_has_no_auto_promotion(self):
         self.shared.enqueue(self.item)
         cfg=replace(self.cfg,graphiti_enabled=False)

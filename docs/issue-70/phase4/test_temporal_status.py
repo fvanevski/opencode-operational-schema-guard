@@ -40,6 +40,29 @@ class StatusTests(unittest.TestCase):
             c.execute("UPDATE temporal_validator_active SET validator_sha256=?",("b"*64,))
         self.assertEqual(q.status()[0]["temporal_validation_status"],"UNVERIFIED")
 
+    def test_legacy_outcome_schema_fails_closed_without_runtime_identity(self):
+        t=tempfile.TemporaryDirectory();self.addCleanup(t.cleanup)
+        db=gate.QueueDB(str(Path(t.name)/"gate.sqlite3"))
+        q=SharedWorkQueue(db)
+        item=candidate("legacy-exclusive")
+        item["category"]="exclusive_state_transition"
+        item["transition"]={
+            "subject_ref":"Service","predicate":"USES",
+            "outgoing_state_ref":"Redis","incoming_state_ref":"NATS",
+            "effective_at":"2026-10-30T00:00:00Z"}
+        nominated=q.enqueue(item)
+        with db.connect() as conn:
+            conn.execute("""CREATE TABLE temporal_transition_contracts(
+                work_key TEXT,group_id TEXT,contract_json TEXT,contract_digest TEXT)""")
+            conn.execute("""INSERT INTO temporal_transition_contracts VALUES
+                (?,'approved','{}','digest')""",(nominated["work_key"],))
+            conn.execute("""CREATE TABLE temporal_validation_results(
+                work_key TEXT,episode_uuid TEXT,state TEXT,exit_code INTEGER,
+                disposition TEXT)""")
+            conn.execute("""INSERT INTO temporal_validation_results VALUES
+                (?,'ep-old','done',0,'PASS')""",(nominated["work_key"],))
+        self.assertEqual(q.status()[0]["temporal_validation_status"],"UNVERIFIED")
+
     def test_exclusive_state_without_contract_is_unverified_not_exempt(self):
         t=tempfile.TemporaryDirectory();self.addCleanup(t.cleanup)
         db=gate.QueueDB(str(Path(t.name)/"gate.sqlite3"))

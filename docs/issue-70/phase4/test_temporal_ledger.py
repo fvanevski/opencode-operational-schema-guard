@@ -148,6 +148,8 @@ class Tests(unittest.TestCase):
                     "mode":"live","coverage":"complete","findings":[]}
         adapter=TemporalCheckingAdapter(Core(),self.db,runner,validator_sha256=self.pin)
         self.assertEqual(adapter.ledger.evaluate("k",runner),"UNVERIFIED")
+        # Restart with only durable state: the new instance retries read-only.
+        adapter=TemporalCheckingAdapter(Core(),self.db,runner,validator_sha256=self.pin)
         self.assertEqual(adapter.retry_pending(max_items=1),1)
         self.assertEqual(adapter.ledger.status_for_episode("ep-1","issue70_test"),"PASS")
         self.assertEqual(adapter.retry_pending(max_items=1),0)
