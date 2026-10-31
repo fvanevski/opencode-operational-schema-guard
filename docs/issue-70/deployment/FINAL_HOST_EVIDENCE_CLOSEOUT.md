@@ -17,7 +17,7 @@ No runtime source, configuration, memory policy or Graphiti activation is author
 
 ### Phase 1: retained originals and limited retrospective
 
-Read original 21:41 run artifacts and `fresh-process-receipt.json` against the independent sanitized audit. Preserve all original artifacts and source hashes. The original run took place approximately 2026-10-31 21:41–21:42 PDT, or 2026-11-01 04:41–04:42 UTC. Use a small clock-skew buffer rather than broad logs.
+Read original 21:41 run artifacts and `fresh-process-receipt.json` against the independent sanitized audit. Preserve all original artifacts and source hashes. The original run took place approximately 2026-10-31 21:41–21:42 UTC (2026-10-31 14:41–14:42 PDT). Use a small clock-skew buffer rather than broad logs.
 
 Inspect, only if already retained, pre/post readback/verifier logs, gate/backend user/system journals, gate's read-only durable work and Graphiti receipt/status projections, and existing FalkorDB/Graphiti audit/journal records. First establish log ownership, relevant time window, retention, and read capability; stop looking after one bounded pass. Never export private memory content, tokens, full session logs or datastore copies.
 
