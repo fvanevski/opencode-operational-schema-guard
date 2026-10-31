@@ -89,7 +89,7 @@
    "source_base_sha256": "6ad48a939d3f52df1c774f87d030986b35022a8c20f15916d82177ccf2094f42"
   },
   {
-   "candidate_sha256": "79d9b711c46a0e28a52f82c10c018420d724c397373eb113c3df250e61aec24a",
+   "candidate_sha256": "ec9d96e588723611409cdeee4228290c689f3a09670ea032f9391e90bcb976fd",
    "component": "gate",
    "path": "graphiti_runtime_bootstrap.py",
    "source_base_sha256": null
@@ -366,6 +366,10 @@
     "sha256": "a15f5d78cfc08ba403d9ef13b1221256816e4797439f06f05a33d5829279e9a1"
    },
    {
+    "path": "docs/issue-70/phase3/test_production_target_policy.py",
+    "sha256": "3322fe2d2f7cb83efc9a3bdcbdef88d411e6ba8c025312bb670df1c633e4b0ef"
+   },
+   {
     "path": "docs/issue-70/phase2/graphiti_terminal.py",
     "sha256": "475e75e59d8faae487dc2ca23763f30db76463af834c3afde317abaab80818e0"
    },
@@ -396,8 +400,8 @@
   {
    "apply_and_reverse": "PASS",
    "path": "patches/gate.patch",
-   "sha256": "463b759197ecd2efaa3c162b78c828f20f79e0989ccfa7529aa4c3055fdcf0fa",
-   "entries": "thirteen file entries: Phase 1/2 gate files plus Phase 3 graphiti_runtime_bootstrap.py and the Phase 4 shared_work.py transactional contract binding (temporal_transition_contracts) and bootstrap validator pin (graphiti_validator_path/sha256); host-activation regeneration: graphiti_runtime_bootstrap.py now carries the LazyCoreAdapter fix (defers concrete adapter/table creation to first submit/poll; client_factory exposed immediately; validator identity verified eagerly; exposes_retry only when the exclusive category is present) so build_runtime no longer creates graphiti_ingest_receipts at startup (test_positive_setup_is_lazy_and_scoped), and openviking_commit_gate.py imports build_runtime; regenerated against installed base 6ad48a93, byte-exact forward/reverse"
+   "sha256": "4b528bcc9d5767a8a5b294d76760a45fea3b81a15eaee370781208924e30ef8b",
+   "entries": "thirteen file entries: Phase 1/2 gate files plus Phase 3 graphiti_runtime_bootstrap.py and the Phase 4 shared_work.py transactional contract binding (temporal_transition_contracts) and bootstrap validator pin (graphiti_validator_path/sha256); host-activation regeneration: graphiti_runtime_bootstrap.py now carries the LazyCoreAdapter fix (defers concrete adapter/table creation to first submit/poll; client_factory exposed immediately; validator identity verified eagerly; exposes_retry only when the exclusive category is present) so build_runtime no longer creates graphiti_ingest_receipts at startup (test_positive_setup_is_lazy_and_scoped), and openviking_commit_gate.py imports build_runtime; final lifecycle corrections: LazyCoreAdapter.retry_pending now short-circuits to 0 when no temporal_validation_results table exists (an idle worker tick creates no optional Graphiti/temporal tables), and build_runtime invalidates a previously active temporal_validator_active digest at bootstrap (UPDATE only an existing identity table; no optional tables introduced into a fresh database); regenerated against installed base 6ad48a93, byte-exact forward/reverse"
   },
   {
    "apply_and_reverse": "PASS",

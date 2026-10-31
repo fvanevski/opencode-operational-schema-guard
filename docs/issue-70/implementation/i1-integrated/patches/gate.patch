@@ -1,7 +1,7 @@
 diff -ruN a/graphiti_runtime_bootstrap.py b/graphiti_runtime_bootstrap.py
 --- a/graphiti_runtime_bootstrap.py	1969-12-31 16:00:00.000000000 -0800
-+++ b/graphiti_runtime_bootstrap.py	2026-10-31 08:30:50.424926966 -0700
-@@ -0,0 +1,143 @@
++++ b/graphiti_runtime_bootstrap.py	2026-10-31 08:55:58.134016721 -0700
+@@ -0,0 +1,163 @@
 +"""Explicit, opt-in Graphiti Core runtime wiring for the existing gate.
 +
 +No separate inference scheduler: the gate Worker owns EX flock + SQLite.
@@ -27,9 +27,10 @@ diff -ruN a/graphiti_runtime_bootstrap.py b/graphiti_runtime_bootstrap.py
 +    work, preserving the legacy-database non-intrusion invariant.
 +    """
 +
-+    def __init__(self, build, client_factory, *, exposes_retry):
++    def __init__(self, build, client_factory, *, exposes_retry, db):
 +        self._build = build
 +        self._adapter = None
++        self.db = db
 +        self.client_factory = client_factory
 +        if exposes_retry:
 +            self.retry_pending = self._retry_pending
@@ -40,6 +41,15 @@ diff -ruN a/graphiti_runtime_bootstrap.py b/graphiti_runtime_bootstrap.py
 +        return self._adapter
 +
 +    def _retry_pending(self, *, max_items=1):
++        # The worker checks read-only retries on every idle tick. Without
++        # this guard, that check alone creates Graphiti/temporal tables even
++        # though no episode was ever nominated or submitted.
++        if self._adapter is None:
++            with self.db.connect() as conn:
++                exists=conn.execute("""SELECT 1 FROM sqlite_master
++                    WHERE type='table' AND name='temporal_validation_results'""").fetchone()
++            if exists is None:
++                return 0
 +        return self._real().retry_pending(max_items=max_items)
 +
 +    def submit(self, candidate):
@@ -131,6 +141,16 @@ diff -ruN a/graphiti_runtime_bootstrap.py b/graphiti_runtime_bootstrap.py
 +            child=str(phase4/"temporal_validator_child.py"),
 +            validator_path=str(validator_path),
 +            validator_sha256=expected)
++        # A previously selected validator must lose recall authority at
++        # bootstrap, not only when the lazy adapter first submits or polls.
++        # Update only an existing identity table: no optional tables are
++        # introduced into a fresh database without actual work.
++        with db.connect() as conn:
++            active=conn.execute("""SELECT 1 FROM sqlite_master
++                WHERE type='table' AND name='temporal_validator_active'""").fetchone()
++            if active is not None:
++                conn.execute("""UPDATE temporal_validator_active
++                    SET validator_sha256=? WHERE singleton=1""",(expected,))
 +    def build_core():
 +        core=AwaitedCoreAdapter(
 +            db,resolve=resolver,
@@ -143,11 +163,11 @@ diff -ruN a/graphiti_runtime_bootstrap.py b/graphiti_runtime_bootstrap.py
 +        return core
 +    # Table creation in the gate database follows the first durable work,
 +    # never a positive production startup.
-+    adapter=LazyCoreAdapter(build_core,factory,exposes_retry=exclusive)
++    adapter=LazyCoreAdapter(build_core,factory,exposes_retry=exclusive,db=db)
 +    return adapter,resolver
 diff -ruN a/memory-candidate-v1.schema.json b/memory-candidate-v1.schema.json
 --- a/memory-candidate-v1.schema.json	1969-12-31 16:00:00.000000000 -0800
-+++ b/memory-candidate-v1.schema.json	2026-10-31 08:30:50.425925528 -0700
++++ b/memory-candidate-v1.schema.json	2026-10-31 08:55:58.135004093 -0700
 @@ -0,0 +1,226 @@
 +{
 +  "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -376,8 +396,8 @@ diff -ruN a/memory-candidate-v1.schema.json b/memory-candidate-v1.schema.json
 +  ]
 +}
 diff -ruN a/openviking_commit_gate.py b/openviking_commit_gate.py
---- a/openviking_commit_gate.py	2026-10-31 08:30:46.685017287 -0700
-+++ b/openviking_commit_gate.py	2026-10-31 08:30:50.426938020 -0700
+--- a/openviking_commit_gate.py	2026-10-31 08:55:58.130716231 -0700
++++ b/openviking_commit_gate.py	2026-10-31 08:55:58.135947123 -0700
 @@ -32,6 +32,8 @@
  from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
  from pathlib import Path
@@ -1088,7 +1108,7 @@ diff -ruN a/openviking_commit_gate.py b/openviking_commit_gate.py
  
 diff -ruN a/receipt_protocol.py b/receipt_protocol.py
 --- a/receipt_protocol.py	1969-12-31 16:00:00.000000000 -0800
-+++ b/receipt_protocol.py	2026-10-31 08:30:50.428100505 -0700
++++ b/receipt_protocol.py	2026-10-31 08:55:58.136994465 -0700
 @@ -0,0 +1,165 @@
 +"""Issue 70: durable OpenViking commit receipt core (disabled until integrated).
 +
@@ -1257,12 +1277,12 @@ diff -ruN a/receipt_protocol.py b/receipt_protocol.py
 +    return "BLOCK", None
 diff -ruN a/requirements-phase1.txt b/requirements-phase1.txt
 --- a/requirements-phase1.txt	1969-12-31 16:00:00.000000000 -0800
-+++ b/requirements-phase1.txt	2026-10-31 08:30:50.429249290 -0700
++++ b/requirements-phase1.txt	2026-10-31 08:55:58.137830073 -0700
 @@ -0,0 +1 @@
 +jsonschema>=4.26,<5
 diff -ruN a/shared_work.py b/shared_work.py
 --- a/shared_work.py	1969-12-31 16:00:00.000000000 -0800
-+++ b/shared_work.py	2026-10-31 08:30:50.430348124 -0700
++++ b/shared_work.py	2026-10-31 08:55:58.139036659 -0700
 @@ -0,0 +1,398 @@
 +"""Phase 1 typed work in the existing commit-gate SQLite and worker owner.
 +
@@ -1664,7 +1684,7 @@ diff -ruN a/shared_work.py b/shared_work.py
 +        raise RuntimeError("Graphiti terminal observation interface unavailable")
 diff -ruN a/test_receipt_protocol.py b/test_receipt_protocol.py
 --- a/test_receipt_protocol.py	1969-12-31 16:00:00.000000000 -0800
-+++ b/test_receipt_protocol.py	2026-10-31 08:30:50.431436897 -0700
++++ b/test_receipt_protocol.py	2026-10-31 08:55:58.140192373 -0700
 @@ -0,0 +1,59 @@
 +import tempfile
 +import unittest
@@ -1727,7 +1747,7 @@ diff -ruN a/test_receipt_protocol.py b/test_receipt_protocol.py
 +if __name__ == '__main__': unittest.main()
 diff -ruN a/tests/test_corrections.py b/tests/test_corrections.py
 --- a/tests/test_corrections.py	1969-12-31 16:00:00.000000000 -0800
-+++ b/tests/test_corrections.py	2026-10-31 08:30:50.432550341 -0700
++++ b/tests/test_corrections.py	2026-10-31 08:55:58.141133883 -0700
 @@ -0,0 +1,240 @@
 +"""Issue 70 corrections, disposable state only; never talks to installed services."""
 +import copy
@@ -1970,8 +1990,8 @@ diff -ruN a/tests/test_corrections.py b/tests/test_corrections.py
 +if __name__ == '__main__':
 +    unittest.main()
 diff -ruN a/tests/test_dual_metrics.py b/tests/test_dual_metrics.py
---- a/tests/test_dual_metrics.py	2026-10-31 08:30:46.687494171 -0700
-+++ b/tests/test_dual_metrics.py	2026-10-31 08:30:50.433534082 -0700
+--- a/tests/test_dual_metrics.py	2026-10-31 08:55:58.132931358 -0700
++++ b/tests/test_dual_metrics.py	2026-10-31 08:55:58.142155275 -0700
 @@ -61,7 +61,10 @@
  
      def test_worker_switches_both_directions_without_restart(self):
@@ -2010,7 +2030,7 @@ diff -ruN a/tests/test_dual_metrics.py b/tests/test_dual_metrics.py
                  for running,waiting in [(1,0),(0,1),(0,0)]:
 diff -ruN a/tests/test_multi_unknown_recovery.py b/tests/test_multi_unknown_recovery.py
 --- a/tests/test_multi_unknown_recovery.py	1969-12-31 16:00:00.000000000 -0800
-+++ b/tests/test_multi_unknown_recovery.py	2026-10-31 08:30:50.434633926 -0700
++++ b/tests/test_multi_unknown_recovery.py	2026-10-31 08:55:58.143907922 -0700
 @@ -0,0 +1,91 @@
 +"""Gate admission regressions for multiple unresolved backend receipts.
 +
@@ -2105,7 +2125,7 @@ diff -ruN a/tests/test_multi_unknown_recovery.py b/tests/test_multi_unknown_reco
 +    unittest.main()
 diff -ruN a/tests/test_service_corrections.py b/tests/test_service_corrections.py
 --- a/tests/test_service_corrections.py	1969-12-31 16:00:00.000000000 -0800
-+++ b/tests/test_service_corrections.py	2026-10-31 08:30:50.435512085 -0700
++++ b/tests/test_service_corrections.py	2026-10-31 08:55:58.144694899 -0700
 @@ -0,0 +1,144 @@
 +"""Service-backed contract tests, loopback ephemeral ports and disposable DB."""
 +import copy
@@ -2253,7 +2273,7 @@ diff -ruN a/tests/test_service_corrections.py b/tests/test_service_corrections.p
 +if __name__ == '__main__': unittest.main()
 diff -ruN a/tests/test_service_mixed.py b/tests/test_service_mixed.py
 --- a/tests/test_service_mixed.py	1969-12-31 16:00:00.000000000 -0800
-+++ b/tests/test_service_mixed.py	2026-10-31 08:30:50.436638690 -0700
++++ b/tests/test_service_mixed.py	2026-10-31 08:55:58.145472106 -0700
 @@ -0,0 +1,127 @@
 +import json
 +import os
@@ -2384,7 +2404,7 @@ diff -ruN a/tests/test_service_mixed.py b/tests/test_service_mixed.py
 +    unittest.main()
 diff -ruN a/tests/test_shared_work.py b/tests/test_shared_work.py
 --- a/tests/test_shared_work.py	1969-12-31 16:00:00.000000000 -0800
-+++ b/tests/test_shared_work.py	2026-10-31 08:30:50.437714303 -0700
++++ b/tests/test_shared_work.py	2026-10-31 08:55:58.146349465 -0700
 @@ -0,0 +1,303 @@
 +import hashlib
 +import tempfile
