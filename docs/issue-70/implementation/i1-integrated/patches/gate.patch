@@ -1,5 +1,6 @@
+diff -ruN a/graphiti_runtime_bootstrap.py b/graphiti_runtime_bootstrap.py
 --- a/graphiti_runtime_bootstrap.py	1969-12-31 16:00:00.000000000 -0800
-+++ b/graphiti_runtime_bootstrap.py	1969-12-31 16:00:00.000000000 -0800
++++ b/graphiti_runtime_bootstrap.py	2026-10-30 19:56:19.256568889 -0700
 @@ -0,0 +1,80 @@
 +"""Explicit, opt-in Graphiti Core runtime wiring for the existing gate.
 +
@@ -81,8 +82,9 @@
 +            validator_path=str(validator_path))
 +        adapter=TemporalCheckingAdapter(adapter,db,run_validation)
 +    return adapter,resolver
+diff -ruN a/memory-candidate-v1.schema.json b/memory-candidate-v1.schema.json
 --- a/memory-candidate-v1.schema.json	1969-12-31 16:00:00.000000000 -0800
-+++ b/memory-candidate-v1.schema.json	1969-12-31 16:00:00.000000000 -0800
++++ b/memory-candidate-v1.schema.json	2026-10-30 19:56:19.256599120 -0700
 @@ -0,0 +1,226 @@
 +{
 +  "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -310,8 +312,9 @@
 +    }
 +  ]
 +}
---- a/openviking_commit_gate.py	2026-10-30 19:28:40.858317331 -0700
-+++ b/openviking_commit_gate.py	2026-10-30 19:28:40.860925201 -0700
+diff -ruN a/openviking_commit_gate.py b/openviking_commit_gate.py
+--- a/openviking_commit_gate.py	2026-10-30 19:56:19.255580481 -0700
++++ b/openviking_commit_gate.py	2026-10-30 19:56:19.256655591 -0700
 @@ -32,6 +32,8 @@
  from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
  from pathlib import Path
@@ -996,8 +999,13 @@
      server = GateServer(cfg, db, worker)
      worker_thread = threading.Thread(target=worker.run, name="commit-worker", daemon=True)
  
+Binary files a/__pycache__/openviking_commit_gate.cpython-314.pyc and b/__pycache__/openviking_commit_gate.cpython-314.pyc differ
+Binary files a/__pycache__/receipt_protocol.cpython-314.pyc and b/__pycache__/receipt_protocol.cpython-314.pyc differ
+Binary files a/__pycache__/shared_work.cpython-314.pyc and b/__pycache__/shared_work.cpython-314.pyc differ
+Binary files a/__pycache__/test_receipt_protocol.cpython-314.pyc and b/__pycache__/test_receipt_protocol.cpython-314.pyc differ
+diff -ruN a/receipt_protocol.py b/receipt_protocol.py
 --- a/receipt_protocol.py	1969-12-31 16:00:00.000000000 -0800
-+++ b/receipt_protocol.py	1969-12-31 16:00:00.000000000 -0800
++++ b/receipt_protocol.py	2026-10-30 19:56:19.256708212 -0700
 @@ -0,0 +1,165 @@
 +"""Issue 70: durable OpenViking commit receipt core (disabled until integrated).
 +
@@ -1164,13 +1172,15 @@
 +    if state == "accepted" and isinstance(task_id, str) and task_id:
 +        return "TRACK", task_id
 +    return "BLOCK", None
+diff -ruN a/requirements-phase1.txt b/requirements-phase1.txt
 --- a/requirements-phase1.txt	1969-12-31 16:00:00.000000000 -0800
-+++ b/requirements-phase1.txt	1969-12-31 16:00:00.000000000 -0800
++++ b/requirements-phase1.txt	2026-10-30 19:56:19.256732202 -0700
 @@ -0,0 +1 @@
 +jsonschema>=4.26,<5
+diff -ruN a/shared_work.py b/shared_work.py
 --- a/shared_work.py	1969-12-31 16:00:00.000000000 -0800
-+++ b/shared_work.py	1969-12-31 16:00:00.000000000 -0800
-@@ -0,0 +1,342 @@
++++ b/shared_work.py	2026-10-30 19:56:19.256761513 -0700
+@@ -0,0 +1,359 @@
 +"""Phase 1 typed work in the existing commit-gate SQLite and worker owner.
 +
 +The real Graphiti adapter is deliberately unavailable until a durable terminal
@@ -1485,7 +1495,7 @@
 +            if not has_temporal:
 +                rows = conn.execute(f"SELECT {columns} FROM memory_work mw ORDER BY mw.created_at DESC LIMIT ?",(count,)).fetchall()
 +                return [dict(row) for row in rows]
-+            rows = conn.execute(f"""SELECT {columns},
++            rows = conn.execute(f"""SELECT {columns},mw.candidate_json AS _candidate_json,
 +                tc.work_key AS temporal_contract_key,
 +                tv.state AS temporal_state,tv.exit_code AS temporal_exit,
 +                tv.disposition AS temporal_disposition,tv.episode_uuid AS temporal_episode_uuid
@@ -1497,12 +1507,29 @@
 +            response=[]
 +            for row in rows:
 +                record=dict(row)
++                raw_candidate=record.pop("_candidate_json")
 +                contract=record.pop("temporal_contract_key")
 +                state=record.pop("temporal_state")
 +                code=record.pop("temporal_exit")
-+                record["temporal_validation_status"]=(
-+                    "not_required" if contract is None else
-+                    outcomes.get(code,"UNVERIFIED") if state=="done" else "UNVERIFIED")
++                try:
++                    category=json.loads(raw_candidate).get("category")
++                except (TypeError,ValueError,AttributeError):
++                    category=None
++                if contract is None:
++                    # A trusted bound contract is required for any temporal
++                    # check. An exclusive transition can never be
++                    # validation-exempt (never 'not_required'), even when its
++                    # ingestion is already completed; an ordinary fact needs no
++                    # temporal validation.
++                    record["temporal_validation_status"]=(
++                        "UNVERIFIED" if category in ("exclusive_state_transition", None)
++                        else "not_required")
++                else:
++                    # A trusted bound contract exists; report the durable
++                    # validation outcome, retaining each result's disposition.
++                    record["temporal_validation_status"]=(
++                        outcomes.get(code,"UNVERIFIED")
++                        if state=="done" else "UNVERIFIED")
 +                response.append(record)
 +            return response
 +
@@ -1513,8 +1540,9 @@
 +
 +    def poll(self, backend_identity):
 +        raise RuntimeError("Graphiti terminal observation interface unavailable")
+diff -ruN a/test_receipt_protocol.py b/test_receipt_protocol.py
 --- a/test_receipt_protocol.py	1969-12-31 16:00:00.000000000 -0800
-+++ b/test_receipt_protocol.py	1969-12-31 16:00:00.000000000 -0800
++++ b/test_receipt_protocol.py	2026-10-30 19:56:19.256793623 -0700
 @@ -0,0 +1,59 @@
 +import tempfile
 +import unittest
@@ -1575,8 +1603,16 @@
 +        self.assertNotEqual(KEY, request_key({**SCOPE,"user_id":"other"},7))
 +        self.assertEqual(BODY, canonical_digest({"keep_recent_count":0}))
 +if __name__ == '__main__': unittest.main()
+Binary files a/tests/__pycache__/test_corrections.cpython-314.pyc and b/tests/__pycache__/test_corrections.cpython-314.pyc differ
+Binary files a/tests/__pycache__/test_dual_metrics.cpython-314.pyc and b/tests/__pycache__/test_dual_metrics.cpython-314.pyc differ
+Binary files a/tests/__pycache__/test_gate.cpython-314.pyc and b/tests/__pycache__/test_gate.cpython-314.pyc differ
+Binary files a/tests/__pycache__/test_multi_unknown_recovery.cpython-314.pyc and b/tests/__pycache__/test_multi_unknown_recovery.cpython-314.pyc differ
+Binary files a/tests/__pycache__/test_service_corrections.cpython-314.pyc and b/tests/__pycache__/test_service_corrections.cpython-314.pyc differ
+Binary files a/tests/__pycache__/test_service_mixed.cpython-314.pyc and b/tests/__pycache__/test_service_mixed.cpython-314.pyc differ
+Binary files a/tests/__pycache__/test_shared_work.cpython-314.pyc and b/tests/__pycache__/test_shared_work.cpython-314.pyc differ
+diff -ruN a/tests/test_corrections.py b/tests/test_corrections.py
 --- a/tests/test_corrections.py	1969-12-31 16:00:00.000000000 -0800
-+++ b/tests/test_corrections.py	1969-12-31 16:00:00.000000000 -0800
++++ b/tests/test_corrections.py	2026-10-30 19:56:19.256829584 -0700
 @@ -0,0 +1,240 @@
 +"""Issue 70 corrections, disposable state only; never talks to installed services."""
 +import copy
@@ -1818,8 +1854,9 @@
 +
 +if __name__ == '__main__':
 +    unittest.main()
---- a/tests/test_dual_metrics.py	2026-10-30 19:28:40.859698862 -0700
-+++ b/tests/test_dual_metrics.py	2026-10-30 19:28:40.861201404 -0700
+diff -ruN a/tests/test_dual_metrics.py b/tests/test_dual_metrics.py
+--- a/tests/test_dual_metrics.py	2026-10-30 19:56:19.255522790 -0700
++++ b/tests/test_dual_metrics.py	2026-10-30 19:56:19.256871145 -0700
 @@ -99,7 +99,11 @@
  
      def test_each_provider_busy_blocks_and_idle_keeps_grace(self):
@@ -1833,8 +1870,9 @@
              worker=gate.Worker(replace(config(root), drain_enabled=True, process_names=(),quiet_grace_seconds=30), db, threading.Event())
              for pair in PAIRS:
                  for running,waiting in [(1,0),(0,1),(0,0)]:
+diff -ruN a/tests/test_multi_unknown_recovery.py b/tests/test_multi_unknown_recovery.py
 --- a/tests/test_multi_unknown_recovery.py	1969-12-31 16:00:00.000000000 -0800
-+++ b/tests/test_multi_unknown_recovery.py	1969-12-31 16:00:00.000000000 -0800
++++ b/tests/test_multi_unknown_recovery.py	2026-10-30 19:56:19.256924296 -0700
 @@ -0,0 +1,91 @@
 +"""Gate admission regressions for multiple unresolved backend receipts.
 +
@@ -1927,8 +1965,9 @@
 +
 +if __name__ == "__main__":
 +    unittest.main()
+diff -ruN a/tests/test_service_corrections.py b/tests/test_service_corrections.py
 --- a/tests/test_service_corrections.py	1969-12-31 16:00:00.000000000 -0800
-+++ b/tests/test_service_corrections.py	1969-12-31 16:00:00.000000000 -0800
++++ b/tests/test_service_corrections.py	2026-10-30 19:56:19.256950936 -0700
 @@ -0,0 +1,144 @@
 +"""Service-backed contract tests, loopback ephemeral ports and disposable DB."""
 +import copy
@@ -2074,8 +2113,9 @@
 +
 +
 +if __name__ == '__main__': unittest.main()
+diff -ruN a/tests/test_service_mixed.py b/tests/test_service_mixed.py
 --- a/tests/test_service_mixed.py	1969-12-31 16:00:00.000000000 -0800
-+++ b/tests/test_service_mixed.py	1969-12-31 16:00:00.000000000 -0800
++++ b/tests/test_service_mixed.py	2026-10-30 19:56:19.256975487 -0700
 @@ -0,0 +1,127 @@
 +import json
 +import os
@@ -2204,8 +2244,9 @@
 +
 +if __name__ == "__main__":
 +    unittest.main()
+diff -ruN a/tests/test_shared_work.py b/tests/test_shared_work.py
 --- a/tests/test_shared_work.py	1969-12-31 16:00:00.000000000 -0800
-+++ b/tests/test_shared_work.py	1969-12-31 16:00:00.000000000 -0800
++++ b/tests/test_shared_work.py	2026-10-30 19:56:19.257001507 -0700
 @@ -0,0 +1,303 @@
 +import hashlib
 +import tempfile

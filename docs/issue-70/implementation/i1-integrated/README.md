@@ -186,6 +186,50 @@ installed bases and proven byte-exact forward and reverse, including
 cleanup of patch-introduced files. `patches/backend.patch` is unchanged
 from Phase 2.
 
+## Final integrated campaign (source-only, one PR)
+
+The Central corrections (source-derived canonical extraction instruction
+restored across the awaited Graphiti child, and the `shared_work.status()`
+correction that never labels an unbound exclusive transition as
+validation-exempt) are now qualified on the corrected source
+(`issue/70-temporal-final`, base `dc4d4ff69d8480c252ac59f15ca1284de26d5635`).
+
+- **Bounded source repair** to `candidate/gate/shared_work.py`
+  (`fc753d51` → `1f31823e`): the corrected `status()` ordinary branch ignored
+  the durable `temporal_validation_results` row, so a fact with a bound
+  contract and a `done` result rendered `UNVERIFIED` instead of its
+  disposition. Repaired to report the durable outcome (a missing contract
+  stays `UNVERIFIED` for exclusive/unknown category and `not_required` only
+  for a known ordinary category; the candidate JSON is never exposed).
+  `test_temporal_status.py` 27/27 after the repair.
+- **CPU suites re-executed on the corrected source**: phase4 27/27, phase3
+  23/23, phase2 30/30, gate 59/59, receipt 7/7, launcher 5/5,
+  cross-process 5/5, ov2 20/20, actual-backend 20/20 → **196 total** (the
+  prior handback's "197" was a mis-stated aggregate; its listed suites
+  summed to 191, and the +5 is the new Central regression tests).
+- **One genuine automatic positive temporal transition** on fresh
+  disposable graph `issue70_final_real` (episode
+  `201b764a-650a-4504-ab65-3e7bbe21c25c`): operator-approved disposable Git
+  record → native nomination → transactional contract binding → awaited
+  separate-interpreter Graphiti child receiving the source-derived
+  `USES_AS_JOB_QUEUE_BACKEND` instruction unchanged → exact persisted
+  episode readback → pinned read-only validator **exit 0 PASS**
+  (coverage complete, no findings) → durable work/episode-keyed
+  disposition → operator-visible `temporal_validation_status=PASS`.
+  Extracted edges use the canonical predicate with correct temporal
+  boundaries (outgoing `Redis` edge `invalid_at=2026-10-30`, incoming
+  `NATS` edge `valid_at=2026-10-30`). Read-only recall returned
+  source-attributed facts labeled `PASS`. Live `graphiti_live` graph
+  untouched (node count 0); no live gate DB access, no production
+  deployment.
+- `patches/gate.patch` and `patches/openviking-v2.patch` regenerated
+  against the re-verified installed bases and proven byte-exact forward
+  and reverse (removal of every patch-introduced file); `SHA256SUMS` and
+  `source-base-manifest.json` refreshed for the corrected source.
+
+Production exclusive-state capture remains **disabled**; this PASS is a
+product-confidence prerequisite, not an activation.
+
 ## Reproduction
 
 Use a Python environment matching the authenticated OpenViking/native RAGFS installation, Python 3.14 for gate tests, Node, patch and bwrap. The optional queue tests use requirements-phase1.txt; disabled gate startup is also tested with jsonschema deliberately unavailable. No dependency was installed into the protected host.

@@ -1,3 +1,20 @@
+# Final integrated campaign handback (source-only, one PR)
+
+```text
+ISSUE70_FINAL_SOURCE_RESULT=PASS (source-only; genuine automatic temporal PASS demonstrated; production activation still disabled)
+BRANCH=issue/70-temporal-final
+CENTRAL_BASE_SHA=dc4d4ff69d8480c252ac59f15ca1284de26d5635
+SOURCE_REPAIR=PASS candidate/gate/shared_work.py fc753d51->1f31823e (status() now reports the durable validator disposition for a bound contract; unbound exclusive stays UNVERIFIED, ordinary stays not_required; candidate JSON never exposed); test_temporal_status.py 27/27
+CPU_SUITES=PASS phase4 27/27, phase3 23/23, phase2 30/30, gate 59/59, receipt 7/7, launcher 5/5, cross-process 5/5, ov2 20/20, actual-backend 20/20 (196 total; prior "197" was a mis-stated aggregate, listed suites summed to 191, +5 = new Central regression tests)
+CANONICAL_INSTRUCTION=PASS source-derived USES_AS_JOB_QUEUE_BACKEND instruction forwarded unchanged through the awaited separate-interpreter Graphiti child; ordinary episodes get no temporal instruction; untrusted metadata/free-form prompts cannot override; unsupported child args fail closed; pinned validator independently authoritative
+GENUINE_PASS_TRANSITION=PASS fresh disposable graph issue70_final_real; episode 201b764a-650a-4504-ab65-3e7bbe21c25c; git record e11ecb0f; work 4994ee8f...; validator exit 0 PASS (coverage complete, no findings); extracted edges canonical with correct temporal boundaries (Redis invalid_at=2026-10-30, NATS valid_at=2026-10-30); operator status temporal_validation_status=PASS; read-only recall source-attributed facts labeled PASS
+PACKAGE_RECONSTRUCTION=PASS gate.patch (13 entries) + openviking-v2.patch (8 entries) regenerated against re-verified installed bases 6ad48a93/6899822e, byte-exact forward/reverse (patch-introduced files removed on reverse); SHA256SUMS (47 entries) + source-base-manifest.json (phase4_evidence + refreshed candidate/patch identities) refreshed
+PROTECTED_LIVE_SURFACES=live graphiti_live graph node count 0 (untouched); live gate DB never accessed by tests; pinned validator byte-identical (aa4f048d...); no production capture activation
+LIVE_GRAPH_MUTATION=no; LIVE_GATE_DB_ACCESS_BY_TESTS=no; PRODUCTION_DEPLOYMENT=no; PRODUCTION_EXCLUSIVE_CAPTURE=disabled
+ONE_CONSOLIDATED_PR=authorized after qualification; Phase 1 (issue/70, 033b5aae) merged into the continuation branch non-destructively before publication; base selection per PR #71 merge state
+RECOMMENDED_CENTRAL_ACTION=Independently review this consolidated source-only Phase 2-4 continuation; production activation of exclusive-state capture and issue #70 closure remain separate Central decisions
+```
+
 # Consolidated Phase 1 integration handback
 
 ```text

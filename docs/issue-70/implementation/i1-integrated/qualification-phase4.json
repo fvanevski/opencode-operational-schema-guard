@@ -17,10 +17,10 @@
     "disposable_graph": "issue70_p4_real (fresh; post-run FalkorDB key readback lists issue70_p4_real alongside pre-existing issue70_phase2_disposable / issue70_p3_real / issue70_p3_cpu)"
   },
   "cpu_suites": {
-    "note": "All suites re-executed in this campaign; no prior totals reused. Service-dependent tests (actual-backend) run in the prepare_backend.py-assembled disposable tree; all other suites are deterministic CPU-only.",
-    "phase4": "25/25 OK (includes 2 regression tests added by the in-campaign ledger repair: all_detailed_dispositions_of_the_pinned_validator_are_durable, findings_projection_keeps_bounded_diagnostic_fields)",
-    "phase3": "22/22 OK",
-    "phase2": "28/28 OK",
+    "note": "All suites re-executed in the final-integrated campaign on the corrected source; no prior totals reused. Service-dependent tests (actual-backend) run in the prepare_backend.py-assembled disposable tree; all other suites are deterministic CPU-only.",
+    "phase4": "27/27 OK (final-integrated: 25 baseline + 2 status regressions from the Central 'never label an unbound exclusive transition as validation-exempt' correction; in-campaign shared_work.status() source repair verified)",
+    "phase3": "23/23 OK (final-integrated: 22 baseline + 1 child-forwarding regression for the source-derived canonical instruction)",
+    "phase2": "30/30 OK (final-integrated: 28 baseline + 2 source-derived canonical-instruction regressions)",
     "gate_tests": "59/59 OK (test_gate 16, test_shared_work 14, test_corrections 13, test_dual_metrics 7, test_multi_unknown_recovery 5, test_service_corrections 3, test_service_mixed 1)",
     "gate_top_level_receipt_protocol": "7/7 OK",
     "i1_launcher_admission": "5/5 OK",
@@ -102,9 +102,20 @@
   },
   "package_reconstruction": {
     "patches_regenerated": {
-      "patches/gate.patch": {"sha256": "669654115dcd78d88a901f98d91a28878b15b66398368641b74741350f70556d", "entries": 13, "forward_reverse": "byte-exact PASS (applied to installed base 6ad48a93 reproduces candidate gate tree; reverse restores base bytes and removes every patch-introduced file)"},
-      "patches/openviking-v2.patch": {"sha256": "2ec04e90ee76f70550e221b1ccf4f9376ecd76f54130bace10cef4c735a387cd", "entries": 8, "forward_reverse": "byte-exact PASS (installed base 6899822e)"},
-      "patches/backend.patch": {"sha256": "a03ab064dc6f0d13861ef7b20faf8a4b6b490474f9f2f92cffc740b0cbe1ad61", "note": "unchanged from Phase 2"}
+      "patches/gate.patch": {
+        "sha256": "669654115dcd78d88a901f98d91a28878b15b66398368641b74741350f70556d",
+        "entries": 13,
+        "forward_reverse": "byte-exact PASS (applied to installed base 6ad48a93 reproduces candidate gate tree; reverse restores base bytes and removes every patch-introduced file)"
+      },
+      "patches/openviking-v2.patch": {
+        "sha256": "2ec04e90ee76f70550e221b1ccf4f9376ecd76f54130bace10cef4c735a387cd",
+        "entries": 8,
+        "forward_reverse": "byte-exact PASS (installed base 6899822e)"
+      },
+      "patches/backend.patch": {
+        "sha256": "a03ab064dc6f0d13861ef7b20faf8a4b6b490474f9f2f92cffc740b0cbe1ad61",
+        "note": "unchanged from Phase 2"
+      }
     },
     "source_bound_backend": "prepare_backend.py re-authenticated the installed OpenViking package against source-base-manifest.json and assembled a fresh disposable tree /tmp/opencode/issue70-p4-backend-a; all patched backend files verified against candidate hashes",
     "manifest": "source-base-manifest.json carries the phase4_evidence section (source-pinned phase4 runtime file mapping plus the three phase2/phase3 files modified by the Phase 4 commits) and refreshed candidate_sha256 for the four candidate files changed in Phase 4 (graphiti_runtime_bootstrap.py cb7eb478..., openviking_commit_gate.py f38e0501..., shared_work.py fc753d51..., graphiti-recall.mjs c1eab9e9...)",
@@ -120,5 +131,49 @@
     "production_capture": "not activated",
     "pr_merge_deploy": "none (no new PR, no merge, no deployment)"
   },
-  "sanitization": "no secrets, tokens, private logs, disposable databases, model outputs, or credentials are committed; work/episode/contract digests and service addresses are recorded as evidence identities only; recall bearer token and gate tokens are referenced, never committed"
+  "sanitization": "no secrets, tokens, private logs, disposable databases, model outputs, or credentials are committed; work/episode/contract digests and service addresses are recorded as evidence identities only; recall bearer token and gate tokens are referenced, never committed",
+  "final_integrated_campaign": {
+    "note": "Final source-only integration campaign on the Central-corrected source (branch issue/70-temporal-final, base dc4d4ff69d8480c252ac59f15ca1284de26d5635). Adds a genuine automatic positive temporal transition using the restored source-derived canonical extraction instruction, plus a bounded in-campaign source repair to shared_work.status().",
+    "source_repair": {
+      "file": "docs/issue-70/implementation/i1-integrated/candidate/gate/shared_work.py",
+      "pre_sha256": "fc753d510515f5560e7a4fc41f7979a05bf963979df43f6cd7520badd30f3eb6",
+      "post_sha256": "1f31823ec90bc4d30f7a6eb141d1cbbfb49aaebb6227b6f7bef1616f2a945323",
+      "defect": "The Central status() correction's ordinary branch ignored the durable temporal_validation_results row: an ordinary (non-exclusive) fact with a bound contract and a 'done' validator result rendered UNVERIFIED instead of its disposition. Repaired: a bound contract now reports the durable outcome; a missing contract stays UNVERIFIED for exclusive/unknown category and not_required only for a known ordinary category. The candidate JSON is never exposed. test_temporal_status.py 27/27 after repair."
+    },
+    "genuine_pass_transition": {
+      "result": "PASS (genuine automatic positive temporal transition; ingestion succeeded AND validator returned exit 0)",
+      "root": "/tmp/opencode/issue70-final-real",
+      "disposable_graph": "issue70_final_real (fresh; isolated from live graphiti_live and all prior issue70_* graphs)",
+      "git_record_commit": "e11ecb0f057ccf504a10834f10d0810b8114d74a (operator-approved disposable Git record: Service job-queue backend Redis -> NATS, effective 2026-10-30T00:00:00Z)",
+      "work_key": "4994ee8fd5238802015fd8172927d5274eb77dfe7e0f773b12ecff2afff3eefc",
+      "ingestion": "memory_work.status=completed (backend_identity graphiti-core-child); graphiti_ingest_receipts state=completed",
+      "episode_uuid": "201b764a-650a-4504-ab65-3e7bbe21c25c",
+      "contract_binding": "temporal_transition_contracts row bound transactionally with the queued promotion (contract_digest ad318d7fbd4994e95f64edc60de143b1a6c7f2917888ad652e85c1b45eda36b8; attestation_digest fe6ceb1da5ec07fc7f95b9e73f41f9cbd023ed30173c7df6eb5c031b02952a15)",
+      "canonical_instruction": "source-derived USES_AS_JOB_QUEUE_BACKEND instruction (from the authenticated transition_contract) forwarded unchanged through the awaited separate-interpreter Graphiti child (graphiti_process_transport -> graphiti_core_worker -> Graphiti Core add_episode custom_extraction_instructions)",
+      "extracted_edges": [
+        "Service -USES_AS_JOB_QUEUE_BACKEND-> Redis: valid_at None, invalid_at 2026-10-30T00:00:00Z (outgoing edge invalidated at the effective time)",
+        "Service -USES_AS_JOB_QUEUE_BACKEND-> NATS: valid_at 2026-10-30T00:00:00Z, invalid_at None (incoming edge valid from the effective time)"
+      ],
+      "canonical_predicate_observed": "yes (USES_AS_JOB_QUEUE_BACKEND, not a synonym)",
+      "validator": "pinned read-only validator live mode (MCP 127.0.0.1:8766 + FalkorDB completeness oracle); temporal_validation_results: state=done, exit_code=0, disposition=PASS, coverage=complete, findings=[], attempts=1, result_digest 082be2dbd2eb3d7abddac6ce1cb9151a438320cdf4dd07c9e32b7590cf9ba3a9",
+      "operator_status": "SharedWorkQueue.status() -> temporal_validation_status=PASS with temporal_episode_uuid=201b764a-650a-4504-ab65-3e7bbe21c25c, distinct from the ingestion status completed",
+      "read_only_recall": "graphiti_recall_service.py (127.0.0.1:9117, bearer token) returned source-attributed facts labeled validation_status=PASS with the outgoing Redis edge invalid_at=2026-10-30T00:00:00Z and the incoming NATS edge valid_at=2026-10-30T00:00:00Z; wrong token -> 403, wrong group -> 403, secret-like query -> rejected/empty",
+      "live_graph_untouched": "graphiti_live node count = 0 (read-only sentinel); only issue70_final_real was created/mutated"
+    },
+    "total_reconciliation": {
+      "note": "The prior Phase 4 host handback stated 197 total checks, but its listed suites summed to 191 (25 phase4 + 22 phase3 + 28 phase2 + 59 gate + 7 receipt + 5 launcher + 5 cross-process + 20 ov2 + 20 actual-backend = 191). The '197' was a mis-stated aggregate, not six omitted tests. The final-integrated campaign's actual re-execution is 196: the +5 over the historical 191 comes from the new Central regression tests (phase4 25->27, phase3 22->23, phase2 28->30). No tests were fabricated to reconcile the number.",
+      "suite_matrix": {
+        "phase4": 27,
+        "phase3": 23,
+        "phase2": 30,
+        "gate": 59,
+        "receipt_protocol": 7,
+        "launcher": 5,
+        "cross_process": 5,
+        "ov2": 20,
+        "actual_backend": 20
+      },
+      "total": 196
+    }
+  }
 }

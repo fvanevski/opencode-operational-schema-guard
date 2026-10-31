@@ -17,3 +17,24 @@ The Phase 3 additions (gate `graphiti_runtime_bootstrap.py`, `shared_work.py` au
 ## Phase 4 rollback scope
 
 The Phase 4 additions (gate `shared_work.py` transactional `temporal_transition_contracts` binding and `temporal_validation_status` status join, `graphiti_runtime_bootstrap.py` operator-pinned validator gate, source-pinned `docs/issue-70/phase4/` runtime, and the `graphiti-recall.mjs` temporal label semantics) roll back with the same discipline: reverse `patches/gate.patch` and `patches/openviking-v2.patch` (thirteen and eight entries, including the Phase 4 content) on isolated copies to restore the authenticated installed gate/plugin bytes, and drop the Phase 4 source-pinned directory from the deployment manifest. The `temporal_transition_contracts` and `temporal_validation_results` tables are created `IF NOT EXISTS` in the gate SQLite database and are inert when the feature is disabled: no exclusive-state ingestion starts without the explicit bootstrap opt-in (validator path + SHA-256 pin plus the operator source policy), and the automatic category remains disabled by bootstrap policy in every shipped configuration. No Phase 4 component is installed on the live host: the live gate config carries no graphiti keys, the live gate database was never accessed by tests, the installed plugin remains the pre-Phase 4 `index.mjs` (6899822e), the pinned read-only validator is an operator-supplied file outside the repository, and all temporal-validation evidence lives on the disposable graph `issue70_p4_real` and disposable gate databases only. A failed validation outcome (INCONSISTENT/INCOMPLETE/UNVERIFIED) never erases or re-executes the completed Graphiti ingestion receipt; retrying validation is bounded and read-only, so rollback never replays ingestion.
+
+## Final integrated campaign rollback scope
+
+The final integrated campaign (Central source-derived canonical-instruction
+restoration and the `shared_work.status()` source repair, `fc753d51` →
+`1f31823e`) rolls back with the same discipline: reverse the regenerated
+`patches/gate.patch` (thirteen entries, now carrying the corrected
+`shared_work.py`) and `patches/openviking-v2.patch` (eight entries) on
+isolated copies to restore the authenticated installed gate/plugin bytes
+(6ad48a93 / 6899822e), dropping every patch-introduced file. The
+source-pinned `docs/issue-70/phase2/graphiti_terminal.py`,
+`phase3/graphiti_core_worker.py` and `phase3/graphiti_process_transport.py`
+canonical-instruction files and their regressions roll back with the branch
+commit; no component is installed on the live host. The genuine PASS
+transition ran only on the disposable graph `issue70_final_real` and a
+disposable gate database; the live `graphiti_live` graph was not mutated
+(node count 0), the live gate database was never accessed by tests, and the
+pinned read-only validator is an operator-supplied file outside the
+repository. Production exclusive-state capture remains disabled in every
+shipped configuration; demonstrating a genuine automatic PASS does not
+activate it.

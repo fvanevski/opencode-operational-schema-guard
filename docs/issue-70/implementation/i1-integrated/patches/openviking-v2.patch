@@ -1,5 +1,6 @@
---- /dev/null	2026-10-28 17:12:09.262798232 -0700
-+++ b/candidate-capture.mjs	2026-10-30 19:28:40.865216405 -0700
+diff -ruN a/candidate-capture.mjs b/candidate-capture.mjs
+--- a/candidate-capture.mjs	1969-12-31 16:00:00.000000000 -0800
++++ b/candidate-capture.mjs	2026-10-30 19:56:24.552954533 -0700
 @@ -0,0 +1,136 @@
 +import { createHash } from "node:crypto"
 +import { readFileSync } from "node:fs"
@@ -137,8 +138,9 @@
 +  observe.status = () => ({ ...stats, pending: pending.size, calls: calls.size })
 +  return observe
 +}
---- /dev/null	2026-10-28 17:12:09.262798232 -0700
-+++ b/graphiti-recall.mjs	2026-10-30 19:28:40.865249306 -0700
+diff -ruN a/graphiti-recall.mjs b/graphiti-recall.mjs
+--- a/graphiti-recall.mjs	1969-12-31 16:00:00.000000000 -0800
++++ b/graphiti-recall.mjs	2026-10-30 19:56:24.552989694 -0700
 @@ -0,0 +1,89 @@
 +/** Optional, bounded, read-only Graphiti recall alongside existing OpenViking.
 + * The configured localhost service must use CPU/graph-only lookups: no LLM or
@@ -229,8 +231,9 @@
 +  }
 +  return recall
 +}
---- a/index.mjs	2026-10-30 19:28:40.864218177 -0700
-+++ b/index.mjs	2026-10-30 19:28:40.865281126 -0700
+diff -ruN a/index.mjs b/index.mjs
+--- a/index.mjs	2026-10-30 19:56:24.551868983 -0700
++++ b/index.mjs	2026-10-30 19:56:24.553020364 -0700
 @@ -11,6 +11,8 @@
  import { createHybridLexicalIndex } from "../openviking-context-v4/lib/shared/hybrid-lexical.mjs"
  import { createHybridRecall, loadVikingCorpus, DEFAULT_CORPUS_ROOT } from "../openviking-context-v4/lib/shared/hybrid-recall.mjs"
@@ -286,8 +289,9 @@
            if (process.env.PHASE_B_OV_EVENT_TRACE) appendFileSync(process.env.PHASE_B_OV_EVENT_TRACE, `${JSON.stringify({ type: event.type, session: Boolean(sessionID) })}\n`)
            if (!sessionID) continue
            try {
---- /dev/null	2026-10-28 17:12:09.262798232 -0700
-+++ b/memory-candidate-v1.schema.json	2026-10-30 19:28:40.865308046 -0700
+diff -ruN a/memory-candidate-v1.schema.json b/memory-candidate-v1.schema.json
+--- a/memory-candidate-v1.schema.json	1969-12-31 16:00:00.000000000 -0800
++++ b/memory-candidate-v1.schema.json	2026-10-30 19:56:24.553049365 -0700
 @@ -0,0 +1,226 @@
 +{
 +  "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -515,8 +519,9 @@
 +    }
 +  ]
 +}
---- /dev/null	2026-10-28 17:12:09.262798232 -0700
-+++ b/tests/candidate-capture.test.mjs	2026-10-30 19:28:40.865366427 -0700
+diff -ruN a/tests/candidate-capture.test.mjs b/tests/candidate-capture.test.mjs
+--- a/tests/candidate-capture.test.mjs	1969-12-31 16:00:00.000000000 -0800
++++ b/tests/candidate-capture.test.mjs	2026-10-30 19:56:24.553113256 -0700
 @@ -0,0 +1,137 @@
 +import test from "node:test"
 +import assert from "node:assert/strict"
@@ -655,8 +660,9 @@
 +    assert.equal(calls, 1)
 +  } finally { globalThis.fetch = original }
 +})
---- /dev/null	2026-10-28 17:12:09.262798232 -0700
-+++ b/tests/capture-isolation.test.mjs	2026-10-30 19:28:40.865403827 -0700
+diff -ruN a/tests/capture-isolation.test.mjs b/tests/capture-isolation.test.mjs
+--- a/tests/capture-isolation.test.mjs	1969-12-31 16:00:00.000000000 -0800
++++ b/tests/capture-isolation.test.mjs	2026-10-30 19:56:24.553148477 -0700
 @@ -0,0 +1,91 @@
 +import test from "node:test"
 +import assert from "node:assert/strict"
@@ -749,8 +755,9 @@
 +  const continued = success(); continued.data.assistantMessageID = "continued-message"
 +  assert.equal(candidateFromToolEvent(continued, policy, "/work").event_id, id)
 +})
---- /dev/null	2026-10-28 17:12:09.262798232 -0700
-+++ b/tests/central-authentication-regressions.test.mjs	2026-10-30 19:28:40.865428777 -0700
+diff -ruN a/tests/central-authentication-regressions.test.mjs b/tests/central-authentication-regressions.test.mjs
+--- a/tests/central-authentication-regressions.test.mjs	1969-12-31 16:00:00.000000000 -0800
++++ b/tests/central-authentication-regressions.test.mjs	2026-10-30 19:56:24.553171807 -0700
 @@ -0,0 +1,52 @@
 +// Issue #70. Copy this file to the authenticated openviking-v2 source's
 +// tests/ directory, alongside candidate-capture.test.mjs, before running.
@@ -804,8 +811,9 @@
 +  }})
 +  await assert.doesNotReject(observer(candidateEvent()))
 +})
---- /dev/null	2026-10-28 17:12:09.262798232 -0700
-+++ b/tests/graphiti-recall.test.mjs	2026-10-30 19:28:40.865450067 -0700
+diff -ruN a/tests/graphiti-recall.test.mjs b/tests/graphiti-recall.test.mjs
+--- a/tests/graphiti-recall.test.mjs	1969-12-31 16:00:00.000000000 -0800
++++ b/tests/graphiti-recall.test.mjs	2026-10-30 19:56:24.553192307 -0700
 @@ -0,0 +1,52 @@
 +import test from "node:test"
 +import assert from "node:assert/strict"

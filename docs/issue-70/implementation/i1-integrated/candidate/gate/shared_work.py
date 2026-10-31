@@ -332,16 +332,21 @@ class SharedWorkQueue:
                     category=json.loads(raw_candidate).get("category")
                 except (TypeError,ValueError,AttributeError):
                     category=None
-                if category=="exclusive_state_transition":
-                    # A missing contract is never evidence that validation was
-                    # unnecessary, even if ingestion was already completed.
+                if contract is None:
+                    # A trusted bound contract is required for any temporal
+                    # check. An exclusive transition can never be
+                    # validation-exempt (never 'not_required'), even when its
+                    # ingestion is already completed; an ordinary fact needs no
+                    # temporal validation.
+                    record["temporal_validation_status"]=(
+                        "UNVERIFIED" if category in ("exclusive_state_transition", None)
+                        else "not_required")
+                else:
+                    # A trusted bound contract exists; report the durable
+                    # validation outcome, retaining each result's disposition.
                     record["temporal_validation_status"]=(
                         outcomes.get(code,"UNVERIFIED")
-                        if contract is not None and state=="done" else "UNVERIFIED")
-                else:
-                    record["temporal_validation_status"]=(
-                        "not_required" if category is not None and contract is None
-                        else "UNVERIFIED")
+                        if state=="done" else "UNVERIFIED")
                 response.append(record)
             return response
 

@@ -1,40 +1,48 @@
 {
-  "encountered": true,
-  "requested_shape": "agent-authored: python3 -m unittest (discover/individual class forms), bwrap-isolated run_qualification.py, sha256sum/diff/patch proofs; no rtk prefix on agent-chosen commands",
-  "effective_shape": "as requested; no harness rewrites observed on suite or proof commands",
-  "rewrite_provenance": "agent-authored commands; zsh shell-shape errors only (cosmetic 'echo ===' glob failures), no authority/identity command touched",
-  "event_kind": "completed_execution_with_local_repair",
-  "events": [
-    "unittest import form: 'unittest tests.test_multi_unknown_recovery' failed to resolve; corrected to discover/class form (interface discovery, pre-execution)",
-    "one permission.rejected on a compound 'mkdir -p /tmp/opencode/issue70 && ...' call; retried without mkdir since the directory existed (pre_execution_rejection)",
-    "cosmetic zsh glob failures on 'echo ===' separators; no command semantics affected",
-    "fixture disabled-stage AttributeError (receipt runtime None) found by full-suite run; fixture guard added (test repair, not command friction)",
-    "stale patches/gate.patch detected by forward/reverse proof; regenerated against installed base 6ad48a93 and re-proven byte-exact forward/reverse (artifact correction)",
-    "phase2: compound 'rm -rf <scratch> && mkdir -p' rejected twice by the guard; recovered with a plain mkdir of a fresh scratch directory and scoped 'rm -r' of __pycache__ only (pre_execution_rejection, recovered)",
-    "phase2: 'grep -h -E' over evidence logs was rewritten by the rtk alias to rtk grep usage output; recovered by invoking /usr/bin/grep explicitly (harness rewrite, no semantics changed)",
-    "phase2: first prepare_backend.py call passed the site-packages root; preparer strips the openviking/ prefix and correctly rejected 'source mismatch: openviking/session/session.py'; corrected to .../site-packages/openviking and the authentication then passed (interface discovery, pre-execution)"
-  ],
-  "execution_effect": "Phase 2 campaign: gate suite 59/59 (one fixture repair in test_dual_metrics.py), Phase 2 integration 20/20, launcher 5/5, actual-backend 20/20, new cross-process admission 5/5, full isolated runner 142/142; forward/reverse byte-exact regenerated gate.patch (twelve file entries) against installed base 6ad48a93; disposable backend re-assembled from the authenticated installed package; no production storage/services touched; Graphiti writes stayed disabled; no PR/merge/deploy",
-  "phase3_events": [
-    "shell permission rejection on a compound 'rm -rf <scratch> && mkdir -p' call (D staging); retried as a plain mkdir of the fresh directory (pre_execution_rejection, recovered)",
-    "rg --include glob shape failed under zsh for content ranking; switched to rg -g (interface discovery, cosmetic)",
-    "A3 first gate run used a gate toml without an explicit [gate] database key, so the gate Config default (live queue.sqlite3) was used and 1 work row + 1 attestation + 1 admission contaminated the live DB; repaired by scoped delete of exactly those rows (live DB back to 0 rows) and by adding explicit database/lock_file keys to every disposable gate toml (operational incident, self-inflicted, disclosed)",
-    "zsh one-liner for-loop with 'printf ... >> file' under set -e reported a misleading entries=0 while the appends had succeeded; recovered by moving the patch-generation logic into a script file (harness shape, no semantics changed)",
-    "grep '^candidate' false negative over SHA256SUMS (lines begin with the hash, not the path); corrected to path-substring grep (interface discovery)",
-    "node --test summary grep '^# pass' matched nothing (summaries use the U+2139 info marker); corrected pattern (interface discovery)",
-    "first test_i1_service.py run from the package directory failed 20/20: the suite requires the prepare_backend.py-assembled backend/ tree; recovered by assembling a fresh disposable tree (i1-tree-p3) and re-running 20/20 (interface discovery on test preconditions)",
-    "first regenerated gate.patch used 'diff -Nru ../gate-a/f f' labels that break patch -p1; regenerated with a//b/ label-rooted staging and re-proven byte-exact forward/reverse (artifact correction)"
-  ],
-  "phase3_execution_effect": "Phase 3 campaign: phase3 22/22, phase2 28/28, gate 66/66, ov2 15/15 (capture 7, isolation 5, central-auth 3), graphiti-recall 5/5, launcher 5/5, actual-backend 20/20 (161 checks); gate.patch (thirteen entries) and openviking-v2.patch (eight entries) regenerated against installed bases 6ad48a93/6899822e and proven byte-exact forward/reverse; real separate-interpreter Graphiti run and read-only recall qualified on disposable surfaces (graph issue70_p3_real, gate DB /tmp/opencode/issue70-p3-real/queue.sqlite3); live gate config/database and installed plugin unchanged; exclusive-state auto-capture stayed disabled; no PR/merge/deploy",
-  "phase4_events": [
-    "shell permission rejection on a compound 'rm -rf /tmp/opencode/issue70-p4-backend && python3 prepare_backend.py ...' call; recovered by assembling into a fresh directory name (issue70-p4-backend-a) without the rm (pre_execution_rejection, recovered)",
-    "cosmetic zsh glob failures on 'echo ===POLICY===' separators parsed as '== not found' commands; no command semantics affected",
-    "top-level receipt-protocol suite first invoked as 'python3 -m unittest docs/issue-70/.../candidate/gate.test_receipt_protocol' (path-as-module) and failed import; corrected to PYTHONPATH-candidate/gate python3 -m unittest test_receipt_protocol (interface discovery, pre-execution)",
-    "node --test summary grep '^# pass' matched nothing (summaries use the U+2139 info marker); recurrence of the Phase 3 discovery, corrected pattern (interface discovery)",
-    "first actual-backend suite run exceeded the 120s foreground shell timeout (suite takes ~175s with live disposable subprocesses); re-run in the background with log capture and the producer exit preserved (harness shape, no semantics changed)"
-  ],
-  "phase4_execution_effect": "Phase 4 campaign: phase4 25/25 (after the in-campaign temporal_ledger.py/test_temporal_ledger.py repair; was 23/23 pre-repair), phase3 22/22, phase2 28/28, gate 59/59, receipt protocol 7/7, launcher 5/5, cross-process admission 5/5, graphiti-recall 5/5, candidate-capture 7/7, capture-isolation 5/5, central-auth 3/3, actual-backend 20/20; gate.patch (thirteen entries, including Phase 4 shared_work transactional contract binding and bootstrap validator pin) and openviking-v2.patch (eight entries, including Phase 4 temporal label semantics in graphiti-recall.mjs) regenerated against installed bases 6ad48a93/6899822e and proven byte-exact forward/reverse; two genuine disposable Graphiti transitions on fresh graph issue70_p4_real captured honestly as non-PASS (exit 2 INCOMPLETE_EVIDENCE / exit 1 MISSING_STATE) with durable work/episode-keyed results, bounded read-only retry (attempts 1->2) and no re-ingestion; cross-backend exclusion, SIGKILL interruption/restart, mismatched-validator-pin and read-only recall (including V2 client label semantics) qualified; live gate config/database, installed plugin, pinned validator (aa4f048d...) and all non-issue70 graphs untouched; no PR/merge/deploy",
-  "correction": "command shapes corrected in place; all acceptance-bearing suites re-run after fixture and artifact repairs; repaired runs are the recorded evidence",
-  "recipe_reference": "GHDEV-10; /home/filip/.codex/RTK.md; README.md reproduction recipe",
-  "sensitive_values_omitted": true
+ "encountered": true,
+ "requested_shape": "agent-authored: python3 -m unittest (discover/individual class forms), bwrap-isolated run_qualification.py, sha256sum/diff/patch proofs; no rtk prefix on agent-chosen commands",
+ "effective_shape": "as requested; no harness rewrites observed on suite or proof commands",
+ "rewrite_provenance": "agent-authored commands; zsh shell-shape errors only (cosmetic 'echo ===' glob failures), no authority/identity command touched",
+ "event_kind": "completed_execution_with_local_repair",
+ "events": [
+  "unittest import form: 'unittest tests.test_multi_unknown_recovery' failed to resolve; corrected to discover/class form (interface discovery, pre-execution)",
+  "one permission.rejected on a compound 'mkdir -p /tmp/opencode/issue70 && ...' call; retried without mkdir since the directory existed (pre_execution_rejection)",
+  "cosmetic zsh glob failures on 'echo ===' separators; no command semantics affected",
+  "fixture disabled-stage AttributeError (receipt runtime None) found by full-suite run; fixture guard added (test repair, not command friction)",
+  "stale patches/gate.patch detected by forward/reverse proof; regenerated against installed base 6ad48a93 and re-proven byte-exact forward/reverse (artifact correction)",
+  "phase2: compound 'rm -rf <scratch> && mkdir -p' rejected twice by the guard; recovered with a plain mkdir of a fresh scratch directory and scoped 'rm -r' of __pycache__ only (pre_execution_rejection, recovered)",
+  "phase2: 'grep -h -E' over evidence logs was rewritten by the rtk alias to rtk grep usage output; recovered by invoking /usr/bin/grep explicitly (harness rewrite, no semantics changed)",
+  "phase2: first prepare_backend.py call passed the site-packages root; preparer strips the openviking/ prefix and correctly rejected 'source mismatch: openviking/session/session.py'; corrected to .../site-packages/openviking and the authentication then passed (interface discovery, pre-execution)"
+ ],
+ "execution_effect": "Phase 2 campaign: gate suite 59/59 (one fixture repair in test_dual_metrics.py), Phase 2 integration 20/20, launcher 5/5, actual-backend 20/20, new cross-process admission 5/5, full isolated runner 142/142; forward/reverse byte-exact regenerated gate.patch (twelve file entries) against installed base 6ad48a93; disposable backend re-assembled from the authenticated installed package; no production storage/services touched; Graphiti writes stayed disabled; no PR/merge/deploy",
+ "phase3_events": [
+  "shell permission rejection on a compound 'rm -rf <scratch> && mkdir -p' call (D staging); retried as a plain mkdir of the fresh directory (pre_execution_rejection, recovered)",
+  "rg --include glob shape failed under zsh for content ranking; switched to rg -g (interface discovery, cosmetic)",
+  "A3 first gate run used a gate toml without an explicit [gate] database key, so the gate Config default (live queue.sqlite3) was used and 1 work row + 1 attestation + 1 admission contaminated the live DB; repaired by scoped delete of exactly those rows (live DB back to 0 rows) and by adding explicit database/lock_file keys to every disposable gate toml (operational incident, self-inflicted, disclosed)",
+  "zsh one-liner for-loop with 'printf ... >> file' under set -e reported a misleading entries=0 while the appends had succeeded; recovered by moving the patch-generation logic into a script file (harness shape, no semantics changed)",
+  "grep '^candidate' false negative over SHA256SUMS (lines begin with the hash, not the path); corrected to path-substring grep (interface discovery)",
+  "node --test summary grep '^# pass' matched nothing (summaries use the U+2139 info marker); corrected pattern (interface discovery)",
+  "first test_i1_service.py run from the package directory failed 20/20: the suite requires the prepare_backend.py-assembled backend/ tree; recovered by assembling a fresh disposable tree (i1-tree-p3) and re-running 20/20 (interface discovery on test preconditions)",
+  "first regenerated gate.patch used 'diff -Nru ../gate-a/f f' labels that break patch -p1; regenerated with a//b/ label-rooted staging and re-proven byte-exact forward/reverse (artifact correction)"
+ ],
+ "phase3_execution_effect": "Phase 3 campaign: phase3 22/22, phase2 28/28, gate 66/66, ov2 15/15 (capture 7, isolation 5, central-auth 3), graphiti-recall 5/5, launcher 5/5, actual-backend 20/20 (161 checks); gate.patch (thirteen entries) and openviking-v2.patch (eight entries) regenerated against installed bases 6ad48a93/6899822e and proven byte-exact forward/reverse; real separate-interpreter Graphiti run and read-only recall qualified on disposable surfaces (graph issue70_p3_real, gate DB /tmp/opencode/issue70-p3-real/queue.sqlite3); live gate config/database and installed plugin unchanged; exclusive-state auto-capture stayed disabled; no PR/merge/deploy",
+ "phase4_events": [
+  "shell permission rejection on a compound 'rm -rf /tmp/opencode/issue70-p4-backend && python3 prepare_backend.py ...' call; recovered by assembling into a fresh directory name (issue70-p4-backend-a) without the rm (pre_execution_rejection, recovered)",
+  "cosmetic zsh glob failures on 'echo ===POLICY===' separators parsed as '== not found' commands; no command semantics affected",
+  "top-level receipt-protocol suite first invoked as 'python3 -m unittest docs/issue-70/.../candidate/gate.test_receipt_protocol' (path-as-module) and failed import; corrected to PYTHONPATH-candidate/gate python3 -m unittest test_receipt_protocol (interface discovery, pre-execution)",
+  "node --test summary grep '^# pass' matched nothing (summaries use the U+2139 info marker); recurrence of the Phase 3 discovery, corrected pattern (interface discovery)",
+  "first actual-backend suite run exceeded the 120s foreground shell timeout (suite takes ~175s with live disposable subprocesses); re-run in the background with log capture and the producer exit preserved (harness shape, no semantics changed)"
+ ],
+ "phase4_execution_effect": "Phase 4 campaign: phase4 25/25 (after the in-campaign temporal_ledger.py/test_temporal_ledger.py repair; was 23/23 pre-repair), phase3 22/22, phase2 28/28, gate 59/59, receipt protocol 7/7, launcher 5/5, cross-process admission 5/5, graphiti-recall 5/5, candidate-capture 7/7, capture-isolation 5/5, central-auth 3/3, actual-backend 20/20; gate.patch (thirteen entries, including Phase 4 shared_work transactional contract binding and bootstrap validator pin) and openviking-v2.patch (eight entries, including Phase 4 temporal label semantics in graphiti-recall.mjs) regenerated against installed bases 6ad48a93/6899822e and proven byte-exact forward/reverse; two genuine disposable Graphiti transitions on fresh graph issue70_p4_real captured honestly as non-PASS (exit 2 INCOMPLETE_EVIDENCE / exit 1 MISSING_STATE) with durable work/episode-keyed results, bounded read-only retry (attempts 1->2) and no re-ingestion; cross-backend exclusion, SIGKILL interruption/restart, mismatched-validator-pin and read-only recall (including V2 client label semantics) qualified; live gate config/database, installed plugin, pinned validator (aa4f048d...) and all non-issue70 graphs untouched; no PR/merge/deploy",
+ "correction": "command shapes corrected in place; all acceptance-bearing suites re-run after fixture and artifact repairs; repaired runs are the recorded evidence",
+ "recipe_reference": "GHDEV-10; /home/filip/.codex/RTK.md; README.md reproduction recipe",
+ "sensitive_values_omitted": true,
+ "final_events": [
+  "shell permission rejection on 'rm -rf' compound calls when assembling the disposable backend tree and building patch base trees; recovered by assembling into fresh, collision-free directory names without rm (pre_execution_rejection, recovered)",
+  "prepare_backend.py --source-package first pointed at the site-packages root, so the manifest's openviking/ path prefix produced 'source mismatch: openviking/session/session.py'; corrected to point at the installed openviking package directory (interface discovery, pre-execution)",
+  "'set -e' combined with 'diff -ruN a b' aborted the script because diff exits 1 when files differ (the expected case); recovered by capturing diff's exit code explicitly (shell shape, no semantics changed)",
+  "actual-backend service suite exceeded the 120s foreground shell timeout (~170s with live disposable subprocesses); re-run in the background with log capture and the producer exit preserved (harness shape, no semantics changed)",
+  "the C-step driver's trailing edge/DB inspection ran in the host python3 (no falkordb) and raised ModuleNotFoundError; the real Graphiti ingestion and pinned-validator PASS had already persisted durably in the Graphiti venv, so the inspection was re-run in the authenticated Graphiti venv interpreter (interface discovery, no test semantics changed)"
+ ],
+ "final_execution_effect": "Final integrated campaign: phase4 27/27, phase3 23/23, phase2 30/30, gate 59/59, receipt 7/7, launcher 5/5, cross-process 5/5, ov2 20/20, actual-backend 20/20 (196 total); one genuine automatic PASS transition on disposable graph issue70_final_real (episode 201b764a, validator exit 0); gate/openviking-v2 patches regenerated and proven byte-exact forward/reverse; no acceptance-bearing command was masked or weakened."
 }
