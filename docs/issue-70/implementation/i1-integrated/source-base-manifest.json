@@ -89,7 +89,7 @@
    "source_base_sha256": "6ad48a939d3f52df1c774f87d030986b35022a8c20f15916d82177ccf2094f42"
   },
   {
-   "candidate_sha256": "ec9d96e588723611409cdeee4228290c689f3a09670ea032f9391e90bcb976fd",
+   "candidate_sha256": "d4cbd16d93d71c096afab740946005e7a278d7c2acb2d2efae6cec7ff3c3099f",
    "component": "gate",
    "path": "graphiti_runtime_bootstrap.py",
    "source_base_sha256": null
@@ -351,7 +351,7 @@
    },
    {
     "path": "docs/issue-70/phase3/test_auto_promotion.py",
-    "sha256": "92ada605f34ebddf028fbf15294077820bdf7938ebe564aa905a861b6be501be"
+    "sha256": "0e444ce3bf69174e77b97b39c60006f70e2c0f56e836681ad2b068aad16c8066"
    },
    {
     "path": "docs/issue-70/phase3/test_graphiti_process_transport.py",
@@ -367,7 +367,7 @@
    },
    {
     "path": "docs/issue-70/phase3/test_production_target_policy.py",
-    "sha256": "3322fe2d2f7cb83efc9a3bdcbdef88d411e6ba8c025312bb670df1c633e4b0ef"
+    "sha256": "64c5d2443d356ceac822287db10f41b8b34038cf51649c3ef8b660028e65d953"
    },
    {
     "path": "docs/issue-70/phase2/graphiti_terminal.py",
@@ -400,8 +400,8 @@
   {
    "apply_and_reverse": "PASS",
    "path": "patches/gate.patch",
-   "sha256": "4b528bcc9d5767a8a5b294d76760a45fea3b81a15eaee370781208924e30ef8b",
-   "entries": "thirteen file entries: Phase 1/2 gate files plus Phase 3 graphiti_runtime_bootstrap.py and the Phase 4 shared_work.py transactional contract binding (temporal_transition_contracts) and bootstrap validator pin (graphiti_validator_path/sha256); host-activation regeneration: graphiti_runtime_bootstrap.py now carries the LazyCoreAdapter fix (defers concrete adapter/table creation to first submit/poll; client_factory exposed immediately; validator identity verified eagerly; exposes_retry only when the exclusive category is present) so build_runtime no longer creates graphiti_ingest_receipts at startup (test_positive_setup_is_lazy_and_scoped), and openviking_commit_gate.py imports build_runtime; final lifecycle corrections: LazyCoreAdapter.retry_pending now short-circuits to 0 when no temporal_validation_results table exists (an idle worker tick creates no optional Graphiti/temporal tables), and build_runtime invalidates a previously active temporal_validator_active digest at bootstrap (UPDATE only an existing identity table; no optional tables introduced into a fresh database); regenerated against installed base 6ad48a93, byte-exact forward/reverse"
+   "sha256": "ef110f6412eefc3929a8a49dff89c81ccd1bce374630457180708d3bf94be7e2",
+   "entries": "thirteen file entries: Phase 1/2 gate files plus Phase 3 graphiti_runtime_bootstrap.py and the Phase 4 shared_work.py transactional contract binding (temporal_transition_contracts) and bootstrap validator pin (graphiti_validator_path/sha256); host-activation regeneration: graphiti_runtime_bootstrap.py now carries the LazyCoreAdapter fix (defers concrete adapter/table creation to first submit/poll; client_factory exposed immediately; validator identity verified eagerly; exposes_retry only when the exclusive category is present) so build_runtime no longer creates graphiti_ingest_receipts at startup (test_positive_setup_is_lazy_and_scoped), and openviking_commit_gate.py imports build_runtime; final lifecycle corrections: LazyCoreAdapter.retry_pending now short-circuits to 0 when no temporal_validation_results table exists (an idle worker tick creates no optional Graphiti/temporal tables), and build_runtime invalidates a previously active temporal_validator_active digest at bootstrap (UPDATE only an existing identity table; no optional tables introduced into a fresh database); Codex P1 validator-authority correction: build_runtime now calls the explicit temporal_ledger.select_active_validator(db, sha) at exclusive bootstrap (persisting exactly one temporal_validator_active singleton; ingestion/results/contract tables remain deferred), and TemporalLedger.__init__ no longer selects/reselects the active validator so an old lazy runtime initializing after a newer bootstrap cannot restore its obsolete SHA (test_overlapping_bootstrap_does_not_resurrect_old_validator); regenerated against installed base 6ad48a93, byte-exact forward/reverse"
   },
   {
    "apply_and_reverse": "PASS",
@@ -430,7 +430,7 @@
    },
    {
     "path": "docs/issue-70/phase4/temporal_ledger.py",
-    "sha256": "080a4224ce0dfab9b2780eedfa0b9fd201163a04a3d0c10ccbc34c3c37af2da9"
+    "sha256": "fc4c3459ee4a5e1df4ef2f7f58ccc94bf5882752de9e31f5bd1e3e7a95daad65"
    },
    {
     "path": "docs/issue-70/phase4/temporal_validator_child.py",
@@ -446,7 +446,7 @@
    },
    {
     "path": "docs/issue-70/phase4/test_temporal_ledger.py",
-    "sha256": "5445826a90c875ae119baabb60b88945edb171f3772777ca5ab53868c6f792eb"
+    "sha256": "243e0ccf57e5777cb54230909c192dfdab736562ed663cb2a0cb06db223da9f0"
    },
    {
     "path": "docs/issue-70/phase4/test_temporal_recall.py",
@@ -458,7 +458,7 @@
    },
    {
     "path": "docs/issue-70/phase4/test_temporal_status.py",
-    "sha256": "2ea7c76186893c548a447b472175a4fc7ccf32e5ffe54923881bebb7f7352ef8"
+    "sha256": "96062c0f5859a07d66cd9959fbdd085a5c75b315540a2a2b260fd5d151f9f11d"
    },
    {
     "path": "docs/issue-70/phase4/test_temporal_validator_transport.py",

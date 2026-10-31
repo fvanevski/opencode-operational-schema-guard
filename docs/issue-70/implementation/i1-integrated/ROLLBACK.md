@@ -88,3 +88,25 @@ nothing on the live host. To roll back:
   isolated Graphiti evidence lives only on the disposable `hostact_iso_group`
   graph and disposable gate databases. Reverting the candidate sources restores
   the pre-campaign installable package with no host-side residue to clean up.
+
+## Codex P1 validator-authority rollback scope
+
+The Codex P1 correction (branch `issue/70-host-activation`, central start
+`e97a739`) changed only the installable candidate sources, the Phase 3/4
+source-pinned runtime, and their package metadata; it installed nothing on the
+live host. To roll back:
+
+- Reverse `patches/gate.patch` (`ef110f64`, thirteen entries) on an isolated
+  copy to restore the authenticated installed gate bytes (`6ad48a93`) and remove
+  every patch-introduced file, including the `select_active_validator` bootstrap
+  call in `graphiti_runtime_bootstrap.py`. `openviking-v2.patch` (`b0ee5faa`) and
+  `backend.patch` (`a03ab064`) are unchanged and reverse as before.
+- The validator-authority change is inert when Graphiti is disabled: an
+  exclusive bootstrap persists exactly one `temporal_validator_active`
+  singleton (via `select_active_validator`), and the ledger constructor never
+  reselects the active validator. Reverting the candidate `temporal_ledger.py`
+  (back to the pre-Codex-P1 `080a4224` bytes) restores the prior behavior with
+  no host-side residue.
+- No live gate database was mutated, no live graph was mutated, and the
+  historical real Graphiti evidence remains attributed to its original tested
+  SHA and source head (it was NOT rerun in this campaign).
