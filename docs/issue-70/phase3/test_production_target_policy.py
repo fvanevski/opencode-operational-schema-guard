@@ -172,6 +172,9 @@ class ProductionTargetTests(unittest.TestCase):
         with self.db.connect() as conn:
             self.assertEqual(conn.execute("""SELECT validator_sha256 FROM
                 temporal_validator_active WHERE singleton=1""").fetchone()[0],sha_b)
+            # A real gate always owns memory_work; this isolated FakeDB
+            # creates the minimal table for the read-only retry join.
+            conn.execute("CREATE TABLE memory_work(work_key TEXT PRIMARY KEY,status TEXT)")
             conn.execute("""INSERT INTO temporal_transition_contracts(
                 work_key,group_id,contract_json,contract_digest,attestation_digest,
                 bound_at) VALUES ('old-work','graphiti_live','{}','old','',0)""")
