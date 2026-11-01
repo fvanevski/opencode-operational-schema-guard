@@ -8,6 +8,8 @@ import argparse
 import fcntl
 import importlib.util
 import os
+import socket
+from urllib.parse import urlparse
 from pathlib import Path
 import subprocess
 import sys
@@ -94,7 +96,36 @@ def main():
               flush=True)
         result = subprocess.run(cmd, env=env, check=False,
                                 timeout=args.max_seconds + 45)
-        return result.returncode
+        if result.returncode == 0:
+            return 0
+        # Graphiti add_memory ACKs asynchronously. On nonterminal timeout,
+        # releasing EX might admit an agent while already-queued extraction
+        # wakes later. Fail closed: require the operator to quiesce the
+        # isolated MCP worker, NOT simply to acknowledge the error.
+        print("UNRESOLVED: holding exclusive lease. Stop the disposable Graphiti "
+              "MCP worker and confirm its listener is closed before resuming "
+              "interactive agents.", file=sys.stderr, flush=True)
+        parsed = urlparse(args.endpoint)
+        if parsed.hostname not in ('127.0.0.1', 'localhost', '::1'):
+            raise RuntimeError('unsafe Graphiti endpoint in quiescence check')
+        while True:
+            try:
+                answer = input('After stopping ONLY the disposable Graphiti worker, '
+                               'type VERIFY_STOPPED to check listener: ').strip()
+            except EOFError:
+                # No unattended unlock of an unknown remote extraction job.
+                while True:
+                    time.sleep(3600)
+            if answer != 'VERIFY_STOPPED':
+                continue
+            try:
+                with socket.create_connection((parsed.hostname, parsed.port or 80), timeout=2):
+                    print('Graphiti endpoint still live: EX retained', file=sys.stderr)
+                    continue
+            except (ConnectionRefusedError, TimeoutError, OSError):
+                print('Graphiti endpoint unavailable; preserve unresolved journal '
+                      'and service logs for explicit reconciliation.', file=sys.stderr)
+                return result.returncode
 
 if __name__ == "__main__":
     try:
