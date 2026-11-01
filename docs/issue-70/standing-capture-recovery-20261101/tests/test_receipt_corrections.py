@@ -14,7 +14,7 @@ import build_receipt_corrections as source
 
 class TestPurePatch(TestCase):
     def test_old_gate_fragment_unique(self):
-        original = "def x():\n" + source.GATE_BEFORE + "    return api_key\n"
+        original = "def x():\n" + source.GATE_BEFORE + "        return api_key\n"
         changed = source.replace_once(original, source.GATE_BEFORE, source.GATE_AFTER, "gate")
         self.assertIn("self.cfg.receipts_enabled", changed)
 

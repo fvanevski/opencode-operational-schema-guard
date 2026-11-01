@@ -12,7 +12,7 @@ from pathlib import Path
 
 BASE_SHA256 = {
     "gate": "9d71ac50a3e9e2deb455395ecfb56cb4cacfb09aeadfbad5206ae1f143dcb878",
-    "backend": "2775fae94e0ae7908f90c330561724c58bb2399911a08df840abeb55e8a67577",
+    "backend": "2775fae94e0ae7900b6f0f58dbc3fdf7f995a31e98dfcc2f79b5d9e81a611b92",
 }
 GATE_BEFORE = '''        api_key = os.environ.get("OPENVIKING_ROOT_API_KEY") or os.environ.get("OPENVIKING_API_KEY")
         if not api_key:
