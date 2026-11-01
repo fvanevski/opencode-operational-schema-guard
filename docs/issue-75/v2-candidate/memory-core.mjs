@@ -32,9 +32,12 @@ export function selectCompletedTest(event) {
   if (!command || !TEST_CMD.test(command) || /[;&|<>$]/.test(command)) return null;
   // Avoid recording failure text or treating arbitrary assistant prose as tool proof.
   const result = event.result;
-  const exit = result?.exitCode ?? result?.exit_code ?? result?.code;
+  // Stock V2 nests shell output in result.output and/or metadata.
+  const exit = result?.exitCode ?? result?.exit_code ?? result?.code ??
+    result?.output?.exit ?? result?.metadata?.exit;
   if (exit !== 0) return null;
-  const stdout = typeof result === 'string' ? result : (result?.output ?? result?.stdout ?? '');
+  const stdout = result?.output?.output ?? result?.output?.stdout ??
+    (typeof result?.output === 'string' ? result.output : result?.stdout ?? '');
   const summary = safeText(stdout, 1200);
   if (!summary || !TEST_PASS.test(summary)) return null;
   const match = summary.match(/(?:\d+\s+passed|tests?\s+passed|test result: ok|test suites:\s+\d+\s+passed)/i);
@@ -108,7 +111,7 @@ export class Journal {
     await this.init();
     return atomicWrite(this.filename(candidate.uuid), candidate, { exclusive: true });
   }
-  async update(uuid, expected, status) {
+  async update(uuid, expected, status, extra = {}) {
     await this.init();
     const lock = this.filename(uuid) + '.lock';
     try { await fs.mkdir(lock); }
@@ -116,7 +119,10 @@ export class Journal {
     try {
       const current = await this.get(uuid);
       if (!current || current.status !== expected) return false;
-      await atomicWrite(this.filename(uuid), { ...current, status, updatedAt: new Date().toISOString() });
+      const permitted = {};
+      if (typeof extra.remoteEpisodeUuid === 'string' && validId(extra.remoteEpisodeUuid))
+        permitted.remoteEpisodeUuid = extra.remoteEpisodeUuid;
+      await atomicWrite(this.filename(uuid), { ...current, ...permitted, status, updatedAt: new Date().toISOString() });
       return true;
     } finally { await fs.rmdir(lock); }
   }

@@ -33,11 +33,8 @@ export default Plugin.define({
     const pending = new Map();
     const latest = new Map();
     let stopped = false;
-    const scheduleDrain = () => {
-      queueMicrotask(() => {
-        if (!stopped) void memory.drain().catch(() => {});
-      });
-    };
+    // Only stage candidates in live hooks. A post-harness exclusive runner
+    // owns Graphiti submissions and must hold the lease until terminal readback.
     const register = async (f) => registrations.push(await f());
     try {
       await register(() => ctx.session.hook('prompt', event => {
@@ -59,7 +56,6 @@ export default Plugin.define({
         if (!selected) return;
         await memory.stage(selected, { sessionID: event.sessionID,
           toolID: event.callID || event.id || 'completed-tool', time: new Date().toISOString() });
-        scheduleDrain();
       }));
       await register(() => ctx.session.hook('context', async event => {
         if (stopped || !event?.sessionID || !Array.isArray(event.system)) return;
@@ -69,7 +65,6 @@ export default Plugin.define({
           pending.delete(event.sessionID);
           try {
             await memory.stage(queued.candidate, { sessionID: event.sessionID, time: queued.time });
-            scheduleDrain();
           } catch { /* Nonessential memory cannot block agent operation. */ }
         }
         const selected = latest.get(event.sessionID);
@@ -89,8 +84,7 @@ export default Plugin.define({
       await Promise.allSettled(registrations.map(r => r.dispose()));
       throw error;
     }
-    // Reconcile known queued submissions in the background; never replay unknowns.
-    queueMicrotask(() => { if (!stopped) void memory.reconcile().catch(() => {}); });
+    // No startup ingestion or reconciliation while the interactive model is active.
     return async () => {
       stopped = true;
       pending.clear(); latest.clear();
