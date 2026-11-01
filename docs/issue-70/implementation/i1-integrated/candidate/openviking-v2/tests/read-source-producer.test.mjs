@@ -95,7 +95,7 @@ test("overlong or excessively multiline records cannot rely on unreported displa
   writeFileSync(f.path,JSON.stringify({...f.record,episode_body:"safe ".repeat(1800)}))
   git(f.root,"add",".");git(f.root,"commit","-qm","oversized record")
   assert.equal(await proposalFromCompletedRead(f.event,args),null)
-  writeFileSync(f.path,JSON.stringify({...f.record,episode_body:"safe\n".repeat(210)}))
+  writeFileSync(f.path,JSON.stringify({...f.record,episode_body:"safe"}).replace(/}$/, "\n".repeat(210)+"}"))
   git(f.root,"add",".");git(f.root,"commit","-qm","multiline record")
   assert.equal(await proposalFromCompletedRead(f.event,args),null)
 })
