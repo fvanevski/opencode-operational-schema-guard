@@ -1,5 +1,4 @@
 /** Stock OpenCode V2 candidate. Opt-in only; no host mutation on import. */
-import { Plugin } from '@opencode/plugin';
 import path from 'node:path';
 import os from 'node:os';
 import { GraphitiMcp, Journal, Memory, selectUserDecision, selectCompletedTest, formatContext } from './memory-core.mjs';
@@ -12,7 +11,7 @@ function config(ctx) {
     enabled: x.enabled === true,
     capture: x.capture === true,
     group: typeof x.group === 'string' ? x.group : '',
-    endpoint: typeof x.endpoint === 'string' ? x.endpoint : 'http://127.0.0.1:8000/mcp/',
+    endpoint: typeof x.endpoint === 'string' ? x.endpoint : 'http://127.0.0.1:8766/mcp',
     // Disabled by default until the independent reranker service and latency
     // are qualified without sharing the single-concurrency extraction LLM.
     rerankEndpoint: typeof x.rerankEndpoint === 'string' ? x.rerankEndpoint : '',
@@ -25,7 +24,9 @@ function removeOwn(parts) {
     if (parts[i]?.type === 'text' && parts[i].text?.startsWith(OPEN)) parts.splice(i, 1);
   }
 }
-export default Plugin.define({
+// Stock V2 accepts this standard plugin object directly; do not require a
+// separately resolved @opencode/plugin shim at runtime.
+export default {
   id: 'local.ghdev-graphiti-memory',
   async setup(ctx) {
     const settings = config(ctx);
@@ -96,4 +97,4 @@ export default Plugin.define({
       await Promise.allSettled(registrations.map(r => r.dispose()));
     };
   },
-});
+};

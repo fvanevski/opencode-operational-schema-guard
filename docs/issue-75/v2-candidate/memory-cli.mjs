@@ -11,7 +11,7 @@ function option(name) {
 const group = option('group');
 const dir = option('state-dir') || path.join(process.env.XDG_STATE_HOME ||
   path.join(os.homedir(), '.local', 'state'), 'ghdev-graphiti');
-const endpoint = option('endpoint') || 'http://127.0.0.1:8000/mcp/';
+const endpoint = option('endpoint') || 'http://127.0.0.1:8766/mcp';
 const allowed = ['list', 'reconcile', 'forget', 'drain'];
 const maxSeconds = Number(option('max-seconds') || '600');
 if (!group || !allowed.includes(command) || !Number.isFinite(maxSeconds) ||
