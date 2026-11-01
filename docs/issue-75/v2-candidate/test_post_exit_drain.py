@@ -1,5 +1,7 @@
 """CPU-only admission tests, no host services or model inference."""
+import fcntl
 import importlib.util
+import tempfile
 from pathlib import Path
 from types import SimpleNamespace
 from unittest import TestCase, mock
@@ -33,6 +35,21 @@ def http_response(payload):
     return response
 
 class PostExitAdmissionTests(TestCase):
+    def test_bounded_lock_wait_does_not_bypass_held_lease(self):
+        with tempfile.TemporaryFile() as first, tempfile.TemporaryFile() as other:
+            # Two open handles must reference the SAME inode for contention.
+            # A separate temp file would not exercise the existing lease.
+            pass
+        with tempfile.TemporaryDirectory() as temp:
+            lockpath = Path(temp) / 'agent.lock'
+            with lockpath.open('a+') as holder, lockpath.open('a+') as contender:
+                fcntl.flock(holder.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                with self.assertRaisesRegex(RuntimeError, 'lease held'):
+                    runner.acquire_gate_lock(contender, 0)
+                fcntl.flock(holder.fileno(), fcntl.LOCK_UN)
+                runner.acquire_gate_lock(contender, 0)
+                fcntl.flock(contender.fileno(), fcntl.LOCK_UN)
+
     def setUp(self):
         FakeWorker.active = []
 

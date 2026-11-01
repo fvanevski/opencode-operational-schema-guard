@@ -55,6 +55,20 @@ def observation(gate, config):
         return
     raise RuntimeError("scheduler idle not verified: " + "; ".join(errors))
 
+def acquire_gate_lock(handle, timeout_seconds):
+    # Wait only for the canonical existing flock. Never bypass a held lease.
+    deadline = time.monotonic() + timeout_seconds
+    while True:
+        try:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            return
+        except BlockingIOError:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise RuntimeError('shared agent/gate lease held; bounded wait exhausted')
+            time.sleep(min(0.25, remaining))
+
+
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--gate-source", required=True,
@@ -67,9 +81,12 @@ def main():
     p.add_argument("--state-dir", required=True)
     p.add_argument("--endpoint", required=True)
     p.add_argument("--max-seconds", type=int, default=600)
+    p.add_argument("--lock-timeout", type=float, default=120)
     args = p.parse_args()
     if not 5 <= args.max_seconds <= 3600:
         p.error("max-seconds must be between 5 and 3600")
+    if not 0 <= args.lock_timeout <= 600:
+        p.error("lock-timeout must be between 0 and 600 seconds")
     gate = load_gate(args.gate_source)
     cfg = gate.Config.load(args.gate_config)
     if not cfg.lock_file or not cfg.metrics_url or not cfg.process_names:
@@ -77,10 +94,7 @@ def main():
     lock = Path(cfg.lock_file)
     lock.parent.mkdir(parents=True, exist_ok=True)
     with lock.open("a+") as handle:
-        try:
-            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except BlockingIOError:
-            raise RuntimeError("shared agent/gate lease held; do not bypass")
+        acquire_gate_lock(handle, args.lock_timeout)
         observation(gate, cfg)
         grace = max(0, cfg.quiet_grace_seconds)
         time.sleep(grace)
