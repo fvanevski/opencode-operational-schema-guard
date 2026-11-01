@@ -36,10 +36,7 @@ def http_response(payload):
 
 class PostExitAdmissionTests(TestCase):
     def test_bounded_lock_wait_does_not_bypass_held_lease(self):
-        with tempfile.TemporaryFile() as first, tempfile.TemporaryFile() as other:
-            # Two open handles must reference the SAME inode for contention.
-            # A separate temp file would not exercise the existing lease.
-            pass
+        # Two handles to the SAME inode exercise actual flock contention.
         with tempfile.TemporaryDirectory() as temp:
             lockpath = Path(temp) / 'agent.lock'
             with lockpath.open('a+') as holder, lockpath.open('a+') as contender:
