@@ -20,13 +20,14 @@ ALIASES = {
     "dependency": ("depends","requires"),
     "reliant": ("depends","requires"),
     "break": ("fails","depends","requires"),
+    "breaks": ("fails","depends","requires"),
     "broken": ("fails","depends","requires"),
     "downstream": ("depends","requires"),
     "replaced": ("superseded","migrated"),
     "superseded": ("replaced","migrated"),
     "broker": ("messaging","queue"),
 }
-DEPENDENCY = {"depends","depend","dependency","reliant","break","broken","downstream","requires","impact","affect"}
+DEPENDENCY = {"depends","depend","dependency","reliant","break","breaks","broken","fails","downstream","requires","impact","affect"}
 
 
 def valid_query(text):
