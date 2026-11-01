@@ -57,3 +57,31 @@ Never put private session IDs, tokens, backend DB copies, raw journals, or secre
 ## Handoff execution
 
 Use `LOCAL_AGENT_CONTRACT.md` on **this working branch**. Agent fetches the branch and reads these exact files from GitHub, prepares host-specific service integration/after-exit controller, returns a bounded evidence packet, and **does not open a PR** until host evidence supports the minimal candidate. No Central-generated ZIP download is required.
+
+## Post-handback production-source correction (2026-11-01)
+
+The first host continuation returned BLOCKED with an additional independently demonstrated pair of defects. A missing backend receipt DB was not the only problem: receipt handler \`_receipt_owner\` rejects a legitimate empty \`actor_peer\`, while the gate previously selected a ROOT credential merely because it existed, potentially breaking legacy tenant-scoped commits. Historical rollout scripts that compare against the pre-native-read release checkout are stale for the current installed integration; use exact current installed SHA pins.
+
+**Central-owned source, same branch:** \`tools/build_receipt_corrections.py\` takes the exact current installed gate and backend source (SHA-256 pinned inside the tool), and produces two *disposable* corrected Python files with a nonsecret source-readback JSON. The corrections are deliberately narrow:
+- Backend receipt owner: require exact scope keys and nonempty account/user/session, permit the documented empty string only for \`actor_peer\` (or bounded nonempty values); preserve ROOT/tenant/header comparisons.
+- Gate auth: for \`receipts_enabled=true\`, require \`OPENVIKING_ROOT_API_KEY\`; for legacy \`false\`, require \`OPENVIKING_API_KEY\` even if ROOT is also present. Never use fallback across credential roles.
+- No change to the queue, sticky admission, scheduler/lease, receipt submission/replay, or Graphiti semantics.
+
+**Current operational prerequisite:** the backend \`openviking.service\` requires an effective, private durable \`OPENVIKING_COMMIT_RECEIPT_DB\`; the gate user service requires access to the actual ROOT key for receipt mode and tenant API key for legacy mode. Reuse an authenticated existing secret-bearing EnvironmentFile where readable by the service identity (do not copy secrets into Git or a new broad-access file). Systemd changes are scoped to these service units, ownership and effective process environments. Prove the proper credential is selected by each endpoint mode in a disposable real HTTP exercise, including the empty-actor-peer receipt POST and mismatching scope negative controls.
+
+**Source/package integrity:** \`implementation/i1-integrated\` is the historical installed source package; its old manifest is not rewritten to misrepresent installed bytes. Build a new two-file overlay from the pinned live source, test it in private scratch, record its new SHA-256 identities, then install it only in an operator-authorized post-exit activation with preimages and fresh readback. Any later canonical package consolidation belongs in at most one PR after host qualification, not this diagnostic campaign.
+
+**One-shot continuation order:** qualifying both source corrections and backend/gate credentials comes *before* the original pre-handler rearm. Recheck exact request/session/queue state, archive/receipt absence and exclusive lease; obtain new operator approval; back up SQLite and installed source/config; deploy fixed source + receipt service support; verify a real disposable receipt round-trip and original-request negative read; stop gate; invoke the existing \`rearm_prehandler_rejection.py\` once with its exact proofs; restart in standing config; let original receipt-keyed OpenViking work and the already-queued Graphiti work process normally; confirm terminal actual receipts, Graphiti UUID/readback, recall and baseline nonregression. Stop and retain disabled capture on any uncertainty. Never repeat the native read or source commit.
+
+**Regression commands (run from this directory):**
+\`\`\`bash
+python3 -m unittest discover -s tests -p 'test_receipt_corrections.py' -v
+python3 tools/build_receipt_corrections.py \
+  --gate-original <AUTHENTICATED_INSTALLED_GATE_PY> \
+  --backend-original <AUTHENTICATED_INSTALLED_SESSIONS_PY> \
+  --output <ABSENT_PRIVATE_SCRATCH_OUTPUT>
+GRAPHITI_RECEIPT_CORRECTIONS_DIR=<PRIVATE_SCRATCH_OUTPUT> \
+  python3 -m unittest discover -s tests -p 'test_receipt_corrections.py' -v
+\`\`\`
+The second test run must execute the dynamic acceptance cases; do not count SKIP as full source qualification. Run the existing seven rearm regressions, the repository's backend service integration cases in a disposable runtime, and the original-host read-only preflight. No write to live source, private DB or service during active harness execution.
+
