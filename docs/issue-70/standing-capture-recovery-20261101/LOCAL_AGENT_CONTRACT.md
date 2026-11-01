@@ -1,4 +1,5 @@
 <<< LOCAL_AGENT_CONTRACT_BEGIN >>>
+CURRENT OVERRIDE: Read HOST_PROMOTION_RESUME.md first. It is the controlling contract for this post-preflight retry; it supersedes all later requirements below for a new typed operator approval, exact plan-hash entry, unconditionally terminal one-shot preflight journaling, or a blanket agent-name process veto. Preserve the actual shared lease, receipt identities, DB CAS, operator's existing promotion authorization, and readback safeguards.
 LOCAL_AGENT_PRIMARY=build
 TASK=Reconcile Issue-70 standing-capture backend receipt mismatch, then prepare one recoverable host continuation from the existing queued Graphiti job.
 
@@ -16,7 +17,7 @@ SCOPE & OWNERSHIP:
 
 CURRENT CONTINUATION / CENTRAL CODE AUTHORITY (supersedes prior assumption that only service configuration is missing):
 - First read the updated README and Central-authored tools/build_receipt_corrections.py plus tests/test_receipt_corrections.py from this exact fetched branch head.
-- Authenticated installed source pins: gate 9d71ac50a3e9e2deb455395ecfb56cb4cacfb09aeadfbad5206ae1f143dcb878 and backend sessions.py 2775fae94e0ae7908f90c330561724c58bb2399911a08df840abeb55e8a67577. The tool creates corrected copies only in absent caller-owned private scratch. Never hand-edit installed source in the active agent session.
+- Authenticated installed source pins: gate 9d71ac50a3e9e2deb455395ecfb56cb4cacfb09aeadfbad5206ae1f143dcb878 and backend sessions.py 2775fae94e0ae7900b6f0f58dbc3fdf7f995a31e98dfcc2f79b5d9e81a611b92. The tool creates corrected copies only in absent caller-owned private scratch. Never hand-edit installed source in the active agent session.
 - Fix A: _receipt_owner must accept empty actor_peer under exact scope/header comparisons; no bypass of ROOT/tenant authorization.
 - Fix B: gate receipt endpoints require ROOT API key, legacy tenant commits require tenant API key; no cross-role credential fallback. A configured backend receipt DB and effective backend/gate EnvironmentFiles must be verified separately.
 - Qualify Central's two-file source in disposable runtime: pure regressions, candidate dynamic behavior regressions, empty-peer real HTTP POST/GET, wrong peer/tenant/role denials, and legacy tenant mode. Report actual passed counts and any SKIPs separately. Use original existing integration tests where feasible. Do not modify production schema or auth APIs to satisfy fixture mistakes.

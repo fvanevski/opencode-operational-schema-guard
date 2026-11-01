@@ -1,5 +1,7 @@
 # Standing Graphiti capture: reconcile the pre-handler OpenViking receipt failure
 
+> **Current continuation (2026-11-01):** The controlling host-retry contract is [HOST_PROMOTION_RESUME.md](HOST_PROMOTION_RESUME.md). The operator's standing request already authorizes bounded promotion. Superseded below: repeated typed approval hashes, one-shot journal consumption before read-only preflight, and blanket process-name vetoes. Keep exact durable-work identity, authenticated backend proofs, backups, canonical exclusive lease, scheduler-idle checks, and genuine persistence readback. Do not create another Graphiti nomination or memory fact record.
+
 Status: **CENTRAL CANDIDATE STAGED; HOST VALIDATION AND OPERATOR APPROVAL OUTSTANDING**.
 
 This task-specific branch supports one host recovery. It is not installed production code, an authorization to mutate the queue, an unbounded replay policy, or evidence of completed Graphiti standing activation.
