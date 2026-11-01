@@ -26,8 +26,9 @@ if (!group || !['list', 'reconcile', 'forget'].includes(command)) {
     const id = option('id');
     const item = await journal.get(id);
     if (!item) throw new Error('No local record with this id in this group');
+    if (item.status !== 'persisted') throw new Error('Only confirmed persisted episodes may be forgotten; reconcile queued/unknown first');
     if (!args.includes('--yes')) throw new Error('Explicit --yes required for destructive remote deletion');
-    // An unknown queued operation may be in flight; this is an explicit user action.
+    // No implicit delete for an in-flight or unknown write.
     await client.call('delete_episode', { uuid: id, group_id: group });
     await journal.update(id, item.status, 'forgotten');
     console.log(JSON.stringify({ deleted: id, group }));

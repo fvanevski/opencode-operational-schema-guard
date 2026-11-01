@@ -54,7 +54,7 @@ export function makeCandidate(group, selected, source) {
   if (!['user_decision', 'test_outcome'].includes(selected.kind)) return null;
   const assertion = safeText(selected.assertion, 500);
   const sessionID = safeText(source.sessionID, 120);
-  if (!assertion || !sessionID) return null;
+  if (!assertion || !sessionID || !/^[a-zA-Z0-9_.:-]{1,120}$/.test(sessionID)) return null;
   const uuid = deterministicUUID(group, selected.kind, assertion);
   const anchor = source.toolID ? 'opencode:' + sessionID + ':tool:' + String(source.toolID).slice(0, 90)
     : 'opencode:' + sessionID + ':user:' + digest(assertion).slice(0, 16);
@@ -245,12 +245,12 @@ export class Memory {
   async search(query, { limit = 4, maxChars = 1400 } = {}) {
     const text = safeText(query, 500);
     if (!text || text.length < 10) return [];
-    const [facts, nodes] = await Promise.all([
-      this.graphiti.call('search_memory_facts', { query: text, group_ids: [this.group], max_facts: 12 }),
-      this.graphiti.call('search_nodes', { query: text, group_ids: [this.group], max_nodes: 6 }),
-    ]);
-    // Nodes help debug semantic coverage. Only episode-backed facts enter automatic context.
-    void nodes;
+    // Facts are the injectible result. Native node search runs separately in
+    // benchmarking/on-demand inspection; do not spend an extra embedding query
+    // on every automatic context build if it cannot add sourced facts.
+    const facts = await this.graphiti.call('search_memory_facts', {
+      query: text, group_ids: [this.group], max_facts: 12,
+    });
     const result = [];
     let budget = maxChars;
     const unique = new Set();
