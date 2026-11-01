@@ -73,7 +73,7 @@ if (!group || !allowed.includes(command) || !Number.isFinite(maxSeconds) ||
           persisted_before: persistedBefore,
           submitted_this_run: submittedThisRun.size,
           reconciled_this_run: reconciledThisRun.size,
-          fresh_extraction_proven: [...submittedThisRun].some(id => reconciledThisRun.has(id)) }));
+          submitted_and_reconciled_this_run: [...submittedThisRun].some(id => reconciledThisRun.has(id)) }));
         break;
       }
       await new Promise(resolve => setTimeout(resolve, 2500));
