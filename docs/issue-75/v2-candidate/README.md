@@ -1,4 +1,8 @@
-# Issue #75: first integrated native V2 memory candidate
+# HISTORICAL: first integrated V2 candidate (superseded by README_NEXT.md)
+
+Do not use this document as current execution or API authority. The corrected code and next integrated Build campaign are governed by README_NEXT.md and LOCAL_AGENT_CONTRACT_NEXT.md. The first local-agent handback identified remote UUID and inference-scheduling defects superseding parts of this original design.
+
+## Original first-campaign record
 
 **Status: staged Central-authored experimental source, NOT deployed, host-qualified or CI-tested.**
 Work on branch `issue/75`; supersedes `docs/issue-75/implementation/`. Follow the [architecture reassessment](../ARCHITECTURE_REASSESSMENT.md) and updated [Issue #75](https://github.com/fvanevski/opencode-operational-schema-guard/issues/75).
