@@ -20,12 +20,15 @@ function evaluate(file) {
     const truth = expected.get(r.id);
     const found = new Set(r.returned);
     for (const fact of found) {
-      if (!spec.seeds.some(x => x.id === fact)) throw Error('Unknown fact label: ' + fact);
+      const seed = spec.seeds.find(x => x.id === fact);
+      if (!seed) throw Error('Unknown fact label: ' + fact);
+      if (seed.group !== spec.queries.find(x => x.id === r.id).group) wrongGroup++;
       if (truth.has(fact)) tp++; else fp++;
     }
     for (const fact of truth) if (!found.has(fact)) fn++;
     if (truth.size ? [...truth].some(x => found.has(x)) : found.size === 0) caseCovered++;
-    if (r.id === 'wrong-group' && found.size) wrongGroup += found.size;
+    // A fact returned for the wrong-group QUESTION is a relevance false
+    // positive, not necessarily a cross-group retrieval violation.
     if (r.timed_out) timeouts++;
     if (!Number.isFinite(r.latency_ms) || r.latency_ms < 0) throw Error('Invalid latency_ms for ' + r.id);
     if (!Number.isInteger(r.context_chars) || r.context_chars < 0) throw Error('Invalid context_chars for ' + r.id);

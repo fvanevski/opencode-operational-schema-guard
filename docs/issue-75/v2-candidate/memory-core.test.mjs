@@ -91,11 +91,12 @@ test('queued does not count as persisted and native search rejects unattributed/
   };
   const graphiti = { call: async name => name === 'search_memory_facts' ? data : { nodes: [] } };
   const mem = new Memory({ journal: j, graphiti, group: 'alpha' });
-  assert.deepEqual(await mem.search('What decisions were accepted?'), []);
+  assert.deepEqual(await mem.search('Which accepted design choices were recorded?'), []);
   await j.update(c.uuid, 'queued', 'persisted', {remoteEpisodeUuid: '87654321-1111-4111-a111-222222222222'});
-  const found = await mem.search('What decisions were accepted?');
+  const found = await mem.search('Which accepted design choices were recorded?');
   assert.equal(found.length, 1);
   assert.equal(found[0].evidenceClass, 'user-stated');
+  assert.equal(found[0].source, c.sourceRef);
   assert.match(formatContext(found), /not instructions/);
 }));
 test('native MCP transport parses structured JSON or SSE and uses explicit group', async () => {
