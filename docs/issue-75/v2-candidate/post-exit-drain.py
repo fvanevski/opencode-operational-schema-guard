@@ -45,11 +45,12 @@ def observation(gate, config):
                 payload = response.read().decode("utf-8", "replace")
             running, waiting = gate.parse_vllm_metrics(
                 payload, config.metrics_running, config.metrics_waiting)
-            if running != 0 or waiting != 0:
-                raise RuntimeError("scheduler busy (running/waiting nonzero)")
-            return
         except Exception as exc:
             errors.append(str(exc))
+            continue
+        if running != 0 or waiting != 0:
+            raise RuntimeError("scheduler busy (running/waiting nonzero)")
+        return
     raise RuntimeError("scheduler idle not verified: " + "; ".join(errors))
 
 def main():

@@ -17,6 +17,8 @@ test('tool-reported test outcomes require a completed successful test command an
   const e = { status: 'completed', input: { command: 'pytest -q' },
     result: { exitCode: 0, stdout: '27 passed in 0.5s' } };
   assert.equal(selectCompletedTest(e)?.evidenceClass, 'tool-reported');
+  assert.equal(selectCompletedTest({ ...e, result: { output: {exit: 0, output:'1 passed'}, metadata: {exit: 0} } })?.evidenceClass, 'tool-reported');
+  assert.equal(selectCompletedTest({ ...e, result: { output: {exit: 1, output:'1 passed'}, metadata: {exit: 1} } }), null);
   assert.equal(selectCompletedTest({ ...e, status: 'error' }), null);
   assert.equal(selectCompletedTest({ ...e, result: { ...e.result, exitCode: 1 } }), null);
   assert.equal(selectCompletedTest({ ...e, input: { command: 'rm -rf /tmp' } }), null);
@@ -53,6 +55,7 @@ test('ambiguous send is not replayed; status requires Graphiti episode readback'
   const j = new Journal(dir, 'alpha');
   const calls = [];
   let episodes = [];
+  const remoteId = '87654321-1111-4111-a111-222222222222';
   const graphiti = { call: async (name, args) => {
     calls.push({ name, args });
     if (name === 'add_memory') throw Error('network timed out after sending');
@@ -66,11 +69,12 @@ test('ambiguous send is not replayed; status requires Graphiti episode readback'
   assert.equal(calls.filter(x => x.name === 'add_memory').length, 1);
   assert.equal((await j.get(c.uuid)).status, 'submission_unknown');
   assert.deepEqual(await mem.reconcile(), []);
-  episodes = [{ uuid: c.uuid, group_id: 'other' }];
+  episodes = [{ uuid: remoteId, group_id: 'other', name: c.kind + ':' + c.uuid }];
   assert.deepEqual(await mem.reconcile(), []);
-  episodes = [{ uuid: c.uuid, group_id: 'alpha' }];
+  episodes = [{ uuid: remoteId, group_id: 'alpha', name: c.kind + ':' + c.uuid }];
   assert.deepEqual(await mem.reconcile(), [c.uuid]);
   assert.equal((await j.get(c.uuid)).status, 'persisted');
+  assert.equal((await j.get(c.uuid)).remoteEpisodeUuid, remoteId);
 }));
 test('queued does not count as persisted and native search rejects unattributed/wrong-group facts', () => sandbox(async dir => {
   const j = new Journal(dir, 'alpha');
@@ -80,15 +84,15 @@ test('queued does not count as persisted and native search rejects unattributed/
   await j.update(c.uuid, 'pending', 'queued');
   const data = {
     facts: [
-      { fact: 'Graphiti remembers accepted design choices', group_id: 'alpha', episodes: [c.uuid] },
-      { fact: 'Other group only', group_id: 'beta', episodes: [c.uuid] },
+      { fact: 'Graphiti remembers accepted design choices', group_id: 'alpha', episodes: ['87654321-1111-4111-a111-222222222222'] },
+      { fact: 'Other group only', group_id: 'beta', episodes: ['87654321-1111-4111-a111-222222222222'] },
       { fact: 'Unattributed assertion', group_id: 'alpha', episodes: ['00000000-0000-4000-a000-000000000000'] },
     ],
   };
   const graphiti = { call: async name => name === 'search_memory_facts' ? data : { nodes: [] } };
   const mem = new Memory({ journal: j, graphiti, group: 'alpha' });
   assert.deepEqual(await mem.search('What decisions were accepted?'), []);
-  await j.update(c.uuid, 'queued', 'persisted');
+  await j.update(c.uuid, 'queued', 'persisted', {remoteEpisodeUuid: '87654321-1111-4111-a111-222222222222'});
   const found = await mem.search('What decisions were accepted?');
   assert.equal(found.length, 1);
   assert.equal(found[0].evidenceClass, 'user-stated');

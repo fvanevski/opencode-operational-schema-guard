@@ -3,6 +3,7 @@ import { Plugin } from '@opencode/plugin';
 import path from 'node:path';
 import os from 'node:os';
 import { GraphitiMcp, Journal, Memory, selectUserDecision, selectCompletedTest, formatContext } from './memory-core.mjs';
+import { localReranker } from './relevance.mjs';
 const OPEN = '[GHDEV_GRAPHITI_CONTEXT]';
 const CLOSE = '[/GHDEV_GRAPHITI_CONTEXT]';
 function config(ctx) {
@@ -12,6 +13,9 @@ function config(ctx) {
     capture: x.capture === true,
     group: typeof x.group === 'string' ? x.group : '',
     endpoint: typeof x.endpoint === 'string' ? x.endpoint : 'http://127.0.0.1:8000/mcp/',
+    // Disabled by default until the independent reranker service and latency
+    // are qualified without sharing the single-concurrency extraction LLM.
+    rerankEndpoint: typeof x.rerankEndpoint === 'string' ? x.rerankEndpoint : '',
     stateDir: typeof x.stateDir === 'string' ? x.stateDir :
       path.join(process.env.XDG_STATE_HOME || path.join(os.homedir(), '.local', 'state'), 'ghdev-graphiti'),
   };
@@ -28,7 +32,8 @@ export default Plugin.define({
     if (!settings.enabled || !settings.group) return;
     const graphiti = new GraphitiMcp(settings.endpoint);
     const store = new Journal(settings.stateDir, settings.group);
-    const memory = new Memory({ journal: store, graphiti, group: settings.group });
+    const ranker = settings.rerankEndpoint ? localReranker(settings.rerankEndpoint) : null;
+    const memory = new Memory({ journal: store, graphiti, group: settings.group, ranker });
     const registrations = [];
     const pending = new Map();
     const latest = new Map();
