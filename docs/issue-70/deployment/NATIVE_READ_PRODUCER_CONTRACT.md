@@ -24,8 +24,15 @@ events and keeps successful tool-name/call-ID correlation.
 A new real producer registers native `execute.before` and
 `execute.after` hooks. Before/after must correlate exact
 session ID, assistant message ID, call ID and file path. It only processes
-`read` with `status=completed` and a
-nontruncated file result identified by the stock read tool's metadata.
+`read` with `status=completed`, native `input.path`, a present result,
+no explicit offset/limit, and no reported failure/truncation.
+Stock OpenCode V2 v2.2.5 does **not** expose `metadata.display`; that field
+is not required or fabricated. To remain conservative without an authoritative
+display-completeness flag, eligible committed JSON records must be at most
+8 KiB and 200 lines. A default read plus these bounds is the supported
+nomination trigger; immutable Git-byte equality, not the displayed tool body,
+is the source fact authority. Actual local positive delivery must still be
+verified in a fresh stock-V2 process.
 The Git inspection and bounded candidate enqueue run asynchronously outside
 the interactive tool completion path.
 
@@ -81,11 +88,11 @@ implicitly flips the live gate's independent
    `COMMAND_SHAPE_FRICTION`. Central owns semantic repairs,
    final review and the later exact production opt-in.
 
-If the installed native read result does not provide the current source's
-`metadata.display` shape, stop and report the observed
-complete tool-hook schema; do not fabricate a successful nomination by
-injecting synthetic metadata or disabling safeguards. Central will apply
-one supported adapter correction in this same PR.
+If a later stock V2 version changes the supported `input.path` or
+`status=completed` contract, stop and report its observed, sanitized native
+hook shape. Do not fabricate a successful nomination by injecting synthetic
+metadata or disabling source and policy safeguards. Central will make the
+minimal supported adapter correction in the same PR.
 
 No new issue or PR is required. Host changes are limited to isolated test
 and packaging scratch; active installed source/config/service remains unchanged.

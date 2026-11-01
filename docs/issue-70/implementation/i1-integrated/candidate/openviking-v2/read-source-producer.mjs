@@ -9,6 +9,10 @@ import { isAbsolute, relative, sep } from "node:path"
 
 const exec = promisify(execFile)
 const LIMIT = 65536
+// Stay below the normal local read tool's output limits without relying on
+// metadata.display, which stock OpenCode V2 does not provide.
+const MAX_READ_BYTES = 8192
+const MAX_READ_LINES = 200
 const NAME = /^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/
 const BRANCH = /^refs\/heads\/[A-Za-z0-9_./-]+$/
 const HASH = /^[a-f0-9]{40}$/
@@ -37,11 +41,16 @@ export async function proposalFromCompletedRead(event, {
       !valid(event.messageID) || !valid(event.id) || !capturePolicy?.enabled ||
       !capturePolicy.tools?.includes("read") || !capturePolicy.workspaces?.includes(workspaceID)) return null
   const input = event.input
-  const display = event.result?.metadata?.display
-  if (!shape(input, ["filePath", "offset", "limit"]) || !isAbsolute(input.filePath ?? "") ||
-      (input.offset !== undefined && input.offset !== 1) || input.limit !== undefined ||
-      display?.type !== "file" || display?.truncated !== false ||
-      display.path !== input.filePath || event.result?.metadata?.truncated !== false ||
+  const result = event.result
+  // Stock V2 calls the native read argument "path" and has no metadata.display.
+  // A completed execute.after result authenticates the successful local call.
+  // Offset/limit denote partial reads. Any explicit failure or truncation
+  // indication must fail closed even though those metadata fields are optional.
+  if (!shape(input, ["path", "offset", "limit"]) || !isAbsolute(input.path ?? "") ||
+      input.offset !== undefined || input.limit !== undefined ||
+      result == null || result.isError === true || result.error != null ||
+      result.truncated === true || result.metadata?.truncated === true ||
+      result.metadata?.display?.truncated === true ||
       !isAbsolute(sourcePolicyPath ?? "")) return null
   try {
     const source = JSON.parse(await readFile(sourcePolicyPath, "utf8"))
@@ -59,18 +68,22 @@ export async function proposalFromCompletedRead(event, {
         !source.source_prefix.split("/").every(s => s && s !== "." && s !== "..")) return null
     const root = await realpath(source.repository)
     if (root !== source.repository || root !== workspaceID) return null
-    const path = await realpath(input.filePath)
-    if (path !== input.filePath || !within(path, root)) return null
+    const path = await realpath(input.path)
+    if (path !== input.path || !within(path, root)) return null
     const rel = relative(root, path).split(sep).join("/")
     if (!rel.startsWith(source.source_prefix + "/") || !rel.endsWith(".json") ||
         /(?:^|\/)(?:tests?|fixtures?)(?:\/|$)/i.test(rel)) return null
     const info = await stat(path)
-    if (!info.isFile() || info.size < 1 || info.size > LIMIT) return null
+    if (!info.isFile() || info.size < 1 || info.size > MAX_READ_BYTES) return null
     const sha = (await gitReader(root, "rev-parse", "--verify",
       source.trusted_ref + "^{commit}")).toString().trim()
     if (!HASH.test(sha)) return null
     const pinned = await gitReader(root, "show", sha + ":" + rel)
     if (pinned.length !== info.size || !pinned.equals(await readFile(path))) return null
+    // An omitted native display flag cannot certify an arbitrary large read.
+    // Keep eligible JSON records small enough to be complete under stock-V2
+    // default read limits; the gate still independently verifies the blob.
+    if (pinned.toString("utf8").split("\n").length > MAX_READ_LINES) return null
     const record = JSON.parse(pinned.toString("utf8"))
     const fields = ["schema_version","workspace_id","group_id","category","episode_body","reference_time"]
     const exclusive = record?.category === "exclusive_state_transition"
@@ -117,14 +130,16 @@ export function createReadSourceProducer({ workspaceID, capturePolicyPath,
   const before = event => {
     if (event?.tool !== "read" || !valid(event.sessionID) ||
         !valid(event.messageID) || !valid(event.id)) return
-    started.set(key(event), { messageID:event.messageID, path:event.input?.filePath })
+    if (!shape(event.input, ["path", "offset", "limit"]) ||
+        !isAbsolute(event.input.path ?? "")) return
+    started.set(key(event), { messageID:event.messageID, path:event.input.path })
     if (started.size > 1024) { started.delete(started.keys().next().value); stats.deferred++ }
   }
   const after = event => {
     const prior = started.get(key(event))
     started.delete(key(event))
     if (!prior || event?.tool !== "read" || event.status !== "completed" ||
-        prior.messageID !== event.messageID || prior.path !== event.input?.filePath) return
+        prior.messageID !== event.messageID || prior.path !== event.input?.path) return
     if (pending.size >= Math.max(1, Math.min(64, maxPending))) { stats.deferred++; return }
     const task = Promise.resolve().then(async () => {
       const policy = policyLoader(capturePolicyPath)

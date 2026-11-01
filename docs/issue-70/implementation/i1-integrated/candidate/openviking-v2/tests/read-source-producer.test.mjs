@@ -28,8 +28,7 @@ function fixture(t) {
   const capture={enabled:true,revision:"r1",workspaces:[root],
     groups:["ghdev_gh_mcp"],categories:["verified_architecture_fact"],tools:["read"]}
   const event={tool:"read",status:"completed",sessionID:"s",messageID:"m",id:"t",
-    input:{filePath:path},result:{metadata:{truncated:false,
-      display:{type:"file",truncated:false,path}}}}
+    input:{path},result:{metadata:{}}}
   return {root,path,record,capture,sourcePath,event}
 }
 test("successful stock-V2 local read nominates only matching Git source",async t=>{
@@ -76,11 +75,28 @@ test("dirty source, partial reads, disabled policy and untrusted workspace fail 
   writeFileSync(f.path,readFileSync(f.path,"utf8").replace("durable","transient"))
   assert.equal(await proposalFromCompletedRead(f.event,args),null)
 })
-test("missing read proof or secret-bearing Git record never nominates",async t=>{
+test("native completed read requires a result and rejects explicit errors/truncation",async t=>{
   const f=fixture(t),args={workspaceID:f.root,capturePolicy:f.capture,sourcePolicyPath:f.sourcePath}
-  assert.equal(await proposalFromCompletedRead({...f.event,result:{metadata:{truncated:false}}},args),null)
+  assert.equal(await proposalFromCompletedRead({...f.event,result:null},args),null)
+  assert.equal(await proposalFromCompletedRead({...f.event,result:{isError:true}},args),null)
+  assert.equal(await proposalFromCompletedRead({...f.event,result:{metadata:{truncated:true}}},args),null)
+  assert.equal(await proposalFromCompletedRead({...f.event,input:{filePath:f.path}},args),null)
+  assert.ok(await proposalFromCompletedRead({...f.event,result:{metadata:{}}},args))
+})
+test("secret-bearing Git record never nominates",async t=>{
+  const f=fixture(t),args={workspaceID:f.root,capturePolicy:f.capture,sourcePolicyPath:f.sourcePath}
   writeFileSync(f.path,JSON.stringify({...f.record,episode_body:"password=not allowed"}))
   git(f.root,"add",".");git(f.root,"commit","-qm","sensitive record")
+  assert.equal(await proposalFromCompletedRead(f.event,args),null)
+})
+
+test("overlong or excessively multiline records cannot rely on unreported display completeness",async t=>{
+  const f=fixture(t),args={workspaceID:f.root,capturePolicy:f.capture,sourcePolicyPath:f.sourcePath}
+  writeFileSync(f.path,JSON.stringify({...f.record,episode_body:"safe ".repeat(1800)}))
+  git(f.root,"add",".");git(f.root,"commit","-qm","oversized record")
+  assert.equal(await proposalFromCompletedRead(f.event,args),null)
+  writeFileSync(f.path,JSON.stringify({...f.record,episode_body:"safe\n".repeat(210)}))
+  git(f.root,"add",".");git(f.root,"commit","-qm","multiline record")
   assert.equal(await proposalFromCompletedRead(f.event,args),null)
 })
 
