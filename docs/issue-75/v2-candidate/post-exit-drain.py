@@ -94,9 +94,13 @@ def main():
         ]
         print("EX admission proven; invoking candidate drain with lock retained",
               flush=True)
-        result = subprocess.run(cmd, env=env, check=False,
-                                timeout=args.max_seconds + 45)
-        if result.returncode == 0:
+        try:
+            result = subprocess.run(cmd, env=env, check=False,
+                                    timeout=args.max_seconds + 45)
+            exit_code = result.returncode
+        except subprocess.TimeoutExpired:
+            exit_code = 3
+        if exit_code == 0:
             return 0
         # Graphiti add_memory ACKs asynchronously. On nonterminal timeout,
         # releasing EX might admit an agent while already-queued extraction
@@ -122,10 +126,13 @@ def main():
                 with socket.create_connection((parsed.hostname, parsed.port or 80), timeout=2):
                     print('Graphiti endpoint still live: EX retained', file=sys.stderr)
                     continue
-            except (ConnectionRefusedError, TimeoutError, OSError):
-                print('Graphiti endpoint unavailable; preserve unresolved journal '
-                      'and service logs for explicit reconciliation.', file=sys.stderr)
-                return result.returncode
+            except ConnectionRefusedError:
+                print('Graphiti endpoint refused connection; preserve unresolved '
+                      'journal and service logs for reconciliation.', file=sys.stderr)
+                return exit_code
+            except OSError as exc:
+                print('Graphiti listener state uncertain: ' + str(exc) +
+                      '; EX retained', file=sys.stderr)
 
 if __name__ == "__main__":
     try:
