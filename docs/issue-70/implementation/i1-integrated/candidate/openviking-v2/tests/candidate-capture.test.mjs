@@ -106,6 +106,31 @@ test("installed OpenCode 2.2.5 event shape: name arrives on input.started only",
   assert.equal(anonymous.status().pending, 0)
 })
 
+test("native local success uses executed=false; absent execution provenance is rejected", () => {
+  const local = structuredClone(event)
+  local.data.executed = false
+  assert.ok(candidateFromToolEvent(local, policy, "/work"))
+  delete local.data.executed
+  assert.equal(candidateFromToolEvent(local, policy, "/work"), null)
+})
+
+test("completed local hook shares exact candidate identity and bounded enqueue", async () => {
+  const seen = []
+  const observer = createCaptureObserver({
+    workspaceID: "/work", policyPath: "test", policyLoader: () => ({ ...policy, tools: ["read"] }),
+    url: "http://127.0.0.1:1", token: "fixture", enqueue: async item => { seen.push(item); return true },
+  })
+  const hook = { tool: "read", status: "completed", sessionID: "s1", messageID: "m1", id: "t1" }
+  const proposal = { group_id: "approved", category: "verified_architecture_fact",
+    fact_ref: "git:" + "a".repeat(40) + ":docs/memory-records/ghdev/f.json",
+    observed_at: "2026-10-31T21:41:00Z" }
+  const id = observer.fromCompletedHook(hook, proposal)
+  assert.match(id, /^[a-f0-9]{64}$/)
+  await observer.flush()
+  assert.equal(seen.length, 1)
+  assert.equal(observer.fromCompletedHook({ ...hook, status: "error" }, proposal), null)
+})
+
 test("secrets fixtures raw logs unsupported and unstructured claims are rejected", () => {
   for (const fact_ref of ["tests/fixture", "logs/run.log", "password=secret", "raw conversation text", "sk-abcdefghijklmnopqrstuvwxyz123456"]) {
     const changed = structuredClone(event)

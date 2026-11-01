@@ -11,7 +11,8 @@ import { initLogger, log } from "../openviking-context-v4/lib/utils.mjs"
 import { createHybridLexicalIndex } from "../openviking-context-v4/lib/shared/hybrid-lexical.mjs"
 import { createHybridRecall, loadVikingCorpus, DEFAULT_CORPUS_ROOT } from "../openviking-context-v4/lib/shared/hybrid-recall.mjs"
 import { normalizeToolName } from "../openviking-context-v4/lib/shared/uri-guard.mjs"
-import { createCaptureObserver } from "./candidate-capture.mjs"
+import { createCaptureObserver, loadCapturePolicy } from "./candidate-capture.mjs"
+import { createReadSourceProducer } from "./read-source-producer.mjs"
 import { createGraphitiRecall } from "./graphiti-recall.mjs"
 
 const pluginRoot = dirname(fileURLToPath(new URL("../openviking-context-v4/index.mjs", import.meta.url)))
@@ -72,6 +73,13 @@ export default {
       policyPath: process.env.GRAPHITI_CAPTURE_POLICY_PATH,
       url: process.env.GRAPHITI_CAPTURE_GATE_URL ?? "http://127.0.0.1:1933",
       token: process.env.GRAPHITI_CAPTURE_TOKEN ?? "",
+    })
+    const readProducer = createReadSourceProducer({
+      workspaceID: directory,
+      capturePolicyPath: process.env.GRAPHITI_CAPTURE_POLICY_PATH,
+      sourcePolicyPath: process.env.GRAPHITI_CAPTURE_SOURCE_POLICY_PATH,
+      observer: observeCandidate,
+      policyLoader: loadCapturePolicy,
     })
     const recallGraphiti = createGraphitiRecall({
       workspaceID: directory,
@@ -136,6 +144,8 @@ export default {
       if (await consumeCanonical(event.sessionID)) await manager.flushSession(event.sessionID, { commit: true, reason: "session.compacting" })
     })
     const before = await ctx.tool.hook("execute.before", (event) => uriGuard({ tool: event.tool, args: event.input }, { args: event.input }))
+    const readBefore = await ctx.tool.hook("execute.before", (event) => readProducer.before(event))
+    const readAfter = await ctx.tool.hook("execute.after", (event) => readProducer.after(event))
     const after = lexical ? await ctx.tool.hook("execute.after", (event) => {
       if (event.status !== "completed") return
       const name = normalizeToolName(event.tool)
@@ -174,7 +184,9 @@ export default {
     return async () => {
       stopped = true
       controller.abort()
-      await Promise.allSettled([subscriber, context.dispose(), compaction.dispose(), before.dispose(), after?.dispose(), mcp?.dispose()])
+      await Promise.allSettled([subscriber, context.dispose(), compaction.dispose(), before.dispose(), readBefore.dispose(), readAfter.dispose(), after?.dispose(), mcp?.dispose()])
+      await readProducer.flush()
+      await observeCandidate.flush()
       await manager.flushAll({ commit: true })
     }
   },
