@@ -49,22 +49,31 @@ if (!group || !allowed.includes(command) || !Number.isFinite(maxSeconds) ||
     if (process.env.GHDEV_MEMORY_POST_EXIT_LEASE !== 'admitted')
       throw new Error('Drain requires the admitted post-exit runner, not an interactive hook');
     const deadline = Date.now() + maxSeconds * 1000;
+    const before = await journal.list();
+    const persistedBefore = before.filter(x => x.status === 'persisted').length;
+    const submittedThisRun = new Set();
+    const reconciledThisRun = new Set();
     let settled = false;
     while (Date.now() < deadline) {
-      await memory.reconcile();
+      for (const id of await memory.reconcile()) reconciledThisRun.add(id);
       const states = await journal.list();
       const unresolved = states.filter(x =>
         x.status === 'submission_unknown' || x.status === 'queued');
       const pending = states.filter(x => x.status === 'pending');
       if (!unresolved.length && pending.length) {
         const submitted = await memory.drain();
+        for (const id of submitted) submittedThisRun.add(id);
         console.log(JSON.stringify({ event: 'submitted', candidateIDs: submitted }));
       }
       const latest = await journal.list();
       if (!latest.some(x => ['pending','queued','submission_unknown'].includes(x.status))) {
         settled = true;
         console.log(JSON.stringify({ event: 'settled',
-          persisted: latest.filter(x => x.status === 'persisted').length }));
+          persisted: latest.filter(x => x.status === 'persisted').length,
+          persisted_before: persistedBefore,
+          submitted_this_run: submittedThisRun.size,
+          reconciled_this_run: reconciledThisRun.size,
+          fresh_extraction_proven: [...submittedThisRun].some(id => reconciledThisRun.has(id)) }));
         break;
       }
       await new Promise(resolve => setTimeout(resolve, 2500));
