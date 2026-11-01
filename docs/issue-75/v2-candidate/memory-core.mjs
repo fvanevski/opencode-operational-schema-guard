@@ -205,48 +205,64 @@ export class GraphitiMcp {
   }
 }
 export class Memory {
-  constructor({ journal, graphiti, group }) {
-    this.journal = journal; this.graphiti = graphiti; this.group = group; this.processing = null;
+  constructor({ journal, graphiti, group, ranker = null }) {
+    this.journal = journal; this.graphiti = graphiti; this.group = group;
+    this.ranker = ranker; this.processing = null;
   }
   async stage(selected, source) {
     const candidate = makeCandidate(this.group, selected, source);
     return candidate && await this.journal.stage(candidate) ? candidate : null;
   }
-  // May run after a hook returns. Never retry a possibly submitted episode.
+  // ONLY a post-harness admitted caller may invoke drain. Graphiti queues
+  // asynchronous extraction, so the caller must retain its exclusive lease
+  // until explicit persistence readback or a typed unresolved exit.
   async drain() {
     if (this.processing) return this.processing;
     this.processing = (async () => {
-      const rows = (await this.journal.list()).filter(x => x.status === 'pending').slice(0, 2);
+      const rows = (await this.journal.list()).filter(x => x.status === 'pending').slice(0, 1);
+      const submitted = [];
       for (const row of rows) {
         if (!await this.journal.update(row.uuid, 'pending', 'submission_unknown')) continue;
+        const name = row.kind + ':' + row.uuid;
         try {
+          // Pinned Graphiti core generates remote UUID itself. Supplying the
+          // local deterministic UUID caused NodeNotFoundError on this host.
           await this.graphiti.call('add_memory', {
-            uuid: row.uuid, group_id: this.group, name: row.kind + ':' + row.uuid,
+            group_id: this.group, name,
             episode_body: row.assertion + '\n[Source class: ' + row.evidenceClass +
               '; Source reference: ' + row.sourceRef + ']',
             source: 'text', source_description: row.evidenceClass + ' | ' + row.sourceRef,
             reference_time: row.referenceTime,
           });
           await this.journal.update(row.uuid, 'submission_unknown', 'queued');
+          submitted.push(row.uuid);
         } catch {
-          // May have been queued remotely before network failure; manual/reconciled only.
+          // Transport failure may mean accepted+queued; never blind replay.
         }
       }
+      return submitted;
     })();
     try { return await this.processing; } finally { this.processing = null; }
   }
   async reconcile() {
-    const rows = (await this.journal.list()).filter(x => x.status === 'queued' || x.status === 'submission_unknown');
+    const rows = (await this.journal.list()).filter(x =>
+      ['queued', 'submission_unknown'].includes(x.status));
     if (!rows.length) return [];
-    const data = await this.graphiti.call('get_episodes', { group_ids: [this.group], max_episodes: 100 });
-    const live = new Set((data.episodes ?? []).filter(e => e.group_id === this.group).map(e => e.uuid));
-    const seen = [];
+    const data = await this.graphiti.call('get_episodes', {
+      group_ids: [this.group], max_episodes: 100,
+    });
+    if (!Array.isArray(data.episodes)) throw new Error('Graphiti episode list unavailable');
+    const persisted = [];
     for (const row of rows) {
-      if (live.has(row.uuid)) {
-        if (await this.journal.update(row.uuid, row.status, 'persisted')) seen.push(row.uuid);
-      }
+      const matches = data.episodes.filter(e => e?.group_id === this.group &&
+        e?.name === row.kind + ':' + row.uuid && validId(e?.uuid || ''));
+      // Zero matches may mean still extracting OR beyond the recent episode
+      // window. Multiple matches are a duplicate anomaly; never pick one.
+      if (matches.length !== 1) continue;
+      if (await this.journal.update(row.uuid, row.status, 'persisted',
+        { remoteEpisodeUuid: matches[0].uuid })) persisted.push(row.uuid);
     }
-    return seen;
+    return persisted;
   }
   async search(query, { limit = 4, maxChars = 1400 } = {}) {
     const text = safeText(query, 500);
@@ -257,26 +273,32 @@ export class Memory {
     const facts = await this.graphiti.call('search_memory_facts', {
       query: text, group_ids: [this.group], max_facts: 12,
     });
-    const result = [];
-    let budget = maxChars;
+    if (!Array.isArray(facts.facts)) return [];
+    const local = (await this.journal.list()).filter(r =>
+      r.status === 'persisted' && r.group === this.group && validId(r.remoteEpisodeUuid || ''));
+    const byRemote = new Map(local.map(r => [r.remoteEpisodeUuid, r]));
+    const candidates = [];
     const unique = new Set();
-    for (const fact of facts.facts ?? []) {
+    for (const fact of facts.facts) {
       if (fact.group_id && fact.group_id !== this.group) continue;
       const assertion = safeText(fact.fact, 480);
       if (!assertion || unique.has(assertion.toLowerCase())) continue;
       const ids = Array.isArray(fact.episodes) ? fact.episodes : [];
-      let source = null;
-      for (const id of ids.slice(0, 12)) {
-        const row = typeof id === 'string' ? await this.journal.get(id) : null;
-        if (row?.status === 'persisted' && row.group === this.group) { source = row; break; }
-      }
+      const source = ids.slice(0, 12).map(id => byRemote.get(id)).find(Boolean);
       if (!source) continue;
+      unique.add(assertion.toLowerCase());
       const temporal = fact.invalid_at ? 'historical/superseded' : 'current state not independently verified';
-      const entry = { fact: assertion, source: source.sourceRef, evidenceClass: source.evidenceClass,
-        temporal, validAt: fact.valid_at ?? null, invalidAt: fact.invalid_at ?? null };
+      candidates.push({ fact: assertion, source: source.sourceRef, evidenceClass: source.evidenceClass,
+        temporal, validAt: fact.valid_at ?? null, invalidAt: fact.invalid_at ?? null });
+    }
+    const { relevanceFilter } = await import('./relevance.mjs');
+    const ranked = await relevanceFilter(text, candidates, this.ranker);
+    const result = [];
+    let budget = maxChars;
+    for (const entry of ranked) {
       const cost = JSON.stringify(entry).length;
       if (cost > budget) continue;
-      result.push(entry); budget -= cost; unique.add(assertion.toLowerCase());
+      result.push(entry); budget -= cost;
       if (result.length >= limit) break;
     }
     return result;
