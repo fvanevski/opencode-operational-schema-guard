@@ -1,6 +1,10 @@
 # Issue #75 first integrated retrieval unit
 
 Source base: main 0f03cec9635304849ae17bfbf08ea930eab32e1d.
+See INTEGRATION.md for Central-authored code-level wiring; the adapter
+implements search orchestration and contributor-safe aggregation rather than
+leaving that semantic design to the local agent.
+
 These centrally authored modules and tests are *candidate source*, not an
 installed live plugin. The currently running stock V2 host source/config,
 Graphiti recall service and recovered gate overlays must be authenticated.
@@ -21,10 +25,10 @@ Graphiti recall service and recovered gate overlays must be authenticated.
   probes. Each query <=24 rows, aggregate <=192 rows, and <=96 total unique
   episode IDs. No broad scan, index creation or graph writes. Keep existing
   service semaphore and timeouts.
-- Aggregate duplicate edge facts AND ALL their episode contributors BEFORE
-  deciding a validation status. The existing format_rows truncates input to
-  24 rows and must be adapted to the larger bounded candidate set. A
-  max-results limit must not hide a contradictory exclusive contributor.
+- graphiti_retrieval_adapter.py merges ALL returned edge/episode contributors
+  before passing at most 24 complete fact/period rows to existing format_rows;
+  a saturated search probe fails closed rather than hiding contributors. The
+  source and exclusive-state validation SQL remains unchanged.
 - Use graphiti-intent.mjs to replace the fixed keyword-regex request gate
   in the stock V2 graphiti-recall.mjs. Keep its group/policy/token checks,
   <=1200 ms timeout, <=8 items/2400 chars, source-attributed formatting and

@@ -17,7 +17,7 @@ Objective: complete the FIRST cohesive Issue #75 retrieval improvement as
 an integrated Python Graphiti read-only service + stock OpenCode V2 hook +
 frozen old/new selection benchmark, not as disconnected microtasks.
 
-1. Read README.md and centrally staged source/tests in this directory.
+1. Read README.md, INTEGRATION.md, and centrally staged source/tests in this directory.
 Verify working branch exact SHA from kickoff. Inspect applicable AGENTS.md
 and source/tool/validation instructions. Compare the actual installed
 OpenCode V2 Graphiti hook, Python recall server, config, and relevant host
@@ -28,14 +28,16 @@ using a disposable seeded graph and disposable authoritative receipts.
 Freeze direct, paraphrased, implicit dependency, multi-entity, historical,
 irrelevant, wrong-group and unsupported-source queries and relevance labels
 BEFORE applying the candidate.
-3. Integrate centrally authored graphiti_relevance.py and graphiti-intent.mjs
-into an ISOLATED candidate of the real installed code. Bind at most six
+3. Integrate centrally authored graphiti_relevance.py, graphiti_retrieval_adapter.py
+and graphiti-intent.mjs into an ISOLATED candidate of the real installed code.
+Follow the exact Reader.query and client hook substitutions in INTEGRATION.md. Bind at most six
 parameterized edge-name/fact search terms and two dependency-neighbor
 lookups. Preserve all contributor receipts/temporal verdicts, source
 attribution, policy separation, bounded latency and ordinary OpenViking
 fallback. Resolve straightforward API/interface differences only within
 this exact retrieval subsystem, not an unplanned platform rewrite.
-4. Run staged Python unittest + node:test and existing relevant Issue #70
+4. Run both staged Python unittest modules, the staged node:test module,
+and existing relevant Issue #70
 regressions; exercise the real disposable service/stock V2 context path,
 including missing Graphiti endpoint and exclusive validation conflict.
 Repair in-scope candidate defects and rerun impacted tests as needed.
