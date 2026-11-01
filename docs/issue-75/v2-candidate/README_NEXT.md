@@ -30,6 +30,7 @@ CPU-only from this candidate directory:
     node --check benchmark-evaluate.mjs
     node --test memory-core.test.mjs relevance.test.mjs
     python3 -m py_compile post-exit-drain.py
+    python3 -m unittest discover -p test_post_exit_drain.py
 
 The Build agent owns actual execution, integration and correction of verified host mismatches within the named source. The previous 7-query benchmark and relevance judgments are immutable. Rerun these plus separate holdout probes; targets remain precision >=0.80, recall >=0.75, >=2 additional covered cases over the first 5/7 heuristic-only baseline, zero actual cross-group leaks. Do not tune those judgments, fabricate old service results or treat the heuristic-only baseline as live service output.
 
