@@ -137,60 +137,6 @@
    "source_base_sha256": null
   },
   {
-   "candidate_sha256": "ac54e32016b2c29d38c302f116a69110395a579d82b602d2cbf7cbf416d63e4a",
-   "component": "openviking-v2",
-   "path": "package.json",
-   "source_base_sha256": "ac54e32016b2c29d38c302f116a69110395a579d82b602d2cbf7cbf416d63e4a"
-  },
-  {
-   "candidate_sha256": "410129383ca7d4896d78fa0a6e2393fac9374135990788af83671e7523235fed",
-   "component": "openviking-v2",
-   "path": "index.mjs",
-   "source_base_sha256": "6899822ec75a16ba05578d4ba165dfe8f913f3d37a4d96717767a170b906766d"
-  },
-  {
-   "candidate_sha256": "b30bbe291ac02c477dc7f6febf40b943f8166a086169aa37c316611293fc9d7e",
-   "component": "openviking-v2",
-   "path": "memory-candidate-v1.schema.json",
-   "source_base_sha256": null
-  },
-  {
-   "candidate_sha256": "dea00b72af7f476612d6b997d69ba8a8b640ae4d349f1954e61014f1f351b57b",
-   "component": "openviking-v2",
-   "path": "candidate-capture.mjs",
-   "source_base_sha256": null
-  },
-  {
-   "candidate_sha256": "084fae37be2fccacd3c3459b92bc0786abb2a307560520e644e13c8cf5cd42f4",
-   "component": "openviking-v2",
-   "path": "graphiti-recall.mjs",
-   "source_base_sha256": null
-  },
-  {
-   "candidate_sha256": "0a124d2ef8f3f081cb759f938a1be3c620dfc4c46eb700ea5a8142d02bca1c85",
-   "component": "openviking-v2",
-   "path": "tests/candidate-capture.test.mjs",
-   "source_base_sha256": null
-  },
-  {
-   "candidate_sha256": "69359d8b945c9a4e2586edbb8023e6bccdce9700b3a9f2bd809576fa79a4cd31",
-   "component": "openviking-v2",
-   "path": "tests/graphiti-recall.test.mjs",
-   "source_base_sha256": null
-  },
-  {
-   "candidate_sha256": "770d5c0bae05b67f193f9b5fd205bb7e4e8e63f754727f920223a2fe37c65860",
-   "component": "openviking-v2",
-   "path": "tests/central-authentication-regressions.test.mjs",
-   "source_base_sha256": null
-  },
-  {
-   "candidate_sha256": "cd77e3e057940b2f62c26e422e594ab0ca02ccd339c550ddb042f5b619e4c026",
-   "component": "openviking-v2",
-   "path": "tests/capture-isolation.test.mjs",
-   "source_base_sha256": null
-  },
-  {
    "candidate_sha256": "6b876bdb26588f8f1e67e066c8c91637ad5fd344e679ebb2515f87526567d8d2",
    "component": "backend",
    "path": "openviking/session/session.py",
@@ -246,15 +192,69 @@
   },
   {
    "component": "openviking-v2",
+   "path": "candidate-capture.mjs",
+   "source_base_sha256": null,
+   "candidate_sha256": "dea00b72af7f476612d6b997d69ba8a8b640ae4d349f1954e61014f1f351b57b"
+  },
+  {
+   "component": "openviking-v2",
+   "path": "graphiti-recall.mjs",
+   "source_base_sha256": null,
+   "candidate_sha256": "084fae37be2fccacd3c3459b92bc0786abb2a307560520e644e13c8cf5cd42f4"
+  },
+  {
+   "component": "openviking-v2",
+   "path": "index.mjs",
+   "source_base_sha256": "6899822ec75a16ba05578d4ba165dfe8f913f3d37a4d96717767a170b906766d",
+   "candidate_sha256": "410129383ca7d4896d78fa0a6e2393fac9374135990788af83671e7523235fed"
+  },
+  {
+   "component": "openviking-v2",
+   "path": "memory-candidate-v1.schema.json",
+   "source_base_sha256": null,
+   "candidate_sha256": "b30bbe291ac02c477dc7f6febf40b943f8166a086169aa37c316611293fc9d7e"
+  },
+  {
+   "component": "openviking-v2",
+   "path": "package.json",
+   "source_base_sha256": "ac54e32016b2c29d38c302f116a69110395a579d82b602d2cbf7cbf416d63e4a",
+   "candidate_sha256": "ac54e32016b2c29d38c302f116a69110395a579d82b602d2cbf7cbf416d63e4a"
+  },
+  {
+   "component": "openviking-v2",
    "path": "read-source-producer.mjs",
    "source_base_sha256": null,
-   "candidate_sha256": "b7553772cdc2308ec8ca250610f6bf16e501d514f2221f76a1fe7b541dad05e6"
+   "candidate_sha256": "f36370625e0a701258bbb3c3ae589fe17f598040b1752a1a7f61bceda2c582f2"
+  },
+  {
+   "component": "openviking-v2",
+   "path": "tests/candidate-capture.test.mjs",
+   "source_base_sha256": null,
+   "candidate_sha256": "0a124d2ef8f3f081cb759f938a1be3c620dfc4c46eb700ea5a8142d02bca1c85"
+  },
+  {
+   "component": "openviking-v2",
+   "path": "tests/capture-isolation.test.mjs",
+   "source_base_sha256": null,
+   "candidate_sha256": "cd77e3e057940b2f62c26e422e594ab0ca02ccd339c550ddb042f5b619e4c026"
+  },
+  {
+   "component": "openviking-v2",
+   "path": "tests/central-authentication-regressions.test.mjs",
+   "source_base_sha256": null,
+   "candidate_sha256": "770d5c0bae05b67f193f9b5fd205bb7e4e8e63f754727f920223a2fe37c65860"
+  },
+  {
+   "component": "openviking-v2",
+   "path": "tests/graphiti-recall.test.mjs",
+   "source_base_sha256": null,
+   "candidate_sha256": "69359d8b945c9a4e2586edbb8023e6bccdce9700b3a9f2bd809576fa79a4cd31"
   },
   {
    "component": "openviking-v2",
    "path": "tests/read-source-producer.test.mjs",
    "source_base_sha256": null,
-   "candidate_sha256": "01e7ba5436609ac668e939e0be896520bcf5334257e6218f57d9dddaff5f1ff2"
+   "candidate_sha256": "86eea49f0c55b952cae79b43ef14493b021d8c02eede1c6a88916ce12b7e6a69"
   }
  ],
  "phase2_evidence": {
@@ -418,7 +418,7 @@
   {
    "apply_and_reverse": "PASS",
    "path": "patches/openviking-v2.patch",
-   "sha256": "849c6cb9acb12b28c6c917354638175638a96465cee75adaf1e60030fc315549",
+   "sha256": "9027d2deb1aade3b44f85f3c7d18c5114da05b8bc4eff099cfd797a03030ca4c",
    "entries": "10 changed-file entries; 11 candidate files including unchanged package.json. Native read producer module, hooks and tests; authenticated historical index base 6899822e. Exact forward/reverse; new files removed in disposable reverse copy."
   },
   {

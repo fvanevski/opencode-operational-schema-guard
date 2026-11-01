@@ -1,32 +1,108 @@
 {
-  "result": "BLOCKED",
-  "initial_central_head": "854c5ea446eef798001b4a2a161330cf3aade254",
-  "initial_central_tree": "b1a3652eedf38feac2c6778aa36a278b2b70b699",
+  "result": "PASS",
+  "central_source_head": "ba3df70ec9a6ebf9a57fe6feacf37169b4d6f361",
+  "central_source_tree": "6f74caf8526cade2c806f0a33c29106e0effd060",
   "installed_opencode_version": "2.2.5",
-  "binary_sha256": "8d060e1d2fbb9bb44cf09ae6ed1f3f6a7cff070b5227e2f90970132b23a92050",
-  "actual_harness": "managed-codex-app-server 0.166.0; /proc ancestry comm=codex argv[1]=app-server; direct stock OpenCode child launched via installed admission wrapper",
+  "actual_harness": {
+    "ancestry": [
+      {
+        "pid": 3767439,
+        "comm": "python3",
+        "exe": "/usr/bin/python3.14",
+        "mode": null
+      },
+      {
+        "pid": 3767415,
+        "comm": "rtk",
+        "exe": "/home/filip/.local/bin/rtk",
+        "mode": null
+      },
+      {
+        "pid": 2370541,
+        "comm": "codex",
+        "exe": "/opt/filip/.codex/packages/app-server-daemon/releases/0.166.0-x86_64-unknown-linux-musl/bin/codex",
+        "mode": "app-server"
+      },
+      {
+        "pid": 1473,
+        "comm": "systemd",
+        "exe": "unreadable",
+        "mode": null
+      }
+    ],
+    "opencode_binary": "/home/filip/.opencode/bin/opencode",
+    "opencode_sha256": "8d060e1d2fbb9bb44cf09ae6ed1f3f6a7cff070b5227e2f90970132b23a92050",
+    "opencode_version": "opencode v2.2.5"
+  },
+  "focused_node_tests": {
+    "tests": 31,
+    "pass": 31,
+    "fail": 0,
+    "exit_code": 0,
+    "evidence": "focused-node-tests.tap",
+    "command": "node --test docs/issue-70/implementation/i1-integrated/candidate/openviking-v2/tests/*.test.mjs"
+  },
+  "syntax": {
+    "modules": 9,
+    "failures": 0,
+    "command": "node --check <each V2 .mjs>"
+  },
+  "v4_regressions": {
+    "tests": 24,
+    "pass": 24,
+    "fail": 0,
+    "scope": "fresh copied installed V4 memory-session, r3b-manager-integration, hybrid-recall",
+    "evidence": "v4-tests.tap"
+  },
+  "root_tests": {
+    "rerun": false,
+    "carryover": "493/493 from prior head 6724ef1 only; not proof of corrected source",
+    "central_exact_head_ci": "node-contract SUCCESS observed for ba3df70"
+  },
+  "native_read_path": "PASS",
+  "native_completed_result": "PASS",
+  "native_tool_correlation": "PASS",
+  "git_source_verification": "PASS",
+  "candidate_http_delivery": "PASS",
+  "durable_work_record": "PASS",
+  "source_attestation": "PASS",
+  "negative_and_duplicate_paths": {
+    "failed": "PASS_ZERO_NEW_WORK",
+    "partial": "PASS_ZERO_NEW_WORK",
+    "dirty": "PASS_ZERO_NEW_WORK",
+    "unauthorized_path": "PASS_ZERO_NEW_WORK",
+    "unauthorized_group": "PASS_ZERO_NEW_WORK",
+    "duplicate": "PASS_HTTP_202_ONE_RECORD; exact native-generated envelope replay, same logical source identity"
+  },
+  "native_calls": 6,
+  "native_context_callbacks": 12,
+  "http_status": 202,
+  "initial_durable_status": "deferred_unverified",
+  "source_authorized_status": "queued",
+  "durable_work_count": 1,
+  "attempt_generation": 0,
   "package_reconstruction": {
-    "central_head": "854c5ea446eef798001b4a2a161330cf3aade254",
-    "central_tree": "b1a3652eedf38feac2c6778aa36a278b2b70b699",
+    "central_head": "ba3df70ec9a6ebf9a57fe6feacf37169b4d6f361",
+    "central_tree": "6f74caf8526cade2c806f0a33c29106e0effd060",
     "approved_installed_source": "b126b6d415a3f8706e0c8c22b219cca2161a7465",
     "historical_base": {
       "package.json": "ac54e32016b2c29d38c302f116a69110395a579d82b602d2cbf7cbf416d63e4a",
       "index.mjs": "6899822ec75a16ba05578d4ba165dfe8f913f3d37a4d96717767a170b906766d"
     },
     "old_patch_sha256": "b0ee5faae46ccaf8c9201f9a0bdd46d8f4c20a285e38e27832707b1b5ef2b321",
-    "patch_sha256": "849c6cb9acb12b28c6c917354638175638a96465cee75adaf1e60030fc315549",
+    "patch_sha256": "9027d2deb1aade3b44f85f3c7d18c5114da05b8bc4eff099cfd797a03030ca4c",
     "candidate_files": {
       "candidate-capture.mjs": "dea00b72af7f476612d6b997d69ba8a8b640ae4d349f1954e61014f1f351b57b",
       "graphiti-recall.mjs": "084fae37be2fccacd3c3459b92bc0786abb2a307560520e644e13c8cf5cd42f4",
       "index.mjs": "410129383ca7d4896d78fa0a6e2393fac9374135990788af83671e7523235fed",
       "memory-candidate-v1.schema.json": "b30bbe291ac02c477dc7f6febf40b943f8166a086169aa37c316611293fc9d7e",
       "package.json": "ac54e32016b2c29d38c302f116a69110395a579d82b602d2cbf7cbf416d63e4a",
-      "read-source-producer.mjs": "b7553772cdc2308ec8ca250610f6bf16e501d514f2221f76a1fe7b541dad05e6",
+      "read-source-producer.mjs": "f36370625e0a701258bbb3c3ae589fe17f598040b1752a1a7f61bceda2c582f2",
       "tests/candidate-capture.test.mjs": "0a124d2ef8f3f081cb759f938a1be3c620dfc4c46eb700ea5a8142d02bca1c85",
       "tests/capture-isolation.test.mjs": "cd77e3e057940b2f62c26e422e594ab0ca02ccd339c550ddb042f5b619e4c026",
       "tests/central-authentication-regressions.test.mjs": "770d5c0bae05b67f193f9b5fd205bb7e4e8e63f754727f920223a2fe37c65860",
       "tests/graphiti-recall.test.mjs": "69359d8b945c9a4e2586edbb8023e6bccdce9700b3a9f2bd809576fa79a4cd31",
-      "tests/read-source-producer.test.mjs": "01e7ba5436609ac668e939e0be896520bcf5334257e6218f57d9dddaff5f1ff2"
+      "tests/read-source-producer.test.mjs": "86eea49f0c55b952cae79b43ef14493b021d8c02eede1c6a88916ce12b7e6a69"
     },
     "file_count": 11,
     "changed_entries": 10,
@@ -35,89 +111,14 @@
     "preserved_originals": "PASS",
     "semantic_source_changes": false
   },
-  "test_results": {
-    "v2": {
-      "command": "node --test docs/issue-70/implementation/i1-integrated/candidate/openviking-v2/tests/*.test.mjs",
-      "tests": 29,
-      "pass": 29,
-      "fail": 0,
-      "exit_code": 0,
-      "output_sha256": "67cf6c266eab3ade096f6a5298bb506808f1db1a3a0cb9cbe2de751ad3ea1a12"
-    },
-    "root": {
-      "command": "npm test",
-      "tests": 493,
-      "pass": 493,
-      "fail": 0,
-      "exit_code": 0,
-      "output_sha256": "06cd0985ed20258bedb791fe59e899851b7e3b2bc30b09abe7ea275722b8aab1"
-    },
-    "v4": {
-      "command": "node --test tests/memory-session.test.mjs tests/r3b-manager-integration.test.mjs tests/hybrid-recall.test.mjs",
-      "tests": 24,
-      "pass": 24,
-      "fail": 0,
-      "exit_code": 0,
-      "output_sha256": "d2c34c1f530f1ed988e14027816678083ff12e394dcdd624da267ecc5d2a5b69"
-    },
-    "root_static": {
-      "command": "npm run check",
-      "exit_code": 0,
-      "output_sha256": "5c37a504539b3bff6fb3617779d574d85608d49577a7e4ec5fc32901429cb690"
-    },
-    "python_gate": {
-      "result": "NOT_RERUN_UNCHANGED_INTERFACE",
-      "reason": "No gate/Python/interface edits; native endpoint is the existing GateServer/QueueDB contract."
-    }
-  },
-  "native_before_after_callbacks": "PASS_REAL_5_CALLS_FINAL_RUN",
-  "native_identity_correlation": true,
-  "native_local_execution_semantics": "4 completed local reads / 1 native failed read; terminal executed=false for all",
-  "native_read_result": {
-    "keys": [
-      "output",
-      "content",
-      "metadata"
-    ],
-    "outputSchema": {
-      "type": "string",
-      "uri": "string",
-      "name": "string",
-      "content": "string",
-      "encoding": "string",
-      "mime": "string"
-    },
-    "contentSchema": {
-      "type": "array",
-      "items": [
-        {
-          "type": "string",
-          "text": "string"
-        }
-      ]
-    },
-    "metadata": {
-      "truncated": false
-    }
-  },
-  "native_negative_paths": {
-    "dirty": "completed / zero nomination",
-    "failed": "error / zero nomination",
-    "offpolicy": "completed / zero nomination",
-    "partial": "completed / metadata.truncated=true / zero nomination",
-    "limitation": "zero positive nomination means negative rejection cannot establish a functioning positive producer"
-  },
-  "disposable_gate_delivery": "BLOCKED_ZERO_DURABLE_ROWS; producer eligibility rejects before Git attestation or HTTP enqueue (source inference, not an observed HTTP success)",
-  "durable_candidate_status": "NONE_ZERO_ROWS",
-  "duplicate_durable_nominations": "UNQUALIFIED_NO_POSITIVE_DELIVERY",
-  "git_source_attestation": "DISPOSABLE_RECORD_PINNED; PRODUCER_ATTESTATION_NOT_REACHED",
-  "source_api_mismatch": "SOURCE_API_MISMATCH: installed read input.path vs producer input.filePath; installed result.metadata={truncated:false} has no display; producer requires display.type=file/display.path/display.truncated=false",
-  "smallest_central_owned_correction": "Adapt read-source-producer.mjs before/after path correlation and eligibility to native input.path; authenticate complete-file proof using the installed structured result.output union and metadata.truncated, without synthesizing metadata.display; retain Git blob equality, policy, ID correlation and all partial/dirty/secret checks. Replace synthetic read fixtures with captured native-shaped regressions. Reconstruct and repeat positive native delivery after Central source correction.",
-  "openviking_nonregression": "10 real context hook invocations in final run; ordinary event subscriber/lifecycle observed; V4 24/24. AutoRecall/autoCapture deliberately disabled; no real memory backend accessed.",
-  "semantic_source_changes": false,
-  "production_source_changes": false,
-  "production_config_changes": false,
-  "production_graph_writes": false,
+  "source_manifest_sha256": "61a86b7d45b5e77082443085b5a49b58a7b5c9e7c8d85e171fcc79021d660e2b",
+  "producer_source_policy_same_canonical_path_and_hash": true,
+  "evidence_directory": "/home/filip/.issue70-promotion/evidence/producer-final-6xdot6sb",
+  "installed_production_unchanged": true,
+  "graphiti_production_writes": false,
+  "graphiti_extraction": false,
   "gpu_inference": false,
-  "readiness": "BLOCKED"
+  "semantic_source_edits": false,
+  "remaining_blockers": [],
+  "final_readiness": "READY_FOR_CENTRAL_REVIEW"
 }

@@ -1,79 +1,80 @@
-# Issue #70 native read producer: host integration handback
+# Issue #70 native read producer: final host qualification
 
-Result: **BLOCKED — SOURCE_API_MISMATCH**, not ready for acceptance.
-The mechanical package is reconstructed; the producer does not nominate a genuine
-successful stock-V2 read. No production activation is authorized or performed.
+Result: **PASS — READY_FOR_CENTRAL_REVIEW**. Existing draft PR #74 remains the
+review target. Production activation and Graphiti extraction were not performed.
 
-Central source authenticated from origin: `854c5ea446eef798001b4a2a161330cf3aade254`,
-tree `b1a3652eedf38feac2c6778aa36a278b2b70b699`.
-Installed source readback passed for all 15 critical files against approved
-`b126b6d415a3f8706e0c8c22b219cca2161a7465` / tree
-`dacb27120deef3e8bfa27b50222bf20cb60c450c`, unchanged before/after.
-Production Graphiti enablement and approval remain false. Ten protected config/source
-hashes also match the earlier activation-preflight identities on current readback.
+Central source was fetched from origin branch `issue/70-v2-read-producer` and
+matched head `ba3df70ec9a6ebf9a57fe6feacf37169b4d6f361`, tree
+`6f74caf8526cade2c806f0a33c29106e0effd060`. Every tested V2 candidate file is
+byte-identical to that committed source. Build made only mechanical package,
+inventory and qualification-document changes.
 
-The new V2 patch has 10 changed-file entries and reconstructs all 11 candidate
-files byte-for-byte. Reverse restores the original index/package and removes all
-nine introduced files. The historical index is `6899822ec75a16ba05578d4ba165dfe8f913f3d37a4d96717767a170b906766d`;
-it was recovered by reversing the authenticated approved package and independently
-matched to preserved pre-promotion originals. The promoted candidate was never
-misrepresented as the historical base. Gate/backend patches are unchanged.
-The manifest, inventory and checksums include the new module and test.
-Future promotion mapping must include `candidate/openviking-v2/read-source-producer.mjs`
-to the corresponding installed V2 plugin directory; the approved-installed-source
-verifier remains pinned to the existing deployment and is intentionally unchanged.
+Fresh checks: complete V2 suite **31/31 PASS**, syntax **9/9 modules PASS**,
+and copied installed V4 memory/session/hybrid regressions **24/24 PASS**.
+The root campaign was not rerun. Its earlier 493/493 result applies only to
+its original source; Central's exact-head node-contract CI was independently
+observed passing. Final publication identity and CI are recorded in the sealed
+packet after publication, avoiding self-referential commit hashes here.
 
-Verification: V2 **29/29**, repository **493/493**, V4 memory/session/hybrid
-regressions **24/24**, repository static checks and diff hygiene passed. Python/gate,
-GPU, real Graphiti and full OpenViking deployment campaigns were not repeated.
+The actual installed stock OpenCode **2.2.5** binary has SHA-256
+`8d060e1d2fbb9bb44cf09ae6ed1f3f6a7cff070b5227e2f90970132b23a92050`.
+It ran through the existing admission launcher in a fresh private project,
+HOME/XDG and server, with explicit plugin discovery and copied V4 sibling.
+The local model stub requested real native reads; it did not invoke the producer.
+The observer delegated unchanged events and fetch arguments and retained only
+structural projections and disposable candidate envelopes.
 
-Stock installed OpenCode **v2.2.5**, binary SHA-256
-`8d060e1d2fbb9bb44cf09ae6ed1f3f6a7cff070b5227e2f90970132b23a92050`,
-ran in a fresh disposable HOME/XDG/project through the installed admission launcher.
-The unchanged Central candidate was loaded through a transparent hook-observer
-wrapper, preserving the required copied V4 sibling imports. Every callback received
-the original native event unchanged. Only a local stub model was used. The gate
-used the existing GateServer/QueueDB contract with a private DB, disposable
-`issue70_native_read` group, production_activation=false, no draining worker or
-Graphiti adapter. Source-policy canonical paths and SHA-256 were identical for
-producer and disposable gate. Raw CLI output and databases are excluded from the
-sanitized evidence packet.
+Six real calls correlated session, message, call ID and input.path across native
+execute.before/after. The clean committed JSON read completed with
+`result.metadata = {truncated:false}`, no metadata.display, and native
+session.tool.success executed=false. The producer authenticated the local bytes
+against the trusted Git commit and generated the correct Git fact_ref,
+workspace, private issue70_native_read group, category and deterministic event ID.
 
-Real before/after hooks correlate exact session, message and call IDs. A clean
-committed authorized JSON read completes with `input: {path: <absolute path>}`,
-`status: completed`, and `result.metadata: {truncated: false}`. There is **no
-metadata.display**. `result.output` is a structured object with string fields
-`type`, `uri`, `name`, `content`, `encoding`, `mime`; content is not retained.
-Native `session.tool.success.executed=false` is observed for the same IDs.
+The actual candidate HTTP response was **202**, with durable disposition
+**deferred_unverified**. A direct SQLite read confirmed exactly one corresponding
+memory_work/source-admission identity. Exact native-generated candidate replay
+with the same logical tool identity returned 202 and retained one record.
+This is HTTP nomination replay; no synthetic producer call was substituted for
+the native positive read. The existing GitFactResolver loaded the gate's exact
+source-policy file, then existing auto_admit independently persisted one source
+attestation and moved the same work record to **queued**. Attempt generation
+remained zero and backend identity null. No draining worker or Graphiti adapter
+was started. Producer/gate policy canonical path and SHA-256 matched;
+production_activation=false and production approval=false.
 
-The producer instead requires `input.filePath` and metadata.display with file
-type/path/truncated proof. It therefore rejects the successful read before Git
-attestation or enqueue. The authentic disposable Git record is independently
-pinned, but **no producer-derived Git reference or durable nomination exists**.
-All five final CLI turns exit 0; that is not producer success. Dirty, failed,
-off-policy and genuinely partial reads produce zero rows. Partial read emits
-metadata.truncated=true. These negatives are not sufficient positive qualification
-while the producer rejects every native read. Duplicate durable delivery remains
-unqualified. Ten native context hook invocations and the baseline event subscriber
-remain active with autoRecall/autoCapture disabled; real backend recall is outside
-this isolated test.
+Failed, partial (limit=1 with reported truncation), dirty Git source,
+unauthorized path and unauthorized group reads each added **zero** records.
+Twelve actual context callbacks and the baseline event subscription were observed.
+The V4 regressions cover the unchanged session/capture machinery. Real backend
+recall and production Graphiti terminal persistence are outside this qualification.
 
-Smallest proposed Central source repair: use the native `path` field in exact
-before/after correlation and eligibility; authenticate full-file proof from the
-installed structured output and metadata truncation contract; retain immutable
-Git byte equality and every policy/negative guard. Update producer fixtures to
-the captured native shape. Do not fabricate metadata.display. This is substantive
-source authority work and was **not applied** by Build.
+Mechanical packaging reused the previous reconstruction script/contract. The
+approved b126b6d4 package, manifest and patch were authenticated against committed
+bytes, then its patch was reversed and the recovered historical originals were
+independently matched to preserved baseline files. The original index SHA-256 is
+`6899822ec75a16ba05578d4ba165dfe8f913f3d37a4d96717767a170b906766d`.
+The new patch has ten changed entries and eleven candidate files; forward
+reconstruction is byte-exact, reverse restores both originals and removes all
+nine introduced files. Gate/backend patches and historical source ownership
+remain unchanged. Inventory, manifest and checksums have been regenerated.
 
-Actual build harness: managed Codex app-server **0.166.0**, verified from /proc
-executable and argv[1]=app-server. The direct-CLI preference was not satisfied by
-the invoking environment. Stock OpenCode qualification itself used explicit CLI
-children, private server URL and an admission lease. No harness trust state was
-edited to conceal this provenance.
+Ninety-one protected file hashes match before/after, including all fifteen
+critical installed sources from approved b126b6d4. Production Graphiti enablement
+and production approval remain false; the new producer is absent from the live
+plugin. No production database, private transcript or raw server log is archived.
 
-Private packet: `/home/filip/.issue70-promotion/evidence/native-read-ediiy5kv`.
-See `qualification-native-read.json` for source identities and exact test commands;
-the private packet contains bounded native shapes, source/config readbacks,
-GHDEV-10 command friction and a SHA-256 manifest. Published commit/tree and exact-head
-CI are recorded after publication in that packet to avoid self-referential hashes.
-Central must repair and independently review this same PR before acceptance.
+Actual build harness is **managed Codex app-server 0.166.0**, verified by /proc
+ancestry. The invoking environment did not satisfy the codex-cli-direct preference;
+this is disclosed provenance, not a native OpenCode qualification failure.
+GHDEV-10 COMMAND_SHAPE_FRICTION.json separates the two new resolved command-shape
+mistakes from the previous handback's resolved invocation issues and Central's
+now-corrected source API mismatch.
+
+Evidence: `/home/filip/.issue70-promotion/evidence/producer-final-6xdot6sb`.
+See qualification-native-read.json for results and exact source identities.
+The packet contains the native event correlation, actual HTTP response, durable
+record projection, independent source attestation, test outputs, reconstruction
+proof and command-shape record. Its final remote head/tree, changed-file list,
+exact-head CI and archive SHA-256 are recorded after the single non-force update.
+Central owns independent exact-head review and all later approval/activation.
