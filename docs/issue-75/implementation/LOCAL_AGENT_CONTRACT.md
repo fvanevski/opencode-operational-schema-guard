@@ -1,3 +1,7 @@
+# SUPERSEDED — do not execute
+
+Following the Issue #75 architectural correction on 2026-11-01, this first-pass retrieval-only packet and its local-agent kickoff are **withdrawn**. It incorrectly assumed that Issue #70's Git source authority, receipts, temporal validation and scheduler were mandatory implementation contracts. Those are prior working fixtures to evaluate, not required architecture. See `docs/issue-75/ARCHITECTURE_REASSESSMENT.md`. The code/tests below remain historical experiments, not the approved Issue #75 implementation. No live host behavior is changed by this notice.
+
 <<< LOCAL_AGENT_CONTRACT_BEGIN >>>
 LOCAL_AGENT_PRIMARY=build
 REPO_ID=fvanevski/opencode-operational-schema-guard
