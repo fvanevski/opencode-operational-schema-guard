@@ -1,0 +1,120 @@
+diff --git a/docs/issue-75/v2-candidate/memory-core.mjs b/docs/issue-75/v2-candidate/memory-core.mjs
+index 9478c8e..6151caa 100644
+--- a/docs/issue-75/v2-candidate/memory-core.mjs
++++ b/docs/issue-75/v2-candidate/memory-core.mjs
+@@ -9,7 +9,10 @@ import path from 'node:path';
+ 
+ const PRIVATE = /<private\b|<\/private>|BEGIN (?:RSA |OPENSSH )?PRIVATE KEY|(?:api[_-]?key|access[_-]?token|password|secret)\s*[:=]|authorization\s*:\s*bearer|gh[pousr]_[A-Za-z0-9]{18,}|sk-[A-Za-z0-9_-]{16,}/i;
+ const DECISION = /\b(?:i (?:prefer|want|choose|decided|will use)|we (?:prefer|choose|decided|will use)|(?:let's|lets) (?:use|keep|switch to)|(?:for this (?:project|repo|workflow)|going forward)[,: ]+|(?:remember|note) (?:that|this)|(?:the (?:decision|architecture|default|requirement) is))\b/i;
+-const TEST_CMD = /^(?:env\s+\S+\s+)*(?:python(?:3)? -m pytest|pytest|node --test|npm test|npm run test|bun test|cargo test|go test)\b/i;
++// Host binding: the installed rtk plugin may rewrite a submitted test command
++// to its `rtk <tool>` form (observed on the qualified host). Recognize the
++// wrapper prefix for the SAME closed test-command set; nothing else.
++const TEST_CMD = /^(?:env\s+\S+\s+)*(?:rtk\s+)?(?:python(?:3)? -m pytest|pytest|node --test|npm test|npm run test|bun test|cargo test|go test)\b/i;
+ const TEST_PASS = /\b(?:\d+\s+passed|tests?\s+passed|test result: ok|test suites:\s+\d+\s+passed)\b/i;
+ 
+ export function safeText(value, limit = 700) {
+diff --git a/docs/issue-75/v2-candidate/memory-core.test.mjs b/docs/issue-75/v2-candidate/memory-core.test.mjs
+index c486aef..1b7ccc8 100644
+--- a/docs/issue-75/v2-candidate/memory-core.test.mjs
++++ b/docs/issue-75/v2-candidate/memory-core.test.mjs
+@@ -24,6 +24,13 @@ test('tool-reported test outcomes require a completed successful test command an
+   assert.equal(selectCompletedTest({ ...e, input: { command: 'rm -rf /tmp' } }), null);
+   assert.equal(selectCompletedTest({ ...e, result: { ...e.result, stdout: 'PASSED with password=secret' } }), null);
+ });
++test('host rtk-wrapped test commands are recognized, arbitrary rtk commands are not', () => {
++  const e = { status: 'completed', input: { command: 'rtk pytest /tmp/scratch/test_smoke.py -q' },
++    result: { output: { exit: 0, output: 'Pytest: 3 passed\n' }, metadata: { exit: 0 } } };
++  assert.equal(selectCompletedTest(e)?.evidenceClass, 'tool-reported');
++  assert.equal(selectCompletedTest({ ...e, input: { command: 'rtk node --version' } }), null);
++  assert.equal(selectCompletedTest({ ...e, input: { command: 'rtk rm -rf /tmp' } }), null);
++});
+ test('stable candidate UUID and scoped group', () => {
+   const selected = selectUserDecision('We decided to keep Graphiti memory separate from OpenViking summaries.');
+   const a = makeCandidate('project-a', selected, { sessionID: 's1', time: '2026-10-01T00:00:00Z' });
+diff --git a/docs/issue-75/v2-candidate/plugin-behavior.test.mjs b/docs/issue-75/v2-candidate/plugin-behavior.test.mjs
+index c674a06..7f189e6 100644
+--- a/docs/issue-75/v2-candidate/plugin-behavior.test.mjs
++++ b/docs/issue-75/v2-candidate/plugin-behavior.test.mjs
+@@ -11,6 +11,7 @@ import plugin from './plugin.mjs';
+ // invokes so we can prove the active session performs NO Graphiti add_memory.
+ async function startMockMcp() {
+   const calls = [];
++  const searchQueries = [];
+   const server = createServer((req, res) => {
+     let body = '';
+     req.on('data', (c) => { body += c; });
+@@ -18,6 +19,8 @@ async function startMockMcp() {
+       let msg;
+       try { msg = JSON.parse(body); } catch { res.writeHead(400); return res.end(); }
+       calls.push(msg.method === 'tools/call' ? 'tools/call:' + msg.params.name : msg.method);
++      if (msg.method === 'tools/call' && msg.params.name === 'search_memory_facts')
++        searchQueries.push(msg.params.arguments?.query);
+       let result;
+       if (msg.method === 'initialize') result = { capabilities: {} };
+       else if (msg.method === 'tools/call') {
+@@ -31,7 +34,8 @@ async function startMockMcp() {
+   });
+   await new Promise((r) => server.listen(0, '127.0.0.1', r));
+   const port = server.address().port;
+-  return { url: `http://127.0.0.1:${port}/mcp`, calls, close: () => new Promise((r) => server.close(r)) };
++  return { url: `http://127.0.0.1:${port}/mcp`, calls, searchQueries,
++    close: () => new Promise((r) => server.close(r)) };
+ }
+ function makeCtx(options) {
+   const hooks = { session: {}, tool: {} };
+@@ -110,3 +114,18 @@ test('disabled plugin registers no hooks and performs no work', async () => {
+     assert.equal(hooks.tool['execute.after'], undefined, 'no tool hook when disabled');
+   });
+ });
++
++test('JSON-encoded prompt text (host V2 wire shape) is decoded before capture and search', async () => {
++  const text = 'I prefer a small Graphiti integration with native hybrid search.';
++  await withPlugin({ enabled: true, capture: true, group: 'g_issue75_b75' }, async ({ hooks, mcp, dir }) => {
++    // Stock V2 delivers prompt.text JSON-encoded; capture must use the plain text.
++    await hooks.session.prompt({ sessionID: 's4', prompt: { text: JSON.stringify(text) } });
++    await hooks.session.context({ sessionID: 's4', system: [] });
++    const rows = (await new Journal(dir, 'g_issue75_b75').list());
++    assert.equal(rows.length, 1, 'decision staged from encoded prompt');
++    assert.equal(rows[0].assertion, text, 'assertion must not carry the JSON quoting');
++    assert.ok(!mcp.calls.includes('tools/call:add_memory'));
++    assert.equal(mcp.searchQueries.length, 1, 'context build performed the read-only search');
++    assert.equal(mcp.searchQueries[0], text, 'search query must be the decoded prompt');
++  });
++});
+diff --git a/docs/issue-75/v2-candidate/plugin.mjs b/docs/issue-75/v2-candidate/plugin.mjs
+index c64d8c9..15ce48f 100644
+--- a/docs/issue-75/v2-candidate/plugin.mjs
++++ b/docs/issue-75/v2-candidate/plugin.mjs
+@@ -24,6 +24,20 @@ function removeOwn(parts) {
+     if (parts[i]?.type === 'text' && parts[i].text?.startsWith(OPEN)) parts.splice(i, 1);
+   }
+ }
++// Host binding: the stock V2 prompt hook may deliver prompt.text as a
++// JSON-encoded string (surrounding quotes shift the selector's named-term
++// anchor and break the first-token exemption). Capture and search must
++// operate on the plain-text prompt, never its transport encoding.
++function promptText(value) {
++  if (typeof value !== 'string') return '';
++  if (value.length >= 2 && value.startsWith('"') && value.endsWith('"')) {
++    try {
++      const decoded = JSON.parse(value);
++      if (typeof decoded === 'string') return decoded;
++    } catch { /* not valid JSON: keep the raw text */ }
++  }
++  return value;
++}
+ // Stock V2 accepts this standard plugin object directly; do not require a
+ // separately resolved @opencode/plugin shim at runtime.
+ export default {
+@@ -45,8 +59,8 @@ export default {
+     try {
+       await register(() => ctx.session.hook('prompt', event => {
+         if (!event?.sessionID) return;
+-        const text = event.prompt?.text;
+-        if (typeof text !== 'string') return;
++        const text = promptText(event.prompt?.text);
++        if (!text) return;
+         // Only remember after the admitted prompt reaches a model context build.
+         if (settings.capture) {
+           const candidate = selectUserDecision(text);

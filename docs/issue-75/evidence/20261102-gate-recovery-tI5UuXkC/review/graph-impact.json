@@ -1,0 +1,23 @@
+{
+  "scope": "current private installed-source graph; not candidate implementation approval",
+  "claim": {
+    "risk": "LOW",
+    "impactedCount": 2,
+    "epistemic": "lower-bound",
+    "boundaries": [
+      "1 call site invoking `claim` was dropped at index time because the receiver's type could not be established (e.g. an unresolved constructor, factory or chained expression). Those callers are absent from this result \u2014 actual impact may be higher."
+    ]
+  },
+  "dead_letter": {
+    "risk": "LOW",
+    "impactedCount": 3,
+    "epistemic": "exact"
+  },
+  "source_confirmation": [
+    "Worker.tick calls QueueDB.claim",
+    "Worker._process calls QueueDB.dead_letter",
+    "Worker.run calls Worker.tick",
+    "GateHandler.do_POST calls GateHandler._enqueue"
+  ],
+  "no_function_edit": true
+}

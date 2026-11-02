@@ -1,0 +1,95 @@
+{
+  "version": 1,
+  "fixture_note": "Synthetic developer facts, NOT evidence about the user's projects. Freeze expected relevance before baseline or candidate tests.",
+  "seeds": [
+    {
+      "id": "f1",
+      "group": "g_issue75_test",
+      "kind": "user_decision",
+      "text": "We decided to use React Flow for backlog dependency visualization."
+    },
+    {
+      "id": "f2",
+      "group": "g_issue75_test",
+      "kind": "verified_result",
+      "text": "The archive exporter depends on the quality gate before replacing the original media."
+    },
+    {
+      "id": "f3",
+      "group": "g_issue75_test",
+      "kind": "historical",
+      "text": "The backlog visualization originally used Tkinter, then switched to React Flow."
+    },
+    {
+      "id": "f4",
+      "group": "g_other_repo",
+      "kind": "user_decision",
+      "text": "The other repository uses Vue for its dashboard."
+    }
+  ],
+  "queries": [
+    {
+      "id": "direct",
+      "group": "g_issue75_test",
+      "query": "Which library is used for backlog dependency visualization?",
+      "expected": [
+        "f1"
+      ]
+    },
+    {
+      "id": "paraphrase",
+      "group": "g_issue75_test",
+      "query": "What did we settle on for the interactive issue map?",
+      "expected": [
+        "f1"
+      ]
+    },
+    {
+      "id": "dependency",
+      "group": "g_issue75_test",
+      "query": "What prevents an archive export from replacing the source immediately?",
+      "expected": [
+        "f2"
+      ]
+    },
+    {
+      "id": "historical",
+      "group": "g_issue75_test",
+      "query": "What did we use before changing the backlog visualization?",
+      "expected": [
+        "f3"
+      ]
+    },
+    {
+      "id": "multi",
+      "group": "g_issue75_test",
+      "query": "How do the exporter and quality gate relate?",
+      "expected": [
+        "f2"
+      ]
+    },
+    {
+      "id": "irrelevant",
+      "group": "g_issue75_test",
+      "query": "What is the weather in Tokyo?",
+      "expected": []
+    },
+    {
+      "id": "wrong-group",
+      "group": "g_issue75_test",
+      "query": "Does this repo use Vue for the dashboard?",
+      "expected": []
+    }
+  ],
+  "metrics": [
+    "case_coverage",
+    "fact_precision",
+    "fact_recall",
+    "false_positive_count",
+    "p50_ms",
+    "p95_ms",
+    "context_chars",
+    "timeout_count",
+    "wrong_group_count"
+  ]
+}

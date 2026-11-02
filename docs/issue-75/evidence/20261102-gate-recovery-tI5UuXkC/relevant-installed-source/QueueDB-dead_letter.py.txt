@@ -1,0 +1,11 @@
+    def dead_letter(self, row: sqlite3.Row, error: str) -> None:
+        key = (row["account"], row["user_id"], row["actor_peer"], row["session_id"])
+        with self.connect() as conn:
+            conn.execute(
+                """
+                UPDATE intents SET state='dead', task_id=NULL, claimed_generation=NULL,
+                    attempts=attempts + 1, next_attempt_at=0, last_error=?
+                WHERE account=? AND user_id=? AND actor_peer=? AND session_id=?
+                """,
+                (error[:1000], *key),
+            )

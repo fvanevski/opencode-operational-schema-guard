@@ -1,0 +1,40 @@
+{
+  "schema": "issue75-graphiti-sanitizer-evidence-v1",
+  "provenance": {
+    "target_file": "/workspace/mcp_servers/graphiti/run_graphiti.py",
+    "base_sha256": "7f9f51853c68f43b44e98e48af11d85cb7accf0b4130f2af919bfe8c5c309ba8",
+    "deployed_sha256": "2f070e28fc52b0dea04b2adf532661ebb498e02f70ad61721c661164aae60119",
+    "patch_path": "docs/issue-75/host-patches/graphiti/run_graphiti.py.patch",
+    "overlay_path": "docs/issue-75/host-patches/graphiti/graphiti_sanitizer.py",
+    "litellm_extract_config": "docs/issue-75/host-patches/graphiti/litellm-extract.yaml"
+  },
+  "effective_model_parameters": {
+    "engine": "ninfer-serve (127.0.0.1:8001)",
+    "proxy": "litellm-proxy (127.0.0.1:8002)",
+    "model_alias": "chat-extract",
+    "upstream_model": "openai/chat",
+    "preserve_thinking": false,
+    "drop_params": false,
+    "response_format_forwarding": true
+  },
+  "unit_and_regression_tests": {
+    "test_file": "docs/issue-75/host-patches/graphiti/tests/test_graphiti_sanitizer.py",
+    "runner": "/workspace/mcp_servers/graphiti/upstream/mcp_server/.venv/bin/python",
+    "test_cases": [
+      {"name": "test_complete_reasoning_block_removed", "status": "PASS"},
+      {"name": "test_orphan_closing_tag_removed", "status": "PASS"},
+      {"name": "test_markdown_code_fences_removed", "status": "PASS"},
+      {"name": "test_thinking_outside_code_fences_removed", "status": "PASS"},
+      {"name": "test_thinking_inside_code_fences_removed", "status": "PASS"},
+      {"name": "test_valid_empty_structured_json_preserved", "status": "PASS"},
+      {"name": "test_orphan_closing_tag_with_whitespace_and_newlines", "status": "PASS"},
+      {"name": "test_malformed_json_raises_json_decode_error", "status": "PASS"},
+      {"name": "test_plain_text_non_json_raises_json_decode_error", "status": "PASS"},
+      {"name": "test_installation_into_dummy_client", "status": "PASS"},
+      {"name": "test_openai_generic_client_patched", "status": "PASS"}
+    ],
+    "total_tests": 11,
+    "passed": 11,
+    "failed": 0
+  }
+}

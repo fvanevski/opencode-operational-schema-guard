@@ -1,0 +1,6 @@
+    def _identity(self) -> dict[str, str]:
+        return {
+            "account": self.headers.get("X-OpenViking-Account", "").strip(),
+            "user_id": self.headers.get("X-OpenViking-User", "").strip(),
+            "actor_peer": self.headers.get("X-OpenViking-Actor-Peer", "").strip(),
+        }

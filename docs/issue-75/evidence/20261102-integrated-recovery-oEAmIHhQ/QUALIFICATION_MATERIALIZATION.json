@@ -1,0 +1,88 @@
+{
+  "ready": true,
+  "row": {
+    "uuid": "2cc20a0c-4a58-4fa6-a45a-eeaaca31d190",
+    "group": "g_issue75_qual_final_oEAmIHhQ",
+    "kind": "user_decision",
+    "assertion": "We decided that the release pipeline runs the smoke test suite before publishing the release artifact.",
+    "evidenceClass": "user-stated",
+    "sourceRef": "opencode:opencode-qual-oEAmIHhQ:user:397f295c8b1eb454",
+    "referenceTime": "2026-11-02T19:13:29.768Z",
+    "status": "persisted",
+    "createdAt": "2026-11-02T19:13:29.769Z",
+    "updatedAt": "2026-11-02T19:14:24.656Z",
+    "remoteEpisodeUuid": "4909cbad-a283-468e-9b34-3b613c26cd2b"
+  },
+  "nodesCount": 3,
+  "edgesCount": 3,
+  "nodes": [
+    {
+      "uuid": "57d0d521-0a82-424a-a2b9-5ccfa62ec928",
+      "name": "release pipeline",
+      "labels": [
+        "Entity"
+      ],
+      "created_at": "2026-11-02T19:14:13.284604+00:00",
+      "summary": "The release pipeline runs the smoke test suite before publishing the release artifact.\nThe release pipeline publishes the release artifact after running the smoke test suite.",
+      "group_id": "g_issue75_qual_final_oEAmIHhQ",
+      "attributes": {}
+    },
+    {
+      "uuid": "817a6155-64aa-467d-a275-863ac096f8c3",
+      "name": "smoke test suite",
+      "labels": [
+        "Entity"
+      ],
+      "created_at": "2026-11-02T19:14:13.284641+00:00",
+      "summary": "The release pipeline runs the smoke test suite before publishing the release artifact.\nThe smoke test suite is run before the release artifact is published.",
+      "group_id": "g_issue75_qual_final_oEAmIHhQ",
+      "attributes": {}
+    },
+    {
+      "uuid": "65a6287b-a8b5-49e2-a2a7-a9da5587f30a",
+      "name": "release artifact",
+      "labels": [
+        "Entity"
+      ],
+      "created_at": "2026-11-02T19:14:13.284654+00:00",
+      "summary": "The release pipeline publishes the release artifact after running the smoke test suite.\nThe smoke test suite is run before the release artifact is published.",
+      "group_id": "g_issue75_qual_final_oEAmIHhQ",
+      "attributes": {}
+    }
+  ],
+  "edges": [
+    {
+      "uuid": "5dc3bc28-b990-4cde-8a62-47385b47f071",
+      "name": "PUBLISHES",
+      "fact": "The release pipeline publishes the release artifact after running the smoke test suite.",
+      "source_node_uuid": "57d0d521-0a82-424a-a2b9-5ccfa62ec928",
+      "target_node_uuid": "65a6287b-a8b5-49e2-a2a7-a9da5587f30a",
+      "group_id": "g_issue75_qual_final_oEAmIHhQ",
+      "created_at": "2026-11-02T19:14:23.646099+00:00",
+      "valid_at": "2026-11-02T19:13:29+00:00",
+      "invalid_at": null
+    },
+    {
+      "uuid": "a36aba24-0e2b-4920-8f7b-ded50d15be4c",
+      "name": "RUNS",
+      "fact": "The release pipeline runs the smoke test suite before publishing the release artifact.",
+      "source_node_uuid": "57d0d521-0a82-424a-a2b9-5ccfa62ec928",
+      "target_node_uuid": "817a6155-64aa-467d-a275-863ac096f8c3",
+      "group_id": "g_issue75_qual_final_oEAmIHhQ",
+      "created_at": "2026-11-02T19:14:23.646046+00:00",
+      "valid_at": "2026-11-02T19:13:29+00:00",
+      "invalid_at": null
+    },
+    {
+      "uuid": "a23feaeb-969c-4a91-a63c-0d6685ed0fd8",
+      "name": "PRECEDES",
+      "fact": "The smoke test suite is run before the release artifact is published.",
+      "source_node_uuid": "817a6155-64aa-467d-a275-863ac096f8c3",
+      "target_node_uuid": "65a6287b-a8b5-49e2-a2a7-a9da5587f30a",
+      "group_id": "g_issue75_qual_final_oEAmIHhQ",
+      "created_at": "2026-11-02T19:14:23.646124+00:00",
+      "valid_at": "2026-11-02T19:13:29+00:00",
+      "invalid_at": null
+    }
+  ]
+}

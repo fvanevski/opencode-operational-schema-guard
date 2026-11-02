@@ -1,0 +1,610 @@
+diff -ruN a/gate/admission_hold.py b/gate/admission_hold.py
+--- a/gate/admission_hold.py	1969-12-31 16:00:00.000000000 -0800
++++ b/gate/admission_hold.py	2026-11-02 14:43:47.290567769 -0800
+@@ -0,0 +1,210 @@
++"""Durable default-closed publication hold and owner-only rejection transaction.
++
++No network, scheduler or implicit release. Caller must quiesce services and prove
++backend nonacceptance before repair. A hold transition takes the same publication
++fence exclusively; workers retain a shared fence through terminal processing.
++"""
++from contextlib import contextmanager, closing
++from functools import wraps
++import fcntl
++import hashlib
++import json
++import os
++import sqlite3
++import stat
++import time
++
++class Held(RuntimeError):
++    pass
++
++
++def closed(conn):
++    try:
++        row = conn.execute("SELECT held FROM recovery_hold WHERE singleton=1").fetchone()
++        return row is None or row[0] != 0
++    except sqlite3.DatabaseError:
++        return True
++
++
++def initialize(conn):
++    conn.execute("CREATE TABLE IF NOT EXISTS recovery_hold(singleton INTEGER PRIMARY KEY CHECK(singleton=1), held INTEGER NOT NULL CHECK(held IN (0,1)), owner TEXT NOT NULL, revision INTEGER NOT NULL, reason TEXT NOT NULL)")
++    conn.execute("INSERT OR IGNORE INTO recovery_hold VALUES(1,1,'bootstrap',0,'default closed: owner disposition required')")
++    conn.execute("CREATE TABLE IF NOT EXISTS recovery_hold_audit(id INTEGER PRIMARY KEY, owner TEXT NOT NULL, revision INTEGER UNIQUE NOT NULL, held INTEGER NOT NULL, reason TEXT NOT NULL, at REAL NOT NULL)")
++    conn.execute("CREATE TABLE IF NOT EXISTS rejection_repairs(request_key TEXT PRIMARY KEY, owner TEXT NOT NULL, evidence_digest TEXT NOT NULL, intent_before TEXT NOT NULL, attempt_before TEXT NOT NULL, intent_after TEXT NOT NULL, attempt_after TEXT NOT NULL, at REAL NOT NULL)")
++    # Defend stale/old direct callers as well as the current worker. Missing hold
++    # singleton is closed, never equivalent to open. No trigger auto-releases.
++    test = "COALESCE((SELECT held FROM recovery_hold WHERE singleton=1),1) != 0"
++    for name,table,event,when in [
++        ("hold_intent_claim","intents","UPDATE OF state","NEW.state='inflight'"),
++        ("hold_attempt_submit","commit_attempts","UPDATE OF submitted","NEW.submitted=1 AND OLD.submitted=0"),
++        ("hold_attempt_insert","commit_attempts","INSERT","NEW.submitted=1")]:
++        conn.execute(f"CREATE TRIGGER IF NOT EXISTS {name} BEFORE {event} ON {table} WHEN ({when}) AND ({test}) BEGIN SELECT RAISE(ABORT,'admission held'); END")
++    if conn.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='memory_work'").fetchone():
++        for event in ("INSERT", "UPDATE OF status"):
++            name="hold_memory_"+("insert" if event=="INSERT" else "update")
++            conn.execute(f"CREATE TRIGGER IF NOT EXISTS {name} BEFORE {event} ON memory_work WHEN NEW.status IN ('admitted','processing') AND ({test}) BEGIN SELECT RAISE(ABORT,'admission held'); END")
++
++
++def owner_file(path):
++    info = os.stat(path, follow_symlinks=False)
++    if not stat.S_ISREG(info.st_mode) or info.st_uid != os.getuid() or info.st_mode & 0o077:
++        raise PermissionError("owner-only regular database required")
++
++
++@contextmanager
++def fence(path, exclusive=False):
++    # Existing parent and database ownership are validated; never replace lock.
++    owner_file(path)
++    flags=os.O_RDWR|os.O_CREAT|os.O_NOFOLLOW
++    fd=os.open(path+".publication.lock",flags,0o600)
++    try:
++        info=os.fstat(fd)
++        if info.st_uid != os.getuid() or info.st_mode & 0o077 or not stat.S_ISREG(info.st_mode):
++            raise PermissionError("unsafe publication fence")
++        try:
++            fcntl.flock(fd,(fcntl.LOCK_EX if exclusive else fcntl.LOCK_SH)|fcntl.LOCK_NB)
++        except BlockingIOError as exc:
++            raise Held("publication active or owner transition in progress") from exc
++        yield
++    finally:
++        os.close(fd)
++
++
++@contextmanager
++def publication(path):
++    with fence(path):
++        conn=sqlite3.connect('file:'+path+'?mode=ro',uri=True)
++        try:
++            conn.execute('PRAGMA query_only=ON')
++            if closed(conn):
++                raise Held("durable admission held")
++        finally:
++            conn.close()
++        yield
++
++
++def guarded(default=False):
++    def decorate(fn):
++        @wraps(fn)
++        def wrapper(self,*args,**kwargs):
++            db=getattr(self,'db',None) or self.server.db
++            try:
++                with publication(db.path):
++                    return fn(self,*args,**kwargs)
++            except Held:
++                if hasattr(self,"_set_admission_status"):
++                    self._set_admission_status("durable_hold")
++                return default
++        return wrapper
++    return decorate
++
++
++def set_hold(path, owner, revision, held, reason):
++    if not isinstance(owner,str) or len(owner)<16 or owner=='bootstrap' or not reason:
++        raise ValueError("explicit owner and reason required")
++    with fence(path,exclusive=True), closing(sqlite3.connect(path)) as conn, conn:
++        conn.execute('BEGIN IMMEDIATE')
++        row=conn.execute('SELECT held,owner,revision FROM recovery_hold WHERE singleton=1').fetchone()
++        if row is None or row[2] != revision or row[1] not in (owner,'bootstrap'):
++            raise Held('stale hold owner or revision')
++        if not held and row[1] == 'bootstrap':
++            raise Held('claim hold ownership before release')
++        conn.execute('UPDATE recovery_hold SET held=?,owner=?,revision=revision+1,reason=? WHERE singleton=1',(int(held),owner,reason))
++        conn.execute('INSERT INTO recovery_hold_audit(owner,revision,held,reason,at) VALUES(?,?,?,?,?)',(owner,revision+1,int(held),reason,time.time()))
++        return revision+1
++
++
++def canonical(value):
++    return json.dumps(value,sort_keys=True,separators=(',',':'),allow_nan=False)
++
++
++def repair_rejected(path, expected_intent, expected_attempt, *, owner, evidence_digest):
++    """Full-row CAS under persistent owned hold; no inference of backend outcome.
++
++    evidence_digest identifies the separately verified private no-acceptance proof.
++    This function cannot establish that external precondition. It is not an HTTP
++    API and is callable only by the filesystem owner. No expiry/retry/rekey.
++    """
++    if len(evidence_digest)!=64 or any(c not in '0123456789abcdef' for c in evidence_digest):
++        raise ValueError('SHA256 evidence digest required')
++    with fence(path,exclusive=True), closing(sqlite3.connect(path)) as conn, conn:
++        conn.row_factory=sqlite3.Row
++        conn.execute('PRAGMA synchronous=FULL')
++        conn.execute('BEGIN IMMEDIATE')
++        hold=conn.execute('SELECT * FROM recovery_hold WHERE singleton=1').fetchone()
++        if not hold or hold['held']!=1 or hold['owner']!=owner or owner=='bootstrap':
++            raise Held('repair requires owned durable hold')
++        key=expected_attempt['request_key']
++        fields=('account','user_id','actor_peer','session_id')
++        intent=conn.execute('SELECT * FROM intents WHERE account=? AND user_id=? AND actor_peer=? AND session_id=?',tuple(expected_intent[k] for k in fields)).fetchone()
++        attempt=conn.execute('SELECT * FROM commit_attempts WHERE request_key=?',(key,)).fetchone()
++        audit=conn.execute('SELECT * FROM rejection_repairs WHERE request_key=?',(key,)).fetchone()
++        if audit:
++            if (audit['owner']==owner and audit['evidence_digest']==evidence_digest
++                and audit['intent_before']==canonical(expected_intent) and audit['attempt_before']==canonical(expected_attempt)
++                and intent and attempt and audit['intent_after']==canonical(dict(intent)) and audit['attempt_after']==canonical(dict(attempt))):
++                return 'already_rejected'
++            raise Held('audit or current row mismatch')
++        if not intent or not attempt or dict(intent)!=expected_intent or dict(attempt)!=expected_attempt:
++            raise Held('exact preimage mismatch')
++        if (intent['state']!='unknown' or intent['task_id'] is not None or attempt['submitted']!=1 or attempt['resolved']!=0
++            or intent['claimed_generation']!=attempt['generation'] or intent['requested_generation']!=attempt['generation']
++            or intent['processed_generation']>=attempt['generation'] or any(intent[k]!=attempt[k] for k in fields)):
++            raise Held('not the exact unresolved rejected operation')
++        from receipt_protocol import request_key, canonical_digest
++        if request_key({k:attempt[k] for k in fields},attempt['generation'])!=key or canonical_digest(json.loads(attempt['body_json']))!=attempt['body_digest']:
++            raise Held('immutable fingerprint mismatch')
++        if canonical_digest(json.loads(intent['commit_body_json']))!=attempt['body_digest']:
++            raise Held('intent body mismatch')
++        if conn.execute("UPDATE intents SET state='dead',last_error='backend_preacceptance_rejected: owner audited' WHERE account=? AND user_id=? AND actor_peer=? AND session_id=?",tuple(intent[k] for k in fields)).rowcount!=1:
++            raise Held('intent count mismatch')
++        if conn.execute('UPDATE commit_attempts SET resolved=1 WHERE request_key=? AND submitted=1 AND resolved=0',(key,)).rowcount!=1:
++            raise Held('attempt count mismatch')
++        after_i=dict(intent);after_i.update(state='dead',last_error='backend_preacceptance_rejected: owner audited')
++        after_a=dict(attempt);after_a['resolved']=1
++        conn.execute('INSERT INTO rejection_repairs VALUES(?,?,?,?,?,?,?,?)',(key,owner,evidence_digest,canonical(dict(intent)),canonical(dict(attempt)),canonical(after_i),canonical(after_a),time.time()))
++        return 'rejected'
++
++
++def retire_untenanted_pending(path, expected_intent, *, owner, evidence_digest):
++    """Full-row CAS retirement of invalid, never-accepted untenanted pending intents under persistent owned hold.
++
++    evidence_digest identifies the verified proof that the intent has blank tenant scope,
++    cannot be accepted by the backend, and has no prior attempt or execution receipt.
++    This function operates atomically in a single SQLite transaction under fence(path, exclusive=True).
++    """
++    if len(evidence_digest)!=64 or any(c not in '0123456789abcdef' for c in evidence_digest):
++        raise ValueError('SHA256 evidence digest required')
++    with fence(path,exclusive=True), closing(sqlite3.connect(path)) as conn, conn:
++        conn.row_factory=sqlite3.Row
++        conn.execute('PRAGMA synchronous=FULL')
++        conn.execute('BEGIN IMMEDIATE')
++        hold=conn.execute('SELECT * FROM recovery_hold WHERE singleton=1').fetchone()
++        if not hold or hold['held']!=1 or hold['owner']!=owner or owner=='bootstrap':
++            raise Held('repair requires owned durable hold')
++        fields=('account','user_id','actor_peer','session_id')
++        intent=conn.execute('SELECT * FROM intents WHERE account=? AND user_id=? AND actor_peer=? AND session_id=?',tuple(expected_intent[k] for k in fields)).fetchone()
++        audit_key=f"untenanted:{expected_intent['session_id']}:gen{expected_intent['requested_generation']}"
++        audit=conn.execute('SELECT * FROM rejection_repairs WHERE request_key=?',(audit_key,)).fetchone()
++        if audit:
++            if (audit['owner']==owner and audit['evidence_digest']==evidence_digest
++                and audit['intent_before']==canonical(expected_intent)
++                and intent and audit['intent_after']==canonical(dict(intent))):
++                return 'already_rejected'
++            raise Held('audit or current row mismatch')
++        if not intent or dict(intent)!=expected_intent:
++            raise Held('exact preimage mismatch')
++        if (intent['state']!='pending' or intent['task_id'] is not None
++            or intent['account']!='' or intent['user_id']!=''
++            or intent['attempts']!=0 or intent['processed_generation']!=0):
++            raise Held('not an unattempted untenanted pending intent')
++        attempts=conn.execute('SELECT count(*) FROM commit_attempts WHERE session_id=?',(intent['session_id'],)).fetchone()[0]
++        if attempts!=0:
++            raise Held('commit attempts exist for session')
++        last_error='untenanted_spool_rejected: owner audited'
++        if conn.execute("UPDATE intents SET state='dead',last_error=? WHERE account=? AND user_id=? AND actor_peer=? AND session_id=?",(last_error,*(intent[k] for k in fields))).rowcount!=1:
++            raise Held('intent count mismatch')
++        after_i=dict(intent);after_i.update(state='dead',last_error=last_error)
++        conn.execute('INSERT INTO rejection_repairs VALUES(?,?,?,?,?,?,?,?)',(audit_key,owner,evidence_digest,canonical(dict(intent)),'{}',canonical(after_i),'{}',time.time()))
++        return 'rejected'
++
+diff -ruN a/gate/openviking_commit_gate.py b/gate/openviking_commit_gate.py
+--- a/gate/openviking_commit_gate.py	2026-11-02 14:43:47.293373589 -0800
++++ b/gate/openviking_commit_gate.py	2026-11-02 14:43:47.332180558 -0800
+@@ -36,6 +36,8 @@
+ from shared_work import validator as capture_preflight, SourceAuthorityUnavailable, SourceEventConflict, DisabledGraphitiAdapter, SharedWorkQueue
+ 
+ 
++import admission_hold
++
+ LOG = logging.getLogger("openviking-commit-gate")
+ COMMIT_RE = re.compile(r"^/api/v1/sessions/([^/]+)/commit$")
+ METRIC_RE = re.compile(
+@@ -55,7 +57,7 @@
+ TERMINAL_OK = {"completed", "complete", "succeeded", "success"}
+ TERMINAL_FAILED = {"failed", "failure", "error", "cancelled", "canceled"}
+ NON_INTERACTIVE_HARNESS_SUBCOMMANDS = {
+-    "codex": {"app-server"},
++    "codex": {"app-server", "exec-server"},
+     "opencode": {"serve"},
+ }
+ HARNESS_ALIASES: dict[str, dict[str, set[str]]] = {
+@@ -302,6 +304,7 @@
+                 BEGIN UPDATE commit_attempts SET resolved=1
+                 WHERE account=OLD.account AND user_id=OLD.user_id AND actor_peer=OLD.actor_peer
+                     AND session_id=OLD.session_id AND generation=OLD.claimed_generation; END""")
++            admission_hold.initialize(conn)
+         os.chmod(self.path, 0o600)
+ 
+     @staticmethod
+@@ -427,6 +430,8 @@
+         key = (row["account"], row["user_id"], row["actor_peer"], row["session_id"])
+         with self.connect() as conn:
+             conn.execute("BEGIN IMMEDIATE")
++            if admission_hold.closed(conn):
++                return None
+             current = conn.execute(
+                 "SELECT * FROM intents WHERE account=? AND user_id=? AND actor_peer=? AND session_id=?",
+                 key,
+@@ -811,7 +816,10 @@
+             raw = response.read()
+             return response.status, json.loads(raw or b"{}")
+     except urllib.error.HTTPError as exc:
+-        raw = exc.read()
++        try:
++            raw = exc.read()
++        finally:
++            exc.close()
+         try:
+             payload = json.loads(raw or b"{}")
+         except json.JSONDecodeError:
+@@ -898,6 +906,7 @@
+                 WHERE status IN ('admitted','processing','blocked_reconcile')
+                 LIMIT 1""").fetchone() is not None
+ 
++    @admission_hold.guarded()
+     def tick(self) -> bool:
+         # Admission safety survives a later config disable, even though
+         # new Graphiti admissions are disabled and no optional schema is
+@@ -1071,6 +1080,9 @@
+                 self._last_class = "GRAPHITI_EPISODE_INGEST"
+                 self.quiet_since = None
+                 return True
++            if candidate["state"] != "inflight" and self.cfg.receipts_enabled and not self._verified_claim_binding(candidate):
++                self._set_admission_status("tenant_binding_unverified")
++                return False
+             row = candidate if candidate["state"] == "inflight" else self.db.claim(candidate)
+             if row is None:
+                 self.quiet_since = None
+@@ -1254,6 +1266,7 @@
+             headers["X-OpenViking-Actor-Peer"] = row["actor_peer"]
+         return headers
+ 
++    @admission_hold.guarded()
+     def _process(self, row: sqlite3.Row) -> None:
+         if self.cfg.receipts_enabled:
+             self._process_receipted(row)
+@@ -1346,10 +1359,29 @@
+                 return
+             self.db.retry(current or row, str(exc), self.cfg)
+ 
++    def _verified_claim_binding(self, row):
++        if any(not str(row[k]) or str(row[k])!=str(row[k]).strip() for k in ("account","user_id","session_id")):
++            return False
++        try:
++            session=urllib.parse.quote(str(row["session_id"]),safe="")
++            url=f"http://{self.cfg.backend_host}:{self.cfg.backend_port}/api/v1/admin/commit_receipts/binding/{session}"
++            status,payload=json_request("GET",url,headers=self._auth_headers(row),timeout=self.cfg.request_timeout_seconds)
++        except Exception:
++            # Missing owner reply is not proof of an invalid owner.
++            return None
++        if status!=200 or not isinstance(payload,dict):
++            return None
++        result=payload.get("result")
++        if not isinstance(result,dict) or result.get("protocol")!="gate-owner-binding-v1":
++            return None
++        # A valid authoritative reply with incorrect scope is a real mismatch.
++        return all(result.get(k)==row[k] for k in ("account","user_id","session_id"))
++
+     def _receipt_url(self, row, attempt):
+         session = urllib.parse.quote(str(row["session_id"]),safe="")
+         return f"http://{self.cfg.backend_host}:{self.cfg.backend_port}/api/v1/admin/commit_receipts/{session}/{attempt['request_key']}"
+ 
++    @admission_hold.guarded()
+     def _receipt_recovery_admitted(self, row):
+         # The backend's per-request fence does not serialize different keys.
+         # Another unproven/queued task can exist while metrics report idle.
+@@ -1385,6 +1417,7 @@
+             self._recovery_quiet_since=None
+             return False
+ 
++    @admission_hold.guarded()
+     def _receipt_observation(self, row, payload=None, *, allow_recovery=False):
+         attempt = self.db.attempt(row)
+         if attempt is None: return False  # Historical unknowns have no invented key.
+@@ -1411,6 +1444,7 @@
+             return False
+         return False
+ 
++    @admission_hold.guarded()
+     def _process_receipted(self, row):
+         attempt=self.db.attempt(row)
+         if attempt is None:
+@@ -1419,6 +1453,15 @@
+         try:
+             headers=self._auth_headers(row)
+             if not attempt["submitted"]:
++                binding = self._verified_claim_binding(row)
++                if binding is False:
++                    self.db.dead_letter(row,"pre-submission authenticated owner mismatch")
++                    return
++                if binding is None:
++                    # Receipt submission has NOT started. Requeue the same
++                    # generation/identity under the existing bounded backoff.
++                    self.db.retry(row,"pre-submission owner binding temporarily unavailable",self.cfg)
++                    return
+                 envelope={"scope":{k:str(row[k]) for k in ("account","user_id","actor_peer","session_id")},
+                     "generation":attempt["generation"],"body":json.loads(attempt["body_json"]),"body_digest":attempt["body_digest"]}
+                 with self.db.connect() as conn:
+@@ -1597,6 +1640,28 @@
+             "actor_peer": self.headers.get("X-OpenViking-Actor-Peer", "").strip(),
+         }
+ 
++    def _verified_identity(self, session_id):
++        # Reject ambiguous credential and assertion multiplicity before transport.
++        names=("Authorization","X-API-Key","X-OpenViking-Account","X-OpenViking-User","X-OpenViking-Actor-Peer")
++        for name in names:
++            values=self.headers.get_all(name,[])
++            if len(values)>1 or any(v!=v.strip() or not v or "," in v for v in values):
++                raise ValueError("ambiguous identity headers")
++        if bool(self.headers.get("Authorization")) == bool(self.headers.get("X-API-Key")):
++            raise ValueError("one authenticated credential required")
++        headers={n:self.headers[n] for n in ("Authorization","X-API-Key") if self.headers.get(n)}
++        cfg=self.server.cfg
++        url=f"http://{cfg.backend_host}:{cfg.backend_port}/api/v1/admin/commit_receipts/binding/{urllib.parse.quote(session_id,safe='')}"
++        status,payload=json_request("GET",url,headers=headers,timeout=cfg.request_timeout_seconds)
++        result=payload.get("result") if isinstance(payload,dict) else None
++        if (status!=200 or not isinstance(result,dict) or result.get("protocol")!="gate-owner-binding-v1"
++            or result.get("session_id")!=session_id or any(not isinstance(result.get(k),str) or not result[k] or result[k]!=result[k].strip() for k in ("account","user_id"))):
++            raise ValueError("backend-authoritative owner binding unavailable")
++        for header,key in (("X-OpenViking-Account","account"),("X-OpenViking-User","user_id")):
++            if self.headers.get(header) is not None and self.headers[header]!=result[key]:
++                raise ValueError("caller assertion differs from authenticated owner")
++        return {"account":result["account"],"user_id":result["user_id"],"actor_peer":self.headers.get("X-OpenViking-Actor-Peer","")}
++
+     def _capture_credential_supplied(self) -> bool:
+         token = os.environ.get("GRAPHITI_CAPTURE_TOKEN", "")
+         return bool(token) and hmac.compare_digest(self.headers.get("Authorization", ""), f"Bearer {token}")
+@@ -1639,7 +1704,7 @@
+                 raise ValueError("keep_recent_count must be between 0 and 10000")
+             reason = self.headers.get("X-OpenViking-Commit-Reason", "client")[:120]
+             queued = self.server.db.enqueue(
+-                self._identity(), session_id, keep_recent, body, reason
++                self._verified_identity(session_id), session_id, keep_recent, body, reason
+             )
+             self._json(
+                 200,
+@@ -1663,6 +1728,25 @@
+             self._json(503, {"status": "error", "error": {"message": str(exc)}})
+ 
+     def _proxy(self) -> None:
++        import posixpath
++        path = urllib.parse.urlsplit(self.path)
++        norm_path = posixpath.normpath(urllib.parse.unquote(path.path))
++        is_receipt = norm_path.startswith("/api/v1/admin/commit_receipts/")
++        is_binding = (self.command == "GET" and
++            re.fullmatch(r"/api/v1/admin/commit_receipts/binding/[^/]+", norm_path) is not None)
++        # Every receipt endpoint /{session}/{key} can trigger backend reconciliation
++        # (even on ordinary GET with recover=false, transitioning preparing->accepted or completed->sealed).
++        # Only pure owner binding lookup (/binding/{session}) is truly read-only and unfenced.
++        if is_receipt and not is_binding:
++            try:
++                with admission_hold.publication(self.server.db.path):
++                    return self._proxy_unheld()
++            except admission_hold.Held:
++                self._json(503, {"status": "error", "error": {"message": "durable admission held"}})
++                return
++        return self._proxy_unheld()
++
++    def _proxy_unheld(self) -> None:
+         if self._capture_credential_supplied():
+             self._json(401, {"status": "error", "error": {"message": "Capture credential has no proxy authority"}})
+             return
+diff -ruN a/gate/shared_work.py b/gate/shared_work.py
+--- a/gate/shared_work.py	2026-11-02 14:43:47.293573544 -0800
++++ b/gate/shared_work.py	2026-11-02 14:43:47.290947387 -0800
+@@ -274,6 +274,10 @@
+     def claim(self, key: str, lease: str):
+         with self.legacy_db.connect() as conn:
+             conn.execute("BEGIN IMMEDIATE")
++            import admission_hold
++            admission_hold.initialize(conn)
++            if admission_hold.closed(conn):
++                return None
+             updated = conn.execute("""UPDATE memory_work SET status='admitted', attempt_generation=attempt_generation+1,
+                 lease_identity=?, updated_at=? WHERE work_key=? AND status='queued'""", (lease, time.time(), key))
+             if updated.rowcount != 1:
+diff -ruN a/openviking/server/app.py b/openviking/server/app.py
+--- a/openviking/server/app.py	2026-11-02 14:43:47.292522641 -0800
++++ b/openviking/server/app.py	2026-11-02 14:43:47.289299571 -0800
+@@ -691,6 +691,8 @@
+     app.include_router(privacy_configs_router)
+     app.include_router(skills_router)
+     app.include_router(sessions_router)
++    from openviking.server.routers.sessions import receipt_router
++    app.include_router(receipt_router)
+     app.include_router(snapshot_router)
+     app.include_router(stats_router)
+     app.include_router(pack_router)
+diff -ruN a/openviking/server/routers/sessions.py b/openviking/server/routers/sessions.py
+--- a/openviking/server/routers/sessions.py	2026-11-02 14:43:47.292659624 -0800
++++ b/openviking/server/routers/sessions.py	2026-11-02 14:43:47.289711740 -0800
+@@ -828,3 +828,124 @@
+         fn=_batch_add,
+     )
+     return Response(status="ok", result=execution.result, telemetry=execution.telemetry)
++
++
++receipt_router = APIRouter(prefix="/api/v1/admin/commit_receipts", tags=["admin"])
++
++# Issue 70: opt-in, backend-owner receipt boundary. Ordinary commit is unchanged.
++from fastapi import Request
++from openviking.server.identity import Role
++from openviking.service.commit_receipts import runtime as receipt_runtime
++from openviking.service.receipt_protocol import ReceiptConflict, request_key as receipt_key
++from openviking.service.task_tracker import get_task_tracker
++
++
++def _receipt_owner(request, ctx, session_id, scope):
++    if ctx.role != Role.ROOT:
++        raise HTTPException(403, "receipt interface requires backend owner")
++    if (not isinstance(scope, dict)
++            or set(scope) != {"account","user_id","actor_peer","session_id"}
++            or not all(isinstance(v, str) and
++                       (0 <= len(v) <= 256 if k == "actor_peer" else 0 < len(v) <= 256)
++                       for k, v in scope.items())
++            or scope.get("session_id") != session_id
++            or scope.get("actor_peer") != request.headers.get("X-OpenViking-Actor-Peer", "")):
++        raise HTTPException(409, "receipt scope mismatch")
++    mode=getattr(request.app.state.config,"auth_mode",None)
++    if mode=="trusted":
++        if scope["account"]!=ctx.account_id or scope["user_id"]!=ctx.user.user_id:
++            raise HTTPException(409,"receipt tenant mismatch")
++    elif mode!="api_key":
++        raise HTTPException(403,"receipt owner authentication mode unavailable")
++    # Native api_key mode deliberately strips tenant assertion headers and pins
++    # ROOT to its own identity. This ADMIN operation explicitly scopes the
++    # verified backend owner to the immutable request tenant, without relaxing
++    # ordinary tenant API authentication or accepting the nomination token.
++    from dataclasses import replace
++    from openviking_cli.session.user_id import UserIdentifier
++    return replace(ctx,user=UserIdentifier(scope["account"],scope["user_id"]),actor_peer_id=None)
++
++
++@receipt_router.post("/{session_id}/{request_key}")
++async def commit_with_receipt(request: Request, session_id: str, request_key: str,
++                              envelope: Dict[str, Any] = Body(...),
++                              _ctx: RequestContext = Depends(get_session_request_context)):
++    owner = receipt_runtime()
++    if owner is None: raise HTTPException(503, "receipt protocol disabled")
++    scope = envelope.get("scope", {})
++    _ctx=_receipt_owner(request,_ctx,session_id,scope)
++    try:
++        generation = envelope["generation"]
++        if isinstance(generation,bool): raise ValueError("invalid generation")
++        body = envelope["body"]
++        parsed = CommitRequest.model_validate(body)
++        service = get_service()
++        existing = await service.sessions.get(session_id, _ctx, auto_create=False)
++        if existing.user != _ctx.user:
++            raise HTTPException(409, "receipt session owner mismatch")
++        async def commit():
++            response = await commit_session(session_id, parsed, _ctx)
++            return response["result"]
++        row = await owner.submit(request_key,scope,generation,body,envelope["body_digest"],commit)
++        return {"status":"ok","result":row}
++    except ReceiptConflict as exc:
++        raise HTTPException(409, {"code":"receipt_conflict","message":str(exc)}) from exc
++    except (ValueError,KeyError,TypeError) as exc:
++        raise HTTPException(400, "invalid receipt envelope") from exc
++
++
++@receipt_router.get("/binding/{session_id}")
++async def get_commit_binding(request: Request, session_id: str,
++                             _ctx: RequestContext = Depends(get_session_request_context)):
++    """Read-only authoritative future scope; never creates a session or receipt.
++
++    API-key ROOT has no tenant identity. Its service owner must be pinned in
++    server configuration, not nominated by external assertion headers. Internal
++    gate worker claim checks may pass explicit stored tenant headers as ROOT to
++    verify session ownership without requiring a global ROOT default pin.
++    """
++    import os, json
++    from dataclasses import replace
++    from openviking_cli.session.user_id import UserIdentifier
++    if _ctx.role == Role.ROOT:
++        mode=getattr(request.app.state.config,"auth_mode",None)
++        if mode == "api_key":
++            hdr_account = request.headers.get("X-OpenViking-Account")
++            hdr_user = request.headers.get("X-OpenViking-User")
++            if hdr_account is not None or hdr_user is not None:
++                if not all(isinstance(v, str) and 0 < len(v) <= 256 and v == v.strip() for v in (hdr_account, hdr_user)):
++                    raise HTTPException(409, "invalid receipt tenant scope")
++                _ctx=replace(_ctx,user=UserIdentifier(hdr_account,hdr_user),actor_peer_id=None)
++            else:
++                try:
++                    owner=json.loads(os.environ["OPENVIKING_GATE_ROOT_OWNER"])
++                    if not isinstance(owner,list) or len(owner)!=2 or not all(isinstance(v,str) and v and v==v.strip() for v in owner):
++                        raise ValueError("invalid pinned owner")
++                    _ctx=replace(_ctx,user=UserIdentifier(*owner),actor_peer_id=None)
++                except (KeyError,ValueError,TypeError):
++                    raise HTTPException(503,"ROOT gate owner not configured") from None
++        elif mode != "trusted":
++            raise HTTPException(403,"authenticated gate binding required")
++    service=get_service()
++    session=await service.sessions.get(session_id,_ctx,auto_create=False)
++    if session.user != _ctx.user:
++        raise HTTPException(409,"session owner mismatch")
++    return {"status":"ok","result":{"protocol":"gate-owner-binding-v1",
++        "account":_ctx.account_id,"user_id":_ctx.user.user_id,"session_id":session_id}}
++
++
++@receipt_router.get("/{session_id}/{request_key}")
++async def get_commit_receipt(request: Request, session_id: str, request_key: str,
++                             recover: bool = Query(False),
++                             _ctx: RequestContext = Depends(get_session_request_context)):
++    owner = receipt_runtime()
++    if owner is None: raise HTTPException(503, "receipt protocol disabled")
++    row = owner.ledger.read(request_key)
++    if row is None: raise HTTPException(404, "receipt unavailable")
++    import json
++    scope = json.loads(row["scope_json"])
++    _ctx=_receipt_owner(request,_ctx,session_id,scope)
++    service = get_service()
++    session = await service.sessions.open(session_id,_ctx)
++    row = await owner.reconcile(request_key,session,get_task_tracker(),allow_recovery=recover)
++    return {"status":"ok","result":row}
+diff -ruN a/openviking/session/session.py b/openviking/session/session.py
+--- a/openviking/session/session.py	2026-11-02 14:43:47.292895499 -0800
++++ b/openviking/session/session.py	2026-11-02 14:43:47.290117849 -0800
+@@ -1651,8 +1651,14 @@
+             )
+             original_messages = list(self._messages)
+             task_id = str(uuid4())
++            from openviking.service.commit_receipts import current_operation
++            receipt_operation = current_operation.get()
++            if receipt_operation:
++                receipt_operation[0].bind(receipt_operation[1], task_id, archive_uri)
+             queue_msg = SessionCommitMsg(
+                 task_id=task_id,
++                receipt_request_key=receipt_operation[1] if receipt_operation else "",
++                _task_work_id=(receipt_operation[1] + ":phase2") if receipt_operation else "",
+                 session_id=self.session_id,
+                 session_uri=self._session_uri,
+                 archive_uri=archive_uri,
+@@ -1908,6 +1914,10 @@
+         )
+ 
+     async def resume_queued_commit(self, msg: "SessionCommitMsg") -> bool:
++        from openviking.service.commit_receipts import resume_fenced
++        return await resume_fenced(self, msg, lambda: self._resume_queued_commit(msg))
++
++    async def _resume_queued_commit(self, msg: "SessionCommitMsg") -> bool:
+         """Run one durable Phase 2 job from its archived messages."""
+         from openviking.service.task_tracker import get_task_tracker
+ 
+diff -ruN a/openviking/storage/queuefs/session_commit_msg.py b/openviking/storage/queuefs/session_commit_msg.py
+--- a/openviking/storage/queuefs/session_commit_msg.py	2026-11-02 14:43:47.293076543 -0800
++++ b/openviking/storage/queuefs/session_commit_msg.py	2026-11-02 14:43:47.290371375 -0800
+@@ -25,6 +25,7 @@
+     # Version 1 snapshots explicitly encode WM. Version 0 (before default-off)
+     # omitted true; only queued work, never saved user intent, inherits that value.
+     memory_policy_version: int = 1
++    receipt_request_key: str = ""
+ 
+     def to_dict(self) -> Dict[str, Any]:
+         return asdict(self)

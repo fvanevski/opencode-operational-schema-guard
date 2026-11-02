@@ -1,0 +1,15 @@
+--- historical/openviking/session/session.py
++++ current-disk/openviking/session/session.py
+@@ -1660,4 +1653,0 @@
+-            from openviking.service.commit_receipts import current_operation
+-            receipt_operation = current_operation.get()
+-            if receipt_operation:
+-                receipt_operation[0].bind(receipt_operation[1], task_id, archive_uri)
+@@ -1666,2 +1655,0 @@
+-                receipt_request_key=receipt_operation[1] if receipt_operation else "",
+-                _task_work_id=(receipt_operation[1] + ":phase2") if receipt_operation else "",
+@@ -1925,4 +1910,0 @@
+-        from openviking.service.commit_receipts import resume_fenced
+-        return await resume_fenced(self, msg, lambda: self._resume_queued_commit(msg))
+-
+-    async def _resume_queued_commit(self, msg: "SessionCommitMsg") -> bool:

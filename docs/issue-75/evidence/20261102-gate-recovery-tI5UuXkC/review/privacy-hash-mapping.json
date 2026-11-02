@@ -1,0 +1,48 @@
+{
+  "mappings": [
+    {
+      "public_path": "observations/historical-original-409.json",
+      "private_original_symbolic_reference": "prior-reconciliation/evidence/backend-exact-lifetime-log.json",
+      "original_sha256": "b31a60402625c5168113e5b042b03b82547ad93770ffae9930f7a5a267a1c19c",
+      "published_sha256": "e88bf25fcea5028d4985e5735b3d3eb5f1d21a4f616dd0ee3ddef53a4078d52d",
+      "relation": "SANITIZED_PROJECTION_NOT_BYTE_IDENTICAL",
+      "redactions": [
+        "consistent opaque session/request/body/peer aliases",
+        "omit raw body strings and unrelated private rows",
+        "omit personal paths/accounts/user names/process argv"
+      ]
+    },
+    {
+      "public_path": "RECOVERY_PROPOSAL.json",
+      "private_original_symbolic_reference": "prior-reconciliation/RECOVERY_PROPOSAL.json",
+      "original_sha256": "a0a1bbf1b68738158d4368c8345692ece49717e1d5e77c670043d2bd0f3ac6af",
+      "published_sha256": "9065497e17af7f44ac9191d79a3ef9ebe8af501559c4245f40f475abfc32a1bb",
+      "relation": "SANITIZED_PROJECTION_NOT_BYTE_IDENTICAL",
+      "redactions": [
+        "consistent opaque session/request/body/peer aliases",
+        "omit raw body strings and unrelated private rows",
+        "omit personal paths/accounts/user names/process argv"
+      ]
+    },
+    {
+      "public_path": "observations/original-gate-rows-before.json",
+      "private_original_symbolic_reference": "current-private/live-original-before.json",
+      "original_sha256": "2a5a5a95dae3e8ce9f9751b6efdbc2f5c107fe0038536f9db38bd6ced3101e40",
+      "published_sha256": "1a58947f8fb72e83e4fea8a1477190e98ea4f461b1b54f8e9fe3ae08e583eda7",
+      "relation": "SANITIZED_PROJECTION_NOT_BYTE_IDENTICAL",
+      "redactions": [
+        "consistent opaque session/request/body/peer aliases",
+        "omit raw body strings and unrelated private rows",
+        "omit personal paths/accounts/user names/process argv"
+      ]
+    }
+  ],
+  "alias_semantics": {
+    "SESSION_A": "same original physical session across observations",
+    "REQUEST_A": "same original immutable request key; not executable",
+    "BODY_A": "same original body fingerprint; not executable",
+    "PEER_A": "same original peer",
+    "HTTP_REQUEST_A": "same original backend access request ID"
+  },
+  "public_fixture": "Fixture identifiers are synthetic and do not encode private originals."
+}

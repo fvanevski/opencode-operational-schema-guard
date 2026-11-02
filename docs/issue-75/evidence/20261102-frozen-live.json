@@ -1,0 +1,66 @@
+{
+  "label": "actual Memory.search with pinned Graphiti and independent CPU reranker (frozen)",
+  "group": "g_issue75_test",
+  "source_map": "benchmark-source-map.json",
+  "results": [
+    {
+      "id": "direct",
+      "returned": [
+        "f1"
+      ],
+      "latency_ms": 169,
+      "context_chars": 295,
+      "timed_out": false
+    },
+    {
+      "id": "paraphrase",
+      "returned": [
+        "f1"
+      ],
+      "latency_ms": 46,
+      "context_chars": 295,
+      "timed_out": false
+    },
+    {
+      "id": "dependency",
+      "returned": [
+        "f2"
+      ],
+      "latency_ms": 51,
+      "context_chars": 372,
+      "timed_out": false
+    },
+    {
+      "id": "historical",
+      "returned": [
+        "f3"
+      ],
+      "latency_ms": 49,
+      "context_chars": 319,
+      "timed_out": false
+    },
+    {
+      "id": "multi",
+      "returned": [
+        "f2"
+      ],
+      "latency_ms": 45,
+      "context_chars": 372,
+      "timed_out": false
+    },
+    {
+      "id": "irrelevant",
+      "returned": [],
+      "latency_ms": 38,
+      "context_chars": 0,
+      "timed_out": false
+    },
+    {
+      "id": "wrong-group",
+      "returned": [],
+      "latency_ms": 46,
+      "context_chars": 0,
+      "timed_out": false
+    }
+  ]
+}

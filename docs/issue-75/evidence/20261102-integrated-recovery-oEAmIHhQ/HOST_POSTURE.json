@@ -1,0 +1,43 @@
+{
+  "schema": "issue75-host-posture-v1",
+  "services": {
+    "openviking.service": {
+      "status": "active",
+      "version": "0.5.3",
+      "port": 1934
+    },
+    "openviking-commit-gate.service": {
+      "status": "active",
+      "admission": "durable_hold",
+      "port": 1933
+    },
+    "litellm-proxy.service": {
+      "status": "active",
+      "port": 8002
+    },
+    "falkordb": {
+      "status": "active",
+      "port": 6382
+    },
+    "ninfer-serve": {
+      "status": "active",
+      "port": 8001,
+      "running": 0,
+      "waiting": 0
+    },
+    "tei-reranker": {
+      "status": "active",
+      "port": 8004
+    }
+  },
+  "canonical_lock": {
+    "path": "/run/user/1000/openviking-agent.lock",
+    "held": false
+  },
+  "admission_hold": {
+    "singleton": 1,
+    "held": 1,
+    "owner": "issue75-integrated-oEAmIHhQ",
+    "revision": 1
+  }
+}

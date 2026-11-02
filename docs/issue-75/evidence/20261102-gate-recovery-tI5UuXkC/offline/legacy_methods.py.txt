@@ -1,0 +1,40 @@
+class QueueDB:
+    @contextmanager
+    def connect(self) -> Iterator[sqlite3.Connection]:
+        conn = sqlite3.connect(self.path, timeout=10.0)
+        try:
+            conn.row_factory = sqlite3.Row
+            conn.execute("PRAGMA busy_timeout=10000")
+            conn.execute("PRAGMA journal_mode=WAL")
+            conn.execute("PRAGMA synchronous=FULL")
+            with conn:
+                yield conn
+        finally:
+            conn.close()
+
+    def next_ready(self, now: float | None = None) -> sqlite3.Row | None:
+        now = time.time() if now is None else now
+        with self.connect() as conn:
+            return conn.execute(
+                """
+                SELECT * FROM intents
+                WHERE state='pending'
+                  AND requested_generation > processed_generation
+                  AND next_attempt_at <= ?
+                ORDER BY first_requested_at, last_requested_at
+                LIMIT 1
+                """,
+                (now,),
+            ).fetchone()
+
+    def dead_letter(self, row: sqlite3.Row, error: str) -> None:
+        key = (row["account"], row["user_id"], row["actor_peer"], row["session_id"])
+        with self.connect() as conn:
+            conn.execute(
+                """
+                UPDATE intents SET state='dead', task_id=NULL, claimed_generation=NULL,
+                    attempts=attempts + 1, next_attempt_at=0, last_error=?
+                WHERE account=? AND user_id=? AND actor_peer=? AND session_id=?
+                """,
+                (error[:1000], *key),
+            )

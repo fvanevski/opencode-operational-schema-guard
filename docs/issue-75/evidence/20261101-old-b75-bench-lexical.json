@@ -1,0 +1,131 @@
+{
+  "label": "lexical-filter candidate (live g_issue75_test)",
+  "endpoint": "http://127.0.0.1:8766/mcp",
+  "group": "g_issue75_test",
+  "reranker": null,
+  "results": [
+    {
+      "id": "direct",
+      "returned": [
+        "f1",
+        "f3"
+      ],
+      "latency_ms": 85,
+      "context_chars": 506,
+      "timed_out": false,
+      "error": null,
+      "raw_facts": [
+        {
+          "fact": "React Flow was chosen to be used for backlog dependency visualization.",
+          "evidenceClass": "user-stated",
+          "source": "opencode:issue75-bench-seed:user:b130b3750fe57790",
+          "mapped_to": [
+            "f1"
+          ]
+        },
+        {
+          "fact": "Tkinter was originally used for the backlog visualization and was then replaced by React Flow.",
+          "evidenceClass": "user-stated",
+          "source": "opencode:issue75-bench-seed:user:0c1a779fc0af9b84",
+          "mapped_to": [
+            "f1",
+            "f3"
+          ]
+        }
+      ],
+      "n_facts_returned": 2
+    },
+    {
+      "id": "paraphrase",
+      "returned": [],
+      "latency_ms": 22,
+      "context_chars": 0,
+      "timed_out": false,
+      "error": null,
+      "raw_facts": [],
+      "n_facts_returned": 0
+    },
+    {
+      "id": "dependency",
+      "returned": [],
+      "latency_ms": 35,
+      "context_chars": 0,
+      "timed_out": false,
+      "error": null,
+      "raw_facts": [],
+      "n_facts_returned": 0
+    },
+    {
+      "id": "historical",
+      "returned": [
+        "f1",
+        "f3"
+      ],
+      "latency_ms": 40,
+      "context_chars": 506,
+      "timed_out": false,
+      "error": null,
+      "raw_facts": [
+        {
+          "fact": "Tkinter was originally used for the backlog visualization and was then replaced by React Flow.",
+          "evidenceClass": "user-stated",
+          "source": "opencode:issue75-bench-seed:user:0c1a779fc0af9b84",
+          "mapped_to": [
+            "f1",
+            "f3"
+          ]
+        },
+        {
+          "fact": "React Flow was chosen to be used for backlog dependency visualization.",
+          "evidenceClass": "user-stated",
+          "source": "opencode:issue75-bench-seed:user:b130b3750fe57790",
+          "mapped_to": [
+            "f1"
+          ]
+        }
+      ],
+      "n_facts_returned": 2
+    },
+    {
+      "id": "multi",
+      "returned": [
+        "f2"
+      ],
+      "latency_ms": 28,
+      "context_chars": 372,
+      "timed_out": false,
+      "error": null,
+      "raw_facts": [
+        {
+          "fact": "opencode:issue75-bench-seed:user:c5f310c70274e8a1 states that the archive exporter depends on the quality gate before replacing the original media.",
+          "evidenceClass": "user-stated",
+          "source": "opencode:issue75-bench-seed:user:c5f310c70274e8a1",
+          "mapped_to": [
+            "f2"
+          ]
+        }
+      ],
+      "n_facts_returned": 1
+    },
+    {
+      "id": "irrelevant",
+      "returned": [],
+      "latency_ms": 22,
+      "context_chars": 0,
+      "timed_out": false,
+      "error": null,
+      "raw_facts": [],
+      "n_facts_returned": 0
+    },
+    {
+      "id": "wrong-group",
+      "returned": [],
+      "latency_ms": 30,
+      "context_chars": 0,
+      "timed_out": false,
+      "error": null,
+      "raw_facts": [],
+      "n_facts_returned": 0
+    }
+  ]
+}

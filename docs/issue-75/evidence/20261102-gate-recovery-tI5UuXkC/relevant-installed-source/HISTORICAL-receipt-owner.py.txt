@@ -1,0 +1,24 @@
+def _receipt_owner(request, ctx, session_id, scope):
+    if ctx.role != Role.ROOT:
+        raise HTTPException(403, "receipt interface requires backend owner")
+    if (not isinstance(scope, dict)
+            or set(scope) != {"account","user_id","actor_peer","session_id"}
+            or not all(isinstance(v, str) and
+                       (0 <= len(v) <= 256 if k == "actor_peer" else 0 < len(v) <= 256)
+                       for k, v in scope.items())
+            or scope.get("session_id") != session_id
+            or scope.get("actor_peer") != request.headers.get("X-OpenViking-Actor-Peer", "")):
+        raise HTTPException(409, "receipt scope mismatch")
+    mode=getattr(request.app.state.config,"auth_mode",None)
+    if mode=="trusted":
+        if scope["account"]!=ctx.account_id or scope["user_id"]!=ctx.user.user_id:
+            raise HTTPException(409,"receipt tenant mismatch")
+    elif mode!="api_key":
+        raise HTTPException(403,"receipt owner authentication mode unavailable")
+    # Native api_key mode deliberately strips tenant assertion headers and pins
+    # ROOT to its own identity. This ADMIN operation explicitly scopes the
+    # verified backend owner to the immutable request tenant, without relaxing
+    # ordinary tenant API authentication or accepting the nomination token.
+    from dataclasses import replace
+    from openviking_cli.session.user_id import UserIdentifier
+    return replace(ctx,user=UserIdentifier(scope["account"],scope["user_id"]),actor_peer_id=None)

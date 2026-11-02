@@ -1,0 +1,7 @@
+{
+  "status": "HISTORICAL",
+  "timestamp_utc": "2026-11-02T04:54:11.938Z",
+  "sanitized_log_message": "2026-11-01 20:54:11,938 - uvicorn.access - INFO - [request_id=HTTP_REQUEST_A] 127.0.0.1:44904 - \"POST /api/v1/admin/commit_receipts/SESSION_A/REQUEST_A HTTP/1.1\" 409",
+  "body_headers_coverage": "Access record lacks HTTP body/headers. Immutable gate scope and historical route source support preacceptance rejection; log alone does not supply body.",
+  "original_artifact_sha256": "b31a60402625c5168113e5b042b03b82547ad93770ffae9930f7a5a267a1c19c"
+}

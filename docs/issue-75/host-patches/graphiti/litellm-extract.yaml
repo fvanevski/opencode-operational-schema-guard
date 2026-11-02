@@ -1,0 +1,19 @@
+# Issue #75 disposable Graphiti extraction proxy, NOT the interactive chat profile.
+# Launch bound to --host 127.0.0.1 --port 8003; never expose to a public interface.
+# Caller supplies a strong private LITELLM_MASTER_KEY, never commit its value.
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
+
+model_list:
+  - model_name: chat-extract
+    litellm_params:
+      model: openai/chat
+      api_base: http://127.0.0.1:8001/v1
+      api_key: EMPTY
+      extra_body:
+        preserve_thinking: false
+
+litellm_settings:
+  num_retries: 0
+  drop_params: false
+  request_timeout: 600

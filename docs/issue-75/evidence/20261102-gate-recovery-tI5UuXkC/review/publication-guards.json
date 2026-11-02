@@ -1,0 +1,32 @@
+{
+  "task_contracts": {
+    "base": "9a932539d79db63929edc226c3e9a86f1c0dafc1",
+    "publication": "docs/issue-75/EVIDENCE_PUBLICATION_PROTOCOL.md",
+    "design_handoff": "docs/issue-75/GATE_RECOVERY_DESIGN_AND_EVIDENCE_HANDOFF.md"
+  },
+  "git_hooks": {
+    "core_hooksPath_override": false,
+    "executable_non_sample_hooks": []
+  },
+  "repository_CI": {
+    "ci_yml": "npm run check; npm test; triggered on PR/main push, not this issue branch",
+    "ghdev_verify": "manual exact-PR-head workflow, not a substitute/evidence-only publication gate; no dispatch authorized or invoked"
+  },
+  "active_command_checks": [
+    "npm run check: exit 0",
+    "npm test: 493/493 pass, exit 0",
+    "git diff --check required on final staged packet",
+    "GitNexus detect_changes required immediately before commit; external exact staged receipt",
+    "deny-by-default packet path/mode/size/privacy review required",
+    "remote exact-parent and nonprotected branch check",
+    "normal non-force push and fetched blob readback required"
+  ],
+  "named_policy_catalog_gap": "Separate documents named GHDEV-02 and GHDEV-07 were not found in repository/installed policy roots; no claim of having read absent files. Applied exact task publication contract, actual repository/harness constraints and canonical GHDEV-10 fields; no source Verify exemption or receipt fabricated.",
+  "branch_readback": {
+    "name": "issue/75",
+    "protected": false,
+    "sha": "9a932539d79db63929edc226c3e9a86f1c0dafc1"
+  },
+  "no_bypass": true,
+  "self_reference_limit": "Final staged guard and publication receipt are computed privately after packet sealing; no amend/follow-up commit."
+}

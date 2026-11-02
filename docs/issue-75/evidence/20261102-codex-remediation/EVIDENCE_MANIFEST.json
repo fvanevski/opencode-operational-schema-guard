@@ -1,0 +1,30 @@
+{
+  "schema": "issue75-codex-remediation-evidence-manifest-v1",
+  "directory": "docs/issue-75/evidence/20261102-codex-remediation",
+  "artifacts": {
+    "CODEX_FINDINGS_REGRESSIONS.json": {
+      "sha256": "f5af7f4adbb6e944745156b1d4ccacf83114116d2c0460a7898c1750e7c168d3",
+      "bytes": 2580
+    },
+    "CONTRACT_TEST_RESULTS.json": {
+      "sha256": "fca10573785278f091b114bd6ebd1515235ccd648e7156a921c3668329895a52",
+      "bytes": 2135
+    },
+    "HOST_POSTURE.json": {
+      "sha256": "f30bbb08f5a8550bd45d31f707aa5a0e063bc55450d003f206677ae6fb4fb5d6",
+      "bytes": 1817
+    },
+    "README.md": {
+      "sha256": "8272f2d7d7584f89824ed4304e25d458303d3cd00c179ee860e9c5276a6fd349",
+      "bytes": 5142
+    },
+    "SERVICE_INTEGRATION_TESTS.json": {
+      "sha256": "b38e8601267c9c27340a9ba4b5e791f2a9e89d59cb04fa6cabd530b86f161ed2",
+      "bytes": 2100
+    },
+    "TRANSIENT_RETRY_QUALIFICATION.json": {
+      "sha256": "ffae8d89335e26ab1539856bc2a7cd4d649756a1ca78c446ef67d5cf2425ddcd",
+      "bytes": 1692
+    }
+  }
+}

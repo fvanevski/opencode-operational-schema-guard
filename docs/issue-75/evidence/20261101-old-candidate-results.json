@@ -1,0 +1,300 @@
+{
+  "label": "native Graphiti candidate (search_memory_facts, group-scoped, source-episode-qualified)",
+  "endpoint": "http://127.0.0.1:8766/mcp",
+  "group": "g_issue75_test",
+  "other_group": "g_other_repo",
+  "state_dir": "<redacted-local-path>",
+  "results": [
+    {
+      "id": "direct",
+      "returned": [
+        "f1",
+        "f3",
+        "f2"
+      ],
+      "latency_ms": 48,
+      "context_chars": 770,
+      "timed_out": false,
+      "error": null,
+      "raw_facts": [
+        {
+          "fact": "React Flow was chosen to be used for backlog dependency visualization.",
+          "evidenceClass": "user-stated",
+          "temporal": "current state not independently verified",
+          "source": "opencode:issue75-bench-seed:user:b130b3750fe57790",
+          "mapped_to": [
+            "f1"
+          ]
+        },
+        {
+          "fact": "Tkinter was originally used for the backlog visualization and was then replaced by React Flow.",
+          "evidenceClass": "user-stated",
+          "temporal": "current state not independently verified",
+          "source": "opencode:issue75-bench-seed:user:0c1a779fc0af9b84",
+          "mapped_to": [
+            "f1",
+            "f3"
+          ]
+        },
+        {
+          "fact": "opencode:issue75-bench-seed:user:c5f310c70274e8a1 states that the archive exporter depends on the quality gate before replacing the original media.",
+          "evidenceClass": "user-stated",
+          "temporal": "current state not independently verified",
+          "source": "opencode:issue75-bench-seed:user:c5f310c70274e8a1",
+          "mapped_to": [
+            "f2"
+          ]
+        }
+      ],
+      "n_facts_returned": 3
+    },
+    {
+      "id": "paraphrase",
+      "returned": [
+        "f1",
+        "f3",
+        "f2"
+      ],
+      "latency_ms": 36,
+      "context_chars": 770,
+      "timed_out": false,
+      "error": null,
+      "raw_facts": [
+        {
+          "fact": "React Flow was chosen to be used for backlog dependency visualization.",
+          "evidenceClass": "user-stated",
+          "temporal": "current state not independently verified",
+          "source": "opencode:issue75-bench-seed:user:b130b3750fe57790",
+          "mapped_to": [
+            "f1"
+          ]
+        },
+        {
+          "fact": "Tkinter was originally used for the backlog visualization and was then replaced by React Flow.",
+          "evidenceClass": "user-stated",
+          "temporal": "current state not independently verified",
+          "source": "opencode:issue75-bench-seed:user:0c1a779fc0af9b84",
+          "mapped_to": [
+            "f1",
+            "f3"
+          ]
+        },
+        {
+          "fact": "opencode:issue75-bench-seed:user:c5f310c70274e8a1 states that the archive exporter depends on the quality gate before replacing the original media.",
+          "evidenceClass": "user-stated",
+          "temporal": "current state not independently verified",
+          "source": "opencode:issue75-bench-seed:user:c5f310c70274e8a1",
+          "mapped_to": [
+            "f2"
+          ]
+        }
+      ],
+      "n_facts_returned": 3
+    },
+    {
+      "id": "dependency",
+      "returned": [
+        "f2",
+        "f1",
+        "f3"
+      ],
+      "latency_ms": 34,
+      "context_chars": 770,
+      "timed_out": false,
+      "error": null,
+      "raw_facts": [
+        {
+          "fact": "opencode:issue75-bench-seed:user:c5f310c70274e8a1 states that the archive exporter depends on the quality gate before replacing the original media.",
+          "evidenceClass": "user-stated",
+          "temporal": "current state not independently verified",
+          "source": "opencode:issue75-bench-seed:user:c5f310c70274e8a1",
+          "mapped_to": [
+            "f2"
+          ]
+        },
+        {
+          "fact": "Tkinter was originally used for the backlog visualization and was then replaced by React Flow.",
+          "evidenceClass": "user-stated",
+          "temporal": "current state not independently verified",
+          "source": "opencode:issue75-bench-seed:user:0c1a779fc0af9b84",
+          "mapped_to": [
+            "f1",
+            "f3"
+          ]
+        },
+        {
+          "fact": "React Flow was chosen to be used for backlog dependency visualization.",
+          "evidenceClass": "user-stated",
+          "temporal": "current state not independently verified",
+          "source": "opencode:issue75-bench-seed:user:b130b3750fe57790",
+          "mapped_to": [
+            "f1"
+          ]
+        }
+      ],
+      "n_facts_returned": 3
+    },
+    {
+      "id": "historical",
+      "returned": [
+        "f1",
+        "f3",
+        "f2"
+      ],
+      "latency_ms": 34,
+      "context_chars": 770,
+      "timed_out": false,
+      "error": null,
+      "raw_facts": [
+        {
+          "fact": "React Flow was chosen to be used for backlog dependency visualization.",
+          "evidenceClass": "user-stated",
+          "temporal": "current state not independently verified",
+          "source": "opencode:issue75-bench-seed:user:b130b3750fe57790",
+          "mapped_to": [
+            "f1"
+          ]
+        },
+        {
+          "fact": "Tkinter was originally used for the backlog visualization and was then replaced by React Flow.",
+          "evidenceClass": "user-stated",
+          "temporal": "current state not independently verified",
+          "source": "opencode:issue75-bench-seed:user:0c1a779fc0af9b84",
+          "mapped_to": [
+            "f1",
+            "f3"
+          ]
+        },
+        {
+          "fact": "opencode:issue75-bench-seed:user:c5f310c70274e8a1 states that the archive exporter depends on the quality gate before replacing the original media.",
+          "evidenceClass": "user-stated",
+          "temporal": "current state not independently verified",
+          "source": "opencode:issue75-bench-seed:user:c5f310c70274e8a1",
+          "mapped_to": [
+            "f2"
+          ]
+        }
+      ],
+      "n_facts_returned": 3
+    },
+    {
+      "id": "multi",
+      "returned": [
+        "f2",
+        "f1",
+        "f3"
+      ],
+      "latency_ms": 27,
+      "context_chars": 770,
+      "timed_out": false,
+      "error": null,
+      "raw_facts": [
+        {
+          "fact": "opencode:issue75-bench-seed:user:c5f310c70274e8a1 states that the archive exporter depends on the quality gate before replacing the original media.",
+          "evidenceClass": "user-stated",
+          "temporal": "current state not independently verified",
+          "source": "opencode:issue75-bench-seed:user:c5f310c70274e8a1",
+          "mapped_to": [
+            "f2"
+          ]
+        },
+        {
+          "fact": "React Flow was chosen to be used for backlog dependency visualization.",
+          "evidenceClass": "user-stated",
+          "temporal": "current state not independently verified",
+          "source": "opencode:issue75-bench-seed:user:b130b3750fe57790",
+          "mapped_to": [
+            "f1"
+          ]
+        },
+        {
+          "fact": "Tkinter was originally used for the backlog visualization and was then replaced by React Flow.",
+          "evidenceClass": "user-stated",
+          "temporal": "current state not independently verified",
+          "source": "opencode:issue75-bench-seed:user:0c1a779fc0af9b84",
+          "mapped_to": [
+            "f1",
+            "f3"
+          ]
+        }
+      ],
+      "n_facts_returned": 3
+    },
+    {
+      "id": "irrelevant",
+      "returned": [
+        "f1",
+        "f3"
+      ],
+      "latency_ms": 21,
+      "context_chars": 506,
+      "timed_out": false,
+      "error": null,
+      "raw_facts": [
+        {
+          "fact": "Tkinter was originally used for the backlog visualization and was then replaced by React Flow.",
+          "evidenceClass": "user-stated",
+          "temporal": "current state not independently verified",
+          "source": "opencode:issue75-bench-seed:user:0c1a779fc0af9b84",
+          "mapped_to": [
+            "f1",
+            "f3"
+          ]
+        },
+        {
+          "fact": "React Flow was chosen to be used for backlog dependency visualization.",
+          "evidenceClass": "user-stated",
+          "temporal": "current state not independently verified",
+          "source": "opencode:issue75-bench-seed:user:b130b3750fe57790",
+          "mapped_to": [
+            "f1"
+          ]
+        }
+      ],
+      "n_facts_returned": 2
+    },
+    {
+      "id": "wrong-group",
+      "returned": [
+        "f1",
+        "f3",
+        "f2"
+      ],
+      "latency_ms": 27,
+      "context_chars": 770,
+      "timed_out": false,
+      "error": null,
+      "raw_facts": [
+        {
+          "fact": "React Flow was chosen to be used for backlog dependency visualization.",
+          "evidenceClass": "user-stated",
+          "temporal": "current state not independently verified",
+          "source": "opencode:issue75-bench-seed:user:b130b3750fe57790",
+          "mapped_to": [
+            "f1"
+          ]
+        },
+        {
+          "fact": "Tkinter was originally used for the backlog visualization and was then replaced by React Flow.",
+          "evidenceClass": "user-stated",
+          "temporal": "current state not independently verified",
+          "source": "opencode:issue75-bench-seed:user:0c1a779fc0af9b84",
+          "mapped_to": [
+            "f1",
+            "f3"
+          ]
+        },
+        {
+          "fact": "opencode:issue75-bench-seed:user:c5f310c70274e8a1 states that the archive exporter depends on the quality gate before replacing the original media.",
+          "evidenceClass": "user-stated",
+          "temporal": "current state not independently verified",
+          "source": "opencode:issue75-bench-seed:user:c5f310c70274e8a1",
+          "mapped_to": [
+            "f2"
+          ]
+        }
+      ],
+      "n_facts_returned": 3
+    }
+  ]
+}

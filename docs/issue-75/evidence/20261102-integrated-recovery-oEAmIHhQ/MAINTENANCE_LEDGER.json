@@ -1,0 +1,88 @@
+{
+  "schema": "issue75-maintenance-ledger-v1",
+  "result": "PASS",
+  "litellm_before": {
+    "unit": "litellm-proxy.service",
+    "active": "active",
+    "enabled": "disabled",
+    "ts": 1793646809.7866883
+  },
+  "litellm_after": {
+    "unit": "litellm-proxy.service",
+    "active": "active",
+    "enabled": "disabled",
+    "ts": 1793646875.0919974
+  },
+  "downtime_seconds": 64.794,
+  "events": [
+    {
+      "event": "stopped_litellm_proxy",
+      "state": {
+        "unit": "litellm-proxy.service",
+        "active": "inactive",
+        "enabled": "disabled",
+        "ts": 1793646810.0736728
+      }
+    },
+    {
+      "event": "started_disposable_litellm_8003",
+      "pid": 3504368,
+      "ts": 1793646816.0776467
+    },
+    {
+      "event": "started_disposable_graphiti_8767",
+      "pid": 3505166,
+      "ts": 1793646817.5790854
+    },
+    {
+      "event": "ex_lock_acquired",
+      "ts": 1793646817.579112,
+      "ninfer_running": 0,
+      "ninfer_waiting": 0
+    },
+    {
+      "event": "quiet_grace_verified",
+      "ts": 1793646847.7851138,
+      "grace_elapsed_seconds": 30.206,
+      "ninfer_running": 0,
+      "ninfer_waiting": 0
+    },
+    {
+      "event": "drain_submitted",
+      "ts": 1793646847.8841379,
+      "submitted": [
+        "2cc20a0c-4a58-4fa6-a45a-eeaaca31d190"
+      ]
+    },
+    {
+      "event": "terminal_materialization_confirmed_under_ex",
+      "ts": 1793646868.8769505,
+      "nodesCount": 3,
+      "edgesCount": 3,
+      "remoteEpisodeUuid": "4909cbad-a283-468e-9b34-3b613c26cd2b"
+    },
+    {
+      "event": "fresh_process_recall_verified",
+      "ts": 1793646869.16613,
+      "recall_pid": 3510985
+    },
+    {
+      "event": "ex_lock_released",
+      "ts": 1793646869.5936372
+    },
+    {
+      "event": "restored_litellm_proxy",
+      "state": {
+        "unit": "litellm-proxy.service",
+        "active": "active",
+        "enabled": "disabled",
+        "ts": 1793646874.610976
+      }
+    }
+  ],
+  "ninfer_after": {
+    "running": 0,
+    "waiting": 0
+  },
+  "new_ninfer_completions_count": 2
+}

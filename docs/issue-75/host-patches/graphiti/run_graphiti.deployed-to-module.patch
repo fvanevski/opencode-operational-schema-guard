@@ -1,0 +1,24 @@
+--- a/run_graphiti.py
++++ b/run_graphiti.py
+@@ -40,18 +40,7 @@
+ CrossEncoderFactory.create = staticmethod(make_reranker)
+ 
+-# Reasoning model think-tag sanitization: local reasoning models (e.g. Qwen3.8 with thinking)
+-# may output <think>...</think> or an orphan leading </think> tag before the structured JSON.
+-# Strip these along with markdown code fences so json.loads parses the structured response.
+-import re
+-from graphiti_core.llm_client.openai_generic_client import OpenAIGenericClient
+-_orig_strip_code_fences = OpenAIGenericClient._strip_code_fences
+-
+-def _strip_code_fences_and_thinking(text: str) -> str:
+-    stripped = text.strip()
+-    stripped = re.sub(r'^\s*<think>.*?</think>\s*', '', stripped, flags=re.DOTALL)
+-    stripped = re.sub(r'^\s*</think>\s*', '', stripped)
+-    return _orig_strip_code_fences(stripped)
+-
+-OpenAIGenericClient._strip_code_fences = staticmethod(_strip_code_fences_and_thinking)
++# Issue #75: use the same tested Graphiti JSON sanitizer at runtime.
++from graphiti_sanitizer import install_graphiti_sanitizer
++install_graphiti_sanitizer()
+ 
+ from graphiti_mcp_server import main

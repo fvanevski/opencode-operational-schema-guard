@@ -1,0 +1,33 @@
+    def claim(self, row: sqlite3.Row) -> sqlite3.Row | None:
+        key = (row["account"], row["user_id"], row["actor_peer"], row["session_id"])
+        with self.connect() as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            current = conn.execute(
+                "SELECT * FROM intents WHERE account=? AND user_id=? AND actor_peer=? AND session_id=?",
+                key,
+            ).fetchone()
+            if current is None or current["state"] != "pending":
+                return None
+            generation = int(current["requested_generation"])
+            scope = {k: str(current[k]) for k in ("account","user_id","actor_peer","session_id")}
+            frozen = json.loads(current["commit_body_json"] or "{}")
+            digest = request_digest(frozen)
+            req = request_key(scope,generation)
+            prior = conn.execute("SELECT * FROM commit_attempts WHERE request_key=?",(req,)).fetchone()
+            if prior and (prior["body_digest"] != digest or prior["submitted"]):
+                raise RuntimeError("claimed attempt is immutable or already submitted")
+            conn.execute("""INSERT OR IGNORE INTO commit_attempts
+                (request_key,account,user_id,actor_peer,session_id,generation,body_json,body_digest)
+                VALUES (?,?,?,?,?,?,?,?)""",(req,*key,generation,json.dumps(frozen,sort_keys=True),digest))
+            conn.execute("UPDATE commit_attempts SET resolved=0 WHERE request_key=?",(req,))
+            conn.execute(
+                """
+                UPDATE intents SET state='inflight', claimed_generation=?, task_id=NULL
+                WHERE account=? AND user_id=? AND actor_peer=? AND session_id=?
+                """,
+                (generation, *key),
+            )
+            return conn.execute(
+                "SELECT * FROM intents WHERE account=? AND user_id=? AND actor_peer=? AND session_id=?",
+                key,
+            ).fetchone()

@@ -1,0 +1,42 @@
+    def _enqueue(self, encoded_session: str) -> None:
+        if self._capture_credential_supplied():
+            self._json(401, {"status": "error", "error": {"message": "Capture credential has no commit authority"}})
+            return
+        try:
+            session_id = urllib.parse.unquote(encoded_session).strip()
+            if not session_id or "/" in session_id or len(session_id) > 255:
+                raise ValueError("invalid session id")
+            raw = self._read_body(self.server.cfg.max_commit_body_bytes)
+            body = json.loads(raw or b"{}")
+            if not isinstance(body, dict):
+                raise ValueError("commit body must be a JSON object")
+            keep_recent = body.get("keep_recent_count", 0)
+            if isinstance(keep_recent, bool):
+                raise ValueError("keep_recent_count must be an integer")
+            keep_recent = int(keep_recent)
+            if keep_recent < 0 or keep_recent > 10000:
+                raise ValueError("keep_recent_count must be between 0 and 10000")
+            reason = self.headers.get("X-OpenViking-Commit-Reason", "client")[:120]
+            queued = self.server.db.enqueue(
+                self._identity(), session_id, keep_recent, body, reason
+            )
+            self._json(
+                200,
+                {
+                    "status": "ok",
+                    "result": {
+                        "session_id": session_id,
+                        "status": "queued",
+                        "task_id": None,
+                        "archive_uri": None,
+                        "archived": False,
+                        "broker_intent_id": queued["intent_id"],
+                        "broker_generation": queued["generation"],
+                    },
+                },
+            )
+        except (ValueError, json.JSONDecodeError) as exc:
+            self._json(400, {"status": "error", "error": {"message": str(exc)}})
+        except Exception as exc:
+            LOG.exception("failed to persist commit intent")
+            self._json(503, {"status": "error", "error": {"message": str(exc)}})

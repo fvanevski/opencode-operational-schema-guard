@@ -1,0 +1,10 @@
+{
+  "schema": "issue75.disposable-journal-seed-map.v1",
+  "group": "g_issue75_test",
+  "note": "TEST ONLY: source mapping independently observed in the published host relevance evidence. Never import into the production selector.",
+  "local_journal_uuid_to_seed": {
+    "a4e1b76c-a01f-4990-a18f-83b5524e8638": "f1",
+    "2b43b66c-5840-4af4-a8f3-cc31cbf38fc9": "f2",
+    "6cf87bac-1506-44cd-a43a-b92c4ab648e4": "f3"
+  }
+}

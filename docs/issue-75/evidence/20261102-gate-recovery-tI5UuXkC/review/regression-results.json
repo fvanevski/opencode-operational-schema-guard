@@ -1,0 +1,32 @@
+{
+  "source_base": "9a932539d79db63929edc226c3e9a86f1c0dafc1",
+  "syntax": {
+    "command": [
+      "rtk",
+      "proxy",
+      "npm",
+      "run",
+      "check"
+    ],
+    "exit_code": 0,
+    "output_bytes": 1812
+  },
+  "repository_suite": {
+    "command": [
+      "rtk",
+      "proxy",
+      "npm",
+      "test"
+    ],
+    "exit_code": 0,
+    "output_bytes": 115115
+  },
+  "counts": {
+    "tests": 493,
+    "pass": 493,
+    "fail": 0,
+    "skipped": 0
+  },
+  "raw_private_log_sha256": "e99eb38207efdfb2ad9198be8ea250560429d393f5b319f8753b23c5030795a7",
+  "meaning": "publication regression only; no recovery/extraction acceptance"
+}

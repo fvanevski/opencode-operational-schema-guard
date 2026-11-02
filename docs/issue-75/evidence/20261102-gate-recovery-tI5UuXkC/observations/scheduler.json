@@ -1,0 +1,24 @@
+{
+  "snapshots": {
+    "before": {
+      "ninfer_requests_running": "0",
+      "ninfer_requests_waiting": "0",
+      "ninfer_requests_total{outcome=\"completed\"}": "218",
+      "ninfer_requests_total{outcome=\"cancelled\"}": "0",
+      "ninfer_requests_total{outcome=\"failed\"}": "0",
+      "ninfer_requests_total{outcome=\"rejected\"}": "0",
+      "ninfer_requests_submitted_total": "218"
+    },
+    "after": {
+      "ninfer_requests_running": "0",
+      "ninfer_requests_waiting": "0",
+      "ninfer_requests_total{outcome=\"completed\"}": "218",
+      "ninfer_requests_total{outcome=\"cancelled\"}": "0",
+      "ninfer_requests_total{outcome=\"failed\"}": "0",
+      "ninfer_requests_total{outcome=\"rejected\"}": "0",
+      "ninfer_requests_submitted_total": "218"
+    }
+  },
+  "no_exclusive_interval_admitted": true,
+  "quiet_grace_not_executed": true
+}

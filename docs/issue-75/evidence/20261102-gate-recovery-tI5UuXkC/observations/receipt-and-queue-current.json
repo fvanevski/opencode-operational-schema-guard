@@ -1,0 +1,42 @@
+{
+  "receipt": {
+    "schema": [
+      {
+        "name": "commit_receipts",
+        "sql": "CREATE TABLE commit_receipts (\n                request_key TEXT PRIMARY KEY,\n                scope_json TEXT NOT NULL,\n                body_digest TEXT NOT NULL,\n                state TEXT NOT NULL,\n                task_id TEXT,\n                outcome TEXT,\n                release_proven INTEGER NOT NULL DEFAULT 0\n            )"
+      },
+      {
+        "name": "receipt_bindings",
+        "sql": "CREATE TABLE receipt_bindings (request_key TEXT PRIMARY KEY, task_id TEXT UNIQUE NOT NULL, archive_uri TEXT NOT NULL)"
+      }
+    ],
+    "counts": {
+      "commit_receipts": 33,
+      "receipt_bindings": 33
+    },
+    "REQUEST_A_count": {
+      "commit_receipts": 0,
+      "receipt_bindings": 0
+    }
+  },
+  "queuefs": {
+    "schema": [
+      {
+        "name": "queue_metadata",
+        "sql": "CREATE TABLE queue_metadata (\n                queue_name TEXT PRIMARY KEY,\n                created_at INTEGER DEFAULT (strftime('%s', 'now')),\n                last_updated INTEGER DEFAULT (strftime('%s', 'now'))\n            )"
+      },
+      {
+        "name": "queue_messages",
+        "sql": "CREATE TABLE queue_messages (\n                id INTEGER PRIMARY KEY AUTOINCREMENT,\n                queue_name TEXT NOT NULL,\n                message_id TEXT NOT NULL,\n                data TEXT NOT NULL,\n                timestamp INTEGER NOT NULL,\n                status TEXT NOT NULL DEFAULT 'pending',\n                processing_started_at INTEGER,\n                created_at INTEGER DEFAULT (strftime('%s', 'now'))\n            )"
+      },
+      {
+        "name": "sqlite_sequence",
+        "sql": "CREATE TABLE sqlite_sequence(name,seq)"
+      }
+    ],
+    "counts": {
+      "queue_messages": 0,
+      "queue_metadata": 9
+    }
+  }
+}

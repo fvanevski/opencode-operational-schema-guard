@@ -1,0 +1,15 @@
+{
+  "harness": "same native standalone Codex exec controller; no additional controller",
+  "version": "0.166.0",
+  "provider_model_from_native_state": [
+    {
+      "provider": "openai",
+      "model": "gpt-6.1-sol",
+      "source": "exec"
+    }
+  ],
+  "auth_mode": "chatgpt",
+  "native_binary_sha256": "b8a11fedf24b2dfb59a70c9e52b030f9a508dcd49cd2dd0d41956f4c785156b8",
+  "effective_responses_URL": "UNVERIFIED",
+  "basis": "Prior version-bound workspace-origin routing analysis remains applicable; no new exec-bound supported URL readback available. No model check, account switch, service change or local GPU request used. Inherited OPENAI_BASE_URL is not endpoint authority."
+}

@@ -1,0 +1,24 @@
+{
+  "command": "rtk proxy python3 -B offline/characterize_schema.py",
+  "exit_code": 0,
+  "stdout": {
+    "result": "CHARACTERIZATION_PASS",
+    "checks": [
+      "unknown -> dead leaves submitted attempt unresolved (legacy defect reproduced)",
+      "raw ready selector still exposes pending generation-gap backlog; full worker admission NOT tested",
+      "inflight -> dead fires actual commit_attempt_resolved trigger (control)",
+      "unrelated backlog and failed history unchanged"
+    ],
+    "repair_implemented": false,
+    "crash_or_recovery_tests": "NOT_RUN_SOURCE_DRIFT_STOP",
+    "production_DB_connections": 0,
+    "network_calls": 0
+  },
+  "stderr": "",
+  "prior_failure": {
+    "exit_code": 1,
+    "exception": "sqlite3.IntegrityError: NOT NULL constraint failed: intents.first_requested_at",
+    "effect": "fixture setup aborted; no protected DB access",
+    "correction": "Supplied actual required first_requested_at and last_requested_at columns in complete synthetic fixtures"
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "redaction_notice": "SESSION_A/REQUEST_A/BODY_A/PEER_A are consistent aliases, not usable protocol values; blank tenant strings remain blank.",
+  "intents": [
+    {
+      "account": "",
+      "user_id": "",
+      "actor_peer": "PEER_A",
+      "session_id": "SESSION_A",
+      "requested_generation": 2,
+      "processed_generation": 0,
+      "claimed_generation": 2,
+      "keep_recent_count": 10,
+      "first_requested_at": 1793591608.637504,
+      "last_requested_at": 1793591608.791488,
+      "state": "unknown",
+      "task_id": null,
+      "attempts": 0,
+      "next_attempt_at": 0.0,
+      "last_error": "ambiguous backend acknowledgment",
+      "last_terminal_outcome": null,
+      "last_terminal_generation": null
+    }
+  ],
+  "commit_attempts": [
+    {
+      "request_key": "REQUEST_A",
+      "account": "",
+      "user_id": "",
+      "actor_peer": "PEER_A",
+      "session_id": "SESSION_A",
+      "generation": 2,
+      "body_digest": "BODY_A",
+      "submitted": 1,
+      "resolved": 0
+    }
+  ],
+  "same_session_failed_tasks": [],
+  "global_state_counts": [
+    {
+      "state": "complete",
+      "count": 1298
+    },
+    {
+      "state": "dead",
+      "count": 16
+    },
+    {
+      "state": "failed",
+      "count": 9
+    },
+    {
+      "state": "pending",
+      "count": 3
+    },
+    {
+      "state": "unknown",
+      "count": 1
+    }
+  ]
+}

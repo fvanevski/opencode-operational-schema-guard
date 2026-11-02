@@ -1,0 +1,54 @@
+{
+  "schema": "issue75-host-posture-pr-readiness-v1",
+  "audit_timestamp": "2026-11-02T19:53:00Z",
+  "services": {
+    "openviking.service": {
+      "status": "active",
+      "version": "0.5.3",
+      "port": 1934
+    },
+    "openviking-commit-gate.service": {
+      "status": "active",
+      "admission": "normal_restored",
+      "port": 1933
+    },
+    "litellm-proxy.service": {
+      "status": "active",
+      "port": 8002
+    },
+    "falkordb": {
+      "status": "active",
+      "port": 6382
+    },
+    "ninfer-serve": {
+      "status": "active",
+      "port": 8001,
+      "running": 0,
+      "waiting": 0
+    },
+    "tei-reranker": {
+      "status": "active",
+      "port": 8004
+    }
+  },
+  "canonical_lock": {
+    "path": "/run/user/1000/openviking-agent.lock",
+    "held": false
+  },
+  "recovery_hold": {
+    "singleton": 1,
+    "held": 0,
+    "owner": "issue75-integrated-oEAmIHhQ",
+    "revision": 2,
+    "reason": "Release hold: untenanted pending intents audited and retired; normal admission restored"
+  },
+  "queue_state": {
+    "total_rows": 1327,
+    "pending": 0,
+    "inflight": 0,
+    "complete": 1303,
+    "dead": 19,
+    "failed": 9,
+    "rejection_repairs_count": 3
+  }
+}

@@ -1,0 +1,101 @@
+{
+  "schema": "issue75-receipt-get-fencing-audit-v1",
+  "audit_timestamp": "2026-11-02T19:44:45Z",
+  "vulnerability_analysis": {
+    "root_cause": "Prior gate _proxy implementation only checked hold for POST or GET with recover=true. Ordinary GET /api/v1/admin/commit_receipts/{session}/{key} with recover=false was proxied via _proxy_unheld without acquiring admission_hold.publication. The backend get_commit_receipt handler invokes owner.reconcile(allow_recovery=False), which mutates durable state (updating preparing->accepted and completed->sealed_terminal in commit_receipts.sqlite3).",
+    "fencing_fix": "Normalized incoming path via posixpath.normpath(urllib.parse.unquote(path.path)). All receipt endpoints (/api/v1/admin/commit_receipts/{session}/{key}) are fenced under admission_hold.publication for all HTTP verbs and all query parameter variants. Pure read-only owner binding lookups (/api/v1/admin/commit_receipts/binding/{session}) and health checks (/health) remain unfenced."
+  },
+  "deployed_source_pins": {
+    "openviking_commit_gate.py": {
+      "preimage_sha256": "7e506e2e5eca249f80f8341b0eb8fd4e480866ab53df57b8ecf19ff202bdc2f2",
+      "deployed_sha256": "bef5696ab19b8e2f9c585eda7a5c61bf82bd6941f18a765e0830428f53c3e75b",
+      "path": "/home/filip/.local/share/openviking-commit-gate/openviking_commit_gate.py"
+    },
+    "admission_hold.py": {
+      "preimage_sha256": "63548e622288a7f1e7fe58146414e4b087e16dc9e4ad907f081b78ecd132ef3e",
+      "deployed_sha256": "97cc0003bb39e9a770cf66d09e2b86fac1101e00915b900cdf55756257c43c1d",
+      "path": "/home/filip/.local/share/openviking-commit-gate/admission_hold.py"
+    }
+  },
+  "verified_test_matrix": [
+    {
+      "method": "GET",
+      "route": "/api/v1/admin/commit_receipts/s1/k1",
+      "hold": 1,
+      "expected_status": 503,
+      "actual_status": 503,
+      "message": "durable admission held",
+      "backend_reconcile_called": false
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/admin/commit_receipts/s1/k1?recover=false",
+      "hold": 1,
+      "expected_status": 503,
+      "actual_status": 503,
+      "message": "durable admission held",
+      "backend_reconcile_called": false
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/admin/commit_receipts/s1/k1?recover=0",
+      "hold": 1,
+      "expected_status": 503,
+      "actual_status": 503,
+      "message": "durable admission held",
+      "backend_reconcile_called": false
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/admin/commit_receipts/s1/k1?recover=true",
+      "hold": 1,
+      "expected_status": 503,
+      "actual_status": 503,
+      "message": "durable admission held",
+      "backend_reconcile_called": false
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/admin/%63ommit_receipts/s1/k1",
+      "hold": 1,
+      "expected_status": 503,
+      "actual_status": 503,
+      "message": "durable admission held",
+      "backend_reconcile_called": false
+    },
+    {
+      "method": "POST",
+      "route": "/api/v1/admin/commit_receipts/s1/k1",
+      "hold": 1,
+      "expected_status": 503,
+      "actual_status": 503,
+      "message": "durable admission held",
+      "backend_reconcile_called": false
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/admin/commit_receipts/binding/s1",
+      "hold": 1,
+      "expected_status": 200,
+      "actual_status": 200,
+      "protocol": "gate-owner-binding-v1",
+      "backend_reconcile_called": false
+    },
+    {
+      "method": "GET",
+      "route": "/health",
+      "hold": 1,
+      "expected_status": 200,
+      "actual_status": 200,
+      "status": "ok"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/admin/commit_receipts/s1/k1",
+      "hold": 0,
+      "expected_status": 200,
+      "actual_status": 200,
+      "backend_reconcile_called": true
+    }
+  ]
+}

@@ -1,0 +1,118 @@
+[
+  {
+    "published_path": "relevant-installed-source/QueueDB-connect.py.txt",
+    "source_locator": "installed-gate/openviking_commit_gate.py",
+    "host_sha256": "32017a4e25ba708a6f64e3f32717a09d01620000e77690910973cee6b510e2fe",
+    "lines": [
+      207,
+      218
+    ],
+    "original_excerpt_sha256": "5ff9098ce710b56b9784b90df1edd97711d7687cd3d51a4efedcdfef4845f3df",
+    "redactions": "none; necessary source excerpt only"
+  },
+  {
+    "published_path": "relevant-installed-source/QueueDB-next_ready.py.txt",
+    "source_locator": "installed-gate/openviking_commit_gate.py",
+    "host_sha256": "32017a4e25ba708a6f64e3f32717a09d01620000e77690910973cee6b510e2fe",
+    "lines": [
+      384,
+      397
+    ],
+    "original_excerpt_sha256": "24f7f55be3969ea168722e765494e99c3e28eddf1aa3e4ab83f5e8c6e14e830b",
+    "redactions": "none; necessary source excerpt only"
+  },
+  {
+    "published_path": "relevant-installed-source/QueueDB-claim.py.txt",
+    "source_locator": "installed-gate/openviking_commit_gate.py",
+    "host_sha256": "32017a4e25ba708a6f64e3f32717a09d01620000e77690910973cee6b510e2fe",
+    "lines": [
+      426,
+      458
+    ],
+    "original_excerpt_sha256": "3524d054022bf65f32f886c84ae5d339d101efbc8421b31cd6466287b6b9c916",
+    "redactions": "none; necessary source excerpt only"
+  },
+  {
+    "published_path": "relevant-installed-source/QueueDB-dead_letter.py.txt",
+    "source_locator": "installed-gate/openviking_commit_gate.py",
+    "host_sha256": "32017a4e25ba708a6f64e3f32717a09d01620000e77690910973cee6b510e2fe",
+    "lines": [
+      630,
+      640
+    ],
+    "original_excerpt_sha256": "93f6b727b67379d963ef897f401c7a45ffb1cae41ce1bcf296da8ce68be31f53",
+    "redactions": "none; necessary source excerpt only"
+  },
+  {
+    "published_path": "relevant-installed-source/GateHandler-_identity.py.txt",
+    "source_locator": "installed-gate/openviking_commit_gate.py",
+    "host_sha256": "32017a4e25ba708a6f64e3f32717a09d01620000e77690910973cee6b510e2fe",
+    "lines": [
+      1593,
+      1598
+    ],
+    "original_excerpt_sha256": "40b27606af5335b927333d9d1e2311b2644ef3a43b110b9205c7d1d39b9fe0d0",
+    "redactions": "none; necessary source excerpt only"
+  },
+  {
+    "published_path": "relevant-installed-source/GateHandler-_enqueue.py.txt",
+    "source_locator": "installed-gate/openviking_commit_gate.py",
+    "host_sha256": "32017a4e25ba708a6f64e3f32717a09d01620000e77690910973cee6b510e2fe",
+    "lines": [
+      1622,
+      1663
+    ],
+    "original_excerpt_sha256": "174c5dbedb24144cccf33436b4e2d9a20b442ff37832048e793ad046de0796f3",
+    "redactions": "none; necessary source excerpt only"
+  },
+  {
+    "published_path": "relevant-installed-source/Worker-tick.py.txt",
+    "source_locator": "installed-gate/openviking_commit_gate.py",
+    "host_sha256": "32017a4e25ba708a6f64e3f32717a09d01620000e77690910973cee6b510e2fe",
+    "lines": [
+      901,
+      1086
+    ],
+    "original_excerpt_sha256": "c7c9c549ec02c4625e089f113d8756677b4249a7e4d043b16612662be8f64791",
+    "redactions": "none; necessary source excerpt only"
+  },
+  {
+    "published_path": "relevant-installed-source/Worker-_process_receipted.py.txt",
+    "source_locator": "installed-gate/openviking_commit_gate.py",
+    "host_sha256": "32017a4e25ba708a6f64e3f32717a09d01620000e77690910973cee6b510e2fe",
+    "lines": [
+      1414,
+      1438
+    ],
+    "original_excerpt_sha256": "646cca68c0d684b0306c8f79297bb427600b8d3d2e99bf15ee3371d6203fa658",
+    "redactions": "none; necessary source excerpt only"
+  },
+  {
+    "published_path": "relevant-installed-source/Worker-_receipt_observation.py.txt",
+    "source_locator": "installed-gate/openviking_commit_gate.py",
+    "host_sha256": "32017a4e25ba708a6f64e3f32717a09d01620000e77690910973cee6b510e2fe",
+    "lines": [
+      1388,
+      1412
+    ],
+    "original_excerpt_sha256": "c0c598ad439f2a1ff1a24d444c38a1519557dfd4b9025896c62c93e0b0bc0937",
+    "redactions": "none; necessary source excerpt only"
+  },
+  {
+    "published_path": "offline/installed_schema.sql",
+    "source_locator": "gate SQLite sqlite_master, read-only transaction",
+    "original_artifact_sha256": "3f29562e02ff38b99e165be6277e647cecfc0a15f91ba12df96c23a202a07d05",
+    "redactions": "internal SQLite-managed sqlite_sequence definition omitted; it is created by AUTOINCREMENT. No row values included."
+  },
+  {
+    "published_path": "relevant-installed-source/HISTORICAL-receipt-owner.py.txt",
+    "source_locator": "historical installed openviking/server/routers/sessions.py",
+    "host_sha256": "bb9e949e2b892a5bf84ee23d87385ee24064877f862784e9b6386341da8980a9",
+    "lines": [
+      843,
+      866
+    ],
+    "redactions": "none",
+    "status": "historical only; current disk no longer contains this function"
+  }
+]

@@ -1,0 +1,52 @@
+{
+  "schema": "issue75-evidence-manifest-v1",
+  "timestamp": 1793654760.0,
+  "result": "PASS",
+  "files": [
+    {
+      "name": "CONTRACT_TEST_RESULTS.json",
+      "bytes": 1515,
+      "sha256": "911528eb68aa244145915f4216f51cd8e0b707f96fed19c8bf5aac2db018f5fd"
+    },
+    {
+      "name": "CREDENTIAL_ROTATION.json",
+      "bytes": 493,
+      "sha256": "54a922ae61ee0ba8073d43b45f463b274214755160da4337cba6088e9886fdae"
+    },
+    {
+      "name": "HARNESS_CLASSIFIER_REGRESSIONS.json",
+      "bytes": 1753,
+      "sha256": "9cede50b89be1d2956ff2484c651565f9587bb881585bf0a5395e74f9f15af2b"
+    },
+    {
+      "name": "HOST_POSTURE.json",
+      "bytes": 1290,
+      "sha256": "c591c88d0353b0fe6df4b42852a7695086fe9c768c5c722caa9c8a0cff6dd27a"
+    },
+    {
+      "name": "README.md",
+      "bytes": 4822,
+      "sha256": "a27970905fe65c9b97b2457fcd48588396ad950e2cb40f2d85cea1f4c44207aa"
+    },
+    {
+      "name": "SERVICE_INTEGRATION_TESTS.json",
+      "bytes": 2073,
+      "sha256": "d70672841d67c94b8e8ac89a5d60407ae89402e7807c075651c0d42ad2c7e22f"
+    },
+    {
+      "name": "SHA256SUMS",
+      "bytes": 736,
+      "sha256": "d5cc23624d56f27018763e63b52e5bd35b9053be7c50fb525eac503d815ee49b"
+    },
+    {
+      "name": "UNMOCKED_GATE_COMMIT_RECEIPT.json",
+      "bytes": 903,
+      "sha256": "75bbb69dcf5ef9740d43967d9d1766f60647dea56ac7b5e84966906282a5069d"
+    },
+    {
+      "name": "V2_STOCK_EVENT_RECALL.json",
+      "bytes": 8477,
+      "sha256": "afd0d65851140961807bff9d33dc72c58959dacb51ef859e09a24d3da55466cc"
+    }
+  ]
+}

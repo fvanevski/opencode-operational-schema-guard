@@ -1,0 +1,14 @@
+--- a/run_graphiti.py
++++ b/run_graphiti.py
+@@ -38,6 +38,11 @@
+     )
+ 
+ CrossEncoderFactory.create = staticmethod(make_reranker)
++
++# Issue #75: use the same tested Graphiti JSON sanitizer at runtime.
++from graphiti_sanitizer import install_graphiti_sanitizer
++install_graphiti_sanitizer()
++
+ from graphiti_mcp_server import main
+ 
+ # Durable keep-alive fix (no upstream source changes): the pinned SDK's

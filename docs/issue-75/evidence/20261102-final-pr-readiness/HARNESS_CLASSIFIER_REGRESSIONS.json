@@ -1,0 +1,70 @@
+{
+  "suite": "test_harness_classifier.py",
+  "total_tests": 12,
+  "passed": 12,
+  "failed": 0,
+  "tests": [
+    {
+      "name": "test_empty_process_names_returns_empty",
+      "status": "PASS"
+    },
+    {
+      "name": "test_interactive_agy_is_detected",
+      "status": "PASS"
+    },
+    {
+      "name": "test_interactive_antigravity_alias_is_detected",
+      "status": "PASS"
+    },
+    {
+      "name": "test_interactive_codex_is_detected",
+      "status": "PASS"
+    },
+    {
+      "name": "test_interactive_opencode_is_detected",
+      "status": "PASS"
+    },
+    {
+      "name": "test_missing_or_unreadable_proc_fails_closed",
+      "status": "PASS"
+    },
+    {
+      "name": "test_opencode_desktop_electron_helpers_are_exempted",
+      "status": "PASS"
+    },
+    {
+      "name": "test_opencode_desktop_main_is_detected",
+      "status": "PASS"
+    },
+    {
+      "name": "test_passive_codex_app_server_is_exempted",
+      "status": "PASS"
+    },
+    {
+      "name": "test_passive_codex_exec_server_is_exempted",
+      "status": "PASS"
+    },
+    {
+      "name": "test_passive_opencode_serve_is_exempted",
+      "status": "PASS"
+    },
+    {
+      "name": "test_unrelated_processes_are_ignored",
+      "status": "PASS"
+    }
+  ],
+  "coverage_invariants": {
+    "interactive_codex_detected": true,
+    "passive_codex_exec_server_exempt": true,
+    "passive_codex_app_server_exempt": true,
+    "interactive_opencode_detected": true,
+    "passive_opencode_serve_exempt": true,
+    "interactive_agy_detected": true,
+    "antigravity_alias_detected": true,
+    "opencode_desktop_detected": true,
+    "electron_helper_exempt": true,
+    "unrelated_process_exempt": true,
+    "missing_proc_fail_closed": true,
+    "empty_process_names_safe": true
+  }
+}
