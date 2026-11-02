@@ -41,6 +41,10 @@ test('generic historical vs current-choice evidence wins without project-specifi
   assert.deepEqual(await relevanceFilter('What did we decide?', items,
     async () => new Map([[0,.9],[1,.8]])), []);
   assert.equal(relevanceSignals('Does this service use Redis for its cache?', current.fact).eligible, false);
+  const causal = relevanceSignals('What must complete before the exporter swaps the media?',
+    'The archive exporter depends on a quality gate before replacing the source.');
+  assert.equal(causal.eligible, true);
+  assert.equal(causal.priority, 0, 'Causal before is not a historical-state preference');
 });
 test('without an independent reranker, semantic-only choice retrieval abstains', async () => {
   const item = {fact:'PostgreSQL was chosen as the preferred transactional database.'};
