@@ -1,4 +1,8 @@
-# Issue #75 — Direct-harness BLOCKED handback and inference admission decision
+# Issue #75 — Direct-harness BLOCKED handback (historical pre-authorization)
+
+**Subsequent authorization:** The user explicitly authorized one bounded, reversible maintenance window for identified competing inference clients. The current execution authority is `docs/issue-75/AUTHORIZED_INFERENCE_MAINTENANCE_CONTRACT.md`. Preserve this prior BLOCKED finding as evidence; do not interpret its no-authorization statement as superseding the later express grant.
+
+## Original adjudication (preserved)
 
 **Recorded:** 2026-11-02 UTC. **Current branch base at recording:** \`9ade013d2bf03765abd18a49c8cdf23651f5f6cf\`. **Decision status:** BLOCKED; no host inference or production-action authorization granted by this document.
 
