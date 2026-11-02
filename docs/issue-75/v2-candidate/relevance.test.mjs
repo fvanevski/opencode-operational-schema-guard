@@ -23,6 +23,12 @@ test('reranker admits semantic paraphrase but rejects top-k unrelated material',
   const unsupported = await relevanceFilter('Does this repository use MongoDB for storage?', c,
     async () => new Map([[0,.91],[1,.88]]));
   assert.deepEqual(unsupported, []);
+  const unrelatedDecision = [
+    {fact:'PostgreSQL was selected for inventory transaction storage.'},
+    {fact:'The product archive uses a quality gate for media exports.'},
+  ];
+  assert.deepEqual(await relevanceFilter('What did we settle on for retry backoff strategy?',
+    unrelatedDecision, async () => new Map([[0,.015],[1,.012]])), []);
 });
 test('unavailable reranker fails closed to conservative CPU filter, not all top-k', async () => {
   const c = [{fact:'React Flow chosen for backlog dependency visualization'},
