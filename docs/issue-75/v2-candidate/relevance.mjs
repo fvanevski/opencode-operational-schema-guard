@@ -57,7 +57,8 @@ const DECISION_INTENT = /\b(?:settle(?:d)? on|decid(?:e|ed)|chos(?:e|en)|choos(?
 // expresses a dependency, not an earlier technology choice.
 const HISTORICAL_INTENT = /\b(?:original(?:ly)?|previous(?:ly)?|prior|formerly|used to|histor(?:y|ical)|earlier|first|replaced|switched from)\b|\b(?:use|used|had|chosen)\s+before\b|\bbefore\s+(?:chang\w*|switch\w*|migrat\w*|replac\w*|adopt\w*)\b/i;
 const DIRECT_DECISION = /\b(?:chos(?:e|en)|decid(?:e|ed)|select(?:ed)?|picked|settled|prefer(?:red)?|adopt(?:ed)?)\b/i;
-const HISTORICAL_STATEMENT = /\b(?:original(?:ly)?|previous(?:ly)?|prior|formerly|used to|replac(?:e|ed) (?:by|with)|switched (?:from|to)|then)\b/i;
+// "original media" names a source file, not a historical decision.
+const HISTORICAL_STATEMENT = /\b(?:originally|previously|prior to|formerly|used to|replac(?:e|ed) (?:by|with)|switched (?:from|to)|then)\b/i;
 const INTENT_TERMS = new Set('settle decided decide chosen choose select selected pick picked agreed prefer preferred original originally before previous previously formerly historical history earlier first'.split(' '));
 function namedQueryTerms(query) {
   // Keep mid-question proper names/acronyms as hard topic constraints. This
