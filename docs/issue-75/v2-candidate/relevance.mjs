@@ -116,6 +116,8 @@ export async function relevanceFilter(query, candidates, ranker = null, { maxSel
     const signals = relevanceSignals(query, item.fact,
       { hasRerankScore: validScore });
     if (!signals.eligible) continue;
+    if (signals.choiceOnly && (background === null || !validScore || score <= 2 * background))
+      continue;
     admitted.push({ item, index: i, priority: signals.priority,
       rankScore: validScore ? score : null, lexical: signals.overlap });
   }
