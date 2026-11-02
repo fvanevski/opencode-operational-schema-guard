@@ -1,0 +1,7 @@
+{
+  "name": "opencode-v2-candidate-graphiti",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "./plugin.mjs",
+  "exports": "./plugin.mjs"
+}

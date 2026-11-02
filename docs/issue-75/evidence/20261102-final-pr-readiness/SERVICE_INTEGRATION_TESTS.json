@@ -1,0 +1,36 @@
+{
+  "suite": "test_tenant_integration.py (TenantIntegration & I1Service)",
+  "runner": "/home/filip/.local/share/uv/tools/openviking/bin/python",
+  "total_tests": 19,
+  "passed": 19,
+  "failed": 0,
+  "duration_seconds": 148.285,
+  "result": "PASS",
+  "tests": [
+    {"name": "test_01_backend_receipt_binding_roundtrip", "status": "PASS"},
+    {"name": "test_02_backend_missing_receipt_404", "status": "PASS"},
+    {"name": "test_03_backend_missing_headers_503", "status": "PASS"},
+    {"name": "test_04_backend_missing_binding_403", "status": "PASS"},
+    {"name": "test_05_backend_unpinned_root_owner_503", "status": "PASS"},
+    {"name": "test_06_backend_unmatched_user_key_403", "status": "PASS"},
+    {"name": "test_07_backend_valid_user_key_success", "status": "PASS"},
+    {"name": "test_08_backend_invalid_signature_401", "status": "PASS"},
+    {"name": "test_09_backend_cross_tenant_impersonation_rejected", "status": "PASS"},
+    {"name": "test_10_gate_worker_tenant_binding_success", "status": "PASS"},
+    {"name": "test_01_disposable_smoke_publication_pause", "status": "PASS"},
+    {"name": "test_02_disposable_smoke_registration_pause", "status": "PASS"},
+    {"name": "test_03_disposable_smoke_complete_flow", "status": "PASS"},
+    {"name": "test_04_disposable_smoke_terminal_gap", "status": "PASS"},
+    {"name": "test_05_disposable_smoke_model_failure", "status": "PASS"},
+    {"name": "test_06_disposable_smoke_disabled_receipts", "status": "PASS"},
+    {"name": "test_07_disposable_smoke_multi_session", "status": "PASS"},
+    {"name": "test_08_disposable_smoke_multi_session_both_published", "status": "PASS"},
+    {"name": "test_09_disposable_smoke_queue_replay", "status": "PASS"}
+  ],
+  "fixture_provenance": {
+    "backend_candidate": "service-integration/backend (host-candidate)",
+    "gate_candidate": "service-integration/candidate/gate (host-candidate/gate)",
+    "shim_source": "docs/issue-70/implementation/i1-integrated/candidate/shim",
+    "openviking_v2_source": "docs/issue-70/implementation/i1-integrated/candidate/openviking-v2"
+  }
+}

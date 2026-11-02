@@ -17,7 +17,7 @@
 -    return _orig_strip_code_fences(stripped)
 -
 -OpenAIGenericClient._strip_code_fences = staticmethod(_strip_code_fences_and_thinking)
-+# Use the exactly tested implementation, copied beside run_graphiti.py.
++# Issue #75: use the same tested Graphiti JSON sanitizer at runtime.
 +from graphiti_sanitizer import install_graphiti_sanitizer
 +install_graphiti_sanitizer()
  

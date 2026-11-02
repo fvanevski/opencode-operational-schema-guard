@@ -398,6 +398,15 @@
  LOG = logging.getLogger("openviking-commit-gate")
  COMMIT_RE = re.compile(r"^/api/v1/sessions/([^/]+)/commit$")
  METRIC_RE = re.compile(
+@@ -55,7 +57,7 @@
+ TERMINAL_OK = {"completed", "complete", "succeeded", "success"}
+ TERMINAL_FAILED = {"failed", "failure", "error", "cancelled", "canceled"}
+ NON_INTERACTIVE_HARNESS_SUBCOMMANDS = {
+-    "codex": {"app-server"},
++    "codex": {"app-server", "exec-server"},
+     "opencode": {"serve"},
+ }
+ HARNESS_ALIASES: dict[str, dict[str, set[str]]] = {
 @@ -302,6 +304,7 @@
                  BEGIN UPDATE commit_attempts SET resolved=1
                  WHERE account=OLD.account AND user_id=OLD.user_id AND actor_peer=OLD.actor_peer

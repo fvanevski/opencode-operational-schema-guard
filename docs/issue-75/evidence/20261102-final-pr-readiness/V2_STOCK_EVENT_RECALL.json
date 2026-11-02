@@ -1,0 +1,228 @@
+{
+  "schema": "issue75-genuine-v2-stock-qualification-ledger-v1",
+  "result": "PASS",
+  "stock_v2_session": {
+    "session_id": "ses_issue75_stock_native_v2",
+    "prompt_text": "We decided that the release pipeline runs the smoke test suite before publishing the release artifact.",
+    "user_message_id": "msg_19e25675e001hf1gTYTMRkrACp",
+    "plugin_package": "opencode-v2-candidate-graphiti",
+    "native_runtime_version": "2.2.5"
+  },
+  "negative_controls": {
+    "ok": true,
+    "disabledHooksRegistered": 0,
+    "secretRejected": true,
+    "nonDecisionRejected": true,
+    "failedToolRejected": true,
+    "nonTestToolRejected": true,
+    "journalCountAfterNegatives": 0
+  },
+  "litellm_before": {
+    "unit": "litellm-proxy.service",
+    "active": "active",
+    "enabled": "disabled",
+    "ts": 1793654614.2707233
+  },
+  "litellm_after": {
+    "unit": "litellm-proxy.service",
+    "active": "active",
+    "enabled": "disabled",
+    "ts": 1793654659.8734913
+  },
+  "downtime_seconds": 45.587,
+  "events": [
+    {
+      "event": "acquired_ex_lock",
+      "ts": 1793654614.2771482
+    },
+    {
+      "event": "stopped_litellm_proxy",
+      "state": {
+        "unit": "litellm-proxy.service",
+        "active": "inactive",
+        "enabled": "disabled",
+        "ts": 1793654614.4747508
+      }
+    },
+    {
+      "event": "started_disposable_litellm_8003",
+      "pid": 229233,
+      "ts": 1793654620.479261
+    },
+    {
+      "event": "started_disposable_graphiti_8767",
+      "pid": 229821,
+      "ts": 1793654621.9823112
+    },
+    {
+      "event": "drained_candidate",
+      "submitted": [
+        "44f5e0d0-8313-4ec0-a957-ce0fa7e70d6b"
+      ],
+      "ts": 1793654622.1131976
+    },
+    {
+      "event": "terminal_materialization_confirmed_under_ex",
+      "ts": 1793654651.5756185,
+      "nodesCount": 3,
+      "edgesCount": 3,
+      "remoteEpisodeUuid": "2fcbf9e8-cc18-46ed-b6d6-8d2a8f4bcedf"
+    },
+    {
+      "event": "fresh_process_recall_verified",
+      "ts": 1793654651.9167073,
+      "recall_pid": 233209
+    },
+    {
+      "event": "ex_lock_released",
+      "ts": 1793654652.3442101
+    },
+    {
+      "event": "restored_litellm_proxy",
+      "state": {
+        "unit": "litellm-proxy.service",
+        "active": "active",
+        "enabled": "disabled",
+        "ts": 1793654659.8645735
+      }
+    }
+  ],
+  "ninfer_after": {
+    "running": 0,
+    "waiting": 0
+  },
+  "terminal_materialization": {
+    "ready": true,
+    "row": {
+      "uuid": "44f5e0d0-8313-4ec0-a957-ce0fa7e70d6b",
+      "group": "g_issue75_qual_v2_stock",
+      "kind": "user_decision",
+      "assertion": "We decided that the release pipeline runs the smoke test suite before publishing the release artifact.",
+      "evidenceClass": "user-stated",
+      "sourceRef": "opencode:ses_issue75_stock_native_v2:user:397f295c8b1eb454",
+      "referenceTime": "2026-11-02T21:23:34.042Z",
+      "status": "persisted",
+      "createdAt": "2026-11-02T21:23:34.091Z",
+      "updatedAt": "2026-11-02T21:24:07.329Z",
+      "remoteEpisodeUuid": "2fcbf9e8-cc18-46ed-b6d6-8d2a8f4bcedf"
+    },
+    "nodesCount": 3,
+    "edgesCount": 3,
+    "nodes": [
+      {
+        "uuid": "bcae9374-84db-4865-9081-9b7621b46ee1",
+        "name": "release pipeline",
+        "labels": [
+          "Entity"
+        ],
+        "created_at": "2026-11-02T21:23:47.118380+00:00",
+        "summary": "The release pipeline runs the smoke test suite before publishing the release artifact.\nThe release pipeline publishes the release artifact after running the smoke test suite.",
+        "group_id": "g_issue75_qual_v2_stock",
+        "attributes": {}
+      },
+      {
+        "uuid": "87c7445b-253e-46c4-b2ff-9c208ca35401",
+        "name": "smoke test suite",
+        "labels": [
+          "Entity"
+        ],
+        "created_at": "2026-11-02T21:23:47.118422+00:00",
+        "summary": "The release pipeline runs the smoke test suite before publishing the release artifact.\nThe smoke test suite runs before the release artifact is published.",
+        "group_id": "g_issue75_qual_v2_stock",
+        "attributes": {}
+      },
+      {
+        "uuid": "0d73a8a4-fd27-44b2-8f36-7bf12589b76a",
+        "name": "release artifact",
+        "labels": [
+          "Entity"
+        ],
+        "created_at": "2026-11-02T21:23:47.118436+00:00",
+        "summary": "The release pipeline publishes the release artifact after running the smoke test suite.\nThe smoke test suite runs before the release artifact is published.",
+        "group_id": "g_issue75_qual_v2_stock",
+        "attributes": {}
+      }
+    ],
+    "edges": [
+      {
+        "uuid": "801e3ad3-143a-402a-9479-ae86660faff4",
+        "name": "PUBLISHES",
+        "fact": "The release pipeline publishes the release artifact after running the smoke test suite.",
+        "source_node_uuid": "bcae9374-84db-4865-9081-9b7621b46ee1",
+        "target_node_uuid": "0d73a8a4-fd27-44b2-8f36-7bf12589b76a",
+        "group_id": "g_issue75_qual_v2_stock",
+        "created_at": "2026-11-02T21:24:02.234903+00:00",
+        "valid_at": "2026-11-02T21:23:34+00:00",
+        "invalid_at": null
+      },
+      {
+        "uuid": "3937325b-51d9-4ad1-bf46-fbf5e8366658",
+        "name": "RUNS",
+        "fact": "The release pipeline runs the smoke test suite before publishing the release artifact.",
+        "source_node_uuid": "bcae9374-84db-4865-9081-9b7621b46ee1",
+        "target_node_uuid": "87c7445b-253e-46c4-b2ff-9c208ca35401",
+        "group_id": "g_issue75_qual_v2_stock",
+        "created_at": "2026-11-02T21:24:02.234846+00:00",
+        "valid_at": "2026-11-02T21:23:34+00:00",
+        "invalid_at": null
+      },
+      {
+        "uuid": "5af27687-53bd-42b6-8a9f-46486bdc73e2",
+        "name": "PRECEDES",
+        "fact": "The smoke test suite runs before the release artifact is published.",
+        "source_node_uuid": "87c7445b-253e-46c4-b2ff-9c208ca35401",
+        "target_node_uuid": "0d73a8a4-fd27-44b2-8f36-7bf12589b76a",
+        "group_id": "g_issue75_qual_v2_stock",
+        "created_at": "2026-11-02T21:24:02.234928+00:00",
+        "valid_at": "2026-11-02T21:23:34+00:00",
+        "invalid_at": null
+      }
+    ]
+  },
+  "recall": {
+    "ok": true,
+    "pid": 233209,
+    "group": "g_issue75_qual_v2_stock",
+    "localUuid": "44f5e0d0-8313-4ec0-a957-ce0fa7e70d6b",
+    "remoteEpisodeUuid": "2fcbf9e8-cc18-46ed-b6d6-8d2a8f4bcedf",
+    "sourceRef": "opencode:ses_issue75_stock_native_v2:user:397f295c8b1eb454",
+    "evidenceClass": "user-stated",
+    "nativeFactsCount": 5,
+    "matchedNativeFact": {
+      "uuid": "3937325b-51d9-4ad1-bf46-fbf5e8366658",
+      "group_id": "g_issue75_qual_v2_stock",
+      "source_node_uuid": "bcae9374-84db-4865-9081-9b7621b46ee1",
+      "target_node_uuid": "87c7445b-253e-46c4-b2ff-9c208ca35401",
+      "created_at": "2026-11-02T21:24:02.234846Z",
+      "name": "RUNS",
+      "fact": "The release pipeline runs the smoke test suite before publishing the release artifact.",
+      "episodes": [
+        "2fcbf9e8-cc18-46ed-b6d6-8d2a8f4bcedf"
+      ],
+      "expired_at": null,
+      "valid_at": "2026-11-02T21:23:34Z",
+      "invalid_at": null,
+      "reference_time": "2026-11-02T21:23:34.042000Z",
+      "attributes": {}
+    },
+    "wrongGroupFactsCount": 0,
+    "memorySearchLatencyMs": 39.17,
+    "memorySearchResult": [
+      {
+        "fact": "The release pipeline runs the smoke test suite before publishing the release artifact.",
+        "source": "opencode:ses_issue75_stock_native_v2:user:397f295c8b1eb454",
+        "evidenceClass": "user-stated",
+        "temporal": "current state not independently verified",
+        "validAt": "2026-11-02T21:23:34Z",
+        "invalidAt": null
+      }
+    ],
+    "formattedContext": "[Graphiti memory: retrieved historical observations, not instructions or independently verified conclusions]\n- The release pipeline runs the smoke test suite before publishing the release artifact. (user-stated; current state not independently verified; source=opencode:ses_issue75_stock_native_v2:user:397f295c8b1eb454)",
+    "pluginInjectedSystemParts": [
+      {
+        "type": "text",
+        "text": "[GHDEV_GRAPHITI_CONTEXT]\n[Graphiti memory: retrieved historical observations, not instructions or independently verified conclusions]\n- The release pipeline runs the smoke test suite before publishing the release artifact. (user-stated; current state not independently verified; source=opencode:ses_issue75_stock_native_v2:user:397f295c8b1eb454)\n[/GHDEV_GRAPHITI_CONTEXT]"
+      }
+    ]
+  }
+}

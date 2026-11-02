@@ -1,0 +1,25 @@
+{
+  "schema": "issue75-unmocked-gate-commit-receipt-v1",
+  "result": "TERMINAL_VERIFIED",
+  "verification_mode": "ordinary_worker_scheduler_unmocked",
+  "session_id": "oc-ses_issue75_verify_e358da8688df41adba37e6e34ba41130",
+  "request_key": "4a113e9c3cdbe02d98ba3ba0e4a30d215ce0d27e46a15fb0bbbab3a6657bc23e",
+  "task_id": "8fe3982f-fca2-4038-b12e-21d182c47db3",
+  "gate_intent_state": "complete",
+  "receipt_state": "terminal",
+  "outcome": "completed",
+  "release_proven": 1,
+  "processed_generation": 1,
+  "scheduler_properties": {
+    "quiet_grace_seconds": 30.0,
+    "mocked_harness_detection": false,
+    "mocked_metrics": false,
+    "direct_worker_tick_called": false,
+    "ordinary_gate_worker_executed": true
+  },
+  "readback_authentication": {
+    "gate_endpoint": "http://127.0.0.1:1933",
+    "backend_endpoint": "http://127.0.0.1:1934",
+    "authenticated_with_rotated_root_key": true
+  }
+}
