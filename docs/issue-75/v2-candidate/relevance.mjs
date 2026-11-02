@@ -100,6 +100,13 @@ export async function relevanceFilter(query, candidates, ranker = null, { maxSel
       if (response instanceof Map) scores = response;
     } catch { /* Degrade to lexical evidence only, not unfiltered top-k. */ }
   }
+  const otherScores = bounded.map((item, i) => {
+    const score = scores?.get(i);
+    return !DIRECT_DECISION.test(item.fact) && !HISTORICAL_STATEMENT.test(item.fact) &&
+      typeof score === 'number' && Number.isFinite(score) && score >= 0 && score <= 1
+      ? score : null;
+  }).filter(score => score !== null);
+  const background = otherScores.length ? Math.max(...otherScores) : null;
   const admitted = [];
   for (let i = 0; i < bounded.length; i++) {
     const item = bounded[i];
