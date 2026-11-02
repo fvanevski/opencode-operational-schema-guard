@@ -1,0 +1,19 @@
+{
+  "unit_and_candidate_tests": {
+    "memory_core_test_mjs": "7/7 PASS",
+    "test_recovery_py": "12/12 PASS",
+    "test_binding_py": "1/1 PASS"
+  },
+  "service_integration_suite": {
+    "test_tenant_integration_py": "19/19 PASS (including 11 I1Service and 10 TenantIntegration subtests)",
+    "duration_seconds": 171.0
+  },
+  "gate_invariant_checks": {
+    "unauthenticated_rejected_before_latch": true,
+    "spoofed_tenant_rejected_before_latch": true,
+    "worker_preclaim_binding_verified": true,
+    "unpinned_root_binding_denied_503": true,
+    "rejected_receipt_lookup_404": true,
+    "durable_hold_prevents_spurious_drain": true
+  }
+}

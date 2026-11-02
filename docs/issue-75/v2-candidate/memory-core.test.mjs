@@ -69,7 +69,10 @@ test('ambiguous send is not replayed; status requires Graphiti episode readback'
   const c = await mem.stage(selectUserDecision('I decided to store memory with a stable episode UUID.'),
     { sessionID: 's1' });
   await mem.drain(); await mem.drain();
-  assert.equal(calls.filter(x => x.name === 'add_memory').length, 1);
+  const addCalls = calls.filter(x => x.name === 'add_memory');
+  assert.equal(addCalls.length, 1);
+  assert.match(addCalls[0].args.custom_extraction_instructions || '', /software|pipeline|service|artifact/i);
+  assert.match(addCalls[0].args.custom_extraction_instructions || '', /Do NOT extract.*Source reference|opencode:/i);
   assert.equal((await j.get(c.uuid)).status, 'submission_unknown');
   assert.deepEqual(await mem.reconcile(), []);
   episodes = [{ uuid: remoteId, group_id: 'other', name: c.kind + ':' + c.uuid }];

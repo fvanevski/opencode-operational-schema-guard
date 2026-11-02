@@ -1,0 +1,56 @@
+{
+  "package": "openviking==0.5.3",
+  "installed_RECORD_differences": 0,
+  "status": "DEPLOYED_AND_VERIFIED",
+  "files": [
+    {
+      "path": "openviking/server/app.py",
+      "base_sha256": "58698d30ee86e167c7f2cc7fbc1565f1844224fe5da25b5d9cf8cda48c120a24",
+      "candidate_sha256": "b610a61ffb290018696c6d8b5a1cc12c1714ca6a1bcd9c82ae7820f958aa81cf",
+      "deployed_sha256": "b610a61ffb290018696c6d8b5a1cc12c1714ca6a1bcd9c82ae7820f958aa81cf",
+      "deployed_path": "/home/filip/.local/share/uv/tools/openviking/lib/python3.14/site-packages/openviking/server/app.py"
+    },
+    {
+      "path": "openviking/server/routers/sessions.py",
+      "base_sha256": "4b0cb8b6d141f3987ebe398d0ce64b4474414d7281ecc208efacdb9439e1247b",
+      "candidate_sha256": "b3ff40b2e9f89ed9f6e5f7ba109d0f7edfe2755892bccce229144a7ac8195442",
+      "deployed_sha256": "b3ff40b2e9f89ed9f6e5f7ba109d0f7edfe2755892bccce229144a7ac8195442",
+      "deployed_path": "/home/filip/.local/share/uv/tools/openviking/lib/python3.14/site-packages/openviking/server/routers/sessions.py"
+    },
+    {
+      "path": "openviking/session/session.py",
+      "base_sha256": "b892f66da79ee76a5fecd502d71d0893da53541f0800c7100a8a54623766a816",
+      "candidate_sha256": "ede4bf4fc3a7766a4546c40a2c900043582d65e61422c8f636334a6e8780f180",
+      "deployed_sha256": "ede4bf4fc3a7766a4546c40a2c900043582d65e61422c8f636334a6e8780f180",
+      "deployed_path": "/home/filip/.local/share/uv/tools/openviking/lib/python3.14/site-packages/openviking/session/session.py"
+    },
+    {
+      "path": "openviking/storage/queuefs/session_commit_msg.py",
+      "base_sha256": "7b8922a20a82e5ff103a84d8cd9de6c6c865cc5010d56c4add70b5eceadc9852",
+      "candidate_sha256": "4959299bb99a6f8833f44957883fc322a3bf3acbdd846c041ee93d5da5c6c7ad",
+      "deployed_sha256": "4959299bb99a6f8833f44957883fc322a3bf3acbdd846c041ee93d5da5c6c7ad",
+      "deployed_path": "/home/filip/.local/share/uv/tools/openviking/lib/python3.14/site-packages/openviking/storage/queuefs/session_commit_msg.py"
+    },
+    {
+      "path": "gate/admission_hold.py",
+      "base_sha256": null,
+      "candidate_sha256": "63548e622288a7f1e7fe58146414e4b087e16dc9e4ad907f081b78ecd132ef3e",
+      "deployed_sha256": "63548e622288a7f1e7fe58146414e4b087e16dc9e4ad907f081b78ecd132ef3e",
+      "deployed_path": "/home/filip/.local/share/openviking-commit-gate/admission_hold.py"
+    },
+    {
+      "path": "gate/openviking_commit_gate.py",
+      "base_sha256": "32017a4e25ba708a6f64e3f32717a09d01620000e77690910973cee6b510e2fe",
+      "candidate_sha256": "7e506e2e5eca249f80f8341b0eb8fd4e480866ab53df57b8ecf19ff202bdc2f2",
+      "deployed_sha256": "7e506e2e5eca249f80f8341b0eb8fd4e480866ab53df57b8ecf19ff202bdc2f2",
+      "deployed_path": "/home/filip/.local/share/openviking-commit-gate/openviking_commit_gate.py"
+    },
+    {
+      "path": "gate/shared_work.py",
+      "base_sha256": "4543e71ebbd4a53d109c7be8903cb404b578825c74a02ed9e0a5301124417a89",
+      "candidate_sha256": "83147273abe8c9fb627fc36fc21d7ae892efdd9b9f382a17a1cd68bb609f07a6",
+      "deployed_sha256": "83147273abe8c9fb627fc36fc21d7ae892efdd9b9f382a17a1cd68bb609f07a6",
+      "deployed_path": "/home/filip/.local/share/openviking-commit-gate/shared_work.py"
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "ok": true,
+  "negativeControls": {
+    "disabledHooksRegistered": 0,
+    "secretRejected": true,
+    "nonDecisionRejected": true,
+    "failedToolRejected": true,
+    "journalCountAfterNegatives": 0
+  },
+  "stagedCandidate": {
+    "uuid": "2cc20a0c-4a58-4fa6-a45a-eeaaca31d190",
+    "group": "g_issue75_qual_final_oEAmIHhQ",
+    "kind": "user_decision",
+    "assertion": "We decided that the release pipeline runs the smoke test suite before publishing the release artifact.",
+    "evidenceClass": "user-stated",
+    "sourceRef": "opencode:opencode-qual-oEAmIHhQ:user:397f295c8b1eb454",
+    "referenceTime": "2026-11-02T19:13:29.768Z",
+    "status": "pending",
+    "createdAt": "2026-11-02T19:13:29.769Z"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "hold_revision": 1,
+  "first_repair_result": "rejected",
+  "second_repair_result": "already_rejected",
+  "evidence_digest": "273a380c3b7ba1a987b2f9f6b97f6755213834ed0cbb239d8ff847b436cc08ab",
+  "repaired_intent_state": "dead",
+  "repaired_intent_last_error": "backend_preacceptance_rejected: owner audited",
+  "repaired_attempt_resolved": 1,
+  "recovery_hold": [
+    {
+      "singleton": 1,
+      "held": 1,
+      "owner": "issue75-integrated-oEAmIHhQ",
+      "revision": 1,
+      "reason": "Issue #75 Phase 2 durable hold before rejected-commit repair; retain hold while blank-scope pending rows remain"
+    }
+  ],
+  "rejection_repairs_count": 1,
+  "other_intents_unchanged": true,
+  "other_intents_count": 1326,
+  "other_attempts_unchanged": true,
+  "other_attempts_count": 84,
+  "failed_tasks_unchanged": true,
+  "memory_work_unchanged": true
+}

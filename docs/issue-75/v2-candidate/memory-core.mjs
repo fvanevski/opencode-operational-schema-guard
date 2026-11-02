@@ -13,6 +13,13 @@ const DECISION = /\b(?:i (?:prefer|want|choose|decided|will use)|we (?:prefer|ch
 // Preserve the closed allowlist: `rtk` does not authorize arbitrary commands.
 const TEST_CMD = /^(?:env\s+\S+\s+)*(?:rtk\s+)?(?:python(?:3)? -m pytest|pytest|node --test|npm test|npm run test|bun test|cargo test|go test)\b/i;
 const TEST_PASS = /\b(?:\d+\s+passed|tests?\s+passed|test result: ok|test suites:\s+\d+\s+passed)\b/i;
+export const EXTRACTION_INSTRUCTIONS =
+  'Extract concrete named software components, services, pipelines, jobs, test suites, ' +
+  'quality gates, tools, libraries, and build artifacts mentioned in the statement as ' +
+  'Entity nodes (even when project-specific rather than public encyclopedia topics), ' +
+  'and extract the directed relationship between them. Do NOT extract bracketed ' +
+  'provenance annotations ([Source class: ...; Source reference: ...]), opencode:... ' +
+  'anchors, session IDs, or hashes as entities.';
 
 export function safeText(value, limit = 700) {
   if (typeof value !== 'string') return '';
@@ -235,6 +242,7 @@ export class Memory {
               '; Source reference: ' + row.sourceRef + ']',
             source: 'text', source_description: row.evidenceClass + ' | ' + row.sourceRef,
             reference_time: row.referenceTime,
+            custom_extraction_instructions: EXTRACTION_INSTRUCTIONS,
           });
           await this.journal.update(row.uuid, 'submission_unknown', 'queued');
           submitted.push(row.uuid);
