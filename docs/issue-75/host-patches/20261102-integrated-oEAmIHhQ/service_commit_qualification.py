@@ -105,21 +105,27 @@ def read_state(path: pathlib.Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def require(predicate: bool, message: str) -> None:
+    # This must not be disabled by Python -O / PYTHONOPTIMIZE.
+    if not predicate:
+        raise AssertionError(message)
+
+
 def check_terminal(intent: dict, attempt: dict, receipt: dict, expected: dict) -> None:
-    """Raise AssertionError unless all real terminal-completion predicates agree."""
+    """Prove full completion, including scope/attempt/receipt; no mock pass."""
     for k in ("account", "user_id", "actor_peer", "session_id"):
-        assert intent[k] == attempt[k] == expected[k], "scope mismatch: " + k
-    assert intent["state"] == "complete", "intent not complete"
-    assert int(intent["processed_generation"]) >= int(attempt["generation"]), "generation not processed"
-    assert int(intent["requested_generation"]) == int(attempt["generation"]), "unexpected generation"
-    assert int(attempt["submitted"]) == 1 and int(attempt["resolved"]) == 1, "attempt not settled"
-    assert receipt["request_key"] == attempt["request_key"], "receipt key mismatch"
-    assert receipt["state"] in ("terminal", "sealed_terminal"), "receipt not terminal"
-    assert receipt["outcome"] == "completed", "not completed"
-    assert receipt["release_proven"] == 1, "backend release not proven"
-    assert receipt.get("task_id"), "missing backend task"
+        require(intent[k] == attempt[k] == expected[k], "scope mismatch: " + k)
+    require(intent["state"] == "complete", "intent not complete")
+    require(int(intent["processed_generation"]) >= int(attempt["generation"]), "generation not processed")
+    require(int(intent["requested_generation"]) == int(attempt["generation"]), "unexpected generation")
+    require(int(attempt["submitted"]) == 1 and int(attempt["resolved"]) == 1, "attempt not settled")
+    require(receipt["request_key"] == attempt["request_key"], "receipt key mismatch")
+    require(receipt["state"] in ("terminal", "sealed_terminal"), "receipt not terminal")
+    require(receipt["outcome"] == "completed", "not completed")
+    require(receipt["release_proven"] == 1, "backend release not proven")
+    require(bool(receipt.get("task_id")), "missing backend task")
     scope = json.loads(receipt["scope_json"])
-    assert all(scope.get(k) == expected[k] for k in ("account", "user_id", "actor_peer", "session_id")), "receipt scope mismatch"
+    require(all(scope.get(k) == expected[k] for k in ("account", "user_id", "actor_peer", "session_id")), "receipt scope mismatch")
 
 
 def submit(args) -> int:
@@ -166,7 +172,7 @@ def submit(args) -> int:
 
 
 def observe_once(state: dict, db_path: pathlib.Path, root_key: str) -> dict:
-    assert state["phase"] in ("gate_submission_unknown", "gate_queued"), "submission phase not established"
+    require(state["phase"] in ("gate_submission_unknown", "gate_queued"), "submission phase not established")
     if not db_path.is_file():
         raise FileNotFoundError("explicit existing gate SQLite database required")
     uri = db_path.resolve().as_uri() + "?mode=ro"
@@ -200,6 +206,10 @@ def observe_once(state: dict, db_path: pathlib.Path, root_key: str) -> dict:
         raise AssertionError("receipt readback failure or ambiguous backend state; HTTP=" + str(status))
     receipt = payload["result"]
     if receipt.get("state") not in ("terminal", "sealed_terminal"):
+        return {"result": "PENDING", "intent_state": intent["state"], "receipt_state": receipt.get("state")}
+    # A receipt can become terminal just before the gate transaction commits.
+    # Poll again rather than misclassifying a legitimate short-lived race.
+    if intent["state"] in ("pending", "inflight", "unknown"):
         return {"result": "PENDING", "intent_state": intent["state"], "receipt_state": receipt.get("state")}
     check_terminal(intent, attempt, receipt, state)
     return {"result": "TERMINAL_VERIFIED", "session_id": state["session_id"], "request_key": attempt["request_key"],
