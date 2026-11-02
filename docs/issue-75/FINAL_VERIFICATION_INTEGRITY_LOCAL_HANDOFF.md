@@ -94,6 +94,14 @@ Rerun focused Gate receipt/tenant tests consuming the ACTUAL final deployed
 candidate, including the previously passed 19-case tenant integration suite
 if its inputs are affected. Do not weaken tests. Inspect disposable and live
 postures; preserve historical repair audit and Graphiti groups.
+
+Before declaring the whole issue PR-ready, compare prior evidence to Issue #75's
+original stock-OpenCode-V2 acceptance requirement. If the previously accepted
+Graphiti example originated only from a manually staged fixture rather than a
+real opted-in completed V2 user/tool event, add ONE narrow ordinary V2 source
+event capture and attribution readback using the existing candidate plugin and
+journal; no extra architecture or reranker campaign. This is a mandatory
+acceptance gap check, not permission to relitigate established results.
 Publish a privacy-screened GitHub-readable packet containing full source
 diffs/pins, sanitizer reconstructed identity, config redactions, exact producer
 commands/exits, post-controller supervisor receipt, normal worker status,
