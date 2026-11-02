@@ -37,25 +37,81 @@ export function localReranker(url, { fetchImpl = fetch, timeoutMs = 160, model =
     return out;
   };
 }
-/** Predeclared floor prevents low-relevance top-k being treated as evidence.
- * Lack of a functioning reranker -> lexical-only conservative admission.
- * Do not silently lower the floor to improve one benchmark. */
-export async function relevanceFilter(query, candidates, ranker = null, { threshold = 0.70 } = {}) {
-  if (!Array.isArray(candidates) || candidates.length === 0) return [];
+/**
+ * Retrieval scores from the pinned CPU cross-encoder rank *candidates*, and
+ * are NOT calibrated relevance probabilities. The 2026-11-01 host evidence
+ * has a supported paraphrase fact scoring 0.069 while a wrong-question
+ * distractor scores 0.129: no universal absolute floor separates them.
+ *
+ * Automatic injection is intentionally stricter than on-demand search:
+ *  - require topical evidence and explicit workspace/source qualification
+ *    (the latter is enforced upstream in Memory.search);
+ *  - use decision-vs-history cues to choose the right kind of observation;
+ *  - inject at most one fact by default, rather than the whole native top-k;
+ *  - abstain on unsupported topics, named entities and reranker outages.
+ * Generic cues below describe temporal intent, not benchmark-specific facts.
+ * These heuristics are provisional and require independent host holdout.
+ */
+const DECISION_INTENT = /\b(?:settle(?:d)? on|decid(?:e|ed)|chos(?:e|en)|choos(?:e|ing)|select(?:ed)?|pick(?:ed)?|agreed (?:to|on)|prefer(?:red)?)\b/i;
+const HISTORICAL_INTENT = /\b(?:original(?:ly)?|previous(?:ly)?|before|prior|formerly|used to|histor(?:y|ical)|earlier|first|replaced|switched from)\b/i;
+const DIRECT_DECISION = /\b(?:chos(?:e|en)|decid(?:e|ed)|select(?:ed)?|picked|settled|prefer(?:red)?|adopt(?:ed)?)\b/i;
+const HISTORICAL_STATEMENT = /\b(?:original(?:ly)?|previous(?:ly)?|before|prior|formerly|used to|replac(?:e|ed) (?:by|with)|switched (?:from|to)|then)\b/i;
+const INTENT_TERMS = new Set('settle decided decide chosen choose select selected pick picked agreed prefer preferred original originally before previous previously formerly historical history earlier first'.split(' '));
+function namedQueryTerms(query) {
+  // Keep mid-question proper names/acronyms as hard topic constraints. This
+  // avoids asserting facts about named software absent from the local group.
+  return [...String(query).matchAll(/\b[A-Z][A-Za-z0-9_-]{2,}\b/g)]
+    .filter(match => match.index !== 0 && !['Our', 'We', 'The'].includes(match[0]))
+    .map(match => match[0].toLowerCase());
+}
+export function relevanceSignals(query, fact, { hasRerankScore = false } = {}) {
+  const content = safeFact(fact);
+  const overlap = lexicalSupport(query, content);
+  const names = namedQueryTerms(query);
+  if (!content || names.some(name => !content.toLowerCase().includes(name)))
+    return { eligible: false, priority: 0, overlap };
+  const historical = HISTORICAL_INTENT.test(query) && HISTORICAL_STATEMENT.test(content);
+  const directDecision = DECISION_INTENT.test(query) &&
+    DIRECT_DECISION.test(content) && !HISTORICAL_STATEMENT.test(content);
+  const topicTerms = words(query).filter(term => !INTENT_TERMS.has(term));
+  const topical = overlap.count >= 2;
+  // Temporal queries can reference a historical record without the same
+  // words (e.g. original toolkit vs formerly used UI library).
+  const qualifiedHistory = historical && overlap.count >= 1;
+  // A weak paraphrase may have no literal overlap. Only the independent
+  // reranker may support a direct-choice candidate in that case; never
+  // fabricate a "semantic match" from regexes alone.
+  const qualifiedChoice = directDecision && hasRerankScore && topicTerms.length >= 2;
+  return { eligible: topical || qualifiedHistory || qualifiedChoice,
+    priority: historical || directDecision ? 1 : 0, overlap };
+}
+function safeFact(value) { return typeof value === 'string' ? value.trim() : ''; }
+export async function relevanceFilter(query, candidates, ranker = null, { maxSelected = 1 } = {}) {
+  if (!Array.isArray(candidates) || !candidates.length || !Number.isInteger(maxSelected) ||
+      maxSelected < 1 || maxSelected > 4) return [];
   const bounded = candidates.slice(0, 12);
   let scores = null;
   if (ranker) {
-    try { scores = await ranker(query, bounded); }
-    catch { scores = null; }
+    try {
+      const response = await ranker(query, bounded);
+      if (response instanceof Map) scores = response;
+    } catch { /* Degrade to lexical evidence only, not unfiltered top-k. */ }
   }
-  const ranked = [];
+  const admitted = [];
   for (let i = 0; i < bounded.length; i++) {
     const item = bounded[i];
-    const lexical = lexicalSupport(query, item.fact);
-    const score = scores instanceof Map ? scores.get(i) : undefined;
-    const accepted = typeof score === 'number' ? score >= threshold : admitFact(query, item.fact);
-    if (accepted) ranked.push({ item, score: typeof score === 'number' ? score : lexical.score, index: i });
+    const score = scores?.get(i);
+    const validScore = typeof score === 'number' && Number.isFinite(score) &&
+      score >= 0 && score <= 1;
+    const signals = relevanceSignals(query, item.fact,
+      { hasRerankScore: validScore });
+    if (!signals.eligible) continue;
+    admitted.push({ item, index: i, priority: signals.priority,
+      rankScore: validScore ? score : null, lexical: signals.overlap });
   }
-  ranked.sort((a, b) => b.score - a.score || a.index - b.index);
-  return ranked.map(x => x.item);
+  admitted.sort((a, b) => b.priority - a.priority ||
+    (a.rankScore !== null && b.rankScore !== null ? b.rankScore - a.rankScore : 0) ||
+    b.lexical.count - a.lexical.count || b.lexical.score - a.lexical.score ||
+    a.index - b.index);
+  return admitted.slice(0, maxSelected).map(x => x.item);
 }
