@@ -10,15 +10,10 @@ import tempfile
 import unittest
 from contextlib import closing
 
-candidate_dirs = [
-    pathlib.Path("/tmp/opencode/issue75-direct/integrated-oEAmIHhQ/host-candidate/gate"),
-    pathlib.Path(__file__).resolve().parents[6] / "host-candidate" / "gate",
-    pathlib.Path("/home/filip/.local/share/openviking-commit-gate"),
-]
-for d in candidate_dirs:
-    if d.is_dir():
-        sys.path.insert(0, str(d))
-        break
+gate_root = pathlib.Path(__file__).resolve().parents[1] / "host-candidate" / "gate"
+if not gate_root.is_dir():
+    raise RuntimeError("Test requires reconstructed candidate gate")
+sys.path.insert(0, str(gate_root))
 
 import admission_hold as hold
 import openviking_commit_gate as gate
