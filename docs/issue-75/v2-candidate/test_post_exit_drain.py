@@ -56,6 +56,7 @@ class PostExitAdmissionTests(TestCase):
 
     def setUp(self):
         FakeWorker.active = []
+        self.real_canonical_unresolved = runner.canonical_unresolved
         patcher = mock.patch.object(runner, 'canonical_unresolved', return_value=False)
         patcher.start()
         self.addCleanup(patcher.stop)
@@ -67,8 +68,8 @@ class PostExitAdmissionTests(TestCase):
                 conn.execute("CREATE TABLE memory_work (status TEXT NOT NULL)")
                 conn.execute("INSERT INTO memory_work VALUES ('blocked_reconcile')")
             cfg = SimpleNamespace(**vars(CFG), database=str(f))
-            self.assertTrue(runner.canonical_unresolved(FakeGate, cfg))
-            with mock.patch.object(runner, "canonical_unresolved", wraps=runner.canonical_unresolved):
+            self.assertTrue(self.real_canonical_unresolved(FakeGate, cfg))
+            with mock.patch.object(runner, "canonical_unresolved", wraps=self.real_canonical_unresolved):
                 with mock.patch.object(runner.urllib.request, "urlopen") as metrics:
                     with self.assertRaisesRegex(RuntimeError, "unresolved"):
                         runner.observation(FakeGate, cfg)
@@ -76,19 +77,19 @@ class PostExitAdmissionTests(TestCase):
             with sqlite3.connect(f) as conn:
                 self.assertEqual(conn.execute("SELECT status FROM memory_work").fetchone()[0], "blocked_reconcile")
                 conn.execute("UPDATE memory_work SET status='completed'")
-            self.assertFalse(runner.canonical_unresolved(FakeGate, cfg))
+            self.assertFalse(self.real_canonical_unresolved(FakeGate, cfg))
 
     def test_canonical_queue_missing_fails_closed(self):
         cfg = SimpleNamespace(database="/nonexistent/issue75-gate-state.sqlite3")
         with self.assertRaisesRegex(RuntimeError, "unverifiable"):
-            runner.canonical_unresolved(FakeGate, cfg)
+            self.real_canonical_unresolved(FakeGate, cfg)
 
     def test_canonical_queue_no_memory_work_table_is_idle(self):
         with tempfile.TemporaryDirectory() as directory:
             f = Path(directory) / "queue.sqlite3"
             with sqlite3.connect(f) as conn:
                 conn.execute("CREATE TABLE unrelated (n INTEGER)")
-            self.assertFalse(runner.canonical_unresolved(FakeGate, SimpleNamespace(database=str(f))))
+            self.assertFalse(self.real_canonical_unresolved(FakeGate, SimpleNamespace(database=str(f))))
 
     @mock.patch.object(runner.urllib.request, "urlopen")
     def test_idle_only(self, urlopen):
