@@ -1,6 +1,6 @@
 --- a/run_graphiti.py
 +++ b/run_graphiti.py
-@@ -40,20 +40,9 @@
+@@ -40,18 +40,7 @@
  CrossEncoderFactory.create = staticmethod(make_reranker)
  
 -# Reasoning model think-tag sanitization: local reasoning models (e.g. Qwen3.8 with thinking)

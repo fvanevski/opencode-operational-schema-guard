@@ -1,6 +1,6 @@
 --- a/run_graphiti.py
 +++ b/run_graphiti.py
-@@ -38,6 +38,10 @@
+@@ -38,6 +38,11 @@
      )
  
  CrossEncoderFactory.create = staticmethod(make_reranker)
