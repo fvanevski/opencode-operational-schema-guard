@@ -67,7 +67,7 @@ class PostExitAdmissionTests(TestCase):
             with sqlite3.connect(f) as conn:
                 conn.execute("CREATE TABLE memory_work (status TEXT NOT NULL)")
                 conn.execute("INSERT INTO memory_work VALUES ('blocked_reconcile')")
-            cfg = SimpleNamespace(**vars(CFG), database=str(f))
+            cfg = SimpleNamespace(**{**vars(CFG), "database": str(f)})
             self.assertTrue(self.real_canonical_unresolved(FakeGate, cfg))
             with mock.patch.object(runner, "canonical_unresolved", wraps=self.real_canonical_unresolved):
                 with mock.patch.object(runner.urllib.request, "urlopen") as metrics:
