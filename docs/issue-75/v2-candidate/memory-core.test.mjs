@@ -17,6 +17,9 @@ test('tool-reported test outcomes require a completed successful test command an
   const e = { status: 'completed', input: { command: 'pytest -q' },
     result: { exitCode: 0, stdout: '27 passed in 0.5s' } };
   assert.equal(selectCompletedTest(e)?.evidenceClass, 'tool-reported');
+  assert.equal(selectCompletedTest({ ...e, input: {command:'rtk pytest -q'} })?.evidenceClass, 'tool-reported');
+  assert.equal(selectCompletedTest({ ...e, input: {command:'rtk bash -c echo'} }), null);
+  assert.equal(selectCompletedTest({ ...e, input: {command:'rtk rm -rf /tmp/foo'} }), null);
   assert.equal(selectCompletedTest({ ...e, result: { output: {exit: 0, output:'1 passed'}, metadata: {exit: 0} } })?.evidenceClass, 'tool-reported');
   assert.equal(selectCompletedTest({ ...e, result: { output: {exit: 1, output:'1 passed'}, metadata: {exit: 1} } }), null);
   assert.equal(selectCompletedTest({ ...e, status: 'error' }), null);

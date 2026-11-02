@@ -9,7 +9,9 @@ import path from 'node:path';
 
 const PRIVATE = /<private\b|<\/private>|BEGIN (?:RSA |OPENSSH )?PRIVATE KEY|(?:api[_-]?key|access[_-]?token|password|secret)\s*[:=]|authorization\s*:\s*bearer|gh[pousr]_[A-Za-z0-9]{18,}|sk-[A-Za-z0-9_-]{16,}/i;
 const DECISION = /\b(?:i (?:prefer|want|choose|decided|will use)|we (?:prefer|choose|decided|will use)|(?:let's|lets) (?:use|keep|switch to)|(?:for this (?:project|repo|workflow)|going forward)[,: ]+|(?:remember|note) (?:that|this)|(?:the (?:decision|architecture|default|requirement) is))\b/i;
-const TEST_CMD = /^(?:env\s+\S+\s+)*(?:python(?:3)? -m pytest|pytest|node --test|npm test|npm run test|bun test|cargo test|go test)\b/i;
+// RTK may transparently prefix supported test commands in the active host.
+// Preserve the closed allowlist: `rtk` does not authorize arbitrary commands.
+const TEST_CMD = /^(?:env\s+\S+\s+)*(?:rtk\s+)?(?:python(?:3)? -m pytest|pytest|node --test|npm test|npm run test|bun test|cargo test|go test)\b/i;
 const TEST_PASS = /\b(?:\d+\s+passed|tests?\s+passed|test result: ok|test suites:\s+\d+\s+passed)\b/i;
 
 export function safeText(value, limit = 700) {
