@@ -85,6 +85,7 @@ export function relevanceSignals(query, fact, { hasRerankScore = false } = {}) {
   // fabricate a "semantic match" from regexes alone.
   const qualifiedChoice = directDecision && hasRerankScore && topicTerms.length >= 2;
   return { eligible: topical || qualifiedHistory || qualifiedChoice,
+    choiceOnly: qualifiedChoice && !topical && !qualifiedHistory,
     priority: historical || directDecision ? 1 : 0, overlap };
 }
 function safeFact(value) { return typeof value === 'string' ? value.trim() : ''; }
