@@ -1,0 +1,14 @@
+    def next_ready(self, now: float | None = None) -> sqlite3.Row | None:
+        now = time.time() if now is None else now
+        with self.connect() as conn:
+            return conn.execute(
+                """
+                SELECT * FROM intents
+                WHERE state='pending'
+                  AND requested_generation > processed_generation
+                  AND next_attempt_at <= ?
+                ORDER BY first_requested_at, last_requested_at
+                LIMIT 1
+                """,
+                (now,),
+            ).fetchone()

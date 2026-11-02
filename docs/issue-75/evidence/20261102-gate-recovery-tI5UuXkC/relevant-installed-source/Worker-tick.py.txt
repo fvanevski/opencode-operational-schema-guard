@@ -1,0 +1,186 @@
+    def tick(self) -> bool:
+        # Admission safety survives a later config disable, even though
+        # new Graphiti admissions are disabled and no optional schema is
+        # initialized. Unknown prior producers must remain globally fenced.
+        if not self.cfg.graphiti_enabled:
+            try:
+                unresolved = self._unresolved_graphiti_from_existing_db()
+            except Exception:
+                self.quiet_since = None
+                self._set_admission_status("graphiti_state_unverifiable")
+                return False
+            if unresolved:
+                self.quiet_since = None
+                self._set_admission_status("blocked_reconcile")
+                return False
+        if not self.cfg.drain_enabled:
+            self.quiet_since = None
+            self._set_admission_status("drain_disabled")
+            return False
+        if self.cfg.receipts_enabled and self.db.has_unknown_claim():
+            harnesses=self._active_harness_processes()
+            if harnesses:
+                self._recovery_quiet_since=None
+                self._set_admission_status("harness_active",harnesses=harnesses)
+                return False
+            handle = self._try_exclusive_lock()
+            if handle is None:
+                self._recovery_quiet_since=None
+                self._set_admission_status("shared_lease_active")
+                return False
+            try:
+                for unknown in self.db.unknown_rows():
+                    self._receipt_observation(unknown,allow_recovery=self._receipt_recovery_admitted(unknown))
+            finally:
+                handle.close()
+        inflight = self.db.inflight()
+        if self.shared and self.shared.unresolved():
+            # Reconcile a previously sealed OWNED Graphiti receipt read-only;
+            # never retry the old episode on restart or transport ambiguity.
+            unresolved = self.shared.unresolved()
+            if unresolved["status"] == "blocked_reconcile" and unresolved["backend_identity"]:
+                handle = self._try_exclusive_lock()
+                if handle is not None:
+                    try:
+                        receipt = self.graphiti_adapter.poll(unresolved["backend_identity"])
+                        if (isinstance(receipt,dict)
+                                and receipt.get("backend_identity")==unresolved["backend_identity"]
+                                and receipt.get("status")=="completed"
+                                and receipt.get("persisted") is True):
+                            self.shared.reconcile(unresolved["work_key"],unresolved["backend_identity"],"completed")
+                    except Exception:
+                        pass  # Absence of authoritative proof is never safe release.
+                    finally:
+                        fcntl.flock(handle.fileno(),fcntl.LOCK_UN)
+                        handle.close()
+            if self.shared.unresolved():
+                self.quiet_since = None
+                self._set_admission_status("blocked_reconcile")
+                return False
+        # The existing worker owns read-only temporal retries after Graphiti
+        # work has already completed; no extra scheduler or graph re-ingestion.
+        retry = getattr(self.graphiti_adapter, "retry_pending", None)
+        if self.shared is not None and callable(retry):
+            handle = self._try_exclusive_lock()
+            if handle is not None:
+                try:
+                    retry(max_items=1)
+                finally:
+                    fcntl.flock(handle.fileno(),fcntl.LOCK_UN)
+                    handle.close()
+        candidate = inflight or self.db.next_ready()
+        if (self.shared is not None and self.source_resolver is not None
+                and not isinstance(self.graphiti_adapter, DisabledGraphitiAdapter)):
+            # Source verification is CPU-only and bounded; candidate selection
+            # remains subject to all global admission + publication barriers.
+            self.shared.auto_admit(self.source_resolver)
+        graph_candidate = self.shared.ready() if self.shared else None
+        if candidate is None and graph_candidate is None:
+            self.quiet_since = None
+            self._set_admission_status("queue_empty")
+            return False
+        if isinstance(self.graphiti_adapter, DisabledGraphitiAdapter):
+            graph_candidate = None
+            if candidate is None:
+                self._set_admission_status("graphiti_disabled")
+                return False
+        selected_graphiti = False
+        if not inflight and graph_candidate is not None:
+            selected_graphiti = candidate is None or self._last_class == "OPENVIKING_SESSION_COMMIT"
+        harnesses = self._active_harness_processes()
+        if harnesses:
+            self.quiet_since = None
+            self._set_admission_status("harness_active", harnesses=harnesses)
+            return False
+        lock_handle = self._try_exclusive_lock()
+        if lock_handle is None:
+            self._recovery_quiet_since=None
+            self.quiet_since = None
+            self._set_admission_status("shared_lease_active")
+            return False
+        try:
+            # The initial Graphiti check is only an early rejection. The
+            # authoritative recheck MUST be under the EX flock: another
+            # coordinator can claim a Graphiti job while we wait for it.
+            # Do not let config disablement release an old producer.
+            try:
+                graphiti_unresolved = self._unresolved_graphiti_from_existing_db()
+            except Exception:
+                self.quiet_since = None
+                self._set_admission_status("graphiti_state_unverifiable")
+                return False
+            if graphiti_unresolved:
+                self.quiet_since = None
+                self._set_admission_status("blocked_reconcile")
+                return False
+            if inflight is not None and inflight["task_id"]:
+                # Already submitted: the running scheduler occupancy is this
+                # operation's own activity, not a new pre-admission veto.
+                self._set_admission_status("reconciling_commit")
+                self._process(inflight)
+                self.quiet_since = None
+                return True
+            if self.db.has_unknown_claim() is True and not self._unknown_quiescent():
+                self.quiet_since = None
+                self._set_admission_status("unknown_quiescence_unavailable")
+                return False
+            running, waiting = self._metrics()
+            if running != 0 or waiting != 0:
+                self.quiet_since = None
+                self._set_admission_status(
+                    "vllm_busy", requests_running=running, requests_waiting=waiting
+                )
+                return False
+            now = time.monotonic()
+            if self.quiet_since is None:
+                self.quiet_since = now
+                self._set_admission_status(
+                    "quiet_grace",
+                    quiet_elapsed_seconds=0.0,
+                    quiet_required_seconds=self.cfg.quiet_grace_seconds,
+                )
+                return False
+            if now - self.quiet_since < self.cfg.quiet_grace_seconds:
+                self._set_admission_status(
+                    "quiet_grace",
+                    quiet_elapsed_seconds=round(now - self.quiet_since, 3),
+                    quiet_required_seconds=self.cfg.quiet_grace_seconds,
+                )
+                return False
+            # The lock has remained exclusively obtainable and vLLM idle for the
+            # grace period. Re-check metrics while retaining this lock.
+            if self.db.has_unknown_claim() is True and not self._unknown_quiescent():
+                self.quiet_since = None
+                self._set_admission_status("unknown_quiescence_unavailable")
+                return False
+            running, waiting = self._metrics()
+            if running != 0 or waiting != 0:
+                self.quiet_since = None
+                self._set_admission_status(
+                    "vllm_busy", requests_running=running, requests_waiting=waiting
+                )
+                return False
+            if selected_graphiti:
+                row = self.shared.claim(graph_candidate["work_key"], f"gate:{os.getpid()}:{time.time_ns()}")
+                if row is None:
+                    self.quiet_since = None
+                    self._set_admission_status("candidate_changed")
+                    return False
+                self._set_admission_status("processing_graphiti", work_key=row["work_key"])
+                self._process_graphiti(row)
+                self._last_class = "GRAPHITI_EPISODE_INGEST"
+                self.quiet_since = None
+                return True
+            row = candidate if candidate["state"] == "inflight" else self.db.claim(candidate)
+            if row is None:
+                self.quiet_since = None
+                self._set_admission_status("candidate_changed")
+                return False
+            self._set_admission_status("committing", session_id=str(row["session_id"]))
+            self._process(row)
+            self._last_class = "OPENVIKING_SESSION_COMMIT"
+            self.quiet_since = None
+            return True
+        finally:
+            fcntl.flock(lock_handle.fileno(), fcntl.LOCK_UN)
+            lock_handle.close()

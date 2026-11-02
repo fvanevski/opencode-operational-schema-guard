@@ -1,0 +1,12 @@
+{
+  "protected_source_config_cache_files": 17,
+  "protected_baseline_equal": true,
+  "original_intent_attempt_failed_history_equal": true,
+  "current_backend_disk_hashes_equal_to_campaign_baseline": true,
+  "historical_six_file_drift_preexisted_controller": true,
+  "protected_mutations": [],
+  "service_actions": [],
+  "model_requests": 0,
+  "historical_gate_pyc_exception": "Prior incident original bytes unavailable; this campaign baseline unchanged",
+  "full_database_byte_freeze_claimed": false
+}

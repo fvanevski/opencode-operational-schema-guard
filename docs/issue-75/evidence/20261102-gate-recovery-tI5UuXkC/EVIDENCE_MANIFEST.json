@@ -1,0 +1,389 @@
+{
+  "schema": "issue75-sanitized-review-packet-v1",
+  "repo": "fvanevski/opencode-operational-schema-guard",
+  "base_sha": "9a932539d79db63929edc226c3e9a86f1c0dafc1",
+  "result": "BLOCKED_MATERIAL_SOURCE_IDENTITY_DRIFT",
+  "created_at_utc": "2026-11-02T17:08:51.697874+00:00",
+  "artifacts": [
+    {
+      "path": "HANDBACK.md",
+      "bytes": 4461,
+      "sha256": "3b50b523ebf7a69845a7dce3a9ad5694f519228c9678882027ba1a6472eebe14",
+      "disclosure_class": "REVIEW_REPORT_OR_GENERATED_RECEIPT",
+      "decision": "APPROVED",
+      "original_host_artifact_reference": "generated review artifact, original inputs retained privately"
+    },
+    {
+      "path": "README.md",
+      "bytes": 3332,
+      "sha256": "34bdd205ef5acd748653e546e08fbec28e0b1f0e328ebe27f03ab3dc66686de6",
+      "disclosure_class": "REVIEW_REPORT_OR_GENERATED_RECEIPT",
+      "decision": "APPROVED",
+      "original_host_artifact_reference": "generated review artifact, original inputs retained privately"
+    },
+    {
+      "path": "RECOVERY_PROPOSAL.json",
+      "bytes": 5407,
+      "sha256": "9065497e17af7f44ac9191d79a3ef9ebe8af501559c4245f40f475abfc32a1bb",
+      "disclosure_class": "REVIEW_REPORT_OR_GENERATED_RECEIPT",
+      "decision": "APPROVED",
+      "original_host_artifact_reference": "see review/privacy-hash-mapping.json; original/derived hashes differ"
+    },
+    {
+      "path": "SOURCE.diff",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "disclosure_class": "REVIEW_REPORT_OR_GENERATED_RECEIPT",
+      "decision": "APPROVED",
+      "original_host_artifact_reference": "generated review artifact, original inputs retained privately"
+    },
+    {
+      "path": "observations/controller-transport.json",
+      "bytes": 681,
+      "sha256": "a474c5583bcf245c9a7cd54fc1fc0f3a588da7a8ff516684f408423cca20cb72",
+      "disclosure_class": "SANITIZED_METADATA_OR_ALIASED_ROW_PROJECTION",
+      "decision": "APPROVED",
+      "original_host_artifact_reference": "generated review artifact, original inputs retained privately"
+    },
+    {
+      "path": "observations/current-receipt-route.json",
+      "bytes": 351,
+      "sha256": "8ddb0540312334c6acd9825579e09af8dcad7807060124ed3daa1cb179639516",
+      "disclosure_class": "SANITIZED_METADATA_OR_ALIASED_ROW_PROJECTION",
+      "decision": "APPROVED",
+      "original_host_artifact_reference": "generated review artifact, original inputs retained privately"
+    },
+    {
+      "path": "observations/historical-original-409.json",
+      "bytes": 554,
+      "sha256": "e88bf25fcea5028d4985e5735b3d3eb5f1d21a4f616dd0ee3ddef53a4078d52d",
+      "disclosure_class": "SANITIZED_METADATA_OR_ALIASED_ROW_PROJECTION",
+      "decision": "APPROVED",
+      "original_host_artifact_reference": "see review/privacy-hash-mapping.json; original/derived hashes differ"
+    },
+    {
+      "path": "observations/historical-task-publication.json",
+      "bytes": 545,
+      "sha256": "6372797e39f72a286daa9d2d2b64e1221805fb2409e272c344f870a652d62945",
+      "disclosure_class": "SANITIZED_METADATA_OR_ALIASED_ROW_PROJECTION",
+      "decision": "APPROVED",
+      "original_host_artifact_reference": "generated review artifact, original inputs retained privately"
+    },
+    {
+      "path": "observations/original-gate-rows-after.json",
+      "bytes": 1360,
+      "sha256": "1a58947f8fb72e83e4fea8a1477190e98ea4f461b1b54f8e9fe3ae08e583eda7",
+      "disclosure_class": "SANITIZED_METADATA_OR_ALIASED_ROW_PROJECTION",
+      "decision": "APPROVED",
+      "original_host_artifact_reference": "see review/privacy-hash-mapping.json; original/derived hashes differ"
+    },
+    {
+      "path": "observations/original-gate-rows-before.json",
+      "bytes": 1360,
+      "sha256": "1a58947f8fb72e83e4fea8a1477190e98ea4f461b1b54f8e9fe3ae08e583eda7",
+      "disclosure_class": "SANITIZED_METADATA_OR_ALIASED_ROW_PROJECTION",
+      "decision": "APPROVED",
+      "original_host_artifact_reference": "see review/privacy-hash-mapping.json; original/derived hashes differ"
+    },
+    {
+      "path": "observations/pending-disposition.json",
+      "bytes": 908,
+      "sha256": "eb784a2b3e3076966a682928e43a2573832c3c203b62f782793ed4632985e6ee",
+      "disclosure_class": "SANITIZED_METADATA_OR_ALIASED_ROW_PROJECTION",
+      "decision": "APPROVED",
+      "original_host_artifact_reference": "generated review artifact, original inputs retained privately"
+    },
+    {
+      "path": "observations/protected-state.json",
+      "bytes": 501,
+      "sha256": "52e3a86fc845aa1dee99da3dd512b984433a3f5f3b0c208712b57bef04447f11",
+      "disclosure_class": "SANITIZED_METADATA_OR_ALIASED_ROW_PROJECTION",
+      "decision": "APPROVED",
+      "original_host_artifact_reference": "generated review artifact, original inputs retained privately"
+    },
+    {
+      "path": "observations/receipt-and-queue-current.json",
+      "bytes": 1840,
+      "sha256": "be92eb6f66850d40927195e86a0ce4bdadd34a3bd0b6e1e8dc31056f7b3e91e5",
+      "disclosure_class": "SANITIZED_METADATA_OR_ALIASED_ROW_PROJECTION",
+      "decision": "APPROVED",
+      "original_host_artifact_reference": "generated review artifact, original inputs retained privately"
+    },
+    {
+      "path": "observations/runtime-receipt-openapi.json",
+      "bytes": 362,
+      "sha256": "ef2eec010a63f145c2ff9076c93162838d7f1e78546430656a61a116d70a4ab5",
+      "disclosure_class": "SANITIZED_METADATA_OR_ALIASED_ROW_PROJECTION",
+      "decision": "APPROVED",
+      "original_host_artifact_reference": "generated review artifact, original inputs retained privately"
+    },
+    {
+      "path": "observations/scheduler.json",
+      "bytes": 860,
+      "sha256": "faffe2c500fddf1de6a7e6ef6cc7298e6f076dcbeba39d598c7c4d1568446fc7",
+      "disclosure_class": "SANITIZED_METADATA_OR_ALIASED_ROW_PROJECTION",
+      "decision": "APPROVED",
+      "original_host_artifact_reference": "generated review artifact, original inputs retained privately"
+    },
+    {
+      "path": "observations/source-drift-timeline.json",
+      "bytes": 2560,
+      "sha256": "45fc778ced96dccf848aa1fd4d487657d03cde35e73ef65876567044dd91a80c",
+      "disclosure_class": "SANITIZED_METADATA_OR_ALIASED_ROW_PROJECTION",
+      "decision": "APPROVED",
+      "original_host_artifact_reference": "generated review artifact, original inputs retained privately"
+    },
+    {
+      "path": "offline/characterization-results.json",
+      "bytes": 1001,
+      "sha256": "3fde7d4f4221a4ce98bb51a907a2432a7c214f5d304b3b6d97b6e684b91976ff",
+      "disclosure_class": "DISPOSABLE_CHARACTERIZATION_ONLY_NOT_REPAIR",
+      "decision": "APPROVED",
+      "original_host_artifact_reference": "current gate SQLite schema / selected installed methods; synthetic data only"
+    },
+    {
+      "path": "offline/characterize_schema.py",
+      "bytes": 4403,
+      "sha256": "cec6c418539a151fd09afb51ad1f640a52d41700587d73ae7b593a30afc68d82",
+      "disclosure_class": "DISPOSABLE_CHARACTERIZATION_ONLY_NOT_REPAIR",
+      "decision": "APPROVED",
+      "original_host_artifact_reference": "current gate SQLite schema / selected installed methods; synthetic data only"
+    },
+    {
+      "path": "offline/installed_schema.sql",
+      "bytes": 5640,
+      "sha256": "7a48526c6312688026af443c0cef27a0779d71a0477a189448ef9d4da0faad5b",
+      "disclosure_class": "DISPOSABLE_CHARACTERIZATION_ONLY_NOT_REPAIR",
+      "decision": "APPROVED",
+      "original_host_artifact_reference": "current gate SQLite schema / selected installed methods; synthetic data only"
+    },
+    {
+      "path": "offline/legacy_methods.py.txt",
+      "bytes": 1559,
+      "sha256": "26d6e8558716aec93c4866409bc64ac53cec253a5966f49eb061ebc5ae0efba5",
+      "disclosure_class": "DISPOSABLE_CHARACTERIZATION_ONLY_NOT_REPAIR",
+      "decision": "APPROVED",
+      "original_host_artifact_reference": "current gate SQLite schema / selected installed methods; synthetic data only"
+    },
+    {
+      "path": "relevant-installed-source/GateHandler-_enqueue.py.txt",
+      "bytes": 2113,
+      "sha256": "174c5dbedb24144cccf33436b4e2d9a20b442ff37832048e793ad046de0796f3",
+      "disclosure_class": "NECESSARY_SOURCE_EXCERPT_OR_DRIFT_OBSERVATION",
+      "decision": "APPROVED",
+      "original_host_artifact_reference": "see source-provenance.json and observations/source-drift-timeline.json; necessary excerpts only"
+    },
+    {
+      "path": "relevant-installed-source/GateHandler-_identity.py.txt",
+      "bytes": 304,
+      "sha256": "40b27606af5335b927333d9d1e2311b2644ef3a43b110b9205c7d1d39b9fe0d0",
+      "disclosure_class": "NECESSARY_SOURCE_EXCERPT_OR_DRIFT_OBSERVATION",
+      "decision": "APPROVED",
+      "original_host_artifact_reference": "see source-provenance.json and observations/source-drift-timeline.json; necessary excerpts only"
+    },
+    {
+      "path": "relevant-installed-source/HISTORICAL-receipt-owner.py.txt",
+      "bytes": 1507,
+      "sha256": "240c57c9863c1c039df73444f2d12b2648cba2a8b28a5ae380abf345cd9e8d5e",
+      "disclosure_class": "NECESSARY_SOURCE_EXCERPT_OR_DRIFT_OBSERVATION",
+      "decision": "APPROVED",
+      "original_host_artifact_reference": "see source-provenance.json and observations/source-drift-timeline.json; necessary excerpts only"
+    },
+    {
+      "path": "relevant-installed-source/QueueDB-claim.py.txt",
+      "bytes": 1938,
+      "sha256": "3524d054022bf65f32f886c84ae5d339d101efbc8421b31cd6466287b6b9c916",
+      "disclosure_class": "NECESSARY_SOURCE_EXCERPT_OR_DRIFT_OBSERVATION",
+      "decision": "APPROVED",
+      "original_host_artifact_reference": "see source-provenance.json and observations/source-drift-timeline.json; necessary excerpts only"
+    },
+    {
+      "path": "relevant-installed-source/QueueDB-connect.py.txt",
+      "bytes": 437,
+      "sha256": "5ff9098ce710b56b9784b90df1edd97711d7687cd3d51a4efedcdfef4845f3df",
+      "disclosure_class": "NECESSARY_SOURCE_EXCERPT_OR_DRIFT_OBSERVATION",
+      "decision": "APPROVED",
+      "original_host_artifact_reference": "see source-provenance.json and observations/source-drift-timeline.json; necessary excerpts only"
+    },
+    {
+      "path": "relevant-installed-source/QueueDB-dead_letter.py.txt",
+      "bytes": 549,
+      "sha256": "93f6b727b67379d963ef897f401c7a45ffb1cae41ce1bcf296da8ce68be31f53",
+      "disclosure_class": "NECESSARY_SOURCE_EXCERPT_OR_DRIFT_OBSERVATION",
+      "decision": "APPROVED",
+      "original_host_artifact_reference": "see source-provenance.json and observations/source-drift-timeline.json; necessary excerpts only"
+    },
+    {
+      "path": "relevant-installed-source/QueueDB-next_ready.py.txt",
+      "bytes": 556,
+      "sha256": "24f7f55be3969ea168722e765494e99c3e28eddf1aa3e4ab83f5e8c6e14e830b",
+      "disclosure_class": "NECESSARY_SOURCE_EXCERPT_OR_DRIFT_OBSERVATION",
+      "decision": "APPROVED",
+      "original_host_artifact_reference": "see source-provenance.json and observations/source-drift-timeline.json; necessary excerpts only"
+    },
+    {
+      "path": "relevant-installed-source/Worker-_process_receipted.py.txt",
+      "bytes": 1545,
+      "sha256": "646cca68c0d684b0306c8f79297bb427600b8d3d2e99bf15ee3371d6203fa658",
+      "disclosure_class": "NECESSARY_SOURCE_EXCERPT_OR_DRIFT_OBSERVATION",
+      "decision": "APPROVED",
+      "original_host_artifact_reference": "see source-provenance.json and observations/source-drift-timeline.json; necessary excerpts only"
+    },
+    {
+      "path": "relevant-installed-source/Worker-_receipt_observation.py.txt",
+      "bytes": 1503,
+      "sha256": "c0c598ad439f2a1ff1a24d444c38a1519557dfd4b9025896c62c93e0b0bc0937",
+      "disclosure_class": "NECESSARY_SOURCE_EXCERPT_OR_DRIFT_OBSERVATION",
+      "decision": "APPROVED",
+      "original_host_artifact_reference": "see source-provenance.json and observations/source-drift-timeline.json; necessary excerpts only"
+    },
+    {
+      "path": "relevant-installed-source/Worker-tick.py.txt",
+      "bytes": 9440,
+      "sha256": "c7c9c549ec02c4625e089f113d8756677b4249a7e4d043b16612662be8f64791",
+      "disclosure_class": "NECESSARY_SOURCE_EXCERPT_OR_DRIFT_OBSERVATION",
+      "decision": "APPROVED",
+      "original_host_artifact_reference": "see source-provenance.json and observations/source-drift-timeline.json; necessary excerpts only"
+    },
+    {
+      "path": "relevant-installed-source/keyed-publication-drift.diff",
+      "bytes": 836,
+      "sha256": "6e345539e643b98bd440776302b1deb32036a0664a5722378fa7cdc47a91c39b",
+      "disclosure_class": "NECESSARY_SOURCE_EXCERPT_OR_DRIFT_OBSERVATION",
+      "decision": "APPROVED",
+      "original_host_artifact_reference": "see source-provenance.json and observations/source-drift-timeline.json; necessary excerpts only"
+    },
+    {
+      "path": "relevant-installed-source/receipt-route-drift.diff",
+      "bytes": 4375,
+      "sha256": "0e732c33ea67b25e1088d0fe9c5835be51166c21e40f50f9ea40cf47cf94a257",
+      "disclosure_class": "NECESSARY_SOURCE_EXCERPT_OR_DRIFT_OBSERVATION",
+      "decision": "APPROVED",
+      "original_host_artifact_reference": "see source-provenance.json and observations/source-drift-timeline.json; necessary excerpts only"
+    },
+    {
+      "path": "relevant-installed-source/source-provenance.json",
+      "bytes": 4735,
+      "sha256": "cf5eec887e529e03f7b58fec71677ceb18cf9ea5d2a04dfb5a1bbaf1df12e23d",
+      "disclosure_class": "NECESSARY_SOURCE_EXCERPT_OR_DRIFT_OBSERVATION",
+      "decision": "APPROVED",
+      "original_host_artifact_reference": "see source-provenance.json and observations/source-drift-timeline.json; necessary excerpts only"
+    },
+    {
+      "path": "review/COMMAND_SHAPE_FRICTION.json",
+      "bytes": 8781,
+      "sha256": "800c9298534b28d06bc5a5ee2719286dee5723945f0fc707b18aaa826d1724fe",
+      "disclosure_class": "REVIEW_REPORT_OR_GENERATED_RECEIPT",
+      "decision": "APPROVED",
+      "original_host_artifact_reference": "generated review artifact, original inputs retained privately"
+    },
+    {
+      "path": "review/design-disposition.md",
+      "bytes": 3522,
+      "sha256": "5becc3b74f842a9c2a3c468410ff78f900ffee605abf9d1fe073780e47a794d3",
+      "disclosure_class": "REVIEW_REPORT_OR_GENERATED_RECEIPT",
+      "decision": "APPROVED",
+      "original_host_artifact_reference": "generated review artifact, original inputs retained privately"
+    },
+    {
+      "path": "review/disclosure-review.json",
+      "bytes": 15505,
+      "sha256": "712566a7aa9fabbd9dc4db094203e85ab3f8f33bcf4e8666c75664d9e138d677",
+      "disclosure_class": "GENERATED_DISCLOSURE_RECEIPT",
+      "decision": "APPROVED",
+      "original_host_artifact_reference": "generated review artifact, original inputs retained privately"
+    },
+    {
+      "path": "review/graph-impact.json",
+      "bytes": 801,
+      "sha256": "678189febb1a0e58dda63c67e82bb7f41df383c9621bbaa54bb51c06a7819cc6",
+      "disclosure_class": "REVIEW_REPORT_OR_GENERATED_RECEIPT",
+      "decision": "APPROVED",
+      "original_host_artifact_reference": "generated review artifact, original inputs retained privately"
+    },
+    {
+      "path": "review/privacy-hash-mapping.json",
+      "bytes": 2355,
+      "sha256": "48cb98189fcbb5c095cd222c57a3d83b62e6a4075a8c05db7becedc11a849309",
+      "disclosure_class": "REVIEW_REPORT_OR_GENERATED_RECEIPT",
+      "decision": "APPROVED",
+      "original_host_artifact_reference": "generated review artifact, original inputs retained privately"
+    },
+    {
+      "path": "review/publication-guards.json",
+      "bytes": 1657,
+      "sha256": "4b2bc68d6b2bed9d188e6d9096fd82ac0f7f397ee9b9e240a1b6c2e39c1b8a31",
+      "disclosure_class": "REVIEW_REPORT_OR_GENERATED_RECEIPT",
+      "decision": "APPROVED",
+      "original_host_artifact_reference": "generated review artifact, original inputs retained privately"
+    },
+    {
+      "path": "review/regression-results.json",
+      "bytes": 634,
+      "sha256": "aaa34a27fa8de0049b510f7343a8f7d163ad7754a3f0da5d4123210fa5f6f6b8",
+      "disclosure_class": "REVIEW_REPORT_OR_GENERATED_RECEIPT",
+      "decision": "APPROVED",
+      "original_host_artifact_reference": "generated review artifact, original inputs retained privately"
+    }
+  ],
+  "administrative_members": [
+    {
+      "path": "EVIDENCE_MANIFEST.json",
+      "sha256": null,
+      "disclosure_class": "GENERATED_SELF_MANIFEST",
+      "reason": "self hash excluded, covered by SHA256SUMS and remote Git blob readback"
+    },
+    {
+      "path": "SHA256SUMS",
+      "sha256": null,
+      "disclosure_class": "GENERATED_CHECKSUM_LIST",
+      "reason": "excluded from its own checksum list; covered by external remote-readback receipt"
+    }
+  ],
+  "all_public_member_paths": [
+    "EVIDENCE_MANIFEST.json",
+    "HANDBACK.md",
+    "README.md",
+    "RECOVERY_PROPOSAL.json",
+    "SHA256SUMS",
+    "SOURCE.diff",
+    "observations/controller-transport.json",
+    "observations/current-receipt-route.json",
+    "observations/historical-original-409.json",
+    "observations/historical-task-publication.json",
+    "observations/original-gate-rows-after.json",
+    "observations/original-gate-rows-before.json",
+    "observations/pending-disposition.json",
+    "observations/protected-state.json",
+    "observations/receipt-and-queue-current.json",
+    "observations/runtime-receipt-openapi.json",
+    "observations/scheduler.json",
+    "observations/source-drift-timeline.json",
+    "offline/characterization-results.json",
+    "offline/characterize_schema.py",
+    "offline/installed_schema.sql",
+    "offline/legacy_methods.py.txt",
+    "relevant-installed-source/GateHandler-_enqueue.py.txt",
+    "relevant-installed-source/GateHandler-_identity.py.txt",
+    "relevant-installed-source/HISTORICAL-receipt-owner.py.txt",
+    "relevant-installed-source/QueueDB-claim.py.txt",
+    "relevant-installed-source/QueueDB-connect.py.txt",
+    "relevant-installed-source/QueueDB-dead_letter.py.txt",
+    "relevant-installed-source/QueueDB-next_ready.py.txt",
+    "relevant-installed-source/Worker-_process_receipted.py.txt",
+    "relevant-installed-source/Worker-_receipt_observation.py.txt",
+    "relevant-installed-source/Worker-tick.py.txt",
+    "relevant-installed-source/keyed-publication-drift.diff",
+    "relevant-installed-source/receipt-route-drift.diff",
+    "relevant-installed-source/source-provenance.json",
+    "review/COMMAND_SHAPE_FRICTION.json",
+    "review/design-disposition.md",
+    "review/disclosure-review.json",
+    "review/graph-impact.json",
+    "review/privacy-hash-mapping.json",
+    "review/publication-guards.json",
+    "review/regression-results.json"
+  ],
+  "supplemental_archive": null,
+  "scope_limit": "No repair/recurrence implementation after material source drift; no live recovery qualification; publication receipt external to avoid self-reference."
+}

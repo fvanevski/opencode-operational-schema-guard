@@ -1,0 +1,25 @@
+    def _receipt_observation(self, row, payload=None, *, allow_recovery=False):
+        attempt = self.db.attempt(row)
+        if attempt is None: return False  # Historical unknowns have no invented key.
+        try:
+            if payload is None:
+                status,payload=json_request("GET",self._receipt_url(row,attempt)+("?recover=true" if allow_recovery else ""),headers=self._auth_headers(row),timeout=self.cfg.request_timeout_seconds)
+                if status != 200: return False
+            scope={k:str(row[k]) for k in ("account","user_id","actor_peer","session_id")}
+            receipt=payload.get("result")
+            decision,value=gate_decision(receipt,key=attempt["request_key"],scope=scope,body_digest=attempt["body_digest"])
+            if decision == "TRACK":
+                self.db.adopt_receipt_task(row,value)
+                return False
+            if decision == "RELEASE":
+                if value == "skipped" or value == "completed":
+                    if row["state"] == "unknown": self.db.adopt_receipt_task(row,receipt.get("task_id"))
+                    self.db.complete(row,outcome=value)
+                else:
+                    self.db.adopt_receipt_task(row,receipt["task_id"])
+                    current=self.db.inflight()
+                    self.db.task_failed(current,error=f"receipt terminal {value}",task_id=receipt["task_id"],failure_kind=value)
+                return True
+        except Exception:
+            return False
+        return False

@@ -1,0 +1,14 @@
+{
+  "info": {
+    "title": "OpenViking API",
+    "description": "OpenViking HTTP Server - Agent-native context database",
+    "version": "0.1.0"
+  },
+  "receipt_routes": {
+    "/api/v1/admin/commit_receipts/{session_id}/{request_key}": [
+      "post",
+      "get"
+    ]
+  },
+  "schema_sha256": "e285db37b36305eddb613fe6ed96f82e7fa7ed235ab00b766540ab96959bade9"
+}

@@ -1,0 +1,53 @@
+{
+  "process_start_utc": "2026-11-01T19:13:20.690000+00:00",
+  "files": [
+    {
+      "source": "openviking/session/session.py",
+      "previous_sha256": "6b876bdb26588f8f1e67e066c8c91637ad5fd344e679ebb2515f87526567d8d2",
+      "current_sha256": "b892f66da79ee76a5fecd502d71d0893da53541f0800c7100a8a54623766a816",
+      "mtime_utc": "2026-11-02T16:45:37.489828+00:00",
+      "ctime_utc": "2026-11-02T16:45:37.489828+00:00",
+      "changed_after_backend_process_start": true
+    },
+    {
+      "source": "openviking/server/routers/sessions.py",
+      "previous_sha256": "bb9e949e2b892a5bf84ee23d87385ee24064877f862784e9b6386341da8980a9",
+      "current_sha256": "4b0cb8b6d141f3987ebe398d0ce64b4474414d7281ecc208efacdb9439e1247b",
+      "mtime_utc": "2026-11-02T16:45:37.486828+00:00",
+      "ctime_utc": "2026-11-02T16:45:37.486828+00:00",
+      "changed_after_backend_process_start": true
+    },
+    {
+      "source": "openviking/server/routers/tasks.py",
+      "previous_sha256": "6ace29777f36739d3b5468a5478214050333b813d0cb61cad4db2a2e45286d2b",
+      "current_sha256": "a099911d5385e07753faa3a542a50d68dc75b0837c0a613378e4fa2a8e3ab856",
+      "mtime_utc": "2026-11-02T16:45:37.486828+00:00",
+      "ctime_utc": "2026-11-02T16:45:37.486828+00:00",
+      "changed_after_backend_process_start": true
+    },
+    {
+      "source": "openviking/service/task_tracker.py",
+      "previous_sha256": "f823631dcf5001fd00f752ecab9a57870fec4096bb26064a5c39684d919a680e",
+      "current_sha256": "fdc0cfa68aa440ae846a4ba34c5371c4466fc4be4ef767af8303134c57f8e669",
+      "mtime_utc": "2026-11-02T16:45:37.488828+00:00",
+      "ctime_utc": "2026-11-02T16:45:37.488828+00:00",
+      "changed_after_backend_process_start": true
+    },
+    {
+      "source": "openviking/service/task_store.py",
+      "previous_sha256": "344d154cde29fb21e0fb78b347ebd1101b393d71422da3a779a4bd2eb6662ee8",
+      "current_sha256": "432410cb3bd2601ebf2cc37b3209b80f00106bc0442a58db661f278043d28cf7",
+      "mtime_utc": "2026-11-02T16:45:37.488828+00:00",
+      "ctime_utc": "2026-11-02T16:45:37.488828+00:00",
+      "changed_after_backend_process_start": true
+    },
+    {
+      "source": "openviking/storage/queuefs/session_commit_msg.py",
+      "previous_sha256": "4959299bb99a6f8833f44957883fc322a3bf3acbdd846c041ee93d5da5c6c7ad",
+      "current_sha256": "7b8922a20a82e5ff103a84d8cd9de6c6c865cc5010d56c4add70b5eceadc9852",
+      "mtime_utc": "2026-11-02T16:45:37.494828+00:00",
+      "ctime_utc": "2026-11-02T16:45:37.494828+00:00",
+      "changed_after_backend_process_start": true
+    }
+  ]
+}

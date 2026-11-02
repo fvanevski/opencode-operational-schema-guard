@@ -1,0 +1,76 @@
+{
+  "status": "BLOCKED_MATERIAL_SOURCE_IDENTITY_DRIFT",
+  "candidate_implemented": false,
+  "live_repair": "NOT_EXECUTED",
+  "historical_proposal_original_sha256": "a0a1bbf1b68738158d4368c8345692ece49717e1d5e77c670043d2bd0f3ac6af",
+  "historical_redacted_proposal": {
+    "status": "NOT_EXECUTED",
+    "exact_outcome": "RECOVERY_ACTION_REQUIRED",
+    "backend_outcome": "NEVER_ACCEPTED_PROVEN",
+    "evidence_basis": "Exact original receipt POST returned 409; immutable submitted scope has blank account/user, rejected by installed pre-submit _receipt_owner. No receipt/binding/archive/task/queue publication exists for this operation.",
+    "gate_state": "unknown; submitted=1; resolved=0; task_id=null; claimed_generation=2",
+    "supported_installed_recovery": null,
+    "supported_surface_assessment": [
+      {
+        "surface": "GET /api/v1/admin/commit_receipts/{session}/{key}",
+        "assessment": "Absent row returns 404. No supported gate release from absence."
+      },
+      {
+        "surface": "GET same route?recover=true",
+        "assessment": "Requires an existing receipt and durable task/archive binding. Missing row still returns 404 before recovery. NOT executed by this controller."
+      },
+      {
+        "surface": "POST same route with original scope",
+        "assessment": "Blank account/user remains invalid; would be a prohibited new submission attempt, not reconciliation."
+      },
+      {
+        "surface": "POST with corrected tenant scope",
+        "assessment": "Changes the immutable request identity. Original key would fail scope/generation hashing; a recomputed key would create a new operation. Neither is recovery of the old key."
+      },
+      {
+        "surface": "QueueDB.dead_letter",
+        "assessment": "Installed internal method, not an administrative API. Alone it does not resolve commit_attempts for OLD.state=unknown, because commit_attempt_resolved trigger only handles OLD.state=inflight. Insufficient as a complete safe recovery transaction."
+      },
+      {
+        "surface": "QueueDB.adopt_receipt_task + complete(skipped)",
+        "assessment": "Requires authoritative backend terminal receipt semantics. Using skipped for an unaccepted commit would invent an outcome; forbidden."
+      },
+      {
+        "surface": "Direct SQL edits or retry",
+        "assessment": "Protected-state repair/replay; not authorized and no such operation was executed."
+      }
+    ],
+    "minimum_missing_supported_capability": "A reviewed owner-authorized, compare-and-set resolution for a proven pre-publication rejection, preserving the immutable attempt and rejection evidence while resolving both the broker barrier and attempt latch without claiming successful/skipped extraction or scheduling a retry. No such complete administrative operation exists in the installed interface.",
+    "required_authority": [
+      "Separate approval for a narrowly reviewed gate protocol/admin implementation and the exact durable resolution, or an explicitly reviewed owner transaction; current read-only contract grants neither.",
+      "Separate disposition of other preexisting pending jobs before a repair can expose them to automatic post-controller draining. Do not let clearing this row become implicit replay authority.",
+      "Correct future authenticated tenant identity binding/validation before receipt submission; do not rewrite the identity of this already submitted attempt."
+    ],
+    "required_compare_guards": {
+      "account": "",
+      "user_id": "",
+      "actor_peer": "PEER_A",
+      "session_id": "SESSION_A",
+      "generation": 2,
+      "request_key": "REQUEST_A",
+      "body_digest": "BODY_A",
+      "state": "unknown",
+      "submitted": 1,
+      "resolved": 0,
+      "task_id": null,
+      "requested_generation": 2,
+      "processed_generation": 0,
+      "claimed_generation": 2
+    },
+    "preconditions": [
+      "Reauthenticate installed source/process and repeat the exact rejection/absence/publication checks under an approved transaction fence.",
+      "Hold the existing canonical exclusion mechanism, preserve lock inode/gate policy, and ensure a consistent fresh backup plus guarded row preimages.",
+      "Retain every historical failed/dead task and every distinct generation; no deletion, successful-outcome fabrication or pending-job replay.",
+      "Keep ordinary production admission blocked until all affected pending work and controller endpoint prerequisites have independent authorization/proof."
+    ],
+    "rollback": "Before commit, transaction rollback must restore all preimages. After commit, backup restoration is safe only while the same exclusion/admission boundary is still retained and no subsequent work has been released. Once another queued job starts, a row-only rollback cannot undo its effects. Therefore this is not an automatically reversible repair under the current maintenance grant.",
+    "expected_invariant": "The original rejected request remains auditable, cannot be retried or re-keyed as recovery, and no fake task/receipt is created; future admission is considered separately.",
+    "mutations_performed": []
+  },
+  "current_boundary": "Six backend files changed after process start; current disk lacks receipt route and keyed Session/QueueFS bindings while live process still advertises route. Re-establish coherent runtime/source authority before candidate implementation."
+}

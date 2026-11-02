@@ -1,0 +1,28 @@
+{
+  "status": "NO_RELEASE_AUTHORITY",
+  "count": 3,
+  "generation_gaps": [
+    {
+      "pending_alias": "PENDING_1",
+      "requested_generation": 3,
+      "processed_generation": 0,
+      "claimed_generation": null,
+      "state": "pending"
+    },
+    {
+      "pending_alias": "PENDING_2",
+      "requested_generation": 1,
+      "processed_generation": 0,
+      "claimed_generation": null,
+      "state": "pending"
+    },
+    {
+      "pending_alias": "PENDING_3",
+      "requested_generation": 4,
+      "processed_generation": 0,
+      "claimed_generation": null,
+      "state": "pending"
+    }
+  ],
+  "policy": "Do not clear a barrier merely because a harness is active now. Require a reviewed persistent hold checked by worker reconciliation and claims, canonical EX ownership, explicit disposition of every pending/generation gap, and independent release authority. No hold deployed or qualified here."
+}

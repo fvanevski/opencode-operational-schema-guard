@@ -1,0 +1,12 @@
+{
+  "status": "HISTORICAL_REVALIDATED_PRIVATE_ARTIFACT_SEAL",
+  "original_session": "SESSION_A",
+  "commit_count": 0,
+  "message_count": 101,
+  "archive_count": 0,
+  "publication_markers": 0,
+  "matching_task_count": 0,
+  "release_identity": "NOT_ASSIGNED; no retrospective ACK inferred from queue emptiness",
+  "limits": "Current on-disk task/session implementations drifted. Historical absence does not qualify current keyed producer fencing.",
+  "original_artifact_sha256": "6e4795318cd6ef7f17493e4dc8caab73ac6c870d2b0617bbf0afade19e958d18"
+}

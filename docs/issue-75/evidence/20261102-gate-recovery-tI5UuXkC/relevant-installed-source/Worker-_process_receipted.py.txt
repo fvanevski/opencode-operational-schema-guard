@@ -1,0 +1,25 @@
+    def _process_receipted(self, row):
+        attempt=self.db.attempt(row)
+        if attempt is None:
+            self.db.mark_unknown(row)
+            return
+        try:
+            headers=self._auth_headers(row)
+            if not attempt["submitted"]:
+                envelope={"scope":{k:str(row[k]) for k in ("account","user_id","actor_peer","session_id")},
+                    "generation":attempt["generation"],"body":json.loads(attempt["body_json"]),"body_digest":attempt["body_digest"]}
+                with self.db.connect() as conn:
+                    conn.execute("UPDATE commit_attempts SET submitted=1 WHERE request_key=?",(attempt["request_key"],))
+                status,payload=json_request("POST",self._receipt_url(row,attempt),headers=headers,body=envelope,timeout=self.cfg.request_timeout_seconds)
+                if status != 200:
+                    self.db.mark_unknown(self.db.inflight() or row)
+                    return
+                if self._receipt_observation(row,payload): return
+            deadline=time.monotonic()+self.cfg.task_timeout_seconds
+            while not self.stop_event.is_set() and time.monotonic()<deadline:
+                current = self.db.inflight() or row
+                if self._receipt_observation(current,allow_recovery=self._receipt_recovery_admitted(current)): return
+                self.stop_event.wait(self.cfg.task_poll_seconds)
+            self.db.mark_unknown(self.db.inflight() or row)
+        except Exception:
+            self.db.mark_unknown(self.db.inflight() or row)

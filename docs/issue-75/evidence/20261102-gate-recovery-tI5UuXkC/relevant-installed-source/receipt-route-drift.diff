@@ -1,0 +1,83 @@
+--- historical/openviking/server/routers/sessions.py
++++ current-disk/openviking/server/routers/sessions.py
+@@ -828,80 +828,3 @@
+         fn=_batch_add,
+     )
+     return Response(status="ok", result=execution.result, telemetry=execution.telemetry)
+-
+-
+-receipt_router = APIRouter(prefix="/api/v1/admin/commit_receipts", tags=["admin"])
+-
+-# Issue 70: opt-in, backend-owner receipt boundary. Ordinary commit is unchanged.
+-from fastapi import Request
+-from openviking.server.identity import Role
+-from openviking.service.commit_receipts import runtime as receipt_runtime
+-from openviking.service.receipt_protocol import ReceiptConflict, request_key as receipt_key
+-from openviking.service.task_tracker import get_task_tracker
+-
+-
+-def _receipt_owner(request, ctx, session_id, scope):
+-    if ctx.role != Role.ROOT:
+-        raise HTTPException(403, "receipt interface requires backend owner")
+-    if (not isinstance(scope, dict)
+-            or set(scope) != {"account","user_id","actor_peer","session_id"}
+-            or not all(isinstance(v, str) and
+-                       (0 <= len(v) <= 256 if k == "actor_peer" else 0 < len(v) <= 256)
+-                       for k, v in scope.items())
+-            or scope.get("session_id") != session_id
+-            or scope.get("actor_peer") != request.headers.get("X-OpenViking-Actor-Peer", "")):
+-        raise HTTPException(409, "receipt scope mismatch")
+-    mode=getattr(request.app.state.config,"auth_mode",None)
+-    if mode=="trusted":
+-        if scope["account"]!=ctx.account_id or scope["user_id"]!=ctx.user.user_id:
+-            raise HTTPException(409,"receipt tenant mismatch")
+-    elif mode!="api_key":
+-        raise HTTPException(403,"receipt owner authentication mode unavailable")
+-    # Native api_key mode deliberately strips tenant assertion headers and pins
+-    # ROOT to its own identity. This ADMIN operation explicitly scopes the
+-    # verified backend owner to the immutable request tenant, without relaxing
+-    # ordinary tenant API authentication or accepting the nomination token.
+-    from dataclasses import replace
+-    from openviking_cli.session.user_id import UserIdentifier
+-    return replace(ctx,user=UserIdentifier(scope["account"],scope["user_id"]),actor_peer_id=None)
+-
+-
+-@receipt_router.post("/{session_id}/{request_key}")
+-async def commit_with_receipt(request: Request, session_id: str, request_key: str,
+-                              envelope: Dict[str, Any] = Body(...),
+-                              _ctx: RequestContext = Depends(get_session_request_context)):
+-    owner = receipt_runtime()
+-    if owner is None: raise HTTPException(503, "receipt protocol disabled")
+-    scope = envelope.get("scope", {})
+-    _ctx=_receipt_owner(request,_ctx,session_id,scope)
+-    try:
+-        generation = envelope["generation"]
+-        if isinstance(generation,bool): raise ValueError("invalid generation")
+-        body = envelope["body"]
+-        parsed = CommitRequest.model_validate(body)
+-        async def commit():
+-            response = await commit_session(session_id, parsed, _ctx)
+-            return response["result"]
+-        row = await owner.submit(request_key,scope,generation,body,envelope["body_digest"],commit)
+-        return {"status":"ok","result":row}
+-    except ReceiptConflict as exc:
+-        raise HTTPException(409, {"code":"receipt_conflict","message":str(exc)}) from exc
+-    except (ValueError,KeyError,TypeError) as exc:
+-        raise HTTPException(400, "invalid receipt envelope") from exc
+-
+-
+-@receipt_router.get("/{session_id}/{request_key}")
+-async def get_commit_receipt(request: Request, session_id: str, request_key: str,
+-                             recover: bool = Query(False),
+-                             _ctx: RequestContext = Depends(get_session_request_context)):
+-    owner = receipt_runtime()
+-    if owner is None: raise HTTPException(503, "receipt protocol disabled")
+-    row = owner.ledger.read(request_key)
+-    if row is None: raise HTTPException(404, "receipt unavailable")
+-    import json
+-    scope = json.loads(row["scope_json"])
+-    _ctx=_receipt_owner(request,_ctx,session_id,scope)
+-    service = get_service()
+-    session = await service.sessions.open(session_id,_ctx)
+-    row = await owner.reconcile(request_key,session,get_task_tracker(),allow_recovery=recover)
+-    return {"status":"ok","result":row}

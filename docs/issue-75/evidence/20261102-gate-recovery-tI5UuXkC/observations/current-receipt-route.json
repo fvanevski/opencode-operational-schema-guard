@@ -1,0 +1,14 @@
+{
+  "method": "GET",
+  "route_shape": "/api/v1/admin/commit_receipts/<session>/<request-key>",
+  "status": 404,
+  "response": {
+    "status": "error",
+    "error": {
+      "code": "NOT_FOUND",
+      "message": "receipt unavailable"
+    }
+  },
+  "auth": "existing gate ROOT credential plus exact actor-peer header; values omitted",
+  "recover": false
+}
