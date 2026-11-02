@@ -90,6 +90,14 @@ class TestGraphitiSanitizer(unittest.TestCase):
         with self.assertRaises(json.JSONDecodeError):
             json.loads(sanitized)
 
+    def test_json_literal_think_tag_is_preserved(self):
+        raw = '{"note": "<think>example data</think>", "extracted_entities": []}'
+        self.assertEqual(sanitize_llm_json_response(raw), raw)
+
+    def test_multiple_leading_reasoning_envelopes(self):
+        raw = "<think>first</think> </think><think>second</think> " + chr(96)*3 + "json\n{\"ok\": true}\n" + chr(96)*3
+        self.assertEqual(json.loads(sanitize_llm_json_response(raw)), {"ok": True})
+
     def test_installation_into_dummy_client(self):
         class DummyClient:
             @staticmethod

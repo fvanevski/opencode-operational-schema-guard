@@ -1,12 +1,8 @@
-# LiteLLM Extraction Configuration for Graphiti / Issue #75
-# Pinned to local Qwen3.8-27B engine (ninfer-serve on port 8001).
-# Key parameters:
-# - preserve_thinking: false in extra_body (ensures thinking tokens are routed without breaking OpenAI schema)
-# - drop_params: false (ensures response_format: {"type": "json_schema"} is passed to backend)
-# - num_retries: 0 (deterministic fail-fast behavior)
-
+# Issue #75 disposable Graphiti extraction proxy, NOT the interactive chat profile.
+# Launch bound to --host 127.0.0.1 --port 8003; never expose to a public interface.
+# Caller supplies a strong private LITELLM_MASTER_KEY, never commit its value.
 general_settings:
-  dangerously_permit_weak_or_unset_master_key: true
+  master_key: os.environ/LITELLM_MASTER_KEY
 
 model_list:
   - model_name: chat-extract
