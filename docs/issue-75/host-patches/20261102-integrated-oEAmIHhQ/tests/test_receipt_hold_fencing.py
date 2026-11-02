@@ -18,15 +18,10 @@ import urllib.parse
 import urllib.request
 
 # Ensure gate modules can be imported
-candidate_dirs = [
-    pathlib.Path("/tmp/opencode/issue75-direct/integrated-oEAmIHhQ/host-candidate/gate"),
-    pathlib.Path(__file__).resolve().parents[6] / "host-candidate" / "gate",
-    pathlib.Path("/home/filip/.local/share/openviking-commit-gate"),
-]
-for d in candidate_dirs:
-    if d.is_dir():
-        sys.path.insert(0, str(d))
-        break
+candidate_gate = pathlib.Path(__file__).resolve().parents[1] / "host-candidate" / "gate"
+if not candidate_gate.is_dir():
+    raise RuntimeError("Fencing tests require reconstructed host-candidate/gate; installed fallback prohibited")
+sys.path.insert(0, str(candidate_gate))
 
 import admission_hold as hold
 import openviking_commit_gate as gate
@@ -160,6 +155,20 @@ class TestReceiptHoldFencing(unittest.TestCase):
         self.assertEqual(status, 503)
         self.assertEqual(body.get("error", {}).get("message"), "durable admission held")
         self.assertEqual(self.backend_server.reconcile_call_count, 0)
+
+    def test_post_to_binding_prefix_fenced_when_held(self):
+        # Backend interprets this as receipt POST for session 'binding'.
+        status, body = self.request("POST", "/api/v1/admin/commit_receipts/binding/key", body=b"{}")
+        self.assertEqual(status, 503)
+        self.assertEqual(body.get("error", {}).get("message"), "durable admission held")
+        self.assertNotIn(("POST", "/api/v1/admin/commit_receipts/binding/key"),
+                         self.backend_server.requests_log)
+
+    def test_encoded_binding_post_fenced_when_held(self):
+        status, body = self.request("POST", "/api/v1/admin/commit_receipts/%62inding/key", body=b"{}")
+        self.assertEqual(status, 503)
+        self.assertNotIn(("POST", "/api/v1/admin/commit_receipts/%62inding/key"),
+                         self.backend_server.requests_log)
 
     def test_pure_read_only_binding_allowed_when_hold_active(self):
         # Binding lookup does not reconcile and must remain accessible

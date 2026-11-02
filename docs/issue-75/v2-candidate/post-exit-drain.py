@@ -5,6 +5,9 @@ canonical shared EX lock; hold it through remote episode persistence readback.
 This is designed to run only after the interactive agent process exits.
 """
 import argparse
+import contextlib
+import sqlite3
+from types import SimpleNamespace
 import fcntl
 import importlib.util
 import os
@@ -30,6 +33,29 @@ def load_gate(filename):
             raise RuntimeError("installed gate lacks expected interface " + name)
     return module
 
+@contextlib.contextmanager
+def _read_only_gate_connection(config):
+    """Read the canonical gate DB without creating or mutating its schema."""
+    source = Path(config.database).resolve(strict=True)
+    conn = sqlite3.connect(source.as_uri() + "?mode=ro", uri=True, timeout=5)
+    try:
+        conn.execute("PRAGMA query_only=ON")
+        yield conn
+    finally:
+        conn.close()
+
+
+def canonical_unresolved(gate, config):
+    """Delegate the unresolved decision to the installed gate implementation."""
+    observer = object.__new__(gate.Worker)
+    observer.cfg = config
+    observer.db = SimpleNamespace(connect=lambda: _read_only_gate_connection(config))
+    try:
+        return bool(observer._unresolved_graphiti_from_existing_db())
+    except Exception as exc:
+        raise RuntimeError("canonical Graphiti state unverifiable") from exc
+
+
 def observation(gate, config):
     # Reuse the installed gate's own definitions, not an independently invented
     # process denylist or metrics dialect.
@@ -38,6 +64,8 @@ def observation(gate, config):
     harnesses = observer._active_harness_processes()
     if harnesses:
         raise RuntimeError("interactive harness active/unknown: cannot drain")
+    if canonical_unresolved(gate, config):
+        raise RuntimeError("canonical Graphiti work unresolved: cannot drain")
     errors = []
     for url in (config.metrics_url, *config.metrics_fallback_urls):
         try:
