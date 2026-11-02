@@ -50,6 +50,12 @@ Without a working independent reranker, zero-overlap semantic choices
 fail closed to lexical selection; low-confidence misses are preferable
 to a fabricated answer.
 
+A zero-token-overlap direct-choice match additionally needs a scored
+nondecision contrast candidate from the same query and a decision score
+more than twice the strongest such contrast. This relative margin is
+exploratory, not a calibrated confidence probability, and needs fresh
+unseen negative-case validation.
+
 This is a provisional bounded candidate, not a general semantic
 entailment solver. In particular, a low-overlap unrelated choice
 question could still be falsely matched to an unrelated chosen fact.
