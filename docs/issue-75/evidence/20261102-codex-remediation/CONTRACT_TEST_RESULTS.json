@@ -1,0 +1,87 @@
+{
+  "schema": "issue75-codex-remediation-contract-test-results-v1",
+  "result": "PASS",
+  "total_suites": 9,
+  "total_tests": 108,
+  "passed": 108,
+  "failed": 0,
+  "suites": [
+    {
+      "suite": "test_receipt_hold_fencing.py",
+      "count": 8,
+      "passed": 8,
+      "failed": 0,
+      "runner": "python3 (reconstructed host-candidate/gate)"
+    },
+    {
+      "suite": "test_claim_binding_retry.py",
+      "count": 4,
+      "passed": 4,
+      "failed": 0,
+      "runner": "python3 (reconstructed host-candidate/gate)"
+    },
+    {
+      "suite": "test_post_exit_drain.py",
+      "count": 9,
+      "passed": 9,
+      "failed": 0,
+      "runner": "python3"
+    },
+    {
+      "suite": "test_harness_classifier.py",
+      "count": 12,
+      "passed": 12,
+      "failed": 0,
+      "runner": "python3 (reconstructed host-candidate/gate)"
+    },
+    {
+      "suite": "test_untenanted_retirement.py",
+      "count": 5,
+      "passed": 5,
+      "failed": 0,
+      "runner": "python3 (reconstructed host-candidate/gate)"
+    },
+    {
+      "suite": "test_recovery.py",
+      "count": 12,
+      "passed": 12,
+      "failed": 0,
+      "runner": "python3 (reconstructed host-candidate/gate)"
+    },
+    {
+      "suite": "test_binding.py",
+      "count": 1,
+      "passed": 1,
+      "failed": 0,
+      "runner": "python3 (reconstructed host-candidate/gate)"
+    },
+    {
+      "suite": "test_graphiti_sanitizer.py",
+      "count": 13,
+      "passed": 13,
+      "failed": 0,
+      "runner": "/workspace/mcp_servers/graphiti/upstream/mcp_server/.venv/bin/python"
+    },
+    {
+      "suite": "v2-candidate node test suite (memory-core, plugin, relevance)",
+      "count": 19,
+      "passed": 19,
+      "failed": 0,
+      "runner": "node --test"
+    },
+    {
+      "suite": "test_tenant_integration.py (TenantIntegration & I1Service)",
+      "count": 19,
+      "passed": 19,
+      "failed": 0,
+      "runner": "/home/filip/.local/share/uv/tools/openviking/bin/python"
+    },
+    {
+      "suite": "qualify_transient_retry.py (end-to-end integration)",
+      "count": 6,
+      "passed": 6,
+      "failed": 0,
+      "runner": "python3"
+    }
+  ]
+}

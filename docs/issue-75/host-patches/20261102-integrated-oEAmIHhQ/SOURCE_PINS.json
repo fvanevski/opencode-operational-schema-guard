@@ -41,8 +41,8 @@
     {
       "path": "gate/openviking_commit_gate.py",
       "base_sha256": "32017a4e25ba708a6f64e3f32717a09d01620000e77690910973cee6b510e2fe",
-      "candidate_sha256": "eb8753caddab78a2b3930f39985f453f1981a1fc3d012340baab017f8b792c94",
-      "deployed_sha256": "eb8753caddab78a2b3930f39985f453f1981a1fc3d012340baab017f8b792c94",
+      "candidate_sha256": "aa0cf54e4513767b87f18e9704e27eb398a6aee3e71462644044d8805fd12b96",
+      "deployed_sha256": "aa0cf54e4513767b87f18e9704e27eb398a6aee3e71462644044d8805fd12b96",
       "deployed_path": "/home/filip/.local/share/openviking-commit-gate/openviking_commit_gate.py"
     },
     {

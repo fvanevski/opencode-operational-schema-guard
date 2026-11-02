@@ -1,0 +1,56 @@
+{
+  "schema": "issue75-codex-remediation-host-posture-v1",
+  "timestamp": 1793659936.0,
+  "services": {
+    "openviking.service": "active",
+    "openviking-commit-gate.service": "active",
+    "litellm-proxy.service": "active"
+  },
+  "endpoints": {
+    "gate": "http://127.0.0.1:1933",
+    "backend": "http://127.0.0.1:1934",
+    "ninfer_metrics": "http://127.0.0.1:8001/metrics",
+    "litellm": "http://127.0.0.1:8002/v1",
+    "embedder": "http://127.0.0.1:8004/v1",
+    "falkordb": "redis://127.0.0.1:6382",
+    "graphiti_mcp": "http://127.0.0.1:8766/mcp"
+  },
+  "deployed_pins": {
+    "gate_source": "/home/filip/.local/share/openviking-commit-gate/openviking_commit_gate.py",
+    "gate_deployed_sha256": "aa0cf54e4513767b87f18e9704e27eb398a6aee3e71462644044d8805fd12b96",
+    "gate_preimage_sha256": "eb8753caddab78a2b3930f39985f453f1981a1fc3d012340baab017f8b792c94",
+    "gate_service_pid": 810932
+  },
+  "gate_queue_state": {
+    "database": "/home/filip/.local/state/openviking-commit-gate/queue.sqlite3",
+    "recovery_hold": {
+      "held": 0,
+      "owner": "issue75-integrated-oEAmIHhQ",
+      "revision": 2,
+      "reason": "Release hold: untenanted pending intents audited and retired; normal admission restored"
+    },
+    "intents": {
+      "complete": 1306,
+      "dead": 19,
+      "failed": 9,
+      "pending": 1
+    },
+    "commit_attempts": {
+      "resolved": 93,
+      "unresolved": 0
+    },
+    "rejection_repairs_count": 3
+  },
+  "canonical_agent_lock": {
+    "path": "/run/user/1000/openviking-agent.lock",
+    "state": "unlocked"
+  },
+  "durable_repair_invariants": {
+    "historical_rejected_commit_repaired": true,
+    "intent_dead": true,
+    "attempt_latched_resolved": true,
+    "audit_row_present": true,
+    "unrelated_intents_preserved": true,
+    "no_duplicate_execution": true
+  }
+}

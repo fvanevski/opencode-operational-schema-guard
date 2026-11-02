@@ -1,0 +1,63 @@
+{
+  "schema": "issue75-transient-retry-qualification-v1",
+  "result": "PASS",
+  "session_id": "test-session-retry-001",
+  "scope": {
+    "account": "acc1",
+    "user_id": "usr1",
+    "actor_peer": "act1"
+  },
+  "phases": [
+    {
+      "phase": "transient_outage",
+      "backend_response": {
+        "status": 503,
+        "payload": {"error": "outage"}
+      },
+      "gate_worker_action": "retry",
+      "gate_db_state_after": {
+        "intent_state": "pending",
+        "attempts": 1,
+        "last_error": "pre-submission owner binding temporarily unavailable",
+        "commit_attempts_submitted": 0
+      },
+      "receipt_posts_observed": 0
+    },
+    {
+      "phase": "recovery_and_submission",
+      "backend_response": {
+        "status": 200,
+        "payload": {
+          "status": "ok",
+          "result": {
+            "protocol": "gate-owner-binding-v1",
+            "account": "acc1",
+            "user_id": "usr1",
+            "session_id": "test-session-retry-001"
+          }
+        }
+      },
+      "gate_worker_action": "submit_receipt",
+      "receipt_response": {
+        "protocol": "openviking-commit-receipt-v1",
+        "state": "terminal",
+        "outcome": "completed",
+        "release_proven": 1,
+        "task_id": "task-qual-001"
+      },
+      "gate_db_state_after": {
+        "intent_state": "complete",
+        "attempts": 0,
+        "commit_attempts_submitted": 1
+      },
+      "receipt_posts_observed": 1
+    }
+  ],
+  "invariants_verified": {
+    "no_dead_letter_on_outage": true,
+    "same_generation_retried": true,
+    "submitted_zero_during_outage": true,
+    "exact_once_submission_on_recovery": true,
+    "no_duplicate_execution": true
+  }
+}

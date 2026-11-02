@@ -1,181 +1,6 @@
---- a/openviking/server/app.py
-+++ b/openviking/server/app.py
-@@ -691,6 +691,8 @@
-     app.include_router(privacy_configs_router)
-     app.include_router(skills_router)
-     app.include_router(sessions_router)
-+    from openviking.server.routers.sessions import receipt_router
-+    app.include_router(receipt_router)
-     app.include_router(snapshot_router)
-     app.include_router(stats_router)
-     app.include_router(pack_router)
---- a/openviking/server/routers/sessions.py
-+++ b/openviking/server/routers/sessions.py
-@@ -828,3 +828,124 @@
-         fn=_batch_add,
-     )
-     return Response(status="ok", result=execution.result, telemetry=execution.telemetry)
-+
-+
-+receipt_router = APIRouter(prefix="/api/v1/admin/commit_receipts", tags=["admin"])
-+
-+# Issue 70: opt-in, backend-owner receipt boundary. Ordinary commit is unchanged.
-+from fastapi import Request
-+from openviking.server.identity import Role
-+from openviking.service.commit_receipts import runtime as receipt_runtime
-+from openviking.service.receipt_protocol import ReceiptConflict, request_key as receipt_key
-+from openviking.service.task_tracker import get_task_tracker
-+
-+
-+def _receipt_owner(request, ctx, session_id, scope):
-+    if ctx.role != Role.ROOT:
-+        raise HTTPException(403, "receipt interface requires backend owner")
-+    if (not isinstance(scope, dict)
-+            or set(scope) != {"account","user_id","actor_peer","session_id"}
-+            or not all(isinstance(v, str) and
-+                       (0 <= len(v) <= 256 if k == "actor_peer" else 0 < len(v) <= 256)
-+                       for k, v in scope.items())
-+            or scope.get("session_id") != session_id
-+            or scope.get("actor_peer") != request.headers.get("X-OpenViking-Actor-Peer", "")):
-+        raise HTTPException(409, "receipt scope mismatch")
-+    mode=getattr(request.app.state.config,"auth_mode",None)
-+    if mode=="trusted":
-+        if scope["account"]!=ctx.account_id or scope["user_id"]!=ctx.user.user_id:
-+            raise HTTPException(409,"receipt tenant mismatch")
-+    elif mode!="api_key":
-+        raise HTTPException(403,"receipt owner authentication mode unavailable")
-+    # Native api_key mode deliberately strips tenant assertion headers and pins
-+    # ROOT to its own identity. This ADMIN operation explicitly scopes the
-+    # verified backend owner to the immutable request tenant, without relaxing
-+    # ordinary tenant API authentication or accepting the nomination token.
-+    from dataclasses import replace
-+    from openviking_cli.session.user_id import UserIdentifier
-+    return replace(ctx,user=UserIdentifier(scope["account"],scope["user_id"]),actor_peer_id=None)
-+
-+
-+@receipt_router.post("/{session_id}/{request_key}")
-+async def commit_with_receipt(request: Request, session_id: str, request_key: str,
-+                              envelope: Dict[str, Any] = Body(...),
-+                              _ctx: RequestContext = Depends(get_session_request_context)):
-+    owner = receipt_runtime()
-+    if owner is None: raise HTTPException(503, "receipt protocol disabled")
-+    scope = envelope.get("scope", {})
-+    _ctx=_receipt_owner(request,_ctx,session_id,scope)
-+    try:
-+        generation = envelope["generation"]
-+        if isinstance(generation,bool): raise ValueError("invalid generation")
-+        body = envelope["body"]
-+        parsed = CommitRequest.model_validate(body)
-+        service = get_service()
-+        existing = await service.sessions.get(session_id, _ctx, auto_create=False)
-+        if existing.user != _ctx.user:
-+            raise HTTPException(409, "receipt session owner mismatch")
-+        async def commit():
-+            response = await commit_session(session_id, parsed, _ctx)
-+            return response["result"]
-+        row = await owner.submit(request_key,scope,generation,body,envelope["body_digest"],commit)
-+        return {"status":"ok","result":row}
-+    except ReceiptConflict as exc:
-+        raise HTTPException(409, {"code":"receipt_conflict","message":str(exc)}) from exc
-+    except (ValueError,KeyError,TypeError) as exc:
-+        raise HTTPException(400, "invalid receipt envelope") from exc
-+
-+
-+@receipt_router.get("/binding/{session_id}")
-+async def get_commit_binding(request: Request, session_id: str,
-+                             _ctx: RequestContext = Depends(get_session_request_context)):
-+    """Read-only authoritative future scope; never creates a session or receipt.
-+
-+    API-key ROOT has no tenant identity. Its service owner must be pinned in
-+    server configuration, not nominated by external assertion headers. Internal
-+    gate worker claim checks may pass explicit stored tenant headers as ROOT to
-+    verify session ownership without requiring a global ROOT default pin.
-+    """
-+    import os, json
-+    from dataclasses import replace
-+    from openviking_cli.session.user_id import UserIdentifier
-+    if _ctx.role == Role.ROOT:
-+        mode=getattr(request.app.state.config,"auth_mode",None)
-+        if mode == "api_key":
-+            hdr_account = request.headers.get("X-OpenViking-Account")
-+            hdr_user = request.headers.get("X-OpenViking-User")
-+            if hdr_account is not None or hdr_user is not None:
-+                if not all(isinstance(v, str) and 0 < len(v) <= 256 and v == v.strip() for v in (hdr_account, hdr_user)):
-+                    raise HTTPException(409, "invalid receipt tenant scope")
-+                _ctx=replace(_ctx,user=UserIdentifier(hdr_account,hdr_user),actor_peer_id=None)
-+            else:
-+                try:
-+                    owner=json.loads(os.environ["OPENVIKING_GATE_ROOT_OWNER"])
-+                    if not isinstance(owner,list) or len(owner)!=2 or not all(isinstance(v,str) and v and v==v.strip() for v in owner):
-+                        raise ValueError("invalid pinned owner")
-+                    _ctx=replace(_ctx,user=UserIdentifier(*owner),actor_peer_id=None)
-+                except (KeyError,ValueError,TypeError):
-+                    raise HTTPException(503,"ROOT gate owner not configured") from None
-+        elif mode != "trusted":
-+            raise HTTPException(403,"authenticated gate binding required")
-+    service=get_service()
-+    session=await service.sessions.get(session_id,_ctx,auto_create=False)
-+    if session.user != _ctx.user:
-+        raise HTTPException(409,"session owner mismatch")
-+    return {"status":"ok","result":{"protocol":"gate-owner-binding-v1",
-+        "account":_ctx.account_id,"user_id":_ctx.user.user_id,"session_id":session_id}}
-+
-+
-+@receipt_router.get("/{session_id}/{request_key}")
-+async def get_commit_receipt(request: Request, session_id: str, request_key: str,
-+                             recover: bool = Query(False),
-+                             _ctx: RequestContext = Depends(get_session_request_context)):
-+    owner = receipt_runtime()
-+    if owner is None: raise HTTPException(503, "receipt protocol disabled")
-+    row = owner.ledger.read(request_key)
-+    if row is None: raise HTTPException(404, "receipt unavailable")
-+    import json
-+    scope = json.loads(row["scope_json"])
-+    _ctx=_receipt_owner(request,_ctx,session_id,scope)
-+    service = get_service()
-+    session = await service.sessions.open(session_id,_ctx)
-+    row = await owner.reconcile(request_key,session,get_task_tracker(),allow_recovery=recover)
-+    return {"status":"ok","result":row}
---- a/openviking/session/session.py
-+++ b/openviking/session/session.py
-@@ -1651,8 +1651,14 @@
-             )
-             original_messages = list(self._messages)
-             task_id = str(uuid4())
-+            from openviking.service.commit_receipts import current_operation
-+            receipt_operation = current_operation.get()
-+            if receipt_operation:
-+                receipt_operation[0].bind(receipt_operation[1], task_id, archive_uri)
-             queue_msg = SessionCommitMsg(
-                 task_id=task_id,
-+                receipt_request_key=receipt_operation[1] if receipt_operation else "",
-+                _task_work_id=(receipt_operation[1] + ":phase2") if receipt_operation else "",
-                 session_id=self.session_id,
-                 session_uri=self._session_uri,
-                 archive_uri=archive_uri,
-@@ -1908,6 +1914,10 @@
-         )
- 
-     async def resume_queued_commit(self, msg: "SessionCommitMsg") -> bool:
-+        from openviking.service.commit_receipts import resume_fenced
-+        return await resume_fenced(self, msg, lambda: self._resume_queued_commit(msg))
-+
-+    async def _resume_queued_commit(self, msg: "SessionCommitMsg") -> bool:
-         """Run one durable Phase 2 job from its archived messages."""
-         from openviking.service.task_tracker import get_task_tracker
- 
---- a/openviking/storage/queuefs/session_commit_msg.py
-+++ b/openviking/storage/queuefs/session_commit_msg.py
-@@ -25,6 +25,7 @@
-     # Version 1 snapshots explicitly encode WM. Version 0 (before default-off)
-     # omitted true; only queued work, never saved user intent, inherits that value.
-     memory_policy_version: int = 1
-+    receipt_request_key: str = ""
- 
-     def to_dict(self) -> Dict[str, Any]:
-         return asdict(self)
---- /dev/null
-+++ b/gate/admission_hold.py
+diff -ruN a/gate/admission_hold.py b/gate/admission_hold.py
+--- a/gate/admission_hold.py	1969-12-31 16:00:00.000000000 -0800
++++ b/gate/admission_hold.py	2026-11-02 14:43:47.290567769 -0800
 @@ -0,0 +1,210 @@
 +"""Durable default-closed publication hold and owner-only rejection transaction.
 +
@@ -387,8 +212,9 @@
 +        conn.execute('INSERT INTO rejection_repairs VALUES(?,?,?,?,?,?,?,?)',(audit_key,owner,evidence_digest,canonical(dict(intent)),'{}',canonical(after_i),'{}',time.time()))
 +        return 'rejected'
 +
---- a/gate/openviking_commit_gate.py
-+++ b/gate/openviking_commit_gate.py
+diff -ruN a/gate/openviking_commit_gate.py b/gate/openviking_commit_gate.py
+--- a/gate/openviking_commit_gate.py	2026-11-02 14:43:47.293373589 -0800
++++ b/gate/openviking_commit_gate.py	2026-11-02 14:43:47.332180558 -0800
 @@ -36,6 +36,8 @@
  from shared_work import validator as capture_preflight, SourceAuthorityUnavailable, SourceEventConflict, DisabledGraphitiAdapter, SharedWorkQueue
  
@@ -462,7 +288,7 @@
      def _process(self, row: sqlite3.Row) -> None:
          if self.cfg.receipts_enabled:
              self._process_receipted(row)
-@@ -1346,10 +1359,24 @@
+@@ -1346,10 +1359,29 @@
                  return
              self.db.retry(current or row, str(exc), self.cfg)
  
@@ -473,11 +299,16 @@
 +            session=urllib.parse.quote(str(row["session_id"]),safe="")
 +            url=f"http://{self.cfg.backend_host}:{self.cfg.backend_port}/api/v1/admin/commit_receipts/binding/{session}"
 +            status,payload=json_request("GET",url,headers=self._auth_headers(row),timeout=self.cfg.request_timeout_seconds)
-+            result=payload.get("result",{})
-+            return (status==200 and result.get("protocol")=="gate-owner-binding-v1"
-+                and all(result.get(k)==row[k] for k in ("account","user_id","session_id")))
 +        except Exception:
-+            return False
++            # Missing owner reply is not proof of an invalid owner.
++            return None
++        if status!=200 or not isinstance(payload,dict):
++            return None
++        result=payload.get("result")
++        if not isinstance(result,dict) or result.get("protocol")!="gate-owner-binding-v1":
++            return None
++        # A valid authoritative reply with incorrect scope is a real mismatch.
++        return all(result.get(k)==row[k] for k in ("account","user_id","session_id"))
 +
      def _receipt_url(self, row, attempt):
          session = urllib.parse.quote(str(row["session_id"]),safe="")
@@ -487,7 +318,7 @@
      def _receipt_recovery_admitted(self, row):
          # The backend's per-request fence does not serialize different keys.
          # Another unproven/queued task can exist while metrics report idle.
-@@ -1385,6 +1412,7 @@
+@@ -1385,6 +1417,7 @@
              self._recovery_quiet_since=None
              return False
  
@@ -495,7 +326,7 @@
      def _receipt_observation(self, row, payload=None, *, allow_recovery=False):
          attempt = self.db.attempt(row)
          if attempt is None: return False  # Historical unknowns have no invented key.
-@@ -1411,6 +1439,7 @@
+@@ -1411,6 +1444,7 @@
              return False
          return False
  
@@ -503,17 +334,23 @@
      def _process_receipted(self, row):
          attempt=self.db.attempt(row)
          if attempt is None:
-@@ -1419,6 +1448,9 @@
+@@ -1419,6 +1453,15 @@
          try:
              headers=self._auth_headers(row)
              if not attempt["submitted"]:
-+                if not self._verified_claim_binding(row):
-+                    self.db.dead_letter(row,"pre-submission authenticated binding unavailable")
++                binding = self._verified_claim_binding(row)
++                if binding is False:
++                    self.db.dead_letter(row,"pre-submission authenticated owner mismatch")
++                    return
++                if binding is None:
++                    # Receipt submission has NOT started. Requeue the same
++                    # generation/identity under the existing bounded backoff.
++                    self.db.retry(row,"pre-submission owner binding temporarily unavailable",self.cfg)
 +                    return
                  envelope={"scope":{k:str(row[k]) for k in ("account","user_id","actor_peer","session_id")},
                      "generation":attempt["generation"],"body":json.loads(attempt["body_json"]),"body_digest":attempt["body_digest"]}
                  with self.db.connect() as conn:
-@@ -1597,6 +1629,28 @@
+@@ -1597,6 +1640,28 @@
              "actor_peer": self.headers.get("X-OpenViking-Actor-Peer", "").strip(),
          }
  
@@ -542,7 +379,7 @@
      def _capture_credential_supplied(self) -> bool:
          token = os.environ.get("GRAPHITI_CAPTURE_TOKEN", "")
          return bool(token) and hmac.compare_digest(self.headers.get("Authorization", ""), f"Bearer {token}")
-@@ -1639,7 +1693,7 @@
+@@ -1639,7 +1704,7 @@
                  raise ValueError("keep_recent_count must be between 0 and 10000")
              reason = self.headers.get("X-OpenViking-Commit-Reason", "client")[:120]
              queued = self.server.db.enqueue(
@@ -551,7 +388,7 @@
              )
              self._json(
                  200,
-@@ -1663,6 +1717,24 @@
+@@ -1663,6 +1728,25 @@
              self._json(503, {"status": "error", "error": {"message": str(exc)}})
  
      def _proxy(self) -> None:
@@ -559,7 +396,8 @@
 +        path = urllib.parse.urlsplit(self.path)
 +        norm_path = posixpath.normpath(urllib.parse.unquote(path.path))
 +        is_receipt = norm_path.startswith("/api/v1/admin/commit_receipts/")
-+        is_binding = norm_path.startswith("/api/v1/admin/commit_receipts/binding/")
++        is_binding = (self.command == "GET" and
++            re.fullmatch(r"/api/v1/admin/commit_receipts/binding/[^/]+", norm_path) is not None)
 +        # Every receipt endpoint /{session}/{key} can trigger backend reconciliation
 +        # (even on ordinary GET with recover=false, transitioning preparing->accepted or completed->sealed).
 +        # Only pure owner binding lookup (/binding/{session}) is truly read-only and unfenced.
@@ -576,8 +414,9 @@
          if self._capture_credential_supplied():
              self._json(401, {"status": "error", "error": {"message": "Capture credential has no proxy authority"}})
              return
---- a/gate/shared_work.py
-+++ b/gate/shared_work.py
+diff -ruN a/gate/shared_work.py b/gate/shared_work.py
+--- a/gate/shared_work.py	2026-11-02 14:43:47.293573544 -0800
++++ b/gate/shared_work.py	2026-11-02 14:43:47.290947387 -0800
 @@ -274,6 +274,10 @@
      def claim(self, key: str, lease: str):
          with self.legacy_db.connect() as conn:
@@ -589,3 +428,183 @@
              updated = conn.execute("""UPDATE memory_work SET status='admitted', attempt_generation=attempt_generation+1,
                  lease_identity=?, updated_at=? WHERE work_key=? AND status='queued'""", (lease, time.time(), key))
              if updated.rowcount != 1:
+diff -ruN a/openviking/server/app.py b/openviking/server/app.py
+--- a/openviking/server/app.py	2026-11-02 14:43:47.292522641 -0800
++++ b/openviking/server/app.py	2026-11-02 14:43:47.289299571 -0800
+@@ -691,6 +691,8 @@
+     app.include_router(privacy_configs_router)
+     app.include_router(skills_router)
+     app.include_router(sessions_router)
++    from openviking.server.routers.sessions import receipt_router
++    app.include_router(receipt_router)
+     app.include_router(snapshot_router)
+     app.include_router(stats_router)
+     app.include_router(pack_router)
+diff -ruN a/openviking/server/routers/sessions.py b/openviking/server/routers/sessions.py
+--- a/openviking/server/routers/sessions.py	2026-11-02 14:43:47.292659624 -0800
++++ b/openviking/server/routers/sessions.py	2026-11-02 14:43:47.289711740 -0800
+@@ -828,3 +828,124 @@
+         fn=_batch_add,
+     )
+     return Response(status="ok", result=execution.result, telemetry=execution.telemetry)
++
++
++receipt_router = APIRouter(prefix="/api/v1/admin/commit_receipts", tags=["admin"])
++
++# Issue 70: opt-in, backend-owner receipt boundary. Ordinary commit is unchanged.
++from fastapi import Request
++from openviking.server.identity import Role
++from openviking.service.commit_receipts import runtime as receipt_runtime
++from openviking.service.receipt_protocol import ReceiptConflict, request_key as receipt_key
++from openviking.service.task_tracker import get_task_tracker
++
++
++def _receipt_owner(request, ctx, session_id, scope):
++    if ctx.role != Role.ROOT:
++        raise HTTPException(403, "receipt interface requires backend owner")
++    if (not isinstance(scope, dict)
++            or set(scope) != {"account","user_id","actor_peer","session_id"}
++            or not all(isinstance(v, str) and
++                       (0 <= len(v) <= 256 if k == "actor_peer" else 0 < len(v) <= 256)
++                       for k, v in scope.items())
++            or scope.get("session_id") != session_id
++            or scope.get("actor_peer") != request.headers.get("X-OpenViking-Actor-Peer", "")):
++        raise HTTPException(409, "receipt scope mismatch")
++    mode=getattr(request.app.state.config,"auth_mode",None)
++    if mode=="trusted":
++        if scope["account"]!=ctx.account_id or scope["user_id"]!=ctx.user.user_id:
++            raise HTTPException(409,"receipt tenant mismatch")
++    elif mode!="api_key":
++        raise HTTPException(403,"receipt owner authentication mode unavailable")
++    # Native api_key mode deliberately strips tenant assertion headers and pins
++    # ROOT to its own identity. This ADMIN operation explicitly scopes the
++    # verified backend owner to the immutable request tenant, without relaxing
++    # ordinary tenant API authentication or accepting the nomination token.
++    from dataclasses import replace
++    from openviking_cli.session.user_id import UserIdentifier
++    return replace(ctx,user=UserIdentifier(scope["account"],scope["user_id"]),actor_peer_id=None)
++
++
++@receipt_router.post("/{session_id}/{request_key}")
++async def commit_with_receipt(request: Request, session_id: str, request_key: str,
++                              envelope: Dict[str, Any] = Body(...),
++                              _ctx: RequestContext = Depends(get_session_request_context)):
++    owner = receipt_runtime()
++    if owner is None: raise HTTPException(503, "receipt protocol disabled")
++    scope = envelope.get("scope", {})
++    _ctx=_receipt_owner(request,_ctx,session_id,scope)
++    try:
++        generation = envelope["generation"]
++        if isinstance(generation,bool): raise ValueError("invalid generation")
++        body = envelope["body"]
++        parsed = CommitRequest.model_validate(body)
++        service = get_service()
++        existing = await service.sessions.get(session_id, _ctx, auto_create=False)
++        if existing.user != _ctx.user:
++            raise HTTPException(409, "receipt session owner mismatch")
++        async def commit():
++            response = await commit_session(session_id, parsed, _ctx)
++            return response["result"]
++        row = await owner.submit(request_key,scope,generation,body,envelope["body_digest"],commit)
++        return {"status":"ok","result":row}
++    except ReceiptConflict as exc:
++        raise HTTPException(409, {"code":"receipt_conflict","message":str(exc)}) from exc
++    except (ValueError,KeyError,TypeError) as exc:
++        raise HTTPException(400, "invalid receipt envelope") from exc
++
++
++@receipt_router.get("/binding/{session_id}")
++async def get_commit_binding(request: Request, session_id: str,
++                             _ctx: RequestContext = Depends(get_session_request_context)):
++    """Read-only authoritative future scope; never creates a session or receipt.
++
++    API-key ROOT has no tenant identity. Its service owner must be pinned in
++    server configuration, not nominated by external assertion headers. Internal
++    gate worker claim checks may pass explicit stored tenant headers as ROOT to
++    verify session ownership without requiring a global ROOT default pin.
++    """
++    import os, json
++    from dataclasses import replace
++    from openviking_cli.session.user_id import UserIdentifier
++    if _ctx.role == Role.ROOT:
++        mode=getattr(request.app.state.config,"auth_mode",None)
++        if mode == "api_key":
++            hdr_account = request.headers.get("X-OpenViking-Account")
++            hdr_user = request.headers.get("X-OpenViking-User")
++            if hdr_account is not None or hdr_user is not None:
++                if not all(isinstance(v, str) and 0 < len(v) <= 256 and v == v.strip() for v in (hdr_account, hdr_user)):
++                    raise HTTPException(409, "invalid receipt tenant scope")
++                _ctx=replace(_ctx,user=UserIdentifier(hdr_account,hdr_user),actor_peer_id=None)
++            else:
++                try:
++                    owner=json.loads(os.environ["OPENVIKING_GATE_ROOT_OWNER"])
++                    if not isinstance(owner,list) or len(owner)!=2 or not all(isinstance(v,str) and v and v==v.strip() for v in owner):
++                        raise ValueError("invalid pinned owner")
++                    _ctx=replace(_ctx,user=UserIdentifier(*owner),actor_peer_id=None)
++                except (KeyError,ValueError,TypeError):
++                    raise HTTPException(503,"ROOT gate owner not configured") from None
++        elif mode != "trusted":
++            raise HTTPException(403,"authenticated gate binding required")
++    service=get_service()
++    session=await service.sessions.get(session_id,_ctx,auto_create=False)
++    if session.user != _ctx.user:
++        raise HTTPException(409,"session owner mismatch")
++    return {"status":"ok","result":{"protocol":"gate-owner-binding-v1",
++        "account":_ctx.account_id,"user_id":_ctx.user.user_id,"session_id":session_id}}
++
++
++@receipt_router.get("/{session_id}/{request_key}")
++async def get_commit_receipt(request: Request, session_id: str, request_key: str,
++                             recover: bool = Query(False),
++                             _ctx: RequestContext = Depends(get_session_request_context)):
++    owner = receipt_runtime()
++    if owner is None: raise HTTPException(503, "receipt protocol disabled")
++    row = owner.ledger.read(request_key)
++    if row is None: raise HTTPException(404, "receipt unavailable")
++    import json
++    scope = json.loads(row["scope_json"])
++    _ctx=_receipt_owner(request,_ctx,session_id,scope)
++    service = get_service()
++    session = await service.sessions.open(session_id,_ctx)
++    row = await owner.reconcile(request_key,session,get_task_tracker(),allow_recovery=recover)
++    return {"status":"ok","result":row}
+diff -ruN a/openviking/session/session.py b/openviking/session/session.py
+--- a/openviking/session/session.py	2026-11-02 14:43:47.292895499 -0800
++++ b/openviking/session/session.py	2026-11-02 14:43:47.290117849 -0800
+@@ -1651,8 +1651,14 @@
+             )
+             original_messages = list(self._messages)
+             task_id = str(uuid4())
++            from openviking.service.commit_receipts import current_operation
++            receipt_operation = current_operation.get()
++            if receipt_operation:
++                receipt_operation[0].bind(receipt_operation[1], task_id, archive_uri)
+             queue_msg = SessionCommitMsg(
+                 task_id=task_id,
++                receipt_request_key=receipt_operation[1] if receipt_operation else "",
++                _task_work_id=(receipt_operation[1] + ":phase2") if receipt_operation else "",
+                 session_id=self.session_id,
+                 session_uri=self._session_uri,
+                 archive_uri=archive_uri,
+@@ -1908,6 +1914,10 @@
+         )
+ 
+     async def resume_queued_commit(self, msg: "SessionCommitMsg") -> bool:
++        from openviking.service.commit_receipts import resume_fenced
++        return await resume_fenced(self, msg, lambda: self._resume_queued_commit(msg))
++
++    async def _resume_queued_commit(self, msg: "SessionCommitMsg") -> bool:
+         """Run one durable Phase 2 job from its archived messages."""
+         from openviking.service.task_tracker import get_task_tracker
+ 
+diff -ruN a/openviking/storage/queuefs/session_commit_msg.py b/openviking/storage/queuefs/session_commit_msg.py
+--- a/openviking/storage/queuefs/session_commit_msg.py	2026-11-02 14:43:47.293076543 -0800
++++ b/openviking/storage/queuefs/session_commit_msg.py	2026-11-02 14:43:47.290371375 -0800
+@@ -25,6 +25,7 @@
+     # Version 1 snapshots explicitly encode WM. Version 0 (before default-off)
+     # omitted true; only queued work, never saved user intent, inherits that value.
+     memory_policy_version: int = 1
++    receipt_request_key: str = ""
+ 
+     def to_dict(self) -> Dict[str, Any]:
+         return asdict(self)

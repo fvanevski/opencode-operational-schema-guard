@@ -1,0 +1,57 @@
+{
+  "schema": "issue75-codex-findings-regressions-v1",
+  "result": "PASS",
+  "findings": [
+    {
+      "id": "P1-1",
+      "summary": "Receipt binding POST bypasses admission hold",
+      "status": "RESOLVED_AND_VERIFIED",
+      "test_suite": "test_receipt_hold_fencing.py",
+      "tests_passed": 8,
+      "tests_failed": 0,
+      "critical_assertions": [
+        "test_post_to_binding_prefix_fenced_when_held (POST /api/v1/admin/commit_receipts/binding/key -> 503, 0 backend calls)",
+        "test_encoded_binding_post_fenced_when_held (POST /api/v1/admin/commit_receipts/%62inding/key -> 503, 0 backend calls)",
+        "test_pure_read_only_binding_allowed_when_hold_active (GET /api/v1/admin/commit_receipts/binding/s1 -> 200)"
+      ]
+    },
+    {
+      "id": "P1-2",
+      "summary": "Drain ignores canonical unresolved work in SQLite",
+      "status": "RESOLVED_AND_VERIFIED",
+      "test_suite": "test_post_exit_drain.py",
+      "tests_passed": 9,
+      "tests_failed": 0,
+      "critical_assertions": [
+        "test_canonical_queue_unresolved_blocks_drain (blocked_reconcile in memory_work blocks drain before metrics)",
+        "test_canonical_queue_missing_fails_closed (unreadable DB fails closed)",
+        "test_canonical_queue_no_memory_work_table_is_idle (missing table is idle)",
+        "test_bounded_lock_wait_does_not_bypass_held_lease (flock contention respected)"
+      ]
+    },
+    {
+      "id": "P2-1",
+      "summary": "Temporary binding outage dead-letters claimed work",
+      "status": "RESOLVED_AND_VERIFIED",
+      "test_suites": [
+        "test_claim_binding_retry.py",
+        "TRANSIENT_RETRY_QUALIFICATION.json"
+      ],
+      "tests_passed": 4,
+      "tests_failed": 0,
+      "critical_assertions": [
+        "test_unavailable_binding_retries_without_submission (503, 404, bad shape return None and trigger retry with submitted=0)",
+        "test_transport_timeout_retries_without_submission (timeout returns None and triggers retry with submitted=0)",
+        "test_binding_authoritative_mismatch_is_terminal (genuine mismatch returns False and triggers dead_letter)",
+        "transient_retry_qualification (initial 503 retries, recovery submits once and completes)"
+      ]
+    },
+    {
+      "id": "P2-2",
+      "summary": "Fencing test uses fragile parents[6] traversal",
+      "status": "RESOLVED_AND_VERIFIED",
+      "test_suite": "test_receipt_hold_fencing.py",
+      "status_detail": "Replaced with candidate_gate = pathlib.Path(__file__).resolve().parents[1] / 'host-candidate' / 'gate'; fails closed if candidate missing"
+    }
+  ]
+}
