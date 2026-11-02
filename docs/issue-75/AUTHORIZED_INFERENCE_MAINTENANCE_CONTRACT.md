@@ -1,5 +1,7 @@
 # Issue #75 — authorized inference maintenance-window continuation
 
+**Current preflight blocker:** An earlier Codex commit has no authenticated task UUID and a receipt lookup returned 404. Before starting the maintenance window, follow `docs/issue-75/UNKNOWN_COMMIT_RECONCILIATION_CONTINUATION.md`. This maintenance authorization remains valid, but no clients may be paused or GPU work submitted until the normal installed gate proves safe admission; the previous user approval does not authorize clearing or replaying the unknown commit.
+
 **Governing status:** Active, supersedes the BLOCKED execution disposition in `DIRECT_HARNESS_BLOCKER_ADJUDICATION_20261102.md` **only with respect to temporary competing-client quiescence**. Root-cause evidence and all data protections remain in force.
 
 **Authorization:** The user explicitly approved a bounded maintenance window permitting the local agent to *temporarily quiesce the specifically identified competing inference clients*, subject to preflight verification, rollback and service restoration, while preserving the OpenViking gate and protected data. This authorization does not approve permanent production configuration changes, blanket stopping of unrelated services, security/gate bypass, modifying persisted memories, GitHub writes, or promoting an experimental extractor.
