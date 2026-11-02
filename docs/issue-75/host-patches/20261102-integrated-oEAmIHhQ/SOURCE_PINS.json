@@ -34,15 +34,15 @@
     {
       "path": "gate/admission_hold.py",
       "base_sha256": null,
-      "candidate_sha256": "63548e622288a7f1e7fe58146414e4b087e16dc9e4ad907f081b78ecd132ef3e",
-      "deployed_sha256": "63548e622288a7f1e7fe58146414e4b087e16dc9e4ad907f081b78ecd132ef3e",
+      "candidate_sha256": "97cc0003bb39e9a770cf66d09e2b86fac1101e00915b900cdf55756257c43c1d",
+      "deployed_sha256": "97cc0003bb39e9a770cf66d09e2b86fac1101e00915b900cdf55756257c43c1d",
       "deployed_path": "/home/filip/.local/share/openviking-commit-gate/admission_hold.py"
     },
     {
       "path": "gate/openviking_commit_gate.py",
       "base_sha256": "32017a4e25ba708a6f64e3f32717a09d01620000e77690910973cee6b510e2fe",
-      "candidate_sha256": "7e506e2e5eca249f80f8341b0eb8fd4e480866ab53df57b8ecf19ff202bdc2f2",
-      "deployed_sha256": "7e506e2e5eca249f80f8341b0eb8fd4e480866ab53df57b8ecf19ff202bdc2f2",
+      "candidate_sha256": "bef5696ab19b8e2f9c585eda7a5c61bf82bd6941f18a765e0830428f53c3e75b",
+      "deployed_sha256": "bef5696ab19b8e2f9c585eda7a5c61bf82bd6941f18a765e0830428f53c3e75b",
       "deployed_path": "/home/filip/.local/share/openviking-commit-gate/openviking_commit_gate.py"
     },
     {

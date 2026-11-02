@@ -176,7 +176,7 @@
          return asdict(self)
 --- /dev/null
 +++ b/gate/admission_hold.py
-@@ -0,0 +1,166 @@
+@@ -0,0 +1,210 @@
 +"""Durable default-closed publication hold and owner-only rejection transaction.
 +
 +No network, scheduler or implicit release. Caller must quiesce services and prove
@@ -343,17 +343,61 @@
 +        after_a=dict(attempt);after_a['resolved']=1
 +        conn.execute('INSERT INTO rejection_repairs VALUES(?,?,?,?,?,?,?,?)',(key,owner,evidence_digest,canonical(dict(intent)),canonical(dict(attempt)),canonical(after_i),canonical(after_a),time.time()))
 +        return 'rejected'
++
++
++def retire_untenanted_pending(path, expected_intent, *, owner, evidence_digest):
++    """Full-row CAS retirement of invalid, never-accepted untenanted pending intents under persistent owned hold.
++
++    evidence_digest identifies the verified proof that the intent has blank tenant scope,
++    cannot be accepted by the backend, and has no prior attempt or execution receipt.
++    This function operates atomically in a single SQLite transaction under fence(path, exclusive=True).
++    """
++    if len(evidence_digest)!=64 or any(c not in '0123456789abcdef' for c in evidence_digest):
++        raise ValueError('SHA256 evidence digest required')
++    with fence(path,exclusive=True), closing(sqlite3.connect(path)) as conn, conn:
++        conn.row_factory=sqlite3.Row
++        conn.execute('PRAGMA synchronous=FULL')
++        conn.execute('BEGIN IMMEDIATE')
++        hold=conn.execute('SELECT * FROM recovery_hold WHERE singleton=1').fetchone()
++        if not hold or hold['held']!=1 or hold['owner']!=owner or owner=='bootstrap':
++            raise Held('repair requires owned durable hold')
++        fields=('account','user_id','actor_peer','session_id')
++        intent=conn.execute('SELECT * FROM intents WHERE account=? AND user_id=? AND actor_peer=? AND session_id=?',tuple(expected_intent[k] for k in fields)).fetchone()
++        audit_key=f"untenanted:{expected_intent['session_id']}:gen{expected_intent['requested_generation']}"
++        audit=conn.execute('SELECT * FROM rejection_repairs WHERE request_key=?',(audit_key,)).fetchone()
++        if audit:
++            if (audit['owner']==owner and audit['evidence_digest']==evidence_digest
++                and audit['intent_before']==canonical(expected_intent)
++                and intent and audit['intent_after']==canonical(dict(intent))):
++                return 'already_rejected'
++            raise Held('audit or current row mismatch')
++        if not intent or dict(intent)!=expected_intent:
++            raise Held('exact preimage mismatch')
++        if (intent['state']!='pending' or intent['task_id'] is not None
++            or intent['account']!='' or intent['user_id']!=''
++            or intent['attempts']!=0 or intent['processed_generation']!=0):
++            raise Held('not an unattempted untenanted pending intent')
++        attempts=conn.execute('SELECT count(*) FROM commit_attempts WHERE session_id=?',(intent['session_id'],)).fetchone()[0]
++        if attempts!=0:
++            raise Held('commit attempts exist for session')
++        last_error='untenanted_spool_rejected: owner audited'
++        if conn.execute("UPDATE intents SET state='dead',last_error=? WHERE account=? AND user_id=? AND actor_peer=? AND session_id=?",(last_error,*(intent[k] for k in fields))).rowcount!=1:
++            raise Held('intent count mismatch')
++        after_i=dict(intent);after_i.update(state='dead',last_error=last_error)
++        conn.execute('INSERT INTO rejection_repairs VALUES(?,?,?,?,?,?,?,?)',(audit_key,owner,evidence_digest,canonical(dict(intent)),'{}',canonical(after_i),'{}',time.time()))
++        return 'rejected'
++
 --- a/gate/openviking_commit_gate.py
 +++ b/gate/openviking_commit_gate.py
-@@ -35,6 +35,8 @@
- from receipt_protocol import canonical_digest as request_digest, request_key, gate_decision
+@@ -36,6 +36,8 @@
  from shared_work import validator as capture_preflight, SourceAuthorityUnavailable, SourceEventConflict, DisabledGraphitiAdapter, SharedWorkQueue
  
-+
-+import admission_hold
  
++import admission_hold
++
  LOG = logging.getLogger("openviking-commit-gate")
  COMMIT_RE = re.compile(r"^/api/v1/sessions/([^/]+)/commit$")
+ METRIC_RE = re.compile(
 @@ -302,6 +304,7 @@
                  BEGIN UPDATE commit_attempts SET resolved=1
                  WHERE account=OLD.account AND user_id=OLD.user_id AND actor_peer=OLD.actor_peer
@@ -498,19 +542,24 @@
              )
              self._json(
                  200,
-@@ -1663,6 +1717,19 @@
+@@ -1663,6 +1717,24 @@
              self._json(503, {"status": "error", "error": {"message": str(exc)}})
  
      def _proxy(self) -> None:
-+        path=urllib.parse.urlsplit(self.path)
-+        receipt_path=urllib.parse.unquote(path.path).startswith("/api/v1/admin/commit_receipts/")
-+        recovery=urllib.parse.parse_qs(path.query).get("recover",["false"])[0].lower() not in ("false","0","")
-+        if receipt_path and (self.command=="POST" or recovery):
++        import posixpath
++        path = urllib.parse.urlsplit(self.path)
++        norm_path = posixpath.normpath(urllib.parse.unquote(path.path))
++        is_receipt = norm_path.startswith("/api/v1/admin/commit_receipts/")
++        is_binding = norm_path.startswith("/api/v1/admin/commit_receipts/binding/")
++        # Every receipt endpoint /{session}/{key} can trigger backend reconciliation
++        # (even on ordinary GET with recover=false, transitioning preparing->accepted or completed->sealed).
++        # Only pure owner binding lookup (/binding/{session}) is truly read-only and unfenced.
++        if is_receipt and not is_binding:
 +            try:
 +                with admission_hold.publication(self.server.db.path):
 +                    return self._proxy_unheld()
 +            except admission_hold.Held:
-+                self._json(503,{"status":"error","error":{"message":"durable admission held"}})
++                self._json(503, {"status": "error", "error": {"message": "durable admission held"}})
 +                return
 +        return self._proxy_unheld()
 +

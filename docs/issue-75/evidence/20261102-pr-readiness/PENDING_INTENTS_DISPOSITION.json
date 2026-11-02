@@ -1,0 +1,88 @@
+{
+  "schema": "issue75-pending-intents-disposition-v1",
+  "audit_timestamp": "2026-11-02T19:46:06Z",
+  "hold_state": {
+    "singleton": 1,
+    "held": 0,
+    "revision": 2,
+    "owner": "issue75-integrated-oEAmIHhQ",
+    "reason": "Release hold: untenanted pending intents audited and retired; normal admission restored"
+  },
+  "dispositions": [
+    {
+      "rowid": 1325,
+      "session_id": "cx-01a19a50-40f3-7b03-9d80-a7fb61421b59",
+      "classification": "PROVEN_INVALID_UNTENANTED",
+      "prior_state": "pending",
+      "terminal_state": "dead",
+      "last_error": "untenanted_spool_rejected: owner audited",
+      "evidence_digest": "baf76d8ccff9d7f0d6c753dd11ac573ecc40a07079573183e704aca70fd5983b",
+      "audit_key": "untenanted:cx-01a19a50-40f3-7b03-9d80-a7fb61421b59:gen6",
+      "preimage": {
+        "account": "",
+        "user_id": "",
+        "actor_peer": "filip-cli",
+        "requested_generation": 6,
+        "processed_generation": 0,
+        "commit_body_json": "{\"keep_recent_count\": 10}",
+        "attempts": 0
+      },
+      "rationale": "Historical spool with blank account and user_id. Backend returns 409 conflict (invalid receipt tenant scope). Pre-claim worker binding returns False. Zero attempts or backend receipts ever created. Retired to terminal dead state via exact CAS under owned hold."
+    },
+    {
+      "rowid": 1327,
+      "session_id": "cx-01a19a9f-8933-74d1-b378-9f24d6ebd8a0",
+      "classification": "PROVEN_INVALID_UNTENANTED",
+      "prior_state": "pending",
+      "terminal_state": "dead",
+      "last_error": "untenanted_spool_rejected: owner audited",
+      "evidence_digest": "467acfcbc5c074291bd26ec18605d52bb6bb100aa350d7c764b128c94e2e7308",
+      "audit_key": "untenanted:cx-01a19a9f-8933-74d1-b378-9f24d6ebd8a0:gen9",
+      "preimage": {
+        "account": "",
+        "user_id": "",
+        "actor_peer": "filip-cli",
+        "requested_generation": 9,
+        "processed_generation": 0,
+        "commit_body_json": "{\"keep_recent_count\": 10}",
+        "attempts": 0
+      },
+      "rationale": "Historical spool with blank account and user_id. Backend returns 409 conflict (invalid receipt tenant scope). Pre-claim worker binding returns False. Zero attempts or backend receipts ever created. Retired to terminal dead state via exact CAS under owned hold."
+    },
+    {
+      "rowid": 1326,
+      "session_id": "oc-ses_e65c4e095ffeycUDo0IpP5wLwV__r3_000001",
+      "classification": "LEGITIMATELY_PENDING_LEGITIMATE_OWNER",
+      "prior_state": "pending",
+      "terminal_state": "complete",
+      "last_error": null,
+      "processed_generation": 1,
+      "last_terminal_outcome": "completed",
+      "preimage": {
+        "account": "garion",
+        "user_id": "filip",
+        "actor_peer": "",
+        "requested_generation": 1,
+        "processed_generation": 0,
+        "commit_body_json": "{\"keep_recent_count\": 0}",
+        "attempts": 0
+      },
+      "execution": {
+        "request_key": "8af41115071d701cf33dce7e589e4e9914678f84a28627647e03c1e79abad061",
+        "task_id": "caf5e22d-525d-4b88-bd50-bf2ce262dae4",
+        "receipt_state": "terminal",
+        "outcome": "completed",
+        "release_proven": 1
+      },
+      "rationale": "Legitimate session commit with valid tenant scope (account: garion, user_id: filip). Starved by preceding untenanted intent. Once invalid intents retired, worker claimed Row 1326, verified owner binding, executed backend commit task, and sealed terminal receipt."
+    }
+  ],
+  "queue_summary": {
+    "total_intents": 1327,
+    "pending_intents": 0,
+    "complete_intents": 1303,
+    "dead_intents": 19,
+    "failed_intents": 9,
+    "rejection_repairs_count": 3
+  }
+}

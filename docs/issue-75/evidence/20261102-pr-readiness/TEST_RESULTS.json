@@ -1,0 +1,74 @@
+{
+  "schema": "issue75-test-results-receipt-v1",
+  "executed_suites": [
+    {
+      "suite": "test_graphiti_sanitizer.py",
+      "command": "/workspace/mcp_servers/graphiti/upstream/mcp_server/.venv/bin/python -B docs/issue-75/host-patches/graphiti/tests/test_graphiti_sanitizer.py",
+      "producer_exit_code": 0,
+      "tests_total": 11,
+      "passed": 11,
+      "failed": 0,
+      "duration_seconds": 0.605
+    },
+    {
+      "suite": "test_receipt_hold_fencing.py",
+      "command": "python3 -B docs/issue-75/host-patches/20261102-integrated-oEAmIHhQ/tests/test_receipt_hold_fencing.py",
+      "producer_exit_code": 0,
+      "tests_total": 6,
+      "passed": 6,
+      "failed": 0,
+      "duration_seconds": 4.559
+    },
+    {
+      "suite": "test_untenanted_retirement.py",
+      "command": "python3 -B docs/issue-75/host-patches/20261102-integrated-oEAmIHhQ/tests/test_untenanted_retirement.py",
+      "producer_exit_code": 0,
+      "tests_total": 5,
+      "passed": 5,
+      "failed": 0,
+      "duration_seconds": 0.020
+    },
+    {
+      "suite": "test_recovery.py",
+      "command": "python3 -B docs/issue-75/host-patches/20261102-integrated-oEAmIHhQ/tests/test_recovery.py",
+      "producer_exit_code": 0,
+      "tests_total": 12,
+      "passed": 12,
+      "failed": 0,
+      "duration_seconds": 0.228
+    },
+    {
+      "suite": "test_binding.py",
+      "command": "python3 -B docs/issue-75/host-patches/20261102-integrated-oEAmIHhQ/tests/test_binding.py",
+      "producer_exit_code": 0,
+      "tests_total": 1,
+      "passed": 1,
+      "failed": 0,
+      "duration_seconds": 0.000
+    },
+    {
+      "suite": "test_new_valid_session_commit.py",
+      "command": "python3 -B docs/issue-75/host-patches/20261102-integrated-oEAmIHhQ/tests/test_new_valid_session_commit.py",
+      "producer_exit_code": 0,
+      "tests_total": 1,
+      "passed": 1,
+      "failed": 0,
+      "duration_seconds": 4.696
+    },
+    {
+      "suite": "memory-core.test.mjs",
+      "command": "node --test docs/issue-75/v2-candidate/memory-core.test.mjs",
+      "producer_exit_code": 0,
+      "tests_total": 7,
+      "passed": 7,
+      "failed": 0,
+      "duration_seconds": 0.075
+    }
+  ],
+  "summary": {
+    "all_passed": true,
+    "total_tests": 43,
+    "passed_tests": 43,
+    "failed_tests": 0
+  }
+}

@@ -1,0 +1,23 @@
+# LiteLLM Extraction Configuration for Graphiti / Issue #75
+# Pinned to local Qwen3.8-27B engine (ninfer-serve on port 8001).
+# Key parameters:
+# - preserve_thinking: false in extra_body (ensures thinking tokens are routed without breaking OpenAI schema)
+# - drop_params: false (ensures response_format: {"type": "json_schema"} is passed to backend)
+# - num_retries: 0 (deterministic fail-fast behavior)
+
+general_settings:
+  dangerously_permit_weak_or_unset_master_key: true
+
+model_list:
+  - model_name: chat-extract
+    litellm_params:
+      model: openai/chat
+      api_base: http://127.0.0.1:8001/v1
+      api_key: EMPTY
+      extra_body:
+        preserve_thinking: false
+
+litellm_settings:
+  num_retries: 0
+  drop_params: false
+  request_timeout: 600

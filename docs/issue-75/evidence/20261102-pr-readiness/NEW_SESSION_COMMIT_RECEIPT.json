@@ -1,0 +1,38 @@
+{
+  "schema": "issue75-new-session-commit-receipt-v1",
+  "demonstration_timestamp": "2026-11-02T19:52:24Z",
+  "session": {
+    "session_id": "oc-ses_issue75_valid_1793649139",
+    "account": "garion",
+    "user_id": "filip",
+    "actor_peer": "filip-cli"
+  },
+  "admission": {
+    "gate_endpoint": "http://127.0.0.1:1933/api/v1/sessions/oc-ses_issue75_valid_1793649139/commit",
+    "response_status": 200,
+    "admission_result": {
+      "status": "queued",
+      "session_id": "oc-ses_issue75_valid_1793649139",
+      "broker_generation": 1
+    }
+  },
+  "processing": {
+    "preclaim_binding_verified": true,
+    "backend_submission_url": "http://127.0.0.1:1934/api/v1/admin/commit_receipts/oc-ses_issue75_valid_1793649139/2eb69694aad9258ac7984f9b7d9de9f990b1a46e6c59707dc49fd716fb2da391",
+    "task_id": "93a6017c-7317-49b6-ad1a-b0893109f707"
+  },
+  "readback": {
+    "readback_url": "http://127.0.0.1:1933/api/v1/admin/commit_receipts/oc-ses_issue75_valid_1793649139/2eb69694aad9258ac7984f9b7d9de9f990b1a46e6c59707dc49fd716fb2da391",
+    "http_status": 200,
+    "receipt": {
+      "protocol": "openviking-commit-receipt-v1",
+      "request_key": "2eb69694aad9258ac7984f9b7d9de9f990b1a46e6c59707dc49fd716fb2da391",
+      "scope_json": "{\"account\":\"garion\",\"actor_peer\":\"filip-cli\",\"session_id\":\"oc-ses_issue75_valid_1793649139\",\"user_id\":\"filip\"}",
+      "body_digest": "42af323a6e06f50bcc33a4ba5b5ee754f35a9b209adee7375ad8f1320029e0be",
+      "state": "terminal",
+      "task_id": "93a6017c-7317-49b6-ad1a-b0893109f707",
+      "outcome": "completed",
+      "release_proven": 1
+    }
+  }
+}
