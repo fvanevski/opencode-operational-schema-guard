@@ -1,4 +1,6 @@
-# Issue #75 integrated correction (next Build campaign)
+# HISTORICAL Issue #75 correction handoff (superseded for relevance by RELEVANCE_ADMISSION_REVIEW_20261101.md)
+
+The former 0.70 score-floor candidate is superseded by the centrally staged source-aware selection and query-relative evidence review. For the next host execution, use `docs/issue-75/FINAL_HOST_QUALIFICATION_CONTRACT.md`. Do not treat this document's original threshold or prior command as current source authority.
 
 STATUS: staged and GitHub-readback-verified Central candidate, NOT tested on the live host or deployed. The previous first handoff is superseded by LOCAL_AGENT_CONTRACT_NEXT.md. Prior locally generated /tmp/opencode/issue75-evidence/final-diff.binary remains host-only and its exact bytes are UNVERIFIED centrally.
 

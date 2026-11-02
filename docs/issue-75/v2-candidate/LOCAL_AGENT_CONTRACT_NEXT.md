@@ -1,4 +1,5 @@
 <<< LOCAL_AGENT_CONTRACT_BEGIN >>>
+STATUS=SUPERSEDED_BY_docs/issue-75/FINAL_HOST_QUALIFICATION_CONTRACT.md
 PRIMARY_AGENT=build
 REPO_ID=fvanevski/opencode-operational-schema-guard
 ISSUE_NUMBER=75
