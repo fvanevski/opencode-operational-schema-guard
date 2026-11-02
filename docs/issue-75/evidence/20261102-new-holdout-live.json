@@ -1,0 +1,101 @@
+{
+  "label": "actual Memory.search with pinned Graphiti and independent CPU reranker (holdout)",
+  "group": "g_issue75_test",
+  "source_map": "benchmark-source-map.json",
+  "results": [
+    {
+      "id": "n1_unrelated_cooking",
+      "returned": [],
+      "latency_ms": 24,
+      "context_chars": 0,
+      "timed_out": false
+    },
+    {
+      "id": "n2_absent_db_choice",
+      "returned": [
+        "f1"
+      ],
+      "latency_ms": 39,
+      "context_chars": 295,
+      "timed_out": false
+    },
+    {
+      "id": "n3_direct_f1",
+      "returned": [
+        "f1"
+      ],
+      "latency_ms": 48,
+      "context_chars": 295,
+      "timed_out": false
+    },
+    {
+      "id": "n4_paraphrase_choice_f1",
+      "returned": [
+        "f1"
+      ],
+      "latency_ms": 62,
+      "context_chars": 295,
+      "timed_out": false
+    },
+    {
+      "id": "n5_historical_f3",
+      "returned": [
+        "f1"
+      ],
+      "latency_ms": 50,
+      "context_chars": 295,
+      "timed_out": false
+    },
+    {
+      "id": "n6_causal_f2",
+      "returned": [],
+      "latency_ms": 43,
+      "context_chars": 0,
+      "timed_out": false
+    },
+    {
+      "id": "n7_absent_entity_kafka",
+      "returned": [],
+      "latency_ms": 59,
+      "context_chars": 0,
+      "timed_out": false
+    },
+    {
+      "id": "n8_underspecified",
+      "returned": [],
+      "latency_ms": 53,
+      "context_chars": 0,
+      "timed_out": false
+    },
+    {
+      "id": "n9_unrelated_choice",
+      "returned": [],
+      "latency_ms": 42,
+      "context_chars": 0,
+      "timed_out": false
+    },
+    {
+      "id": "n10_crossgroup_vue",
+      "returned": [],
+      "latency_ms": 45,
+      "context_chars": 0,
+      "timed_out": false
+    },
+    {
+      "id": "n11_direct_f2",
+      "returned": [
+        "f2"
+      ],
+      "latency_ms": 49,
+      "context_chars": 372,
+      "timed_out": false
+    },
+    {
+      "id": "n12_absent_entity_angular",
+      "returned": [],
+      "latency_ms": 52,
+      "context_chars": 0,
+      "timed_out": false
+    }
+  ]
+}

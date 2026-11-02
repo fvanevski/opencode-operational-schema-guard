@@ -1,0 +1,48 @@
+{
+  "label": "actual Memory.search with pinned Graphiti and independent CPU reranker (holdout)",
+  "group": "g_issue75_test",
+  "source_map": "benchmark-source-map.json",
+  "results": [
+    {
+      "id": "h1_paraphrase_f1",
+      "returned": [
+        "f1"
+      ],
+      "latency_ms": 50,
+      "context_chars": 295,
+      "timed_out": false
+    },
+    {
+      "id": "h2_dep_f2",
+      "returned": [
+        "f2"
+      ],
+      "latency_ms": 36,
+      "context_chars": 372,
+      "timed_out": false
+    },
+    {
+      "id": "h3_hist_f3",
+      "returned": [
+        "f3"
+      ],
+      "latency_ms": 44,
+      "context_chars": 319,
+      "timed_out": false
+    },
+    {
+      "id": "h4_irrelevant",
+      "returned": [],
+      "latency_ms": 27,
+      "context_chars": 0,
+      "timed_out": false
+    },
+    {
+      "id": "h5_crossgroup",
+      "returned": [],
+      "latency_ms": 42,
+      "context_chars": 0,
+      "timed_out": false
+    }
+  ]
+}

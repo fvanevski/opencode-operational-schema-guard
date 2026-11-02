@@ -1,0 +1,1371 @@
+{
+  "schema": "ghdev.issue75.reranker-observation.v1",
+  "captured_at": "2026-11-02T01:45:31.951Z",
+  "group": "g_issue75_test",
+  "benchmark_version": 1,
+  "source": "real native Graphiti search_memory_facts + existing loopback reranker",
+  "note": "Raw scores are NOT probabilities and NOT calibrated relevance evidence; fact-ID adjudication is separate.",
+  "holdout": "supplied",
+  "journal_persisted_count": 3,
+  "results": [
+    {
+      "case": "direct",
+      "set": "frozen",
+      "query": "Which library is used for backlog dependency visualization?",
+      "expected_fixture_ids": [
+        "f1"
+      ],
+      "search_ms": 149.672,
+      "rerank_ms": 31.601,
+      "redacted_count": 0,
+      "raw_result_count": 3,
+      "rerank": {
+        "result_count": 3,
+        "error": null
+      },
+      "candidates": [
+        {
+          "fact": "React Flow was chosen to be used for backlog dependency visualization.",
+          "returned_group": "g_issue75_test",
+          "graphiti_episode_ids": [
+            "6d4dd8b3-ee68-405d-9fb9-c5a4bc880b1b",
+            "362f057b-d093-4874-950f-f32cfc9ee69c"
+          ],
+          "matching_local_sources": [
+            {
+              "localId": "a4e1b76c-a01f-4990-a18f-83b5524e8638",
+              "kind": "user_decision",
+              "sourceClass": "user-stated"
+            }
+          ],
+          "lexical": {
+            "count": 3,
+            "score": 0.75
+          },
+          "rerank_score": 0.5975885987281799,
+          "rerank_position": 1
+        },
+        {
+          "fact": "Tkinter was originally used for the backlog visualization and was then replaced by React Flow.",
+          "returned_group": "g_issue75_test",
+          "graphiti_episode_ids": [
+            "896e0fe4-5f48-4a6d-9b48-da558f3fa922"
+          ],
+          "matching_local_sources": [
+            {
+              "localId": "6cf87bac-1506-44cd-a43a-b92c4ab648e4",
+              "kind": "user_decision",
+              "sourceClass": "user-stated"
+            }
+          ],
+          "lexical": {
+            "count": 2,
+            "score": 0.5
+          },
+          "rerank_score": 0.428205281496048,
+          "rerank_position": 2
+        },
+        {
+          "fact": "opencode:issue75-bench-seed:user:c5f310c70274e8a1 states that the archive exporter depends on the quality gate before replacing the original media.",
+          "returned_group": "g_issue75_test",
+          "graphiti_episode_ids": [
+            "95c0c4b4-8527-4f80-a67d-3e52ac6ec801"
+          ],
+          "matching_local_sources": [
+            {
+              "localId": "2b43b66c-5840-4af4-a8f3-cc31cbf38fc9",
+              "kind": "user_decision",
+              "sourceClass": "user-stated"
+            }
+          ],
+          "lexical": {
+            "count": 0,
+            "score": 0
+          },
+          "rerank_score": 0.02223203517496586,
+          "rerank_position": 3
+        }
+      ]
+    },
+    {
+      "case": "paraphrase",
+      "set": "frozen",
+      "query": "What did we settle on for the interactive issue map?",
+      "expected_fixture_ids": [
+        "f1"
+      ],
+      "search_ms": 25.886,
+      "rerank_ms": 12.593,
+      "redacted_count": 0,
+      "raw_result_count": 3,
+      "rerank": {
+        "result_count": 3,
+        "error": null
+      },
+      "candidates": [
+        {
+          "fact": "React Flow was chosen to be used for backlog dependency visualization.",
+          "returned_group": "g_issue75_test",
+          "graphiti_episode_ids": [
+            "6d4dd8b3-ee68-405d-9fb9-c5a4bc880b1b",
+            "362f057b-d093-4874-950f-f32cfc9ee69c"
+          ],
+          "matching_local_sources": [
+            {
+              "localId": "a4e1b76c-a01f-4990-a18f-83b5524e8638",
+              "kind": "user_decision",
+              "sourceClass": "user-stated"
+            }
+          ],
+          "lexical": {
+            "count": 0,
+            "score": 0
+          },
+          "rerank_score": 0.06869181990623474,
+          "rerank_position": 2
+        },
+        {
+          "fact": "Tkinter was originally used for the backlog visualization and was then replaced by React Flow.",
+          "returned_group": "g_issue75_test",
+          "graphiti_episode_ids": [
+            "896e0fe4-5f48-4a6d-9b48-da558f3fa922"
+          ],
+          "matching_local_sources": [
+            {
+              "localId": "6cf87bac-1506-44cd-a43a-b92c4ab648e4",
+              "kind": "user_decision",
+              "sourceClass": "user-stated"
+            }
+          ],
+          "lexical": {
+            "count": 0,
+            "score": 0
+          },
+          "rerank_score": 0.09136182814836502,
+          "rerank_position": 1
+        },
+        {
+          "fact": "opencode:issue75-bench-seed:user:c5f310c70274e8a1 states that the archive exporter depends on the quality gate before replacing the original media.",
+          "returned_group": "g_issue75_test",
+          "graphiti_episode_ids": [
+            "95c0c4b4-8527-4f80-a67d-3e52ac6ec801"
+          ],
+          "matching_local_sources": [
+            {
+              "localId": "2b43b66c-5840-4af4-a8f3-cc31cbf38fc9",
+              "kind": "user_decision",
+              "sourceClass": "user-stated"
+            }
+          ],
+          "lexical": {
+            "count": 0,
+            "score": 0
+          },
+          "rerank_score": 0.020196763798594475,
+          "rerank_position": 3
+        }
+      ]
+    },
+    {
+      "case": "dependency",
+      "set": "frozen",
+      "query": "What prevents an archive export from replacing the source immediately?",
+      "expected_fixture_ids": [
+        "f2"
+      ],
+      "search_ms": 29.126,
+      "rerank_ms": 13.658,
+      "redacted_count": 0,
+      "raw_result_count": 3,
+      "rerank": {
+        "result_count": 3,
+        "error": null
+      },
+      "candidates": [
+        {
+          "fact": "opencode:issue75-bench-seed:user:c5f310c70274e8a1 states that the archive exporter depends on the quality gate before replacing the original media.",
+          "returned_group": "g_issue75_test",
+          "graphiti_episode_ids": [
+            "95c0c4b4-8527-4f80-a67d-3e52ac6ec801"
+          ],
+          "matching_local_sources": [
+            {
+              "localId": "2b43b66c-5840-4af4-a8f3-cc31cbf38fc9",
+              "kind": "user_decision",
+              "sourceClass": "user-stated"
+            }
+          ],
+          "lexical": {
+            "count": 2,
+            "score": 0.3333333333333333
+          },
+          "rerank_score": 0.21164561808109283,
+          "rerank_position": 1
+        },
+        {
+          "fact": "Tkinter was originally used for the backlog visualization and was then replaced by React Flow.",
+          "returned_group": "g_issue75_test",
+          "graphiti_episode_ids": [
+            "896e0fe4-5f48-4a6d-9b48-da558f3fa922"
+          ],
+          "matching_local_sources": [
+            {
+              "localId": "6cf87bac-1506-44cd-a43a-b92c4ab648e4",
+              "kind": "user_decision",
+              "sourceClass": "user-stated"
+            }
+          ],
+          "lexical": {
+            "count": 1,
+            "score": 0.16666666666666666
+          },
+          "rerank_score": 0.045418787747621536,
+          "rerank_position": 2
+        },
+        {
+          "fact": "React Flow was chosen to be used for backlog dependency visualization.",
+          "returned_group": "g_issue75_test",
+          "graphiti_episode_ids": [
+            "6d4dd8b3-ee68-405d-9fb9-c5a4bc880b1b",
+            "362f057b-d093-4874-950f-f32cfc9ee69c"
+          ],
+          "matching_local_sources": [
+            {
+              "localId": "a4e1b76c-a01f-4990-a18f-83b5524e8638",
+              "kind": "user_decision",
+              "sourceClass": "user-stated"
+            }
+          ],
+          "lexical": {
+            "count": 0,
+            "score": 0
+          },
+          "rerank_score": 0.027685707435011864,
+          "rerank_position": 3
+        }
+      ]
+    },
+    {
+      "case": "historical",
+      "set": "frozen",
+      "query": "What did we use before changing the backlog visualization?",
+      "expected_fixture_ids": [
+        "f3"
+      ],
+      "search_ms": 33.906,
+      "rerank_ms": 12.368,
+      "redacted_count": 0,
+      "raw_result_count": 3,
+      "rerank": {
+        "result_count": 3,
+        "error": null
+      },
+      "candidates": [
+        {
+          "fact": "Tkinter was originally used for the backlog visualization and was then replaced by React Flow.",
+          "returned_group": "g_issue75_test",
+          "graphiti_episode_ids": [
+            "896e0fe4-5f48-4a6d-9b48-da558f3fa922"
+          ],
+          "matching_local_sources": [
+            {
+              "localId": "6cf87bac-1506-44cd-a43a-b92c4ab648e4",
+              "kind": "user_decision",
+              "sourceClass": "user-stated"
+            }
+          ],
+          "lexical": {
+            "count": 2,
+            "score": 0.5
+          },
+          "rerank_score": 0.5195587873458862,
+          "rerank_position": 1
+        },
+        {
+          "fact": "React Flow was chosen to be used for backlog dependency visualization.",
+          "returned_group": "g_issue75_test",
+          "graphiti_episode_ids": [
+            "6d4dd8b3-ee68-405d-9fb9-c5a4bc880b1b",
+            "362f057b-d093-4874-950f-f32cfc9ee69c"
+          ],
+          "matching_local_sources": [
+            {
+              "localId": "a4e1b76c-a01f-4990-a18f-83b5524e8638",
+              "kind": "user_decision",
+              "sourceClass": "user-stated"
+            }
+          ],
+          "lexical": {
+            "count": 2,
+            "score": 0.5
+          },
+          "rerank_score": 0.5119112730026245,
+          "rerank_position": 2
+        },
+        {
+          "fact": "opencode:issue75-bench-seed:user:c5f310c70274e8a1 states that the archive exporter depends on the quality gate before replacing the original media.",
+          "returned_group": "g_issue75_test",
+          "graphiti_episode_ids": [
+            "95c0c4b4-8527-4f80-a67d-3e52ac6ec801"
+          ],
+          "matching_local_sources": [
+            {
+              "localId": "2b43b66c-5840-4af4-a8f3-cc31cbf38fc9",
+              "kind": "user_decision",
+              "sourceClass": "user-stated"
+            }
+          ],
+          "lexical": {
+            "count": 1,
+            "score": 0.25
+          },
+          "rerank_score": 0.04037049412727356,
+          "rerank_position": 3
+        }
+      ]
+    },
+    {
+      "case": "multi",
+      "set": "frozen",
+      "query": "How do the exporter and quality gate relate?",
+      "expected_fixture_ids": [
+        "f2"
+      ],
+      "search_ms": 24.631,
+      "rerank_ms": 10.796,
+      "redacted_count": 0,
+      "raw_result_count": 3,
+      "rerank": {
+        "result_count": 3,
+        "error": null
+      },
+      "candidates": [
+        {
+          "fact": "opencode:issue75-bench-seed:user:c5f310c70274e8a1 states that the archive exporter depends on the quality gate before replacing the original media.",
+          "returned_group": "g_issue75_test",
+          "graphiti_episode_ids": [
+            "95c0c4b4-8527-4f80-a67d-3e52ac6ec801"
+          ],
+          "matching_local_sources": [
+            {
+              "localId": "2b43b66c-5840-4af4-a8f3-cc31cbf38fc9",
+              "kind": "user_decision",
+              "sourceClass": "user-stated"
+            }
+          ],
+          "lexical": {
+            "count": 3,
+            "score": 0.75
+          },
+          "rerank_score": 0.25235694646835327,
+          "rerank_position": 1
+        },
+        {
+          "fact": "React Flow was chosen to be used for backlog dependency visualization.",
+          "returned_group": "g_issue75_test",
+          "graphiti_episode_ids": [
+            "6d4dd8b3-ee68-405d-9fb9-c5a4bc880b1b",
+            "362f057b-d093-4874-950f-f32cfc9ee69c"
+          ],
+          "matching_local_sources": [
+            {
+              "localId": "a4e1b76c-a01f-4990-a18f-83b5524e8638",
+              "kind": "user_decision",
+              "sourceClass": "user-stated"
+            }
+          ],
+          "lexical": {
+            "count": 0,
+            "score": 0
+          },
+          "rerank_score": 0.02005654387176037,
+          "rerank_position": 3
+        },
+        {
+          "fact": "Tkinter was originally used for the backlog visualization and was then replaced by React Flow.",
+          "returned_group": "g_issue75_test",
+          "graphiti_episode_ids": [
+            "896e0fe4-5f48-4a6d-9b48-da558f3fa922"
+          ],
+          "matching_local_sources": [
+            {
+              "localId": "6cf87bac-1506-44cd-a43a-b92c4ab648e4",
+              "kind": "user_decision",
+              "sourceClass": "user-stated"
+            }
+          ],
+          "lexical": {
+            "count": 0,
+            "score": 0
+          },
+          "rerank_score": 0.022151008248329163,
+          "rerank_position": 2
+        }
+      ]
+    },
+    {
+      "case": "irrelevant",
+      "set": "frozen",
+      "query": "What is the weather in Tokyo?",
+      "expected_fixture_ids": [],
+      "search_ms": 18.529,
+      "rerank_ms": 8.879,
+      "redacted_count": 0,
+      "raw_result_count": 2,
+      "rerank": {
+        "result_count": 2,
+        "error": null
+      },
+      "candidates": [
+        {
+          "fact": "Tkinter was originally used for the backlog visualization and was then replaced by React Flow.",
+          "returned_group": "g_issue75_test",
+          "graphiti_episode_ids": [
+            "896e0fe4-5f48-4a6d-9b48-da558f3fa922"
+          ],
+          "matching_local_sources": [
+            {
+              "localId": "6cf87bac-1506-44cd-a43a-b92c4ab648e4",
+              "kind": "user_decision",
+              "sourceClass": "user-stated"
+            }
+          ],
+          "lexical": {
+            "count": 0,
+            "score": 0
+          },
+          "rerank_score": 0.020806336775422096,
+          "rerank_position": 1
+        },
+        {
+          "fact": "React Flow was chosen to be used for backlog dependency visualization.",
+          "returned_group": "g_issue75_test",
+          "graphiti_episode_ids": [
+            "6d4dd8b3-ee68-405d-9fb9-c5a4bc880b1b",
+            "362f057b-d093-4874-950f-f32cfc9ee69c"
+          ],
+          "matching_local_sources": [
+            {
+              "localId": "a4e1b76c-a01f-4990-a18f-83b5524e8638",
+              "kind": "user_decision",
+              "sourceClass": "user-stated"
+            }
+          ],
+          "lexical": {
+            "count": 0,
+            "score": 0
+          },
+          "rerank_score": 0.011020730249583721,
+          "rerank_position": 2
+        }
+      ]
+    },
+    {
+      "case": "wrong-group",
+      "set": "frozen",
+      "query": "Does this repo use Vue for the dashboard?",
+      "expected_fixture_ids": [],
+      "search_ms": 27.072,
+      "rerank_ms": 14.311,
+      "redacted_count": 0,
+      "raw_result_count": 3,
+      "rerank": {
+        "result_count": 3,
+        "error": null
+      },
+      "candidates": [
+        {
+          "fact": "React Flow was chosen to be used for backlog dependency visualization.",
+          "returned_group": "g_issue75_test",
+          "graphiti_episode_ids": [
+            "6d4dd8b3-ee68-405d-9fb9-c5a4bc880b1b",
+            "362f057b-d093-4874-950f-f32cfc9ee69c"
+          ],
+          "matching_local_sources": [
+            {
+              "localId": "a4e1b76c-a01f-4990-a18f-83b5524e8638",
+              "kind": "user_decision",
+              "sourceClass": "user-stated"
+            }
+          ],
+          "lexical": {
+            "count": 0,
+            "score": 0
+          },
+          "rerank_score": 0.1016378328204155,
+          "rerank_position": 2
+        },
+        {
+          "fact": "Tkinter was originally used for the backlog visualization and was then replaced by React Flow.",
+          "returned_group": "g_issue75_test",
+          "graphiti_episode_ids": [
+            "896e0fe4-5f48-4a6d-9b48-da558f3fa922"
+          ],
+          "matching_local_sources": [
+            {
+              "localId": "6cf87bac-1506-44cd-a43a-b92c4ab648e4",
+              "kind": "user_decision",
+              "sourceClass": "user-stated"
+            }
+          ],
+          "lexical": {
+            "count": 0,
+            "score": 0
+          },
+          "rerank_score": 0.12901116907596588,
+          "rerank_position": 1
+        },
+        {
+          "fact": "opencode:issue75-bench-seed:user:c5f310c70274e8a1 states that the archive exporter depends on the quality gate before replacing the original media.",
+          "returned_group": "g_issue75_test",
+          "graphiti_episode_ids": [
+            "95c0c4b4-8527-4f80-a67d-3e52ac6ec801"
+          ],
+          "matching_local_sources": [
+            {
+              "localId": "2b43b66c-5840-4af4-a8f3-cc31cbf38fc9",
+              "kind": "user_decision",
+              "sourceClass": "user-stated"
+            }
+          ],
+          "lexical": {
+            "count": 0,
+            "score": 0
+          },
+          "rerank_score": 0.029360977932810783,
+          "rerank_position": 3
+        }
+      ]
+    },
+    {
+      "case": "n1_unrelated_cooking",
+      "set": "holdout",
+      "query": "What is the best pasta sauce to serve with grilled chicken?",
+      "search_ms": 15.356,
+      "rerank_ms": 1.381,
+      "redacted_count": 0,
+      "raw_result_count": 0,
+      "rerank": {
+        "result_count": 0,
+        "error": null
+      },
+      "candidates": []
+    },
+    {
+      "case": "n2_absent_db_choice",
+      "set": "holdout",
+      "query": "Which database did we choose for session storage?",
+      "search_ms": 21.053,
+      "rerank_ms": 12.744,
+      "redacted_count": 0,
+      "raw_result_count": 3,
+      "rerank": {
+        "result_count": 3,
+        "error": null
+      },
+      "candidates": [
+        {
+          "fact": "React Flow was chosen to be used for backlog dependency visualization.",
+          "returned_group": "g_issue75_test",
+          "graphiti_episode_ids": [
+            "6d4dd8b3-ee68-405d-9fb9-c5a4bc880b1b",
+            "362f057b-d093-4874-950f-f32cfc9ee69c"
+          ],
+          "matching_local_sources": [
+            {
+              "localId": "a4e1b76c-a01f-4990-a18f-83b5524e8638",
+              "kind": "user_decision",
+              "sourceClass": "user-stated"
+            }
+          ],
+          "lexical": {
+            "count": 0,
+            "score": 0
+          },
+          "rerank_score": 0.05590043589472771,
+          "rerank_position": 2
+        },
+        {
+          "fact": "Tkinter was originally used for the backlog visualization and was then replaced by React Flow.",
+          "returned_group": "g_issue75_test",
+          "graphiti_episode_ids": [
+            "896e0fe4-5f48-4a6d-9b48-da558f3fa922"
+          ],
+          "matching_local_sources": [
+            {
+              "localId": "6cf87bac-1506-44cd-a43a-b92c4ab648e4",
+              "kind": "user_decision",
+              "sourceClass": "user-stated"
+            }
+          ],
+          "lexical": {
+            "count": 0,
+            "score": 0
+          },
+          "rerank_score": 0.05611933767795563,
+          "rerank_position": 1
+        },
+        {
+          "fact": "opencode:issue75-bench-seed:user:c5f310c70274e8a1 states that the archive exporter depends on the quality gate before replacing the original media.",
+          "returned_group": "g_issue75_test",
+          "graphiti_episode_ids": [
+            "95c0c4b4-8527-4f80-a67d-3e52ac6ec801"
+          ],
+          "matching_local_sources": [
+            {
+              "localId": "2b43b66c-5840-4af4-a8f3-cc31cbf38fc9",
+              "kind": "user_decision",
+              "sourceClass": "user-stated"
+            }
+          ],
+          "lexical": {
+            "count": 0,
+            "score": 0
+          },
+          "rerank_score": 0.02109130471944809,
+          "rerank_position": 3
+        }
+      ]
+    },
+    {
+      "case": "n3_direct_f1",
+      "set": "holdout",
+      "query": "What powers the dependency visualization in the backlog tool?",
+      "search_ms": 28.583,
+      "rerank_ms": 11.677,
+      "redacted_count": 0,
+      "raw_result_count": 3,
+      "rerank": {
+        "result_count": 3,
+        "error": null
+      },
+      "candidates": [
+        {
+          "fact": "React Flow was chosen to be used for backlog dependency visualization.",
+          "returned_group": "g_issue75_test",
+          "graphiti_episode_ids": [
+            "6d4dd8b3-ee68-405d-9fb9-c5a4bc880b1b",
+            "362f057b-d093-4874-950f-f32cfc9ee69c"
+          ],
+          "matching_local_sources": [
+            {
+              "localId": "a4e1b76c-a01f-4990-a18f-83b5524e8638",
+              "kind": "user_decision",
+              "sourceClass": "user-stated"
+            }
+          ],
+          "lexical": {
+            "count": 3,
+            "score": 0.6
+          },
+          "rerank_score": 0.6126680970191956,
+          "rerank_position": 1
+        },
+        {
+          "fact": "Tkinter was originally used for the backlog visualization and was then replaced by React Flow.",
+          "returned_group": "g_issue75_test",
+          "graphiti_episode_ids": [
+            "896e0fe4-5f48-4a6d-9b48-da558f3fa922"
+          ],
+          "matching_local_sources": [
+            {
+              "localId": "6cf87bac-1506-44cd-a43a-b92c4ab648e4",
+              "kind": "user_decision",
+              "sourceClass": "user-stated"
+            }
+          ],
+          "lexical": {
+            "count": 2,
+            "score": 0.4
+          },
+          "rerank_score": 0.3241521716117859,
+          "rerank_position": 2
+        },
+        {
+          "fact": "opencode:issue75-bench-seed:user:c5f310c70274e8a1 states that the archive exporter depends on the quality gate before replacing the original media.",
+          "returned_group": "g_issue75_test",
+          "graphiti_episode_ids": [
+            "95c0c4b4-8527-4f80-a67d-3e52ac6ec801"
+          ],
+          "matching_local_sources": [
+            {
+              "localId": "2b43b66c-5840-4af4-a8f3-cc31cbf38fc9",
+              "kind": "user_decision",
+              "sourceClass": "user-stated"
+            }
+          ],
+          "lexical": {
+            "count": 0,
+            "score": 0
+          },
+          "rerank_score": 0.017375672236084938,
+          "rerank_position": 3
+        }
+      ]
+    },
+    {
+      "case": "n4_paraphrase_choice_f1",
+      "set": "holdout",
+      "query": "What rendering engine did we pick for the dependency map?",
+      "search_ms": 29.906,
+      "rerank_ms": 11.386,
+      "redacted_count": 0,
+      "raw_result_count": 3,
+      "rerank": {
+        "result_count": 3,
+        "error": null
+      },
+      "candidates": [
+        {
+          "fact": "React Flow was chosen to be used for backlog dependency visualization.",
+          "returned_group": "g_issue75_test",
+          "graphiti_episode_ids": [
+            "6d4dd8b3-ee68-405d-9fb9-c5a4bc880b1b",
+            "362f057b-d093-4874-950f-f32cfc9ee69c"
+          ],
+          "matching_local_sources": [
+            {
+              "localId": "a4e1b76c-a01f-4990-a18f-83b5524e8638",
+              "kind": "user_decision",
+              "sourceClass": "user-stated"
+            }
+          ],
+          "lexical": {
+            "count": 1,
+            "score": 0.2
+          },
+          "rerank_score": 0.41086509823799133,
+          "rerank_position": 1
+        },
+        {
+          "fact": "opencode:issue75-bench-seed:user:c5f310c70274e8a1 states that the archive exporter depends on the quality gate before replacing the original media.",
+          "returned_group": "g_issue75_test",
+          "graphiti_episode_ids": [
+            "95c0c4b4-8527-4f80-a67d-3e52ac6ec801"
+          ],
+          "matching_local_sources": [
+            {
+              "localId": "2b43b66c-5840-4af4-a8f3-cc31cbf38fc9",
+              "kind": "user_decision",
+              "sourceClass": "user-stated"
+            }
+          ],
+          "lexical": {
+            "count": 0,
+            "score": 0
+          },
+          "rerank_score": 0.014595314860343933,
+          "rerank_position": 3
+        },
+        {
+          "fact": "Tkinter was originally used for the backlog visualization and was then replaced by React Flow.",
+          "returned_group": "g_issue75_test",
+          "graphiti_episode_ids": [
+            "896e0fe4-5f48-4a6d-9b48-da558f3fa922"
+          ],
+          "matching_local_sources": [
+            {
+              "localId": "6cf87bac-1506-44cd-a43a-b92c4ab648e4",
+              "kind": "user_decision",
+              "sourceClass": "user-stated"
+            }
+          ],
+          "lexical": {
+            "count": 0,
+            "score": 0
+          },
+          "rerank_score": 0.14524899423122406,
+          "rerank_position": 2
+        }
+      ]
+    },
+    {
+      "case": "n5_historical_f3",
+      "set": "holdout",
+      "query": "Which toolkit was used for the visualization before React Flow?",
+      "search_ms": 29.903,
+      "rerank_ms": 12.978,
+      "redacted_count": 0,
+      "raw_result_count": 3,
+      "rerank": {
+        "result_count": 3,
+        "error": null
+      },
+      "candidates": [
+        {
+          "fact": "React Flow was chosen to be used for backlog dependency visualization.",
+          "returned_group": "g_issue75_test",
+          "graphiti_episode_ids": [
+            "6d4dd8b3-ee68-405d-9fb9-c5a4bc880b1b",
+            "362f057b-d093-4874-950f-f32cfc9ee69c"
+          ],
+          "matching_local_sources": [
+            {
+              "localId": "a4e1b76c-a01f-4990-a18f-83b5524e8638",
+              "kind": "user_decision",
+              "sourceClass": "user-stated"
+            }
+          ],
+          "lexical": {
+            "count": 3,
+            "score": 0.6
+          },
+          "rerank_score": 0.6293780207633972,
+          "rerank_position": 1
+        },
+        {
+          "fact": "Tkinter was originally used for the backlog visualization and was then replaced by React Flow.",
+          "returned_group": "g_issue75_test",
+          "graphiti_episode_ids": [
+            "896e0fe4-5f48-4a6d-9b48-da558f3fa922"
+          ],
+          "matching_local_sources": [
+            {
+              "localId": "6cf87bac-1506-44cd-a43a-b92c4ab648e4",
+              "kind": "user_decision",
+              "sourceClass": "user-stated"
+            }
+          ],
+          "lexical": {
+            "count": 3,
+            "score": 0.6
+          },
+          "rerank_score": 0.5721237063407898,
+          "rerank_position": 2
+        },
+        {
+          "fact": "opencode:issue75-bench-seed:user:c5f310c70274e8a1 states that the archive exporter depends on the quality gate before replacing the original media.",
+          "returned_group": "g_issue75_test",
+          "graphiti_episode_ids": [
+            "95c0c4b4-8527-4f80-a67d-3e52ac6ec801"
+          ],
+          "matching_local_sources": [
+            {
+              "localId": "2b43b66c-5840-4af4-a8f3-cc31cbf38fc9",
+              "kind": "user_decision",
+              "sourceClass": "user-stated"
+            }
+          ],
+          "lexical": {
+            "count": 1,
+            "score": 0.2
+          },
+          "rerank_score": 0.022359192371368408,
+          "rerank_position": 3
+        }
+      ]
+    },
+    {
+      "case": "n6_causal_f2",
+      "set": "holdout",
+      "query": "What must the media replacement wait for in the export pipeline?",
+      "search_ms": 27.264,
+      "rerank_ms": 11.451,
+      "redacted_count": 0,
+      "raw_result_count": 3,
+      "rerank": {
+        "result_count": 3,
+        "error": null
+      },
+      "candidates": [
+        {
+          "fact": "opencode:issue75-bench-seed:user:c5f310c70274e8a1 states that the archive exporter depends on the quality gate before replacing the original media.",
+          "returned_group": "g_issue75_test",
+          "graphiti_episode_ids": [
+            "95c0c4b4-8527-4f80-a67d-3e52ac6ec801"
+          ],
+          "matching_local_sources": [
+            {
+              "localId": "2b43b66c-5840-4af4-a8f3-cc31cbf38fc9",
+              "kind": "user_decision",
+              "sourceClass": "user-stated"
+            }
+          ],
+          "lexical": {
+            "count": 1,
+            "score": 0.16666666666666666
+          },
+          "rerank_score": 0.2765442728996277,
+          "rerank_position": 1
+        },
+        {
+          "fact": "Tkinter was originally used for the backlog visualization and was then replaced by React Flow.",
+          "returned_group": "g_issue75_test",
+          "graphiti_episode_ids": [
+            "896e0fe4-5f48-4a6d-9b48-da558f3fa922"
+          ],
+          "matching_local_sources": [
+            {
+              "localId": "6cf87bac-1506-44cd-a43a-b92c4ab648e4",
+              "kind": "user_decision",
+              "sourceClass": "user-stated"
+            }
+          ],
+          "lexical": {
+            "count": 0,
+            "score": 0
+          },
+          "rerank_score": 0.13376693427562714,
+          "rerank_position": 2
+        },
+        {
+          "fact": "React Flow was chosen to be used for backlog dependency visualization.",
+          "returned_group": "g_issue75_test",
+          "graphiti_episode_ids": [
+            "6d4dd8b3-ee68-405d-9fb9-c5a4bc880b1b",
+            "362f057b-d093-4874-950f-f32cfc9ee69c"
+          ],
+          "matching_local_sources": [
+            {
+              "localId": "a4e1b76c-a01f-4990-a18f-83b5524e8638",
+              "kind": "user_decision",
+              "sourceClass": "user-stated"
+            }
+          ],
+          "lexical": {
+            "count": 0,
+            "score": 0
+          },
+          "rerank_score": 0.08383458852767944,
+          "rerank_position": 3
+        }
+      ]
+    },
+    {
+      "case": "n7_absent_entity_kafka",
+      "set": "holdout",
+      "query": "Did we choose Kafka for event streaming?",
+      "search_ms": 20.543,
+      "rerank_ms": 10.916,
+      "redacted_count": 0,
+      "raw_result_count": 3,
+      "rerank": {
+        "result_count": 3,
+        "error": null
+      },
+      "candidates": [
+        {
+          "fact": "React Flow was chosen to be used for backlog dependency visualization.",
+          "returned_group": "g_issue75_test",
+          "graphiti_episode_ids": [
+            "6d4dd8b3-ee68-405d-9fb9-c5a4bc880b1b",
+            "362f057b-d093-4874-950f-f32cfc9ee69c"
+          ],
+          "matching_local_sources": [
+            {
+              "localId": "a4e1b76c-a01f-4990-a18f-83b5524e8638",
+              "kind": "user_decision",
+              "sourceClass": "user-stated"
+            }
+          ],
+          "lexical": {
+            "count": 0,
+            "score": 0
+          },
+          "rerank_score": 0.1950424313545227,
+          "rerank_position": 1
+        },
+        {
+          "fact": "Tkinter was originally used for the backlog visualization and was then replaced by React Flow.",
+          "returned_group": "g_issue75_test",
+          "graphiti_episode_ids": [
+            "896e0fe4-5f48-4a6d-9b48-da558f3fa922"
+          ],
+          "matching_local_sources": [
+            {
+              "localId": "6cf87bac-1506-44cd-a43a-b92c4ab648e4",
+              "kind": "user_decision",
+              "sourceClass": "user-stated"
+            }
+          ],
+          "lexical": {
+            "count": 0,
+            "score": 0
+          },
+          "rerank_score": 0.14184518158435822,
+          "rerank_position": 2
+        },
+        {
+          "fact": "opencode:issue75-bench-seed:user:c5f310c70274e8a1 states that the archive exporter depends on the quality gate before replacing the original media.",
+          "returned_group": "g_issue75_test",
+          "graphiti_episode_ids": [
+            "95c0c4b4-8527-4f80-a67d-3e52ac6ec801"
+          ],
+          "matching_local_sources": [
+            {
+              "localId": "2b43b66c-5840-4af4-a8f3-cc31cbf38fc9",
+              "kind": "user_decision",
+              "sourceClass": "user-stated"
+            }
+          ],
+          "lexical": {
+            "count": 0,
+            "score": 0
+          },
+          "rerank_score": 0.025537889450788498,
+          "rerank_position": 3
+        }
+      ]
+    },
+    {
+      "case": "n8_underspecified",
+      "set": "holdout",
+      "query": "What did we decide?",
+      "search_ms": 19.743,
+      "rerank_ms": 11.037,
+      "redacted_count": 0,
+      "raw_result_count": 3,
+      "rerank": {
+        "result_count": 3,
+        "error": null
+      },
+      "candidates": [
+        {
+          "fact": "React Flow was chosen to be used for backlog dependency visualization.",
+          "returned_group": "g_issue75_test",
+          "graphiti_episode_ids": [
+            "6d4dd8b3-ee68-405d-9fb9-c5a4bc880b1b",
+            "362f057b-d093-4874-950f-f32cfc9ee69c"
+          ],
+          "matching_local_sources": [
+            {
+              "localId": "a4e1b76c-a01f-4990-a18f-83b5524e8638",
+              "kind": "user_decision",
+              "sourceClass": "user-stated"
+            }
+          ],
+          "lexical": {
+            "count": 0,
+            "score": 0
+          },
+          "rerank_score": 0.08426527678966522,
+          "rerank_position": 1
+        },
+        {
+          "fact": "Tkinter was originally used for the backlog visualization and was then replaced by React Flow.",
+          "returned_group": "g_issue75_test",
+          "graphiti_episode_ids": [
+            "896e0fe4-5f48-4a6d-9b48-da558f3fa922"
+          ],
+          "matching_local_sources": [
+            {
+              "localId": "6cf87bac-1506-44cd-a43a-b92c4ab648e4",
+              "kind": "user_decision",
+              "sourceClass": "user-stated"
+            }
+          ],
+          "lexical": {
+            "count": 0,
+            "score": 0
+          },
+          "rerank_score": 0.04139692336320877,
+          "rerank_position": 2
+        },
+        {
+          "fact": "opencode:issue75-bench-seed:user:c5f310c70274e8a1 states that the archive exporter depends on the quality gate before replacing the original media.",
+          "returned_group": "g_issue75_test",
+          "graphiti_episode_ids": [
+            "95c0c4b4-8527-4f80-a67d-3e52ac6ec801"
+          ],
+          "matching_local_sources": [
+            {
+              "localId": "2b43b66c-5840-4af4-a8f3-cc31cbf38fc9",
+              "kind": "user_decision",
+              "sourceClass": "user-stated"
+            }
+          ],
+          "lexical": {
+            "count": 0,
+            "score": 0
+          },
+          "rerank_score": 0.016067149117588997,
+          "rerank_position": 3
+        }
+      ]
+    },
+    {
+      "case": "n9_unrelated_choice",
+      "set": "holdout",
+      "query": "Did we settle on a lunch menu for the team?",
+      "search_ms": 18.873,
+      "rerank_ms": 7.581,
+      "redacted_count": 0,
+      "raw_result_count": 2,
+      "rerank": {
+        "result_count": 2,
+        "error": null
+      },
+      "candidates": [
+        {
+          "fact": "React Flow was chosen to be used for backlog dependency visualization.",
+          "returned_group": "g_issue75_test",
+          "graphiti_episode_ids": [
+            "6d4dd8b3-ee68-405d-9fb9-c5a4bc880b1b",
+            "362f057b-d093-4874-950f-f32cfc9ee69c"
+          ],
+          "matching_local_sources": [
+            {
+              "localId": "a4e1b76c-a01f-4990-a18f-83b5524e8638",
+              "kind": "user_decision",
+              "sourceClass": "user-stated"
+            }
+          ],
+          "lexical": {
+            "count": 0,
+            "score": 0
+          },
+          "rerank_score": 0.010808221995830536,
+          "rerank_position": 2
+        },
+        {
+          "fact": "Tkinter was originally used for the backlog visualization and was then replaced by React Flow.",
+          "returned_group": "g_issue75_test",
+          "graphiti_episode_ids": [
+            "896e0fe4-5f48-4a6d-9b48-da558f3fa922"
+          ],
+          "matching_local_sources": [
+            {
+              "localId": "6cf87bac-1506-44cd-a43a-b92c4ab648e4",
+              "kind": "user_decision",
+              "sourceClass": "user-stated"
+            }
+          ],
+          "lexical": {
+            "count": 0,
+            "score": 0
+          },
+          "rerank_score": 0.012860260903835297,
+          "rerank_position": 1
+        }
+      ]
+    },
+    {
+      "case": "n10_crossgroup_vue",
+      "set": "holdout",
+      "query": "Is Vue used in the dashboard of this repository?",
+      "search_ms": 26.413,
+      "rerank_ms": 11.515,
+      "redacted_count": 0,
+      "raw_result_count": 3,
+      "rerank": {
+        "result_count": 3,
+        "error": null
+      },
+      "candidates": [
+        {
+          "fact": "Tkinter was originally used for the backlog visualization and was then replaced by React Flow.",
+          "returned_group": "g_issue75_test",
+          "graphiti_episode_ids": [
+            "896e0fe4-5f48-4a6d-9b48-da558f3fa922"
+          ],
+          "matching_local_sources": [
+            {
+              "localId": "6cf87bac-1506-44cd-a43a-b92c4ab648e4",
+              "kind": "user_decision",
+              "sourceClass": "user-stated"
+            }
+          ],
+          "lexical": {
+            "count": 0,
+            "score": 0
+          },
+          "rerank_score": 0.0670718103647232,
+          "rerank_position": 1
+        },
+        {
+          "fact": "React Flow was chosen to be used for backlog dependency visualization.",
+          "returned_group": "g_issue75_test",
+          "graphiti_episode_ids": [
+            "6d4dd8b3-ee68-405d-9fb9-c5a4bc880b1b",
+            "362f057b-d093-4874-950f-f32cfc9ee69c"
+          ],
+          "matching_local_sources": [
+            {
+              "localId": "a4e1b76c-a01f-4990-a18f-83b5524e8638",
+              "kind": "user_decision",
+              "sourceClass": "user-stated"
+            }
+          ],
+          "lexical": {
+            "count": 0,
+            "score": 0
+          },
+          "rerank_score": 0.04942347854375839,
+          "rerank_position": 2
+        },
+        {
+          "fact": "opencode:issue75-bench-seed:user:c5f310c70274e8a1 states that the archive exporter depends on the quality gate before replacing the original media.",
+          "returned_group": "g_issue75_test",
+          "graphiti_episode_ids": [
+            "95c0c4b4-8527-4f80-a67d-3e52ac6ec801"
+          ],
+          "matching_local_sources": [
+            {
+              "localId": "2b43b66c-5840-4af4-a8f3-cc31cbf38fc9",
+              "kind": "user_decision",
+              "sourceClass": "user-stated"
+            }
+          ],
+          "lexical": {
+            "count": 0,
+            "score": 0
+          },
+          "rerank_score": 0.0236213281750679,
+          "rerank_position": 3
+        }
+      ]
+    },
+    {
+      "case": "n11_direct_f2",
+      "set": "holdout",
+      "query": "Why can't the exporter replace the media right away?",
+      "search_ms": 26.668,
+      "rerank_ms": 11.327,
+      "redacted_count": 0,
+      "raw_result_count": 3,
+      "rerank": {
+        "result_count": 3,
+        "error": null
+      },
+      "candidates": [
+        {
+          "fact": "opencode:issue75-bench-seed:user:c5f310c70274e8a1 states that the archive exporter depends on the quality gate before replacing the original media.",
+          "returned_group": "g_issue75_test",
+          "graphiti_episode_ids": [
+            "95c0c4b4-8527-4f80-a67d-3e52ac6ec801"
+          ],
+          "matching_local_sources": [
+            {
+              "localId": "2b43b66c-5840-4af4-a8f3-cc31cbf38fc9",
+              "kind": "user_decision",
+              "sourceClass": "user-stated"
+            }
+          ],
+          "lexical": {
+            "count": 2,
+            "score": 0.4
+          },
+          "rerank_score": 0.2329075187444687,
+          "rerank_position": 1
+        },
+        {
+          "fact": "Tkinter was originally used for the backlog visualization and was then replaced by React Flow.",
+          "returned_group": "g_issue75_test",
+          "graphiti_episode_ids": [
+            "896e0fe4-5f48-4a6d-9b48-da558f3fa922"
+          ],
+          "matching_local_sources": [
+            {
+              "localId": "6cf87bac-1506-44cd-a43a-b92c4ab648e4",
+              "kind": "user_decision",
+              "sourceClass": "user-stated"
+            }
+          ],
+          "lexical": {
+            "count": 0,
+            "score": 0
+          },
+          "rerank_score": 0.13426877558231354,
+          "rerank_position": 2
+        },
+        {
+          "fact": "React Flow was chosen to be used for backlog dependency visualization.",
+          "returned_group": "g_issue75_test",
+          "graphiti_episode_ids": [
+            "6d4dd8b3-ee68-405d-9fb9-c5a4bc880b1b",
+            "362f057b-d093-4874-950f-f32cfc9ee69c"
+          ],
+          "matching_local_sources": [
+            {
+              "localId": "a4e1b76c-a01f-4990-a18f-83b5524e8638",
+              "kind": "user_decision",
+              "sourceClass": "user-stated"
+            }
+          ],
+          "lexical": {
+            "count": 0,
+            "score": 0
+          },
+          "rerank_score": 0.07523145526647568,
+          "rerank_position": 3
+        }
+      ]
+    },
+    {
+      "case": "n12_absent_entity_angular",
+      "set": "holdout",
+      "query": "Did the other repository's dashboard originally use Angular?",
+      "search_ms": 30.978,
+      "rerank_ms": 11.102,
+      "redacted_count": 0,
+      "raw_result_count": 3,
+      "rerank": {
+        "result_count": 3,
+        "error": null
+      },
+      "candidates": [
+        {
+          "fact": "Tkinter was originally used for the backlog visualization and was then replaced by React Flow.",
+          "returned_group": "g_issue75_test",
+          "graphiti_episode_ids": [
+            "896e0fe4-5f48-4a6d-9b48-da558f3fa922"
+          ],
+          "matching_local_sources": [
+            {
+              "localId": "6cf87bac-1506-44cd-a43a-b92c4ab648e4",
+              "kind": "user_decision",
+              "sourceClass": "user-stated"
+            }
+          ],
+          "lexical": {
+            "count": 1,
+            "score": 0.2
+          },
+          "rerank_score": 0.22080741822719574,
+          "rerank_position": 1
+        },
+        {
+          "fact": "React Flow was chosen to be used for backlog dependency visualization.",
+          "returned_group": "g_issue75_test",
+          "graphiti_episode_ids": [
+            "6d4dd8b3-ee68-405d-9fb9-c5a4bc880b1b",
+            "362f057b-d093-4874-950f-f32cfc9ee69c"
+          ],
+          "matching_local_sources": [
+            {
+              "localId": "a4e1b76c-a01f-4990-a18f-83b5524e8638",
+              "kind": "user_decision",
+              "sourceClass": "user-stated"
+            }
+          ],
+          "lexical": {
+            "count": 0,
+            "score": 0
+          },
+          "rerank_score": 0.12342866510152817,
+          "rerank_position": 2
+        },
+        {
+          "fact": "opencode:issue75-bench-seed:user:c5f310c70274e8a1 states that the archive exporter depends on the quality gate before replacing the original media.",
+          "returned_group": "g_issue75_test",
+          "graphiti_episode_ids": [
+            "95c0c4b4-8527-4f80-a67d-3e52ac6ec801"
+          ],
+          "matching_local_sources": [
+            {
+              "localId": "2b43b66c-5840-4af4-a8f3-cc31cbf38fc9",
+              "kind": "user_decision",
+              "sourceClass": "user-stated"
+            }
+          ],
+          "lexical": {
+            "count": 0,
+            "score": 0
+          },
+          "rerank_score": 0.019737543538212776,
+          "rerank_position": 3
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "note": "NEW independent adversarial holdout (2026-11-01 final qualification). Disjoint from the frozen 7 and the 20261101 published holdout. Expectations are grounded in the three g_issue75_test seed facts (f1, f2, f3), NOT in model scores. Mix: novel unrelated topics without named entities, choices about absent systems, direct/paraphrased facts, a real historical transition, a causal-before relationship, absent named entities, underspecified asks, and a cross-group named probe.",
+  "seeds": [
+    { "id": "f1", "group": "g_issue75_test", "text": "We decided to use React Flow for backlog dependency visualization." },
+    { "id": "f2", "group": "g_issue75_test", "text": "The archive exporter depends on the quality gate before replacing the original media." },
+    { "id": "f3", "group": "g_issue75_test", "text": "The backlog visualization originally used Tkinter, then switched to React Flow." }
+  ],
+  "queries": [
+    { "id": "n1_unrelated_cooking", "group": "g_issue75_test", "query": "What is the best pasta sauce to serve with grilled chicken?", "expected": [] },
+    { "id": "n2_absent_db_choice", "group": "g_issue75_test", "query": "Which database did we choose for session storage?", "expected": [] },
+    { "id": "n3_direct_f1", "group": "g_issue75_test", "query": "What powers the dependency visualization in the backlog tool?", "expected": ["f1"] },
+    { "id": "n4_paraphrase_choice_f1", "group": "g_issue75_test", "query": "What rendering engine did we pick for the dependency map?", "expected": ["f1"] },
+    { "id": "n5_historical_f3", "group": "g_issue75_test", "query": "Which toolkit was used for the visualization before React Flow?", "expected": ["f3"] },
+    { "id": "n6_causal_f2", "group": "g_issue75_test", "query": "What must the media replacement wait for in the export pipeline?", "expected": ["f2"] },
+    { "id": "n7_absent_entity_kafka", "group": "g_issue75_test", "query": "Did we choose Kafka for event streaming?", "expected": [] },
+    { "id": "n8_underspecified", "group": "g_issue75_test", "query": "What did we decide?", "expected": [] },
+    { "id": "n9_unrelated_choice", "group": "g_issue75_test", "query": "Did we settle on a lunch menu for the team?", "expected": [] },
+    { "id": "n10_crossgroup_vue", "group": "g_issue75_test", "query": "Is Vue used in the dashboard of this repository?", "expected": [] },
+    { "id": "n11_direct_f2", "group": "g_issue75_test", "query": "Why can't the exporter replace the media right away?", "expected": ["f2"] },
+    { "id": "n12_absent_entity_angular", "group": "g_issue75_test", "query": "Did the other repository's dashboard originally use Angular?", "expected": [] }
+  ]
+}
