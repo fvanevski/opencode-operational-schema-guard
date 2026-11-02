@@ -11,6 +11,7 @@ import plugin, { promptText } from './plugin.mjs';
 // invokes so we can prove the active session performs NO Graphiti add_memory.
 async function startMockMcp() {
   const calls = [];
+  const searchQueries = [];
   const server = createServer((req, res) => {
     let body = '';
     req.on('data', (c) => { body += c; });
@@ -18,6 +19,8 @@ async function startMockMcp() {
       let msg;
       try { msg = JSON.parse(body); } catch { res.writeHead(400); return res.end(); }
       calls.push(msg.method === 'tools/call' ? 'tools/call:' + msg.params.name : msg.method);
+      if (msg.method === 'tools/call' && msg.params.name === 'search_memory_facts')
+        searchQueries.push(msg.params.arguments?.query);
       let result;
       if (msg.method === 'initialize') result = { capabilities: {} };
       else if (msg.method === 'tools/call') {
@@ -31,7 +34,8 @@ async function startMockMcp() {
   });
   await new Promise((r) => server.listen(0, '127.0.0.1', r));
   const port = server.address().port;
-  return { url: `http://127.0.0.1:${port}/mcp`, calls, close: () => new Promise((r) => server.close(r)) };
+  return { url: `http://127.0.0.1:${port}/mcp`, calls, searchQueries,
+    close: () => new Promise((r) => server.close(r)) };
 }
 function makeCtx(options) {
   const hooks = { session: {}, tool: {} };
@@ -90,12 +94,13 @@ test('JSON-encoded V2 prompt wire is decoded for capture and retrieval', async (
   assert.equal(promptText(DECISION), DECISION);
   assert.equal(promptText('"bad-unterminated'), '');
   assert.equal(promptText(JSON.stringify({text:DECISION})), '');
-  await withPlugin({ enabled:true, capture:true, group:'g_issue75_b75' }, async ({ hooks, dir }) => {
+  await withPlugin({ enabled:true, capture:true, group:'g_issue75_b75' }, async ({ hooks, dir, mcp }) => {
     await hooks.session.prompt({ sessionID:'s4', prompt:{ text:JSON.stringify(DECISION) } });
     await hooks.session.context({ sessionID:'s4', system:[] });
     const rows = await new Journal(dir, 'g_issue75_b75').list();
     assert.equal(rows.length, 1);
     assert.equal(rows[0].assertion, DECISION);
+    assert.deepEqual(mcp.searchQueries, [DECISION], 'retrieval uses decoded prompt, not transport JSON');
   });
 });
 test('secrets/private markers are excluded from capture', async () => {
