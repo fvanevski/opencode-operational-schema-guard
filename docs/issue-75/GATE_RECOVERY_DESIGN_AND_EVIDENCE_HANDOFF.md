@@ -1,4 +1,8 @@
-# Issue #75 — offline guarded gate recovery candidate and published evidence
+# Issue #75 — historical offline recovery design handoff (superseded)
+
+**Superseded execution contract:** Current authority is `docs/issue-75/INTEGRATED_HOST_RECOVERY_AND_EXTRACTION_HANDOFF.md`, which incorporates the user's later explicit host-action authorization and published six-file source/runtime drift. Retain this document for audit only; its former offline-only and evidence-only prohibitions are not the current execution scope. Preserve every original evidence artifact and safety invariant.
+
+# Original handoff (historical)
 
 **Status:** PREPARATION/REVIEW ONLY. No live repair, no gate state mutation, no Graphiti inference or maintenance-window entry.
 
