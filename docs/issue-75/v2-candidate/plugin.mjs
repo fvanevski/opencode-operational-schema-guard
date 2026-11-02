@@ -23,6 +23,7 @@ function config(ctx) {
 // Decode only a complete string literal, not arbitrary JSON or model text.
 export function promptText(value) {
   if (typeof value !== 'string') return '';
+  if (value.startsWith('{') || value.startsWith('[')) return '';
   if (!value.startsWith('"')) return value;
   try {
     const parsed = JSON.parse(value);
