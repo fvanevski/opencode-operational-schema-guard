@@ -1,4 +1,8 @@
-# Issue #75 — Graphiti empty-materialization root-cause qualification
+# Issue #75 — prior Graphiti empty-materialization qualification (superseded)
+
+**STATUS: Historical**. Its Build-harness workflow concluded with a separate post-exit attempt: clean relational test events in a disposable group stored episodes but produced no edges in either `json_schema` or `json_object` mode. The governing continuation is `docs/issue-75/DIRECT_CLI_HOST_REMEDIATION_CONTRACT.md`, run by a directly launched native Codex CLI or verified Antigravity CLI agent, with bounded experimental inference exclusion. Preserve the prior work and evidence; do not rerun or replay it.
+
+# Previous contract (preserved for audit)
 
 ## Invocation and authority
 
