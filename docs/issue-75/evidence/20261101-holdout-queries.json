@@ -1,0 +1,16 @@
+{
+  "note": "Holdout: NEW unseen queries over the SAME frozen facts (f1-f3) + irrelevant + cross-group probe. Tests filter generalization, not the frozen 7.",
+  "seeds": [
+    { "id": "f1", "group": "g_issue75_test", "text": "We decided to use React Flow for backlog dependency visualization." },
+    { "id": "f2", "group": "g_issue75_test", "text": "The archive exporter depends on the quality gate before replacing the original media." },
+    { "id": "f3", "group": "g_issue75_test", "text": "The backlog visualization originally used Tkinter, then switched to React Flow." },
+    { "id": "f4", "group": "g_other_repo", "text": "The other repository uses Vue for its dashboard." }
+  ],
+  "queries": [
+    { "id": "h1_paraphrase_f1", "group": "g_issue75_test", "query": "Which tool renders the dependency graph for our backlog?", "expected": ["f1"] },
+    { "id": "h2_dep_f2", "group": "g_issue75_test", "query": "What must complete before the exporter swaps the media?", "expected": ["f2"] },
+    { "id": "h3_hist_f3", "group": "g_issue75_test", "query": "What was the original toolkit for the visualization?", "expected": ["f3"] },
+    { "id": "h4_irrelevant", "group": "g_issue75_test", "query": "What is the capital of France?", "expected": [] },
+    { "id": "h5_crossgroup", "group": "g_issue75_test", "query": "Does this repository use Vue for its dashboard?", "expected": [] }
+  ]
+}

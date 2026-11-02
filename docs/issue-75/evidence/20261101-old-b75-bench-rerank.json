@@ -1,0 +1,78 @@
+{
+  "label": "native+rerank candidate (live g_issue75_test)",
+  "endpoint": "http://127.0.0.1:8766/mcp",
+  "group": "g_issue75_test",
+  "reranker": "http://127.0.0.1:8004/v1/rerank",
+  "results": [
+    {
+      "id": "direct",
+      "returned": [],
+      "latency_ms": 147,
+      "context_chars": 0,
+      "timed_out": false,
+      "error": null,
+      "raw_facts": [],
+      "n_facts_returned": 0
+    },
+    {
+      "id": "paraphrase",
+      "returned": [],
+      "latency_ms": 43,
+      "context_chars": 0,
+      "timed_out": false,
+      "error": null,
+      "raw_facts": [],
+      "n_facts_returned": 0
+    },
+    {
+      "id": "dependency",
+      "returned": [],
+      "latency_ms": 52,
+      "context_chars": 0,
+      "timed_out": false,
+      "error": null,
+      "raw_facts": [],
+      "n_facts_returned": 0
+    },
+    {
+      "id": "historical",
+      "returned": [],
+      "latency_ms": 48,
+      "context_chars": 0,
+      "timed_out": false,
+      "error": null,
+      "raw_facts": [],
+      "n_facts_returned": 0
+    },
+    {
+      "id": "multi",
+      "returned": [],
+      "latency_ms": 39,
+      "context_chars": 0,
+      "timed_out": false,
+      "error": null,
+      "raw_facts": [],
+      "n_facts_returned": 0
+    },
+    {
+      "id": "irrelevant",
+      "returned": [],
+      "latency_ms": 27,
+      "context_chars": 0,
+      "timed_out": false,
+      "error": null,
+      "raw_facts": [],
+      "n_facts_returned": 0
+    },
+    {
+      "id": "wrong-group",
+      "returned": [],
+      "latency_ms": 50,
+      "context_chars": 0,
+      "timed_out": false,
+      "error": null,
+      "raw_facts": [],
+      "n_facts_returned": 0
+    }
+  ]
+}
