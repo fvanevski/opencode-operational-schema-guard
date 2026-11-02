@@ -19,6 +19,16 @@ function config(ctx) {
       path.join(process.env.XDG_STATE_HOME || path.join(os.homedir(), '.local', 'state'), 'ghdev-graphiti'),
   };
 }
+// Installed stock-V2 wire may encode prompt.text as a JSON string literal.
+// Decode only a complete string literal, not arbitrary JSON or model text.
+export function promptText(value) {
+  if (typeof value !== 'string') return '';
+  if (!value.startsWith('"')) return value;
+  try {
+    const parsed = JSON.parse(value);
+    return typeof parsed === 'string' ? parsed : '';
+  } catch { return ''; }
+}
 function removeOwn(parts) {
   for (let i = parts.length - 1; i >= 0; i--) {
     if (parts[i]?.type === 'text' && parts[i].text?.startsWith(OPEN)) parts.splice(i, 1);
@@ -45,8 +55,8 @@ export default {
     try {
       await register(() => ctx.session.hook('prompt', event => {
         if (!event?.sessionID) return;
-        const text = event.prompt?.text;
-        if (typeof text !== 'string') return;
+        const text = promptText(event.prompt?.text);
+        if (!text) return;
         // Only remember after the admitted prompt reaches a model context build.
         if (settings.capture) {
           const candidate = selectUserDecision(text);

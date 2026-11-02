@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { createServer } from 'node:http';
 import { Journal } from './memory-core.mjs';
-import plugin from './plugin.mjs';
+import plugin, { promptText } from './plugin.mjs';
 
 // Minimal mock MCP server: records which tools/call methods the plugin
 // invokes so we can prove the active session performs NO Graphiti add_memory.
@@ -85,6 +85,19 @@ test('active session stages a decision + passing tool result, never calls add_me
   });
 });
 
+test('JSON-encoded V2 prompt wire is decoded for capture and retrieval', async () => {
+  assert.equal(promptText(JSON.stringify(DECISION)), DECISION);
+  assert.equal(promptText(DECISION), DECISION);
+  assert.equal(promptText('"bad-unterminated'), '');
+  assert.equal(promptText(JSON.stringify({text:DECISION})), '');
+  await withPlugin({ enabled:true, capture:true, group:'g_issue75_b75' }, async ({ hooks, dir }) => {
+    await hooks.session.prompt({ sessionID:'s4', prompt:{ text:JSON.stringify(DECISION) } });
+    await hooks.session.context({ sessionID:'s4', system:[] });
+    const rows = await new Journal(dir, 'g_issue75_b75').list();
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].assertion, DECISION);
+  });
+});
 test('secrets/private markers are excluded from capture', async () => {
   await withPlugin({ enabled: true, capture: true, group: 'g_issue75_b75' }, async ({ hooks, dir, mcp }) => {
     await hooks.session.prompt({ sessionID: 's2', prompt: { text: 'I decided to send password=supersecret123 to the log.' } });
