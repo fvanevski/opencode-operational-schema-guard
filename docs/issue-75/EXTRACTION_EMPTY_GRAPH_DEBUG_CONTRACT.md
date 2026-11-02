@@ -6,7 +6,8 @@
 LOCAL_AGENT_PRIMARY=build
 REPO_ID=fvanevski/opencode-operational-schema-guard
 ISSUE_NUMBER=75
-REQUIRED_START_HEAD=00917eab02f4a6a13dfd456796093d835b19d808
+REQUIRED_HEAD_SHA=pinned in the accompanying Central kickoff; verify current refs/heads/issue/75 matches before starting
+HISTORICAL_TESTED_HEAD_SHA=00917eab02f4a6a13dfd456796093d835b19d808
 WORK_SCOPE=one bounded host-runtime Graphiti extraction/materialization diagnosis and repair
 LOCAL_SUBSYSTEM_REMEDIATION=allowed
 SUBSYSTEM_SCOPE=disposable Graphiti MCP worker, its disposable LiteLLM extraction alias/config, installed pinned Graphiti structured-output adapter inspected in read-only mode, private test journal/graph group, scratch probes and candidate tests
@@ -21,8 +22,10 @@ INDEPENDENT_PR_REVIEW=forbidden
 
 ### Accepted input evidence (do not repeat operator readbacks)
 
-Current GitHub issue/75 source HEAD at handoff:
+Last host-qualified implementation source SHA:
 \`00917eab02f4a6a13dfd456796093d835b19d808\`.
+The exact handoff-document commit is a later branch head and is pinned
+separately by the Central kickoff; do not confuse the two.
 Current source and tests at \`docs/issue-75/v2-candidate/\`.
 Issue #75 relevance policy was pragmatically accepted despite 9/12 on an
 independent synthetic holdout; **no reranker campaign** is authorized.
