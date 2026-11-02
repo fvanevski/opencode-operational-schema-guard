@@ -1,4 +1,8 @@
-# Issue #75 — final bounded extraction qualification
+# Issue #75 — historical extraction qualification (superseded)
+
+STATUS: Historical. Its operator-driven phase completed episode storage but **failed** graph materialization and recall for five new records. The governing next step is `docs/issue-75/EXTRACTION_EMPTY_GRAPH_DEBUG_CONTRACT.md`, which delegates root-cause diagnostics and bounded disposable remediation to local Build. Do not replay the five stored episodes or repeat the obsolete post-exit drain.
+
+# Previous contract (preserved for evidence)
 
 START_SOURCE_HEAD: use the full 40-hex issue/75 SHA supplied with the kickoff.
 AGENT: build. REQUIRED CODE: docs/issue-75/v2-candidate/.
