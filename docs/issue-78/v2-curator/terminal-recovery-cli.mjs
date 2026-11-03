@@ -22,6 +22,14 @@ function stopped(unit){
  const value=command('systemctl',['--user','show',unit,'--property=ActiveState','--value']);
  if(!['inactive','failed'].includes(value))
   throw Error('DISPOSABLE_UNIT_NOT_STOPPED:'+unit+':'+value);
+ if(unit.endsWith('.service')){
+  const pid=command('systemctl',['--user','show',unit,'--property=MainPID','--value']);
+  if(pid!=='0')throw Error('DISPOSABLE_SERVICE_MAIN_PID_STILL_PRESENT');
+ }else if(unit.endsWith('.path')){
+  const enabled=command('systemctl',['--user','is-enabled',unit],{allowFailure:true});
+  if(!['disabled','masked'].includes(enabled))
+   throw Error('DISPOSABLE_PATH_REMAINS_ENABLED');
+ }
 }
 export async function cli(args=process.argv.slice(2)){
  const get=k=>{const i=args.indexOf('--'+k);return i<0?'':args[i+1]||'';};

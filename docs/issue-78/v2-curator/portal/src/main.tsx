@@ -14,7 +14,8 @@ type Fact = {assertion:string;kind:string;source_refs:string[];evidence_class:st
   group:string;project:string;workspace:string};observed_at:string;temporal_status:string};
 type Event = {event_id:string;source_refs:string[];evidence_class:string;source_strength:string;kind:string;excerpt:string;observed_at:string};
 type Detail=Item & {group:string;workspace:string;events:Event[];facts:Fact[];audit:{
-  at:string;action:string;outcome:string}[]};
+  at:string;action:string;outcome:string}[];failure_evidence?:{
+  kind:string;identity_binding:string;journal_sha256:string;error_code:string;observed_at:string;operator_attested:boolean}};
 type Preview={nodes:Node[];edges:Edge[];note:string;scope:{group:string;project:string};remote_graph?:{status:string;node_count:number;edge_count:number;linked_edge_count:number;unlinked_edge_count:number}};
 const api=async <T,>(path:string,token:string,init:RequestInit={}):Promise<T>=>{
  const res=await fetch(path,{...init,headers:{'x-review-token':token,...(init.body?{'Content-Type':'application/json'}:{})}});
@@ -182,7 +183,7 @@ function App(){
          <Text size="1" color="gray">Approval records intent for the admitted post-exit worker. It does not call the model or Graphiti from this page.</Text>
          {detail.state==='submission_unknown'&&<Callout.Root color="orange"><Callout.Text>Submission outcome unknown. Do not retry. Await positive Graphiti episode reconciliation.</Callout.Text></Callout.Root>}
          {detail.state==='failed_extraction'&&<Callout.Root color="orange"><Callout.Text>
-          Graphiti processing failure recorded from operator-attested group queue evidence. This does not prove absence of partial graph effects or permit resubmission. Original sources remain preserved.
+          Graphiti processing failure recorded from operator-attested group queue evidence ({detail.failure_evidence?.identity_binding||'unverified binding'}). This does not prove absence of partial graph effects or permit resubmission. Original sources remain preserved. Error: {detail.failure_evidence?.error_code||'unknown'}; observed: {detail.failure_evidence?.observed_at||'unknown'}.
          </Callout.Text></Callout.Root>}
         </div></div></Tabs.Content>
       <Tabs.Content value="graph"><Flex gap="2" align="center" wrap="wrap">

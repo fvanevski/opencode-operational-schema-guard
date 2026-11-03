@@ -55,8 +55,9 @@ async function duplicateState(record,store,graphiti) {
   const listed=await allRecords(store);
   const ours=new Set(record.facts.map(f=>normalizedAssertion(f.assertion)));
   for(const other of listed){
-    if(other.id===record.id||!['persisted','queued','submission_unknown'].includes(other.state))continue;
-    for(const f of other.facts||[])if(ours.has(normalizedAssertion(f.assertion)))return 'LOCAL_REPEATED_ASSERTION';
+    if(other.id===record.id||!['persisted','queued','submission_unknown','failed_extraction'].includes(other.state))continue;
+    for(const f of other.facts||[])if(ours.has(normalizedAssertion(f.assertion)))
+      return other.state==='failed_extraction'?'LOCAL_PRIOR_FAILED_EXTRACTION_NO_REPLAY':'LOCAL_REPEATED_ASSERTION';
   }
   for(const f of record.facts){
     const matches=await graphiti.call('search_memory_facts',{query:f.assertion,

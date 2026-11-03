@@ -32,8 +32,10 @@ if(!group||!['drain','status','list','reconcile-only'].includes(command)||
   }else if(command==='list'){
     const rows=await store.list({limit:100});
     console.log(JSON.stringify({group,total:rows.total,
-      items:rows.items.map(({id,state,decision,reason,revision,remote_episode_uuid,source_event_ids})=>
-        ({id,state,decision,reason,revision,remote_episode_uuid,source_event_ids}))},null,2));
+      items:rows.items.map(({id,state,decision,reason,revision,remote_episode_uuid,source_event_ids,failure_evidence})=>
+        ({id,state,decision,reason,revision,remote_episode_uuid,source_event_ids,
+          failure_code:failure_evidence?.error_code||null,
+          failure_identity_binding:failure_evidence?.identity_binding||null}))},null,2));
   }else if(command==='reconcile-only'){
     // The Python wrapper alone owns the actual EX flock. This subprocess
     // receives admission from that wrapper; it cannot call the model or
