@@ -1,7 +1,7 @@
 /** Issue #80: one-shot Graphiti curator, only under the existing EX/quiet-grace gate. */
 import { CandidateQueue } from '../v2-candidate/queue.mjs';
 import { GraphitiMcp, EXTRACTION_INSTRUCTIONS } from '../../issue-75/v2-candidate/memory-core.mjs';
-import { ReviewStore, selectClusters, validateDecision, normalizedAssertion } from './core.mjs';
+import { ReviewStore, selectClusters, validateDecision, validateModelDecision, normalizedAssertion } from './core.mjs';
 import { curateCluster } from './model.mjs';
 const validUUID=s=>typeof s==='string'&&/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i.test(s);
 const nameOf=r=>'curated-v1:'+r.id;
@@ -136,7 +136,7 @@ export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='loca
     if(Date.now()>deadline-5000)break;
     let response;
     try{const reply=await curate(prior,{endpoint:modelEndpoint,model:modelId,apiKey});
-      response=validateDecision(reply.content,prior);
+      response=validateModelDecision(reply.content,prior);
       stats.model_calls++;stats.model_ms+=reply.duration_ms||0;
     }catch{response={decision:'DEFER',reason:'curator_unavailable_on_reevaluation',facts:[]};}
     const updated=await store.reviseDeferred(prior.id,prior.revision,response);
@@ -168,7 +168,7 @@ export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='loca
     let proposal;
     try{
       const reply=await curate(cluster,{endpoint:modelEndpoint,model:modelId,apiKey});
-      proposal=validateDecision(reply.content,cluster);
+      proposal=validateModelDecision(reply.content,cluster);
       stats.model_calls++;stats.model_ms+=reply.duration_ms||0;
     }catch(e){
       proposal={ok:false,decision:'DEFER',facts:[],
@@ -210,5 +210,6 @@ export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='loca
     stats.persisted+=result.persisted;
   }
   stats.unresolved=result.unresolved;
-  return {...stats,status:result.unresolved?'unresolved':'settled'};
+  return {...stats,status:result.unresolved?'unresolved':
+    stats.deferred?'review_required':'settled'};
 }

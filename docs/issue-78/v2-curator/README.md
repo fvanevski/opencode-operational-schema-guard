@@ -121,6 +121,30 @@ actual browser UI; no GitHub source commit or static mock is a substitute.
   merge/supersession and real graph-edge visualization are explicitly not
   claimed accepted in this first vertical host campaign.
 
+## Post-exit schema recovery
+
+The first admitted disposable model call completed under EX admission but
+produced a proposal rejected as `invalid_fact_fields`; no Graphiti write
+occurred. The old review entry is `deferred` (revision 1), and its three
+original source events remain staged. This is not a Graphiti failure and not
+proof that the model hallucinated content: the model response body was omitted
+by the privacy policy, so the exact incorrect field is **UNVERIFIED**.
+
+`validateModelDecision` now binds **only omitted** immutable scope,
+evidence class and latest supporting observed timestamp from exact native
+source references. Mismatched provided fields, wrong-group refs, ungrounded
+assertions, unsupported dates, private text and mixed source authority still
+fail the existing strict validator. Safe `diagnostic_field` identifies the
+invalid schema field without persisting model output or private content.
+The prompt now supplies exact allowed enumerations and unambiguous SOURCE
+reference syntax. Operator-created approvals continue to require all fields.
+
+A subsequent worker run must use `ReviewStore.change(id, revision,
+'reevaluate', {reason})` (revision checked) to request an **admitted**
+re-evaluation of the same original evidence. Do not restage source events,
+alter the frozen pilot, or bypass admission. `review_required` reports
+nonterminal review work even if the admitted command exits zero.
+
 **Execution handoff:** `LOCAL_AGENT_CONTRACT_FIRST_INTEGRATION.md`.
 **Evidence contract:** `docs/issue-78/REVIEW_EVIDENCE_PACKET.md`.
 **PR:** none in this campaign. Use the same issue/79 branch for the combined

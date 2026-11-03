@@ -5,7 +5,7 @@ import path from 'node:path';
 import os from 'node:os';
 import { fromPrompt, fromTool, fromFinishedTurn } from '../v2-candidate/events.mjs';
 import { CandidateQueue } from '../v2-candidate/queue.mjs';
-import { selectClusters, modelPrompt, validateDecision, ReviewStore } from './core.mjs';
+import { selectClusters, modelPrompt, validateDecision, validateModelDecision, ReviewStore } from './core.mjs';
 import { promoteOne, reconcile, runAdmitted, positiveEpisode } from './worker.mjs';
 import { curateCluster } from './model.mjs';
 import { sourcedEpisodeResolver } from './sourced-recall.mjs';
@@ -66,6 +66,45 @@ test('strict structured validator accepts grounded class and rejects all authori
  assert.equal(validateDecision({decision:'SKIP',reason:'Chatter',facts:[fact(U)]},c).ok,false);
  const weak={...U,source_strength:'session-scoped-fallback'};
  assert.equal(validateDecision(proposal(weak),{...c,events:[weak]}).ok,false);
+});
+test('model field binding uses original authenticated source data, not guessed metadata',()=>{
+ const c=cluster(),f=fact(U),minimal={decision:'EMIT',reason:'Grounded decision',
+   facts:[{assertion:f.assertion,kind:'decision',source_refs:f.source_refs,temporal_status:'observed'}]};
+ const result=validateModelDecision(JSON.stringify(minimal),c);
+ assert.equal(result.ok,true);
+ assert.deepEqual(result.facts[0].scope,f.scope);
+ assert.equal(result.facts[0].observed_at,U.observed_at);
+ assert.equal(result.facts[0].evidence_class,'user-stated');
+ const exact=validateDecision(minimal,c);
+ assert.equal(exact.ok,false);
+ assert.equal(exact.reason,'invalid_fact_fields');
+ assert.equal(exact.diagnostic_field,'evidence_class');
+ for(const altered of [
+   {scope:{...scope,group:'wrong'}},
+   {evidence_class:'verified'},
+   {observed_at:'2000-01-01T00:00:00Z'},
+   {source_refs:['opencode:ses_80:message:fake']}
+ ]){
+   const bad=validateModelDecision({...minimal,facts:[{...minimal.facts[0],...altered}]},c);
+   assert.equal(bad.ok,false,JSON.stringify(altered));
+ }
+ assert.match(modelPrompt(c)[0].content,/LATEST referenced event timestamp/);
+ assert.match(modelPrompt(c)[0].content,/SOURCE strings/);
+});
+test('valid multi-event factual assertion uses latest referenced source observation time',()=>{
+ const c=cluster();
+ const f=fact(U,{source_refs:[U.source_refs[0],T.source_refs[0]]});
+ const supportsDifferentClasses=validateModelDecision({decision:'EMIT',
+   reason:'Needs one source authority',facts:[f]},c);
+ assert.equal(supportsDifferentClasses.ok,false);
+ const newer={...U,source_refs:['opencode:ses_80:message:msg_later'],
+   event_id:'a'.repeat(64),observed_at:'2026-11-03T18:03:00.000Z'};
+ const oneClass={...c,events:[U,newer]};
+ const result=validateModelDecision({decision:'EMIT',reason:'Two related observations',
+   facts:[{assertion:f.assertion,kind:'decision',
+     source_refs:[U.source_refs[0],newer.source_refs[0]],temporal_status:'observed'}]},oneClass);
+ assert.equal(result.ok,true);
+ assert.equal(result.facts[0].observed_at,newer.observed_at);
 });
 test('review store durable create/dedup, safe operator revisions and blocked unverified approval',()=>temp(async root=>{
  const store=new ReviewStore(root,scope.group),c=cluster();

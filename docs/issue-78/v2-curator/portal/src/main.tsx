@@ -105,8 +105,8 @@ function App(){
     </button>)}</div>{visible.length===0&&<Text color="gray">No matching reviews.</Text>}</aside>
    <main className="workspace">{!detail?<Card><Heading size="4">Select an evidence cluster</Heading>
      <Text color="gray">Review source events, inspect proposed facts and record a safe decision. Automated curation continues with this portal closed.</Text></Card>:
-     <><Flex justify="between" align="center"><Box><Heading size="4">{detail.project} / {detail.session_id}</Heading>
-      <Text size="1" color="gray">Cluster {detail.id} · revision {detail.revision}</Text></Box>
+     <><Flex justify="between" align="center" wrap="wrap" gap="2"><Box><Heading size="4">{detail.project} / {detail.session_id}</Heading>
+      <Text size="1" color="gray" style={{ overflowWrap: 'anywhere' }}>Cluster {detail.id} · revision {detail.revision}</Text></Box>
       <Badge>{detail.state}</Badge></Flex><Separator size="4"/>
      <Tabs.Root defaultValue="evidence"><Tabs.List><Tabs.Trigger value="evidence">Evidence and proposal</Tabs.Trigger>
        <Tabs.Trigger value="graph">Graph preview</Tabs.Trigger><Tabs.Trigger value="audit">Decision history</Tabs.Trigger></Tabs.List>

@@ -55,9 +55,16 @@ export function modelPrompt(cluster) {
     'Return ONLY one JSON object (no markdown) with decision, reason, facts.',
     'decision must be SKIP, EMIT, MERGE, SUPERSEDE_PROPOSED or DEFER.',
     'For EMIT supply exactly ONE factual assertion in this integration unit; other decisions can propose 0..3.',
-    'Each fact fields: assertion, kind, source_refs, evidence_class, scope, observed_at, temporal_status.',
-    'A source_refs element must be an exact supplied source handle; do not invent facts or sources.',
-    'Evidence class must equal the actual referenced evidence class; NEVER output verified.',
+    'Required fact fields: assertion (25..450 chars), kind, source_refs, temporal_status.',
+    'Choose kind only from: decision, implementation, test_result, architecture, dependency, procedure, blocker, relationship, observation.',
+    'Choose temporal_status only from: observed, historical, proposed, unknown.',
+    'source_refs must be an array of EXACT supplied evidence SOURCE strings (the source field, NOT event id).',
+    'Never invent a source, fact or authority. All source_refs for one fact must have the same class.',
+    'Do not invent scope, evidence_class, or observed_at. These may be omitted in model output: the validator binds missing values from authenticated source events.',
+    'If you include scope, evidence_class or observed_at, each must match the source metadata exactly. observed_at is the LATEST referenced event timestamp.',
+    'For SKIP or DEFER return facts: []. A plain-text reason (1..300 chars) is required.',
+    'Example JSON SHAPE ONLY, not a suggested claim: {"decision":"EMIT","reason":"source-grounded","facts":[{"assertion":"<25..450-char grounded factual statement>","kind":"observation","source_refs":["<exact source string from evidence>"],"temporal_status":"observed"}]}.',
+    'Do not output literal placeholders from the example. Evidence class is NEVER verified.'
     'If uncertain, private, contradictory, redundant or unsupported choose DEFER.',
     'MERGE/SUPERSEDE_PROPOSED means proposal for operator review, never deletion.',
     'Scope must exactly match the group, project and workspace supplied.',
@@ -78,21 +85,29 @@ export function validateDecision(raw,cluster) {
       value.facts.length>3) throw Error('invalid_model_shape');
     const bySource=new Map(cluster.events.map(e=>[e.source_refs[0],e]));
     const facts=value.facts.map((f)=>{
-      if(!f||typeof f!=='object'||Array.isArray(f)||!validText(f.assertion,450,25)||
-        !KINDS.has(f.kind)||!CLASSES.has(f.evidence_class)||
-        !TEMPORAL.has(f.temporal_status)||!validDate(f.observed_at)||
-        !Array.isArray(f.source_refs)||f.source_refs.length<1||f.source_refs.length>8||
-        new Set(f.source_refs).size!==f.source_refs.length||
-        !f.scope||f.scope.group!==cluster.group||
-        f.scope.project!==cluster.project||f.scope.workspace!==cluster.workspace)
-        throw Error('invalid_fact_fields');
+      if(!f||typeof f!=='object'||Array.isArray(f))throw Error('invalid_fact_fields:object');
+      const fieldChecks=[
+        ['assertion',validText(f.assertion,450,25)],
+        ['kind',KINDS.has(f.kind)],
+        ['evidence_class',CLASSES.has(f.evidence_class)],
+        ['temporal_status',TEMPORAL.has(f.temporal_status)],
+        ['observed_at',validDate(f.observed_at)],
+        ['source_refs',Array.isArray(f.source_refs)&&f.source_refs.length>=1&&
+          f.source_refs.length<=8&&new Set(f.source_refs).size===f.source_refs.length],
+        ['scope',f.scope&&f.scope.group===cluster.group&&
+          f.scope.project===cluster.project&&f.scope.workspace===cluster.workspace]
+      ];
+      const failed=fieldChecks.find(([,ok])=>!ok);
+      if(failed)throw Error('invalid_fact_fields:'+failed[0]);
+      const supporting=[];
       for(const ref of f.source_refs){
         const source=bySource.get(ref);
         if(!source||source.evidence_class!==f.evidence_class||source.source_strength!=='native-id')
           throw Error('unattributed_or_weak_source');
-        if(f.observed_at!==source.observed_at)
-          throw Error('unsupported_observation_time');
+        supporting.push(source);
       }
+      const latest=supporting.map(e=>e.observed_at).sort().at(-1);
+      if(f.observed_at!==latest)throw Error('unsupported_observation_time');
       // Reject obviously unsupported model extrapolation while preserving
       // source-backed paraphrases. This is NOT a claim of factual verification.
       const words=tokens(f.assertion);
@@ -118,8 +133,38 @@ export function validateDecision(raw,cluster) {
       'unsupported_claim_text','emit_without_fact','unexpected_facts',
       'proposal_without_fact','duplicate_facts']);
     const reason=String(e?.message||'');
-    return {ok:false,decision:'DEFER',reason:safeReasons.has(reason)?reason:'invalid_model_response',facts:[]};
+    const match=/^invalid_fact_fields:(object|assertion|kind|evidence_class|temporal_status|observed_at|source_refs|scope)$/.exec(reason);
+    return {ok:false,decision:'DEFER',
+      reason:match?'invalid_fact_fields':safeReasons.has(reason)?reason:'invalid_model_response',
+      diagnostic_field:match?match[1]:null,facts:[]};
   }
+}
+/** Bind only missing source metadata, never replace an incorrect model claim.
+ * The strict validator still controls all authority, scope, source and privacy.
+ * This adapter must NOT be used for operator edits, which require full fields.
+ */
+export function validateModelDecision(raw,cluster) {
+  let proposed;
+  try{proposed=typeof raw==='string'?JSON.parse(raw):raw;}
+  catch{return validateDecision(raw,cluster);}
+  if(!proposed||typeof proposed!=='object'||!Array.isArray(proposed.facts))
+    return validateDecision(proposed,cluster);
+  const bySource=new Map((cluster.events||[]).map(e=>[e.source_refs[0],e]));
+  const facts=proposed.facts.map(f=>{
+    if(!f||typeof f!=='object'||!Array.isArray(f.source_refs)||
+       f.source_refs.length<1||f.source_refs.length>8)return f;
+    const events=f.source_refs.map(ref=>bySource.get(ref));
+    if(events.some(e=>!e))return f;
+    const classes=new Set(events.map(e=>e.evidence_class));
+    if(classes.size!==1)return f;
+    const latest=events.map(e=>e.observed_at).sort().at(-1);
+    return {...f,
+      scope:f.scope===undefined?{
+        group:cluster.group,project:cluster.project,workspace:cluster.workspace}:f.scope,
+      evidence_class:f.evidence_class===undefined?events[0].evidence_class:f.evidence_class,
+      observed_at:f.observed_at===undefined?latest:f.observed_at};
+  });
+  return validateDecision({...proposed,facts},cluster);
 }
 async function atomic(dest,payload){
   const tmp=dest+'.'+randomUUID()+'.tmp';
@@ -177,7 +222,8 @@ export class ReviewStore {
           kind:e.kind,evidence_class:e.evidence_class,source_strength:e.source_strength,
           excerpt:e.excerpt,observed_at:e.observed_at,related_event_ids:e.related_event_ids})),
         source_event_ids:cluster.source_event_ids,state,decision:valid.decision,
-        reason:valid.reason,facts:valid.facts,reevaluate_requested:false,
+        reason:valid.reason,diagnostic_field:valid.diagnostic_field??null,
+        facts:valid.facts,reevaluate_requested:false,
         revision:1,created_at:now,updated_at:now,
         remote_episode_uuid:null,audit:[{at:now,action:'curated',outcome:state}]};
       await atomic(this.filename(cluster.id),record);
@@ -222,6 +268,7 @@ export class ReviewStore {
         checked.decision==='SKIP'?'skipped':'deferred';
       const now=new Date().toISOString();
       const updated={...old,state,decision:checked.decision,reason:checked.reason,
+        diagnostic_field:checked.diagnostic_field??null,
         facts:checked.facts,reevaluate_requested:false,revision:old.revision+1,
         updated_at:now,audit:[...old.audit.slice(-59),{at:now,action:'recurated',outcome:state}]};
       await atomic(this.filename(id),updated);
