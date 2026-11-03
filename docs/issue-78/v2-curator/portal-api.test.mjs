@@ -74,7 +74,10 @@ test('loopback API requires token, exact origin, source-bound review and revisio
   assert.ok(preview.nodes.length>=1);
   assert.equal(preview.nodes.some(n=>n.id==='episode'),false);
  }finally{
-  if(child){child.kill('SIGTERM');await new Promise(resolve=>child.once('exit',resolve));}
+  if(child&&child.exitCode===null){
+    const exited=new Promise(resolve=>child.once('exit',resolve));
+    child.kill('SIGTERM');await exited;
+  }
   await rm(root,{recursive:true,force:true});
  }
 });

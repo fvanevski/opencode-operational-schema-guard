@@ -150,6 +150,55 @@ test('no model or graph work without admitted post-exit lease',()=>temp(async ro
  await assert.rejects(curateCluster(cluster(),{endpoint:'http://127.0.0.1:8001/v1/chat/completions',
    model:'local'}),/ADMISSION_REQUIRED/);
 }));
+test('one admitted model cluster emits exactly one source-linked Graphiti episode',()=>temp(async root=>{
+ process.env.GHDEV_MEMORY_POST_EXIT_LEASE='admitted';
+ try{
+  const q=new CandidateQueue(root,scope.group),store=new ReviewStore(root,scope.group);
+  for(const e of [U,T,A])assert.equal((await q.stage(e)).status,'staged');
+  const id=cluster().id,uuid='87654321-1111-4111-a111-222222222222';
+  let writes=0,submitted=false;
+  const graphiti={call:async (method,args)=>{
+    if(method==='search_memory_facts')return {facts:[]};
+    if(method==='add_memory'){
+      writes++;submitted=true;
+      assert.equal(args.group_id,scope.group);
+      assert.match(args.episode_body,/Source references:/);
+      assert.match(args.name,/curated-v1:/);
+      return {ack:true};
+    }
+    if(method==='get_episodes')return {episodes:submitted?[
+      {uuid,group_id:scope.group,name:'curated-v1:'+id}]:[]};
+    throw Error('unexpected call '+method);
+  }};
+  const result=await runAdmitted({root,group:scope.group,queue:q,store,graphiti,
+    curate:async()=>({content:JSON.stringify(proposal(U)),duration_ms:25}),maxSeconds:20});
+  assert.equal(result.status,'settled');
+  assert.equal(result.persisted,1);
+  assert.equal(writes,1);
+  assert.equal((await store.get(id)).state,'persisted');
+  assert.equal((await store.get(id)).remote_episode_uuid,uuid);
+ }finally{delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;}
+}));
+test('operator-requested re-evaluation is processed by admitted worker',()=>temp(async root=>{
+ process.env.GHDEV_MEMORY_POST_EXIT_LEASE='admitted';
+ try{
+  const store=new ReviewStore(root,scope.group),q=new CandidateQueue(root,scope.group),c=cluster();
+  const initial=await store.create(c,{decision:'DEFER',reason:'Needs review',facts:[]});
+  assert.equal(initial.record.state,'deferred');
+  const requested=await store.change(c.id,1,'reevaluate',{reason:'New context'});
+  assert.equal(requested.reevaluate_requested,true);
+  const graphiti={call:async method=>{
+    if(method==='search_memory_facts')return {facts:[{fact:fact(U).assertion,group_id:scope.group}]};
+    return {episodes:[]};
+  }};
+  const result=await runAdmitted({root,group:scope.group,queue:q,store,graphiti,
+    curate:async()=>({content:JSON.stringify(proposal(U)),duration_ms:20}),maxSeconds:20});
+  assert.equal(result.curated,1);
+  assert.equal((await store.get(c.id)).reevaluate_requested,false);
+  assert.equal((await store.get(c.id)).state,'deferred');
+  assert.match((await store.get(c.id)).reason,/DUPLICATE/);
+ }finally{delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;}
+}));
 test('unavailable model yields durable DEFER without losing candidate, no Graphiti write',()=>temp(async root=>{
  process.env.GHDEV_MEMORY_POST_EXIT_LEASE='admitted';
  try{

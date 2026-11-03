@@ -67,7 +67,10 @@ export function modelPrompt(cluster) {
 }
 export function validateDecision(raw,cluster) {
   try {
-    const value=typeof raw==='string'?JSON.parse(raw):raw;
+    let value=raw;
+    if(typeof raw==='string'){
+      try{value=JSON.parse(raw);}catch{return {ok:false,decision:'DEFER',reason:'invalid_model_json',facts:[]};}
+    }
     if(!value||typeof value!=='object'||Array.isArray(value)||
       !DECISIONS.has(value.decision)||!validText(value.reason,300)||!Array.isArray(value.facts)||
       value.facts.length>3) throw Error('invalid_model_shape');
@@ -108,7 +111,12 @@ export function validateDecision(raw,cluster) {
     if(ids.size!==facts.length)throw Error('duplicate_facts');
     return {ok:true,decision:value.decision,reason:value.reason,facts};
   } catch(e) {
-    return {ok:false,decision:'DEFER',reason:String(e?.message||'invalid_model_response').slice(0,120),facts:[]};
+    const safeReasons=new Set(['invalid_model_shape','invalid_fact_fields',
+      'unattributed_or_weak_source','unsupported_observation_time',
+      'unsupported_claim_text','emit_without_fact','unexpected_facts',
+      'proposal_without_fact','duplicate_facts']);
+    const reason=String(e?.message||'');
+    return {ok:false,decision:'DEFER',reason:safeReasons.has(reason)?reason:'invalid_model_response',facts:[]};
   }
 }
 async function atomic(dest,payload){
