@@ -64,10 +64,10 @@ export function modelPrompt(cluster) {
     'If you include scope, evidence_class or observed_at, each must match the source metadata exactly. observed_at is the LATEST referenced event timestamp.',
     'For SKIP or DEFER return facts: []. A plain-text reason (1..300 chars) is required.',
     'Example JSON SHAPE ONLY, not a suggested claim: {"decision":"EMIT","reason":"source-grounded","facts":[{"assertion":"<25..450-char grounded factual statement>","kind":"observation","source_refs":["<exact source string from evidence>"],"temporal_status":"observed"}]}.',
-    'Do not output literal placeholders from the example. Evidence class is NEVER verified.'
+    'Do not output literal placeholders from the example. Evidence class is NEVER verified.',
     'If uncertain, private, contradictory, redundant or unsupported choose DEFER.',
     'MERGE/SUPERSEDE_PROPOSED means proposal for operator review, never deletion.',
-    'Scope must exactly match the group, project and workspace supplied.',
+    'If scope is included, it must exactly match the group, project and workspace supplied.',
   ].join(' ');
   return [{role:'system',content:instructions},
     {role:'user',content:JSON.stringify({scope:{
