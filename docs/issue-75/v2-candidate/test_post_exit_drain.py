@@ -91,6 +91,38 @@ class PostExitAdmissionTests(TestCase):
                 conn.execute("CREATE TABLE unrelated (n INTEGER)")
             self.assertFalse(self.real_canonical_unresolved(FakeGate, SimpleNamespace(database=str(f))))
 
+    def test_late_reconciliation_waits_without_resubmitting_or_releasing(self):
+        with mock.patch.object(runner.subprocess, 'run') as run:
+            run.side_effect = [
+                SimpleNamespace(returncode=3),
+                SimpleNamespace(returncode=0),
+            ]
+            with mock.patch.object(runner.time, 'sleep') as sleep:
+                result = runner.reconcile_late('/tmp/curator-cli.mjs',
+                    'cur80_unit', '/tmp/state', 'http://127.0.0.1:8766/mcp',
+                    {'GHDEV_MEMORY_POST_EXIT_LEASE': 'admitted'}, interval_seconds=5)
+            self.assertEqual(result, 0)
+            self.assertEqual(run.call_count, 2)
+            for call in run.call_args_list:
+                self.assertIn('reconcile-only', call.args[0])
+                self.assertNotIn('drain', call.args[0])
+                self.assertNotIn('add_memory', call.args[0])
+            sleep.assert_called_once_with(5)
+
+    def test_late_reconciliation_keeps_lease_on_unverifiable_remote(self):
+        with mock.patch.object(runner.subprocess, 'run') as run:
+            run.side_effect = [
+                SimpleNamespace(returncode=2),
+                SimpleNamespace(returncode=0),
+            ]
+            with mock.patch.object(runner.time, 'sleep') as sleep:
+                self.assertEqual(runner.reconcile_late(
+                    '/tmp/curator-cli.mjs', 'cur80_unit',
+                    '/tmp/state', 'http://127.0.0.1:8766/mcp',
+                    {'GHDEV_MEMORY_POST_EXIT_LEASE': 'admitted'}, interval_seconds=1), 0)
+            self.assertEqual(run.call_count, 2)
+            sleep.assert_called_once_with(1)
+
     @mock.patch.object(runner.urllib.request, "urlopen")
     def test_idle_only(self, urlopen):
         urlopen.return_value = http_response("0/0")
