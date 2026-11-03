@@ -117,7 +117,7 @@ test('hyphenated issue references preserve exact scope and independent topic evi
   assert.deepEqual(await relevanceFilter(query, [wrong, correct]), [correct]);
 
   // Mixed issue spellings must be equivalent, even with proper-name casing.
-  const capitalized = 'What is the closure requirement for Issue-75?';
+  const capitalized = 'What was the evidence requirement for Issue-75?';
   const supported = { fact: 'Issue #75 closes after the required evidence is reviewed.' };
   const other = { fact: 'Issue-70 closes after the required evidence is reviewed.' };
   assert.equal(relevanceSignals(capitalized, supported.fact).eligible, true);

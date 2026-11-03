@@ -6,7 +6,10 @@ const COMMON = new Set('a an and are as at be been by can did do does for from h
 // as a second independent query term. Do not turn fuzzy stems into authority.
 function tokenGroups(value) {
   const groups = new Map();
+  // Give Issue-75, Issue #75 and Issue 75 the same lexical identity.
+  // The mandatory exact-ID check below still controls scope separately.
   const raw = String(value || '').toLowerCase()
+    .replace(ISSUE_REFERENCE, (_match, id) => 'issue ' + id)
     .match(/[a-z0-9][a-z0-9-]{2,}|\b\d{2,}\b/g) || [];
   for (const word of raw) {
     const stem = word.replace(/(?:ing|ed|s)$/,'');
