@@ -115,7 +115,11 @@ const server=createServer(async(req,res)=>{
         items:results.items.filter(x=>!state||x.state===state).map(x=>({
           id:x.id,state:x.state,project:x.project,session_id:x.session_id,
           event_count:x.events.length,reason:x.reason,decision:x.decision,
-          revision:x.revision,updated_at:x.updated_at,remote_episode_uuid:x.remote_episode_uuid
+          revision:x.revision,updated_at:x.updated_at,remote_episode_uuid:x.remote_episode_uuid,
+          group:x.group,origin:x.origin||'curated',
+          evidence_classes:[...new Set(x.events.map(e=>e.evidence_class))],
+          event_kinds:[...new Set(x.events.map(e=>e.kind))],
+          last_observed_at:x.events.map(e=>e.observed_at).sort().at(-1)||null
         }))});
     }
     const m=/^\/api\/clusters\/([a-f0-9]{64})(?:\/(preview|review))?$/.exec(parsed.pathname);

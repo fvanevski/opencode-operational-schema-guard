@@ -8,7 +8,8 @@ import '@xyflow/react/dist/style.css';
 import './style.css';
 
 type Item = {id:string;state:string;project:string;session_id:string;event_count:number;
-  reason:string;decision:string;revision:number;updated_at:string;remote_episode_uuid:string|null};
+  reason:string;decision:string;revision:number;updated_at:string;remote_episode_uuid:string|null;
+  group:string;origin:string;evidence_classes:string[];event_kinds:string[];last_observed_at:string|null};
 type Fact = {assertion:string;kind:string;source_refs:string[];evidence_class:string;scope:{
   group:string;project:string;workspace:string};observed_at:string;temporal_status:string};
 type Event = {event_id:string;source_refs:string[];evidence_class:string;source_strength:string;kind:string;excerpt:string;observed_at:string};
@@ -27,6 +28,8 @@ function App(){
  const [selected,setSelected]=useState<string|null>(null);const [detail,setDetail]=useState<Detail|null>(null);
  const [preview,setPreview]=useState<Preview|null>(null);const [counts,setCounts]=useState<Record<string,number>>({});
  const [filter,setFilter]=useState('all');const [search,setSearch]=useState('');
+ const [evidenceFilter,setEvidenceFilter]=useState('all');const [kindFilter,setKindFilter]=useState('all');
+ const [ageFilter,setAgeFilter]=useState('all');const [detailTick,setDetailTick]=useState(0);
  const [draft,setDraft]=useState('');const [reason,setReason]=useState('');
  const [sourceId,setSourceId]=useState('');const [kind,setKind]=useState('observation');
  const [busy,setBusy]=useState(false);const [theme,setTheme]=useState<'dark'|'light'>('dark');
@@ -52,11 +55,20 @@ function App(){
       setKind(d.facts[0]?.kind||'observation');})
     .catch(e=>{if(active)setError(String(e));});
   return()=>{active=false;};
- },[token,selected]);
- const visible=useMemo(()=>rows.filter(r=>(filter==='all'||r.state===filter)&&
-    (r.project.toLowerCase().includes(search.toLowerCase())||
-     r.reason.toLowerCase().includes(search.toLowerCase())||
-     r.id.includes(search))),[rows,filter,search]);
+ },[token,selected,detailTick]);
+ const evidenceTypes=useMemo(()=>[...new Set(rows.flatMap(r=>r.evidence_classes))].sort(),[rows]);
+ const eventTypes=useMemo(()=>[...new Set(rows.flatMap(r=>r.event_kinds))].sort(),[rows]);
+ const visible=useMemo(()=>rows.filter(r=>{
+   const term=search.trim().toLowerCase();
+   const ageDays=ageFilter==='all'?null:Number(ageFilter);
+   const recent=ageDays===null||Boolean(r.last_observed_at&&
+     Date.parse(r.last_observed_at)>=Date.now()-ageDays*86400000);
+   return (filter==='all'||r.state===filter)&&
+     (evidenceFilter==='all'||r.evidence_classes.includes(evidenceFilter))&&
+     (kindFilter==='all'||r.event_kinds.includes(kindFilter))&&recent&&
+     (!term||[r.project,r.group,r.session_id,r.reason,r.id,r.origin]
+       .some(x=>x.toLowerCase().includes(term)));
+ }),[rows,filter,search,evidenceFilter,kindFilter,ageFilter]);
  async function submit(action:string){
   if(!detail)return;setBusy(true);setError('');
   try{
@@ -84,7 +96,7 @@ function App(){
   <header><Flex justify="between" align="center"><Box>
    <Text color="gray" size="1">LOCAL GRAPHITI / SOURCE-GROUNDED REVIEW</Text>
    <Heading size="6">Deferred memory inbox</Heading></Box>
-   <Flex align="center" gap="2"><Button variant="soft" onClick={()=>void refresh()}>Refresh</Button>
+   <Flex align="center" gap="2"><Button variant="soft" onClick={()=>{void refresh();setDetailTick(n=>n+1);}}>Refresh</Button>
     <Button variant="outline" onClick={()=>setTheme(theme==='dark'?'light':'dark')}>{theme==='dark'?'Light':'Dark'}</Button>
     <Button variant="outline" color="gray" onClick={()=>{setToken('');setSelected(null);}}>Lock</Button></Flex>
   </Flex></header>
@@ -97,11 +109,22 @@ function App(){
     <Select.Root value={filter} onValueChange={setFilter}><Select.Trigger aria-label="Filter by state"/><Select.Content>
       {['all','deferred','approved','submission_unknown','queued','persisted','skipped'].map(s=>
        <Select.Item key={s} value={s}>{s}</Select.Item>)}</Select.Content></Select.Root>
+    <Select.Root value={evidenceFilter} onValueChange={setEvidenceFilter}><Select.Trigger aria-label="Filter by evidence class" placeholder="Evidence class" /><Select.Content>
+     <Select.Item value="all">All evidence classes</Select.Item>{evidenceTypes.map(s=><Select.Item value={s} key={s}>{s}</Select.Item>)}
+    </Select.Content></Select.Root>
+    <Select.Root value={kindFilter} onValueChange={setKindFilter}><Select.Trigger aria-label="Filter by event kind" placeholder="Event kind" /><Select.Content>
+     <Select.Item value="all">All event kinds</Select.Item>{eventTypes.map(s=><Select.Item value={s} key={s}>{s}</Select.Item>)}
+    </Select.Content></Select.Root>
+    <Select.Root value={ageFilter} onValueChange={setAgeFilter}><Select.Trigger aria-label="Filter by time window" placeholder="Observed time" /><Select.Content>
+     <Select.Item value="all">All observed times</Select.Item><Select.Item value="1">Last 24 hours</Select.Item>
+     <Select.Item value="7">Last 7 days</Select.Item><Select.Item value="30">Last 30 days</Select.Item>
+    </Select.Content></Select.Root>
    </Flex><div role="list" className="inbox">{visible.map(r=><button type="button" role="listitem" key={r.id}
       className={'inboxItem '+(selected===r.id?'current':'')} onClick={()=>setSelected(r.id)}>
      <Flex justify="between"><Text weight="bold">{r.project}</Text><Badge color={
        ['submission_unknown','deferred'].includes(r.state)?'orange':r.state==='persisted'?'green':'gray'}>{r.state}</Badge></Flex>
      <Text size="2">{r.reason}</Text><Text size="1" color="gray">{r.event_count} events · {r.session_id.slice(0,18)}</Text>
+     <Text size="1" color="gray">{r.evidence_classes.join(' / ')} · {r.last_observed_at||'unknown time'}</Text>
     </button>)}</div>{visible.length===0&&<Text color="gray">No matching reviews.</Text>}</aside>
    <main className="workspace">{!detail?<Card><Heading size="4">Select an evidence cluster</Heading>
      <Text color="gray">Review source events, inspect proposed facts and record a safe decision. Automated curation continues with this portal closed.</Text></Card>:
