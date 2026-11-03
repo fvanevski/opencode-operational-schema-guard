@@ -223,7 +223,9 @@ export class ReviewStore {
     await fs.mkdir(lock,{mode:0o700}); // collisions remain visible; never steal lock
     try{return await fn();}finally{await fs.rmdir(lock);}
   }
-  async create(cluster,decision){
+  async create(cluster,decision,{origin='curated'}={}){
+    if(!['curated','qualification_operator_seed'].includes(origin))
+      throw Error('Invalid review creation origin');
     if(!HEX.test(cluster?.id||'')||!Array.isArray(cluster.events)||
        !SAFE.test(cluster.group||'')||cluster.group!==this.group)throw Error('Bad cluster');
     const valid=validateDecision(decision,cluster);
@@ -243,7 +245,8 @@ export class ReviewStore {
         diagnostic_field:decision?.ok===false?decision.diagnostic_field??null:valid.diagnostic_field??null,
         facts:valid.facts,reevaluate_requested:false,
         revision:1,created_at:now,updated_at:now,
-        remote_episode_uuid:null,audit:[{at:now,action:'curated',outcome:state}]};
+        remote_episode_uuid:null,origin,
+        audit:[{at:now,action:origin,outcome:state}]};
       await atomic(this.filename(cluster.id),record);
       return {record,created:true};
     });

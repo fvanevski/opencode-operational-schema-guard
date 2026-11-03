@@ -156,6 +156,15 @@ test('valid multi-event factual assertion uses latest referenced source observat
  assert.equal(operatorResult.ok,true);
  assert.equal(operatorResult.facts[0].observed_at,newer.observed_at);
 });
+test('operator qualification seed cannot masquerade as model curation',()=>temp(async root=>{
+ const store=new ReviewStore(root,scope.group),c=cluster();
+ const result=await store.create(c,{decision:'DEFER',reason:'Operator qualification review',
+   facts:[]},{origin:'qualification_operator_seed'});
+ assert.equal(result.record.origin,'qualification_operator_seed');
+ assert.equal(result.record.audit[0].action,'qualification_operator_seed');
+ await assert.rejects(store.create(c,{decision:'DEFER',reason:'No',facts:[]},
+   {origin:'verified_by_model'}),/Invalid review creation origin/);
+}));
 test('review store durable create/dedup, safe operator revisions and blocked unverified approval',()=>temp(async root=>{
  const store=new ReviewStore(root,scope.group),c=cluster();
  const first=await store.create(c,proposal(U));assert.equal(first.created,true);
