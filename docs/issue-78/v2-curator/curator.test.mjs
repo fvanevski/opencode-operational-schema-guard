@@ -92,6 +92,25 @@ test('model field binding uses original authenticated source data, not guessed m
  assert.match(modelPrompt(c)[0].content,/LATEST referenced event timestamp/);
  assert.match(modelPrompt(c)[0].content,/SOURCE strings/);
 });
+test('field-level model schema diagnostic survives durable deferred review without source text',()=>temp(async root=>{
+ const c=cluster();
+ const f=fact(U,{kind:'unsupported_tool_kind'});
+ const invalid=validateModelDecision({decision:'EMIT',reason:'Source-backed attempt',
+   facts:[f]},c);
+ assert.equal(invalid.ok,false);
+ assert.equal(invalid.reason,'invalid_fact_fields');
+ assert.equal(invalid.diagnostic_field,'kind');
+ const store=new ReviewStore(root,scope.group);
+ const created=await store.create(c,invalid);
+ assert.equal(created.record.state,'deferred');
+ assert.equal(created.record.diagnostic_field,'kind');
+ assert.equal(created.record.facts.length,0);
+ const requested=await store.change(c.id,1,'reevaluate',{reason:'Retry with source-bound schema'});
+ assert.equal(requested.reevaluate_requested,true);
+ const updated=await store.reviseDeferred(c.id,2,invalid);
+ assert.equal(updated.state,'deferred');
+ assert.equal(updated.diagnostic_field,'kind');
+}));
 test('valid multi-event factual assertion uses latest referenced source observation time',()=>{
  const c=cluster();
  const f=fact(U,{source_refs:[U.source_refs[0],T.source_refs[0]]});

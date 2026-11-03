@@ -73,7 +73,14 @@ tests and evidence export.
    keyboard navigation, dark/light, no browser model/Graphiti API calls.
    A native Playwright/Firefox/browser integration already available on
    host is suitable; do not introduce a separate browser-testing platform
-   if not needed. If browser automation is unavailable, do the admitted
+   if not needed. The local OpenCode model has vision capabilities: actively
+   inspect real Playwright browser screenshots with the model to discover
+   visible affordances, layout defects and appropriate interaction targets.
+   Pair visual interpretation with DOM/ARIA/API checks and measurable
+   viewport state; a screenshot impression is not proof of backend mutation.
+   When UI controls are difficult to automate, use screenshot-guided
+   iteration to locate them, then record exact selectors and outcomes.
+   If browser automation is unavailable, do the admitted
    manual browser actions and report precisely which were observed vs
    unverified, with sanitized screenshots and UI/API receipts.
 
