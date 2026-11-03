@@ -2,7 +2,7 @@
 import { randomUUID } from 'node:crypto';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
-import { cleanExcerpt } from './events.mjs';
+import { cleanExcerpt, sha } from './events.mjs';
 
 const SAFE_GROUP = /^[A-Za-z0-9_.-]{1,100}$/;
 const VALID_ID = /^[a-f0-9]{64}$/;
@@ -87,18 +87,46 @@ export class CandidateQueue {
     await replaceAtomic(file, { drops, last_drop_reason: reason,
       updated_at: new Date().toISOString() });
   }
+  // Durable counters for source events declined before stage() (backpressure
+  // and bounded interactive buffers). This is diagnostic, not a replay queue.
+  async recordDrop(reason) {
+    if (!['pending_prompt_overflow', 'pending_session_overflow',
+      'assistant_context_truncated', 'capture_backpressure'].includes(reason))
+      throw Error('Invalid candidate drop reason');
+    return this._locked(async () => { await this._bump(reason); });
+  }
   async stage(event) {
     if (!event || event.schema_version !== 1 || event.group !== this.group ||
       !VALID_ID.test(event.event_id || '') || event.state !== 'new' ||
-      !Array.isArray(event.source_refs) || event.source_refs.length < 1 ||
-      !event.source_refs.every(x => typeof x === 'string' &&
-        x.startsWith('opencode:' + event.session_id + ':') && x.length <= 400) ||
-      !['user-stated', 'tool-reported', 'assistant-reported'].includes(event.evidence_class) ||
-      !['user_turn', 'tool_outcome', 'assistant_turn'].includes(event.kind) ||
+      !Array.isArray(event.source_refs) || event.source_refs.length !== 1 ||
       !SAFE_GROUP.test(event.project || '') ||
       typeof event.session_id !== 'string' ||
+      !/^[A-Za-z0-9_.:-]{1,160}$/.test(event.session_id) ||
       typeof event.excerpt !== 'string' || cleanExcerpt(event.excerpt) !== event.excerpt ||
-      typeof event.workspace !== 'string' || !path.isAbsolute(event.workspace))
+      typeof event.workspace !== 'string' || !path.isAbsolute(event.workspace) ||
+      typeof event.observed_at !== 'string' ||
+      !Number.isFinite(Date.parse(event.observed_at)) ||
+      !Array.isArray(event.related_event_ids) ||
+      event.related_event_ids.length > 8 ||
+      !event.related_event_ids.every(id => VALID_ID.test(id)))
+      return { status: 'invalid' };
+    const allowed = {
+      user_turn: { cls: 'user-stated', types: ['message', 'prompt'] },
+      tool_outcome: { cls: 'tool-reported', types: ['tool'] },
+      file_change: { cls: 'tool-reported', types: ['tool'] },
+      assistant_turn: { cls: 'assistant-reported', types: ['message'] },
+    }[event.kind];
+    if (!allowed || event.evidence_class !== allowed.cls) return { status: 'invalid' };
+    const source = event.source_refs[0];
+    const prefix = 'opencode:' + event.session_id + ':';
+    const parsed = allowed.types.map(type => ({ type, p: prefix + type + ':' }))
+      .find(x => typeof source === 'string' && source.startsWith(x.p));
+    const sourceID = parsed && source.slice(parsed.p.length);
+    if (!sourceID || !/^[A-Za-z0-9_.:-]{1,160}$/.test(sourceID) ||
+      event.source_strength !== (parsed.type === 'prompt' ? 'session-scoped-fallback' : 'native-id') ||
+      event.cluster_key !== sha(this.group + '\\n' + event.session_id).slice(0, 24) ||
+      event.event_id !== sha([1, this.group, event.project, event.workspace,
+        event.session_id, event.kind, sourceID].join('\\n')))
       return { status: 'invalid' };
     return this._locked(async () => {
       const dest = this.filename(event.event_id);

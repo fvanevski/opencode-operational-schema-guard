@@ -1,5 +1,6 @@
 /** Source-attributed, bounded candidate evidence; nothing here is a verified Graphiti fact. */
 import { createHash } from 'node:crypto';
+import path from 'node:path';
 
 const SAFE_ID = /^[A-Za-z0-9_.:-]{1,160}$/;
 const SAFE_SCOPE = /^[A-Za-z0-9_.-]{1,100}$/;
@@ -18,6 +19,21 @@ export function cleanExcerpt(value, max = 1100) {
   if (!text || text.length > max || PRIVATE.test(text) || SELF.test(text)) return '';
   return text;
 }
+// Only assistant text parts qualify. Scan the ENTIRE bounded message before
+// truncating, so a secret or memory-context marker past the excerpt boundary
+// cannot be hidden by truncation.
+function assistantExcerpt(raw) {
+  if (typeof raw !== 'string' || raw.length > 16000 ||
+    PRIVATE.test(raw) || SELF.test(raw) ||
+    /[\0-\u0008\u000b\u000e-\u001f]/u.test(raw)) return '';
+  const condensed = raw.replace(/\s+/g, ' ').trim();
+  if (condensed.length <= 1100) return cleanExcerpt(condensed);
+  const head = condensed.slice(0, 1050);
+  const wordEnd = head.lastIndexOf(' ');
+  return cleanExcerpt((wordEnd >= 800 ? head.slice(0, wordEnd) : head) +
+    ' [truncated; source is a completed assistant turn]');
+}
+
 function stamp(time) {
   const v = time ? new Date(time) : new Date();
   return Number.isFinite(v.getTime()) ? v.toISOString() : null;
@@ -74,11 +90,60 @@ export function fromPrompt(event, scope, { admitted = false } = {}) {
     sourceType: valid(nativeID) ? 'message' : 'prompt', sourceID, weak: !valid(nativeID),
     sessionID, excerpt, time: event?.timestamp || event?.time, related: event?.related_event_ids });
 }
+// Host-qualified execute.after exposes tool/callID, but native edit/write
+// tools do not have shell-command inputs. Their receipts are observations,
+// NOT independently verified repository changes. Never persist file contents,
+// patch hunks, raw tool output, or external/secret-looking filenames.
+const FILE_TOOLS = new Set(['edit', 'write', 'apply_patch']);
+const PRIVATE_PATH = /(?:^|\\/)(?:\\.env(?:\\.[^/]*)?|\\.ssh|\\.npmrc|\\.pypirc|id_(?:rsa|ed25519)|credentials?(?:\\.[^/]*)?|secrets?(?:\\.[^/]*)?)(?:\\/|$)/i;
+function scopedFile(raw, workspace) {
+  if (typeof raw !== 'string' || raw.length < 1 || raw.length > 512 ||
+    /[\\0-\\u001f]/u.test(raw) || !path.isAbsolute(workspace)) return null;
+  const candidate = path.resolve(workspace, raw);
+  const relative = path.relative(workspace, candidate);
+  if (!relative || relative === '..' || relative.startsWith('..' + path.sep) ||
+    path.isAbsolute(relative) || relative.length > 180 ||
+    PRIVATE_PATH.test(relative)) return null;
+  return relative.split(path.sep).join('/');
+}
+function fromFileTool(event, scope, sessionID, callID) {
+  const name = typeof event.tool === 'string' ? event.tool.toLowerCase() : '';
+  if (!FILE_TOOLS.has(name)) return null;
+  if (typeof scope?.workspace !== 'string' || !path.isAbsolute(scope.workspace)) return null;
+  const input = event.input || {};
+  let files;
+  if (name === 'apply_patch') {
+    const patch = input.patch ?? input.patchText ?? input.patch_text;
+    if (typeof patch !== 'string' || patch.length > 32000 ||
+      PRIVATE.test(patch) || SELF.test(patch)) return null;
+    files = [...patch.matchAll(/^\\*\\*\\* (?:Add|Update|Delete) File: (.+)$/gm)]
+      .map(m => m[1]);
+    if (!files.length || files.length > 4) return null;
+  } else {
+    const body = input.content ?? input.newString ?? input.oldString ?? '';
+    if (typeof body !== 'string' || body.length > 32000 ||
+      PRIVATE.test(body) || SELF.test(body)) return null;
+    files = [input.filePath ?? input.file_path ?? input.path];
+  }
+  const relative = files.map(file => scopedFile(file, scope.workspace));
+  if (relative.some(x => !x)) return null;
+  const excerpt = cleanExcerpt('tool ' + event.status + ': ' + name +
+    ' reported file operation on ' + relative.join(', ') +
+    ' (not independently verified)');
+  if (!excerpt) return null;
+  return envelope(scope, { kind: 'file_change', evidenceClass: 'tool-reported',
+    sourceType: 'tool', sourceID: callID, sessionID, excerpt,
+    time: event.timestamp || event.time, related: event.related_event_ids });
+}
+
 export function fromTool(event, scope) {
   if (!['completed', 'error', 'failed'].includes(event?.status)) return null;
   const sessionID = field(event, ['sessionID', 'sessionId']);
   const callID = field(event, ['callID', 'callId', 'id']);
   if (!valid(callID)) return null; // No stable call, no claim of tool provenance.
+  if (FILE_TOOLS.has(event?.tool?.toLowerCase?.())) {
+    return fromFileTool(event, scope, sessionID, callID);
+  }
   const cmd = cleanExcerpt(event?.input?.command ?? event?.input?.cmd ?? '', 250);
   if (!cmd || READ_ONLY_NOISE.test(cmd) || !TOOL_INTEREST.test(cmd)) return null;
   const result = event.result;
@@ -103,7 +168,7 @@ export function fromFinishedTurn(event, scope) {
   // A host-qualified completed native message/event is required.
   if (event?.status !== 'completed' || event?.role !== 'assistant') return null;
   const messageID = field(event, ['messageID', 'messageId', 'id']);
-  const excerpt = cleanExcerpt(event?.text || '');
+  const excerpt = assistantExcerpt(event?.text || '');
   if (!valid(messageID) || !excerpt || excerpt.length < 35 || CHATTER.test(excerpt)) return null;
   return envelope(scope, { kind: 'assistant_turn', evidenceClass: 'assistant-reported',
     sourceType: 'message', sourceID: messageID, sessionID: field(event, ['sessionID', 'sessionId']),

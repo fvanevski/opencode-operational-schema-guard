@@ -55,6 +55,45 @@ test('tool failures and successful tests are separate source events, not verifie
   assert.equal(fromTool(tool('large', 'x'.repeat(20000)), scope), null);
   assert.equal(fromTool(tool('secret', 'api_key=abc123 in pytest output'), scope), null);
 });
+test('native edit/write/apply_patch receipts are scoped, content-free and tool-reported', () => {
+  const base = { sessionID:'ses-files', status:'completed', callID:'call-42',
+    result: { output: { exit:0, output:'updated file contents, do not persist this' } } };
+  const edit = fromTool({ ...base, tool:'edit',
+    input: { filePath:scope.workspace + '/src/core.mjs',
+      oldString:'old state', newString:'new state' } }, scope);
+  const write = fromTool({ ...base, callID:'call-43', tool:'write',
+    input: { path:'docs/design.md', content:'design details are not stored' } }, scope);
+  const patch = fromTool({ ...base, callID:'call-44', tool:'apply_patch',
+    input: { patch:'*** Begin Patch\\n*** Update File: src/core.mjs\\n@@\\n- old\\n+ new\\n*** End Patch' } }, scope);
+  assert.ok(edit && write && patch);
+  assert.equal(edit.kind, 'file_change');
+  assert.equal(edit.evidence_class, 'tool-reported');
+  assert.equal(edit.source_refs[0], 'opencode:ses-files:tool:call-42');
+  assert.match(edit.excerpt, /src\\/core\\.mjs/);
+  assert.doesNotMatch(edit.excerpt, /new state|updated file contents/);
+  assert.match(write.excerpt, /docs\\/design\\.md/);
+  assert.match(patch.excerpt, /src\\/core\\.mjs/);
+  assert.equal(fromTool({ ...base, tool:'edit', input:{filePath:'/tmp/outside.mjs'} }, scope), null);
+  assert.equal(fromTool({ ...base, tool:'write', input:{filePath:'.env',content:'normal'} }, scope), null);
+  assert.equal(fromTool({ ...base, tool:'write', input:{filePath:'src/auth.js',content:'password=example'} }, scope), null);
+  assert.equal(fromTool({ ...base, tool:'apply_patch', input:{patch:'*** Begin Patch\\n*** Update File: ../../etc/hosts\\n*** End Patch'} }, scope), null);
+  assert.equal(fromTool({ ...base, callID:undefined, tool:'edit', input:{filePath:'src/a.js'} }, scope), null);
+  const failure = fromTool({ ...base, status:'error', callID:'call-45',
+    tool:'edit', input:{filePath:'src/core.mjs'} }, scope);
+  assert.ok(failure);
+  assert.match(failure.excerpt, /tool error/);
+});
+test('long assistant text uses bounded whole-message privacy scan before truncation', () => {
+  const base = { sessionID:'ses-1', messageID:'msg-long',role:'assistant',status:'completed' };
+  const text = 'Identified a reproducible parser failure and fixed the module: ' +
+    'A'.repeat(2500);
+  const accepted = fromFinishedTurn({...base,text}, scope);
+  assert.ok(accepted);
+  assert.ok(accepted.excerpt.length <= 1100);
+  assert.match(accepted.excerpt, /truncated/);
+  assert.equal(fromFinishedTurn({...base, text:text+' password=secret123'}, scope), null);
+  assert.equal(fromFinishedTurn({...base, text:'A'.repeat(16001)}, scope), null);
+});
 test('completed assistant event is adapter-ready but never upgrades itself to verified', () => {
   const event = fromFinishedTurn({ sessionID: 'ses-1', messageID: 'msg-3',
     role: 'assistant', status: 'completed',
@@ -99,6 +138,22 @@ test('concurrent repeated delivery remains single-record and queue state unchang
   assert.equal(outcomes.filter(x => x.status === 'staged').length, 1);
   assert.equal(outcomes.filter(x => x.status === 'duplicate').length, 7);
   assert.equal((await q.status()).total, 1);
+}));
+test('durable decline counters survive reopening; source identity and kind cannot be forged', () => sandbox(async root => {
+  const q = new CandidateQueue(root, scope.group);
+  const source = fromPrompt(prompt('Fix the schema decoder and preserve the CLI behavior.'),
+    scope, { admitted:true });
+  assert.equal((await q.stage({ ...source, event_id:'a'.repeat(64) })).status,'invalid');
+  assert.equal((await q.stage({ ...source, evidence_class:'tool-reported' })).status,'invalid');
+  assert.equal((await q.stage({ ...source, kind:'tool_outcome' })).status,'invalid');
+  assert.equal((await q.stage({ ...source, source_refs:['opencode:ses-1:message:msg-2'] })).status,'invalid');
+  const write = fromTool({ sessionID:'ses-1',callID:'call-99',tool:'write',
+    status:'completed',input:{filePath:'src/index.mjs'},result:{} }, scope);
+  assert.equal((await q.stage(write)).status,'staged');
+  await q.recordDrop('pending_prompt_overflow');
+  const restarted = new CandidateQueue(root,scope.group);
+  assert.equal((await restarted.status()).drops.pending_prompt_overflow,1);
+  await assert.rejects(q.recordDrop('untrusted_reason'),/Invalid candidate drop/);
 }));
 test('queue rejects forged authority labels and ungrounded source handles', () => sandbox(async root => {
   const q = new CandidateQueue(root, scope.group);
