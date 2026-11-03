@@ -1,0 +1,10 @@
+[Unit]
+Description=Wake source-grounded candidate curator when candidate queue changes
+# Disposable test instance only. Instantiate paths from the authenticated host.
+
+[Path]
+PathModified=@@CANDIDATE_GROUP_DIRECTORY@@
+Unit=@@SERVICE_UNIT_NAME@@
+
+[Install]
+WantedBy=default.target
