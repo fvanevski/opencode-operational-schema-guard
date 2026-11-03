@@ -32,11 +32,15 @@ The oneshot service may fail with "interactive harness active" while the client
 is still running; systemd retry is a 30-second event-wake continuation, not
 authorization to infer during activity. Actual lock/scheduler check remains in
 the existing gate. A lost Graphiti ACK or nonterminal extraction is **not**
-safe to retry blindly. The accepted Python wrapper may retain EX admission
-indefinitely on an unresolved remote job; its *disposable-worker-only*
-quiescence procedure must not be applied to production services. Do not
-activate a permanent systemd instance or mutate live Graphiti without the
-separate approved activation/rollback boundary.
+safe to retry blindly. The Python wrapper retains EX admission and polls
+`curator-cli reconcile-only` for uniquely confirmed late Graphiti
+episode identities, without rerunning the model or `add_memory`. A
+permanently failed asynchronous extraction remains unresolved until a
+separate operator-adjudicated terminal-failure procedure; do not stop the
+shared MCP-mux Graphiti worker as a shortcut. This update does not affect
+an already-running legacy wrapper process. Do not activate a permanent
+systemd instance or mutate live Graphiti without the separate approved
+activation/rollback boundary.
 
 Validate a real disposable workflow with the operator leaving the OpenCode
 client: a queued capture causes wake; pre-exit does not call LLM/add_memory;

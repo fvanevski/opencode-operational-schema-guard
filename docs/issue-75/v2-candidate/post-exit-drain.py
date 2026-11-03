@@ -11,8 +11,6 @@ from types import SimpleNamespace
 import fcntl
 import importlib.util
 import os
-import socket
-from urllib.parse import urlparse
 from pathlib import Path
 import subprocess
 import sys

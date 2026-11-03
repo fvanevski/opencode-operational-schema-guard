@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { spawnSync } from 'node:child_process';
 import assert from 'node:assert/strict';
 import { mkdtemp, rm } from 'node:fs/promises';
 import path from 'node:path';
@@ -264,6 +265,22 @@ test('incompatible Graphiti readback preflight blocks every add_memory attempt',
   assert.equal(writes,0);
   assert.equal(readbacks,1);
  }finally{delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;}
+}));
+test('reconcile-only CLI rejects callers without inherited EX admission',()=>temp(async root=>{
+ const saved=process.env.GHDEV_MEMORY_POST_EXIT_LEASE;
+ delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;
+ try {
+  const result=spawnSync(process.execPath,[
+    new URL('./curator-cli.mjs',import.meta.url).pathname,
+    'reconcile-only','--group',scope.group,'--state-dir',root,
+    '--endpoint','http://127.0.0.1:8766/mcp'
+  ],{encoding:'utf8',timeout:5000,env:{...process.env}});
+  assert.notEqual(result.status,0);
+  assert.match(result.stderr,/EX_POST_EXIT_ADMISSION_REQUIRED/);
+ } finally {
+  if(saved===undefined)delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;
+  else process.env.GHDEV_MEMORY_POST_EXIT_LEASE=saved;
+ }
 }));
 test('no model or graph work without admitted post-exit lease',()=>temp(async root=>{
  delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;
