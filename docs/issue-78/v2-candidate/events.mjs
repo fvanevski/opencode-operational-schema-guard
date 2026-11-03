@@ -95,10 +95,10 @@ export function fromPrompt(event, scope, { admitted = false } = {}) {
 // NOT independently verified repository changes. Never persist file contents,
 // patch hunks, raw tool output, or external/secret-looking filenames.
 const FILE_TOOLS = new Set(['edit', 'write', 'apply_patch']);
-const PRIVATE_PATH = /(?:^|\\/)(?:\\.env(?:\\.[^/]*)?|\\.ssh|\\.npmrc|\\.pypirc|id_(?:rsa|ed25519)|credentials?(?:\\.[^/]*)?|secrets?(?:\\.[^/]*)?)(?:\\/|$)/i;
+const PRIVATE_PATH = /(?:^|\/)(?:\.env(?:\.[^/]*)?|\.ssh|\.npmrc|\.pypirc|id_(?:rsa|ed25519)|credentials?(?:\.[^/]*)?|secrets?(?:\.[^/]*)?)(?:\/|$)/i;
 function scopedFile(raw, workspace) {
   if (typeof raw !== 'string' || raw.length < 1 || raw.length > 512 ||
-    /[\\0-\\u001f]/u.test(raw) || !path.isAbsolute(workspace)) return null;
+    /[\0-\u001f]/u.test(raw) || !path.isAbsolute(workspace)) return null;
   const candidate = path.resolve(workspace, raw);
   const relative = path.relative(workspace, candidate);
   if (!relative || relative === '..' || relative.startsWith('..' + path.sep) ||
@@ -116,7 +116,7 @@ function fromFileTool(event, scope, sessionID, callID) {
     const patch = input.patch ?? input.patchText ?? input.patch_text;
     if (typeof patch !== 'string' || patch.length > 32000 ||
       PRIVATE.test(patch) || SELF.test(patch)) return null;
-    files = [...patch.matchAll(/^\\*\\*\\* (?:Add|Update|Delete) File: (.+)$/gm)]
+    files = [...patch.matchAll(/^\*\*\* (?:Add|Update|Delete) File: (.+)$/gm)]
       .map(m => m[1]);
     if (!files.length || files.length > 4) return null;
   } else {

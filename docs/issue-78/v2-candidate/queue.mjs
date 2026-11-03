@@ -124,9 +124,9 @@ export class CandidateQueue {
     const sourceID = parsed && source.slice(parsed.p.length);
     if (!sourceID || !/^[A-Za-z0-9_.:-]{1,160}$/.test(sourceID) ||
       event.source_strength !== (parsed.type === 'prompt' ? 'session-scoped-fallback' : 'native-id') ||
-      event.cluster_key !== sha(this.group + '\\n' + event.session_id).slice(0, 24) ||
+      event.cluster_key !== sha(this.group + '\n' + event.session_id).slice(0, 24) ||
       event.event_id !== sha([1, this.group, event.project, event.workspace,
-        event.session_id, event.kind, sourceID].join('\\n')))
+        event.session_id, event.kind, sourceID].join('\n')))
       return { status: 'invalid' };
     return this._locked(async () => {
       const dest = this.filename(event.event_id);

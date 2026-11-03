@@ -64,19 +64,19 @@ test('native edit/write/apply_patch receipts are scoped, content-free and tool-r
   const write = fromTool({ ...base, callID:'call-43', tool:'write',
     input: { path:'docs/design.md', content:'design details are not stored' } }, scope);
   const patch = fromTool({ ...base, callID:'call-44', tool:'apply_patch',
-    input: { patch:'*** Begin Patch\\n*** Update File: src/core.mjs\\n@@\\n- old\\n+ new\\n*** End Patch' } }, scope);
+    input: { patch:'*** Begin Patch\n*** Update File: src/core.mjs\n@@\n- old\n+ new\n*** End Patch' } }, scope);
   assert.ok(edit && write && patch);
   assert.equal(edit.kind, 'file_change');
   assert.equal(edit.evidence_class, 'tool-reported');
   assert.equal(edit.source_refs[0], 'opencode:ses-files:tool:call-42');
-  assert.match(edit.excerpt, /src\\/core\\.mjs/);
+  assert.match(edit.excerpt, /src\/core\.mjs/);
   assert.doesNotMatch(edit.excerpt, /new state|updated file contents/);
-  assert.match(write.excerpt, /docs\\/design\\.md/);
-  assert.match(patch.excerpt, /src\\/core\\.mjs/);
+  assert.match(write.excerpt, /docs\/design\.md/);
+  assert.match(patch.excerpt, /src\/core\.mjs/);
   assert.equal(fromTool({ ...base, tool:'edit', input:{filePath:'/tmp/outside.mjs'} }, scope), null);
   assert.equal(fromTool({ ...base, tool:'write', input:{filePath:'.env',content:'normal'} }, scope), null);
   assert.equal(fromTool({ ...base, tool:'write', input:{filePath:'src/auth.js',content:'password=example'} }, scope), null);
-  assert.equal(fromTool({ ...base, tool:'apply_patch', input:{patch:'*** Begin Patch\\n*** Update File: ../../etc/hosts\\n*** End Patch'} }, scope), null);
+  assert.equal(fromTool({ ...base, tool:'apply_patch', input:{patch:'*** Begin Patch\n*** Update File: ../../etc/hosts\n*** End Patch'} }, scope), null);
   assert.equal(fromTool({ ...base, callID:undefined, tool:'edit', input:{filePath:'src/a.js'} }, scope), null);
   const failure = fromTool({ ...base, status:'error', callID:'call-45',
     tool:'edit', input:{filePath:'src/core.mjs'} }, scope);
