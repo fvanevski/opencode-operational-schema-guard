@@ -112,6 +112,25 @@ export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='loca
   let result=await reconcile(store,graphiti);
   stats.persisted+=result.persisted;stats.unresolved=result.unresolved;
   if(result.unresolved)return {...stats,status:'unresolved'};
+  // Explicit operator re-evaluation is processed by the same admitted
+  // worker, not a browser-triggered LLM call. Missing model defers visibly.
+  const redo=(await store.list({limit:500})).items.filter(x=>
+    x.state==='deferred'&&x.reevaluate_requested);
+  for(const prior of redo.slice(0,maxClusters)){
+    if(Date.now()>deadline-5000)break;
+    let response;
+    try{const reply=await curate(prior,{endpoint:modelEndpoint,model:modelId,apiKey});
+      response=validateDecision(reply.content,prior);
+      stats.model_calls++;stats.model_ms+=reply.duration_ms||0;
+    }catch{response={decision:'DEFER',reason:'curator_unavailable_on_reevaluation',facts:[]};}
+    const updated=await store.reviseDeferred(prior.id,prior.revision,response);
+    if(updated){
+      stats.curated++;
+      if(updated.state==='deferred')stats.deferred++;
+      if(updated.state==='approved')stats.approved++;
+      if(updated.state==='skipped')stats.skipped++;
+    }
+  }
   const list=await queue.list({limit:500,states:['new']});
   const clusters=selectClusters(list.items,{maxClusters});
   for(const cluster of clusters){

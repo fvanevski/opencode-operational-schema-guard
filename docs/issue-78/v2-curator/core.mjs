@@ -16,7 +16,10 @@ const validDate = s => typeof s === 'string' && Number.isFinite(Date.parse(s));
 const validText = (s,max,min=1) => typeof s==='string' && s.length>=min &&
   s.length<=max && s===s.trim() && cleanExcerpt(s,max)===s;
 export const normalizedAssertion = s => String(s).toLowerCase().replace(/\s+/g,' ').trim().replace(/[.!]+$/,'');
-const own = (o,k) => Object.prototype.hasOwnProperty.call(o,k);
+// This filter is a conservative source-text plausibility check, not semantic
+// verification; the evidence class remains exactly what the source proves.
+const tokens = s => new Set((String(s).toLowerCase().match(/[a-z0-9_./:-]{4,}/g)||[])
+  .filter(x=>!['that','this','with','from','were','have','does','will','into','when','then','only','also','their','after','before'].includes(x)));
 export function selectClusters(items, {maxEvents=8,maxClusters=8}={}) {
   if(!Array.isArray(items)||!Number.isInteger(maxEvents)||maxEvents<2||maxEvents>12) throw Error('cluster arguments invalid');
   const groups=new Map();
@@ -85,8 +88,13 @@ export function validateDecision(raw,cluster) {
         if(f.observed_at!==source.observed_at)
           throw Error('unsupported_observation_time');
       }
-      // A proposed future state or historical status must not be described as
-      // independently verified current state. The original source labels stay.
+      // Reject obviously unsupported model extrapolation while preserving
+      // source-backed paraphrases. This is NOT a claim of factual verification.
+      const words=tokens(f.assertion);
+      const available=new Set(f.source_refs.flatMap(ref=>
+        [...tokens(bySource.get(ref).excerpt)]));
+      if(words.size>0&&[...words].filter(w=>available.has(w)).length/words.size<0.35)
+        throw Error('unsupported_claim_text');
       return Object.freeze({assertion:f.assertion,kind:f.kind,
         source_refs:[...f.source_refs],evidence_class:f.evidence_class,
         scope:{group:cluster.group,project:cluster.project,workspace:cluster.workspace},
@@ -157,7 +165,8 @@ export class ReviewStore {
           kind:e.kind,evidence_class:e.evidence_class,source_strength:e.source_strength,
           excerpt:e.excerpt,observed_at:e.observed_at,related_event_ids:e.related_event_ids})),
         source_event_ids:cluster.source_event_ids,state,decision:valid.decision,
-        reason:valid.reason,facts:valid.facts,revision:1,created_at:now,updated_at:now,
+        reason:valid.reason,facts:valid.facts,reevaluate_requested:false,
+        revision:1,created_at:now,updated_at:now,
         remote_episode_uuid:null,audit:[{at:now,action:'curated',outcome:state}]};
       await atomic(this.filename(cluster.id),record);
       return {record,created:true};
@@ -185,9 +194,26 @@ export class ReviewStore {
       const state=decision==='SKIP'?'skipped':decision==='EMIT'?'approved':'deferred';
       const now=new Date().toISOString();
       const updated={...old,state,decision:checked.decision,reason:checked.reason,
-        facts:checked.facts,revision:old.revision+1,updated_at:now,
+        facts:checked.facts,reevaluate_requested:action==='reevaluate',
+        revision:old.revision+1,updated_at:now,
         audit:[...old.audit.slice(-59),{at:now,action,outcome:state}]};
       await atomic(this.filename(id),updated);return updated;
+    });
+  }
+  async reviseDeferred(id,expectedRevision,response){
+    return this._mutex(id,async()=>{
+      const old=await this.get(id);
+      if(!old||old.revision!==expectedRevision||old.state!=='deferred'||
+        old.reevaluate_requested!==true)return false;
+      const checked=validateDecision(response,old);
+      const state=checked.ok&&checked.decision==='EMIT'?'approved':
+        checked.decision==='SKIP'?'skipped':'deferred';
+      const now=new Date().toISOString();
+      const updated={...old,state,decision:checked.decision,reason:checked.reason,
+        facts:checked.facts,reevaluate_requested:false,revision:old.revision+1,
+        updated_at:now,audit:[...old.audit.slice(-59),{at:now,action:'recurated',outcome:state}]};
+      await atomic(this.filename(id),updated);
+      return updated;
     });
   }
   async advance(id,expectedState,next,extra={}){

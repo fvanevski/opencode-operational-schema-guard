@@ -51,7 +51,8 @@ test('strict structured validator accepts grounded class and rejects all authori
   {source_refs:['opencode:ses_80:message:forged']},
   {observed_at:'2022-01-01T00:00:00Z'},
   {scope:{...scope,group:'other'}},
-  {assertion:'Password=secret123 must be kept to support the service.'}
+  {assertion:'Password=secret123 must be kept to support the service.'},
+  {assertion:'An entirely unsupported astronomical theorem about Martian microbes was proven.'}
  ]){
   const value=validateDecision({decision:'EMIT',reason:'Source-backed statement',
     facts:[fact(U,altered)]},c);
