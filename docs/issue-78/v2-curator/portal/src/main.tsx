@@ -100,14 +100,14 @@ function App(){
     <Button variant="outline" onClick={()=>setTheme(theme==='dark'?'light':'dark')}>{theme==='dark'?'Light':'Dark'}</Button>
     <Button variant="outline" color="gray" onClick={()=>{setToken('');setSelected(null);}}>Lock</Button></Flex>
   </Flex></header>
-  <section className="summary" aria-label="Review status counts">{['deferred','approved','submission_unknown','queued','persisted','skipped'].map(k=>
+  <section className="summary" aria-label="Review status counts">{['deferred','approved','submission_unknown','queued','persisted','failed_extraction','skipped'].map(k=>
    <Card key={k}><Text size="1" color="gray">{k.replaceAll('_',' ')}</Text><Heading size="5">{counts[k]||0}</Heading></Card>)}</section>
   {error&&<Callout.Root color="red"><Callout.Text role="alert">{error}</Callout.Text></Callout.Root>}
   <div className="columns">
    <aside><Flex direction="column" gap="2"><TextField.Root placeholder="Filter by project / reason / ID" value={search}
      aria-label="Filter reviews" onChange={e=>setSearch(e.target.value)}/>
     <Select.Root value={filter} onValueChange={setFilter}><Select.Trigger aria-label="Filter by state"/><Select.Content>
-      {['all','deferred','approved','submission_unknown','queued','persisted','skipped'].map(s=>
+      {['all','deferred','approved','submission_unknown','queued','persisted','failed_extraction','skipped'].map(s=>
        <Select.Item key={s} value={s}>{s}</Select.Item>)}</Select.Content></Select.Root>
     <Select.Root value={evidenceFilter} onValueChange={setEvidenceFilter}><Select.Trigger aria-label="Filter by evidence class" placeholder="Evidence class" /><Select.Content>
      <Select.Item value="all">All evidence classes</Select.Item>{evidenceTypes.map(s=><Select.Item value={s} key={s}>{s}</Select.Item>)}
@@ -122,7 +122,7 @@ function App(){
    </Flex><div role="list" className="inbox">{visible.map(r=><button type="button" role="listitem" key={r.id}
       className={'inboxItem '+(selected===r.id?'current':'')} onClick={()=>setSelected(r.id)}>
      <Flex justify="between"><Text weight="bold">{r.project}</Text><Badge color={
-       ['submission_unknown','deferred'].includes(r.state)?'orange':r.state==='persisted'?'green':'gray'}>{r.state}</Badge></Flex>
+       ['submission_unknown','deferred','failed_extraction'].includes(r.state)?'orange':r.state==='persisted'?'green':'gray'}>{r.state}</Badge></Flex>
      <Text size="2">{r.reason}</Text><Text size="1" color="gray">{r.event_count} events · {r.session_id.slice(0,18)}</Text>
      <Text size="1" color="gray">{r.evidence_classes.join(' / ')} · {r.last_observed_at||'unknown time'}</Text>
      {r.origin==='qualification_operator_seed'&&<Text size="1" color="amber">Operator-prepared qualification review, not LLM-curated</Text>}
@@ -181,6 +181,9 @@ function App(){
          </Flex>
          <Text size="1" color="gray">Approval records intent for the admitted post-exit worker. It does not call the model or Graphiti from this page.</Text>
          {detail.state==='submission_unknown'&&<Callout.Root color="orange"><Callout.Text>Submission outcome unknown. Do not retry. Await positive Graphiti episode reconciliation.</Callout.Text></Callout.Root>}
+         {detail.state==='failed_extraction'&&<Callout.Root color="orange"><Callout.Text>
+          Graphiti processing failure recorded from operator-attested group queue evidence. This does not prove absence of partial graph effects or permit resubmission. Original sources remain preserved.
+         </Callout.Text></Callout.Root>}
         </div></div></Tabs.Content>
       <Tabs.Content value="graph"><Flex gap="2" align="center" wrap="wrap">
        <Badge color={preview?.remote_graph?.status==='verified_readback'?'green':'gray'}>

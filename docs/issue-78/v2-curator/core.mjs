@@ -11,7 +11,7 @@ const DECISIONS = new Set(['SKIP','EMIT','MERGE','SUPERSEDE_PROPOSED','DEFER']);
 const CLASSES = new Set(['user-stated','tool-reported','assistant-reported']);
 const TEMPORAL = new Set(['observed','historical','proposed','unknown']);
 const KINDS = new Set(['decision','implementation','test_result','architecture','dependency','procedure','blocker','relationship','observation']);
-const STATES = new Set(['deferred','approved','skipped','submission_unknown','queued','persisted']);
+const STATES = new Set(['deferred','approved','skipped','submission_unknown','queued','persisted','failed_extraction']);
 const digest = input => createHash('sha256').update(input).digest('hex');
 const validDate = s => typeof s === 'string' && Number.isFinite(Date.parse(s));
 const validText = (s,max,min=1) => typeof s==='string' && s.length>=min &&
@@ -256,7 +256,7 @@ export class ReviewStore {
       const old=await this.get(id);
       if(!old)throw Error('Unknown review');
       if(old.revision!==expectedRevision)throw Error('STALE_REVIEW_REVISION');
-      if(['submission_unknown','queued','persisted'].includes(old.state))
+      if(['submission_unknown','queued','persisted','failed_extraction'].includes(old.state))
         throw Error('REMOTE_WRITE_ALREADY_POSSIBLE');
       if(!['approve','edit-and-approve','discard','defer','reevaluate','merge','propose-supersession'].includes(action))
         throw Error('Unknown review action');
@@ -292,6 +292,36 @@ export class ReviewStore {
         diagnostic_field:response?.ok===false?response.diagnostic_field??null:checked.diagnostic_field??null,
         facts:checked.facts,reevaluate_requested:false,revision:old.revision+1,
         updated_at:now,audit:[...old.audit.slice(-59),{at:now,action:'recurated',outcome:state}]};
+      await atomic(this.filename(id),updated);
+      return updated;
+    });
+  }
+  /** Operator-attested async processing failure. This is NOT proof of
+   * absence of partial graph effects, and it never authorizes replay.
+   * Only the offline group-log/positive-readback adjudicator calls this.
+   */
+  async markExtractionFailure(id,expectedRevision,evidence){
+    if(!evidence||evidence.kind!=='graphiti_async_processing_failure'||
+      evidence.identity_binding!=='anonymous_group_fifo_inference'||
+      evidence.operator_attested!==true||
+      !HEX.test(evidence.journal_sha256||'')||
+      !UUID.test(evidence.other_success_episode_uuid||'')||
+      !validDate(evidence.observed_at)||
+      !validText(evidence.error_code,100)||
+      !validText(evidence.reason,300))
+      throw Error('INVALID_TERMINAL_FAILURE_EVIDENCE');
+    return this._mutex(id,async()=>{
+      const old=await this.get(id);
+      if(!old)throw Error('UNKNOWN_REVIEW');
+      if(old.revision!==expectedRevision)throw Error('STALE_REVIEW_REVISION');
+      if(old.state!=='queued'||old.remote_episode_uuid)
+        throw Error('TERMINAL_FAILURE_REQUIRES_UNRESOLVED_QUEUED');
+      const now=new Date().toISOString();
+      const updated={...old,state:'failed_extraction',
+        revision:old.revision+1,updated_at:now,
+        failure_evidence:{...evidence},
+        audit:[...old.audit.slice(-59),{at:now,action:'operator_attested_extraction_failure',
+          outcome:'failed_extraction'}]};
       await atomic(this.filename(id),updated);
       return updated;
     });

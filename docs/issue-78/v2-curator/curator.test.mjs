@@ -166,6 +166,34 @@ test('operator qualification seed cannot masquerade as model curation',()=>temp(
  await assert.rejects(store.create(c,{decision:'DEFER',reason:'No',facts:[]},
    {origin:'verified_by_model'}),/Invalid review creation origin/);
 }));
+test('operator-attested asynchronous extraction failure preserves source authority and blocks replay',()=>temp(async root=>{
+ const s=new ReviewStore(root,scope.group),c=cluster();
+ const {record}=await s.create(c,validDecision(c));
+ await s.advance(record.id,'approved','submission_unknown');
+ await s.advance(record.id,'submission_unknown','queued');
+ const queued=await s.get(record.id);
+ const proof={kind:'graphiti_async_processing_failure',
+   identity_binding:'anonymous_group_fifo_inference',operator_attested:true,
+   journal_sha256:'a'.repeat(64),other_success_episode_uuid:'26299f65-f48c-45c1-abf0-9c7d521b1a03',
+   observed_at:'2026-11-03T22:31:39.841Z',error_code:'graphiti_json_decode_error',
+   reason:'First anonymous FIFO task failed and second task persisted; original graph effects not proven absent'};
+ await assert.rejects(s.markExtractionFailure(record.id,queued.revision,
+   {...proof,operator_attested:false}),/INVALID_TERMINAL_FAILURE_EVIDENCE/);
+ const marked=await s.markExtractionFailure(record.id,queued.revision,proof);
+ assert.equal(marked.state,'failed_extraction');
+ assert.equal(marked.remote_episode_uuid,null);
+ assert.deepEqual(marked.facts,queued.facts);
+ assert.deepEqual(marked.events,queued.events);
+ assert.deepEqual(marked.source_event_ids,queued.source_event_ids);
+ assert.equal(marked.failure_evidence.identity_binding,'anonymous_group_fifo_inference');
+ assert.equal(marked.audit.at(-1).outcome,'failed_extraction');
+ await assert.rejects(s.markExtractionFailure(record.id,queued.revision,proof),
+   /STALE_REVIEW_REVISION/);
+ await assert.rejects(s.change(record.id,marked.revision,'edit-and-approve',
+   {facts:marked.facts}),/REMOTE_WRITE_ALREADY_POSSIBLE/);
+ assert.equal(await s.advance(record.id,'queued','submission_unknown'),false);
+ assert.equal((await s.list()).items[0].state,'failed_extraction');
+}));
 test('review store durable create/dedup, safe operator revisions and blocked unverified approval',()=>temp(async root=>{
  const store=new ReviewStore(root,scope.group),c=cluster();
  const first=await store.create(c,proposal(U));assert.equal(first.created,true);
