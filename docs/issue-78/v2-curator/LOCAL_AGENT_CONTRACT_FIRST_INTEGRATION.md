@@ -49,7 +49,7 @@ tests and evidence export.
 1. **CPU-only source admission and regressions.** Run each command in the
    README's repository-deterministic block. Do not claim PASS merely from
    V8 syntax parsing. Record Node version, commands, exit, test names/counts,
-   bounded failures, exact source tree/SHA and \`git diff --check\`.
+   bounded failures, exact source tree/SHA and `git diff --check`.
    Fix demonstrated in-scope defects in the existing curator/queue/recall
    boundary in one cycle, rerun the relevant focused and legacy suites.
    Do not edit frozen #79 benchmark labels. Build errors are diagnosis,
@@ -57,18 +57,18 @@ tests and evidence export.
    privacy rules. Prefer a meaningful combined fix over serial micro-edits.
 
 2. **Portal build and actual functional browser/API qualification.** In
-   \`docs/issue-78/v2-curator/portal\`, do \`npm install\`, \`npm run check\`
-   and \`npm run build\`. Read/retain the resulting \`package-lock.json\` as
+   `docs/issue-78/v2-curator/portal`, do `npm install`, `npm run check`
+   and `npm run build`. Read/retain the resulting `package-lock.json` as
    uncommitted proposal evidence, not a source commit. Run
-   \`node --test docs/issue-78/v2-curator/portal-api.test.mjs\`.
+   `node --test docs/issue-78/v2-curator/portal-api.test.mjs`.
    Use a fresh disposable group/state root, a new 0600 random local portal
-   token, a private loopback port and the built \`dist\`; exercise the actual
+   token, a private loopback port and the built `dist`; exercise the actual
    browser or available browser automation, not only a static screenshot.
    Verify: login/token rejection, origin/CSRF rejection, live refresh,
    state filtering, source timeline, graph pan/zoom and source associations,
    source-bound edit-and-approve, rejected fabricated/verified/wrong-group
    assertion, revision conflict on two tabs, DEFER/re-evaluate and
-   discard, duplicate/merge/supersession proposal, \`submission_unknown\`
+   discard, duplicate/merge/supersession proposal, `submission_unknown`
    lockout, positive episode-only persisted badge, responsive layout,
    keyboard navigation, dark/light, no browser model/Graphiti API calls.
    A native Playwright/Firefox/browser integration already available on
@@ -81,13 +81,13 @@ tests and evidence export.
    Check the actual installed gate source/config, existing shared EX
    lock, active-harness detection, quiet grace, inference-idle metrics,
    current model inference backend/API and Graphiti MCP endpoint. Reuse
-   the **accepted** \`post-exit-drain.py\` wrapper with this staged
-   \`curator-cli.mjs\`: it takes \`--gate-source\`,
-   \`--gate-config\`, \`--cli\`, \`--group\`, \`--state-dir\`,
-   \`--endpoint\`, \`--max-seconds\` and \`--lock-timeout\`;
-   the child receives \`GHDEV_MEMORY_POST_EXIT_LEASE=admitted\`
-   only inside the wrapper. Set \`LOCAL_CURATOR_URL\`,
-   \`LOCAL_CURATOR_MODEL\`, \`LOCAL_CURATOR_API_KEY\` as
+   the **accepted** `post-exit-drain.py` wrapper with this staged
+   `curator-cli.mjs`: it takes `--gate-source`,
+   `--gate-config`, `--cli`, `--group`, `--state-dir`,
+   `--endpoint`, `--max-seconds` and `--lock-timeout`;
+   the child receives `GHDEV_MEMORY_POST_EXIT_LEASE=admitted`
+   only inside the wrapper. Set `LOCAL_CURATOR_URL`,
+   `LOCAL_CURATOR_MODEL`, `LOCAL_CURATOR_API_KEY` as
    private host environment inputs; never copy secrets to the repo.
    Use the already-running local model/Graphiti services, with
    a **disposable Graphiti group** and private #79 candidate state.
@@ -95,9 +95,9 @@ tests and evidence export.
    Confirm real OpenAI-compatible JSON response shape and model ID,
    namespace, timeouts, token counts and model latency.
    Demonstrate one ordinary implicit user+tool+assistant cluster that
-   produces a grounded EMIT, exactly one \`add_memory\` episode under
+   produces a grounded EMIT, exactly one `add_memory` episode under
    group-scoped admitted execution, positive exact Graphiti episode UUID
-   readback and the new \`_episode-index\` confirmation.
+   readback and the new `_episode-index` confirmation.
    Demonstrate the existing native recall source mapping with exact
    group/workspace/evidence class and the already accepted injection
    budget (not just a plausible model answer). A genuine post-merge
@@ -110,7 +110,7 @@ tests and evidence export.
    during Build. Prepare the disposable post-exit instance/wake; then
    terminate the interactive harness for the genuine model-backed run.
    If the currently active harness cannot collect the terminal result,
-   return \`READY_FOR_POST_EXIT_OPERATOR_RUN\` with one exact native
+   return `READY_FOR_POST_EXIT_OPERATOR_RUN` with one exact native
    wrapper/systemd command, bound private group/state, and expected
    evidence path. The necessary post-exit continuation belongs to
    this same campaign; do not weaken the gate, pretend a same-process
@@ -120,15 +120,15 @@ tests and evidence export.
 
 4. **Recoverability, negative scenarios and automatic wake.** Using
    deterministic stub Graphiti before real service if necessary,
-   exercise \`SKIP\`, valid/invalid EMIT, duplicate equality deferral,
+   exercise `SKIP`, valid/invalid EMIT, duplicate equality deferral,
    MERGE/SUPERSEDE proposals only, unsupported/weak-ID and
    group/workspace exclusion, malformed/timeout model -> DEFER,
-   \`approved -> submission_unknown -> queued -> persisted\`,
+   `approved -> submission_unknown -> queued -> persisted`,
    unknown ACK without blind replay, restart, and failed/denied portal
    review actions. Keep a real unknown write observable, do not
    use recent-window absence to authorize resend. Exercise the
    disposable systemd PathModified -> oneshot wake from staged
-   \`activation/*.in\` against real gate identity, including
+   `activation/*.in` against real gate identity, including
    pre-exit exclusion and one post-exit admitted run, if the current
    gate supports this routing. You may correct template/environment
    bindings and event-wake behavior within this **disposable** scope,
@@ -139,10 +139,10 @@ tests and evidence export.
 
 5. **Bounded autonomy and the stop boundary.** Source corrections are
    allowed locally **only** inside
-   \`docs/issue-78/v2-curator/**\`,
-   \`docs/issue-78/v2-candidate/{plugin.mjs,candidate.test.mjs}\`,
-   and the narrow #75 \`{plugin.mjs,memory-core.mjs,memory-core.test.mjs,
-   plugin-behavior.test.mjs}\` needed for source-mapped recall. Additional
+   `docs/issue-78/v2-curator/**`,
+   `docs/issue-78/v2-candidate/{plugin.mjs,candidate.test.mjs}`,
+   and the narrow #75 `{plugin.mjs,memory-core.mjs,memory-core.test.mjs,
+   plugin-behavior.test.mjs}` needed for source-mapped recall. Additional
    narrowly scoped tests or portal package-lock are permitted. Fix
    demonstrated bugs to root cause and rerun relevant CPU and isolated
    integration tests; preserve all security and evidence controls.
@@ -155,27 +155,27 @@ tests and evidence export.
    general memory GUI or Codex/Antigravity adapter.
 
 6. **Publish the actual evidence bytes on GitHub.** The entire packet
-   goes in \`docs/issue-78/evidence/80-first-integration-v1\`
+   goes in `docs/issue-78/evidence/80-first-integration-v1`
    on the *same issue/79 working branch*, per
-   \`docs/issue-78/REVIEW_EVIDENCE_PACKET.md\`:
-   \`manifest.json\` with exact starting source SHA/tree, tested source
+   `docs/issue-78/REVIEW_EVIDENCE_PACKET.md`:
+   `manifest.json` with exact starting source SHA/tree, tested source
    identity including local diff, artifact file SHA-256 hashes and
-   omissions; \`handback.md\` with complete typed results and canonical
-   \`COMMAND_SHAPE_FRICTION\`; full \`source.patch\` including
+   omissions; `handback.md` with complete typed results and canonical
+   `COMMAND_SHAPE_FRICTION`; full `source.patch` including
    untracked portal lockfile and all changed files (or exact changed
-   bytes); \`cpu-tests.md\`; \`model-curator.json\` with **sanitized**
+   bytes); `cpu-tests.md`; `model-curator.json` with **sanitized**
    response structure/reasons/tokens/timing and exact source handles,
-   not raw private prompts; \`graphiti-receipt.json\` with group-scoped
+   not raw private prompts; `graphiti-receipt.json` with group-scoped
    episode UUID, unknown/queued/persisted readback, lease/gate
-   receipts; \`portal-api-browser.md\` and sanitized screenshot(s)
-   of actual browser UI if available; \`activation-receipt.md\`
+   receipts; `portal-api-browser.md` and sanitized screenshot(s)
+   of actual browser UI if available; `activation-receipt.md`
    and durable state/CLI status including failures and recovery.
 
    Audit EVERY staged evidence file/patch/screenshot for private
    content, credential names/values, endpoint tokens, raw transcripts,
    protected files, raw model output and arbitrary host logs.
    Stage exactly and only the designated evidence directory;
-   \`git diff --cached --name-status\` must show no source/config
+   `git diff --cached --name-status` must show no source/config
    changes. Before remote write, re-fetch and authenticate the
    remote branch still equals the original exact source SHA.
    Make **one evidence-only fast-forward commit** on issue/79.
@@ -183,12 +183,12 @@ tests and evidence export.
    exact full evidence commit SHA plus direct GitHub directory URL.
    Do not push source changes, commit a new PR, merge, force-push,
    rebase a moved branch or deploy a production plugin. Remote
-   STALE/denied -> \`EVIDENCE_PUBLICATION=STALE|BLOCKED\`,
+   STALE/denied -> `EVIDENCE_PUBLICATION=STALE|BLOCKED`,
    complete sanitized portable packet fallback, no false PASS.
 
 ## Required typed handback
 
-\`\`\`text
+```text
 RESULT=PASS|PARTIAL|FAIL|BLOCKED|STALE|READY_FOR_POST_EXIT_OPERATOR_RUN
 LOCAL_AGENT_PRIMARY=build
 REPO_ID; ISSUE_NUMBER=80; BRANCH_NAME=issue/79
@@ -215,10 +215,10 @@ SOURCE_GITHUB_MUTATION=none
 GITHUB_MUTATION=<one evidence-only commit|none>
 KNOWN_GAPS=<bounded, materiality and next owner>
 NEXT=Central independent review and accepted source integration on issue/79
-\`\`\`
+```
 
 COMMAND_SHAPE_FRICTION (mandatory, even when RESULT=PASS):
-\`\`\`text
+```text
 encountered=<yes|no>
 events:
   - scenario=<short scenario key>
@@ -234,7 +234,7 @@ events:
     contract_conflict=<yes|no|uncertain>
     durable_gap_candidate=<yes|no|uncertain>
 omitted_sensitive_values=<yes|no>
-\`\`\`
+```
 If no friction: encountered=no; events=[]; omitted_sensitive_values=no.
 No raw logs/secret values. Material recovered tool-shape discovery remains
 recorded even if the final run succeeds. Return handback in chat alongside
