@@ -73,7 +73,8 @@ export class CandidateQueue {
     return result;
   }
   async _names() {
-    return (await fs.readdir(this.dir)).filter(x => /^[a-f0-9]{64}\.json$/.test(x));
+    try { return (await fs.readdir(this.dir)).filter(x => /^[a-f0-9]{64}\.json$/.test(x)); }
+    catch (e) { if (e.code === 'ENOENT') return []; throw e; }
   }
   async _bump(reason) {
     const file = path.join(this.dir, '_status.json');
@@ -126,7 +127,7 @@ export class CandidateQueue {
     if (!Number.isInteger(offset) || offset < 0 || !Number.isInteger(limit) ||
       limit < 1 || limit > 500 || (states && !states.every(s => STATES.includes(s))))
       throw Error('Invalid bounded queue list request');
-    await this.init();
+    // Inspection must not create or chmod a new state directory.
     const names = (await this._names()).sort();
     const rows = [];
     // This is a bounded page of all source events, not the legacy 500-row Graphiti journal list.
@@ -140,11 +141,14 @@ export class CandidateQueue {
       has_more: offset + limit < rows.length };
   }
   async status() {
-    await this.init();
+    // Read-only observation, including for an as-yet nonexistent group.
     const counts = Object.fromEntries(STATES.map(x => [x, 0]));
     for (const name of await this._names()) {
       const row = await this.get(name.slice(0, -5));
-      if (row) counts[row.state] = (counts[row.state] || 0) + 1;
+      if (row) {
+        if (!STATES.includes(row.state)) throw Error('Unknown candidate state: ' + row.event_id);
+        counts[row.state]++;
+      }
     }
     let drops = {}, last_drop_reason = null;
     try {

@@ -18,7 +18,7 @@ unit, not a final #79 acceptance certificate.
 - queue.mjs: separate private per-group file-per-event store, atomic exclusive
   writes, lock-serialized capacity/CAS transitions, 4000-entry default cap,
   durable queue_full drop counters, restart-safe duplicate IDs, bounded pages
-  and inspectable statuses. No automatic GC/deletion: future curator/archival
+  and inspectable statuses. CLI inspection does not create/chmod state. No automatic GC/deletion: future curator/archival
   must retain source provenance and preserve older Graphiti episodes.
   Corrupt records and uncertain lock ownership are visible failures.
 - plugin.mjs: keeps Issue #75's approved read-only recall path but disables its
