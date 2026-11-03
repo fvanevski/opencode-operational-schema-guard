@@ -1,0 +1,118 @@
+{
+  "kind": "supplemental sanitized stock-V2 host event-shape sample (disposable native run, local provider, issue79_native group)",
+  "frozen_at": "2026-11-03",
+  "total": 11,
+  "valuable": 7,
+  "baseline": {
+    "selected": 1,
+    "valuable_selected": 1,
+    "valuable_recall": 0.14285714285714285,
+    "noisy_selected": 0
+  },
+  "candidate": {
+    "selected": 7,
+    "valuable_selected": 7,
+    "valuable_recall": 1,
+    "noisy_selected": 0
+  },
+  "source_id_collisions": 0,
+  "candidate_event_count": 7,
+  "truncation_markers": 0,
+  "drop_counters": 0,
+  "noncaptured_candidate": [
+    "supp-write-env",
+    "supp-write-outside",
+    "supp-user-chatter",
+    "supp-assistant-secret"
+  ],
+  "rows": [
+    {
+      "id": "supp-user-task",
+      "source": "user",
+      "valuable": true,
+      "old_selected": false,
+      "candidate_selected": true,
+      "reason": null
+    },
+    {
+      "id": "supp-write-1",
+      "source": "file",
+      "valuable": true,
+      "old_selected": false,
+      "candidate_selected": true,
+      "reason": null
+    },
+    {
+      "id": "supp-write-test",
+      "source": "file",
+      "valuable": true,
+      "old_selected": false,
+      "candidate_selected": true,
+      "reason": null
+    },
+    {
+      "id": "supp-shell-fail",
+      "source": "tool",
+      "valuable": true,
+      "old_selected": false,
+      "candidate_selected": true,
+      "reason": null
+    },
+    {
+      "id": "supp-edit-fix",
+      "source": "file",
+      "valuable": true,
+      "old_selected": false,
+      "candidate_selected": true,
+      "reason": null
+    },
+    {
+      "id": "supp-shell-pass",
+      "source": "tool",
+      "valuable": true,
+      "old_selected": true,
+      "candidate_selected": true,
+      "reason": null
+    },
+    {
+      "id": "supp-assistant-summary",
+      "source": "assistant",
+      "valuable": true,
+      "old_selected": false,
+      "candidate_selected": true,
+      "reason": null
+    },
+    {
+      "id": "supp-write-env",
+      "source": "file",
+      "valuable": false,
+      "old_selected": false,
+      "candidate_selected": false,
+      "reason": "private path excluded"
+    },
+    {
+      "id": "supp-write-outside",
+      "source": "file",
+      "valuable": false,
+      "old_selected": false,
+      "candidate_selected": false,
+      "reason": "out-of-workspace path excluded"
+    },
+    {
+      "id": "supp-user-chatter",
+      "source": "user",
+      "valuable": false,
+      "old_selected": false,
+      "candidate_selected": false,
+      "reason": "chatter"
+    },
+    {
+      "id": "supp-assistant-secret",
+      "source": "assistant",
+      "valuable": false,
+      "old_selected": false,
+      "candidate_selected": false,
+      "reason": "secret-bearing assistant text excluded"
+    }
+  ]
+}

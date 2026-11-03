@@ -1,0 +1,32 @@
+# Issue #79 capture-completion: proposed source diff
+#
+# RESULT: NO source changes required.
+#
+# Rationale (evidence-backed):
+#   * All CPU qualification commands in cpu-tests.md pass on the staged
+#     Central-authored source at the authenticated starting head
+#     (25a4c8fe4e2d8db84ac5596b8c58989b23ec9edc): 6 syntax checks, 15/15
+#     candidate tests, 2 frozen pilots, 25/25 + 1/1 Issue #75 regressions.
+#   * Native stock-V2.2.5 shape authentication (host-shapes.json) confirmed the
+#     real tool.execute.after / session.prompt / session.context shapes:
+#       - file tools (write/edit) expose the file path via input `path`
+#       - shell exposes input `command` with result.output.exit
+#       - context messages use the `content` field (part types text/tool-call/
+#         tool-result/reasoning)
+#     The staged events.mjs already consumes these correctly:
+#       - fromFileTool reads input.filePath ?? input.file_path ?? input.path
+#         (native `path` is the final fallback, so it is handled)
+#       - fromTool reads input.command and result.output.exit/.output
+#       - the plugin context handler reads m.parts ?? m.content and extracts
+#         text parts
+#     => the authenticated native shapes match the Central assumptions; the
+#        narrow adapter did NOT need correction.
+#
+# Working-tree state at evidence capture:
+#   git status --short  -> (empty)
+#   git diff | wc -c    -> 0
+#   git diff --check    -> exit 0
+#
+# Therefore this packet carries no proposed source/test diff. Central may
+# integrate the unchanged staged source as-is; the candidate capture layer is
+# host-qualified at the authenticated head.

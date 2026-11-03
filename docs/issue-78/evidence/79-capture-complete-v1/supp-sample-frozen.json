@@ -1,0 +1,44 @@
+{
+  "frozen_at": "2026-11-03",
+  "kind": "supplemental sanitized stock-V2 host event-shape sample (disposable native run, local provider, issue79_native group)",
+  "note": "Bounded sanitized event shapes from a disposable OpenCode V2.2.5 session exercising create/edit/shell fail->fix->pass plus negative file-operation and private/secret cases. Labels frozen BEFORE old-vs-candidate selector comparison. No private payloads, credentials, file contents, or full transcripts. Source IDs are native handles, not content.",
+  "native_shape_reference": {
+    "tool.execute.after": {
+      "write": { "input_keys": ["path", "content"], "result_keys": ["output", "content"], "output_keys": ["operation", "target", "resource", "existed"] },
+      "edit": { "input_keys": ["path", "oldString", "newString"], "result_keys": ["output", "content", "metadata"], "output_keys": ["files", "replacements"] },
+      "shell": { "input_keys": ["command"], "result_keys": ["output", "content", "metadata"], "output_keys": ["exit", "truncated", "output", "status"] }
+    },
+    "session.prompt": { "keys": ["sessionID", "messageID", "prompt{text,files,agents,skills}", "delivery"] },
+    "session.context": { "message_field": "content", "part_types": ["text", "tool-call", "tool-result", "reasoning"] }
+  },
+  "workspace": "/workspace/mcp_servers/gh_mcp",
+  "cases": [
+    { "id": "supp-user-task", "source": "user", "session": "ses_supp", "sourceID": "msg_supp_u1",
+      "text": "The median in score3.js is broken; create the file, add a node:test assertion, and fix the off-by-one so the test passes.",
+      "valuable": true },
+    { "id": "supp-write-1", "source": "file", "session": "ses_supp", "sourceID": "call_supp_w1", "tool": "write",
+      "path": "score3.js", "op": "create", "valuable": true },
+    { "id": "supp-write-test", "source": "file", "session": "ses_supp", "sourceID": "call_supp_w2", "tool": "write",
+      "path": "score3.test.js", "op": "create", "valuable": true },
+    { "id": "supp-shell-fail", "source": "tool", "session": "ses_supp", "sourceID": "call_supp_s1",
+      "command": "node --test score3.test.js", "exit": 1,
+      "output": "1 test, 0 passed, 1 failed (AssertionError: 3 !== 2)", "valuable": true },
+    { "id": "supp-edit-fix", "source": "file", "session": "ses_supp", "sourceID": "call_supp_e1", "tool": "edit",
+      "path": "score3.js", "op": "fix", "valuable": true },
+    { "id": "supp-shell-pass", "source": "tool", "session": "ses_supp", "sourceID": "call_supp_s2",
+      "command": "node --test score3.test.js", "exit": 0,
+      "output": "1 test, 1 passed, 0 failed", "valuable": true },
+    { "id": "supp-assistant-summary", "source": "assistant", "session": "ses_supp", "sourceID": "msg_supp_a1",
+      "text": "Root cause: median returned s[mid] + 1 (off-by-one). Fix: return the middle element (average the two middle for even length); the node:test assertion now passes.",
+      "valuable": true },
+    { "id": "supp-write-env", "source": "file", "session": "ses_supp", "sourceID": "call_supp_neg1", "tool": "write",
+      "path": ".env", "op": "create", "valuable": false, "reason": "private path excluded" },
+    { "id": "supp-write-outside", "source": "file", "session": "ses_supp", "sourceID": "call_supp_neg2", "tool": "write",
+      "path": "/tmp/outside.mjs", "op": "create", "valuable": false, "reason": "out-of-workspace path excluded" },
+    { "id": "supp-user-chatter", "source": "user", "session": "ses_supp", "sourceID": "msg_supp_u2",
+      "text": "ok", "valuable": false, "reason": "chatter" },
+    { "id": "supp-assistant-secret", "source": "assistant", "session": "ses_supp", "sourceID": "msg_supp_a2",
+      "text": "I updated the endpoint so the API key is now api_key=sk-live-abcdef1234567890 in the config for the gateway.",
+      "valuable": false, "reason": "secret-bearing assistant text excluded" }
+  ]
+}

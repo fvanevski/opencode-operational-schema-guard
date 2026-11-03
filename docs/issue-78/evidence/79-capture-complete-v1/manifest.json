@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "packet_kind": "Issue #79 integrated capture-completion Build evidence packet (CPU + isolated native stock-V2.2.5 qualification)",
+  "repository": "fvanevski/opencode-operational-schema-guard",
+  "issue": 79,
+  "branch": "issue/79",
+  "source_start_sha": "25a4c8fe4e2d8db84ac5596b8c58989b23ec9edc",
+  "source_tree_sha": "f021b26434e9109991691621a473db302208cb33",
+  "source_tested_sha": "25a4c8fe4e2d8db84ac5596b8c58989b23ec9edc",
+  "uncommitted_source_diff": "none (0 bytes; no source/test changes required)",
+  "changed_source_paths": [],
+  "evidence_commit_sha": "pending: confirmed by GitHub remote readback (a commit cannot embed its own SHA pre-publication); see handback.md and the chat handback",
+  "test_environment": "Node v26.13.0 (CPU); stock OpenCode 2.2.5 + local vLLM provider (native lane, disposable XDG-isolated config/state, private candidate state root)",
+  "artifacts": [
+    { "path": "docs/issue-78/evidence/79-capture-complete-v1/host-shapes.json",
+      "type": "authenticated stock-V2.2.5 native hook shapes (sanitized)",
+      "sha256": "fc8597d8a5d4f4e20e657e0f9ffab234ffdae8bcc17be0aafa53a199f47cf693" },
+    { "path": "docs/issue-78/evidence/79-capture-complete-v1/supp-sample-frozen.json",
+      "type": "frozen supplemental host event-shape sample (labels frozen before comparison)",
+      "sha256": "6e020ac1854d51afc577b669d514bb78a3974b3d4dfb952e77fd6fee70e47fdd" },
+    { "path": "docs/issue-78/evidence/79-capture-complete-v1/supp-compare.json",
+      "type": "old-vs-candidate per-case selection comparison on the frozen supplemental sample",
+      "sha256": "10079d6f5a22bef373867cb41b5f390f947658a0401bbec12250a082c064ec35" },
+    { "path": "docs/issue-78/evidence/79-capture-complete-v1/receipts.json",
+      "type": "privacy / queue drop-retention / legacy-journal 501+ receipts with explicit counts",
+      "sha256": "4ccae87a49b9448fbdf32523aa5415f6f165933d307cd080f9e44fb817ee2735" },
+    { "path": "docs/issue-78/evidence/79-capture-complete-v1/cpu-tests.md",
+      "type": "CPU qualification commands, exits, and counts",
+      "sha256": "71ff8536c7c51ddda57d44ef24b18fd01e8445e6329dfab3faf38aa1f13df28f" },
+    { "path": "docs/issue-78/evidence/79-capture-complete-v1/source.patch",
+      "type": "proposed source diff (documents NO source changes required)",
+      "sha256": "175dc2d326ff21a255b7b753fa1ef7be1f289d136aa2752eb132754441c8cb47" }
+  ],
+  "meta_files": [
+    { "path": "docs/issue-78/evidence/79-capture-complete-v1/handback.md",
+      "type": "bounded handback + canonical COMMAND_SHAPE_FRICTION (meta-file; exact Git blob on branch)" },
+    { "path": "docs/issue-78/evidence/79-capture-complete-v1/manifest.json",
+      "type": "this manifest (meta-file; self-hash not embeddable)" }
+  ],
+  "exclusions_and_omissions": [
+    "provider apiKey (read from local production config to build the disposable config; value omitted from this packet)",
+    "disposable private candidate state-root absolute paths (host-local; omitted)",
+    "raw prompts, tool stdout, file contents, diffs, and full session transcripts (sanitized shape/ID metadata only)",
+    "host-local /tmp scratch paths (portable packet lives on this branch)"
+  ],
+  "invariants": {
+    "production_mutation": "none",
+    "graphiti_write": "none",
+    "openviking_mutation": "none",
+    "source_remote_update": "forbidden (not performed)",
+    "evidence_remote_update": "allowed (this single evidence-only commit)"
+  }
+}

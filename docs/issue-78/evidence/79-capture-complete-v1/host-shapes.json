@@ -1,0 +1,69 @@
+{
+  "title": "Issue #79 authenticated stock-V2.2.5 native hook shapes (disposable isolated session)",
+  "host": "stock OpenCode 2.2.5, local vLLM provider (Qwen3.8 local), disposable XDG-isolated config/state, private candidate state root",
+  "captured_at": "2026-11-03",
+  "method": "disposable opencode --standalone run with a shape-probe plugin + the candidate plugin; only sanitized field-name/presence/ID metadata captured (no prompts, tool stdout, file contents, credentials, or transcripts)",
+  "findings": {
+    "tool.execute.after": {
+      "common_fields": ["sessionID", "tool", "callID", "status"],
+      "status_values": ["completed", "error", "failed"],
+      "write": {
+        "input_keys": ["path", "content"],
+        "file_path_field": "path",
+        "result_keys": ["output", "content"],
+        "result.output_keys": ["operation", "target", "resource", "existed"]
+      },
+      "edit": {
+        "input_keys": ["path", "oldString", "newString"],
+        "file_path_field": "path",
+        "result_keys": ["output", "content", "metadata"],
+        "result.output_keys": ["files", "replacements"]
+      },
+      "shell": {
+        "input_keys": ["command"],
+        "result_keys": ["output", "content", "metadata"],
+        "result.output_keys": ["exit", "truncated", "output", "status"]
+      },
+      "apply_patch": {
+        "observed_natively": false,
+        "note": "stock V2.2.5 tool set exposed write/edit/shell in the probe; apply_patch not natively exposed. The adapter retains defensive apply_patch handling (input.patch) for producers that do expose it."
+      }
+    },
+    "session.prompt": {
+      "keys": ["sessionID", "messageID", "prompt{text,files,agents,skills}", "delivery"],
+      "native_message_id": true
+    },
+    "session.context": {
+      "keys": ["sessionID", "system[]", "messages[]"],
+      "message_field": "content",
+      "message_shape": "{ id, role, content: [ { type, text, ... } ] }",
+      "part_types_observed": ["text", "tool-call", "tool-result", "reasoning"],
+      "note": "completed assistant turns are observed as prior messages in a subsequent context build (text parts), not via a message.updated/session.idle bus event"
+    }
+  },
+  "adapter_conformance": {
+    "file_path_field": "native uses `path`; events.mjs fromFileTool reads input.filePath ?? input.file_path ?? input.path, so the native `path` field is correctly consumed",
+    "shell_receipt": "native result.output.exit/.output consumed by events.mjs fromTool",
+    "context_messages": "native messages use `content` (not `parts`); plugin.mjs context handler reads m.parts ?? m.content and extracts text parts, so completed assistant turns are captured",
+    "prompt": "native prompt.text and messageID consumed by fromPrompt",
+    "conclusion": "no adapter change required; all observed native shapes are handled by the staged events.mjs/plugin.mjs"
+  },
+  "end_to_end_native_capture": {
+    "group": "issue79_native",
+    "state_root": "disposable private candidate state root (not published; private path omitted)",
+    "records_staged": 8,
+    "by_kind": { "file_change": 3, "tool_outcome": 2, "assistant_turn": 2, "user_turn": 1 },
+    "evidence_classes": { "file_change": "tool-reported", "tool_outcome": "tool-reported", "assistant_turn": "assistant-reported", "user_turn": "user-stated" },
+    "source_strength": "all native-id",
+    "related_event_ids": "later tool/assistant events carry the admitted user prompt event id as a related_event_id (sequencing hint only)",
+    "scenario": "create score3.js (write) -> create score3.test.js (write) -> node --test (fail, exit 1) -> edit fix (edit) -> node --test (pass, exit 0)",
+    "sanitized_record_sample": [
+      { "kind": "file_change", "excerpt_head": "tool completed: write reported file operation on score3.js (not independently verified)" },
+      { "kind": "file_change", "excerpt_head": "tool completed: edit reported file operation on score3.js (not independently verified)" },
+      { "kind": "tool_outcome", "excerpt_head": "tool exit 1; command: node --test score3.test.js; output: ..." },
+      { "kind": "tool_outcome", "excerpt_head": "tool exit 0; command: node --test score3.test.js; output: ..." },
+      { "kind": "assistant_turn", "excerpt_head": "completed assistant turn text (bounded, text parts only, reasoning excluded)" },
+      { "kind": "user_turn", "excerpt_head": "admitted user prompt (bounded excerpt)" }
+    ]
+  }
+}
