@@ -79,6 +79,7 @@ test('model field binding uses original authenticated source data, not guessed m
  assert.equal(exact.ok,false);
  assert.equal(exact.reason,'invalid_fact_fields');
  assert.equal(exact.diagnostic_field,'evidence_class');
+ assert.equal(validateModelDecision({...minimal,facts:[{...minimal.facts[0],kind:'file_change'}]},c).diagnostic_field,'kind');
  for(const altered of [
    {scope:{...scope,group:'wrong'}},
    {evidence_class:'verified'},

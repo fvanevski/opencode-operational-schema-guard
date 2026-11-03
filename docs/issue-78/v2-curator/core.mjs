@@ -222,7 +222,8 @@ export class ReviewStore {
           kind:e.kind,evidence_class:e.evidence_class,source_strength:e.source_strength,
           excerpt:e.excerpt,observed_at:e.observed_at,related_event_ids:e.related_event_ids})),
         source_event_ids:cluster.source_event_ids,state,decision:valid.decision,
-        reason:valid.reason,diagnostic_field:valid.diagnostic_field??null,
+        reason:valid.reason,
+        diagnostic_field:decision?.ok===false?decision.diagnostic_field??null:valid.diagnostic_field??null,
         facts:valid.facts,reevaluate_requested:false,
         revision:1,created_at:now,updated_at:now,
         remote_episode_uuid:null,audit:[{at:now,action:'curated',outcome:state}]};
@@ -268,7 +269,7 @@ export class ReviewStore {
         checked.decision==='SKIP'?'skipped':'deferred';
       const now=new Date().toISOString();
       const updated={...old,state,decision:checked.decision,reason:checked.reason,
-        diagnostic_field:checked.diagnostic_field??null,
+        diagnostic_field:response?.ok===false?response.diagnostic_field??null:checked.diagnostic_field??null,
         facts:checked.facts,reevaluate_requested:false,revision:old.revision+1,
         updated_at:now,audit:[...old.audit.slice(-59),{at:now,action:'recurated',outcome:state}]};
       await atomic(this.filename(id),updated);
