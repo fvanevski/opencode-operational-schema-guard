@@ -11,7 +11,7 @@ type Item = {id:string;state:string;project:string;session_id:string;event_count
   reason:string;decision:string;revision:number;updated_at:string;remote_episode_uuid:string|null};
 type Fact = {assertion:string;kind:string;source_refs:string[];evidence_class:string;scope:{
   group:string;project:string;workspace:string};observed_at:string;temporal_status:string};
-type Event = {event_id:string;source_refs:string[];evidence_class:string;kind:string;excerpt:string;observed_at:string};
+type Event = {event_id:string;source_refs:string[];evidence_class:string;source_strength:string;kind:string;excerpt:string;observed_at:string};
 type Detail=Item & {group:string;workspace:string;events:Event[];facts:Fact[];audit:{
   at:string;action:string;outcome:string}[]};
 type Preview={nodes:Node[];edges:Edge[];note:string;scope:{group:string;project:string}};
@@ -28,6 +28,7 @@ function App(){
  const [preview,setPreview]=useState<Preview|null>(null);const [counts,setCounts]=useState<Record<string,number>>({});
  const [filter,setFilter]=useState('all');const [search,setSearch]=useState('');
  const [draft,setDraft]=useState('');const [reason,setReason]=useState('');
+ const [sourceId,setSourceId]=useState('');const [kind,setKind]=useState('observation');
  const [busy,setBusy]=useState(false);const [theme,setTheme]=useState<'dark'|'light'>('dark');
  const refresh=async(k=token)=>{
   if(!k)return;
@@ -46,7 +47,9 @@ function App(){
   Promise.all([api<Detail>('/api/clusters/'+selected,token),
    api<Preview>('/api/clusters/'+selected+'/preview',token)])
     .then(([d,p])=>{if(!active)return;setDetail(d);setPreview(p);
-      setDraft(d.facts[0]?.assertion||'');setReason(d.reason||'');})
+      setDraft(d.facts[0]?.assertion||'');setReason(d.reason||'');
+      setSourceId(d.facts[0]?.source_refs[0]||d.events.find(e=>e.source_strength==='native-id')?.source_refs[0]||'');
+      setKind(d.facts[0]?.kind||'observation');})
     .catch(e=>{if(active)setError(String(e));});
   return()=>{active=false;};
  },[token,selected]);
@@ -57,8 +60,12 @@ function App(){
  async function submit(action:string){
   if(!detail)return;setBusy(true);setError('');
   try{
-   const facts= action==='edit-and-approve'&&detail.facts.length?
-    [{...detail.facts[0],assertion:draft.trim()},...detail.facts.slice(1)]:detail.facts;
+   const chosen=detail.events.find(e=>e.source_refs.includes(sourceId));
+   const facts=action==='edit-and-approve'?
+    (detail.facts.length?[{...detail.facts[0],assertion:draft.trim()},...detail.facts.slice(1)]:
+      chosen?[{assertion:draft.trim(),kind,source_refs:[sourceId],
+        evidence_class:chosen.evidence_class,scope:{group:detail.group,project:detail.project,workspace:detail.workspace},
+        observed_at:chosen.observed_at,temporal_status:'observed'}]:[]):detail.facts;
    await api('/api/clusters/'+detail.id+'/review',token,{
     method:'POST',body:JSON.stringify({action,reason:reason.trim()||detail.reason,
       revision:detail.revision,facts})});
@@ -114,16 +121,31 @@ function App(){
           <Text size="1" color="gray">{f.source_refs.join(' · ')}</Text></Card>)}
          {detail.facts.length===0&&<Text color="gray">No validated assertion. This cluster requires more evidence or dismissal.</Text>}
          <Heading size="3">Operator decision</Heading>
+         <Text size="2" weight="medium">Grounded assertion</Text>
          <TextArea value={draft} onChange={e=>setDraft(e.target.value)}
           placeholder="Edit grounded assertion" aria-label="Grounded assertion edit" rows={4}/>
+         <Text size="2" weight="medium">Supporting source</Text>
+         <Select.Root value={sourceId||undefined} onValueChange={setSourceId}>
+           <Select.Trigger aria-label="Choose exact supporting source" placeholder="Select native source" />
+           <Select.Content>{detail.events.filter(e=>e.source_strength==='native-id').map(e=>
+             <Select.Item key={e.event_id} value={e.source_refs[0]}>{e.kind} · {e.source_refs[0].slice(-24)}</Select.Item>)}</Select.Content>
+         </Select.Root>
+         <Select.Root value={kind} onValueChange={setKind}>
+           <Select.Trigger aria-label="Assertion kind" /><Select.Content>{[
+             'decision','implementation','test_result','architecture','dependency',
+             'procedure','blocker','relationship','observation'].map(x=>
+               <Select.Item key={x} value={x}>{x}</Select.Item>)}
+           </Select.Content></Select.Root>
          <TextField.Root value={reason} onChange={e=>setReason(e.target.value)}
           placeholder="Rationale" aria-label="Decision rationale"/>
          <Flex gap="2" wrap="wrap">
-          <Button disabled={busy||detail.facts.length===0||!['approved','deferred'].includes(detail.state)}
+          <Button disabled={busy||!sourceId||draft.trim().length<25||!['approved','deferred'].includes(detail.state)}
            onClick={()=>void submit('edit-and-approve')}>Validate & approve</Button>
           <Button disabled={busy||!['deferred','approved'].includes(detail.state)}
            variant="soft" color="orange" onClick={()=>void submit('defer')}>Keep deferred</Button>
           <Button disabled={busy||!['deferred','approved'].includes(detail.state)}
+           variant="soft" onClick={()=>void submit('reevaluate')}>Request re-evaluation</Button>
+          <Button disabled={busy||detail.facts.length===0||!['deferred','approved'].includes(detail.state)}
            variant="soft" onClick={()=>void submit('merge')}>Propose merge</Button>
           <Button disabled={busy||!['deferred','approved'].includes(detail.state)}
            variant="soft" onClick={()=>void submit('propose-supersession')}>Propose supersession</Button>
