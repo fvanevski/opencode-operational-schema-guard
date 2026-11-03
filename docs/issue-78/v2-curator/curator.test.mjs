@@ -235,6 +235,27 @@ test('duplicate assertion diverts approved candidate to deferred with no write',
   assert.equal(writes,0);
  }finally{delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;}
 }));
+test('incompatible Graphiti readback preflight blocks every add_memory attempt',()=>temp(async root=>{
+ process.env.GHDEV_MEMORY_POST_EXIT_LEASE='admitted';
+ try{
+  const store=new ReviewStore(root,scope.group),c=cluster();
+  await store.create(c,proposal(U));
+  let writes=0,readbacks=0;
+  const graphiti={call:async method=>{
+    if(method==='search_memory_facts')return {facts:[]};
+    if(method==='get_episodes'){readbacks++;return {invalid_list:true};}
+    if(method==='add_memory'){writes++;throw Error('must not submit');}
+    throw Error('unexpected '+method);
+  }};
+  const result=await promoteOne(store,await store.get(c.id),graphiti);
+  assert.equal(result.status,'deferred');
+  assert.equal(result.reason,'graphiti_readback_preflight_unavailable');
+  assert.equal((await store.get(c.id)).state,'deferred');
+  assert.equal((await store.get(c.id)).remote_episode_uuid,null);
+  assert.equal(writes,0);
+  assert.equal(readbacks,1);
+ }finally{delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;}
+}));
 test('no model or graph work without admitted post-exit lease',()=>temp(async root=>{
  delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;
  await assert.rejects(runAdmitted({root,group:scope.group}),/ADMISSION_REQUIRED/);

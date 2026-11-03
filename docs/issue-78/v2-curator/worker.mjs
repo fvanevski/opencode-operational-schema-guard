@@ -96,6 +96,19 @@ export async function promoteOne(store,record,graphiti){
     await store.advance(record.id,'approved','deferred',{reason:duplicate});
     return {status:'deferred',reason:duplicate};
   }
+  // Verify the positive readback protocol *before* any remote write intent.
+  // An incompatible list shape must not first surface after add_memory,
+  // when the accepted EX wrapper would have to hold the lease unresolved.
+  try {
+    const episodes=await graphiti.call('get_episodes',{
+      group_ids:[record.group],max_episodes:1000});
+    if(!Array.isArray(episodes?.episodes))
+      throw Error('GRAPHITI_EPISODES_UNAVAILABLE');
+  } catch {
+    await store.advance(record.id,'approved','deferred',
+      {reason:'graphiti_readback_preflight_unavailable'});
+    return {status:'deferred',reason:'graphiti_readback_preflight_unavailable'};
+  }
   // Write-intent is durable BEFORE the first remote call: timeout may mean
   // accepted+queued. A retry must reconcile, never call add_memory again.
   if(!await store.advance(record.id,'approved','submission_unknown'))

@@ -152,8 +152,11 @@ rejected model content was deliberately not retained. For this bounded
 integration, **only exact contiguous extracts of one authenticated source
 excerpt qualify for automatic model promotion**; literal quoted statements
 retain their original evidence class, which is not verification of truth.
-No lexical-overlap threshold is lowered. Paraphrases can be proposed through
-human operator review, which has separate full-field source validation.
+No lexical-overlap threshold is lowered. A read-only Graphiti
+get_episodes shape preflight is now required before first add_memory, so a
+missing/incompatible remote readback schema causes a durable, no-write DEFER.
+Paraphrases can be proposed through human operator review, which has
+separate full-field source validation.
 An ordinary `DEFER` remains an acceptable model decision; it must not be
 converted into `EMIT` simply to obtain a real remote write.
 
