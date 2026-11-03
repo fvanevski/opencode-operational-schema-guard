@@ -258,6 +258,39 @@ test('successful ACK is QUEUED, positive exact group+name episode readback persi
   assert.equal(positiveEpisode(await store.get(c.id),[{uuid,group_id:'other',name:'curated-v1:'+c.id}]),null);
  }finally{delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;}
 }));
+test('earlier extraction failure prevents automatic semantic resubmission of same claim',()=>temp(async root=>{
+ const previouslyAdmitted=process.env.GHDEV_MEMORY_POST_EXIT_LEASE;
+ process.env.GHDEV_MEMORY_POST_EXIT_LEASE='admitted';
+ try {
+  const s=new ReviewStore(root,scope.group),old=cluster();
+  await s.create(old,proposal(U));
+  await s.advance(old.id,'approved','submission_unknown');
+  await s.advance(old.id,'submission_unknown','queued');
+  const queued=await s.get(old.id);
+  await s.markExtractionFailure(old.id,queued.revision,{
+   kind:'graphiti_async_processing_failure',identity_binding:'anonymous_group_fifo_inference',
+   operator_attested:true,journal_sha256:'b'.repeat(64),
+   other_success_episode_uuid:'26299f65-f48c-45c1-abf0-9c7d521b1a03',
+   observed_at:'2026-11-03T22:31:31.240Z',error_code:'graphiti_json_decode_error',
+   reason:'Operator-attested anonymous processing failure; replay prohibited'
+  });
+  const second=fromPrompt({sessionID:'ses_repeat',messageID:'msg_repeat',prompt:{
+   text:'Fix the invalid median algorithm, retain the old CLI interface and prove the node tests pass.'
+  },timestamp:t},scope,{admitted:true});
+  const updated=selectClusters([second])[0];
+  await s.create(updated,proposal(second));
+  let calls=0;
+  const result=await promoteOne(s,await s.get(updated.id),{
+   call:async()=>{calls++;throw Error('No remote tool calls allowed');}
+  });
+  assert.equal(result.status,'deferred');
+  assert.equal(result.reason,'LOCAL_PRIOR_FAILED_EXTRACTION_NO_REPLAY');
+  assert.equal(calls,0);
+ }finally{
+  if(previouslyAdmitted===undefined)delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;
+  else process.env.GHDEV_MEMORY_POST_EXIT_LEASE=previouslyAdmitted;
+ }
+}));
 test('duplicate assertion diverts approved candidate to deferred with no write',()=>temp(async root=>{
  process.env.GHDEV_MEMORY_POST_EXIT_LEASE='admitted';
  try{

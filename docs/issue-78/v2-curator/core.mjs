@@ -319,7 +319,13 @@ export class ReviewStore {
       const now=new Date().toISOString();
       const updated={...old,state:'failed_extraction',
         revision:old.revision+1,updated_at:now,
-        failure_evidence:{...evidence},
+        failure_evidence:{
+          kind:evidence.kind,identity_binding:evidence.identity_binding,
+          operator_attested:true,observed_at:evidence.observed_at,
+          journal_sha256:evidence.journal_sha256,
+          other_success_episode_uuid:evidence.other_success_episode_uuid,
+          error_code:evidence.error_code,reason:evidence.reason
+        },
         audit:[...old.audit.slice(-59),{at:now,action:'operator_attested_extraction_failure',
           outcome:'failed_extraction'}]};
       await atomic(this.filename(id),updated);
