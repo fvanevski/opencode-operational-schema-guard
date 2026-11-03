@@ -55,6 +55,9 @@ export function modelPrompt(cluster) {
     'Return ONLY one JSON object (no markdown) with decision, reason, facts.',
     'decision must be SKIP, EMIT, MERGE, SUPERSEDE_PROPOSED or DEFER.',
     'For EMIT supply exactly ONE factual assertion in this integration unit; other decisions can propose 0..3.',
+    'For ANY model-proposed fact, assertion must be a useful 25..450 character CONTIGUOUS VERBATIM EXTRACT copied from ONE cited source excerpt: exact words, capitalization, punctuation and order. Never paraphrase, summarize, join excerpts, add prefaces, or invent results.',
+    'Cite ONLY the single exact source handle from which the assertion was copied. A source excerpt is evidence of what its author said or a tool reported, NOT independent verification.',
+    'Prefer durable decisions or procedures explicitly stated in source; do not force EMIT to pass tests. If no useful extract fits, return DEFER with empty facts.',
     'Required fact fields: assertion (25..450 chars), kind, source_refs, temporal_status.',
     'Choose kind only from: decision, implementation, test_result, architecture, dependency, procedure, blocker, relationship, observation.',
     'Choose temporal_status only from: observed, historical, proposed, unknown.',
@@ -130,7 +133,8 @@ export function validateDecision(raw,cluster) {
   } catch(e) {
     const safeReasons=new Set(['invalid_model_shape','invalid_fact_fields',
       'unattributed_or_weak_source','unsupported_observation_time',
-      'unsupported_claim_text','emit_without_fact','unexpected_facts',
+      'unsupported_claim_text','model_assertion_not_source_extract',
+      'emit_without_fact','unexpected_facts',
       'proposal_without_fact','duplicate_facts']);
     const reason=String(e?.message||'');
     const match=/^invalid_fact_fields:(object|assertion|kind|evidence_class|temporal_status|observed_at|source_refs|scope)$/.exec(reason);
@@ -164,7 +168,20 @@ export function validateModelDecision(raw,cluster) {
       evidence_class:f.evidence_class===undefined?events[0].evidence_class:f.evidence_class,
       observed_at:f.observed_at===undefined?latest:f.observed_at};
   });
-  return validateDecision({...proposed,facts},cluster);
+  const checked=validateDecision({...proposed,facts},cluster);
+  if(!checked.ok)return checked;
+  // Model-generated facts are extractive at this integration boundary.
+  // Unlike a lexical paraphrase score, exact substring membership proves that
+  // model text originated in a cited, authenticated source excerpt. It does
+  // NOT upgrade the source's evidence class or prove the quoted statement true.
+  // Operator-edited assertions retain the separate full-field review contract.
+  for(const fact of checked.facts){
+    if(fact.source_refs.length!==1||
+       !bySource.get(fact.source_refs[0])?.excerpt.includes(fact.assertion))
+      return {ok:false,decision:'DEFER',reason:'model_assertion_not_source_extract',
+        diagnostic_field:'assertion',facts:[]};
+  }
+  return checked;
 }
 async function atomic(dest,payload){
   const tmp=dest+'.'+randomUUID()+'.tmp';

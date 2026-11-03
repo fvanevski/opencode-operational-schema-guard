@@ -145,6 +145,18 @@ re-evaluation of the same original evidence. Do not restage source events,
 alter the frozen pilot, or bypass admission. `review_required` reports
 nonterminal review work even if the admitted command exits zero.
 
+The next admitted re-evaluation returned `unsupported_claim_text` at
+revision 3 without any Graphiti write. Whether its paraphrase was genuinely
+unsupported or merely lexically dissimilar is **UNVERIFIED** because the
+rejected model content was deliberately not retained. For this bounded
+integration, **only exact contiguous extracts of one authenticated source
+excerpt qualify for automatic model promotion**; literal quoted statements
+retain their original evidence class, which is not verification of truth.
+No lexical-overlap threshold is lowered. Paraphrases can be proposed through
+human operator review, which has separate full-field source validation.
+An ordinary `DEFER` remains an acceptable model decision; it must not be
+converted into `EMIT` simply to obtain a real remote write.
+
 **Execution handoff:** `LOCAL_AGENT_CONTRACT_FIRST_INTEGRATION.md`.
 **Evidence contract:** `docs/issue-78/REVIEW_EVIDENCE_PACKET.md`.
 **PR:** none in this campaign. Use the same issue/79 branch for the combined

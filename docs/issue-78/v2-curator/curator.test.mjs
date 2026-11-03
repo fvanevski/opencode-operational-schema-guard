@@ -34,6 +34,11 @@ const fact=(event,overrides={})=>({
 });
 const proposal=(event,decision='EMIT')=>({decision,reason:'Source-backed reusable decision',
   facts:decision==='EMIT'?[fact(event)]:[]});
+// Model-generated assertions must be exact source excerpts; operator edits can
+// use paraphrases under their distinct revision-checked approval contract.
+const modelProposal=(event=U)=>({decision:'EMIT',reason:'Exact source-backed decision',
+  facts:[{assertion:event.excerpt,kind:'decision',
+    source_refs:[event.source_refs[0]],temporal_status:'observed'}]});
 const temp=fn=> (async()=>{const root=await mkdtemp(path.join(os.tmpdir(),'curator80-'));
   try{return await fn(root);}finally{await rm(root,{recursive:true,force:true});}})();
 
@@ -69,7 +74,7 @@ test('strict structured validator accepts grounded class and rejects all authori
 });
 test('model field binding uses original authenticated source data, not guessed metadata',()=>{
  const c=cluster(),f=fact(U),minimal={decision:'EMIT',reason:'Grounded decision',
-   facts:[{assertion:f.assertion,kind:'decision',source_refs:f.source_refs,temporal_status:'observed'}]};
+   facts:[{assertion:U.excerpt,kind:'decision',source_refs:f.source_refs,temporal_status:'observed'}]};
  const result=validateModelDecision(JSON.stringify(minimal),c);
  assert.equal(result.ok,true);
  assert.deepEqual(result.facts[0].scope,f.scope);
@@ -91,6 +96,24 @@ test('model field binding uses original authenticated source data, not guessed m
  }
  assert.match(modelPrompt(c)[0].content,/LATEST referenced event timestamp/);
  assert.match(modelPrompt(c)[0].content,/SOURCE strings/);
+ assert.match(modelPrompt(c)[0].content,/CONTIGUOUS VERBATIM EXTRACT/);
+});
+test('model curation rejects paraphrases and fabricated extensions despite lexical similarity',()=>{
+ const c=cluster(),raw=modelProposal();
+ assert.equal(validateModelDecision(raw,c).ok,true);
+ const paraphrase=fact(U).assertion;
+ // Manual-review plausibility differs from the stricter model automation.
+ assert.equal(validateDecision({decision:'EMIT',reason:'Manual review only',
+   facts:[fact(U)]},c).ok,true);
+ const rejection=validateModelDecision({...raw,facts:[{...raw.facts[0],assertion:paraphrase}]},c);
+ assert.equal(rejection.ok,false);
+ assert.equal(rejection.reason,'model_assertion_not_source_extract');
+ const fabricated={...raw,facts:[{...raw.facts[0],
+   assertion:U.excerpt+' This proves all future tests pass.'}]};
+ assert.equal(validateModelDecision(fabricated,c).ok,false);
+ const combined={...raw,facts:[{...raw.facts[0],
+   source_refs:[U.source_refs[0],T.source_refs[0]]}]};
+ assert.equal(validateModelDecision(combined,c).ok,false);
 });
 test('field-level model schema diagnostic survives durable deferred review without source text',()=>temp(async root=>{
  const c=cluster();
@@ -113,7 +136,7 @@ test('field-level model schema diagnostic survives durable deferred review witho
 }));
 test('valid multi-event factual assertion uses latest referenced source observation time',()=>{
  const c=cluster();
- const f=fact(U,{source_refs:[U.source_refs[0],T.source_refs[0]]});
+ const f=fact(U,{assertion:U.excerpt,source_refs:[U.source_refs[0],T.source_refs[0]]});
  const supportsDifferentClasses=validateModelDecision({decision:'EMIT',
    reason:'Needs one source authority',facts:[f]},c);
  assert.equal(supportsDifferentClasses.ok,false);
@@ -232,7 +255,7 @@ test('one admitted model cluster emits exactly one source-linked Graphiti episod
     throw Error('unexpected call '+method);
   }};
   const result=await runAdmitted({root,group:scope.group,queue:q,store,graphiti,
-    curate:async()=>({content:JSON.stringify(proposal(U)),duration_ms:25}),maxSeconds:20});
+    curate:async()=>({content:JSON.stringify(modelProposal(U)),duration_ms:25}),maxSeconds:20});
   assert.equal(result.status,'settled');
   assert.equal(result.persisted,1);
   assert.equal(writes,1);
@@ -249,11 +272,11 @@ test('operator-requested re-evaluation is processed by admitted worker',()=>temp
   const requested=await store.change(c.id,1,'reevaluate',{reason:'New context'});
   assert.equal(requested.reevaluate_requested,true);
   const graphiti={call:async method=>{
-    if(method==='search_memory_facts')return {facts:[{fact:fact(U).assertion,group_id:scope.group}]};
+    if(method==='search_memory_facts')return {facts:[{fact:U.excerpt,group_id:scope.group}]};
     return {episodes:[]};
   }};
   const result=await runAdmitted({root,group:scope.group,queue:q,store,graphiti,
-    curate:async()=>({content:JSON.stringify(proposal(U)),duration_ms:20}),maxSeconds:20});
+    curate:async()=>({content:JSON.stringify(modelProposal(U)),duration_ms:20}),maxSeconds:20});
   assert.equal(result.curated,1);
   assert.equal((await store.get(c.id)).reevaluate_requested,false);
   assert.equal((await store.get(c.id)).state,'deferred');
@@ -324,7 +347,7 @@ test('re-evaluated approval converges deferred source queue without re-staging e
   const result=await runAdmitted({root,group:scope.group,queue:q,store,graphiti,
     curate:async()=>({content:JSON.stringify({
       decision:'EMIT',reason:'User-backed decision',
-      facts:[{assertion:fact(U).assertion,kind:'decision',
+      facts:[{assertion:U.excerpt,kind:'decision',
         source_refs:[U.source_refs[0]],temporal_status:'observed'}]}),duration_ms:30}),
     maxSeconds:20});
   assert.equal(result.status,'settled');
