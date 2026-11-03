@@ -94,15 +94,21 @@ const server=createServer(async(req,res)=>{
   if(parsed.pathname.startsWith('/api/')){
     if(!authorized(req))return respond(res,401,{error:'UNAUTHORIZED'});
     if(req.method==='GET'&&parsed.pathname==='/api/status'){
-      const items=(await store.list({limit:500})).items;
-      const counts={};for(const e of items)counts[e.state]=(counts[e.state]||0)+1;
-      return respond(res,200,{scope:group,review_count:items.length,
+      const counts={};let total=0;
+      for(let offset=0;;offset+=500){
+        const page=await store.list({limit:500,offset});
+        for(const e of page.items)counts[e.state]=(counts[e.state]||0)+1;
+        total=page.total;if(!page.has_more)break;
+      }
+      return respond(res,200,{scope:group,review_count:total,
         review_counts:counts,candidate_queue:await queue.status()});
     }
     if(req.method==='GET'&&parsed.pathname==='/api/clusters'){
       const state=parsed.searchParams.get('state');
-      const results=await store.list({limit:500});
-      return respond(res,200,{total:results.total,
+      const offset=Number(parsed.searchParams.get('offset')||0);
+      if(!Number.isInteger(offset)||offset<0)return respond(res,400,{error:'INVALID_OFFSET'});
+      const results=await store.list({limit:500,offset});
+      return respond(res,200,{total:results.total,has_more:results.has_more,
         items:results.items.filter(x=>!state||x.state===state).map(x=>({
           id:x.id,state:x.state,project:x.project,session_id:x.session_id,
           event_count:x.events.length,reason:x.reason,decision:x.decision,

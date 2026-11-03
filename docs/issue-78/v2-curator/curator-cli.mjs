@@ -20,9 +20,13 @@ if(!group||!['drain','status','list'].includes(command)||
 }else{
   const store=new ReviewStore(root,group);
   if(command==='status'){
-    const items=(await store.list({limit:500})).items;
-    const counts={};for(const r of items)counts[r.state]=(counts[r.state]||0)+1;
-    console.log(JSON.stringify({group,counts,review_count:items.length,
+    const counts={};let reviewCount=0;
+    for(let offset=0;;offset+=500){
+      const page=await store.list({limit:500,offset});
+      for(const r of page.items)counts[r.state]=(counts[r.state]||0)+1;
+      reviewCount=page.total;if(!page.has_more)break;
+    }
+    console.log(JSON.stringify({group,counts,review_count:reviewCount,
       queue:await new CandidateQueue(root,group).status()},null,2));
   }else if(command==='list'){
     const rows=await store.list({limit:100});

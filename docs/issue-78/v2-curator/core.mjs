@@ -142,15 +142,17 @@ export class ReviewStore {
       return v;
     } catch(e){if(e.code==='ENOENT')return null;throw e;}
   }
-  async list({limit=100}={}){
-    if(!Number.isInteger(limit)||limit<1||limit>500)throw Error('Invalid list limit');
+  async list({limit=100,offset=0}={}){
+    if(!Number.isInteger(limit)||limit<1||limit>500||
+      !Number.isInteger(offset)||offset<0)throw Error('Invalid list page');
     let names=[];
     try{names=(await fs.readdir(this.dir)).filter(n=>/^[a-f0-9]{64}\.json$/.test(n)).sort();}
     catch(e){if(e.code!=='ENOENT')throw e;}
     const items=[];
     for(const n of names){const v=await this.get(n.slice(0,-5));if(v)items.push(v);}
     items.sort((a,b)=>a.updated_at.localeCompare(b.updated_at)||a.id.localeCompare(b.id));
-    return {total:items.length,items:items.slice(0,limit),has_more:items.length>limit};
+    return {total:items.length,items:items.slice(offset,offset+limit),
+      has_more:items.length>offset+limit};
   }
   async _mutex(id,fn){
     await this.ensure(); const lock=this.filename(id)+'.lock';

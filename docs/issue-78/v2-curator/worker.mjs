@@ -5,6 +5,15 @@ import { ReviewStore, selectClusters, validateDecision, normalizedAssertion } fr
 import { curateCluster } from './model.mjs';
 const validUUID=s=>typeof s==='string'&&/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i.test(s);
 const nameOf=r=>'curated-v1:'+r.id;
+async function allRecords(store){
+  const out=[];
+  for(let offset=0;;offset+=500){
+    const page=await store.list({limit:500,offset});
+    out.push(...page.items);
+    if(!page.has_more)break;
+  }
+  return out;
+}
 const admitted=()=>{if(process.env.GHDEV_MEMORY_POST_EXIT_LEASE!=='admitted')
   throw Error('EX_POST_EXIT_ADMISSION_REQUIRED');};
 export function episodeBody(record){
@@ -27,7 +36,7 @@ export function positiveEpisode(record, episodes){
 }
 export async function reconcile(store,graphiti,{maxEpisodes=1000}={}){
   admitted();
-  const records=(await store.list({limit:500})).items.filter(r=>['queued','submission_unknown'].includes(r.state));
+  const records=(await allRecords(store)).filter(r=>['queued','submission_unknown'].includes(r.state));
   if(!records.length)return {persisted:0,unresolved:0};
   const reply=await graphiti.call('get_episodes',{group_ids:[store.group],max_episodes:maxEpisodes});
   if(!Array.isArray(reply?.episodes))throw Error('GRAPHITI_EPISODES_UNAVAILABLE');
@@ -43,7 +52,7 @@ export async function reconcile(store,graphiti,{maxEpisodes=1000}={}){
 }
 async function duplicateState(record,store,graphiti) {
   // Cheap local semantic identity and confirmed remote factual equality.
-  const listed=(await store.list({limit:500})).items;
+  const listed=await allRecords(store);
   const ours=new Set(record.facts.map(f=>normalizedAssertion(f.assertion)));
   for(const other of listed){
     if(other.id===record.id||!['persisted','queued','submission_unknown'].includes(other.state))continue;
@@ -114,7 +123,7 @@ export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='loca
   if(result.unresolved)return {...stats,status:'unresolved'};
   // Explicit operator re-evaluation is processed by the same admitted
   // worker, not a browser-triggered LLM call. Missing model defers visibly.
-  const redo=(await store.list({limit:500})).items.filter(x=>
+  const redo=(await allRecords(store)).filter(x=>
     x.state==='deferred'&&x.reevaluate_requested);
   for(const prior of redo.slice(0,maxClusters)){
     if(Date.now()>deadline-5000)break;
@@ -175,7 +184,7 @@ export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='loca
       }else await queue.transition(e.event_id,'new',to);
     }
   }
-  const after=(await store.list({limit:500})).items;
+  const after=await allRecords(store);
   for(const entry of after.filter(x=>x.state==='approved')){
     if(Date.now()>deadline-5000)break;
     const wrote=await promoteOne(store,entry,graphiti);
