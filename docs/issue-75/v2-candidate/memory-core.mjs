@@ -341,9 +341,12 @@ export class Memory {
     // positively persisted, exact group/episode/source mappings. The optional
     // resolver is read-only and cannot upgrade any evidence class.
     if (wanted.size && typeof this.extraSourceResolver === 'function') {
-      const extras = await this.extraSourceResolver([...wanted]);
-      if (!Array.isArray(extras) || extras.length > 120)
-        throw Error('Invalid curated source mapping');
+      // Curated index failure must not suppress already-supported legacy
+      // journal recall or invent a fallback authority for new episodes.
+      let extras = [];
+      try { extras = await this.extraSourceResolver([...wanted]); }
+      catch { extras = []; }
+      if (!Array.isArray(extras) || extras.length > 120) extras = [];
       for (const entry of extras) {
         if (entry?.status !== 'persisted' || entry.group !== this.group ||
           !wanted.has(entry.remoteEpisodeUuid) || byRemote.has(entry.remoteEpisodeUuid) ||

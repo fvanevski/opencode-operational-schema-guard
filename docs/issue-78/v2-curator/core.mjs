@@ -5,6 +5,7 @@ import path from 'node:path';
 import { cleanExcerpt } from '../v2-candidate/events.mjs';
 
 const HEX = /^[a-f0-9]{64}$/;
+const UUID = /^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i;
 const SAFE = /^[A-Za-z0-9_.-]{1,100}$/;
 const DECISIONS = new Set(['SKIP','EMIT','MERGE','SUPERSEDE_PROPOSED','DEFER']);
 const CLASSES = new Set(['user-stated','tool-reported','assistant-reported']);
@@ -235,10 +236,21 @@ export class ReviewStore {
       const old=await this.get(id);
       if(!old||old.state!==expectedState)return false;
       const now=new Date().toISOString();
+      const remoteUUID=extra.remote_episode_uuid||old.remote_episode_uuid;
+      if(next==='persisted'&&!UUID.test(remoteUUID||''))
+        throw Error('Confirmed remote episode UUID required');
       const updated={...old,state:next,revision:old.revision+1,updated_at:now,
         reason:typeof extra.reason==='string'?extra.reason:old.reason,
-        remote_episode_uuid:extra.remote_episode_uuid||old.remote_episode_uuid,
+        remote_episode_uuid:remoteUUID,
         audit:[...old.audit.slice(-59),{at:now,action:'state',outcome:next}]};
+      if(next==='persisted'){
+        // O(1) source lookup in native prompt recall. Write index first;
+        // readers re-check the referenced record's persisted identity, so
+        // a crash between writes cannot create false-positive provenance.
+        const indexDir=path.join(this.dir,'_episode-index');
+        await fs.mkdir(indexDir,{recursive:true,mode:0o700});
+        await atomic(path.join(indexDir,remoteUUID+'.json'),{id,remote_episode_uuid:remoteUUID});
+      }
       await atomic(this.filename(id),updated);return true;
     });
   }
