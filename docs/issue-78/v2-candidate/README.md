@@ -104,3 +104,49 @@ Stop and return to Central only on material source/API incompatibility,
 privacy/data-loss risk, protected-live-state mutation, or architectural decision.
 Otherwise complete the scoped host qualification, tests, pilot and evidence in
 one Build campaign. Exact-head tests/host runs are not yet asserted here.
+
+## Capture completion unit (next integrated #79 Build qualification)
+
+The current working-branch source includes Central-authored extensions beyond
+the first qualified stock V2.2.5 pilot. **These extensions are staged source,
+not yet host-test PASS or accepted production behavior.**
+
+- `events.mjs` now accepts native `edit`, `write` and `apply_patch`
+  execute.after receipts with stable `callID`, bounded workspace-relative
+  file-path handles and **tool-reported** status. It never stores replacement
+  text, source patches, stdout, or an unproven `verified` label. Inputs with
+  secret-like paths, out-of-workspace paths, oversized patches or known private
+  content are excluded. Actual tool names/field shapes need native confirmation.
+- Long completed assistant text up to 16,000 characters is privacy-scanned
+  **before** extraction, then bounded to a <=1,100-character excerpt and a
+  truncation marker. Larger/private/self-generated text is discarded.
+  The plugin keeps a bounded process-local de-duplication hint (64 sessions,
+  256 assistant message IDs per session), processes up to 512 recent context
+  messages and records over-cap/drop reasons durably. The queue remains the
+  restart-safe occurrence deduplication authority.
+- Admitted user message event IDs are attached as nearby task/turn
+  `related_event_ids` to later tool and completed-assistant source events
+  in the same session. Links are sequencing hints, not independent proof of
+  code correctness or causal attribution.
+- `queue.mjs` now checks event identity hashes against the provided native
+  source-handle fields, scope, kind and evidence class before accepting a
+  record. This detects malformed/faked envelope fields; it is **not** a
+  cryptographic attestation of the original OpenCode runtime.
+- Existing `docs/issue-75/v2-candidate/memory-core.mjs` gains bounded
+  `Journal.pages()`, and its current drain/reconcile/search consumers as
+  well as `memory-cli.mjs` use paged reads. The old `Journal.list()` hard
+  cap remains a backward-compatible safety bound for callers that explicitly
+  use that whole-journal method; the active consumers no longer fail at the
+  501st record. Records are never silently dropped or archived. The
+  Graphiti recent-`get_episodes` 100-record window is still a **Stage #80**
+  reconciliation concern; no remote-write replay policy changed.
+- `pilot-real-replay.mjs` evaluates the previously frozen eight-case
+  sanitized host sample without altering labels or claiming that a synthetic
+  reconstruction replaces live native event receipts.
+
+**Qualification authority:** `LOCAL_AGENT_CONTRACT_CAPTURE_COMPLETE.md`
+defines the single bounded Build campaign. Host native tool-shape correction,
+CPU regression repair, and an evidence-only GitHub packet are in scope.
+No production activation, separate PR, Graphiti `add_memory` or model-curator
+integration is authorized. Final last-reply capture where no subsequent context
+exists is a documented API limitation, not a reason to invent a bus hook.
