@@ -125,12 +125,14 @@ function App(){
        ['submission_unknown','deferred'].includes(r.state)?'orange':r.state==='persisted'?'green':'gray'}>{r.state}</Badge></Flex>
      <Text size="2">{r.reason}</Text><Text size="1" color="gray">{r.event_count} events · {r.session_id.slice(0,18)}</Text>
      <Text size="1" color="gray">{r.evidence_classes.join(' / ')} · {r.last_observed_at||'unknown time'}</Text>
+     {r.origin==='qualification_operator_seed'&&<Text size="1" color="amber">Operator-prepared qualification review, not LLM-curated</Text>}
     </button>)}</div>{visible.length===0&&<Text color="gray">No matching reviews.</Text>}</aside>
    <main className="workspace">{!detail?<Card><Heading size="4">Select an evidence cluster</Heading>
      <Text color="gray">Review source events, inspect proposed facts and record a safe decision. Automated curation continues with this portal closed.</Text></Card>:
      <><Flex justify="between" align="center" wrap="wrap" gap="2"><Box><Heading size="4">{detail.project} / {detail.session_id}</Heading>
       <Text size="1" color="gray" style={{ overflowWrap: 'anywhere' }}>Cluster {detail.id} · revision {detail.revision}</Text></Box>
-      <Badge>{detail.state}</Badge></Flex><Separator size="4"/>
+      <Flex gap="2" wrap="wrap" align="center"><Badge>{detail.state}</Badge>
+      {detail.origin==='qualification_operator_seed'&&<Badge color="orange">Operator qualification seed</Badge>}</Flex></Flex><Separator size="4"/>
      <Tabs.Root defaultValue="evidence"><Tabs.List><Tabs.Trigger value="evidence">Evidence and proposal</Tabs.Trigger>
        <Tabs.Trigger value="graph">Graph preview</Tabs.Trigger><Tabs.Trigger value="audit">Decision history</Tabs.Trigger></Tabs.List>
       <Tabs.Content value="evidence"><div className="detailGrid"><div><Heading size="3">Source timeline</Heading>
