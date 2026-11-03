@@ -168,7 +168,7 @@ test('operator qualification seed cannot masquerade as model curation',()=>temp(
 }));
 test('operator-attested asynchronous extraction failure preserves source authority and blocks replay',()=>temp(async root=>{
  const s=new ReviewStore(root,scope.group),c=cluster();
- const {record}=await s.create(c,validDecision(c));
+ const {record}=await s.create(c,proposal(U));
  await s.advance(record.id,'approved','submission_unknown');
  await s.advance(record.id,'submission_unknown','queued');
  const queued=await s.get(record.id);
