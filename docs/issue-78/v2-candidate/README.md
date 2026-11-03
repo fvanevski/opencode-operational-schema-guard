@@ -25,10 +25,15 @@ unit, not a final #79 acceptance certificate.
   old heuristic capture *only inside this isolated new plugin*. It captures
   real admitted user prompts via prompt/context, completed significant tool
   receipts through execute.after and retains queue content through compaction.
-  It deliberately does not register a speculative finished-turn hook.
-- fromFinishedTurn: adapter-ready normalized finished assistant turn, strictly
-  labelled assistant-reported. Local host qualification must find/verify the
-  actual finished-turn event contract before this adapter is wired in.
+  Completed assistant turns are observed **post-completion** through the
+  authenticated stock-V2 context surface (a message present in a later context
+  build has finished; stable native `msg_` IDs; text parts only, reasoning
+  excluded) and staged via `fromFinishedTurn`. The stock V2.2.5 plugin bus
+  does not deliver `message.updated` or `session.idle` events to plugins, so
+  no speculative finished-turn hook is registered. A single-turn session has
+  no subsequent context build, so its final assistant turn remains uncaptured.
+- fromFinishedTurn: normalized completed assistant turns labelled
+  assistant-reported; host-qualified using subsequent stock-V2.2.5 context.
 - candidate-cli.mjs: offline read-only status/list of Stage #79 records.
   It cannot submit to Graphiti or approve inferred facts.
 
@@ -69,6 +74,20 @@ installed supported SDK types and observe a disposable native client/session.
 Do not register guessed V1 names or base evidence on a fabricated event shape.
 Only after direct proof, bind a finished-turn adapter in a focused source edit
 with regression tests and an attached sanitized shape receipt.
+
+**Qualified November 3, 2026 on disposable stock V2.2.5 native sessions:**
+`session.prompt` has `{sessionID, messageID, prompt{text,files,agents,skills},
+delivery}`; `session.context` has `{sessionID, system[], messages[]}`;
+`tool.execute.after` has `{sessionID, tool, callID, status, input,
+result{output{exit,output},...}}`; `session.compaction` fires for manual
+compaction. The plugin bus delivered `session.execution.started|succeeded|
+failed|interrupted`, `session.step.*`, `session.tool.*`, `session.compaction.*`,
+`session.usage.updated` and related events, but no `message.updated`,
+`message.part.updated` or `session.idle`. `ctx.session.get` yielded session
+metadata, not messages. The authenticated completed-assistant observation is
+prior messages in the *next* context build, with stable native IDs and text
+parts; it is not a direct final-turn completion callback. This is scoped host
+evidence, not a claim of whole operational-schema qualification.
 
 Use an isolated *capture-only* config/group/state root and preserve provider
 mapping and existing plugin order/recall/permissions. Do not replace the live

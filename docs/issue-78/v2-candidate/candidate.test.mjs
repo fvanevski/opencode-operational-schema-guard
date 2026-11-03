@@ -151,3 +151,55 @@ test('stock-V2 wrapper keeps legacy recall, stages only in admitted context, no 
   // Endpoint is deliberately unavailable: only the preserved read-only lookup can try it.
   // New candidate collector never calls add_memory or Graphiti.
 }));
+test('finished-turn: completed assistant turns bind through the authenticated context surface, deduped by native message ID', () => sandbox(async root => {
+  const session = {}, toolHooks = {}, methods = [];
+  const ctx = {
+    directory: scope.workspace,
+    options: { enabled: true, capture: true, group: scope.group,
+      project: scope.project, workspace: scope.workspace, stateDir: root,
+      endpoint: 'http://127.0.0.1:1/mcp' },
+    session: { hook: (name, cb) => { (session[name] ||= []).push(cb); return {dispose: async()=>{}}; } },
+    tool: { hook: (name, cb) => { (toolHooks[name] ||= []).push(cb); return {dispose: async()=>{}}; } },
+    logger: { warn: x => methods.push(x) },
+  };
+  const stop = await plugin.setup(ctx);
+  const assistantMsg = { id: 'msg-done-1', role: 'assistant',
+    parts: [{ type: 'reasoning', text: 'internal deliberation must stay out of the excerpt' },
+            { type: 'text', text: 'The stale cache was invalidating the selector; the fix preserves the CLI and the failing test now passes.' }] };
+  const userMsg = { id: 'msg-u-1', role: 'user', parts: [{ type: 'text', text: 'fix it' }] };
+  for (const cb of session.context) await cb({ sessionID: 'ses-1', system: [],
+    messages: [userMsg, assistantMsg] });
+  for (const cb of session.context) await cb({ sessionID: 'ses-1', system: [],
+    messages: [userMsg, assistantMsg] });
+  await stop();
+  const q = new CandidateQueue(root, scope.group);
+  const entries = await q.list();
+  assert.equal(entries.total, 1);
+  const ev = entries.items[0];
+  assert.equal(ev.kind, 'assistant_turn');
+  assert.equal(ev.evidence_class, 'assistant-reported');
+  assert.equal(ev.source_strength, 'native-id');
+  assert.equal(ev.source_refs[0], 'opencode:ses-1:message:msg-done-1');
+  assert.match(ev.excerpt, /invalidating the selector/);
+  assert.equal(ev.excerpt.includes('internal deliberation'), false, 'reasoning parts are excluded');
+}));
+test('finished-turn: ID-less, short, and secret-bearing assistant messages are not staged', () => sandbox(async root => {
+  const session = {}, toolHooks = {};
+  const ctx = {
+    directory: scope.workspace,
+    options: { enabled: true, capture: true, group: scope.group,
+      project: scope.project, workspace: scope.workspace, stateDir: root,
+      endpoint: 'http://127.0.0.1:1/mcp' },
+    session: { hook: (name, cb) => { (session[name] ||= []).push(cb); return {dispose: async()=>{}}; } },
+    tool: { hook: (name, cb) => { (toolHooks[name] ||= []).push(cb); return {dispose: async()=>{}}; } },
+  };
+  const stop = await plugin.setup(ctx);
+  for (const cb of session.context) await cb({ sessionID: 'ses-2', system: [], messages: [
+    { role: 'assistant', parts: [{ type: 'text', text: 'A completed assistant turn that is long enough to be a candidate.' }] },
+    { id: 'msg-short', role: 'assistant', parts: [{ type: 'text', text: 'ok' }] },
+    { id: 'msg-secret', role: 'assistant', parts: [{ type: 'text', text: 'I set password=secret123 for the endpoint so the integration can authenticate against the gateway now.' }] },
+  ]});
+  await stop();
+  const q = new CandidateQueue(root, scope.group);
+  assert.equal((await q.status()).total, 0);
+}));
