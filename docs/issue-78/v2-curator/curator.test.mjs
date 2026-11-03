@@ -8,6 +8,8 @@ import { CandidateQueue } from '../v2-candidate/queue.mjs';
 import { selectClusters, modelPrompt, validateDecision, ReviewStore } from './core.mjs';
 import { promoteOne, reconcile, runAdmitted, positiveEpisode } from './worker.mjs';
 import { curateCluster } from './model.mjs';
+import { sourcedEpisodeResolver } from './sourced-recall.mjs';
+import { Journal, Memory } from '../../issue-75/v2-candidate/memory-core.mjs';
 
 const scope={group:'stage80',workspace:'/workspace/gh_mcp',project:'gh_mcp'};
 const t='2026-11-03T18:00:00.000Z';
@@ -197,6 +199,47 @@ test('operator-requested re-evaluation is processed by admitted worker',()=>temp
   assert.equal((await store.get(c.id)).reevaluate_requested,false);
   assert.equal((await store.get(c.id)).state,'deferred');
   assert.match((await store.get(c.id)).reason,/DUPLICATE/);
+ }finally{delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;}
+}));
+test('persisted curated episode becomes source-attributed in accepted native recall; wrong workspace excluded',()=>temp(async root=>{
+ const store=new ReviewStore(root,scope.group),c=cluster(),uuid='87654321-1111-4111-a111-222222222222';
+ await store.create(c,proposal(U));
+ await store.advance(c.id,'approved','submission_unknown');
+ await store.advance(c.id,'submission_unknown','queued');
+ assert.deepEqual(await sourcedEpisodeResolver(root,scope.group,scope.workspace,scope.project,[uuid]),[]);
+ await store.advance(c.id,'queued','persisted',{remote_episode_uuid:uuid});
+ const mappings=await sourcedEpisodeResolver(root,scope.group,scope.workspace,scope.project,[uuid]);
+ assert.equal(mappings.length,1);
+ assert.equal(mappings[0].sourceRef,U.source_refs[0]);
+ assert.equal(mappings[0].evidenceClass,'user-stated');
+ assert.deepEqual(await sourcedEpisodeResolver(root,scope.group,'/workspace/other',scope.project,[uuid]),[]);
+ const graphiti={call:async name=>{
+   if(name==='search_memory_facts')return {facts:[{fact:fact(U).assertion,group_id:scope.group,episodes:[uuid]}]};
+   throw Error('Unwanted graph write/read '+name);
+ }};
+ const memory=new Memory({journal:new Journal(root,scope.group),graphiti,group:scope.group,
+   extraSourceResolver:ids=>sourcedEpisodeResolver(root,scope.group,scope.workspace,scope.project,ids)});
+ const recalled=await memory.search('Why did we fix the invalid median algorithm and retain the CLI interface?');
+ assert.ok(recalled.length>0);
+ assert.equal(recalled[0].source,U.source_refs[0]);
+ assert.equal(recalled[0].evidenceClass,'user-stated');
+ const legacyOnly=new Memory({journal:new Journal(root,scope.group),graphiti,group:scope.group});
+ assert.deepEqual(await legacyOnly.search('Why did we fix the invalid median algorithm and retain the CLI interface?'),[]);
+}));
+test('multi-fact mixed-episode promotion stays deferred rather than inflating a source class',()=>temp(async root=>{
+ process.env.GHDEV_MEMORY_POST_EXIT_LEASE='admitted';
+ try{
+  const store=new ReviewStore(root,scope.group),c=cluster();
+  const two={decision:'EMIT',reason:'Two candidate statements',
+    facts:[fact(U),fact(A,{assertion:'The median algorithm had an off by one error and the tests now pass.',
+      kind:'implementation'})]};
+  const stored=await store.create(c,two);
+  assert.equal(stored.record.state,'approved');
+  const graphiti={call:async name=>{if(name==='add_memory')throw Error('unexpected write');
+    return {facts:[]};}};
+  const result=await promoteOne(store,stored.record,graphiti);
+  assert.equal(result.status,'deferred');
+  assert.equal((await store.get(c.id)).reason,'multi_fact_requires_split');
  }finally{delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;}
 }));
 test('unavailable model yields durable DEFER without losing candidate, no Graphiti write',()=>temp(async root=>{
