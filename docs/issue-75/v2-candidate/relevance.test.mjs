@@ -107,6 +107,29 @@ test('single-digit issue numbers retain exact issue-qualified scope', async () =
   assert.deepEqual(await relevanceFilter(query, [wrong]), []);
 });
 
+test('hyphenated issue references preserve exact scope and independent topic evidence', async () => {
+  const query = 'What was our agreed evidence requirement before closing issue-7?';
+  const wrong = { fact: 'Issue-8 closes only after an evidence review.' };
+  const correct = { fact: 'Issue 7 closes only after an evidence review.' };
+  assert.equal(relevanceSignals(query, wrong.fact).eligible, false);
+  assert.deepEqual(await relevanceFilter(query, [wrong]), []);
+  assert.equal(relevanceSignals(query, correct.fact).eligible, true);
+  assert.deepEqual(await relevanceFilter(query, [wrong, correct]), [correct]);
+
+  // Mixed issue spellings must be equivalent, even with proper-name casing.
+  const capitalized = 'What is the closure requirement for Issue-75?';
+  const supported = { fact: 'Issue #75 closes after the required evidence is reviewed.' };
+  const other = { fact: 'Issue-70 closes after the required evidence is reviewed.' };
+  assert.equal(relevanceSignals(capitalized, supported.fact).eligible, true);
+  assert.equal(relevanceSignals(capitalized, other.fact).eligible, false);
+  assert.deepEqual(await relevanceFilter(capitalized, [other, supported]), [supported]);
+
+  // Correct identifier alone does not authorize an unrelated observation.
+  const offTopic = { fact: 'Issue-7 uses React Flow for the issue dashboard.' };
+  assert.equal(relevanceSignals(query, offTopic.fact).eligible, false);
+  assert.deepEqual(await relevanceFilter(query, [offTopic]), []);
+});
+
 test('reranker uses loopback only, validates bounded score and request', async () => {
   let body;
   const scorer=localReranker('http://127.0.0.1:8004/v1/rerank',{

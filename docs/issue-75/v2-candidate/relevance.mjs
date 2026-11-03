@@ -78,21 +78,25 @@ const DIRECT_DECISION = /\b(?:chos(?:e|en)|decid(?:e|ed)|select(?:ed)?|picked|se
 // "original media" names a source file, not a historical decision.
 const HISTORICAL_STATEMENT = /\b(?:originally|previously|prior to|formerly|used to|replac(?:e|ed) (?:by|with)|switched (?:from|to)|then)\b/i;
 const INTENT_TERMS = new Set('settle decided decide chosen choose select selected pick picked agreed prefer preferred original originally before previous previously formerly historical history earlier first'.split(' '));
+// The same syntax drives identity extraction, removal from topic terms, and
+// exemption from named-entity matching. Otherwise Issue-7 vs Issue 7 can
+// either evade the scope guard or be rejected despite an exact ID match.
+const ISSUE_REFERENCE = /\bissues?\s*[-#]?\s*(\d+)\b/gi;
 function namedQueryTerms(query) {
-  // Keep mid-question proper names/acronyms as hard topic constraints. This
-  // avoids asserting facts about named software absent from the local group.
-  return [...String(query).matchAll(/\b[A-Z][A-Za-z0-9_-]{2,}\b/g)]
+  // Preserve proper-name constraints, but issue labels have their own exact
+  // scope check and must not become spelling-dependent proper names.
+  return [...stripIssueReferences(query).matchAll(/\b[A-Z][A-Za-z0-9_-]{2,}\b/g)]
     .filter(match => match.index !== 0 && !['Our', 'We', 'The'].includes(match[0]))
     .map(match => match[0].toLowerCase());
 }
 function issueReferences(value) {
-  // Match the number *as an issue reference*, including one-digit issue IDs.
-  // Bare occurrences (dates, pass counts, versions) cannot satisfy this.
-  return new Set([...String(value).matchAll(/\bissues?\s*#?\s*(\d+)\b/gi)]
+  // Match Issue #7, Issue 7 and issue-7 identically. Bare numbers (pass
+  // counts, versions) cannot satisfy a requested issue identity.
+  return new Set([...String(value).matchAll(ISSUE_REFERENCE)]
     .map(match => match[1].replace(/^0+(?=\d)/, '')));
 }
 function stripIssueReferences(value) {
-  return String(value).replace(/\bissues?\s*#?\s*\d+\b/gi, ' ');
+  return String(value).replace(ISSUE_REFERENCE, ' ');
 }
 export function relevanceSignals(query, fact, { hasRerankScore = false } = {}) {
   const content = safeFact(fact);
