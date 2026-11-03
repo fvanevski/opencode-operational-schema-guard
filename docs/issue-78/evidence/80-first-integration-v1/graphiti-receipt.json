@@ -1,0 +1,67 @@
+{
+  "artifact": "graphiti-receipt.json",
+  "issue": 80,
+  "campaign": "80-first-integration-v1",
+  "status": "pending_post_exit_positive_persistence",
+  "endpoint": {
+    "url": "http://127.0.0.1:8766/mcp",
+    "transport": "MCP streamable HTTP (loopback)",
+    "session_init": "initialize ok; server capabilities: tools (listChanged=false), prompts, resources",
+    "server_description": "Graphiti memory service (temporally-aware knowledge graph); episodes partitioned by group_id; bi-temporal fact validity"
+  },
+  "tools_observed": [
+    "add_memory",
+    "add_triplet",
+    "search_nodes",
+    "search_memory_facts",
+    "summarize_saga",
+    "build_communities",
+    "get_episode_entities",
+    "get_entity_edge",
+    "get_episodes",
+    "delete_episode",
+    "delete_entity_edge",
+    "clear_graph"
+  ],
+  "disposable_scope": {
+    "group": "cur80_disposable",
+    "state_root": "/home/filip/.local/state/ghdev-graphiti-issue80 (private, 0700)",
+    "seeded_events": [
+      "de6e9fad3ad4522b561d4243d74a4aba2e3f2f56d82c71ad792b9012a348507e",
+      "99462949b9ba3566ab97696ddd88d9afa035e8ce0c4efedb2818a47f583d7b0a",
+      "b19d06c5469d8608c174096698bc03e70bdf786b8bb0e7a54c5425f28cf1e029"
+    ],
+    "note": "disposable group only; production group ghdev_gh_mcp and all installed OpenViking state untouched"
+  },
+  "gate_receipts": {
+    "installed_gate_source": "/home/filip/.local/share/openviking-commit-gate/openviking_commit_gate.py",
+    "installed_gate_source_sha256": "aa0cf54e4513767b87f18e9704e27eb398a6aee3e71462644044d8805fd12b96",
+    "gate_config": "/home/filip/.config/openviking/commit-gate.toml",
+    "shared_ex_lock": "held by active interactive harness/gate during Build; gate DB had no unresolved memory_work (3 completed) at demo time",
+    "pre_exit_fail_closed_direct": "FAIL_CLOSED: shared agent/gate lease held; bounded wait exhausted (exit 2)",
+    "pre_exit_fail_closed_systemd_wake": "FAIL_CLOSED: interactive harness active/unknown: cannot drain (exit 2)",
+    "no_model_or_graphiti_work_pre_exit": true
+  },
+  "deterministic_stub_scenarios": {
+    "script": "host-local stub-scenarios.mjs (stub Graphiti client, disposable tmp roots, lease set in-process only)",
+    "result": "7/7 PASS",
+    "receipts": [
+      "restart_convergence_no_model_recall: durable approved record with queue events still new converges on re-run without model recall (state=queued, exactly 1 write-intent)",
+      "restart_queue_converged: queue counts new=0 approved=3",
+      "malformed_model_defers: invalid model JSON -> durable DEFER (invalid_model_json), 0 Graphiti writes",
+      "timeout_model_defers: hung curate -> durable DEFER (curator_unavailable_or_invalid)",
+      "unknown_ack_status: add_memory throws after send -> submission_unknown, exactly 1 write",
+      "unknown_ack_no_replay_persists: restart with positive get_episodes readback -> persisted, still exactly 1 write (no blind replay)",
+      "model_lane_requires_lease: curateCluster refuses without lease (MODEL_ADMISSION_REQUIRED)"
+    ]
+  },
+  "native_source_recall": {
+    "evidence": "deterministic curator suite: persisted episode is source-attributed in native recall with exact group/workspace/evidence-class binding and wrong-workspace exclusion (curator.test.mjs, 13/13); stub restart convergence proves recall mapping without model recall",
+    "real_model_recall": "pending post-exit operator run (same campaign continuation)"
+  },
+  "unknown_submission": "reconciled-in-stub (positive get_episodes readback -> persisted; no blind replay; exactly one write retained observable)",
+  "pending_positive_persistence": {
+    "expected": "one admitted model curation of the seeded user+tool+assistant cluster; exactly one add_memory episode under group cur80_disposable; positive exact episode UUID readback + _episode-index confirmation",
+    "boundary": "cannot execute while the interactive OpenCode harness is active (shared EX lease + active-harness classifier); returns READY_FOR_POST_EXIT_OPERATOR_RUN with the exact native wrapper command (see activation-receipt.md); operator result is an authenticated separate receipt for Central adjudication"
+  }
+}

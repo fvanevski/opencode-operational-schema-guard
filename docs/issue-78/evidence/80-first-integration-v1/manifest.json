@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "packet_kind": "Issue #80 first integrated Build campaign evidence packet (CPU + portal browser/API + pre-exit gate/wake + model/Graphiti lane preparation)",
+  "repository": "fvanevski/opencode-operational-schema-guard",
+  "issue": 80,
+  "branch": "issue/79",
+  "campaign": "80-first-integration-v1",
+  "source_start_sha": "c38c8fd1b8fee0b701ebeb8888fa6f1f0a27bfda",
+  "source_tree_sha": "5d6e1612cb0309c2fb6c23887657100c60fa815e",
+  "source_tested_sha": "c38c8fd1b8fee0b701ebeb8888fa6f1f0a27bfda + uncommitted working-tree delta (see changed_source_paths; full bytes in source.patch)",
+  "uncommitted_source_diff": "one in-scope portal fix (main.tsx detail-header wrap) + untracked package-lock.json; NOT committed (stays uncommitted for Central review)",
+  "changed_source_paths": [
+    "docs/issue-78/v2-curator/portal/src/main.tsx (modified, uncommitted)",
+    "docs/issue-78/v2-curator/portal/package-lock.json (untracked)",
+    "docs/issue-78/v2-curator/portal/dist/ (untracked build artifact; hashes below, omitted from source.patch as reproducible)"
+  ],
+  "evidence_commit_sha": "pending: confirmed by GitHub remote readback (a commit cannot embed its own SHA pre-publication); see handback.md and the chat handback",
+  "test_environment": "Node v26.13.0, npm 12.2.1; host Chromium 156 via global Playwright (browser lane); litellm OpenAI-compatible endpoint http://127.0.0.1:8002 (model lane, shape probe only); Graphiti MCP http://127.0.0.1:8766/mcp (endpoint + stub lane); installed gate source /home/filip/.local/share/openviking-commit-gate/openviking_commit_gate.py (SHA-256 aa0cf54e4513767b87f18e9704e27eb398a6aee3e71462644044d8805fd12b96)",
+  "artifacts": [
+    { "path": "docs/issue-78/evidence/80-first-integration-v1/source.patch",
+      "type": "full proposed source diff (modified main.tsx + new untracked package-lock.json; dist/ omitted as reproducible build artifact with hashes recorded here)",
+      "sha256": "9f0e1032abe6cdd864b4eb9ede1543bce12af5858c6dad59c7eb952d44c805f3" },
+    { "path": "docs/issue-78/evidence/80-first-integration-v1/cpu-tests.md",
+      "type": "CPU admission + regression commands, exits, counts, stub-scenario receipts",
+      "sha256": "de9831e8f828785c1926e4e2032751037d87557cf14c1053e79b87d7d223e3d4" },
+    { "path": "docs/issue-78/evidence/80-first-integration-v1/portal-api-browser.md",
+      "type": "portal build receipts + real browser/API 35/35 qualification",
+      "sha256": "c9ce9c1b4144b1a3cfbf867bc3eb39520afdbeb1e3e6be58c3769c8dacf4e6c3" },
+    { "path": "docs/issue-78/evidence/80-first-integration-v1/activation-receipt.md",
+      "type": "disposable event-wake instantiation, pre-exit FAIL_CLOSED receipts, unit removal, post-exit operator command",
+      "sha256": "6531c83148638938261d55f55e3fa9ba42e045e241da26993b0733258203b324" },
+    { "path": "docs/issue-78/evidence/80-first-integration-v1/model-curator.json",
+      "type": "sanitized model endpoint/shape/usage/timing receipts (no raw prompts, no keys)",
+      "sha256": "80bd4beb4eac9aa418ec36ae106e39c87341fadb782c5c91cba9e0f22fe0b54c" },
+    { "path": "docs/issue-78/evidence/80-first-integration-v1/graphiti-receipt.json",
+      "type": "Graphiti endpoint/tools/session receipts, gate lease receipts, deterministic stub scenarios, pending post-exit positive persistence",
+      "sha256": "deec597d308f7e37e63a23640a39df4fa958f66d6dab4ddb783ddd4351b60f54" },
+    { "path": "docs/issue-78/evidence/80-first-integration-v1/screenshots/shot-01-inbox-dark.png",
+      "type": "sanitized browser UI screenshot (inbox, dark)",
+      "sha256": "56d410c1520b3bb7546fcd614e1cd6728d9b482a65320ced2ed98b828b8ee824" },
+    { "path": "docs/issue-78/evidence/80-first-integration-v1/screenshots/shot-02-graph-persisted.png",
+      "type": "sanitized browser UI screenshot (persisted record graph, episode node)",
+      "sha256": "64cf02cf063d35b038e0c0c79d446b2cd982ed3e6c55dedce9c7661866c7edc4" },
+    { "path": "docs/issue-78/evidence/80-first-integration-v1/screenshots/shot-03-inbox-light.png",
+      "type": "sanitized browser UI screenshot (inbox, light)",
+      "sha256": "85ee4cfd376cf9afbaace961bbc325d3370a9ff2986b2485e9695c506bd4c01c" },
+    { "path": "docs/issue-78/evidence/80-first-integration-v1/screenshots/shot-04-mobile-480.png",
+      "type": "sanitized browser UI screenshot (480px viewport, 0px overflow)",
+      "sha256": "fe0812a9bd71ce9bd6d59642c4743a8797a49a07dac684a037b29556a66d9511" },
+    { "path": "docs/issue-78/evidence/80-first-integration-v1/screenshots/shot-05-final-inbox.png",
+      "type": "sanitized browser UI screenshot (final inbox state; byte-identical to shot-03, same rendered state)",
+      "sha256": "85ee4cfd376cf9afbaace961bbc325d3370a9ff2986b2485e9695c506bd4c01c" }
+  ],
+  "untracked_source_artifact_hashes": [
+    { "path": "docs/issue-78/v2-curator/portal/dist/index.html",
+      "sha256": "fa5dec3fdb1dd3788caa3c6e5deaa9fdff2919ea99c83aa9cb37218a47ca77a3" },
+    { "path": "docs/issue-78/v2-curator/portal/dist/assets/index-CvYTe5oU.js",
+      "sha256": "4fe6f57a554b1abfd43c06c9ae1b22979f24928074816bb097ce405a7ff95067" },
+    { "path": "docs/issue-78/v2-curator/portal/dist/assets/index-h0bHJ6nf.css",
+      "sha256": "519bd737a93cb049568eb15d9621019eeb5766a0bf3e9469d726da53b14a6700" }
+  ],
+  "meta_files": [
+    { "path": "docs/issue-78/evidence/80-first-integration-v1/handback.md",
+      "type": "bounded typed handback + canonical COMMAND_SHAPE_FRICTION (meta-file; exact Git blob on branch)" },
+    { "path": "docs/issue-78/evidence/80-first-integration-v1/manifest.json",
+      "type": "this manifest (meta-file; self-hash not embeddable; EVIDENCE_MANIFEST_SHA256 recorded in handback.md and the chat handback)" }
+  ],
+  "exclusions_and_omissions": [
+    "LOCAL_CURATOR_API_KEY and portal token values (0600 host env file only; never staged)",
+    "raw model prompts and raw model output text (sanitized shape/usage/timing only)",
+    "dist/ build artifact bytes (reproducible from source + lock; SHA-256 recorded above)",
+    "host-local /tmp scratch scripts and machine-readable browser results (portable packet lives on this branch; check names/details re-stated in portal-api-browser.md)",
+    "disposable wake unit files (transient; removed; bindings re-stated in activation-receipt.md)"
+  ],
+  "invariants": {
+    "production_mutation": "none",
+    "graphiti_write": "none pre-exit (positive group-scoped episode pending post-exit operator run in disposable group cur80_disposable)",
+    "openviking_mutation": "none",
+    "source_remote_update": "forbidden (not performed)",
+    "evidence_remote_update": "allowed (this single evidence-only fast-forward commit)"
+  }
+}
