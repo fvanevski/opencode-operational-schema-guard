@@ -23,6 +23,10 @@ const tests = [
   "tests/session-trace-assessment.test.mjs",
   "tests/actions-evidence.test.mjs",
   "tests/actions-evidence-workflow.test.mjs",
+  // The stock-V2 memory plugin is a shipped runtime surface. Keep its
+  // source-attributed retrieval and hook regressions inside exact-head CI.
+  "docs/issue-75/v2-candidate/relevance.test.mjs",
+  "docs/issue-75/v2-candidate/plugin-behavior.test.mjs",
 ]
 const child = spawn(process.execPath, ["--test", "--test-reporter=tap", ...tests], { cwd: root, stdio: "inherit", shell: false })
 child.on("error", (error) => {

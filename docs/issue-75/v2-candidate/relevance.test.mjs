@@ -58,6 +58,20 @@ test('without an independent reranker, semantic-only choice retrieval abstains',
   assert.deepEqual(await relevanceFilter('What is the weather?', [item],
     async () => new Map([[0,.99]])), []);
 });
+test('fresh Issue 75 closure question admits sourced closure fact but not another numbered issue', async () => {
+  const query = 'What was our agreed evidence requirement before closing Issue #75?';
+  const supported = { fact: 'Issue 75 closes only after a fresh OpenCode session demonstrates source-attributed Graphiti persistence and recall.' };
+  const wrongIssue = { fact: 'Issue 70 closes only after a fresh OpenCode session demonstrates source-attributed Graphiti persistence and recall.' };
+  const unrelated = { fact: 'Unrelated deployment notes mention graph quality and a new scheduler.' };
+  assert.ok(lexicalSupport(query, supported.fact).count >= 3,
+    'closing/closes plus exact Issue 75 must be distinct lexical evidence');
+  assert.equal(relevanceSignals(query, supported.fact).eligible, true);
+  assert.equal(relevanceSignals(query, wrongIssue.fact).eligible, false,
+    'numeric issue identifier is a mandatory hard qualifier');
+  assert.deepEqual(await relevanceFilter(query, [wrongIssue, unrelated, supported]), [supported]);
+  assert.deepEqual(await relevanceFilter(query, [wrongIssue, unrelated]), []);
+});
+
 test('reranker uses loopback only, validates bounded score and request', async () => {
   let body;
   const scorer=localReranker('http://127.0.0.1:8004/v1/rerank',{

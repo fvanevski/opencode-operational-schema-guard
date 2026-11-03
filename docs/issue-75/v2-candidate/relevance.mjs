@@ -1,13 +1,31 @@
 /** Strict, bounded automatic-injection admission. On-demand Graphiti search
  * may return a broader set. This module never calls the extraction LLM. */
 const COMMON = new Set('a an and are as at be been by can did do does for from has have how i in is it its of on or our should that the their them these this to was were what when where which who why will with we you your used use repo project please current does'.split(' '));
-const words = value => [...new Set(String(value || '').toLowerCase().match(/[a-z0-9][a-z0-9-]{2,}/g) || [])]
-  .map(w => w.replace(/(?:ing|ed|s)$/,'')).filter(w => w.length > 2 && !COMMON.has(w));
+// Keep exact numeric identifiers (e.g. Issue #75) and match common e-dropping
+// gerunds (closing/close, using/use) without treating a generated suffix form
+// as a second independent query term. Do not turn fuzzy stems into authority.
+function tokenGroups(value) {
+  const groups = new Map();
+  const raw = String(value || '').toLowerCase()
+    .match(/[a-z0-9][a-z0-9-]{2,}|\b\d{2,}\b/g) || [];
+  for (const word of raw) {
+    const stem = word.replace(/(?:ing|ed|s)$/,'');
+    if ((stem.length < 3 && !/^\d{2,}$/.test(stem)) || COMMON.has(stem)) continue;
+    if (!groups.has(stem)) groups.set(stem, new Set());
+    groups.get(stem).add(stem);
+    if (word.endsWith('ing') && /^[a-z]+$/.test(word))
+      groups.get(stem).add(stem + 'e');
+  }
+  return groups;
+}
+const words = value => [...tokenGroups(value).keys()];
 export function lexicalSupport(query, fact) {
-  const q = words(query), f = new Set(words(fact));
-  if (!q.length) return { count: 0, score: 0 };
-  const matches = q.filter(w => f.has(w)).length;
-  return { count: matches, score: matches / q.length };
+  const q = tokenGroups(query), f = new Set([...tokenGroups(fact).values()]
+    .flatMap(forms => [...forms]));
+  if (!q.size) return { count: 0, score: 0 };
+  const matches = [...q.values()]
+    .filter(forms => [...forms].some(term => f.has(term))).length;
+  return { count: matches, score: matches / q.size };
 }
 export function admitFact(query, fact) {
   const support = lexicalSupport(query, fact);
@@ -71,7 +89,12 @@ export function relevanceSignals(query, fact, { hasRerankScore = false } = {}) {
   const content = safeFact(fact);
   const overlap = lexicalSupport(query, content);
   const names = namedQueryTerms(query);
-  if (!content || names.some(name => !content.toLowerCase().includes(name)))
+  // Numbers are hard topic qualifiers, not weak similarity hints. Without
+  // this guard an Issue #75 query could admit an Issue #70 closure fact.
+  const requestedNumbers = new Set(String(query).match(/\b\d{2,}\b/g) || []);
+  const factNumbers = new Set(content.match(/\b\d{2,}\b/g) || []);
+  if (!content || names.some(name => !content.toLowerCase().includes(name)) ||
+      [...requestedNumbers].some(number => !factNumbers.has(number)))
     return { eligible: false, priority: 0, overlap };
   const historical = HISTORICAL_INTENT.test(query) && HISTORICAL_STATEMENT.test(content);
   const directDecision = DECISION_INTENT.test(query) &&
