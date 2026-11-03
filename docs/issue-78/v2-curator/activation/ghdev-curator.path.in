@@ -4,6 +4,7 @@ Description=Wake source-grounded candidate curator when candidate queue changes
 
 [Path]
 PathModified=@@CANDIDATE_GROUP_DIRECTORY@@
+PathModified=@@REVIEW_GROUP_DIRECTORY@@
 Unit=@@SERVICE_UNIT_NAME@@
 
 [Install]

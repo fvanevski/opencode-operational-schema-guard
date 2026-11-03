@@ -1,7 +1,8 @@
 # Optional automatic post-exit wake for Issue #80
 
 This is **an event wake**, not an inference scheduler or new model service.
-The \`*.path\` watches the existing bounded candidate directory; the oneshot
+The \`*.path\` watches the existing bounded candidate **and review-state**
+ directories; both native capture and portal approvals must wake the oneshot
 service invokes **the already accepted** \`docs/issue-75/v2-candidate/post-exit-drain.py\`
 which owns canonical inference lease, active-harness exclusion, quiet grace,
 scheduler-idle check and unresolved-Graphiti fail-closed behavior. It invokes
@@ -19,6 +20,13 @@ with \`LOCAL_CURATOR_URL=http://127.0.0.1:<port>/v1/chat/completions\`,
 Use actual absolute executable paths and verified installed gate config.
 The candidate queue group directory must already exist (the capture plugin
 creates it), or first create it in the **disposable** state root.
+
+For disposable qualification, use \`render-qualification.mjs\` to generate
+ private unit files, then install them under the current user's
+ \`~/.config/systemd/user/\` and operate with \`systemctl --user\` only.
+ Do not use \`sudo systemctl\` or create root-owned queue/review records.
+ Install only disposable \`ghdev-curator80-*\` units. The renderer never
+ installs or enables a service and never touches the real plugin list.
 
 The oneshot service may fail with "interactive harness active" while the client
 is still running; systemd retry is a 30-second event-wake continuation, not

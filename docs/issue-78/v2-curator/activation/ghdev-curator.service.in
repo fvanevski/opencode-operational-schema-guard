@@ -13,4 +13,7 @@ RestartSec=30s
 TimeoutStartSec=infinity
 NoNewPrivileges=yes
 UMask=0077
-# Disposable isolated group only. Production install requires separately accepted gate and worker lifecycle.
+# This is a *user* systemd disposable service, never run as root; avoid
+# root-owned review/queue files. Production install needs separate approval.
+# A nonterminal Graphiti write may hold the accepted EX admission until
+# safe worker quiescence. Never stop a shared Graphiti worker to release it.
