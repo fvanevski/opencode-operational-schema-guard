@@ -85,29 +85,50 @@ function namedQueryTerms(query) {
     .filter(match => match.index !== 0 && !['Our', 'We', 'The'].includes(match[0]))
     .map(match => match[0].toLowerCase());
 }
+function issueReferences(value) {
+  // Match the number *as an issue reference*, including one-digit issue IDs.
+  // Bare occurrences (dates, pass counts, versions) cannot satisfy this.
+  return new Set([...String(value).matchAll(/\bissues?\s*#?\s*(\d+)\b/gi)]
+    .map(match => match[1].replace(/^0+(?=\d)/, '')));
+}
+function stripIssueReferences(value) {
+  return String(value).replace(/\bissues?\s*#?\s*\d+\b/gi, ' ');
+}
 export function relevanceSignals(query, fact, { hasRerankScore = false } = {}) {
   const content = safeFact(fact);
   const overlap = lexicalSupport(query, content);
   const names = namedQueryTerms(query);
-  // Numbers are hard topic qualifiers, not weak similarity hints. Without
-  // this guard an Issue #75 query could admit an Issue #70 closure fact.
+  // Match Issue #N against the fact's Issue #N reference, never against
+  // incidental counts (e.g. "Issue 70 had 75 passing tests").
+  const requestedIssues = issueReferences(query);
+  const factIssues = issueReferences(content);
+  // Preserve the earlier general two-or-more digit qualifier, while the
+  // issue-specific check also covers one-digit issue numbers.
   const requestedNumbers = new Set(String(query).match(/\b\d{2,}\b/g) || []);
   const factNumbers = new Set(content.match(/\b\d{2,}\b/g) || []);
   if (!content || names.some(name => !content.toLowerCase().includes(name)) ||
+      [...requestedIssues].some(id => !factIssues.has(id)) ||
       [...requestedNumbers].some(number => !factNumbers.has(number)))
     return { eligible: false, priority: 0, overlap };
+  // Issue identity is one strong qualifier, not the whole relevance signal.
+  // An explicit Issue #N query requires at least one OTHER topical match.
+  // Apply this to every admission path, including history and reranker.
+  const independentTopic = !requestedIssues.size ||
+    lexicalSupport(stripIssueReferences(query), stripIssueReferences(content)).count >= 1;
   const historical = HISTORICAL_INTENT.test(query) && HISTORICAL_STATEMENT.test(content);
   const directDecision = DECISION_INTENT.test(query) &&
     DIRECT_DECISION.test(content) && !HISTORICAL_STATEMENT.test(content);
   const topicTerms = words(query).filter(term => !INTENT_TERMS.has(term));
-  const topical = overlap.count >= 2;
+  const topical = overlap.count >= 2 && independentTopic;
   // Temporal queries can reference a historical record without the same
   // words (e.g. original toolkit vs formerly used UI library).
-  const qualifiedHistory = historical && overlap.count >= 1;
+  const qualifiedHistory = historical && overlap.count >= 1 && independentTopic;
   // A weak paraphrase may have no literal overlap. Only the independent
   // reranker may support a direct-choice candidate in that case; never
-  // fabricate a "semantic match" from regexes alone.
-  const qualifiedChoice = directDecision && hasRerankScore && topicTerms.length >= 2;
+  // fabricate a "semantic match" from regexes alone. An explicitly named
+  // Issue #N still requires independent topic evidence.
+  const qualifiedChoice = directDecision && hasRerankScore &&
+    topicTerms.length >= 2 && independentTopic;
   return { eligible: topical || qualifiedHistory || qualifiedChoice,
     choiceOnly: qualifiedChoice && !topical && !qualifiedHistory,
     priority: historical || directDecision ? 1 : 0, overlap };
