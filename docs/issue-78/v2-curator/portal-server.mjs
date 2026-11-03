@@ -53,14 +53,14 @@ function graphPreview(record){
   const nodes=[],edges=[];
   for(let i=0;i<record.events.length;i++){
     const e=record.events[i];
-    nodes.push({id:'src-'+e.event_id,type:'source',data:{
+    nodes.push({id:'src-'+e.event_id,type:'default',className:'review-source',data:{
       label:e.kind,excerpt:e.excerpt,source:e.source_refs[0],
       authority:e.evidence_class,status:'source observation'},
       position:{x:35,y:55+i*112}});
   }
   for(let i=0;i<record.facts.length;i++){
     const f=record.facts[i],fid='proposal-'+i;
-    nodes.push({id:fid,type:'fact',data:{
+    nodes.push({id:fid,type:'default',className:'review-proposal',data:{
       label:f.assertion,authority:f.evidence_class,
       status:record.state==='persisted'?'source-linked persisted episode':
         'proposed, unverified',time:f.observed_at,temporal:f.temporal_status},
@@ -73,7 +73,7 @@ function graphPreview(record){
     }
   }
   if(record.state==='persisted'&&record.remote_episode_uuid){
-    nodes.push({id:'episode',type:'episode',data:{
+    nodes.push({id:'episode',type:'default',className:'review-episode',data:{
       label:'Persisted Graphiti episode',source:record.remote_episode_uuid,
       status:'remote episode readback confirmed'},position:{x:800,y:90}});
     for(let i=0;i<record.facts.length;i++)edges.push({id:'remote-'+i,

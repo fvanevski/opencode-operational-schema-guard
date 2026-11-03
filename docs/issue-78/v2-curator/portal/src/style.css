@@ -16,7 +16,7 @@ aside{padding:1rem;border:1px solid var(--gray-a6);border-radius:14px;min-width:
 .event{display:flex;flex-direction:column;gap:.6rem;overflow-wrap:anywhere}
 .graph{height:580px;margin:1rem 0;border:1px solid var(--gray-a6);border-radius:12px;background:var(--color-background)}
 .react-flow__node{max-width:240px;padding:.5rem;border-radius:9px;border:1px solid var(--accent-8);background:var(--color-panel-solid);color:var(--gray-12);font-size:12px}
-.react-flow__node-source{border-style:dashed}.react-flow__node-episode{border-color:var(--green-9);border-width:2px}
+.react-flow__node.review-source{border-style:dashed}.react-flow__node.review-episode{border-color:var(--green-9);border-width:2px}
 footer{margin-top:1rem;padding:.75rem;text-align:center}
 @media(max-width:1050px){.summary{grid-template-columns:repeat(3,1fr)}.columns{grid-template-columns:1fr}.inbox{max-height:280px}}
 @media(max-width:680px){.summary{grid-template-columns:repeat(2,1fr)}.detailGrid{grid-template-columns:1fr}.layout{padding:.6rem}header .rt-Flex{flex-wrap:wrap}}

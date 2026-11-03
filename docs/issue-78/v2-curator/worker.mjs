@@ -116,7 +116,20 @@ export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='loca
   const clusters=selectClusters(list.items,{maxClusters});
   for(const cluster of clusters){
     if(Date.now()>deadline-5000)break;
-    if(await store.get(cluster.id))continue;
+    const existing=await store.get(cluster.id);
+    if(existing){
+      // Crash after durable review creation but before all source transitions:
+      // converge the source queue without recalling the model or replaying writes.
+      for(const e of cluster.events){
+        const state=existing.state==='skipped'?'skipped':
+          existing.state==='deferred'?'deferred':'reserved';
+        if(state==='reserved'){
+          if(await queue.transition(e.event_id,'new','reserved'))
+            await queue.transition(e.event_id,'reserved','approved');
+        }else await queue.transition(e.event_id,'new',state);
+      }
+      continue;
+    }
     let proposal;
     try{
       const reply=await curate(cluster,{endpoint:modelEndpoint,model:modelId,apiKey});
@@ -152,8 +165,15 @@ export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='loca
     if(wrote.status==='deferred')stats.deferred++;
     if(wrote.status==='submission_unknown')break;
   }
+  // Graphiti add_memory ACK only queues asynchronous extraction. Poll while
+  // holding the existing EX admission; NEVER call add_memory again on timeout.
   result=await reconcile(store,graphiti);
   stats.persisted+=result.persisted;
+  while(result.unresolved&&Date.now()<deadline-5000){
+    await new Promise(resolve=>setTimeout(resolve,2500));
+    result=await reconcile(store,graphiti);
+    stats.persisted+=result.persisted;
+  }
   stats.unresolved=result.unresolved;
   return {...stats,status:result.unresolved?'unresolved':'settled'};
 }

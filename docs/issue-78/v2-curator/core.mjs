@@ -82,8 +82,8 @@ export function validateDecision(raw,cluster) {
         const source=bySource.get(ref);
         if(!source||source.evidence_class!==f.evidence_class||source.source_strength!=='native-id')
           throw Error('unattributed_or_weak_source');
-        if(Date.parse(f.observed_at)<Date.parse(source.observed_at)-86400000)
-          throw Error('unsupported_effective_time');
+        if(f.observed_at!==source.observed_at)
+          throw Error('unsupported_observation_time');
       }
       // A proposed future state or historical status must not be described as
       // independently verified current state. The original source labels stay.
@@ -172,7 +172,8 @@ export class ReviewStore {
         throw Error('REMOTE_WRITE_ALREADY_POSSIBLE');
       if(!['approve','edit-and-approve','discard','defer','reevaluate','merge','propose-supersession'].includes(action))
         throw Error('Unknown review action');
-      if(!validText(reason,300,0))throw Error('Invalid reason');
+      if(typeof reason!=='string'||reason.length>300||
+        (reason.length>0&&!validText(reason,300)))throw Error('Invalid reason');
       if(action==='reevaluate'&&old.state==='approved')throw Error('Cannot reevaluate approved');
       const decision= action==='discard'?'SKIP': action==='defer'||action==='reevaluate'?'DEFER':
         action==='merge'?'MERGE':action==='propose-supersession'?'SUPERSEDE_PROPOSED':'EMIT';
@@ -198,6 +199,7 @@ export class ReviewStore {
       if(!old||old.state!==expectedState)return false;
       const now=new Date().toISOString();
       const updated={...old,state:next,revision:old.revision+1,updated_at:now,
+        reason:typeof extra.reason==='string'?extra.reason:old.reason,
         remote_episode_uuid:extra.remote_episode_uuid||old.remote_episode_uuid,
         audit:[...old.audit.slice(-59),{at:now,action:'state',outcome:next}]};
       await atomic(this.filename(id),updated);return true;
