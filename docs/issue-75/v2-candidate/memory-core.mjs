@@ -234,9 +234,10 @@ export class GraphitiMcp {
   }
 }
 export class Memory {
-  constructor({ journal, graphiti, group, ranker = null }) {
+  constructor({ journal, graphiti, group, ranker = null, extraSourceResolver = null }) {
     this.journal = journal; this.graphiti = graphiti; this.group = group;
     this.ranker = ranker; this.processing = null;
+    this.extraSourceResolver = extraSourceResolver;
   }
   async stage(selected, source) {
     const candidate = makeCandidate(this.group, selected, source);
@@ -333,6 +334,23 @@ export class Memory {
           if (r.status === 'persisted' && r.group === this.group &&
             wanted.has(r.remoteEpisodeUuid)) byRemote.set(r.remoteEpisodeUuid, r);
         }
+      }
+    }
+    // The Stage #80 curator uses its own durable, source-grounded review
+    // records rather than rewriting the accepted Issue #75 journal. Join only
+    // positively persisted, exact group/episode/source mappings. The optional
+    // resolver is read-only and cannot upgrade any evidence class.
+    if (wanted.size && typeof this.extraSourceResolver === 'function') {
+      const extras = await this.extraSourceResolver([...wanted]);
+      if (!Array.isArray(extras) || extras.length > 120)
+        throw Error('Invalid curated source mapping');
+      for (const entry of extras) {
+        if (entry?.status !== 'persisted' || entry.group !== this.group ||
+          !wanted.has(entry.remoteEpisodeUuid) || byRemote.has(entry.remoteEpisodeUuid) ||
+          !['user-stated','tool-reported','assistant-reported'].includes(entry.evidenceClass) ||
+          typeof entry.sourceRef !== 'string' || entry.sourceRef.length > 1200 ||
+          !entry.sourceRef.startsWith('opencode:')) continue;
+        byRemote.set(entry.remoteEpisodeUuid,entry);
       }
     }
     const candidates = [];

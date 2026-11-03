@@ -45,7 +45,10 @@ export default {
     const graphiti = new GraphitiMcp(settings.endpoint);
     const store = new Journal(settings.stateDir, settings.group);
     const ranker = settings.rerankEndpoint ? localReranker(settings.rerankEndpoint) : null;
-    const memory = new Memory({ journal: store, graphiti, group: settings.group, ranker });
+    const extraSourceResolver = typeof ctx.options?.sourcedEpisodeResolver === 'function'
+      ? ctx.options.sourcedEpisodeResolver : null;
+    const memory = new Memory({ journal: store, graphiti, group: settings.group,
+      ranker, extraSourceResolver });
     const registrations = [];
     const pending = new Map();
     const latest = new Map();

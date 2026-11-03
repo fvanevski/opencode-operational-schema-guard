@@ -4,6 +4,7 @@ import os from 'node:os';
 import baseline from '../../issue-75/v2-candidate/plugin.mjs';
 import { fromPrompt, fromTool, fromFinishedTurn } from './events.mjs';
 import { CandidateQueue } from './queue.mjs';
+import { sourcedEpisodeResolver } from '../v2-curator/sourced-recall.mjs';
 
 export { fromFinishedTurn }; // For a separately authenticated completed-turn adapter.
 export default {
@@ -11,19 +12,23 @@ export default {
   async setup(ctx) {
     const options = ctx.options || {};
     if (options.enabled !== true || !options.group) return;
-    // Disable OLD capture in this isolated candidate; keep old verified recall.
-    const baselineCleanup = await baseline.setup({ ...ctx,
-      options: { ...options, capture: false } });
-    if (options.capture !== true) return baselineCleanup;
     const workspace = options.workspace || ctx.directory || '';
     const project = options.project || (path.isAbsolute(workspace) ? path.basename(workspace) : '');
     const scope = { group: options.group, workspace, project };
+    const root = options.stateDir || path.join(process.env.XDG_STATE_HOME ||
+      path.join(os.homedir(), '.local', 'state'), 'ghdev-graphiti');
+    const resolver = path.isAbsolute(workspace) && project
+      ? ids => sourcedEpisodeResolver(root,options.group,workspace,project,ids) : null;
+    // Preserve the accepted Issue #75 native context/recall adapter. In
+    // addition to its legacy journal, admit only confirmed curated episode
+    // mappings from the same exact group/workspace, without LLM in hooks.
+    const baselineCleanup = await baseline.setup({ ...ctx,
+      options: { ...options, capture: false, sourcedEpisodeResolver: resolver } });
+    if (options.capture !== true) return baselineCleanup;
     if (!path.isAbsolute(workspace) || !project) {
       if (baselineCleanup) await baselineCleanup();
       throw Error('Capture requires an explicit absolute workspace/project binding');
     }
-    const root = options.stateDir || path.join(process.env.XDG_STATE_HOME ||
-      path.join(os.homedir(), '.local', 'state'), 'ghdev-graphiti');
     const queue = new CandidateQueue(root, options.group, { maxItems: options.maxItems || 4000 });
     const pending = new Map();
     const lastAdmittedPrompt = new Map();

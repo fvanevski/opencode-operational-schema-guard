@@ -75,6 +75,13 @@ export async function promoteOne(store,record,graphiti){
   if(record.state!=='approved')return {status:'not_approved'};
   const check=validateDecision({decision:'EMIT',reason:record.reason,
     facts:record.facts},record);
+  // A single episode can contain extracted facts with different supporting
+  // source classes. Until per-fact remote identities are implemented, keep
+  // multi-fact output in operator review instead of misattributing recall.
+  if(check.ok&&record.facts.length!==1){
+    await store.advance(record.id,'approved','deferred',{reason:'multi_fact_requires_split'});
+    return {status:'deferred',reason:'multi_fact_requires_split'};
+  }
   if(!check.ok){
     await store.advance(record.id,'approved','deferred',{reason:'validation:'+check.reason});
     return {status:'deferred',reason:'validation'};
