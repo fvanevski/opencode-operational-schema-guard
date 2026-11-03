@@ -66,6 +66,21 @@ OpenViking integration and shared inference admission.
    review and staging on the SAME issue/79 branch. Do not create a PR,
    merge, deploy, close an issue or write Graphiti facts.
 
+## Subsequent campaign evidence publication (not retroactive)
+This first pilot correctly used `GITHUB_MUTATION=none` and returned uncommitted
+source edits because remote writes were explicitly forbidden at that time.
+**Future Build campaigns**, including Issue #80 and the integrated Issue #81
+qualification, must additionally follow
+`docs/issue-78/REVIEW_EVIDENCE_PACKET.md`. Their new handoffs must explicitly
+set `EVIDENCE_REMOTE_UPDATE=allowed`, `SOURCE_REMOTE_UPDATE=forbidden` (unless
+separately authorized), and a concrete `EVIDENCE_ROOT` on the same issue/79
+working branch. The local Build agent must package and publish a sanitized
+self-contained evidence packet with source diff, frozen fixtures, tests,
+receipts, checksums and full handback, via one scoped evidence-only commit and
+non-force push with exact-head readback. If publication is denied or the head
+moves, return the complete portable packet and report `BLOCKED` or `STALE`;
+never claim evidence is GitHub-staged without readback.
+
 ## Host environment and safety
 CPU-only: JS syntax/tests, event fixtures, selector comparison, queue races,
 source/code/SDK inspection and CLI status.

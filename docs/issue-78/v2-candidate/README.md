@@ -1,6 +1,6 @@
 # Roadmap #78, Stage #79: broad source-event capture (isolated working candidate)
 
-This directory is a **Central-authored, unqualified candidate**. It is **not** the
+This directory is a **Central-authored candidate with bounded local stock-V2.2.5 qualification**, not a fully accepted or deployed implementation. It is **not** the
 installed stock OpenCode plugin and is not authorization to activate production
 Graphiti capture. Working branch: issue/79 (also reserved for Stage #80 so
 we can produce one integrated PR). This is the first cohesive implementation
@@ -67,13 +67,11 @@ Never promote low-precision candidate count to curated Graphiti precision.
 
 ## OpenCode V2 host qualification target
 
-Use the current installed stock V2 public interface. The already-observed
-Issue #75 prompt/context/execute.after/compaction shapes are known; the
-finished-turn/bus event contract is **UNVERIFIED** in this code. Inspect the
-installed supported SDK types and observe a disposable native client/session.
-Do not register guessed V1 names or base evidence on a fabricated event shape.
-Only after direct proof, bind a finished-turn adapter in a focused source edit
-with regression tests and an attached sanitized shape receipt.
+Use the current installed stock V2 public interface. The Issue #75 baseline shapes and post-completion assistant observation via
+subsequent stock-V2 context were qualified in a disposable native campaign.
+The binding, regression tests and sanitized shape results are included below
+and in `../evidence/79-native-v2-20261103/`. Do not extrapolate these bounded
+V2.2.5 findings to other hooks, versions or final-turn delivery.
 
 **Qualified November 3, 2026 on disposable stock V2.2.5 native sessions:**
 `session.prompt` has `{sessionID, messageID, prompt{text,files,agents,skills},
