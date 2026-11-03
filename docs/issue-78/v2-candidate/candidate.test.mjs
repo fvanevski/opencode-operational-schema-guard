@@ -238,6 +238,32 @@ test('finished-turn: completed assistant turns bind through the authenticated co
   assert.match(ev.excerpt, /invalidating the selector/);
   assert.equal(ev.excerpt.includes('internal deliberation'), false, 'reasoning parts are excluded');
 }));
+test('admitted user prompts link later tool and assistant events without upgrading authority', () => sandbox(async root => {
+  const sessions = {}, tools = {};
+  const ctx = { directory:scope.workspace,
+    options: {enabled:true,capture:true,group:scope.group,project:scope.project,
+      workspace:scope.workspace,stateDir:root,endpoint:'http://127.0.0.1:1/mcp'},
+    session:{hook:(name,cb)=>{(sessions[name] ||= []).push(cb);return {dispose:async()=>{}};}},
+    tool:{hook:(name,cb)=>{(tools[name] ||= []).push(cb);return {dispose:async()=>{}};}} };
+  const stop=await plugin.setup(ctx);
+  const original=prompt('Fix the option validation bug while preserving the existing CLI interface.');
+  for(const cb of sessions.prompt) await cb(original);
+  for(const cb of sessions.context) await cb({sessionID:'ses-1',system:[]});
+  for(const cb of tools['execute.after']) await cb(tool('call-work','1 failed during validation',1));
+  for(const cb of sessions.context) await cb({sessionID:'ses-1',system:[],
+    messages:[{id:'msg-complete',role:'assistant',parts:[{type:'text',
+      text:'The input schema rejected a valid setting; I corrected validation and the focused test now passes.'}]}]});
+  await stop();
+  const all=(await new CandidateQueue(root,scope.group).list()).items;
+  const user=all.find(x=>x.kind==='user_turn');
+  const receipt=all.find(x=>x.kind==='tool_outcome');
+  const assistant=all.find(x=>x.kind==='assistant_turn');
+  assert.ok(user && receipt && assistant);
+  assert.ok(receipt.related_event_ids.includes(user.event_id));
+  assert.ok(assistant.related_event_ids.includes(user.event_id));
+  assert.equal(receipt.evidence_class,'tool-reported');
+  assert.equal(assistant.evidence_class,'assistant-reported');
+}));
 test('finished-turn: ID-less, short, and secret-bearing assistant messages are not staged', () => sandbox(async root => {
   const session = {}, toolHooks = {};
   const ctx = {

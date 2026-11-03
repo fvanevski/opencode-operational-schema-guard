@@ -26,6 +26,7 @@ export default {
       path.join(os.homedir(), '.local', 'state'), 'ghdev-graphiti');
     const queue = new CandidateQueue(root, options.group, { maxItems: options.maxItems || 4000 });
     const pending = new Map();
+    const lastAdmittedPrompt = new Map();
     // Stock-V2 context exposes earlier finished assistant messages with native IDs.
     // Seen IDs fence redelivery in a process; the durable queue dedups across restarts.
     const seenAssistant = new Map();
@@ -67,7 +68,15 @@ export default {
         if (stopped || !event?.sessionID || !Array.isArray(event.system)) return;
         const list = pending.get(event.sessionID) || [];
         pending.delete(event.sessionID);
-        for (const observed of list) enqueue(fromPrompt(observed, scope, { admitted: true }));
+        for (const observed of list) {
+          const source = fromPrompt(observed, scope, { admitted: true });
+          if (!source) continue;
+          lastAdmittedPrompt.delete(event.sessionID);
+          lastAdmittedPrompt.set(event.sessionID, source.event_id);
+          if (lastAdmittedPrompt.size > MAX_SESSIONS)
+            lastAdmittedPrompt.delete(lastAdmittedPrompt.keys().next().value);
+          enqueue(source);
+        }
         // Only messages already present when a later context is built are treated
         // as completed. No speculative finished-turn bus hook is registered.
         const msgs = Array.isArray(event.messages) ? event.messages : [];
@@ -84,8 +93,11 @@ export default {
             : Array.isArray(m.content) ? m.content : [];
           const text = parts.filter(p => p?.type === 'text' && typeof p.text === 'string')
             .map(p => p.text).join(' ');
-          enqueue(fromFinishedTurn({ sessionID: event.sessionID, messageID: m.id,
-            role: 'assistant', status: 'completed', text }, scope));
+          const turn = fromFinishedTurn({ sessionID: event.sessionID, messageID: m.id,
+            role: 'assistant', status: 'completed', text }, scope);
+          const anchor = lastAdmittedPrompt.get(event.sessionID);
+          enqueue(turn && anchor ? { ...turn, related_event_ids:
+            [...turn.related_event_ids, anchor].slice(0, 8) } : turn);
         }
         if (seen.size) {
           seenAssistant.delete(event.sessionID);
@@ -95,7 +107,11 @@ export default {
         }
       }));
       registrations.push(await ctx.tool.hook('execute.after', event => {
-        if (!stopped) enqueue(fromTool(event, scope));
+        if (stopped) return;
+        const outcome = fromTool(event, scope);
+        const anchor = lastAdmittedPrompt.get(event?.sessionID);
+        enqueue(outcome && anchor ? { ...outcome, related_event_ids:
+          [...outcome.related_event_ids, anchor].slice(0, 8) } : outcome);
       }));
       registrations.push(await ctx.session.hook('compaction', event => {
         if (event?.sessionID) pending.delete(event.sessionID);
@@ -109,7 +125,7 @@ export default {
     // Native stock V2.2.5 qualification observed finished assistant messages
     // through later context builds (not message.updated/session.idle bus events).
     return async () => {
-      stopped = true; pending.clear(); seenAssistant.clear();
+      stopped = true; pending.clear(); seenAssistant.clear(); lastAdmittedPrompt.clear();
       await Promise.allSettled(registrations.map(x => x.dispose()));
       await Promise.allSettled([...inflight]);
       if (baselineCleanup) await baselineCleanup();
