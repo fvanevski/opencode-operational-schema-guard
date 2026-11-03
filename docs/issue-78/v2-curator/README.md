@@ -145,6 +145,15 @@ invalid schema field without persisting model output or private content.
 The prompt now supplies exact allowed enumerations and unambiguous SOURCE
 reference syntax. Operator-created approvals continue to require all fields.
 
+When an admitted post-exit drain returns typed `unresolved`, the
+   shared-worker-safe wrapper retains its original EX flock and executes
+   `curator-cli reconcile-only` periodically. This mode makes no model or
+   Graphiti writes; it can finish only after all queued/submission-unknown
+   identities have exact positive readback, with no new/reserved candidate
+   or unsubmitted approved review remaining. A terminal Graphiti extraction
+   failure remains an operator-adjudicated blocker, not an automatic retry.
+   This does not hot-patch any already-running legacy wrapper.
+
 A subsequent worker run must use `ReviewStore.change(id, revision,
 'reevaluate', {reason})` (revision checked) to request an **admitted**
 re-evaluation of the same original evidence. Do not restage source events,

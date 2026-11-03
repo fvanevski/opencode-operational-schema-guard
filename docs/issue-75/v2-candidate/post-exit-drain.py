@@ -171,6 +171,15 @@ def main():
             exit_code = 3
         if exit_code == 0:
             return 0
+        if exit_code != 3:
+            # A non-3 exit does not attest that any queued remote submission
+            # exists. Never reinterpret an arbitrary CLI/programming failure
+            # as a successfully reconciled drain.
+            print("DRAIN_ERROR_UNCLASSIFIED: retaining EX; inspect worker and "
+                  "state before operator-adjudicated release.",
+                  file=sys.stderr, flush=True)
+            while True:
+                time.sleep(3600)
         # The installed MCP-mux Graphiti worker is shared. Do NOT require
         # stopping it to release admission. Keep the same exclusive flock and
         # perform read-only Graphiti reconciliation until every submitted
