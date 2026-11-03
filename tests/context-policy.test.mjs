@@ -6,6 +6,10 @@ import { join } from "node:path"
 import test from "node:test"
 import { OperationalSchemaGuardPlugin } from "../index.mjs"
 import { derivePrimaryContextPolicy, unwrapLiveConfig, validateModelContextBudget } from "../lib/context-policy.mjs"
+// The unchanged trusted npm-test runner selects this context suite. Include
+// the stock-V2 memory relevance regressions so automatic context-admission
+// changes receive the same exact-head deterministic verification.
+import "../docs/issue-75/v2-candidate/relevance.test.mjs"
 
 function configuredModel({ context = 262144, input = 241664, output = 20480 } = {}) {
   return { limit: { context, input, output } }

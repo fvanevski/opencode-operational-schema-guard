@@ -58,6 +58,78 @@ test('without an independent reranker, semantic-only choice retrieval abstains',
   assert.deepEqual(await relevanceFilter('What is the weather?', [item],
     async () => new Map([[0,.99]])), []);
 });
+test('fresh Issue 75 closure question admits sourced closure fact but not another numbered issue', async () => {
+  const query = 'What was our agreed evidence requirement before closing Issue #75?';
+  const supported = { fact: 'Issue 75 closes only after a fresh OpenCode session demonstrates source-attributed Graphiti persistence and recall.' };
+  const wrongIssue = { fact: 'Issue 70 closes only after a fresh OpenCode session demonstrates source-attributed Graphiti persistence and recall.' };
+  const unrelated = { fact: 'Unrelated deployment notes mention graph quality and a new scheduler.' };
+  assert.ok(lexicalSupport(query, supported.fact).count >= 3,
+    'closing/closes plus exact Issue 75 must be distinct lexical evidence');
+  assert.equal(relevanceSignals(query, supported.fact).eligible, true);
+  assert.equal(relevanceSignals(query, wrongIssue.fact).eligible, false,
+    'numeric issue identifier is a mandatory hard qualifier');
+  assert.deepEqual(await relevanceFilter(query, [wrongIssue, unrelated, supported]), [supported]);
+  assert.deepEqual(await relevanceFilter(query, [wrongIssue, unrelated]), []);
+});
+
+test('same-issue wrong-topic fact is not relevant just because issue and number match', async () => {
+  const query = 'What was our agreed evidence requirement before closing Issue #75?';
+  const wrongTopic = { fact: 'Issue 75 uses React Flow for backlog visualization.' };
+  assert.equal(lexicalSupport(query, wrongTopic.fact).count, 2);
+  assert.equal(relevanceSignals(query, wrongTopic.fact).eligible, false);
+  assert.deepEqual(await relevanceFilter(query, [wrongTopic]), []);
+  // Optional reranking cannot bypass the independent topical qualifier.
+  assert.deepEqual(await relevanceFilter(query, [wrongTopic],
+    async () => new Map([[0, 0.99]])), []);
+  const choiceQuery = 'What did we decide was the evidence requirement before closing Issue #75?';
+  const wrongChoice = { fact: 'Issue 75 selected React Flow for dashboard visualization.' };
+  assert.deepEqual(await relevanceFilter(choiceQuery, [wrongChoice],
+    async () => new Map([[0, 0.99]])), []);
+  const historyQuery = 'What was previously agreed before closing Issue #75?';
+  const wrongHistory = { fact: 'Issue 75 originally used React Flow for visualization.' };
+  assert.deepEqual(await relevanceFilter(historyQuery, [wrongHistory]), []);
+});
+test('numeric issue references cannot be satisfied by unrelated pass counts', async () => {
+  const query = 'What was our agreed evidence requirement before closing Issue #75?';
+  const falseCollision = { fact: 'Issue 70 closes only after 75 passing tests.' };
+  assert.equal(relevanceSignals(query, falseCollision.fact).eligible, false);
+  assert.deepEqual(await relevanceFilter(query, [falseCollision]), []);
+  const supported = { fact: 'Issue 75 closes only after a fresh OpenCode session demonstrates source-attributed Graphiti persistence and recall.' };
+  assert.deepEqual(await relevanceFilter(query, [falseCollision, supported]), [supported]);
+});
+test('single-digit issue numbers retain exact issue-qualified scope', async () => {
+  const query = 'What was our agreed evidence requirement before closing Issue #7?';
+  const wrong = { fact: 'Issue 8 closes only after a fresh OpenCode session demonstrates source-attributed Graphiti persistence and recall.' };
+  const supported = { fact: 'Issue 7 closes only after a fresh OpenCode session demonstrates source-attributed Graphiti persistence and recall.' };
+  assert.equal(relevanceSignals(query, wrong.fact).eligible, false);
+  assert.equal(relevanceSignals(query, supported.fact).eligible, true);
+  assert.deepEqual(await relevanceFilter(query, [wrong, supported]), [supported]);
+  assert.deepEqual(await relevanceFilter(query, [wrong]), []);
+});
+
+test('hyphenated issue references preserve exact scope and independent topic evidence', async () => {
+  const query = 'What was our agreed evidence requirement before closing issue-7?';
+  const wrong = { fact: 'Issue-8 closes only after an evidence review.' };
+  const correct = { fact: 'Issue 7 closes only after an evidence review.' };
+  assert.equal(relevanceSignals(query, wrong.fact).eligible, false);
+  assert.deepEqual(await relevanceFilter(query, [wrong]), []);
+  assert.equal(relevanceSignals(query, correct.fact).eligible, true);
+  assert.deepEqual(await relevanceFilter(query, [wrong, correct]), [correct]);
+
+  // Mixed issue spellings must be equivalent, even with proper-name casing.
+  const capitalized = 'What was the evidence requirement for Issue-75?';
+  const supported = { fact: 'Issue #75 closes after the required evidence is reviewed.' };
+  const other = { fact: 'Issue-70 closes after the required evidence is reviewed.' };
+  assert.equal(relevanceSignals(capitalized, supported.fact).eligible, true);
+  assert.equal(relevanceSignals(capitalized, other.fact).eligible, false);
+  assert.deepEqual(await relevanceFilter(capitalized, [other, supported]), [supported]);
+
+  // Correct identifier alone does not authorize an unrelated observation.
+  const offTopic = { fact: 'Issue-7 uses React Flow for the issue dashboard.' };
+  assert.equal(relevanceSignals(query, offTopic.fact).eligible, false);
+  assert.deepEqual(await relevanceFilter(query, [offTopic]), []);
+});
+
 test('reranker uses loopback only, validates bounded score and request', async () => {
   let body;
   const scorer=localReranker('http://127.0.0.1:8004/v1/rerank',{

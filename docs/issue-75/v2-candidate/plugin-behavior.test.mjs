@@ -4,12 +4,12 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { createServer } from 'node:http';
-import { Journal } from './memory-core.mjs';
+import { Journal, makeCandidate, selectUserDecision } from './memory-core.mjs';
 import plugin, { promptText } from './plugin.mjs';
 
 // Minimal mock MCP server: records which tools/call methods the plugin
 // invokes so we can prove the active session performs NO Graphiti add_memory.
-async function startMockMcp() {
+async function startMockMcp(searchFacts = []) {
   const calls = [];
   const searchQueries = [];
   const server = createServer((req, res) => {
@@ -25,7 +25,7 @@ async function startMockMcp() {
       if (msg.method === 'initialize') result = { capabilities: {} };
       else if (msg.method === 'tools/call') {
         if (msg.params.name === 'search_memory_facts')
-          result = { structuredContent: { result: { facts: [] } } };
+          result = { structuredContent: { result: { facts: searchFacts } } };
         else result = { structuredContent: { result: {} } };
       } else result = {};
       res.setHeader('content-type', 'application/json');
@@ -47,10 +47,10 @@ function makeCtx(options) {
   };
   return { ctx, hooks };
 }
-async function withPlugin(options, run) {
+async function withPlugin(options, run, searchFacts = []) {
   const dir = await mkdtemp(path.join(os.tmpdir(), 'gh75-plugin-'));
   options.stateDir = dir;
-  const mcp = await startMockMcp();
+  const mcp = await startMockMcp(searchFacts);
   options.endpoint = mcp.url;
   const { ctx, hooks } = makeCtx(options);
   let cleanup;
@@ -103,6 +103,38 @@ test('JSON-encoded V2 prompt wire is decoded for capture and retrieval', async (
     assert.deepEqual(mcp.searchQueries, [DECISION], 'retrieval uses decoded prompt, not transport JSON');
   });
 });
+test('real prompt/context path injects only source-linked persisted closure memory', async () => {
+  const query = 'What was our agreed evidence requirement before closing Issue #75?';
+  const decision = 'For this workflow, we decided that Issue 75 closes only after a fresh OpenCode session demonstrates source-attributed Graphiti persistence and recall.';
+  const fact = 'Issue 75 closes only after a fresh OpenCode session demonstrates source-attributed Graphiti persistence and recall.';
+  const remote = '81dd997d-4ff5-4e94-9bf7-4ca087e1c5a4';
+  await withPlugin({ enabled: true, capture: true, group: 'ghdev_gh_mcp' },
+    async ({ hooks, mcp, dir }) => {
+      const journal = new Journal(dir, 'ghdev_gh_mcp');
+      const candidate = makeCandidate('ghdev_gh_mcp', selectUserDecision(decision),
+        { sessionID: 's-fresh', time: '2026-11-03T01:07:32Z' });
+      assert.ok(candidate);
+      assert.equal(await journal.stage(candidate), true);
+      assert.equal(await journal.update(candidate.uuid, 'pending', 'persisted',
+        { remoteEpisodeUuid: remote }), true);
+      await hooks.session.prompt({ sessionID: 's-fresh', prompt: { text: query } });
+      const system = [{ type: 'text', text: '[preexisting OpenViking context]' }];
+      await hooks.session.context({ sessionID: 's-fresh', system });
+      const injected = system.filter(part => part.type === 'text' &&
+        part.text.startsWith('[GHDEV_GRAPHITI_CONTEXT]'));
+      assert.equal(injected.length, 1, 'public context hook must inject the sourced fact');
+      assert.match(injected[0].text, /Issue 75 closes only after/);
+      assert.match(injected[0].text, /user-stated/);
+      assert.match(injected[0].text, /current state not independently verified/);
+      assert.match(injected[0].text, new RegExp(candidate.sourceRef));
+      assert.ok(system.some(part => part.text.includes('OpenViking')),
+        'existing context must remain intact');
+      assert.ok(!mcp.calls.includes('tools/call:add_memory'),
+        'interactive recall cannot run extraction');
+    },
+    [{ fact, group_id: 'ghdev_gh_mcp', episodes: [remote] }]);
+});
+
 test('secrets/private markers are excluded from capture', async () => {
   await withPlugin({ enabled: true, capture: true, group: 'g_issue75_b75' }, async ({ hooks, dir, mcp }) => {
     await hooks.session.prompt({ sessionID: 's2', prompt: { text: 'I decided to send password=supersecret123 to the log.' } });

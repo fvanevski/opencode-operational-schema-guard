@@ -1,13 +1,34 @@
 /** Strict, bounded automatic-injection admission. On-demand Graphiti search
  * may return a broader set. This module never calls the extraction LLM. */
 const COMMON = new Set('a an and are as at be been by can did do does for from has have how i in is it its of on or our should that the their them these this to was were what when where which who why will with we you your used use repo project please current does'.split(' '));
-const words = value => [...new Set(String(value || '').toLowerCase().match(/[a-z0-9][a-z0-9-]{2,}/g) || [])]
-  .map(w => w.replace(/(?:ing|ed|s)$/,'')).filter(w => w.length > 2 && !COMMON.has(w));
+// Keep exact numeric identifiers (e.g. Issue #75) and match common e-dropping
+// gerunds (closing/close, using/use) without treating a generated suffix form
+// as a second independent query term. Do not turn fuzzy stems into authority.
+function tokenGroups(value) {
+  const groups = new Map();
+  // Give Issue-75, Issue #75 and Issue 75 the same lexical identity.
+  // The mandatory exact-ID check below still controls scope separately.
+  const raw = String(value || '').toLowerCase()
+    .replace(ISSUE_REFERENCE, (_match, id) => 'issue ' + id)
+    .match(/[a-z0-9][a-z0-9-]{2,}|\b\d{2,}\b/g) || [];
+  for (const word of raw) {
+    const stem = word.replace(/(?:ing|ed|s)$/,'');
+    if ((stem.length < 3 && !/^\d{2,}$/.test(stem)) || COMMON.has(stem)) continue;
+    if (!groups.has(stem)) groups.set(stem, new Set());
+    groups.get(stem).add(stem);
+    if (word.endsWith('ing') && /^[a-z]+$/.test(word))
+      groups.get(stem).add(stem + 'e');
+  }
+  return groups;
+}
+const words = value => [...tokenGroups(value).keys()];
 export function lexicalSupport(query, fact) {
-  const q = words(query), f = new Set(words(fact));
-  if (!q.length) return { count: 0, score: 0 };
-  const matches = q.filter(w => f.has(w)).length;
-  return { count: matches, score: matches / q.length };
+  const q = tokenGroups(query), f = new Set([...tokenGroups(fact).values()]
+    .flatMap(forms => [...forms]));
+  if (!q.size) return { count: 0, score: 0 };
+  const matches = [...q.values()]
+    .filter(forms => [...forms].some(term => f.has(term))).length;
+  return { count: matches, score: matches / q.size };
 }
 export function admitFact(query, fact) {
   const support = lexicalSupport(query, fact);
@@ -60,31 +81,61 @@ const DIRECT_DECISION = /\b(?:chos(?:e|en)|decid(?:e|ed)|select(?:ed)?|picked|se
 // "original media" names a source file, not a historical decision.
 const HISTORICAL_STATEMENT = /\b(?:originally|previously|prior to|formerly|used to|replac(?:e|ed) (?:by|with)|switched (?:from|to)|then)\b/i;
 const INTENT_TERMS = new Set('settle decided decide chosen choose select selected pick picked agreed prefer preferred original originally before previous previously formerly historical history earlier first'.split(' '));
+// The same syntax drives identity extraction, removal from topic terms, and
+// exemption from named-entity matching. Otherwise Issue-7 vs Issue 7 can
+// either evade the scope guard or be rejected despite an exact ID match.
+const ISSUE_REFERENCE = /\bissues?\s*[-#]?\s*(\d+)\b/gi;
 function namedQueryTerms(query) {
-  // Keep mid-question proper names/acronyms as hard topic constraints. This
-  // avoids asserting facts about named software absent from the local group.
-  return [...String(query).matchAll(/\b[A-Z][A-Za-z0-9_-]{2,}\b/g)]
+  // Preserve proper-name constraints, but issue labels have their own exact
+  // scope check and must not become spelling-dependent proper names.
+  return [...stripIssueReferences(query).matchAll(/\b[A-Z][A-Za-z0-9_-]{2,}\b/g)]
     .filter(match => match.index !== 0 && !['Our', 'We', 'The'].includes(match[0]))
     .map(match => match[0].toLowerCase());
+}
+function issueReferences(value) {
+  // Match Issue #7, Issue 7 and issue-7 identically. Bare numbers (pass
+  // counts, versions) cannot satisfy a requested issue identity.
+  return new Set([...String(value).matchAll(ISSUE_REFERENCE)]
+    .map(match => match[1].replace(/^0+(?=\d)/, '')));
+}
+function stripIssueReferences(value) {
+  return String(value).replace(ISSUE_REFERENCE, ' ');
 }
 export function relevanceSignals(query, fact, { hasRerankScore = false } = {}) {
   const content = safeFact(fact);
   const overlap = lexicalSupport(query, content);
   const names = namedQueryTerms(query);
-  if (!content || names.some(name => !content.toLowerCase().includes(name)))
+  // Match Issue #N against the fact's Issue #N reference, never against
+  // incidental counts (e.g. "Issue 70 had 75 passing tests").
+  const requestedIssues = issueReferences(query);
+  const factIssues = issueReferences(content);
+  // Preserve the earlier general two-or-more digit qualifier, while the
+  // issue-specific check also covers one-digit issue numbers.
+  const requestedNumbers = new Set(String(query).match(/\b\d{2,}\b/g) || []);
+  const factNumbers = new Set(content.match(/\b\d{2,}\b/g) || []);
+  if (!content || names.some(name => !content.toLowerCase().includes(name)) ||
+      [...requestedIssues].some(id => !factIssues.has(id)) ||
+      [...requestedNumbers].some(number => !factNumbers.has(number)))
     return { eligible: false, priority: 0, overlap };
+  // Issue identity is one strong qualifier, not the whole relevance signal.
+  // An explicit Issue #N query requires at least one OTHER topical match.
+  // Apply this to every admission path, including history and reranker.
+  const independentTopic = !requestedIssues.size ||
+    lexicalSupport(stripIssueReferences(query), stripIssueReferences(content)).count >= 1;
   const historical = HISTORICAL_INTENT.test(query) && HISTORICAL_STATEMENT.test(content);
   const directDecision = DECISION_INTENT.test(query) &&
     DIRECT_DECISION.test(content) && !HISTORICAL_STATEMENT.test(content);
   const topicTerms = words(query).filter(term => !INTENT_TERMS.has(term));
-  const topical = overlap.count >= 2;
+  const topical = overlap.count >= 2 && independentTopic;
   // Temporal queries can reference a historical record without the same
   // words (e.g. original toolkit vs formerly used UI library).
-  const qualifiedHistory = historical && overlap.count >= 1;
+  const qualifiedHistory = historical && overlap.count >= 1 && independentTopic;
   // A weak paraphrase may have no literal overlap. Only the independent
   // reranker may support a direct-choice candidate in that case; never
-  // fabricate a "semantic match" from regexes alone.
-  const qualifiedChoice = directDecision && hasRerankScore && topicTerms.length >= 2;
+  // fabricate a "semantic match" from regexes alone. An explicitly named
+  // Issue #N still requires independent topic evidence.
+  const qualifiedChoice = directDecision && hasRerankScore &&
+    topicTerms.length >= 2 && independentTopic;
   return { eligible: topical || qualifiedHistory || qualifiedChoice,
     choiceOnly: qualifiedChoice && !topical && !qualifiedHistory,
     priority: historical || directDecision ? 1 : 0, overlap };
