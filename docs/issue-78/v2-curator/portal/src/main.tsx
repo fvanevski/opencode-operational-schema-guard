@@ -14,7 +14,7 @@ type Fact = {assertion:string;kind:string;source_refs:string[];evidence_class:st
 type Event = {event_id:string;source_refs:string[];evidence_class:string;source_strength:string;kind:string;excerpt:string;observed_at:string};
 type Detail=Item & {group:string;workspace:string;events:Event[];facts:Fact[];audit:{
   at:string;action:string;outcome:string}[]};
-type Preview={nodes:Node[];edges:Edge[];note:string;scope:{group:string;project:string}};
+type Preview={nodes:Node[];edges:Edge[];note:string;scope:{group:string;project:string};remote_graph?:{status:string;node_count:number;edge_count:number;linked_edge_count:number;unlinked_edge_count:number}};
 const api=async <T,>(path:string,token:string,init:RequestInit={}):Promise<T>=>{
  const res=await fetch(path,{...init,headers:{'x-review-token':token,...(init.body?{'Content-Type':'application/json'}:{})}});
  const data=await res.json();
@@ -157,7 +157,12 @@ function App(){
          <Text size="1" color="gray">Approval records intent for the admitted post-exit worker. It does not call the model or Graphiti from this page.</Text>
          {detail.state==='submission_unknown'&&<Callout.Root color="orange"><Callout.Text>Submission outcome unknown. Do not retry. Await positive Graphiti episode reconciliation.</Callout.Text></Callout.Root>}
         </div></div></Tabs.Content>
-      <Tabs.Content value="graph"><section className="graph"><ReactFlow nodes={preview?.nodes||[]} edges={preview?.edges||[]}
+      <Tabs.Content value="graph"><Flex gap="2" align="center" wrap="wrap">
+       <Badge color={preview?.remote_graph?.status==='verified_readback'?'green':'gray'}>
+        Remote graph: {preview?.remote_graph?.status?.replaceAll('_',' ')||'not configured'}
+       </Badge>{preview?.remote_graph?.status==='verified_readback'&&<Text size="1" color="gray">
+        {preview.remote_graph.node_count} extracted entities · {preview.remote_graph.edge_count} extracted edges
+       </Text>}</Flex><section className="graph"><ReactFlow nodes={preview?.nodes||[]} edges={preview?.edges||[]}
        fitView nodesDraggable={false} nodesConnectable={false} elementsSelectable={true}>
          <Background/><Controls/><MiniMap/></ReactFlow></section><Text size="1" color="gray">{preview?.note}</Text></Tabs.Content>
       <Tabs.Content value="audit">{detail.audit.map((a,i)=><Card key={i}><Text>{a.action} → {a.outcome}</Text><Text size="1" color="gray">{a.at}</Text></Card>)}</Tabs.Content>

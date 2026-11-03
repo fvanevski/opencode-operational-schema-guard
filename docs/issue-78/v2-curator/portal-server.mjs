@@ -7,6 +7,8 @@ import path from 'node:path';
 import os from 'node:os';
 import { CandidateQueue } from '../v2-candidate/queue.mjs';
 import { ReviewStore } from './core.mjs';
+import { inspectEpisodeGraph } from './graph-evidence.mjs';
+import { addReadOnlyGraph } from './graph-preview.mjs';
 
 const args=process.argv.slice(2);
 const opt=k=>{let i=args.indexOf('--'+k);return i<0?'':args[i+1]||'';};
@@ -15,6 +17,7 @@ const root=opt('state-dir')||path.join(process.env.XDG_STATE_HOME||
   path.join(os.homedir(),'.local','state'),'ghdev-graphiti');
 const tokenFile=opt('token-file');
 const dist=opt('dist');
+const graphitiEndpoint=opt('graphiti-endpoint');
 const port=Number(opt('port')||'8820');
 if(!group||!tokenFile||!dist||!Number.isInteger(port)||port<1024||port>65535)
   throw Error('Usage: node portal-server.mjs --group SAFE --state-dir ABS --token-file ABS --dist BUILT_DIST [--port 8820]');
@@ -120,8 +123,16 @@ const server=createServer(async(req,res)=>{
       const record=await store.get(m[1]);
       if(!record)return respond(res,404,{error:'NOT_FOUND'});
       if(req.method==='GET'&&!m[2])return respond(res,200,record);
-      if(req.method==='GET'&&m[2]==='preview')
-        return respond(res,200,graphPreview(record));
+      if(req.method==='GET'&&m[2]==='preview'){
+        const base=graphPreview(record);
+        let inspection={status:'not_configured'};
+        if(graphitiEndpoint&&record.state==='persisted'){
+          try{inspection=await inspectEpisodeGraph({store,root,group,
+            clusterId:record.id,endpoint:graphitiEndpoint});}
+          catch{inspection={status:'graph_readback_unavailable'};}
+        }else if(graphitiEndpoint)inspection={status:'not_persisted'};
+        return respond(res,200,addReadOnlyGraph(base,inspection));
+      }
       if(req.method==='POST'&&m[2]==='review'){
         if(req.headers.origin!==allowedOrigin||
           req.headers['content-type']?.split(';')[0]!=='application/json')

@@ -53,7 +53,13 @@ implementation should use one PR when the required host acceptance is clean.
    proposal/authority labels, status counts and an interactive provenance
    diagram. The diagram shows **source -> proposed fact -> confirmed remote
    episode associations only**; it never invents extracted graph edges.
-   A full entity-edge overlay and model-driven contradiction comparison
+   A source-confirmed, read-only actual entity-edge overlay is available with
+   the optional private `--graphiti-endpoint` server argument; it requires exact
+   persisted episode identity and native indexed source readback, then requests
+   only `get_episodes` and `get_episode_entities` in the same group. The
+   overlay never upgrades extracted claims to verified, and fails closed when
+   returned node/edge groups cannot be established. A full model-driven
+   contradiction comparison
    remain acceptance work under #80/#81 if real Graphiti data requires them.
 7. `activation/ghdev-curator.{path,service}.in` are disposable systemd
    **event-wake templates**, not an installed service. Instantiate against
