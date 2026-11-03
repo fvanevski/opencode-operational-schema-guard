@@ -143,11 +143,18 @@ test('valid multi-event factual assertion uses latest referenced source observat
  const newer={...U,source_refs:['opencode:ses_80:message:msg_later'],
    event_id:'a'.repeat(64),observed_at:'2026-11-03T18:03:00.000Z'};
  const oneClass={...c,events:[U,newer]};
- const result=validateModelDecision({decision:'EMIT',reason:'Two related observations',
+ const sourceRefs=[U.source_refs[0],newer.source_refs[0]];
+ // Automatic model promotions require one source. Multi-source attribution
+ // remains available to a deliberate operator-reviewed assertion.
+ const modelResult=validateModelDecision({decision:'EMIT',reason:'Two related observations',
    facts:[{assertion:f.assertion,kind:'decision',
-     source_refs:[U.source_refs[0],newer.source_refs[0]],temporal_status:'observed'}]},oneClass);
- assert.equal(result.ok,true);
- assert.equal(result.facts[0].observed_at,newer.observed_at);
+     source_refs:sourceRefs,temporal_status:'observed'}]},oneClass);
+ assert.equal(modelResult.ok,false);
+ assert.equal(modelResult.reason,'model_assertion_not_source_extract');
+ const operatorResult=validateDecision({decision:'EMIT',reason:'Two related observations',
+   facts:[{...f,source_refs:sourceRefs,observed_at:newer.observed_at}]},oneClass);
+ assert.equal(operatorResult.ok,true);
+ assert.equal(operatorResult.facts[0].observed_at,newer.observed_at);
 });
 test('review store durable create/dedup, safe operator revisions and blocked unverified approval',()=>temp(async root=>{
  const store=new ReviewStore(root,scope.group),c=cluster();
