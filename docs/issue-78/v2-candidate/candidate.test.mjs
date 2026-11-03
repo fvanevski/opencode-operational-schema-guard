@@ -100,6 +100,28 @@ test('concurrent repeated delivery remains single-record and queue state unchang
   assert.equal(outcomes.filter(x => x.status === 'duplicate').length, 7);
   assert.equal((await q.status()).total, 1);
 }));
+test('queue rejects forged authority labels and ungrounded source handles', () => sandbox(async root => {
+  const q = new CandidateQueue(root, scope.group);
+  const item = fromPrompt(prompt('Fix the config validation bug and preserve the interface contract.'),
+    scope, { admitted:true });
+  assert.equal((await q.stage({ ...item, evidence_class:'verified' })).status, 'invalid');
+  assert.equal((await q.stage({ ...item, source_refs:['unbound:claim'] })).status, 'invalid');
+  assert.equal((await q.status()).total, 0);
+}));
+test('capture opt-out preserves baseline registration without staging events', () => sandbox(async root => {
+  const session = {}, tools = {};
+  const ctx = { directory:scope.workspace,
+    options:{enabled:true,capture:false,group:scope.group,workspace:scope.workspace,
+      project:scope.project,stateDir:root,endpoint:'http://127.0.0.1:1/mcp'},
+    session:{hook:(name, cb)=>{session[name]=cb;return {dispose:async()=>{}};}},
+    tool:{hook:(name, cb)=>{tools[name]=cb;return {dispose:async()=>{}};}} };
+  const stop = await plugin.setup(ctx);
+  await session.prompt(prompt('Fix the state decoder and preserve the existing CLI.'));
+  await tools['execute.after'](tool());
+  await session.context({sessionID:'ses-1',system:[]});
+  await stop();
+  assert.equal((await new CandidateQueue(root, scope.group).status()).total, 0);
+}));
 test('stock-V2 wrapper keeps legacy recall, stages only in admitted context, no Graphiti add_memory', () => sandbox(async root => {
   const session = {}, toolHooks = {}, methods = [];
   const ctx = {

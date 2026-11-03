@@ -2,6 +2,7 @@
 import { randomUUID } from 'node:crypto';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
+import { cleanExcerpt } from './events.mjs';
 
 const SAFE_GROUP = /^[A-Za-z0-9_.-]{1,100}$/;
 const VALID_ID = /^[a-f0-9]{64}$/;
@@ -90,8 +91,15 @@ export class CandidateQueue {
     if (!event || event.schema_version !== 1 || event.group !== this.group ||
       !VALID_ID.test(event.event_id || '') || event.state !== 'new' ||
       !Array.isArray(event.source_refs) || event.source_refs.length < 1 ||
-      typeof event.excerpt !== 'string' || event.excerpt.length > 1100 ||
-      typeof event.workspace !== 'string') return { status: 'invalid' };
+      !event.source_refs.every(x => typeof x === 'string' &&
+        x.startsWith('opencode:' + event.session_id + ':') && x.length <= 400) ||
+      !['user-stated', 'tool-reported', 'assistant-reported'].includes(event.evidence_class) ||
+      !['user_turn', 'tool_outcome', 'assistant_turn'].includes(event.kind) ||
+      !SAFE_GROUP.test(event.project || '') ||
+      typeof event.session_id !== 'string' ||
+      typeof event.excerpt !== 'string' || cleanExcerpt(event.excerpt) !== event.excerpt ||
+      typeof event.workspace !== 'string' || !path.isAbsolute(event.workspace))
+      return { status: 'invalid' };
     return this._locked(async () => {
       const dest = this.filename(event.event_id);
       try { await fs.access(dest); return { status: 'duplicate', event_id: event.event_id }; }
