@@ -154,6 +154,24 @@ When an admitted post-exit drain returns typed `unresolved`, the
    failure remains an operator-adjudicated blocker, not an automatic retry.
    This does not hot-patch any already-running legacy wrapper.
 
+For a disposable `cur80_*` group's two-task anonymous FIFO processing
+failure, `terminal-recovery-cli.mjs` offers a read-only assessment (default)
+and a separately acknowledged local-state recovery
+(`--apply --ack-anonymous-order`). It requires the disposable user-systemd
+service and path stopped, the path disabled, shared MCP-mux active, scoped
+`journalctl --user -u mcp-mux.service` evidence of exactly two processing
+starts (failure then success), two source-bound queued reviews with original
+revisions and ordering, and exact readback of one successful episode UUID
+but none for the failed review. The failed review's attribution is explicitly
+an **inference from anonymous group FIFO ordering**: Graphiti logs say
+`episode None`. The action makes no Graphiti writes, creates the confirmed
+successful review's source index, and marks the other `failed_extraction`
+with a bounded journal SHA-256 and operator-attested audit. It cannot prove
+that the failed task left no partial graph effects and NEVER authorizes replay,
+deletion or authority upgrades. Fresh different-source qualification may be
+performed in a new disposable group, but not a retry of the failed claim.
+This is evidence recovery, not a production queue-repair platform.
+
 A subsequent worker run must use `ReviewStore.change(id, revision,
 'reevaluate', {reason})` (revision checked) to request an **admitted**
 re-evaluation of the same original evidence. Do not restage source events,

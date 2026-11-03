@@ -35,9 +35,12 @@ the existing gate. A lost Graphiti ACK or nonterminal extraction is **not**
 safe to retry blindly. The Python wrapper retains EX admission and polls
 `curator-cli reconcile-only` for uniquely confirmed late Graphiti
 episode identities, without rerunning the model or `add_memory`. A
-permanently failed asynchronous extraction remains unresolved until a
-separate operator-adjudicated terminal-failure procedure; do not stop the
-shared MCP-mux Graphiti worker as a shortcut. This update does not affect
+permanently failed asynchronous extraction remains unresolved until
+explicit operator adjudication. The disposable-group recovery contract is in
+`../terminal-recovery-cli.mjs` and `../README.md`; it uses genuine group
+journal evidence, remote positive readback and separately acknowledged
+anonymous FIFO attribution. Do not stop the shared MCP-mux Graphiti worker
+as a shortcut. This update does not affect
 an already-running legacy wrapper process. Do not activate a permanent
 systemd instance or mutate live Graphiti without the separate approved
 activation/rollback boundary.
