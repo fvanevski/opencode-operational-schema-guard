@@ -135,10 +135,30 @@ export class Journal {
       return true;
     } finally { await fs.rmdir(lock); }
   }
+  // Scans ALL legacy episode records without truncation or deleting any.
+  // Each yield is bounded. A corrupt record fails visibly rather than
+  // disappearing, and the group-scoped source journal remains authoritative.
+  async *pages({ pageSize = 128 } = {}) {
+    if (!Number.isInteger(pageSize) || pageSize < 1 || pageSize > 500)
+      throw Error('Journal pageSize must be 1..500');
+    await this.init();
+    const names = (await fs.readdir(this.dir))
+      .filter(n => /^[0-9a-f-]{36}\.json$/.test(n)).sort();
+    for (let offset = 0; offset < names.length; offset += pageSize) {
+      const rows = [];
+      for (const name of names.slice(offset, offset + pageSize)) {
+        const value = await this.get(name.slice(0, -5));
+        if (value) rows.push(value);
+      }
+      yield rows;
+    }
+  }
+  // Compatibility method: retain the old explicit 500-record bound. New
+  // Graphiti consumers use pages(), not this whole-journal method.
   async list(max = 500) {
     await this.init();
     const names = (await fs.readdir(this.dir)).filter(n => /^[0-9a-f-]{36}\.json$/.test(n));
-    if (names.length > max) throw new Error('Journal limit reached; inspect or archive old records');
+    if (names.length > max) throw new Error('Journal limit reached; use pages() for a full scan');
     const rows = [];
     for (const name of names) { const value = await this.get(name.slice(0, -5)); if (value) rows.push(value); }
     return rows.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
@@ -228,9 +248,19 @@ export class Memory {
   async drain() {
     if (this.processing) return this.processing;
     this.processing = (async () => {
-      const rows = (await this.journal.list()).filter(x => x.status === 'pending').slice(0, 1);
+      // Scan bounded pages; choose oldest pending to retain pre-paging order.
+      // Never silently ignore records beyond the old 500-row limit.
+      let oldest = null;
+      for await (const page of this.journal.pages()) {
+        for (const row of page) {
+          if (row.status !== 'pending') continue;
+          if (!oldest || row.createdAt < oldest.createdAt ||
+            (row.createdAt === oldest.createdAt && row.uuid < oldest.uuid))
+            oldest = row;
+        }
+      }
       const submitted = [];
-      for (const row of rows) {
+      for (const row of oldest ? [oldest] : []) {
         if (!await this.journal.update(row.uuid, 'pending', 'submission_unknown')) continue;
         const name = row.kind + ':' + row.uuid;
         try {
@@ -255,22 +285,29 @@ export class Memory {
     try { return await this.processing; } finally { this.processing = null; }
   }
   async reconcile() {
-    const rows = (await this.journal.list()).filter(x =>
-      ['queued', 'submission_unknown'].includes(x.status));
-    if (!rows.length) return [];
+    let hasUnresolved = false;
+    for await (const page of this.journal.pages()) {
+      if (page.some(x => ['queued', 'submission_unknown'].includes(x.status))) {
+        hasUnresolved = true; break;
+      }
+    }
+    if (!hasUnresolved) return [];
     const data = await this.graphiti.call('get_episodes', {
       group_ids: [this.group], max_episodes: 100,
     });
     if (!Array.isArray(data.episodes)) throw new Error('Graphiti episode list unavailable');
     const persisted = [];
-    for (const row of rows) {
-      const matches = data.episodes.filter(e => e?.group_id === this.group &&
-        e?.name === row.kind + ':' + row.uuid && validId(e?.uuid || ''));
-      // Zero matches may mean still extracting OR beyond the recent episode
-      // window. Multiple matches are a duplicate anomaly; never pick one.
-      if (matches.length !== 1) continue;
-      if (await this.journal.update(row.uuid, row.status, 'persisted',
-        { remoteEpisodeUuid: matches[0].uuid })) persisted.push(row.uuid);
+    for await (const page of this.journal.pages()) {
+      for (const row of page) {
+        if (!['queued', 'submission_unknown'].includes(row.status)) continue;
+        const matches = data.episodes.filter(e => e?.group_id === this.group &&
+          e?.name === row.kind + ':' + row.uuid && validId(e?.uuid || ''));
+        // A zero match may mean still extracting OR beyond the recent episode
+        // window. Multiple matches are a duplicate anomaly; never pick one.
+        if (matches.length !== 1) continue;
+        if (await this.journal.update(row.uuid, row.status, 'persisted',
+          { remoteEpisodeUuid: matches[0].uuid })) persisted.push(row.uuid);
+      }
     }
     return persisted;
   }
@@ -284,9 +321,20 @@ export class Memory {
       query: text, group_ids: [this.group], max_facts: 12,
     });
     if (!Array.isArray(facts.facts)) return [];
-    const local = (await this.journal.list()).filter(r =>
-      r.status === 'persisted' && r.group === this.group && validId(r.remoteEpisodeUuid || ''));
-    const byRemote = new Map(local.map(r => [r.remoteEpisodeUuid, r]));
+    // Only keep rows relevant to returned Graphiti episode anchors.
+    // The journal scan is paged, so historical records >500 still resolve.
+    const wanted = new Set(facts.facts.flatMap(f =>
+      (Array.isArray(f?.episodes) ? f.episodes.slice(0, 12) : []))
+      .filter(id => validId(id)));
+    const byRemote = new Map();
+    if (wanted.size) {
+      for await (const page of this.journal.pages()) {
+        for (const r of page) {
+          if (r.status === 'persisted' && r.group === this.group &&
+            wanted.has(r.remoteEpisodeUuid)) byRemote.set(r.remoteEpisodeUuid, r);
+        }
+      }
+    }
     const candidates = [];
     const unique = new Set();
     for (const fact of facts.facts) {

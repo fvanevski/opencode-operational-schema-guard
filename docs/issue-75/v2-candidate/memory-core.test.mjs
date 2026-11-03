@@ -54,6 +54,43 @@ test('atomic journal stage dedupes repeated events and preserves states', () => 
   assert.equal((await j.list()).length, 1);
   assert.equal(await new Journal(dir, 'beta').get(c.uuid), null);
 }));
+test('legacy journal pages preserve all 501+ rows and admission-safe drain/reconcile', () => sandbox(async dir => {
+  const j = new Journal(dir, 'alpha');
+  const rows = [];
+  for (let i = 0; i < 501; i++) {
+    const c = makeCandidate('alpha', {
+      kind: 'user_decision', evidenceClass: 'user-stated',
+      assertion: 'Use the durable selection config for module ' + i + ' while preserving compatibility.'
+    }, { sessionID: 's-' + i });
+    rows.push(c);
+  }
+  assert.equal((await Promise.all(rows.map(x => j.stage(x)))).every(Boolean),true);
+  await assert.rejects(j.list(), /use pages/);
+  let count = 0, chunks = 0;
+  for await (const page of j.pages({ pageSize: 64 })) {
+    assert.ok(page.length <= 64);
+    count += page.length; chunks++;
+  }
+  assert.equal(count,501);
+  assert.ok(chunks > 1);
+  await assert.rejects(async () => { for await (const page of j.pages({pageSize:501})) {} },
+    /pageSize/);
+  const calls = [];
+  const graphiti = { call: async (name,args) => {
+    calls.push({name,args});
+    if (name === 'get_episodes') return {episodes:[]};
+    if (name === 'add_memory') return {};
+    return {facts:[]};
+  }};
+  const mem = new Memory({ journal:j, graphiti, group:'alpha' });
+  assert.equal((await mem.drain()).length,1);
+  assert.equal(calls.filter(x=>x.name==='add_memory').length,1);
+  assert.deepEqual(await mem.reconcile(),[]);
+  let queued = 0;
+  for await (const page of j.pages()) queued += page.filter(r=>r.status==='queued').length;
+  assert.equal(queued,1);
+  assert.equal((await j.list(600)).length,501);
+}));
 test('ambiguous send is not replayed; status requires Graphiti episode readback', () => sandbox(async dir => {
   const j = new Journal(dir, 'alpha');
   const calls = [];
