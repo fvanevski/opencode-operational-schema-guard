@@ -1,0 +1,22 @@
+:root{font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif}*{box-sizing:border-box}
+body{margin:0}button{cursor:pointer}.login{min-height:100vh;display:grid;place-items:center;padding:2rem}
+.login>*{max-width:490px;width:100%}.login .rt-Card{display:flex;flex-direction:column;gap:1.1rem}
+.layout{min-height:100vh;max-width:1800px;margin:auto;padding:1.25rem}
+header{padding:.5rem .25rem 1.25rem}.summary{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:.65rem;margin-bottom:1rem}
+.summary .rt-Card{display:flex;flex-direction:column;gap:.25rem}
+.columns{display:grid;grid-template-columns:minmax(260px,330px) 1fr;gap:1rem;min-height:70vh}
+aside{padding:1rem;border:1px solid var(--gray-a6);border-radius:14px;min-width:0}
+.inbox{display:flex;flex-direction:column;gap:.4rem;margin-top:1rem;max-height:72vh;overflow:auto}
+.inboxItem{color:inherit;text-align:left;border:1px solid var(--gray-a6);background:var(--gray-a2);padding:1rem;border-radius:10px;display:flex;flex-direction:column;gap:.55rem}
+.inboxItem:hover,.inboxItem:focus-visible{outline:2px solid var(--accent-9)}
+.inboxItem.current{border-color:var(--accent-9);background:var(--accent-a3)}
+.workspace{padding:1rem;min-width:0;border:1px solid var(--gray-a6);border-radius:14px}
+.detailGrid{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;padding-top:1rem}
+.detailGrid>div{display:flex;flex-direction:column;gap:.8rem;min-width:0}
+.event{display:flex;flex-direction:column;gap:.6rem;overflow-wrap:anywhere}
+.graph{height:580px;margin:1rem 0;border:1px solid var(--gray-a6);border-radius:12px;background:var(--color-background)}
+.react-flow__node{max-width:240px;padding:.5rem;border-radius:9px;border:1px solid var(--accent-8);background:var(--color-panel-solid);color:var(--gray-12);font-size:12px}
+.react-flow__node-source{border-style:dashed}.react-flow__node-episode{border-color:var(--green-9);border-width:2px}
+footer{margin-top:1rem;padding:.75rem;text-align:center}
+@media(max-width:1050px){.summary{grid-template-columns:repeat(3,1fr)}.columns{grid-template-columns:1fr}.inbox{max-height:280px}}
+@media(max-width:680px){.summary{grid-template-columns:repeat(2,1fr)}.detailGrid{grid-template-columns:1fr}.layout{padding:.6rem}header .rt-Flex{flex-wrap:wrap}}
