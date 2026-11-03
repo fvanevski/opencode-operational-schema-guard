@@ -301,6 +301,41 @@ test('multi-fact mixed-episode promotion stays deferred rather than inflating a 
   assert.equal((await store.get(c.id)).reason,'multi_fact_requires_split');
  }finally{delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;}
 }));
+test('re-evaluated approval converges deferred source queue without re-staging events',()=>temp(async root=>{
+ process.env.GHDEV_MEMORY_POST_EXIT_LEASE='admitted';
+ try{
+  const store=new ReviewStore(root,scope.group),q=new CandidateQueue(root,scope.group),c=cluster();
+  for(const e of c.events){
+    assert.equal((await q.stage(e)).status,'staged');
+    assert.equal(await q.transition(e.event_id,'new','deferred'),true);
+  }
+  const initial=await store.create(c,{decision:'DEFER',reason:'Model schema mismatch',facts:[]});
+  assert.equal(initial.record.state,'deferred');
+  await store.change(c.id,1,'reevaluate',{reason:'Retry with exact source schema'});
+  const uuid='87654321-1111-4111-a111-222222222222';
+  let remoteWrite=false;
+  const graphiti={call:async method=>{
+    if(method==='search_memory_facts')return {facts:[]};
+    if(method==='add_memory'){remoteWrite=true;return {ok:true};}
+    if(method==='get_episodes')return {episodes:remoteWrite?
+      [{name:'curated-v1:'+c.id,group_id:scope.group,uuid}]:[]};
+    throw Error('unexpected '+method);
+  }};
+  const result=await runAdmitted({root,group:scope.group,queue:q,store,graphiti,
+    curate:async()=>({content:JSON.stringify({
+      decision:'EMIT',reason:'User-backed decision',
+      facts:[{assertion:fact(U).assertion,kind:'decision',
+        source_refs:[U.source_refs[0]],temporal_status:'observed'}]}),duration_ms:30}),
+    maxSeconds:20});
+  assert.equal(result.status,'settled');
+  assert.equal(result.persisted,1);
+  assert.equal((await store.get(c.id)).state,'persisted');
+  const qstatus=await q.status();
+  assert.equal(qstatus.counts.deferred,0);
+  assert.equal(qstatus.counts.approved,3);
+  assert.equal(qstatus.total,3);
+ }finally{delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;}
+}));
 test('unavailable model yields durable DEFER without losing candidate, no Graphiti write',()=>temp(async root=>{
  process.env.GHDEV_MEMORY_POST_EXIT_LEASE='admitted';
  try{

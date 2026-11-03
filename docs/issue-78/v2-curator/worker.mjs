@@ -192,6 +192,17 @@ export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='loca
     }
   }
   const after=await allRecords(store);
+  // The durable review record is authoritative. Restore source-queue
+  // admission after operator re-evaluation or a crash between review CAS
+  // and individual source transitions. Never replay a Graphiti write.
+  for(const entry of after.filter(x=>['approved','submission_unknown','queued','persisted'].includes(x.state))){
+    for(const id of entry.source_event_ids){
+      const moved=await queue.transition(id,'new','reserved')||
+        await queue.transition(id,'deferred','reserved');
+      if(moved)await queue.transition(id,'reserved','approved');
+      else await queue.transition(id,'reserved','approved');
+    }
+  }
   for(const entry of after.filter(x=>x.state==='approved')){
     if(Date.now()>deadline-5000)break;
     const wrote=await promoteOne(store,entry,graphiti);
