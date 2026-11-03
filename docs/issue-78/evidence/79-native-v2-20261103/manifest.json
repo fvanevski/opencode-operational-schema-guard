@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "packet_kind": "sanitized native OpenCode V2.2.5 pilot; Central publication of a local-agent handback",
+  "repository": "fvanevski/opencode-operational-schema-guard",
+  "issue": 79,
+  "branch": "issue/79",
+  "host_frozen_at": "2026-11-03",
+  "host_start_sha": "32767d5e2a507c1b0a6b3f17378f087495ac2e91",
+  "host_tested_source_sha": "32767d5e2a507c1b0a6b3f17378f087495ac2e91",
+  "central_integrated_source_sha": "7fc3d034b67bf26e98e28210dbc1d99054f7b077",
+  "original_uploaded_source_diff": {
+    "sha256": "c19681e429477705d9438b1a04a9908ffef4cd3baf61d59938703447aa6b3e25",
+    "byte_length": 10719,
+    "published_copy": false,
+    "reason": "Changes are directly inspectable in exact Central integration source commit; raw original was reviewed via uploaded file."
+  },
+  "artifacts": [
+    {
+      "path": "docs/issue-78/evidence/79-native-v2-20261103/host-sample-frozen.json",
+      "sha256": "722dcb03d3e7416e7cf8b5bad501e129020076049960ffddd9ba0f3abceb5b43",
+      "git_blob_sha": "4a78bc7f2e4e7519c4fc9ae3942c05011715f850",
+      "size_bytes": 3099
+    },
+    {
+      "path": "docs/issue-78/evidence/79-native-v2-20261103/README.md",
+      "type": "Central review summary",
+      "sha256": "not separately computed; exact Git blob available on branch"
+    },
+    {
+      "path": "docs/issue-78/evidence/79-native-v2-20261103/handback.md",
+      "type": "Bounded reproduction of reported host handback and command-shape friction",
+      "sha256": "not separately computed; exact Git blob available on branch"
+    },
+    {
+      "path": "docs/issue-78/REVIEW_EVIDENCE_PACKET.md",
+      "type": "Normative future Build packet contract",
+      "sha256": "not separately computed; exact Git blob available on branch"
+    }
+  ],
+  "reported_checks": {
+    "syntax_checks": {
+      "passed": 4,
+      "total": 4
+    },
+    "candidate_tests": {
+      "passed": 11,
+      "total": 11
+    },
+    "issue75_regressions": {
+      "passed": 24,
+      "total": 24
+    }
+  },
+  "frozen_real_sample": {
+    "total": 8,
+    "valuable": 7,
+    "prior_selector_valuable": 0,
+    "candidate_valuable": 7,
+    "candidate_noisy": 1,
+    "labels_frozen_before_comparison": true
+  },
+  "limits": [
+    "Host tests and real runtime state reported by local Build agent, not independently replayed by Central",
+    "Installed production plugin unchanged; no authorized Graphiti writes",
+    "The packet original diff was supplied and reviewed outside GitHub; Central-authored integrated source commit is reviewable"
+  ],
+  "source_mutation": "Central-only GitHub source commit; host did not push",
+  "production_mutation": "none reported",
+  "remote_evidence_publication": "Central published because the original handoff forbade local GitHub mutation"
+}
