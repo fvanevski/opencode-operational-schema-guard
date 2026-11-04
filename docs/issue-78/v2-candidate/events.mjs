@@ -121,6 +121,8 @@ export function fromPromptCandidates(event, scope, { admitted = false } = {}) {
     /[\0-\u0008\u000b\u000e-\u001f]/u.test(text)) return [];
   const condensed = text.replace(/\s+/g, ' ').trim();
   if (!condensed || CHATTER.test(condensed) || /^[?!. ]+$/.test(condensed) ||
+    // Pure JSON/source payload is not an authenticated user decision.
+    /^\s*(?:\{|\[\s*\{)/.test(condensed) ||
     (condensed.length <= 1100 && condensed.length > 400 && /[{}]/.test(condensed))) return [];
   const nativeID = field(event, ['messageID', 'messageId', 'promptID', 'promptId']) ||
     field(event?.prompt, ['messageID', 'messageId', 'id']);
