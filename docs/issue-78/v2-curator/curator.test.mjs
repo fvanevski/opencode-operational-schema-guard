@@ -236,6 +236,32 @@ test('Graphiti write intent first; unknown submission cannot replay',()=>temp(as
   assert.deepEqual(res,{persisted:0,unresolved:1});
  }finally{delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;}
 }));
+test('concurrent operator source edit prevents stale Graphiti write intent and attribution',()=>temp(async root=>{
+ process.env.GHDEV_MEMORY_POST_EXIT_LEASE='admitted';
+ try{
+  const store=new ReviewStore(root,scope.group),c=cluster();
+  const original=await store.create(c,proposal(U));
+  let remoteWrites=0,changed;
+  const graphiti={call:async method=>{
+   if(method==='search_memory_facts')return {facts:[]};
+   if(method==='get_episodes'){
+    changed=await store.change(c.id,original.record.revision,'edit-and-approve',
+      {facts:[fact(T,{assertion:T.excerpt,kind:'test_result'})]});
+    return {episodes:[]};
+   }
+   if(method==='add_memory')remoteWrites++;
+   return {facts:[]};
+  }};
+  const result=await promoteOne(store,original.record,graphiti);
+  assert.equal(result.status,'concurrent_transition');
+  assert.equal(remoteWrites,0);
+  assert.equal((await store.get(c.id)).state,'approved');
+  assert.equal((await store.get(c.id)).revision,changed.revision);
+  assert.deepEqual((await store.get(c.id)).facts[0].source_refs,[T.source_refs[0]]);
+  assert.equal(await store.advance(c.id,'approved','submission_unknown',
+    {expected_revision:original.record.revision}),false);
+ }finally{delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;}
+}));
 test('successful ACK is QUEUED, positive exact group+name episode readback persists',()=>temp(async root=>{
  process.env.GHDEV_MEMORY_POST_EXIT_LEASE='admitted';
  try{
@@ -481,6 +507,27 @@ test('re-evaluated approval converges deferred source queue without re-staging e
   assert.equal(qstatus.counts.deferred,0);
   assert.equal(qstatus.counts.approved,3);
   assert.equal(qstatus.total,3);
+ }finally{delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;}
+}));
+test('partial deferred source transitions converge before rechunking or new model calls',()=>temp(async root=>{
+ process.env.GHDEV_MEMORY_POST_EXIT_LEASE='admitted';
+ try{
+  const store=new ReviewStore(root,scope.group),q=new CandidateQueue(root,scope.group);
+  const c=selectClusters([U,T])[0];
+  for(const e of c.events)await q.stage(e);
+  const prior=await store.create(c,{decision:'DEFER',reason:'Await operator review',facts:[]});
+  assert.equal(prior.created,true);
+  await q.transition(U.event_id,'new','deferred');
+  let modelCalls=0;
+  const result=await runAdmitted({root,group:scope.group,store,queue:q,
+    graphiti:{call:async method=>{if(method==='add_memory')throw Error('unexpected remote write');
+      return {episodes:[]};}},
+    curate:async()=>{modelCalls++;throw Error('duplicate model call')},maxSeconds:20});
+  assert.equal(result.curated,0);
+  assert.equal(modelCalls,0);
+  assert.equal((await store.list()).total,1);
+  assert.equal((await q.get(T.event_id)).state,'deferred');
+  assert.equal((await store.get(c.id)).state,'deferred');
  }finally{delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;}
 }));
 test('unavailable model yields durable DEFER without losing candidate, no Graphiti write',()=>temp(async root=>{

@@ -382,6 +382,13 @@ export class ReviewStore {
     return this._mutex(id,async()=>{
       const old=await this.get(id);
       if(!old||old.state!==expectedState)return false;
+      // Never claim remote-write intent with a snapshot superseded by an
+      // operator's concurrent source/authority edit.
+      if(extra.expected_revision!==undefined){
+        if(!Number.isInteger(extra.expected_revision)||extra.expected_revision<1)
+          throw Error('INVALID_EXPECTED_REVISION');
+        if(old.revision!==extra.expected_revision)return false;
+      }
       if(remoteWrite&&process.env.GHDEV_MEMORY_POST_EXIT_LEASE!=='admitted')
         throw Error('EX_POST_EXIT_ADMISSION_REQUIRED');
       // Structural edge check runs after the CAS state check so a record that

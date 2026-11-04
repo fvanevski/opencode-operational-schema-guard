@@ -112,7 +112,8 @@ export async function promoteOne(store,record,graphiti){
   }
   // Write-intent is durable BEFORE the first remote call: timeout may mean
   // accepted+queued. A retry must reconcile, never call add_memory again.
-  if(!await store.advance(record.id,'approved','submission_unknown'))
+  if(!await store.advance(record.id,'approved','submission_unknown',
+    {expected_revision:record.revision}))
     return {status:'concurrent_transition'};
   const args={group_id:record.group,name:nameOf(record),episode_body:episodeBody({
     ...record,state:'submission_unknown'}),source:'text',
@@ -159,6 +160,31 @@ export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='loca
       if(updated.state==='deferred')stats.deferred++;
       if(updated.state==='approved')stats.approved++;
       if(updated.state==='skipped')stats.skipped++;
+    }
+  }
+  // A crash between durable review creation and its source-event transitions
+  // can leave a strict SUBSET of the same cluster in 'new'. Claim every
+  // existing review's source membership BEFORE constructing new cluster IDs,
+  // or that subset will hash to a different ID and be curated twice.
+  const ownedSources=new Map();
+  for(const prior of await allRecords(store)){
+    for(const id of prior.source_event_ids||[]){
+      if(ownedSources.has(id)&&ownedSources.get(id)!==prior.id)
+        throw Error('SOURCE_EVENT_IN_MULTIPLE_REVIEWS');
+      ownedSources.set(id,prior.id);
+      const row=await queue.get(id);
+      if(!row)continue; // An older review may predate this queue instance.
+      if(prior.state==='deferred'||prior.state==='skipped'){
+        const terminal=prior.state;
+        if(row.state==='new'||row.state==='reserved')
+          await queue.transition(id,row.state,terminal);
+      }else if(['approved','submission_unknown','queued','persisted',
+        'failed_extraction'].includes(prior.state)){
+        if(row.state==='new')await queue.transition(id,'new','reserved');
+        else if(row.state==='deferred')
+          await queue.transition(id,'deferred','reserved');
+        await queue.transition(id,'reserved','approved');
+      }
     }
   }
   const list=await queue.list({limit:500,states:['new']});
