@@ -148,7 +148,7 @@ export function tallyModelUsage(stats,reply){
 }
 export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='local',
   graphitiEndpoint,queue,store,graphiti,curate=curateCluster,
-  maxClusters=6,maxSeconds=600}={}){
+  modelOptions={},maxClusters=6,maxSeconds=600}={}){
   admitted();
   if(!Number.isInteger(maxClusters)||maxClusters<1||maxClusters>12)throw Error('Invalid cluster bound');
   const deadline=Date.now()+maxSeconds*1000;
@@ -172,7 +172,8 @@ export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='loca
     if(Date.now()>deadline-5000)break;
     let response;
     stats.model_attempts++;
-    try{const reply=await curate(prior,{endpoint:modelEndpoint,model:modelId,apiKey});
+    try{const reply=await curate(prior,{endpoint:modelEndpoint,model:modelId,apiKey,
+      ...modelOptions});
       response=validateModelDecision(reply.content,prior);
       tallyModelUsage(stats,reply);
     }catch{
@@ -233,7 +234,8 @@ export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='loca
     let proposal;
     stats.model_attempts++;
     try{
-      const reply=await curate(cluster,{endpoint:modelEndpoint,model:modelId,apiKey});
+      const reply=await curate(cluster,{endpoint:modelEndpoint,model:modelId,apiKey,
+        ...modelOptions});
       proposal=validateModelDecision(reply.content,cluster);
       tallyModelUsage(stats,reply);
     }catch(e){
