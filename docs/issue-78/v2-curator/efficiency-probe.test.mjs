@@ -23,9 +23,11 @@ test('EX-only probe never calls Graphiti, and validates source-backed result',as
   process.env.GHDEV_MEMORY_POST_EXIT_LEASE='admitted';
   await assert.rejects(runProbe({...args,group:'ghdev_gh_mcp'}),/DISPOSABLE_SCOPE_REQUIRED/);
   await assert.rejects(runProbe({...args,maxTokens:1600}),/BOUNDED_VARIANT_REQUIRED/);
+  await assert.rejects(runProbe({...args,reasoningEffort:'none'}),/BOUNDED_VARIANT_REQUIRED/);
+  await assert.rejects(runProbe({...args,reasoningEffort:'low'}),/BOUNDED_VARIANT_REQUIRED/);
   let calls=0;
   const out=await runProbe({...args,curate:async(_r,p)=>{
-    calls++;assert.equal(p.reasoningEffort,'none');assert.equal(p.maxTokens,768);
+    calls++;assert.equal(p.reasoningEffort,null);assert.equal(p.maxTokens,768);
     return {content:JSON.stringify({decision:'EMIT',reason:'grounded',
       facts:[{assertion:fact,kind:'implementation',
         source_refs:event.source_refs,temporal_status:'observed'}]}),

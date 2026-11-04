@@ -10,14 +10,18 @@ const fail=x=>{throw Error('PROBE_'+x);};
 const digest=x=>createHash('sha256').update(x).digest('hex');
 const HEX=/^[a-f0-9]{64}$/;
 export async function runProbe({root,group,ids,endpoint,model,apiKey='local',
-  reasoningEffort='none',maxTokens=768,store=null,curate=curateCluster}={}){
+  reasoningEffort=null,maxTokens=768,store=null,curate=curateCluster}={}){
   if(process.env.GHDEV_MEMORY_POST_EXIT_LEASE!=='admitted')fail('EX_ADMISSION_REQUIRED');
   if(!/^cur81_dev_[a-f0-9]{8}$/.test(group||'')||
      typeof root!=='string'||!path.isAbsolute(root))fail('DISPOSABLE_SCOPE_REQUIRED');
   if(!Array.isArray(ids)||ids.length<1||ids.length>5||
      new Set(ids).size!==ids.length||ids.some(id=>!HEX.test(id)))
     fail('EXPLICIT_BOUNDED_CASES_REQUIRED');
-  if(!['none','low'].includes(reasoningEffort)||
+  // chat-fast is a non-thinking alias; no explicit reasoning parameter is sent.
+  // A thinking variant needs an explicitly selected reasoning-capable alias.
+  if((reasoningEffort!==null&&
+     (!['chat-review','chat-audit'].includes(model)||
+      !['low','medium','high','xhigh'].includes(reasoningEffort)))||
      !Number.isInteger(maxTokens)||maxTokens<256||maxTokens>1024)
     fail('BOUNDED_VARIANT_REQUIRED');
   store??=new ReviewStore(root,group);
@@ -79,7 +83,7 @@ export async function main(args=process.argv.slice(2),env=process.env){
     root:arg(args,'state-dir'),group:arg(args,'group'),ids,
     endpoint:env.LOCAL_CURATOR_URL,model:env.LOCAL_CURATOR_MODEL,
     apiKey:env.LOCAL_CURATOR_API_KEY||'local',
-    reasoningEffort:env.GHDEV_CURATOR_PROBE_EFFORT||'none',
+    reasoningEffort:env.GHDEV_CURATOR_PROBE_EFFORT||null,
     maxTokens:Number(env.GHDEV_CURATOR_PROBE_MAX_TOKENS||768)});
   const output=JSON.stringify(report,null,2)+'\n';
   const dest=env.GHDEV_CURATOR_PROBE_OUTPUT;
