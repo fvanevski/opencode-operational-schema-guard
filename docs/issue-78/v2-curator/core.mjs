@@ -332,13 +332,62 @@ export class ReviewStore {
       return updated;
     });
   }
+  /** Operator-attested reconciliation of a locally staged write-intent that
+   * was proven never submitted remotely. This is NOT a replay: no remote
+   * write was ever issued for this record, so restoring the pre-staging
+   * approved state authorizes a genuine FIRST submission by an admitted
+   * worker later. Only the offline scoped adjudicator, with exact scope,
+   * positive zero-episode readback and explicit evidence, calls this.
+   */
+  async reconcileNeverSubmitted(id,expectedRevision,evidence){
+    if(!evidence||evidence.kind!=='pre_exit_local_staging_no_remote_call'||
+       evidence.operator_attested!==true||evidence.staging_proven!==true||
+       evidence.remote_readback_zero_episodes!==true||
+       !HEX.test(evidence.evidence_sha256||'')||
+       !validDate(evidence.staging_at)||!validDate(evidence.observed_at))
+      throw Error('INVALID_NEVER_SUBMITTED_EVIDENCE');
+    return this._mutex(id,async()=>{
+      const old=await this.get(id);
+      if(!old)throw Error('UNKNOWN_REVIEW');
+      if(old.revision!==expectedRevision)throw Error('STALE_REVIEW_REVISION');
+      if(old.state!=='submission_unknown'||old.remote_episode_uuid)
+        throw Error('NEVER_SUBMITTED_REQUIRES_UNRESOLVED_SUBMISSION_UNKNOWN');
+      const staging=old.audit.find(a=>a.action==='state'&&a.outcome==='submission_unknown');
+      if(!staging||staging.at!==evidence.staging_at)
+        throw Error('NEVER_SUBMITTED_STAGING_AUDIT_MISMATCH');
+      const now=new Date().toISOString();
+      const updated={...old,state:'approved',revision:old.revision+1,updated_at:now,
+        never_submitted_evidence:{
+          kind:evidence.kind,operator_attested:true,
+          staging_proven:true,remote_readback_zero_episodes:true,
+          evidence_sha256:evidence.evidence_sha256,
+          staging_at:evidence.staging_at,observed_at:evidence.observed_at
+        },
+        audit:[...old.audit.slice(-59),{at:now,action:'operator_attested_never_submitted',
+          outcome:'approved'}]};
+      await atomic(this.filename(id),updated);
+      return updated;
+    });
+  }
   async advance(id,expectedState,next,extra={}){
     const allowed={approved:['submission_unknown','deferred'],
       submission_unknown:['queued','persisted'],queued:['persisted']};
-    if(!allowed[expectedState]?.includes(next))throw Error('Illegal remote state transition');
+    // Durable remote-write intent (and its settlement) may only be recorded
+    // by an admitted post-exit caller. The marker is declared by the EX
+    // wrapper that owns the canonical flock; it is a marker, not independent
+    // flock proof, so it is enforced HERE at the sole durable writer rather
+    // than trusted at every call site. A stale CAS miss stays a clean false;
+    // a matching state without admission is fail-closed.
+    const remoteWrite=new Set(['submission_unknown','queued','persisted']).has(next);
     return this._mutex(id,async()=>{
       const old=await this.get(id);
       if(!old||old.state!==expectedState)return false;
+      if(remoteWrite&&process.env.GHDEV_MEMORY_POST_EXIT_LEASE!=='admitted')
+        throw Error('EX_POST_EXIT_ADMISSION_REQUIRED');
+      // Structural edge check runs after the CAS state check so a record that
+      // already advanced to a terminal state (e.g. failed_extraction) fails a
+      // replay with a clean false rather than an illegal-transition throw.
+      if(!allowed[expectedState]?.includes(next))throw Error('Illegal remote state transition');
       const now=new Date().toISOString();
       const remoteUUID=extra.remote_episode_uuid||old.remote_episode_uuid;
       if(next==='persisted'&&!UUID.test(remoteUUID||''))

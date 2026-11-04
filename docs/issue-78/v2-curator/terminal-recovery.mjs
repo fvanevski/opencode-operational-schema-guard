@@ -111,3 +111,39 @@ export async function assessOperatorRecovery({store,queue,graphiti,root,group,fa
    failed_review_state:recorded.state,success_source_index_confirmed:true,
    note:'Failure disposition preserves sources; no Graphiti mutation and no replay.'};
 }
+
+/** Scoped adjudication for a review whose durable write-intent was staged
+ * locally (pre-exit) and proven never submitted remotely: exact group/record
+ * identity, submission_unknown state with null remote UUID, and a POSITIVE
+ * zero-episode scoped readback. Applying restores the pre-staging approved
+ * state under explicit operator attestation. No Graphiti mutation, no replay:
+ * the next admitted drain performs the genuine first submission.
+ */
+export async function assessNeverSubmittedRecovery({store,graphiti,group,reviewId,
+  expectedRevision,evidence,apply=false,attestNoRemoteCall=false}={}){
+  if(!store||store.group!==group||!graphiti||!GROUP.test(group||'')||
+    !HEX.test(reviewId||'')||!Number.isInteger(expectedRevision))
+   throw Error('INVALID_NEVER_SUBMITTED_SCOPE');
+  const record=await store.get(reviewId);
+  if(!record||record.group!==group||record.state!=='submission_unknown'||
+    record.remote_episode_uuid||record.revision!==expectedRevision||
+    record.origin!=='qualification_operator_seed'||!record.facts?.length)
+   throw Error('NEVER_SUBMITTED_REVIEW_IDENTITY_NOT_PROVEN');
+  const readback=await graphiti.call('get_episodes',{group_ids:[group],max_episodes:1000});
+  if(!Array.isArray(readback?.episodes))throw Error('GRAPHITI_EPISODE_READBACK_UNAVAILABLE');
+  const scoped=readback.episodes.filter(x=>x?.group_id===group);
+  if(scoped.length!==0)
+   throw Error('REMOTE_GROUP_EPISODES_PRESENT_CANNOT_ATTEST_NEVER_SUBMITTED');
+  const plan={status:'READY_FOR_OPERATOR_ATTESTATION',group,
+    review_id:reviewId,review_revision:record.revision,
+    staged_state:'submission_unknown',remote_episode_count:0,
+    assurance:'positive zero-episode scoped readback plus session-record proof that no add_memory was issued; absence of a recent window alone never proves non-submission, so the no-remote-call attestation is explicit and durable',
+    remote_call_contract:'read-only get_episodes, no model, no Graphiti add_memory'};
+  if(!apply)return plan;
+  if(attestNoRemoteCall!==true)
+   throw Error('EXPLICIT_NO_REMOTE_CALL_ATTESTATION_REQUIRED');
+  const reconciled=await store.reconcileNeverSubmitted(reviewId,expectedRevision,evidence);
+  return {...plan,status:'RECOVERED_NEVER_SUBMITTED',
+    review_state:reconciled.state,
+    note:'Local staging restored to approved; no Graphiti mutation and no replay.'};
+}

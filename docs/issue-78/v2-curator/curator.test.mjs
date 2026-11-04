@@ -169,6 +169,8 @@ test('operator qualification seed cannot masquerade as model curation',()=>temp(
 test('operator-attested asynchronous extraction failure preserves source authority and blocks replay',()=>temp(async root=>{
  const s=new ReviewStore(root,scope.group),c=cluster();
  const {record}=await s.create(c,proposal(U));
+ process.env.GHDEV_MEMORY_POST_EXIT_LEASE='admitted';
+ try{
  await s.advance(record.id,'approved','submission_unknown');
  await s.advance(record.id,'submission_unknown','queued');
  const queued=await s.get(record.id);
@@ -193,8 +195,11 @@ test('operator-attested asynchronous extraction failure preserves source authori
    {facts:marked.facts}),/REMOTE_WRITE_ALREADY_POSSIBLE/);
  assert.equal(await s.advance(record.id,'queued','submission_unknown'),false);
  assert.equal((await s.list()).items[0].state,'failed_extraction');
+}finally{delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;}
 }));
 test('review store durable create/dedup, safe operator revisions and blocked unverified approval',()=>temp(async root=>{
+ process.env.GHDEV_MEMORY_POST_EXIT_LEASE='admitted';
+ try{
  const store=new ReviewStore(root,scope.group),c=cluster();
  const first=await store.create(c,proposal(U));assert.equal(first.created,true);
  assert.equal(first.record.state,'approved');
@@ -212,6 +217,7 @@ test('review store durable create/dedup, safe operator revisions and blocked unv
  const restarted=new ReviewStore(root,scope.group);
  assert.equal((await restarted.get(c.id)).state,'submission_unknown');
  assert.equal((await restarted.get(c.id)).audit.length,4);
+}finally{delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;}
 }));
 test('Graphiti write intent first; unknown submission cannot replay',()=>temp(async root=>{
  process.env.GHDEV_MEMORY_POST_EXIT_LEASE='admitted';
@@ -399,6 +405,8 @@ test('operator-requested re-evaluation is processed by admitted worker',()=>temp
  }finally{delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;}
 }));
 test('persisted curated episode becomes source-attributed in accepted native recall; wrong workspace excluded',()=>temp(async root=>{
+ process.env.GHDEV_MEMORY_POST_EXIT_LEASE='admitted';
+ try{
  const store=new ReviewStore(root,scope.group),c=cluster(),uuid='87654321-1111-4111-a111-222222222222';
  await store.create(c,proposal(U));
  await store.advance(c.id,'approved','submission_unknown');
@@ -422,6 +430,7 @@ test('persisted curated episode becomes source-attributed in accepted native rec
  assert.equal(recalled[0].evidenceClass,'user-stated');
  const legacyOnly=new Memory({journal:new Journal(root,scope.group),graphiti,group:scope.group});
  assert.deepEqual(await legacyOnly.search('Why did we fix the invalid median algorithm and retain the CLI interface?'),[]);
+}finally{delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;}
 }));
 test('multi-fact mixed-episode promotion stays deferred rather than inflating a source class',()=>temp(async root=>{
  process.env.GHDEV_MEMORY_POST_EXIT_LEASE='admitted';
@@ -489,5 +498,54 @@ test('unavailable model yields durable DEFER without losing candidate, no Graphi
   assert.equal(result.deferred,1);
   assert.equal((await store.list()).items[0].state,'deferred');
   assert.equal((await q.status()).counts.deferred,3);
+ }finally{delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;}
+}));
+
+test('authentic admission is required before durable remote-write intent',()=>temp(async root=>{
+ const store=new ReviewStore(root,scope.group),c=cluster();
+ const {record}=await store.create(c,proposal(U));
+ assert.equal(record.state,'approved');
+ // The 15:34:05 incident: a bare interactive staging of write-intent must be
+ // fail-closed. No marker, no flock: the durable writer refuses.
+ delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;
+ await assert.rejects(store.advance(record.id,'approved','submission_unknown'),
+  /EX_POST_EXIT_ADMISSION_REQUIRED/);
+ assert.equal((await store.get(record.id)).state,'approved');
+ // Interactive portal approval is local and needs no admission marker.
+ const deferred=await store.change(record.id,record.revision,'defer',{reason:'Re-queue later'});
+ assert.equal(deferred.state,'deferred');
+ const approved=await store.change(deferred.id,deferred.revision,'edit-and-approve',
+  {reason:'Exact source checked',facts:record.facts});
+ assert.equal(approved.state,'approved');
+ // An admitted post-exit caller may stage the durable write intent.
+ process.env.GHDEV_MEMORY_POST_EXIT_LEASE='admitted';
+ try{
+  assert.equal(await store.advance(approved.id,approved.state,'submission_unknown'),true);
+  assert.equal((await store.get(record.id)).state,'submission_unknown');
+ }finally{delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;}
+ // A stale CAS miss stays a clean false even without admission.
+ assert.equal(await store.advance(record.id,'approved','submission_unknown'),false);
+}));
+test('replay of a legal edge against an advanced record fails with clean false',()=>temp(async root=>{
+ const store=new ReviewStore(root,scope.group),c=cluster();
+ const {record}=await store.create(c,proposal(U));
+ process.env.GHDEV_MEMORY_POST_EXIT_LEASE='admitted';
+ try{
+  await store.advance(record.id,'approved','submission_unknown');
+  await store.advance(record.id,'submission_unknown','queued');
+  const queued=await store.get(record.id);
+  const proof={kind:'graphiti_async_processing_failure',
+   identity_binding:'anonymous_group_fifo_inference',operator_attested:true,
+   journal_sha256:'b'.repeat(64),other_success_episode_uuid:'26299f65-f48c-45c1-abf0-9c7d521b1a03',
+   observed_at:'2026-11-03T22:31:39.841Z',error_code:'graphiti_json_decode_error',
+   reason:'First anonymous FIFO task failed; no replay authorized'};
+  await store.markExtractionFailure(queued.id,queued.revision,proof);
+  const failed=await store.get(record.id);
+  assert.equal(failed.state,'failed_extraction');
+  // Replayed legal edges against the terminal record are clean CAS misses,
+  // never illegal-transition throws.
+  assert.equal(await store.advance(failed.id,'submission_unknown','queued'),false);
+  assert.equal(await store.advance(failed.id,'queued','persisted'),false);
+  assert.equal((await store.get(record.id)).state,'failed_extraction');
  }finally{delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;}
 }));

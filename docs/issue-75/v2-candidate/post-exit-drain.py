@@ -103,7 +103,7 @@ def reconcile_late(cli, group, state_dir, endpoint, env, interval_seconds=15):
     A terminal Graphiti extraction failure has no positive episode identity:
     keep the lease held for an explicitly operator-adjudicated disposition.
     """
-    cmd = ["node", str(Path(cli).resolve(strict=True)), "reconcile-only",
+    cmd = ["node", str(Path(cli).resolve(strict=False)), "reconcile-only",
            "--group", group, "--state-dir", state_dir,
            "--endpoint", endpoint]
     while True:

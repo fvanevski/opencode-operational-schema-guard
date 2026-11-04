@@ -19,6 +19,7 @@ async function fixture(fn){
  const root=await mkdtemp(path.join(os.tmpdir(),'cur80-graph-'));
  try{
   const store=new ReviewStore(root,group),c=cluster();
+  process.env.GHDEV_MEMORY_POST_EXIT_LEASE='admitted';
   await store.create(c,{decision:'EMIT',reason:'Exact user source',
    facts:[{assertion:input.excerpt,kind:'decision',
      source_refs:input.source_refs,evidence_class:'user-stated',
@@ -27,7 +28,8 @@ async function fixture(fn){
   await store.advance(c.id,'approved','submission_unknown');
   await store.advance(c.id,'submission_unknown','queued');
   await store.advance(c.id,'queued','persisted',{remote_episode_uuid:uuid});
-  return await fn({root,store,clusterId:c.id});
+  try{return await fn({root,store,clusterId:c.id});}
+  finally{delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;}
  }finally{await rm(root,{recursive:true,force:true});}
 }
 function stub(id,mode='good'){
