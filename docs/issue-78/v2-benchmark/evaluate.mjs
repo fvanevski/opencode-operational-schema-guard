@@ -100,7 +100,8 @@ export function evaluate(corpus,{observations=null,targets=null,corpusBytes=null
   let nFacts=0,nJudged=0,nSupported=0,nUseful=0,invalid=0,wrongAuthority=0,wrongScope=0;
   for(const o of observations.records){
    if(!Array.isArray(o.source_case_ids)||!o.source_case_ids.length||
-      o.source_case_ids.length>12||!Array.isArray(o.facts))FAIL('observation_shape');
+      o.source_case_ids.length>12||!Array.isArray(o.facts)||
+      !['model','operator_seed'].includes(o.origin))FAIL('observation_shape_or_origin');
    const events=[];
    for(const id of o.source_case_ids){
     if(used.has(id))FAIL('duplicate_observation_case:'+id);

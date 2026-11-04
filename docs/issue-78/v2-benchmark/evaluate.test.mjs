@@ -74,6 +74,8 @@ test('curator observation must match deterministic cluster ID, native source and
  assert.equal(evaluate(c,{observations:{schema_version:1,records:[fake]}}).curator.invalid_model_or_source_decisions,1);
  assert.throws(()=>evaluate(c,{observations:{schema_version:1,records:[
   {...record,source_case_ids:['no-such-source']} ]}}),/missing_candidate/);
+ assert.throws(()=>evaluate(c,{observations:{schema_version:1,records:[
+  {...record,origin:'unspecified'} ]}}),/observation_shape_or_origin/);
 });
 test('independent fact labels cannot be inflated by unaudited observations',()=>{
  const c=corpus(),r=evaluate(c),original=c.cases[0].native_event.prompt.text;
