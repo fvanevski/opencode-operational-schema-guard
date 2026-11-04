@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "kind": "issue81-evidence-packet-operator-adjudication",
+  "campaign": "81-operator-adjudication-v1",
+  "generated_at": "2026-11-04T20:17:05Z",
+  "source": {
+    "repo": "fvanevski/opencode-operational-schema-guard",
+    "branch": "issue/81",
+    "tested_exact_head": "7b7d62685993e56e2b71b77846a6a0c1092d7d01",
+    "parent_evidence_commit": "e6e21f5b2794d20244fa3c62e2b0ccd308fb5752 (81-post-exit-terminal-v1, immutable)"
+  },
+  "scope": "operator-adjudication finalization: evidence-only; no model inference, no Graphiti writes, no replay, no new PR, no merge, no substantive source edit",
+  "operator_adjudication": {
+    "policy": "durable-memory usefulness: retain user architectural decisions / API requirements, changes/supersessions, source-grounded durable implementation facts, important unresolved defects with established status; keep routine test counts / transient failures / redundant progress reports / speculative diagnoses in the evidence history. Retrospective quality labels on already-persisted facts (no episode deletion, no re-labeling of original model DEFER/EMIT records).",
+    "per_fact_durable_useful": { "TRUE": ["F1", "F2", "F3", "F4", "F5", "F11", "F13 (conditional)"], "FALSE": ["F6", "F7", "F8", "F9", "F10", "F12"] },
+    "exact_source_verification": {
+      "method": "each Graphiti fact assertion compared to the FULL native source event excerpt (not the truncated packet-2 quotation)",
+      "grounding": "13/13 YES (no assertion contains a proposition absent from its cited span)",
+      "authority": "13/13 (user-stated F1-F5,F11; tool-reported F6-F8,F10; assistant-reported F9,F12,F13; no assistant fact promoted to independently-verified)",
+      "scope": "13/13 (12 dev -> fsm81; F13 -> qualified_project, earlier cohort)",
+      "f12_source_check": "corroborated: native-ws/fsm81/fsm.test.js has rmSync(tmpDir,{recursive,force}) in an after() hook (line 194); authority stays assistant-reported (corroborated, not independent code verification)"
+    }
+  },
+  "cohorts": {
+    "development": { "group": "cur81_native_a1f3c9d7", "project": "fsm81", "corpus": "corpus81-dev.json (sha d3822a30...)", "persisted_facts": 12, "drained": "yes (settled)" },
+    "new_prospective_blind_holdout": { "group": "cur81_native_holdout_a1f3c9", "project": "fsm81", "corpus": "corpus81-holdout.json (sha 2435236a...)", "persisted_facts": 0, "drained": "no", "durable_fact_precision": "UNVERIFIED" },
+    "earlier_primejs_cohort": { "group": "cur81_holdout_4c3ab514", "project": "qualified_project", "persisted_facts": 1, "note": "source of F13; NOT the new prospective holdout; not combined with it" },
+    "historical_immutable": { "dev": "27/37", "exposed_holdout": "3/6", "note": "frozen, unchanged" },
+    "production_non_mutation": { "ghdev_gh_mcp": 4, "cur81_dev_ce555621": 9 }
+  },
+  "metrics": {
+    "grounded_precision": {
+      "denominator": "the 13 actual persisted receipt-bound model facts (NOT the 7 useful subset)",
+      "dev": "12/12 = 1.0000", "earlier_cohort": "1/1 = 1.0000", "combined": "13/13 = 1.0000", "new_prospective_holdout": "UNVERIFIED (0 persisted facts)",
+      "gate": ">=0.90 measured 1.0000, conditionally met, NOT declared passed (pending operator sign-off + packet-1 ratification + remote receipt bindings)"
+    },
+    "durable_usefulness": { "metric": "7/13 TRUE (F1-F5, F11, F13-conditional); 6/13 FALSE (F6-F10, F12)", "note": "separate finding from grounded precision; the 6 non-useful facts remain in the grounded-precision denominator" },
+    "candidate_recall": { "staged_dev": "5/6 = 0.8333 (FAIL < 0.85)", "patched_dev_counterfactual": "6/6 = 1.0 (via defect #2)", "blind_holdout_provisional_capture": "4/4 = 1.0 (labels pending packet-1 ratification)", "historical_dev_immutable": "27/37", "historical_holdout_immutable": "3/6", "binding": ">=0.85 recall requirement still binding" },
+    "remote_receipts_reverified_readonly": { "dev_cur81_native_a1f3c9d7": "12 episodes (UUIDs unchanged)", "earlier_cur81_holdout_4c3ab514": "1 episode (69fde784-...)", "new_prospective_cur81_native_holdout_a1f3c9": "0", "prod_ghdev_gh_mcp": "4 (intact)", "prior_cur81_dev_ce555621": "9 (intact)" }
+  },
+  "source_defects": {
+    "defect_1": "evaluate.mjs qualification-group identity (Central's)",
+    "defect_2": "events.mjs multi-line promptText JSON.parse (Central's)",
+    "status": "supplied as a minimal complete bounded diff (bounded-repair.patch) + focused regression (scratch-evalfix 78/78); NOT applied to product source; Central owns review/implementation/regressions/exact-head CI on PR #83"
+  },
+  "private_artifacts_on_host": {
+    "operator_adjudication_worksheet": "/tmp/opencode/issue81-qual/terminal81-a1f3c9/operator-adjudication-worksheet.md (private, NOT in this packet)",
+    "operator_decision_packet_1_revised": "/tmp/opencode/issue81-qual/terminal81-a1f3c9/operator-decision-packet-1-revised.md (private, complete self-contained; NOT in this packet)",
+    "operator_decision_packet_1_immutable": "/tmp/opencode/issue81-qual/terminal81-a1f3c9/operator-decision-packet-1.md sha256=54fca993c0b27d7e6611c4fa43301eefabdafad6daa486d877fbddbc5fd265bb",
+    "operator_decision_packet_2": "/tmp/opencode/issue81-qual/terminal81-a1f3c9/operator-decision-packet-2.md sha256=d2f3251d8881a6830049ad378c82447d547420cd14b3ea03446cf450645f3be7"
+  },
+  "files": {
+    "operator-adjudication.md": { "sha256": "36dde33b6053341840d39257a9424c5804c04c904745efa946b1d9d97e63e7ed", "bytes": 5357 },
+    "cohort-separated-quality.md": { "sha256": "92fff2b2ff3e70038aed7c1d0a2c319e596ec4662d7f529b497cb7aad783b9ef", "bytes": 6738 },
+    "operator-decision-packet-1-table.md": { "sha256": "8a81fe7038243fda41edb0ea0a0997c915411982026779924642ed0c06b2a1b2", "bytes": 9320 },
+    "friction-ledger.md": { "sha256": "def05e5bec87f413f373a4cda2889094301d4cabb53800597f5801baff76cb03", "bytes": 4948 },
+    "handback.md": { "sha256": "765a9f256471d6333aac804a97fe5e374925b605632cbb90fcc3821a8b25f0fd", "bytes": 6125 }
+  },
+  "note": "One additive evidence-only fast-forward commit under 81-operator-adjudication-v1/. Prior 81-post-exit-terminal-v1/ and 81-recall-remediation-v1/ evidence are immutable. Cohorts kept separate (earlier prime.js cohort F13 vs new prospective blind holdout); no cohort result combined to manufacture acceptance. Private source text and operator signatures stay on the host, never in GitHub. Operator sign-off of packets 1+2 pending, so RATIFIED_QUALITY=UNVERIFIED and this returns READY_FOR_OPERATOR_REVIEW."
+}
