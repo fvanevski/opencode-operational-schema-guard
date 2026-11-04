@@ -115,6 +115,33 @@ test('independent fact labels cannot be inflated by unaudited observations',()=>
  assert.equal(report.curator.grounded_precision,null);
  assert.equal(report.curator.facts_human_judged,0);
 });
+test('queued or operator-seeded proposals cannot satisfy durable precision target',()=>{
+ const c=corpus();c.label_status='operator_adjudicated';c.adjudicated_by='human_judge';
+ const eid=evaluate(c).rows[0].event_id;
+ const source='opencode:ses_81test:message:msg_implicit';
+ const record={cluster_id:sha256(eid),source_case_ids:['implicit'],
+  origin:'model',decision:'EMIT',reason:'source-grounded',
+  terminal_state:'queued',
+  facts:[{assertion:c.cases[0].native_event.prompt.text,kind:'implementation',
+    source_refs:[source],temporal_status:'observed'}],
+  fact_verdicts:[{grounded:true,useful:true,authority_correct:true,
+    scope_correct:true,evaluator_id:'human_judge'}]};
+ const check=r=>evaluate(c,{targets,observations:{schema_version:1,records:[r]}});
+ const queued=check(record);
+ assert.equal(queued.curator.proposed_fact_grounded_precision,1);
+ assert.equal(queued.curator.grounded_precision,null);
+ assert.equal(queued.targets.grounded_precision,null);
+ assert.equal(check({...record,origin:'operator_seed'}).curator.grounded_precision,null);
+ const uuid='123e4567-e89b-12d3-a456-426614174000';
+ const persisted=check({...record,terminal_state:'persisted',remote_episode_uuid:uuid,
+  remote_readback:{episode_uuid:uuid,episode_name:'curated-v1:'+sha256(eid),
+    group_id:scope.group,source_index_verified:true,source_refs:[source],
+    evidence_ref:'sanitized:independent:group-readback'}});
+ assert.equal(persisted.curator.grounded_precision,1);
+ assert.equal(persisted.targets.grounded_precision,true);
+ assert.equal(check({...record,terminal_state:'persisted',remote_episode_uuid:uuid})
+   .curator.grounded_precision,null);
+});
 test('quantiles and confusion are explicit and null for unobserved denominators',()=>{
  assert.deepEqual(quantiles([]),{count:0,p50:null,p95:null});
  assert.deepEqual(quantiles([1,2,3,4,5]),{count:5,p50:3,p95:5});

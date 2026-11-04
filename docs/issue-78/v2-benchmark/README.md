@@ -15,7 +15,7 @@ The repository source is Central-owned. The local Build agent owns actual host/r
 `evaluate.mjs` imports and executes the current **actual** `selectUserDecision` and `selectCompletedTest` (#75) and `fromPrompt`, `fromTool`, `fromFinishedTurn` (#79). It does **not** classify cases through precomputed guesses. It verifies #80 decisions using `validateModelDecision` for model-origin records and `validateDecision` for other review-origin records.
 
 - The **source event** is not a durable fact. `candidate_recall` is *event-selection recall*, not durable precision.
-- A `curation` record is not terminal Graphiti persistence. `remote_episode_uuid`, entity/edge and source-index facts require independently captured group-scoped host readback. The JSON evaluator only reports local validation and the supplied terminal state as unverified observations.
+- A `curation` record is not terminal Graphiti persistence. `remote_episode_uuid`, entity/edge and source-index facts require independently captured group-scoped host readback. The evaluator distinguishes **proposed-fact precision** from the model-origin **durable precision** threshold. The latter stays null until every EMIT fact has a matching persisted episode UUID/name/group, a source-index receipt and human fact-level verdict. Even then, Central must independently inspect the host evidence referenced by `remote_readback.evidence_ref` before final PASS.
 - Model decisions may only receive source-grounded fact credit after separate **human** `fact_verdicts` are supplied under an `operator_adjudicated` corpus. A model's opinion is not a ground-truth label.
 - `null` means **UNVERIFIED**, not zero or PASS. The evaluator never assesses fresh native session recall from an offline fixture.
 - `privacy` and `wrong_group` selected candidates are explicit guardrail failures. Keep such cases sanitized, using synthetic dummy-looking negative tokens where needed; never publish real credentials.
@@ -78,12 +78,20 @@ Categories: `direct`, `implicit`, `error_fix`, `tool`, `negative_finding`, `chat
     "model_ms": 0,
     "post_exit_ms": 0,
     "terminal_state": "persisted",
-    "remote_episode_uuid": "<uuid if independently confirmed>"
+    "remote_episode_uuid": "<uuid if independently confirmed>",
+    "remote_readback": {
+      "episode_uuid": "<same observed UUID>",
+      "episode_name": "<curated-v1:exact-cluster-id>",
+      "group_id": "<exact disposable group>",
+      "source_index_verified": true,
+      "source_refs": ["opencode:ses_native:message:msg_native"],
+      "evidence_ref": "<inspectable sanitized Graphiti readback>"
+    }
   }]
 }
 ```
 
-Replace the placeholders with **readbacks**, never guessed values. If the separately captured disposable model qualification uses a different group than the frozen corpus, put its actual `scope` (group, project, workspace) on the top-level **observations** object; project/workspace must agree with the corpus, and the group must be the matching `cur81_dev_<8-hex>` disposable group. Each observation then **must** include `source_event_ids` of the actual qualification-group capture, which are recomputed and matched; the original frozen corpus bytes and labels remain untouched. Missing, mismatched or production-group event identities fail closed. `origin=model` enforces the exact-extractive #80 adapter. `fact_verdicts` with boolean `grounded/useful/authority_correct/scope_correct` and independent `evaluator_id` belong only in a truly operator-adjudicated corpus. If a record has no actual model usage, omit tokens or latency fields: do not write zero. Model DEFER/SKIP and service failures are important outcomes and must remain in the dataset. Use `ReviewStore`/queue/Graphiti source identities, not text similarity, to associate host receipts.
+Replace the placeholders with **readbacks**, never guessed values. If the separately captured disposable model qualification uses a different group than the frozen corpus, put its actual `scope` (group, project, workspace) on the top-level **observations** object; project/workspace must agree with the corpus, and the group must be the matching `cur81_dev_<8-hex>` disposable group. Each observation then **must** include `source_event_ids` of the actual qualification-group capture, which are recomputed and matched; the original frozen corpus bytes and labels remain untouched. Missing, mismatched or production-group event identities fail closed. `origin=model` enforces the exact-extractive #80 adapter. `fact_verdicts` with boolean `grounded/useful/authority_correct/scope_correct` and independent `evaluator_id` belong only in a truly operator-adjudicated corpus. If a record has no actual model usage, omit tokens or latency fields: do not write zero. Model DEFER/SKIP and service failures are important outcomes and must remain in the dataset. Do not mark durable precision PASS from a model proposal, operator seed or Graphiti queued ACK; a JSON attestation alone does not establish independent remote acceptance. Use `ReviewStore`/queue/Graphiti source identities, not text similarity, to associate host receipts.
 
 ### Commands
 

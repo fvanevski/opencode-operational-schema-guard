@@ -113,6 +113,7 @@ export function evaluate(corpus,{observations=null,targets=null,corpusBytes=null
     FAIL('observations_schema');
   const used=new Set(),decisions={},modelMs=[],postMs=[],tokenTotals=[],records=[];
   let nFacts=0,nJudged=0,nSupported=0,nUseful=0,invalid=0,wrongAuthority=0,wrongScope=0;
+  let modelEmitted=0,modelDurable=0,durableJudged=0,durableSupported=0;
   for(const o of observations.records){
    if(!Array.isArray(o.source_case_ids)||!o.source_case_ids.length||
       o.source_case_ids.length>12||!Array.isArray(o.facts)||
@@ -147,14 +148,33 @@ export function evaluate(corpus,{observations=null,targets=null,corpusBytes=null
    if(Number.isFinite(o.post_exit_ms))postMs.push(o.post_exit_ms);
    if(Number.isFinite(o.prompt_tokens)&&Number.isFinite(o.completion_tokens))
      tokenTotals.push(o.prompt_tokens+o.completion_tokens);
+   // Only a real model EMIT with independently inspectable positive remote
+   // episode+source-index readback can count toward durable-fact precision.
+   // This local attestation still requires central inspection of evidence_ref.
+   const isModelEmit=o.origin==='model'&&o.decision==='EMIT';
+   const receipt=o.remote_readback;
+   const terminalReadback=Boolean(validated.ok&&isModelEmit&&
+     o.terminal_state==='persisted'&&
+     typeof o.remote_episode_uuid==='string'&&
+     /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(o.remote_episode_uuid)&&
+     receipt?.episode_uuid===o.remote_episode_uuid&&
+     receipt?.episode_name==='curated-v1:'+clusterId&&
+     receipt?.group_id===cluster.group&&receipt?.source_index_verified===true&&
+     Array.isArray(receipt?.source_refs)&&o.facts.every(f=>
+       Array.isArray(f.source_refs)&&f.source_refs.every(ref=>receipt.source_refs.includes(ref)))&&
+     typeof receipt?.evidence_ref==='string'&&receipt.evidence_ref.length>0);
    for(let j=0;j<o.facts.length;j++){
     nFacts++;
+    if(isModelEmit)modelEmitted++;
+    if(terminalReadback)modelDurable++;
     const v=o.fact_verdicts?.[j];
     if(!v||corpus.label_status!=='operator_adjudicated')continue;
     if(!['grounded','useful','authority_correct','scope_correct'].every(k=>typeof v[k]==='boolean')||
        typeof v.evaluator_id!=='string'||!v.evaluator_id)FAIL('unsubstantiated_fact_verdict');
     nJudged++;
+    if(terminalReadback)durableJudged++;
     if(v.grounded&&v.authority_correct&&v.scope_correct)nSupported++;
+    if(terminalReadback&&v.grounded&&v.authority_correct&&v.scope_correct)durableSupported++;
     if(v.grounded&&v.authority_correct&&v.scope_correct&&v.useful)nUseful++;
     if(!v.authority_correct)wrongAuthority++;
     if(!v.scope_correct)wrongScope++;
@@ -165,7 +185,11 @@ export function evaluate(corpus,{observations=null,targets=null,corpusBytes=null
   }
   curated={record_count:records.length,decisions,invalid_model_or_source_decisions:invalid,
     facts_proposed:nFacts,facts_human_judged:nJudged,
-    grounded_precision:nFacts===nJudged?pct(nSupported,nFacts):null,
+    proposed_fact_grounded_precision:nFacts===nJudged?pct(nSupported,nFacts):null,
+    // Do not rate queued, deferred, proposed or operator-seeded facts as durable.
+    grounded_precision:modelEmitted>0&&modelDurable===modelEmitted&&
+      durableJudged===modelDurable?pct(durableSupported,modelDurable):null,
+    model_emitted_facts:modelEmitted,remote_receipt_bound_model_facts:modelDurable,
     useful_facts:nFacts===nJudged?nUseful:null,
     false_authority:nFacts===nJudged?wrongAuthority:null,
     wrong_scope:nFacts===nJudged?wrongScope:null,
