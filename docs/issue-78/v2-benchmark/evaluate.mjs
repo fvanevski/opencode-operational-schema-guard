@@ -58,7 +58,7 @@ function assertTargets(t,c){
    !Number.isFinite(t.thresholds?.post_exit_p95_seconds_max))FAIL('latency_targets');
  if(c.split==='holdout'&&t.status!=='operator_ratified')FAIL('unratified_holdout_targets');
 }
-function replay(x,scope){
+export function replay(x,scope){
  const admitted=x.capture_admitted!==false&&
    (!x.scope||['group','project','workspace'].every(k=>x.scope[k]===scope[k]));
  const e=x.native_event;
@@ -94,7 +94,10 @@ export function evaluate(corpus,{observations=null,targets=null,corpusBytes=null
   if(!s||typeof s!=='object'||s.project!==b.project||
      s.workspace!==b.workspace||
      !(s.group===b.group||
-       (b.group==='cur81_dev'&&/^cur81_dev_[a-f0-9]{8}$/.test(s.group))))
+       (corpus.split==='development'&&b.group==='cur81_dev'&&
+         /^cur81_dev_[a-f0-9]{8}$/.test(s.group))||
+       (corpus.split==='holdout'&&b.group==='cur81_dev'&&
+         /^cur81_holdout_[a-f0-9]{8}$/.test(s.group))))
     FAIL('qualification_scope_mismatch');
  }
  const byCase=new Map(),rows=[],forbidden=[];

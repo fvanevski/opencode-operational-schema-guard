@@ -55,7 +55,7 @@ export function prepareTargets(proposal,proposalSha){
    ratified_at:null,operator_confirmation:null,
    note:'Original thresholds are fixed; only ratify or stop. Never revise after holdout.'};
 }
-export function score({
+export function bindAdjudication({
  corpusBytes,expectedCorpusSha,adjudicationBytes,expectedAdjudicationSha,
  proposalBytes,expectedProposalSha,ratificationBytes,expectedRatificationSha,
  observationsBytes=null
@@ -142,11 +142,9 @@ export function score({
      ratified_at:ratification.ratified_at,
      source_proposal_sha256:expectedProposalSha}};
  const effectiveTargetsBytes=JSON.stringify(effectiveTargets);
- const report=evaluate(effectiveCorpus,{observations:enriched,targets:effectiveTargets,
-   corpusBytes,expectedCorpusSha,targetsBytes:effectiveTargetsBytes,
-   expectedTargetsSha:digest(effectiveTargetsBytes)});
  return {
-   schema_version:1,kind:'issue81-adjudicated-score',
+   effectiveCorpus,effectiveTargets,effectiveTargetsBytes,enriched,
+   corpusBytes,expectedCorpusSha,
    authority:{frozen_corpus_sha256:expectedCorpusSha,
      adjudication_sha256:expectedAdjudicationSha,
      original_target_sha256:expectedProposalSha,
@@ -154,8 +152,17 @@ export function score({
      observation_sha256:observationsBytes?digest(observationsBytes):null,
      case_label_changes_from_provisional:changed,
      source_bytes_unchanged:true,
-     human_attestation_supplied:true},
-   report};
+     human_attestation_supplied:true}};
+}
+export function score(input){
+ const bound=bindAdjudication(input);
+ const report=evaluate(bound.effectiveCorpus,{
+   observations:bound.enriched,targets:bound.effectiveTargets,
+   corpusBytes:bound.corpusBytes,expectedCorpusSha:bound.expectedCorpusSha,
+   targetsBytes:bound.effectiveTargetsBytes,
+   expectedTargetsSha:digest(bound.effectiveTargetsBytes)});
+ return {schema_version:1,kind:'issue81-adjudicated-score',
+   authority:bound.authority,report};
 }
 const get=(args,k)=>{const i=args.indexOf('--'+k);return i<0?null:args[i+1]||null;};
 const required=(args,k)=>{const v=get(args,k);if(!v)fail('missing_argument:'+k);return v;};

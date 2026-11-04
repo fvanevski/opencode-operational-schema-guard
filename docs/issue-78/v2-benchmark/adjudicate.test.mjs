@@ -7,7 +7,7 @@ const c={schema_version:1,split:'holdout',label_status:'provisional',scope,
   source_locator:'sanitized:unit:1',
   native_event:{sessionID:'ses_unit',messageID:'msg_unit',
     timestamp:'2026-11-04T00:00:00Z',
-    prompt:{text:'The architecture must preserve the existing Graphiti storage and review controls.'}},
+    prompt:{text:'I prefer to retain the existing Graphiti storage and review controls.'}},
   label:{valuable:false}}]};
 const p={schema_version:1,status:'central_proposal',thresholds:{
  candidate_recall_min:.85,durable_grounded_precision_min:.9,
