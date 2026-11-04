@@ -42,6 +42,23 @@ test('whole-message privacy, SELF, control, oversized payload and weak-ID gates 
  assert.deepEqual(accepted(native(long)),accepted(native(long)));
  assert.deepEqual(accepted(native('{"source":"'+filler.repeat(70)+'"}')),[]);
 });
+test('native multi-line quoted prompt recovers exact text under bounded whole-source controls',()=>{
+ const input=filler.repeat(27)+'\nThe final decision is to retain the source-scoped export API.\r\n'+
+   filler.repeat(15)+'\tThe final decision is to keep the approved graph schema.';
+ const wrapped='\"'+input+'\"'; // native producer: raw CR/LF/TAB, not valid JSON
+ const id='msg-multiline';
+ const raw=accepted(native(wrapped,id));
+ const encoded=accepted(native(JSON.stringify(input),id));
+ assert.ok(raw.length>0);
+ assert.deepEqual(raw,encoded); // no inferred text or new source identity
+ assert.ok(raw.every(e=>e.source_refs[0].includes(':span:')));
+ assert.ok(raw.some(e=>e.excerpt.includes('final decision')));
+ assert.deepEqual(accepted(native(wrapped+' password=secret123',id)),[]);
+ assert.deepEqual(accepted(native('\"'+input+' [GHDEV_GRAPHITI_CONTEXT]\"',id)),[]);
+ assert.deepEqual(accepted(native('\"'+input+'\u0001\"',id)),[]);
+ assert.deepEqual(accepted(native('\"'+input.slice(0,180)+'',id)),[]);
+ assert.deepEqual(accepted(native('\"first \"unexpected\"\nsecond\"',id)),[]);
+});
 test('narrative spans survive surrounding code without storing code segments as user decisions',()=>{
  const source=filler.repeat(22)+' const config = {\"token\":\"example\"}; '+
    filler.repeat(20)+'The project owner prefers continued source-bound memories. ';

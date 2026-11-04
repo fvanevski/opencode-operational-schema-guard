@@ -102,6 +102,11 @@ export function evaluate(corpus,{observations=null,targets=null,corpusBytes=null
          /^cur81_holdout_[a-f0-9]{8}$/.test(s.group))))
     FAIL('qualification_scope_mismatch');
  }
+ // An independently declared, permitted disposable qualification group
+ // changes native event hashes. A supplied but non-binding event receipt is
+ // an identity mismatch, not proof the source adapter dropped the event.
+ const qualifying=Boolean(observations?.scope&&
+   observations.scope.group!==corpus.scope.group);
  const byCase=new Map(),rows=[],forbidden=[];
  for(const x of corpus.cases){
   const {baseline,candidate,candidates}=replay(x,corpus.scope);
@@ -135,7 +140,8 @@ export function evaluate(corpus,{observations=null,targets=null,corpusBytes=null
     const matching=options.filter(e=>!used.has(e.event_id)&&
       (!requested.size||requested.has(e.event_id)))
       .sort((a,b)=>a.event_id.localeCompare(b.event_id));
-    if(!matching.length)FAIL('missing_candidate:'+id);
+    if(!matching.length)FAIL(requested.size&&qualifying?
+      'qualification_source_identity_mismatch':'missing_candidate:'+id);
     if(!requested.size&&matching.length>1)
       FAIL('span_identity_receipt_required:'+id);
     const found=matching[0];

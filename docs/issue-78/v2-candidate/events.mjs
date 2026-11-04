@@ -80,12 +80,24 @@ const PROMPT_SPAN_CHARS = 900;
 const MAX_PROMPT_SPANS = 6;
 function promptText(event) {
   const raw = event?.prompt?.text;
-  let text = typeof raw === 'string' ? raw : '';
-  if (text.startsWith('"')) {
-    try { const value = JSON.parse(text); text = typeof value === 'string' ? value : ''; }
+  if (typeof raw !== 'string') return '';
+  if (!raw.startsWith('"')) return raw;
+  let decoded;
+  try { decoded = JSON.parse(raw); }
+  catch {
+    // Some live native producers quote an entire multi-line user message
+    // without escaping literal CR/LF/TAB. Repair only those whitespace
+    // controls inside a complete string wrapper. Do NOT repair arbitrary
+    // invalid JSON, or strip other controls that must fail closed.
+    if (!raw.endsWith('"') || !/[\r\n\t]/.test(raw)) return '';
+    const escaped = raw.replace(/[\r\n\t]/g, c =>
+      c === '\r' ? '\\r' : c === '\n' ? '\\n' : '\\t');
+    try { decoded = JSON.parse(escaped); }
     catch { return ''; }
   }
-  return text;
+  // fromPromptCandidates still scans the entire decoded text for secrets,
+  // SELF injection, disallowed controls and length before any span exists.
+  return typeof decoded === 'string' ? decoded : '';
 }
 function promptSpans(text) {
   const spans = [];
