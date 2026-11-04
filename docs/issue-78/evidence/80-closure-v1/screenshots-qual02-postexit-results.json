@@ -1,0 +1,145 @@
+{
+  "url": "http://127.0.0.1:48311",
+  "group": "cur80_qual02",
+  "results": [
+    {
+      "name": "login_screen_shown",
+      "ok": true,
+      "detail": "token input + unlock button"
+    },
+    {
+      "name": "login_unlock_disabled_short",
+      "ok": true,
+      "detail": "unlock disabled until >=32 chars"
+    },
+    {
+      "name": "inbox_count_persisted_1",
+      "ok": true,
+      "detail": "{\"deferred\":0,\"approved\":0,\"submission_unknown\":0,\"queued\":0,\"persisted\":1,\"failed_extraction\":0,\"skipped\":0}"
+    },
+    {
+      "name": "inbox_counts_zero_elsewhere",
+      "ok": true,
+      "detail": "{\"deferred\":0,\"approved\":0,\"submission_unknown\":0,\"queued\":0,\"persisted\":1,\"failed_extraction\":0,\"skipped\":0}"
+    },
+    {
+      "name": "inbox_single_item",
+      "ok": true,
+      "detail": "items=1"
+    },
+    {
+      "name": "inbox_item_persisted_badge",
+      "ok": true,
+      "detail": "issue80-qual02-ws-fresh\npersisted\nSource-grounded: test run result from the native tool outcome\n4 events · ses_e5c3d3bb3"
+    },
+    {
+      "name": "inbox_item_qualification_seed_label",
+      "ok": true,
+      "detail": "origin label present"
+    },
+    {
+      "name": "evidence_source_timeline_4_events",
+      "ok": true,
+      "detail": "event cards=5"
+    },
+    {
+      "name": "evidence_proposal_fact_shown",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "replay_safety_all_actions_disabled",
+      "ok": true,
+      "detail": "{\"Validate & approve\":true,\"Keep deferred\":true,\"Request re-evaluation\":true,\"Propose merge\":true,\"Propose supersession\":true,\"Discard\":true}"
+    },
+    {
+      "name": "no_unknown_callout_in_persisted",
+      "ok": true,
+      "detail": "callout count=0"
+    },
+    {
+      "name": "graph_flow_rendered_nodes",
+      "ok": true,
+      "detail": "flow nodes=8 edges=5"
+    },
+    {
+      "name": "graph_remote_verified_badge",
+      "ok": true,
+      "detail": "green verified-readback badge"
+    },
+    {
+      "name": "graph_extracted_counts_line",
+      "ok": true,
+      "detail": "2 entities · 1 edges line"
+    },
+    {
+      "name": "graph_entity_node",
+      "ok": true,
+      "detail": "node rendered"
+    },
+    {
+      "name": "graph_entity_prime.test.js",
+      "ok": true,
+      "detail": "prime.test.js rendered"
+    },
+    {
+      "name": "graph_persisted_episode_node",
+      "ok": true,
+      "detail": "episode node=1"
+    },
+    {
+      "name": "audit_edit_approve_entry",
+      "ok": true,
+      "detail": "original operator approval retained"
+    },
+    {
+      "name": "audit_never_submitted_reconciliation",
+      "ok": true,
+      "detail": "never-submitted reconciliation retained"
+    },
+    {
+      "name": "audit_terminal_sequence",
+      "ok": true,
+      "detail": "submission_unknown -> queued -> persisted sequence visible"
+    },
+    {
+      "name": "refresh_with_worker_stopped",
+      "ok": true,
+      "detail": "inbox still lists 1 item after manual refresh; drain service is inactive/dead"
+    },
+    {
+      "name": "lock_returns_to_login",
+      "ok": true,
+      "detail": "in-memory token cleared, login screen returns"
+    },
+    {
+      "name": "reunlock_after_lock",
+      "ok": true,
+      "detail": "portal re-unlocked for operator use"
+    },
+    {
+      "name": "no_page_errors",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "name": "token_not_visible_in_dom",
+      "ok": true,
+      "detail": "raw token absent from rendered text"
+    },
+    {
+      "name": "no_unexpected_404s",
+      "ok": true,
+      "detail": "404 urls: [] (favicon 404 expected, dist has no favicon link)"
+    }
+  ],
+  "counts": {
+    "deferred": 0,
+    "approved": 0,
+    "submission_unknown": 0,
+    "queued": 0,
+    "persisted": 1,
+    "failed_extraction": 0,
+    "skipped": 0
+  }
+}

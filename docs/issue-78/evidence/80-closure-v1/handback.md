@@ -84,6 +84,45 @@ PR, merge, issue closure, force-push, or deployment.
 Filled in the chat handback after push: remote `issue/79` ref SHA, evidence
 commit SHA, and per-file path/hash readback of this packet on the remote.
 
+## Final post-exit resolution (second evidence-only commit)
+
+The single pending step declared above — the genuine FIRST `add_memory` for
+`ca268f5d...` under post-exit automatic admission — has now occurred and
+settled. This is recorded in `postexit-terminal.md` and `gui-acceptance-final.md`
+(original pre-exit claims and timestamps in this file are preserved unchanged):
+
+- **Terminal drain (automatic, no manual drain):** after the operator exited the
+  interactive harness, `ghdev-curator80-qual02.service` reached
+  `inactive (dead)`, `Result=success`, `NRestarts=32`; the admitted drain JSON
+  was `{"curated":0,"deferred":0,"skipped":0,"approved":0,"queued":1,
+  "persisted":1,"unresolved":0,"model_calls":0,"model_ms":0,"status":"settled"}`.
+- **Remote Graphiti episode:** exactly one, group `cur80_qual02`,
+  UUID `0e04a359-2ae4-4b37-890e-3e34c40f3fce`, name
+  `curated-v1:ca268f5dd77dee45d74494a604985fcf2c81fcad764f2d62ca66c49f4e764828`;
+  `_episode-index/0e04a359-...json` resolves to the same review.
+- **Review state:** `ca268f5d...` now `persisted` rev 7,
+  `remote_episode_uuid=0e04a359-...`, `never_submitted_evidence` retained.
+- **Real-graph readback:** `graph-readback.mjs` → `verified_readback`,
+  2 extracted entities (`node`, `prime.test.js`) + 1 real relationship edge
+  (group `cur80_qual02`), `unlinked_edge_count=0`.
+- **GUI acceptance:** portal launched on `http://127.0.0.1:48311` (group
+  `cur80_qual02`, private 0600 token, loopback-only, read-only Graphiti endpoint);
+  26/26 Playwright browser checks passed (inbox/counts, source timeline,
+  decision audit retaining the original approval + never-submitted
+  reconciliation, graph preview with real extracted entities/edges + persisted
+  episode node, replay safety with all actions disabled in `persisted` state,
+  portal usable with the worker stopped, CLI/browser agreement, no token leak).
+- **Shared service safety:** `mcp-mux.service` (Graphiti worker PID 1657) was
+  never stopped; no pending `cur80_qual02` extraction.
+- **Cleanup:** the disposable `ghdev-curator80-qual02.{service,path}` user-systemd
+  units are removed after confirming no pending extraction / EX obligation;
+  durable source records and evidence are preserved.
+
+**Final RESULT for the #80 closure campaign: PASS** (all #80 acceptance lanes
+host-verified; see `gui-acceptance-final.md` matrix — remaining items are
+#81-owned). The original `RESULT=PARTIAL_PENDING_POST_EXIT_ADMISSION` above is
+preserved as the first-packet historical state.
+
 ## COMMAND_SHAPE_FRICTION (canonical)
 
 See `command-shape-friction.md` (encountered=yes; 3 events: scratch
