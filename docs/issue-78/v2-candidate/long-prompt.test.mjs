@@ -34,7 +34,7 @@ test('whole-message privacy, SELF, control, oversized payload and weak-ID gates 
  assert.deepEqual(accepted(native(long+' password=secret123')),[]);
  assert.deepEqual(accepted(native(long+' [GHDEV_GRAPHITI_CONTEXT]')),[]);
  assert.deepEqual(accepted(native(long+' [OPENVIKING_CONTEXT]')),[]);
- assert.deepEqual(accepted(native(long+'\\u0001')),[]);
+ assert.deepEqual(accepted(native(long+'\u0001')),[]);
  assert.deepEqual(accepted(native('Please preserve the long source. '+filler.repeat(300))),[]);
  const missing=native(long);delete missing.messageID;
  assert.deepEqual(accepted(missing),[]);

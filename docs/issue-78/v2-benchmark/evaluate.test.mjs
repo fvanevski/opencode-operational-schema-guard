@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {evaluate,sha256,quantiles,confusion} from './evaluate.mjs';
-import {fromPrompt} from '../v2-candidate/events.mjs';
+import {fromPrompt,fromPromptCandidates} from '../v2-candidate/events.mjs';
 const scope={group:'cur81_dev',project:'benchmark',workspace:'/tmp/issue81/benchmark'};
 const timestamp='2026-11-03T18:15:00Z';
 const prompt=(id,text,valuable,category='implicit')=>({
@@ -141,6 +141,30 @@ test('queued or operator-seeded proposals cannot satisfy durable precision targe
  assert.equal(persisted.targets.grounded_precision,true);
  assert.equal(check({...record,terminal_state:'persisted',remote_episode_uuid:uuid})
    .curator.grounded_precision,null);
+});
+test('new native long-message spans are counted once per case and source-bound individually',()=>{
+ const text=('The architecture requires source-cited memory decisions and bounded provenance. ').repeat(120)+
+  'The final decision is to retain the original source index for migration.';
+ const c=corpus();c.cases=[prompt('long',text,true)];
+ const candidates=fromPromptCandidates(c.cases[0].native_event,scope,{admitted:true});
+ assert.ok(candidates.length>1);
+ const report=evaluate(c,{targets});
+ assert.equal(report.case_count,1);
+ assert.equal(report.broad_capture.tp,1); // case coverage, not inflated by spans
+ assert.equal(report.rows[0].candidate_count,candidates.length);
+ assert.deepEqual(report.rows[0].candidate_event_ids,candidates.map(e=>e.event_id));
+ const refs=candidates.slice(0,2).map(e=>e.event_id);
+ const clusterId=sha256([...refs].sort().join('\n'));
+ const result=evaluate(c,{targets,observations:{schema_version:1,scope,
+  records:[{source_case_ids:['long','long'],source_event_ids:[...refs].reverse(),
+    cluster_id:clusterId,origin:'model',decision:'DEFER',
+    reason:'No durable source assertion selected',facts:[]}]}});
+ assert.equal(result.curator.record_count,1);
+ assert.equal(result.curator.invalid_model_or_source_decisions,0);
+ assert.throws(()=>evaluate(c,{observations:{schema_version:1,scope,records:[{
+  source_case_ids:['long'],source_event_ids:['f'.repeat(64)],
+  cluster_id:'f'.repeat(64),origin:'model',decision:'DEFER',reason:'No evidence',facts:[]}]}}),
+  /missing_candidate/);
 });
 test('quantiles and confusion are explicit and null for unobserved denominators',()=>{
  assert.deepEqual(quantiles([]),{count:0,p50:null,p95:null});
