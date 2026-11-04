@@ -206,14 +206,48 @@ export class ReviewStore {
       return v;
     } catch(e){if(e.code==='ENOENT')return null;throw e;}
   }
-  async list({limit=100,offset=0}={}){
+  async list({limit=100,offset=0,filter=null}={}){
     if(!Number.isInteger(limit)||limit<1||limit>500||
       !Number.isInteger(offset)||offset<0)throw Error('Invalid list page');
+    if(filter!==null&&(
+      typeof filter!=='object'||Array.isArray(filter)||
+      !['all',...STATES].includes(filter.state||'all')||
+      typeof (filter.search??'')!=='string'||(filter.search??'').length>160||
+      typeof (filter.evidenceClass??'')!=='string'||(filter.evidenceClass??'').length>100||
+      typeof (filter.eventKind??'')!=='string'||(filter.eventKind??'').length>100||
+      !['all','1','7','30'].includes(filter.ageDays??'all')))
+      throw Error('INVALID_REVIEW_FILTER');
     let names=[];
     try{names=(await fs.readdir(this.dir)).filter(n=>/^[a-f0-9]{64}\.json$/.test(n)).sort();}
     catch(e){if(e.code!=='ENOENT')throw e;}
     const items=[];
     for(const n of names){const v=await this.get(n.slice(0,-5));if(v)items.push(v);}
+    if(filter!==null){
+      const term=(filter.search||'').trim().toLowerCase();
+      const age=filter.ageDays&&filter.ageDays!=='all'?
+        Date.now()-Number(filter.ageDays)*86400000:null;
+      const matched=items.filter(r=>{
+        const last=r.events.map(e=>e.observed_at).sort().at(-1)||null;
+        return (!filter.state||filter.state==='all'||r.state===filter.state)&&
+          (!filter.evidenceClass||filter.evidenceClass==='all'||
+            r.events.some(e=>e.evidence_class===filter.evidenceClass))&&
+          (!filter.eventKind||filter.eventKind==='all'||
+            r.events.some(e=>e.kind===filter.eventKind))&&
+          (age===null||Boolean(last&&Date.parse(last)>=age))&&
+          (!term||[r.project,r.group,r.session_id,r.reason,r.id,r.origin]
+            .some(x=>String(x??'').toLowerCase().includes(term)));
+      });
+      // Priority/newest sorting is used only for the operator's filtered
+      // inbox. Core worker/reconciliation scans retain their stable order.
+      matched.sort((a,b)=>{
+        const urgency=x=>x.state==='deferred'?0:x.state==='submission_unknown'?1:
+          x.state==='failed_extraction'?2:x.state==='approved'?3:4;
+        return urgency(a)-urgency(b)||
+          b.updated_at.localeCompare(a.updated_at)||a.id.localeCompare(b.id);
+      });
+      return {total:matched.length,items:matched.slice(offset,offset+limit),
+        has_more:matched.length>offset+limit};
+    }
     items.sort((a,b)=>a.updated_at.localeCompare(b.updated_at)||a.id.localeCompare(b.id));
     return {total:items.length,items:items.slice(offset,offset+limit),
       has_more:items.length>offset+limit};

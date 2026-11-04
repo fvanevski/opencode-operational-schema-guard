@@ -98,21 +98,40 @@ const server=createServer(async(req,res)=>{
     if(!authorized(req))return respond(res,401,{error:'UNAUTHORIZED'});
     if(req.method==='GET'&&parsed.pathname==='/api/status'){
       const counts={};let total=0;
+      const evidenceClasses=new Set(),eventKinds=new Set();
       for(let offset=0;;offset+=500){
         const page=await store.list({limit:500,offset});
-        for(const e of page.items)counts[e.state]=(counts[e.state]||0)+1;
+        for(const e of page.items){
+          counts[e.state]=(counts[e.state]||0)+1;
+          for(const event of e.events){
+            evidenceClasses.add(event.evidence_class);
+            eventKinds.add(event.kind);
+          }
+        }
         total=page.total;if(!page.has_more)break;
       }
       return respond(res,200,{scope:group,review_count:total,
-        review_counts:counts,candidate_queue:await queue.status()});
+        review_counts:counts,evidence_classes:[...evidenceClasses].sort(),
+        event_kinds:[...eventKinds].sort(),candidate_queue:await queue.status()});
     }
     if(req.method==='GET'&&parsed.pathname==='/api/clusters'){
-      const state=parsed.searchParams.get('state');
       const offset=Number(parsed.searchParams.get('offset')||0);
-      if(!Number.isInteger(offset)||offset<0)return respond(res,400,{error:'INVALID_OFFSET'});
-      const results=await store.list({limit:500,offset});
-      return respond(res,200,{total:results.total,has_more:results.has_more,
-        items:results.items.filter(x=>!state||x.state===state).map(x=>({
+      const limit=Number(parsed.searchParams.get('limit')||100);
+      if(!Number.isInteger(offset)||offset<0||!Number.isInteger(limit)||
+        limit<1||limit>500)return respond(res,400,{error:'INVALID_PAGE'});
+      const filter={
+        state:parsed.searchParams.get('state')||'all',
+        search:parsed.searchParams.get('search')||'',
+        evidenceClass:parsed.searchParams.get('evidence_class')||'all',
+        eventKind:parsed.searchParams.get('event_kind')||'all',
+        ageDays:parsed.searchParams.get('age_days')||'all'
+      };
+      let results;
+      try{results=await store.list({limit,offset,filter});}
+      catch{return respond(res,400,{error:'INVALID_REVIEW_FILTER'});}
+      return respond(res,200,{total:results.total,offset,limit,
+        has_more:results.has_more,
+        items:results.items.map(x=>({
           id:x.id,state:x.state,project:x.project,session_id:x.session_id,
           event_count:x.events.length,reason:x.reason,decision:x.decision,
           revision:x.revision,updated_at:x.updated_at,remote_episode_uuid:x.remote_episode_uuid,
