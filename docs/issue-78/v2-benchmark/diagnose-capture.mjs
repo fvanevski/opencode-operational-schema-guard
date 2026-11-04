@@ -19,6 +19,8 @@ const hasString=x=>typeof x==='string'&&x.length>0;
 const READ_ONLY_NOISE=/^(?:pwd|ls|cat|head|tail|grep|rg|find|wc|sed|awk)\b/i;
 const TOOL_INTEREST=/\b(?:pytest|test|spec|build|compile|lint|format|check|error|fail|pass|exception|traceback|migration|npm|node|python|cargo|go|git|gh|patch|install|deploy|permission|config|service|docker|curl|timeout)\b/i;
 const FILE_TOOLS=new Set(['edit','write','apply_patch']);
+// A read-only tool operation does not establish a file mutation or a
+// durable finding from file contents. Do not assign it file_change authority.
 function metadata(x){
  const e=x.native_event||{},result=e.result;
  const cmd=e.input?.command??e.input?.cmd;
@@ -36,6 +38,7 @@ function metadata(x){
   tool_status_supported:['completed','error','failed'].includes(e.status),
   tool_name_present:hasString(e.tool),
   tool_name_is_file_operation:FILE_TOOLS.has(e.tool?.toLowerCase?.()),
+  tool_name_is_read_only_file:e.tool?.toLowerCase?.()==='read',
   command_present:hasString(cmd),
   command_read_only_noise:hasString(cmd)&&READ_ONLY_NOISE.test(cmd),
   command_in_interest_set:hasString(cmd)&&TOOL_INTEREST.test(cmd),
@@ -66,6 +69,8 @@ function reason(x,meta){
   if(!meta.native_call_id_present)return ['MISSING_NATIVE_CALL_ID','explicit_precondition'];
   if(meta.tool_name_is_file_operation)
     return ['FILE_PATH_OR_OPERATION_SAFETY_FILTER','needs_private_path_inspection'];
+  if(meta.tool_name_is_read_only_file)
+    return ['READ_ONLY_FILE_ACCESS_NOT_DURABLE_FACT','explicit_precondition'];
   if(!meta.command_present)return ['MISSING_SHELL_COMMAND','explicit_precondition'];
   if(meta.command_read_only_noise)
     return ['INTENTIONAL_READ_ONLY_COMMAND_FILTER','explicit_precondition'];

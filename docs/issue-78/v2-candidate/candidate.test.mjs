@@ -83,6 +83,19 @@ test('native edit/write/apply_patch receipts are scoped, content-free and tool-r
   assert.ok(failure);
   assert.match(failure.excerpt, /tool error/);
 });
+test('read-only file access does not assert a file change or durable source fact',()=>{
+ const base={sessionID:'ses-read',callID:'call-read',tool:'read',status:'completed',
+  input:{path:scope.workspace+'/docs/reference.md'},
+  result:{output:{exit:0,output:'A file was read; its contents are not a change.'}}};
+ assert.equal(fromTool(base,scope),null);
+ // The preexisting mutation-only adapter remains available and distinct.
+ const write=fromTool({...base,callID:'call-write',tool:'write',
+  input:{path:scope.workspace+'/docs/reference.md',content:'Updated documentation.'}},scope);
+ assert.ok(write);
+ assert.equal(write.kind,'file_change');
+ assert.equal(write.evidence_class,'tool-reported');
+ assert.doesNotMatch(write.excerpt,/Updated documentation/);
+});
 test('long assistant text uses bounded whole-message privacy scan before truncation', () => {
   const base = { sessionID:'ses-1', messageID:'msg-long',role:'assistant',status:'completed' };
   const text = 'Identified a reproducible parser failure and fixed the module: ' +

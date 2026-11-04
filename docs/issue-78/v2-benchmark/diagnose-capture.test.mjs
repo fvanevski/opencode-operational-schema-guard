@@ -47,6 +47,27 @@ test('classifies misses from actual adapter decisions, exports no source text',(
  assert.equal(exported.includes('I prefer'),false);
  assert.equal(exported.includes('/tmp/bench'),false);
 });
+test('read tool is excluded as read-only, never treated as a file change',()=>{
+ const {corpus}=setup();
+ const x={id:'read_file',source_type:'tool',category:'tool',
+  source_locator:'sanitized:test:read_file',
+  native_event:{sessionID:'ses_case',callID:'call_read_file',
+    timestamp,tool:'read',status:'completed',
+    input:{path:scope.workspace+'/docs/reference.md'},
+    result:{output:{exit:0,output:'arbitrary document contents'}}},
+  label:{valuable:true}};
+ corpus.cases=[x];
+ const raw=JSON.stringify(corpus);
+ const report={authority:{frozen_corpus_sha256:sha(raw)},
+  report:{case_count:1,label_status:'operator_adjudicated',
+   rows:[{id:x.id,category:x.category,truth:true,
+     baseline_selected:false,candidate_selected:false}]}};
+ assert.equal(replay(x,scope).candidate,null);
+ const out=diagnose(corpus,report,raw);
+ assert.equal(out.misses[0].reason_code,'READ_ONLY_FILE_ACCESS_NOT_DURABLE_FACT');
+ assert.equal(out.misses[0].field_presence.tool_name_is_read_only_file,true);
+ assert.equal(JSON.stringify(out).includes('arbitrary document contents'),false);
+});
 test('refuses wrong ratified identities, corrupted source and false adapter claims',()=>{
  const {corpus,raw,score}=setup();
  assert.throws(()=>diagnose(corpus,{...score,
