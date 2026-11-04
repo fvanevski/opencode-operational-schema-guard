@@ -127,6 +127,25 @@ export async function promoteOne(store,record,graphiti){
     return {status:'submission_unknown'};
   }
 }
+// Aggregate usage without logging any source excerpt or model response.
+export function tallyModelUsage(stats,reply){
+  stats.model_calls++;
+  if(Number.isFinite(reply.duration_ms)&&reply.duration_ms>=0)
+    stats.model_ms+=reply.duration_ms;
+  const u=reply.usage;
+  if(u&&Number.isSafeInteger(u.prompt_tokens)&&u.prompt_tokens>=0&&
+    Number.isSafeInteger(u.completion_tokens)&&u.completion_tokens>=0){
+    stats.usage_reported_calls++;
+    stats.prompt_tokens+=u.prompt_tokens;
+    stats.completion_tokens+=u.completion_tokens;
+  }
+  if(Number.isSafeInteger(u?.reasoning_tokens)&&u.reasoning_tokens>=0){
+    stats.reasoning_reported_calls++;
+    stats.reasoning_tokens+=u.reasoning_tokens;
+  }
+  if(reply.finish_reason==='length'||reply.finish_reason==='max_tokens')
+    stats.length_limited_responses++;
+}
 export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='local',
   graphitiEndpoint,queue,store,graphiti,curate=curateCluster,
   maxClusters=6,maxSeconds=600}={}){
@@ -137,7 +156,10 @@ export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='loca
   store??=new ReviewStore(root,group);
   graphiti??=new GraphitiMcp(graphitiEndpoint,{timeoutMs:12000});
   const stats={curated:0,deferred:0,skipped:0,approved:0,queued:0,
-    persisted:0,unresolved:0,model_calls:0,model_ms:0};
+    persisted:0,unresolved:0,model_attempts:0,model_calls:0,
+    model_errors:0,model_ms:0,prompt_tokens:0,completion_tokens:0,
+    usage_reported_calls:0,reasoning_tokens:0,reasoning_reported_calls:0,
+    length_limited_responses:0};
   // Resolve any old ambiguous/queued write before accepting more work.
   let result=await reconcile(store,graphiti);
   stats.persisted+=result.persisted;stats.unresolved=result.unresolved;
@@ -149,10 +171,14 @@ export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='loca
   for(const prior of redo.slice(0,maxClusters)){
     if(Date.now()>deadline-5000)break;
     let response;
+    stats.model_attempts++;
     try{const reply=await curate(prior,{endpoint:modelEndpoint,model:modelId,apiKey});
       response=validateModelDecision(reply.content,prior);
-      stats.model_calls++;stats.model_ms+=reply.duration_ms||0;
-    }catch{response={decision:'DEFER',reason:'curator_unavailable_on_reevaluation',facts:[]};}
+      tallyModelUsage(stats,reply);
+    }catch{
+      stats.model_errors++;
+      response={decision:'DEFER',reason:'curator_unavailable_on_reevaluation',facts:[]};
+    }
     const updated=await store.reviseDeferred(prior.id,prior.revision,response);
     if(updated){
       stats.curated++;
@@ -205,11 +231,13 @@ export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='loca
       continue;
     }
     let proposal;
+    stats.model_attempts++;
     try{
       const reply=await curate(cluster,{endpoint:modelEndpoint,model:modelId,apiKey});
       proposal=validateModelDecision(reply.content,cluster);
-      stats.model_calls++;stats.model_ms+=reply.duration_ms||0;
+      tallyModelUsage(stats,reply);
     }catch(e){
+      stats.model_errors++;
       proposal={ok:false,decision:'DEFER',facts:[],
         reason:'curator_unavailable_or_invalid'};
     }
