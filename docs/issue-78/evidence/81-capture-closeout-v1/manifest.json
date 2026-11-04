@@ -1,0 +1,52 @@
+{
+ "schema_version": 1,
+ "kind": "issue81-evidence-manifest-v1",
+ "campaign": "81-capture-closeout-v1",
+ "source_sha": "036017058a0abdbfc20dde1fd076926ce8ef6d4f",
+ "base_sha": "d7c32f503eaa4cf4c52bb055b434e0ac71b76f45",
+ "note": "Lists every published byte of this packet except manifest.json itself. Published commit SHA and remote readback are recorded in the campaign handback, not here, to keep the manifest self-consistent.",
+ "immutable_identity": {
+  "development_corpus_sha256": "22ae11e64a7a9c443d6f13a79c363115a28b43a27620e5383449bfe32d9fb5b4",
+  "holdout_corpus_sha256": "f904411e51d0bd9674b7f756f3df5bf44452ca8f63362d75102ceb9df677fce4",
+  "targets_proposal_sha256": "17ffb60515f5f96f2d546fd3abf951d0bc008325e38d83145ec4f75a8c76f049",
+  "target_ratification_sha256": "ced9b984b17c1131984184b1bd9c666df3bdca9f20a3a067ee79763f4a05f3d4",
+  "adjudicated_packet_evidence_commit": "87bdc7320c2e291e55c882bef1b190b501644886",
+  "development_score_sha256": "5bcd21975653c5871a4651f170ab23b6576f483c3723c108afc3ea71710905a7",
+  "holdout_score_sha256": "4c0d18472c835349a7441b40329af2c2f138247fea3d21dd789be0624ca12284",
+  "ratified_recall": "dev 27/37 (0.730) FAIL; holdout 3/6 (0.500) FAIL; threshold >=0.85 unchanged"
+ },
+ "files": {
+  "cpu-checks.md": {
+   "sha256": "2b5d1d5831add7d9c4bbb016b80a3ad55aee28a5450a032ec6785a04da951e85",
+   "bytes": 3183
+  },
+  "handback.md": {
+   "sha256": "c58d86f2c2bb6c50fea88eb5c155e560cdeace4036dfcb43d4dc02587497dab5",
+   "bytes": 3286
+  },
+  "profile-authority.md": {
+   "sha256": "a2331bfae9039610c0c25d6b05caf9deb1b3bdc3ad7fb071323f7d455ef13d71",
+   "bytes": 4731
+  },
+  "quality-evidence-addendum.md": {
+   "sha256": "d7e6b49c27e80cb9af36bc3708b97a904286df9358226b6816239956c3ab3290",
+   "bytes": 1903
+  },
+  "read-tool-closeout.test.mjs": {
+   "sha256": "4eabd99f2e85a003646344eb3faf1e484de524f235dd8fe9fc1310be01e2c76d",
+   "bytes": 1838
+  },
+  "recall-miss-matrix.json": {
+   "sha256": "904f829e71d41fcc7dcec36d79db1af40d2e32d3795da3aef317764acf938f70",
+   "bytes": 4257
+  },
+  "root-cause-report.md": {
+   "sha256": "ecb1b97590ffadb0f952064001bfdbf365d1d467a44d75a653007566e4361a8c",
+   "bytes": 8389
+  },
+  "source.patch": {
+   "sha256": "760a53f12a5f2494c653b2030ad4cdb7c28d1c1a9d4b95d59e717e827f749edb",
+   "bytes": 923
+  }
+ }
+}

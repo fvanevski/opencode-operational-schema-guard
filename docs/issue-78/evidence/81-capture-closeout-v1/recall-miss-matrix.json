@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "kind": "issue81-recall-miss-matrix-v1",
+  "source_split_pin": {
+    "development_corpus_sha256": "22ae11e64a7a9c443d6f13a79c363115a28b43a27620e5383449bfe32d9fb5b4",
+    "holdout_corpus_sha256": "f904411e51d0bd9674b7f756f3df5bf44452ca8f63362d75102ceb9df677fce4",
+    "development_score_sha256": "5bcd21975653c5871a4651f170ab23b6576f483c3723c108afc3ea71710905a7",
+    "holdout_score_sha256": "4c0d18472c835349a7441b40329af2c2f138247fea3d21dd789be0624ca12284"
+  },
+  "diagnostic": {
+    "tool": "docs/issue-78/v2-benchmark/diagnose-capture.mjs (exact head 036017058a0abdbfc20dde1fd076926ce8ef6d4f)",
+    "development": { "positive": 37, "captured": 27, "missed": 10, "recall": 0.7297297297297297 },
+    "holdout": { "positive": 6, "captured": 3, "missed": 3, "recall": 0.5 }
+  },
+  "cause_groups": {
+    "missing_native_data_shell_result_not_persisted": {
+      "count": 6,
+      "cases": ["dev-median-testfail", "dev-median-testpass", "dev-sum-test", "dev-c81-fetch", "dev-c80-survey", "ho-prime-test"],
+      "gate": "TOOL_RESULT_EXIT_AND_TEXT_MISSING",
+      "certainty": "shape_indicator_confirmed_by_source_note",
+      "evidence": "native event has tool=shell, status=completed, valid callID, input.command present; the `result` field is entirely absent. Case notes state 'native shell stdout/exit not persisted in this host build'; corpus provenance native_shell_output_persisted=false. Adapter invariant (completed tool event requires result evidence or exit) is correctly fail-closed."
+    },
+    "intentional_prompt_safety_length_bound": {
+      "count": 4,
+      "cases": ["dev-c81-prompt", "dev-c80-prompt", "dev-c75-prompt", "ho-gui-prompt"],
+      "gate": "PROMPT_TEXT_SAFETY_OR_FORMAT_VETO",
+      "certainty": "explicit_precondition_confirmed",
+      "evidence": "prompt text present but condensed length (3659-11443 chars) exceeds the 1100-char bounded-excerpt floor of cleanExcerpt; deliberate size/privacy bound, not a secret veto."
+    },
+    "intentional_prompt_safety_self_marker_veto": {
+      "count": 2,
+      "cases": ["dev-dup-b75-1", "dev-conflict-keep"],
+      "gate": "PROMPT_TEXT_SAFETY_OR_FORMAT_VETO",
+      "certainty": "explicit_precondition_confirmed",
+      "evidence": "prompt text matches the SELF regex (agent-injected memory-context markers); deliberate safety veto of prompts dominated by the agent's own injected context."
+    },
+    "adapter_gap_read_only_file_tool_not_recognized": {
+      "count": 1,
+      "cases": ["ho-gui-read"],
+      "gate": "MISSING_SHELL_COMMAND",
+      "certainty": "real_adapter_defect_confirmed",
+      "evidence": "native event tool=read, input={path}, status=completed. read is not in FILE_TOOLS {edit,write,apply_patch}, so it falls through to the shell-command gate and is rejected. The adapter recognizes write/edit/apply_patch file receipts but silently drops read-only file tools. Minimal defensible fix: add 'read' to FILE_TOOLS (source.patch). Additionally the frozen corpus scope workspace is sanitized and the native path resolves outside it, so the case is also scope-fenced; the patch alone yields zero recall delta on the frozen corpus (verified by patched-source replay)."
+    }
+  },
+  "outcome_counters": {
+    "total_missed": 13,
+    "development_missed": 10,
+    "holdout_missed": 3,
+    "missing_native_data": 6,
+    "intentional_safety_filters": 6,
+    "real_adapter_defect": 1,
+    "unresolved": 0,
+    "false_positives_dev": 6,
+    "false_positives_ho": 2
+  },
+  "counterfactual_after_defensible_fixes": {
+    "note": "Counterfactual on the unchanged ratified cases; NOT a PASS. Numerator = newly captured positive labels; denominator = positive labels (dev 37, ho 6).",
+    "read_tool_patch_only": { "development": "27/37 (0.730, unchanged)", "holdout": "3/6 (0.500, unchanged; ho-gui-read remains scope-fenced under the frozen sanitized scope)" },
+    "read_tool_patch_plus_scope_alignment": { "development": "27/37 (0.730)", "holdout": "4/6 (0.667; ho-gui-read captured as a scoped content-free read receipt)" },
+    "plus_host_shell_result_persistence": { "development": "32/37 (0.865, would meet >=0.85)", "holdout": "5/6 (0.833)" },
+    "plus_prompt_policy_relength": { "development": "37/37 (1.0)", "holdout": "6/6 (1.0)" }
+  }
+}
