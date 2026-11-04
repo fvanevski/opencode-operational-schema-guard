@@ -1,0 +1,109 @@
+{
+  "schema_version": 1,
+  "packet": "81-final-verification-v1",
+  "kind": "issue81-final-source-verification-and-operator-adjudication",
+  "repository": "fvanevski/opencode-operational-schema-guard",
+  "branch": "issue/81",
+  "pr": 83,
+  "pr_state": "draft (unchanged by this packet)",
+  "tested_source_head": "81f9c36ff4c62d474a080442db67db18df87eb39",
+  "central_corrections": {
+    "defect_2_multiline_prompttext": "72ce23409f56a80a3e74fcfd39cd72a44739d10a",
+    "defect_2_secret_veto_assertion": "81f9c36ff4c62d474a080442db67db18df87eb39",
+    "scope": "docs/issue-78/v2-candidate/events.mjs, docs/issue-78/v2-benchmark/evaluate.mjs, docs/issue-78/v2-candidate/long-prompt.test.mjs"
+  },
+  "exact_head_verification": {
+    "node_check_sources": 3,
+    "node_check_exits": [0, 0, 0],
+    "suite_command": "node --test docs/issue-78/v2-candidate/candidate.test.mjs docs/issue-78/v2-candidate/long-prompt.test.mjs docs/issue-78/v2-benchmark/evaluate.test.mjs docs/issue-78/v2-benchmark/stage-holdout.test.mjs docs/issue-78/v2-benchmark/adjudicate.test.mjs docs/issue-78/v2-benchmark/diagnose-capture.test.mjs",
+    "suite_tests": 42,
+    "suite_pass": 42,
+    "suite_fail": 0,
+    "suite_exit": 0,
+    "defects_resolved": true,
+    "assertions_weakened": false
+  },
+  "corpora_sha256": {
+    "prospective_dev_12": "d3822a30ed906372679fc7d2f9ee2e9540279b92d04cda3e8656b628674f0cd7",
+    "prospective_holdout_5": "2435236a249ba871ab9dff4f3060031cc6a4762d0ae1873689d363d3ac8bed2a",
+    "frozen_dev_57": "22ae11e64a7a9c443d6f13a79c363115a28b43a27620e5383449bfe32d9fb5b4",
+    "frozen_holdout_9": "f904411e51d0bd9674b7f756f3df5bf44452ca8f63362d75102ceb9df677fce4",
+    "unmodified": true
+  },
+  "targets": {
+    "sha256": "17ffb60515f5f96f2d546fd3abf951d0bc008325e38d83145ec4f75a8c76f049",
+    "candidate_recall_min": 0.85,
+    "durable_grounded_precision_min": 0.9,
+    "semantic_recall_min": 0.8,
+    "context_p95_ms_max": 300,
+    "post_exit_p95_seconds_max": 900,
+    "zero_secret_leakage": true,
+    "zero_wrong_group": true,
+    "zero_false_verified": true,
+    "ratified_unchanged": true
+  },
+  "results": {
+    "prospective_dev_original_labels": { "recall": "6/6", "selection_precision": "6/8", "recall_value": 1.0 },
+    "prospective_dev_adjudicated_labels": { "recall": "5/5", "selection_precision": "5/8", "recall_value": 1.0, "label_amendment": "dev-p-read -> valuable=false (post-result operator correction, not a blind result)" },
+    "prospective_holdout": { "capture": "4/4", "classification": "exposed semantically-overlapping regression cohort", "durable_fact_precision": "UNVERIFIED" },
+    "historical_immutable": { "dev": "27/37 (0.7297) FAIL", "holdout": "3/6 (0.5000) FAIL" },
+    "frozen_corpora_counterfactual_at_head": { "dev_57": "29/35 selected (precision 0.8286, recall 0.7838)", "holdout_9": "4/6 (0.6667)" },
+    "recovered_event": {
+      "case": "dev-p-codeprose",
+      "event_id": "51ede3da98cd34cb8b72a76f0c889de81f724197ecdf3f6cbaccd4161635589b",
+      "native_source_ref": "opencode:ses_e5811b72dffeHsBS4pVp98BgX7:message:msg_1a7ef64ae00189hlwZMK4t6p70:span:896",
+      "candidate_count": 1
+    }
+  },
+  "cohort_metrics": {
+    "dev_cur81_native_a1f3c9d7": { "persisted_facts": 12, "grounded": "12/12", "durable_useful": "6/12", "grounded_precision": "1.0000 (measured, receipt-bound)" },
+    "earlier_holdout_cur81_holdout_4c3ab514": { "persisted_facts": 1, "fact": "F13 (conditional, assistant-reported)", "grounded": "1/1", "grounded_precision": "1.0000 (measured, conditional)" },
+    "new_prospective_holdout_cur81_native_holdout_a1f3c9": { "persisted_facts": 0, "durable_fact_precision": "UNVERIFIED" },
+    "combined_receipt_bound_grounded": "13/13 = 1.0000",
+    "durable_usefulness_all_13": "7/13 (F13 conditional)",
+    "note": "grounded precision and durable usefulness are distinct measurements; the 6 non-useful persisted dev facts are a real selectivity concern"
+  },
+  "operator_adjudication": {
+    "status": "OPERATOR_RATIFIED",
+    "signed_by": "filip (host-local; signature text not published)",
+    "signed_on": "2026-11-04",
+    "items": {
+      "R1_12_dev_labels": "RATIFIED_WITH_ONE_EDIT (dev-p-read -> valuable=false)",
+      "R2_5_holdout_labels": "RATIFIED (semantic-overlap qualification recorded)",
+      "R3_13_fact_verdicts": "RATIFIED (F12 corroboration corrected; F4 repeated-occurrence recorded)",
+      "R4_thresholds": "RATIFIED (unchanged, no waiver)",
+      "R5_repaired_source_results": "ACKNOWLEDGED_WITH_QUALIFICATIONS",
+      "R6_source_corrections": "ACKNOWLEDGED"
+    },
+    "disposition": {
+      "DEVELOPMENT_RECALL": "MEETS_THRESHOLD_ON_ADJUDICATED_CASES",
+      "INDEPENDENT_HOLDOUT_QUALIFICATION": "PENDING",
+      "PROSPECTIVE_HOLDOUT_DURABLE_PRECISION": "UNVERIFIED",
+      "FRESH_SESSION_SEMANTIC_RECALL": "UNVERIFIED",
+      "ISSUE_81_FINAL_ACCEPTANCE": "NOT_GRANTED"
+    }
+  },
+  "credential_handling": {
+    "cases": ["dev-p-secretlate", "ho-p-secret"],
+    "values_redacted_in_this_packet": true,
+    "raw_values": "private SHA-pinned corpora only (mode 0600)",
+    "rotation_flag": "flagged for operator rotation review if the fixture credential strings are genuine"
+  },
+  "boundary_adherence": {
+    "model_calls_this_verification": 0,
+    "graphiti_writes_this_verification": 0,
+    "new_pr_created": false,
+    "pr83_merged": false,
+    "issue81_closed": false,
+    "production_deployed": false,
+    "ex_gate_bypassed": false,
+    "corpora_modified": false
+  },
+  "log_pointers_host_local": [
+    "logs/exact-head-tests-81f9c36.out",
+    "logs/reeval-repaired-81f9c36.json",
+    "logs/reeval-repaired-amended-81f9c36.json",
+    "operator-consolidated-review-81f9c36.md",
+    "operator-adjudication-worksheet.md (section F, signed)"
+  ]
+}
