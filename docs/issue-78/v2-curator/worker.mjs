@@ -71,6 +71,11 @@ async function duplicateState(record,store,graphiti) {
   }
   return null;
 }
+async function deferValidatedSnapshot(store,record,reason){
+  const changed=await store.advance(record.id,'approved','deferred',{
+    reason,expected_revision:record.revision});
+  return changed?{status:'deferred',reason}:{status:'concurrent_transition'};
+}
 export async function promoteOne(store,record,graphiti){
   admitted();
   if(record.state!=='approved')return {status:'not_approved'};
@@ -80,22 +85,18 @@ export async function promoteOne(store,record,graphiti){
   // source classes. Until per-fact remote identities are implemented, keep
   // multi-fact output in operator review instead of misattributing recall.
   if(check.ok&&record.facts.length!==1){
-    await store.advance(record.id,'approved','deferred',{reason:'multi_fact_requires_split'});
-    return {status:'deferred',reason:'multi_fact_requires_split'};
+    return deferValidatedSnapshot(store,record,'multi_fact_requires_split');
   }
   if(!check.ok){
-    await store.advance(record.id,'approved','deferred',{reason:'validation:'+check.reason});
-    return {status:'deferred',reason:'validation'};
+    return deferValidatedSnapshot(store,record,'validation:'+check.reason);
   }
   let duplicate;
   try{duplicate=await duplicateState(record,store,graphiti);}
   catch(e){
-    await store.advance(record.id,'approved','deferred',{reason:'duplicate_check_unavailable'});
-    return {status:'deferred',reason:'duplicate_check_unavailable'};
+    return deferValidatedSnapshot(store,record,'duplicate_check_unavailable');
   }
   if(duplicate){
-    await store.advance(record.id,'approved','deferred',{reason:duplicate});
-    return {status:'deferred',reason:duplicate};
+    return deferValidatedSnapshot(store,record,duplicate);
   }
   // Verify the positive readback protocol *before* any remote write intent.
   // An incompatible list shape must not first surface after add_memory,
@@ -106,9 +107,7 @@ export async function promoteOne(store,record,graphiti){
     if(!Array.isArray(episodes?.episodes))
       throw Error('GRAPHITI_EPISODES_UNAVAILABLE');
   } catch {
-    await store.advance(record.id,'approved','deferred',
-      {reason:'graphiti_readback_preflight_unavailable'});
-    return {status:'deferred',reason:'graphiti_readback_preflight_unavailable'};
+    return deferValidatedSnapshot(store,record,'graphiti_readback_preflight_unavailable');
   }
   // Write-intent is durable BEFORE the first remote call: timeout may mean
   // accepted+queued. A retry must reconcile, never call add_memory again.

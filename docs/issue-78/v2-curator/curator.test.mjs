@@ -262,6 +262,30 @@ test('concurrent operator source edit prevents stale Graphiti write intent and a
     {expected_revision:original.record.revision}),false);
  }finally{delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;}
 }));
+test('operator source edit during failed preflight cannot be overwritten by stale deferral',()=>temp(async root=>{
+ process.env.GHDEV_MEMORY_POST_EXIT_LEASE='admitted';
+ try{
+  const store=new ReviewStore(root,scope.group),c=cluster();
+  const stored=await store.create(c,proposal(U));
+  let graphWrites=0;
+  const graphiti={call:async method=>{
+    if(method==='search_memory_facts'){
+      await store.change(c.id,stored.record.revision,'edit-and-approve',{
+        facts:[fact(T,{assertion:T.excerpt,kind:'test_result'})]});
+      throw Error('preflight unavailable');
+    }
+    if(method==='add_memory')graphWrites++;
+    return {episodes:[]};
+  }};
+  const result=await promoteOne(store,stored.record,graphiti);
+  assert.equal(result.status,'concurrent_transition');
+  assert.equal(graphWrites,0);
+  const current=await store.get(c.id);
+  assert.equal(current.state,'approved');
+  assert.equal(current.revision,2);
+  assert.deepEqual(current.facts[0].source_refs,[T.source_refs[0]]);
+ }finally{delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;}
+}));
 test('successful ACK is QUEUED, positive exact group+name episode readback persists',()=>temp(async root=>{
  process.env.GHDEV_MEMORY_POST_EXIT_LEASE='admitted';
  try{
