@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { spawnSync } from 'node:child_process';
 import assert from 'node:assert/strict';
 import { mkdtemp, rm } from 'node:fs/promises';
 import os from 'node:os';
@@ -42,6 +43,25 @@ async function sandbox(run) {
   try { return await run(dir); }
   finally { await rm(dir, { recursive: true, force: true }); }
 }
+test('legacy CLI reconcile-only reports pending without submitting under retained EX', () => sandbox(async dir => {
+ const j=new Journal(dir,'alpha');
+ const candidate=makeCandidate('alpha',selectUserDecision(
+   'I want source-grounded Graphiti memories without an interactive model call.'),
+   {sessionID:'ses_legacy_pending'});
+ assert.equal(await j.stage(candidate),true);
+ const args=[new URL('./memory-cli.mjs',import.meta.url).pathname,
+   'reconcile-only','--group','alpha','--state-dir',dir,
+   '--endpoint','http://127.0.0.1:8766/mcp'];
+ let run=spawnSync(process.execPath,args,{encoding:'utf8',timeout:10000,
+   env:{...process.env,GHDEV_MEMORY_POST_EXIT_LEASE:'admitted'}});
+ assert.equal(run.status,4,run.stderr);
+ assert.equal(JSON.parse(run.stdout).status,'work_remaining');
+ assert.equal((await j.get(candidate.uuid)).status,'pending');
+ run=spawnSync(process.execPath,args,{encoding:'utf8',timeout:10000,
+   env:{...process.env,GHDEV_MEMORY_POST_EXIT_LEASE:''}});
+ assert.notEqual(run.status,0);
+ assert.match(run.stderr,/EX_POST_EXIT_ADMISSION_REQUIRED/);
+}));
 test('atomic journal stage dedupes repeated events and preserves states', () => sandbox(async dir => {
   const j = new Journal(dir, 'alpha');
   const c = makeCandidate('alpha', selectUserDecision('I want native Graphiti facts for durable choices.'),

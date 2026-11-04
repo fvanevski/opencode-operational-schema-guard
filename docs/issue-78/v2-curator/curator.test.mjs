@@ -530,6 +530,41 @@ test('partial deferred source transitions converge before rechunking or new mode
   assert.equal((await store.get(c.id)).state,'deferred');
  }finally{delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;}
 }));
+test('filtered review paging includes deferred items after 500 earlier records',()=>temp(async root=>{
+ const store=new ReviewStore(root,scope.group),base=cluster();
+ for(let i=1;i<=502;i++){
+  const id=i.toString(16).padStart(64,'0');
+  const decision=i===502?
+    {decision:'DEFER',reason:'Newer review requires operator',facts:[]}:
+    {decision:'SKIP',reason:'Low-value source',facts:[]};
+  await store.create({...base,id},decision);
+ }
+ const first=await store.list({limit:100,offset:0,filter:{}});
+ assert.equal(first.total,502);
+ assert.equal(first.items[0].state,'deferred');
+ assert.equal(first.has_more,true);
+ const deferred=await store.list({limit:100,filter:{state:'deferred'}});
+ assert.equal(deferred.total,1);
+ assert.equal(deferred.items[0].id,(502).toString(16).padStart(64,'0'));
+ const skipped=await store.list({limit:100,offset:500,filter:{state:'skipped'}});
+ assert.equal(skipped.total,501);
+ assert.equal(skipped.items.length,1);
+ assert.equal(skipped.has_more,false);
+ await assert.rejects(store.list({filter:{state:'untrusted'}}),/INVALID_REVIEW_FILTER/);
+}));
+test('curator reconcile-only reports local approved work without Graphiti write',()=>temp(async root=>{
+ const store=new ReviewStore(root,scope.group),c=cluster();
+ await store.create(c,proposal(U));
+ const processResult=spawnSync(process.execPath,[
+  new URL('./curator-cli.mjs',import.meta.url).pathname,
+  'reconcile-only','--group',scope.group,'--state-dir',root,
+  '--endpoint','http://127.0.0.1:8766/mcp'],{
+  encoding:'utf8',timeout:10000,
+  env:{...process.env,GHDEV_MEMORY_POST_EXIT_LEASE:'admitted'}});
+ assert.equal(processResult.status,4,processResult.stderr);
+ assert.equal(JSON.parse(processResult.stdout).status,'work_remaining');
+ assert.equal((await store.get(c.id)).state,'approved');
+}));
 test('unavailable model yields durable DEFER without losing candidate, no Graphiti write',()=>temp(async root=>{
  process.env.GHDEV_MEMORY_POST_EXIT_LEASE='admitted';
  try{

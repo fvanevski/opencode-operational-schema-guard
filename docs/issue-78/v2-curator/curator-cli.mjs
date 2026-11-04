@@ -77,6 +77,6 @@ if(!group||!['drain','status','list','reconcile-only'].includes(command)||
       modelId:process.env.LOCAL_CURATOR_MODEL,
       apiKey:process.env.LOCAL_CURATOR_API_KEY||'local',maxSeconds,maxClusters});
     console.log(JSON.stringify(data));
-    if(data.status==='unresolved')process.exitCode=3;
+    if(data.status==='unresolved'||data.status==='incomplete')process.exitCode=3;
   }
 }

@@ -63,6 +63,19 @@ test('loopback API requires token, exact origin, source-bound review and revisio
     body:JSON.stringify({action:'discard',revision:1,reason:'Not useful'})});
   assert.equal(resp.status,200);
   assert.equal((await store.get(cluster.id)).state,'skipped');
+  resp=await fetch(origin+'/api/clusters?state=skipped&limit=1&offset=0',
+    {headers:{'x-review-token':token}});
+  assert.equal(resp.status,200);
+  const page=await resp.json();
+  assert.equal(page.total,1);
+  assert.equal(page.items[0].state,'skipped');
+  assert.equal(page.has_more,false);
+  resp=await fetch(origin+'/api/clusters?state=nonexistent',
+    {headers:{'x-review-token':token}});
+  assert.equal(resp.status,400);
+  resp=await fetch(origin+'/api/status',{headers:{'x-review-token':token}});
+  assert.equal(resp.status,200);
+  assert.ok((await resp.json()).evidence_classes.includes('user-stated'));
   resp=await fetch(url,{method:'POST',headers:{'x-review-token':token,
     'Origin':origin,'Content-Type':'application/json'},
     body:JSON.stringify({action:'discard',revision:1,reason:'Not useful'})});
