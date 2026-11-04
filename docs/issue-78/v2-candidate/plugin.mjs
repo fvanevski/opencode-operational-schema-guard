@@ -2,7 +2,7 @@
 import path from 'node:path';
 import os from 'node:os';
 import baseline from '../../issue-75/v2-candidate/plugin.mjs';
-import { fromPrompt, fromTool, fromFinishedTurn } from './events.mjs';
+import { fromPromptCandidates, fromTool, fromFinishedTurn } from './events.mjs';
 import { CandidateQueue } from './queue.mjs';
 import { sourcedEpisodeResolver } from '../v2-curator/sourced-recall.mjs';
 
@@ -74,13 +74,15 @@ export default {
         const list = pending.get(event.sessionID) || [];
         pending.delete(event.sessionID);
         for (const observed of list) {
-          const source = fromPrompt(observed, scope, { admitted: true });
-          if (!source) continue;
+          const sources = fromPromptCandidates(observed, scope, { admitted: true });
+          if (!sources.length) continue;
+          // Anchor downstream tool/assistant outcomes to the first original
+          // message span, never a synthetic assertion or an inferred result.
           lastAdmittedPrompt.delete(event.sessionID);
-          lastAdmittedPrompt.set(event.sessionID, source.event_id);
+          lastAdmittedPrompt.set(event.sessionID, sources[0].event_id);
           if (lastAdmittedPrompt.size > MAX_SESSIONS)
             lastAdmittedPrompt.delete(lastAdmittedPrompt.keys().next().value);
-          enqueue(source);
+          for (const source of sources) enqueue(source);
         }
         // Only messages already present when a later context is built are treated
         // as completed. No speculative finished-turn bus hook is registered.

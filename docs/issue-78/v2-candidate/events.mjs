@@ -71,24 +71,78 @@ function envelope(scope, data) {
     excerpt, state: 'new',
   });
 }
-export function fromPrompt(event, scope, { admitted = false } = {}) {
-  if (!admitted) return null; // Do not record an unadmitted speculative prompt.
-  const sessionID = field(event, ['sessionID', 'sessionId']);
+// Long admitted user prompts have bounded, independent *contiguous* source
+// spans. Full-input privacy/SELF checks run BEFORE any span is derived; omitted
+// context is not a fact. This is not summary generation and runs without an LLM.
+// At most six small spans from one native message bound hook/queue/curator load.
+const MAX_LONG_PROMPT_CHARS = 16000;
+const PROMPT_SPAN_CHARS = 900;
+const MAX_PROMPT_SPANS = 6;
+function promptText(event) {
   const raw = event?.prompt?.text;
   let text = typeof raw === 'string' ? raw : '';
   if (text.startsWith('"')) {
     try { const value = JSON.parse(text); text = typeof value === 'string' ? value : ''; }
-    catch { text = ''; }
+    catch { return ''; }
   }
-  const excerpt = cleanExcerpt(text);
-  if (!excerpt || excerpt.length < 24 || CHATTER.test(excerpt) || /^[?!. ]+$/.test(excerpt)) return null;
-  if (/[{}]/.test(excerpt) && excerpt.length > 400) return null; // JSON/source dumps are not candidate prose.
+  return text;
+}
+function promptSpans(text) {
+  const spans = [];
+  let start = 0;
+  while (start < text.length) {
+    let end = Math.min(start + PROMPT_SPAN_CHARS, text.length);
+    if (end < text.length) {
+      const wordEnd = text.lastIndexOf(' ', end);
+      // Do not cut a word if a nearby boundary is available.
+      if (wordEnd >= start + 600) end = wordEnd;
+    }
+    const excerpt = text.slice(start, end).trim();
+    if (excerpt.length >= 24 && !CHATTER.test(excerpt)) spans.push({ excerpt, offset: start });
+    start = end;
+    while (text[start] === ' ') start++;
+  }
+  if (spans.length <= MAX_PROMPT_SPANS) return spans;
+  // Deterministic coverage of the whole source (including its tail), rather
+  // than silently capturing only the beginning of a large user message.
+  return Array.from({ length: MAX_PROMPT_SPANS }, (_, i) =>
+    spans[Math.round(i * (spans.length - 1) / (MAX_PROMPT_SPANS - 1))]);
+}
+export function fromPromptCandidates(event, scope, { admitted = false } = {}) {
+  if (!admitted) return []; // Only prompts observed in an admitted native context.
+  const sessionID = field(event, ['sessionID', 'sessionId']);
+  const text = promptText(event);
+  if (!text || text.length > MAX_LONG_PROMPT_CHARS ||
+    PRIVATE.test(text) || SELF.test(text) ||
+    /[\0-\u0008\u000b\u000e-\u001f]/u.test(text)) return [];
+  const condensed = text.replace(/\s+/g, ' ').trim();
+  if (!condensed || CHATTER.test(condensed) || /^[?!. ]+$/.test(condensed) ||
+    (condensed.length > 400 && /[{}]/.test(condensed))) return [];
   const nativeID = field(event, ['messageID', 'messageId', 'promptID', 'promptId']) ||
     field(event?.prompt, ['messageID', 'messageId', 'id']);
-  const sourceID = valid(nativeID) ? nativeID : sha(excerpt).slice(0, 32);
-  return envelope(scope, { kind: 'user_turn', evidenceClass: 'user-stated',
-    sourceType: valid(nativeID) ? 'message' : 'prompt', sourceID, weak: !valid(nativeID),
-    sessionID, excerpt, time: event?.timestamp || event?.time, related: event?.related_event_ids });
+  const qualified = valid(nativeID);
+  // Weak content-hash fallback is retained for short prompts only. Long
+  // message segmentation requires an authentic stable native message ID.
+  if (condensed.length > 1100 && !qualified) return [];
+  const segments = condensed.length <= 1100
+    ? [{ excerpt: condensed, offset: 0 }]
+    : promptSpans(condensed);
+  return segments.map(({ excerpt, offset }) => {
+    if (!cleanExcerpt(excerpt) || excerpt.length < 24) return null;
+    const sourceID = qualified
+      ? (segments.length === 1 ? nativeID : nativeID + ':span:' + offset)
+      : sha(excerpt).slice(0, 32);
+    if (!valid(sourceID)) return null;
+    return envelope(scope, { kind: 'user_turn', evidenceClass: 'user-stated',
+      sourceType: qualified ? 'message' : 'prompt', sourceID, weak: !qualified,
+      sessionID, excerpt, time: event?.timestamp || event?.time,
+      related: event?.related_event_ids });
+  }).filter(Boolean);
+}
+export function fromPrompt(event, scope, options = {}) {
+  // Compatibility with existing binary capture/evaluation consumers. The
+  // installed native plugin stages ALL authenticated spans separately.
+  return fromPromptCandidates(event, scope, options)[0] || null;
 }
 // Host-qualified execute.after exposes tool/callID, but native edit/write
 // tools do not have shell-command inputs. Their receipts are observations,
