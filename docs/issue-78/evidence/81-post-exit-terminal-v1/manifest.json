@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "kind": "issue81-evidence-packet-post-exit-terminal",
+  "campaign": "81-post-exit-terminal-v1",
+  "generated_at": "2026-11-04T12:00:00Z",
+  "source": {
+    "repo": "fvanevski/opencode-operational-schema-guard",
+    "branch": "issue/81",
+    "tested_exact_head": "7b7d62685993e56e2b71b77846a6a0c1092d7d01",
+    "parent_evidence_commit": "c66a9251e957efe714c6e2b17bd5442748610553 (81-recall-remediation-v1, immutable)"
+  },
+  "terminal_state": {
+    "ex_admission": "proven (canonical shared flock retained through the drain)",
+    "dev_service": "ghdev-curator81t-qual.service code=exited status=0/SUCCESS settled unresolved:0",
+    "holdout_service": "ghdev-cur81-holdout-4c3ab514.service code=exited status=0/SUCCESS review_required unresolved:0",
+    "ex_lease": "not held by any unresolved drain worker; only the interactive opencode shared-lock holder remains"
+  },
+  "model_usage": {
+    "curator_model_only": { "calls": 16, "prompt": 37744, "completion": 4033, "model_only_total": 41777, "reasoning_separate": 1454, "cached_prompt": 5184, "duration_ms": 15387 },
+    "note": "reasoning tokens reported separately, NOT double-counted; Graphiti extraction cost separately attributable to the Graphiti runtime and excluded from these totals"
+  },
+  "decisions": { "EMIT": 14, "DEFER": 2, "SKIP": 1, "errors": 0, "dev_persisted": 12, "holdout_persisted": 1, "ambiguous_remote_writes": 0 },
+  "graphiti": {
+    "dev_episodes": 12, "dev_nodes": 17, "dev_edges": 29,
+    "holdout_drain_episodes": 1, "holdout_nodes": 2, "holdout_edges": 1,
+    "staged_holdout_episodes": 0, "production_ghdev_gh_mcp_episodes": 4, "prior_cur81_dev_ce555621_episodes": 9
+  },
+  "private_artifacts_on_host": {
+    "operator_decision_packet_1": "/tmp/opencode/issue81-qual/terminal81-a1f3c9/operator-decision-packet-1.md (private, NOT in this packet) sha256=54fca993c0b27d7e6611c4fa43301eefabdafad6daa486d877fbddbc5fd265bb",
+    "operator_decision_packet_2": "/tmp/opencode/issue81-qual/terminal81-a1f3c9/operator-decision-packet-2.md (private, NOT in this packet) sha256=d2f3251d8881a6830049ad378c82447d547420cd14b3ea03446cf450645f3be7",
+    "usage_journal_dev": "/home/filip/.local/state/ghdev-graphiti-issue81/usage-terminal81.jsonl (13 records)"
+  },
+  "quality": {
+    "candidate_recall": { "staged_dev": "5/6 = 0.8333 (FAIL < 0.85)", "patched_dev_counterfactual": "6/6 = 1.0", "blind_holdout_provisional": "4/4 = 1.0", "historical_dev_immutable": "27/37", "historical_holdout_immutable": "3/6" },
+    "durable_grounded_precision": "13/13 grounded + scope-correct = 1.0000 (>=0.90 PASS) PENDING operator signatures",
+    "three_path_staged": { "baseline_recall": 0.1667, "broad_capture_recall": 0.8333, "curator_recall_now_verified": 0.8333 },
+    "semantic_recall": "UNVERIFIED_UNTIL_FRESH_CLIENT (post-merge)"
+  },
+  "files": {
+    "post-exit-receipt.md": { "sha256": "33dca6dbcbb741afc1ed8dae0c93d86d10be296c3f2fcbf58d6eb1c82270cae9", "bytes": 3056 },
+    "model-usage.md": { "sha256": "8b1fc16673de27e1e00453f9cddaeeeb7de7f5b0cc0456a95e34ba227312b8a4", "bytes": 2121 },
+    "graphiti-readback.md": { "sha256": "8a306521e18aedbfe7030607821cff566b4c56720b7b31d2d9507c6fd12a1a51", "bytes": 3776 },
+    "source-index-reconciliation.md": { "sha256": "45c52652e8c446eba4e6ee1c2b156c27687109fc199c681081899c084d9a7100", "bytes": 2171 },
+    "operator-verdict-status.md": { "sha256": "81a48b7ce55ab669fbaa8d48356113e66c59419fdf1617eca72f2a6e066c6160", "bytes": 2149 },
+    "quality-results.md": { "sha256": "be06db6c6f1869e027caf8abb12b65442df36af0eec8faff2b185f99c13bc60d", "bytes": 4582 },
+    "friction-ledger.md": { "sha256": "16acf5c7d5b075df39ec469cf012290b85f5b1ecd10aa42e8fb226391a528fa1", "bytes": 3832 },
+    "handback.md": { "sha256": "44910ad987c956af204c0c03a61bf113c822e2cf202a8a091170a552b74b16fb", "bytes": 4276 }
+  },
+  "note": "One additive evidence-only fast-forward commit; the original 81-recall-remediation-v1 evidence is immutable. Private source text and operator signatures stay on the host, never in GitHub. Operator judgments pending, so this is an honestly partial packet returning READY_FOR_OPERATOR_REVIEW."
+}
