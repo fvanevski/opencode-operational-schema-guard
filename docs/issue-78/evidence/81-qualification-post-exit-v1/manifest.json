@@ -1,0 +1,76 @@
+{
+ "schema_version": 1,
+ "kind": "issue81-evidence-packet-post-exit",
+ "campaign": "81-qualification-post-exit-v1",
+ "generated_at": "2026-11-04T15:23:09.270Z",
+ "source": {
+  "repo": "fvanevski/opencode-operational-schema-guard",
+  "branch": "issue/81",
+  "tested_exact_head": "a4c9e76a6d60179b2555fb3836207b65f99d174d",
+  "prior_evidence_commit": "289821fbc35bd1e04dc24e8b1684f5f028369a66",
+  "worktrees": [
+   "/tmp/opencode/issue81-qual/campaign-ce555621/worktree (first campaign, 7922f31)",
+   "/tmp/opencode/issue81-qual/eval81-a4c9e76a (exact head, clean)"
+  ]
+ },
+ "post_exit": {
+  "ex_admission": "proven 2026-11-04T07:06:14PST by ghdev-curator81-qual.service under the canonical gate",
+  "terminal": "settled 07:11:43PST (service exit 0); 3 admitted runs; 13 model calls",
+  "decisions": {
+   "EMIT": 9,
+   "DEFER": 3,
+   "SKIP": 1
+  },
+  "graphiti": "9/9 verified_readback, 0 duplicates, 0 unresolved; production ghdev_gh_mcp 4-episode baseline intact",
+  "units": "ghdev-curator81-* stopped/removed after safe reconciliation"
+ },
+ "frozen_artifacts": {
+  "development corpus": "/tmp/opencode/issue81-qual/corpus/development.json sha256=22ae11e64a7a9c443d6f13a79c363115a28b43a27620e5383449bfe32d9fb5b4 (57 cases, labels unchanged, reused)",
+  "sealed holdout": "/tmp/opencode/issue81-qual/corpus/holdout.json sha256=f904411e51d0bd9674b7f756f3df5bf44452ca8f63362d75102ceb9df677fce4 (NOT SCORED, unaltered)",
+  "usage journal": "/home/filip/.local/state/ghdev-graphiti-issue81/usage.jsonl (13 entries, 28538 tokens, 51813 ms)",
+  "review store": "/home/filip/.local/state/ghdev-graphiti-issue81/qual81/curation-v1/cur81_dev_ce555621 (13 records, retained)"
+ },
+ "files": {
+  "curator-model-results.json": {
+   "sha256": "f9b26a81c53390b928b4b4340945573adbcbe87da023510aed3d29d399a23dfa",
+   "bytes": 4642
+  },
+  "development-results-v2.json": {
+   "sha256": "bddd1a6e8209328d0453d4f9149aee31a075e68edaa7ef7d9900b41cb461a2e9",
+   "bytes": 18710
+  },
+  "development-results-v2-noobs.json": {
+   "sha256": "eb94abfe3a6bc6280e1ae671ead861d760dced114f559954a40c9edeac920280",
+   "bytes": 13959
+  },
+  "evaluator-regressions.md": {
+   "sha256": "3b51684c843e0091f9eefb81e18fccad5db412b668718571b88c382653dfe1ad",
+   "bytes": 3907
+  },
+  "graphiti-readback-v2.json": {
+   "sha256": "7c0a96255fbd2cc36b9aa8f17c23a19cba975673aac00e5e9c4807e6bc1b4ca0",
+   "bytes": 8003
+  },
+  "handback-v2.md": {
+   "sha256": "88daa14e2be3e43e210f15d148b8428447ed945ecdade26b73d0d77f0b72c77a",
+   "bytes": 5303
+  },
+  "host-identity-v2.md": {
+   "sha256": "8c35fa09f0a2272eba6962196be5750643cda547a1fbced1475382ebfe5d59e5",
+   "bytes": 2664
+  },
+  "observations.json": {
+   "sha256": "543ad0100535790702b91b89743236506c7758d9f49ea7bc16fb917088fd2b53",
+   "bytes": 16020
+  },
+  "post-exit-results.json": {
+   "sha256": "7872104cf6fa89d9557a688dd2f31fdbfa216899efd09eb95ab988bfad175e63",
+   "bytes": 3504
+  },
+  "source-patch-v2-evaluate-test-fixture.patch": {
+   "sha256": "26c3a6865e5ee1b5ba3a13ab6f1a8f370587ed7d43ecc0a28152fd55ca1e894d",
+   "bytes": 707
+  }
+ },
+ "note": "No self-hash of manifest.json; every other exported packet artifact is listed with its SHA-256."
+}

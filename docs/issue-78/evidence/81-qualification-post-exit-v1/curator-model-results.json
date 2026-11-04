@@ -1,0 +1,38 @@
+{
+ "schema_version": 1,
+ "kind": "issue81-curator-model-results-post-exit",
+ "group": "cur81_dev_ce555621",
+ "model": "chat-fast (Qwen3.8-27B NVFP4 via litellm :8002 -> ninfer :8001)",
+ "decision_distribution": {"EMIT": 9, "DEFER": 3, "SKIP": 1, "total_records": 13},
+ "source_event_coverage": "33/33 staged candidate events (queue total 33) processed across 13 clusters; zero submission_unknown",
+ "per_cluster": [
+  {"cluster_id":"148b95fa3cf59edaf23fa0705f1d43c6a17b6fc3fa21237902ad7b4de1a01558","decision":"DEFER","terminal_state":"deferred","model_ms":2680,"prompt_tokens":774,"completion_tokens":523},
+  {"cluster_id":"492668aa62f948b92729f6ac10e5e4c5e497e3ebb2b9e0462fc8f6338b494716","decision":"SKIP","terminal_state":"skipped","model_ms":3031,"prompt_tokens":779,"completion_tokens":654},
+  {"cluster_id":"1cd1f3b12d13c0514e2aa199f25291f7a860fa075289b9dd220fa6e8d3f2fe49","decision":"EMIT","terminal_state":"persisted","remote_episode_uuid":"ca2352d0-372a-40c7-9fd2-55340defa347","model_ms":2478,"prompt_tokens":829,"completion_tokens":786},
+  {"cluster_id":"a492d36f221069e485959fab43f249f06100fdb35dc441731525adb4826778a0","decision":"EMIT","terminal_state":"persisted","remote_episode_uuid":"511e8a52-8362-4e13-9b01-f8649cdf337e","model_ms":2672,"prompt_tokens":824,"completion_tokens":807},
+  {"cluster_id":"e445aeec638c9dd254b331ecb87af1594baf4a0b37018935c80ef93605b10356","decision":"EMIT","terminal_state":"persisted","remote_episode_uuid":"b718e11b-d5f8-4714-aed2-c12ae93c9dba","model_ms":4670,"prompt_tokens":984,"completion_tokens":1531},
+  {"cluster_id":"8e7901a8aa35dee0aa960c3824f510ea31a4b47324c70be7ac3b4f5dd131cfa1","decision":"EMIT","terminal_state":"persisted","remote_episode_uuid":"67326f6a-6850-41d4-8309-dce7b32ab970","model_ms":5732,"prompt_tokens":829,"completion_tokens":1558},
+  {"cluster_id":"8c44c2ffecccb16418d736391e04ca6204cfdece233216c84090f90b10f09cdd","decision":"DEFER","terminal_state":"deferred","note":"5-source median error->fix->test cluster; model deferred (multi-fact requires split)","model_ms":5885,"prompt_tokens":1803,"completion_tokens":1600},
+  {"cluster_id":"9f8612665eaada1346d2c054517d552da05471b47a1f3f79a5940d99d10867ee","decision":"DEFER","terminal_state":"deferred","note":"3-source sum cluster; model deferred","model_ms":5761,"prompt_tokens":1202,"completion_tokens":1600},
+  {"cluster_id":"f584c1bfba64afdaeda0bc595f3bf63c59c13e4e34be77964dcdcf8671d2f0d5","decision":"EMIT","terminal_state":"persisted","note":"7-source #79 supplemental implicit cluster (multi-event, #75 baseline misses)","remote_episode_uuid":"ab748387-5b36-41bb-a024-7f0721165243","model_ms":3033,"prompt_tokens":1634,"completion_tokens":848},
+  {"cluster_id":"4ab73c43df15e0141b535cf1bcda1047e23545d31a590a1c93084a7549b487bd","decision":"EMIT","terminal_state":"persisted","note":"8-source #79 host implicit cluster (multi-event, #75 baseline misses)","remote_episode_uuid":"f1afd4fc-8993-475e-87b1-d8c147318e0c","model_ms":4695,"prompt_tokens":2190,"completion_tokens":1088},
+  {"cluster_id":"7b76aa0b5187a91cff828c42152f7d175de6e6a6d0dcee1e3ab58581e61421fa","decision":"EMIT","terminal_state":"persisted","remote_episode_uuid":"aa48b69d-09e0-4d7f-8021-0d7e1d58244d","model_ms":3959,"prompt_tokens":760,"completion_tokens":1014},
+  {"cluster_id":"6c4aa8ab248cc724880eda60653fc247bf9a122fd67b65863be0989d4bb56459","decision":"EMIT","terminal_state":"persisted","remote_episode_uuid":"71addc8a-1b5a-49a0-8c7c-63c791b61c6c","model_ms":3528,"prompt_tokens":801,"completion_tokens":955},
+  {"cluster_id":"5fc80d9e8c82f723b9e2338404a546835c79fcd5585a7b2a7894d592bf758293","decision":"EMIT","terminal_state":"persisted","note":"2-source implicit decision cluster","remote_episode_uuid":"2b034482-98aa-4b9d-8534-184a90709698","model_ms":3689,"prompt_tokens":998,"completion_tokens":1167}
+ ],
+ "aggregates": {
+  "model_calls": 13,
+  "model_ms_total": 51813,
+  "model_ms_p50": 3689,
+  "model_ms_p95": 5885,
+  "tokens_total": 28538,
+  "tokens_prompt": 14407,
+  "tokens_completion": 14131,
+  "invalid_model_or_source_decisions": 0,
+  "facts_proposed": 9,
+  "remote_receipt_bound_model_facts": 9,
+  "grounded_precision": null,
+  "grounded_precision_note": "null by design: corpus label_status is 'provisional'; durable/fact precision requires operator_adjudicated fact verdicts (central_proposal thresholds unratified). No operator-seeded or queued fact is counted as durable."
+ },
+ "no_invented_authority": "Every persisted fact carries native source_refs resolved to the exact source index (see graphiti-readback-v2.json); DEFER records were retained, not re-cured; no replay of ambiguous submissions occurred."
+}
