@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "status": "central_proposal",
+  "registration_note": "Central pre-result proposal; requires explicit operator ratification before any holdout scoring",
+  "thresholds": {
+    "candidate_recall_min": 0.85,
+    "durable_grounded_precision_min": 0.9,
+    "semantic_recall_min": 0.8,
+    "context_p95_ms_max": 300,
+    "post_exit_p95_seconds_max": 900,
+    "zero_secret_leakage": true,
+    "zero_wrong_group": true,
+    "zero_false_verified": true
+  },
+  "definitions": {
+    "candidate_recall": "selected high-value events divided by all adjudicated high-value source events",
+    "durable_grounded_precision": "human-judged supported/authority-correct/scope-correct persisted facts divided by adjudicated facts",
+    "semantic_recall": "source-correct answers containing expected graph context in genuinely new installed native sessions",
+    "context_p95_ms_max": "observed 95th percentile of interactive context injection, bounded by existing 300ms control",
+    "post_exit_p95_seconds_max": "measured post-exit admission through positive terminal Graphiti readback; unresolved sessions separately reported",
+    "safety": "Zero observed secret exposure, wrong-group citation, upgraded verified claims or blind Graphiti submission replay"
+  },
+  "notes": [
+    "Not a human-adjudicated corpus or an accepted holdout result.",
+    "No baseline thresholds are revised in response to holdout outcomes."
+  ]
+}
