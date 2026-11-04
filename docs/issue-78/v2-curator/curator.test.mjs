@@ -576,6 +576,42 @@ test('filtered review paging includes deferred items after 500 earlier records',
  assert.equal(skipped.has_more,false);
  await assert.rejects(store.list({filter:{state:'untrusted'}}),/INVALID_REVIEW_FILTER/);
 }));
+test('queued Graphiti work survives a concurrent operator edit between review pages',()=>temp(async root=>{
+ process.env.GHDEV_MEMORY_POST_EXIT_LEASE='admitted';
+ try{
+  const store=new ReviewStore(root,scope.group),base=cluster();
+  const id=i=>i.toString(16).padStart(64,'0');
+  for(let i=1;i<=500;i++)
+    await store.create({...base,id:id(i)},{
+      decision:'DEFER',reason:'Operator review pending',facts:[]});
+  const queuedId=id(501);
+  await store.create({...base,id:queuedId},proposal(U));
+  assert.equal(await store.advance(queuedId,'approved','submission_unknown'),true);
+  assert.equal(await store.advance(queuedId,'submission_unknown','queued'),true);
+  const originalList=store.list.bind(store);
+  let operatorEdited=false,graphReads=0;
+  store.list=async opts=>{
+    const page=await originalList(opts);
+    if(!operatorEdited&&opts?.offset===0&&opts?.limit===500){
+      operatorEdited=true;
+      const changed=await store.change(id(1),1,'defer',{
+        reason:'Operator revised review while curator was paging'});
+      assert.equal(changed.revision,2);
+    }
+    return page;
+  };
+  const graphiti={call:async method=>{
+    if(method!=='get_episodes')throw Error('Unexpected Graphiti call: '+method);
+    graphReads++;
+    return {episodes:[]}; // unresolved remote extraction: cannot release EX
+  }};
+  const result=await reconcile(store,graphiti);
+  assert.equal(operatorEdited,true);
+  assert.equal(graphReads,1,'queued review must not be omitted from remote reconciliation');
+  assert.deepEqual(result,{persisted:0,unresolved:1});
+  assert.equal((await store.get(queuedId)).state,'queued');
+ }finally{delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;}
+}));
 test('empty review store with staged new sources resumes admitted work, not an indefinite EX stall',()=>temp(async root=>{
  const q=new CandidateQueue(root,scope.group);
  assert.equal((await q.stage(U)).status,'staged');

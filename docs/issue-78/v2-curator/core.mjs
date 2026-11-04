@@ -248,7 +248,11 @@ export class ReviewStore {
       return {total:matched.length,items:matched.slice(offset,offset+limit),
         has_more:matched.length>offset+limit};
     }
-    items.sort((a,b)=>a.updated_at.localeCompare(b.updated_at)||a.id.localeCompare(b.id));
+    // Unfiltered pages are authoritative worker/admission scans. Order by
+    // immutable review identity: an operator changing updated_at between
+    // offset pages must never make a queued/submission_unknown review vanish.
+    // The filtered operator inbox keeps its separate priority/newest order.
+    items.sort((a,b)=>a.id.localeCompare(b.id));
     return {total:items.length,items:items.slice(offset,offset+limit),
       has_more:items.length>offset+limit};
   }
