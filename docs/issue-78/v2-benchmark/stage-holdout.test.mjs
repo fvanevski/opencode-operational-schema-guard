@@ -8,7 +8,7 @@ const prompt=(id,text,extra={})=>({id,source_type:'prompt',category:'implicit',
  timestamp:'2026-11-04T00:00:00Z',prompt:{text}},label:{valuable:true},...extra});
 const c={schema_version:1,split:'holdout',label_status:'operator_adjudicated',
  adjudicated_by:'human',scope:base,cases:[
- prompt('a','I prefer a bounded Graphiti source index for all future memory assertions.'),
+ prompt('a','I prefer a bounded Graphiti source index for all future memory assertions.',{scope:base}),
  prompt('b','Thanks', {category:'chatter',label:{valuable:false}}),
  prompt('c','I prefer to reuse the existing model admission policy.',{
   scope:{...base,group:'other_group'}})

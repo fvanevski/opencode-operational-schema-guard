@@ -15,9 +15,17 @@ export function plan(corpus,group){
  const target={...corpus.scope,group};
  const selected=[],excluded=[];
  for(const c of corpus.cases){
-  // Same real selector/adapters as the quality comparator; preserve per-case
-  // wrong-group and opt-out vetoes, never reconstruct a weak native identity.
-  const candidate=replay(c,target).candidate;
+  // Case scope is authenticated in the FROZEN corpus, not implicitly equal
+  // to the new disposable group. Validate original scope before rebinding.
+  const matchesOriginal=!c.scope||['group','project','workspace']
+    .every(k=>c.scope[k]===corpus.scope[k]);
+  if(!matchesOriginal){
+   excluded.push({id:c.id,reason:'wrong_original_source_scope'});
+   continue;
+  }
+  // Preserve capture opt-out; drop ONLY the already-validated original case
+  // scope before applying the new group to the existing real event adapter.
+  const candidate=replay({...c,scope:undefined},target).candidate;
   if(!candidate){
    excluded.push({id:c.id,reason:'not_selected_or_scope_excluded'});
   }else if(candidate.source_strength!=='native-id'){
