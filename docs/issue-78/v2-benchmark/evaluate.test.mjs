@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {evaluate,sha256,quantiles,confusion} from './evaluate.mjs';
+import {fromPrompt} from '../v2-candidate/events.mjs';
 const scope={group:'issue81_dev',project:'benchmark',workspace:'/tmp/issue81/benchmark'};
 const timestamp='2026-11-03T18:15:00Z';
 const prompt=(id,text,valuable,category='implicit')=>({
@@ -76,6 +77,25 @@ test('curator observation must match deterministic cluster ID, native source and
   {...record,source_case_ids:['no-such-source']} ]}}),/missing_candidate/);
  assert.throws(()=>evaluate(c,{observations:{schema_version:1,records:[
   {...record,origin:'unspecified'} ]}}),/observation_shape_or_origin/);
+});
+test('qualification group does not rewrite frozen labels or silently rebind event IDs',()=>{
+ const c=corpus(),different={...scope,group:'cur81_dev_ce555621'};
+ const event=fromPrompt(c.cases[0].native_event,different,{admitted:true});
+ assert.ok(event?.event_id);
+ const obs={schema_version:1,scope:different,records:[{
+  source_case_ids:['implicit'],source_event_ids:[event.event_id],
+  cluster_id:sha256(event.event_id),origin:'model',decision:'DEFER',
+  reason:'No durable fact supported yet',facts:[]}]};
+ const report=evaluate(c,{observations:obs});
+ assert.equal(report.curator.invalid_model_or_source_decisions,0);
+ assert.equal(report.curator.records[0].cluster_id,sha256(event.event_id));
+ assert.equal(report.broad_capture.tp,4);
+ const wrong={...obs,records:[{...obs.records[0],source_event_ids:['0'.repeat(64)]}]};
+ assert.throws(()=>evaluate(c,{observations:wrong}),/qualification_source_identity_mismatch/);
+ assert.throws(()=>evaluate(c,{observations:{...obs,scope:{...different,group:'ghdev_gh_mcp'}}}),
+   /qualification_scope_mismatch/);
+ assert.throws(()=>evaluate(c,{observations:{...obs,scope:{...different,project:'other_project'}}}),
+   /qualification_scope_mismatch/);
 });
 test('independent fact labels cannot be inflated by unaudited observations',()=>{
  const c=corpus(),r=evaluate(c),original=c.cases[0].native_event.prompt.text;

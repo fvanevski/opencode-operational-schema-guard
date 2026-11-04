@@ -73,7 +73,8 @@ function replay(x,scope){
 export function evaluate(corpus,{observations=null,targets=null,corpusBytes=null,
  targetsBytes=null,expectedCorpusSha=null,expectedTargetsSha=null}={}){
  assertCorpus(corpus);
- if(targets)assertTargets(targets,corpus);
+ // Holdout failures must report label and external pinning defects before
+ // target ratification. A proposal cannot substitute for human labels.
  if(corpus.split==='holdout'){
   if(corpus.label_status!=='operator_adjudicated')FAIL('unadjudicated_holdout');
   if(!corpusBytes||!expectedCorpusSha||sha256(corpusBytes)!==expectedCorpusSha)
@@ -82,13 +83,27 @@ export function evaluate(corpus,{observations=null,targets=null,corpusBytes=null
     FAIL('unverified_targets_hash');
   if(!targets)FAIL('holdout_targets_required');
  }
+ if(targets)assertTargets(targets,corpus);
+ // The same labelled source events may be captured into a separate
+ // disposable Graphiti qualification group without rewriting frozen corpus
+ // bytes. That changes event IDs, so observed IDs MUST be independently
+ // supplied and matched to group-specific deterministic capture identities.
+ const observedScope=observations?.scope||corpus.scope;
+ if(observations?.scope){
+  const s=observations.scope,b=corpus.scope;
+  if(!s||typeof s!=='object'||s.project!==b.project||
+     s.workspace!==b.workspace||
+     !(s.group===b.group||
+       (b.group==='cur81_dev'&&/^cur81_dev_[a-f0-9]{8}$/.test(s.group))))
+    FAIL('qualification_scope_mismatch');
+ }
  const byCase=new Map(),rows=[],forbidden=[];
  for(const x of corpus.cases){
   const {baseline,candidate}=replay(x,corpus.scope);
   const row={id:x.id,category:x.category,truth:x.label?.valuable??null,
     baseline_selected:baseline,candidate_selected:Boolean(candidate),
     event_id:candidate?.event_id??null};
-  rows.push(row);byCase.set(x.id,{row,candidate});
+  rows.push(row);byCase.set(x.id,{case:x,row,candidate});
   if(candidate&&['privacy','wrong_group'].includes(x.category))forbidden.push(x.id);
  }
  const goldComplete=rows.every(r=>typeof r.truth==='boolean');
@@ -106,13 +121,20 @@ export function evaluate(corpus,{observations=null,targets=null,corpusBytes=null
    for(const id of o.source_case_ids){
     if(used.has(id))FAIL('duplicate_observation_case:'+id);
     used.add(id);
-    const found=byCase.get(id)?.candidate;
+    const info=byCase.get(id);
+    const found=info?.case&&replay(info.case,observedScope).candidate;
     if(!found)FAIL('missing_candidate:'+id);
     events.push(found);
    }
    if(new Set(events.map(e=>[e.group,e.project,e.workspace,e.session_id].join('|'))).size!==1)
     FAIL('cross_scope_cluster');
-   const clusterId=sha256(events.map(e=>e.event_id).sort().join('\n'));
+   const actualIds=events.map(e=>e.event_id).sort();
+   if(observations.scope&&(
+      !Array.isArray(o.source_event_ids)||
+      o.source_event_ids.length!==actualIds.length||
+      JSON.stringify([...o.source_event_ids].sort())!==JSON.stringify(actualIds)))
+     FAIL('qualification_source_identity_mismatch');
+   const clusterId=sha256(actualIds.join('\n'));
    if(o.cluster_id!==clusterId)FAIL('cluster_identity_mismatch');
    const e=events[0],cluster={id:clusterId,group:e.group,project:e.project,
      workspace:e.workspace,session_id:e.session_id,events,source_event_ids:events.map(e=>e.event_id)};
