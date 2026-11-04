@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Theme, Button, TextField, Badge, Card, Flex, Heading, Text, Box, Callout, Select,
   TextArea, Separator, Tabs, Code } from '@radix-ui/themes';
@@ -26,6 +26,9 @@ const api=async <T,>(path:string,token:string,init:RequestInit={}):Promise<T>=>{
 function App(){
  const [token,setToken]=useState(''); const [entry,setEntry]=useState('');
  const [error,setError]=useState(''); const [rows,setRows]=useState<Item[]>([]);
+ const [page,setPage]=useState(0),[total,setTotal]=useState(0),[hasMore,setHasMore]=useState(false);
+ const [evidenceTypes,setEvidenceTypes]=useState<string[]>([]),[eventTypes,setEventTypes]=useState<string[]>([]);
+ const refreshSequence=useRef(0);
  const [selected,setSelected]=useState<string|null>(null);const [detail,setDetail]=useState<Detail|null>(null);
  const [preview,setPreview]=useState<Preview|null>(null);const [counts,setCounts]=useState<Record<string,number>>({});
  const [filter,setFilter]=useState('all');const [search,setSearch]=useState('');
@@ -36,16 +39,24 @@ function App(){
  const [busy,setBusy]=useState(false);const [theme,setTheme]=useState<'dark'|'light'>('dark');
  const refresh=async(k=token)=>{
   if(!k)return;
+  const seq=++refreshSequence.current;
+  const params=new URLSearchParams({offset:String(page*100),limit:'100',state:filter,
+   search,evidence_class:evidenceFilter,event_kind:kindFilter,age_days:ageFilter});
   try{
    const [list,status]=await Promise.all([
-    api<{items:Item[]}>('/api/clusters',k),
-    api<{review_counts:Record<string,number>}>('/api/status',k)]);
-   setRows(list.items);setCounts(status.review_counts);setError('');
-  }catch(e){setError(String(e));}
+    api<{items:Item[];total:number;has_more:boolean}>('/api/clusters?'+params,k),
+    api<{review_counts:Record<string,number>;evidence_classes:string[];event_kinds:string[]}>('/api/status',k)]);
+   if(seq!==refreshSequence.current)return;
+   setRows(list.items);setTotal(list.total);setHasMore(list.has_more);
+   setCounts(status.review_counts);
+   setEvidenceTypes(status.evidence_classes);setEventTypes(status.event_kinds);
+   setError('');
+  }catch(e){if(seq===refreshSequence.current)setError(String(e));}
  };
  useEffect(()=>{if(!token)return;void refresh();
-  const id=window.setInterval(()=>void refresh(),12000);return()=>window.clearInterval(id);
- },[token]);
+  const id=window.setInterval(()=>void refresh(),12000);
+  return()=>{window.clearInterval(id);refreshSequence.current++;};
+ },[token,page,filter,search,evidenceFilter,kindFilter,ageFilter]);
  useEffect(()=>{if(!token||!selected){setDetail(null);setPreview(null);return;}
   let active=true;
   Promise.all([api<Detail>('/api/clusters/'+selected,token),
@@ -57,8 +68,6 @@ function App(){
     .catch(e=>{if(active)setError(String(e));});
   return()=>{active=false;};
  },[token,selected,detailTick]);
- const evidenceTypes=useMemo(()=>[...new Set(rows.flatMap(r=>r.evidence_classes))].sort(),[rows]);
- const eventTypes=useMemo(()=>[...new Set(rows.flatMap(r=>r.event_kinds))].sort(),[rows]);
  const visible=useMemo(()=>rows.filter(r=>{
    const term=search.trim().toLowerCase();
    const ageDays=ageFilter==='all'?null:Number(ageFilter);
@@ -73,12 +82,16 @@ function App(){
  async function submit(action:string){
   if(!detail)return;setBusy(true);setError('');
   try{
-   const chosen=detail.events.find(e=>e.source_refs.includes(sourceId));
+   const chosen=detail.events.find(e=>e.source_strength==='native-id'&&
+     e.source_refs.includes(sourceId));
+   // Rebind provenance on existing proposals, not only empty facts.
    const facts=action==='edit-and-approve'?
-    (detail.facts.length?[{...detail.facts[0],assertion:draft.trim()},...detail.facts.slice(1)]:
-      chosen?[{assertion:draft.trim(),kind,source_refs:[sourceId],
-        evidence_class:chosen.evidence_class,scope:{group:detail.group,project:detail.project,workspace:detail.workspace},
-        observed_at:chosen.observed_at,temporal_status:'observed'}]:[]):detail.facts;
+     (chosen?[{assertion:draft.trim(),kind,source_refs:[sourceId],
+       evidence_class:chosen.evidence_class,
+       scope:{group:detail.group,project:detail.project,workspace:detail.workspace},
+       observed_at:chosen.observed_at,
+       temporal_status:detail.facts[0]?.temporal_status||'observed'},
+       ...detail.facts.slice(1)]:[]):detail.facts;
    await api('/api/clusters/'+detail.id+'/review',token,{
     method:'POST',body:JSON.stringify({action,reason:reason.trim()||detail.reason,
       revision:detail.revision,facts})});
@@ -106,20 +119,30 @@ function App(){
   {error&&<Callout.Root color="red"><Callout.Text role="alert">{error}</Callout.Text></Callout.Root>}
   <div className="columns">
    <aside><Flex direction="column" gap="2"><TextField.Root placeholder="Filter by project / reason / ID" value={search}
-     aria-label="Filter reviews" onChange={e=>setSearch(e.target.value)}/>
-    <Select.Root value={filter} onValueChange={setFilter}><Select.Trigger aria-label="Filter by state"/><Select.Content>
+     aria-label="Filter reviews" onChange={e=>{setSearch(e.target.value);setPage(0);}}/>
+    <Select.Root value={filter} onValueChange={v=>{setFilter(v);setPage(0);}}><Select.Trigger aria-label="Filter by state"/><Select.Content>
       {['all','deferred','approved','submission_unknown','queued','persisted','failed_extraction','skipped'].map(s=>
        <Select.Item key={s} value={s}>{s}</Select.Item>)}</Select.Content></Select.Root>
-    <Select.Root value={evidenceFilter} onValueChange={setEvidenceFilter}><Select.Trigger aria-label="Filter by evidence class" placeholder="Evidence class" /><Select.Content>
+    <Select.Root value={evidenceFilter} onValueChange={v=>{setEvidenceFilter(v);setPage(0);}}><Select.Trigger aria-label="Filter by evidence class" placeholder="Evidence class" /><Select.Content>
      <Select.Item value="all">All evidence classes</Select.Item>{evidenceTypes.map(s=><Select.Item value={s} key={s}>{s}</Select.Item>)}
     </Select.Content></Select.Root>
-    <Select.Root value={kindFilter} onValueChange={setKindFilter}><Select.Trigger aria-label="Filter by event kind" placeholder="Event kind" /><Select.Content>
+    <Select.Root value={kindFilter} onValueChange={v=>{setKindFilter(v);setPage(0);}}><Select.Trigger aria-label="Filter by event kind" placeholder="Event kind" /><Select.Content>
      <Select.Item value="all">All event kinds</Select.Item>{eventTypes.map(s=><Select.Item value={s} key={s}>{s}</Select.Item>)}
     </Select.Content></Select.Root>
-    <Select.Root value={ageFilter} onValueChange={setAgeFilter}><Select.Trigger aria-label="Filter by time window" placeholder="Observed time" /><Select.Content>
+    <Select.Root value={ageFilter} onValueChange={v=>{setAgeFilter(v);setPage(0);}}><Select.Trigger aria-label="Filter by time window" placeholder="Observed time" /><Select.Content>
      <Select.Item value="all">All observed times</Select.Item><Select.Item value="1">Last 24 hours</Select.Item>
      <Select.Item value="7">Last 7 days</Select.Item><Select.Item value="30">Last 30 days</Select.Item>
     </Select.Content></Select.Root>
+   </Flex><Flex align="center" justify="between" gap="2" wrap="wrap">
+    <Text size="1" color="gray" aria-label="Review pagination">
+     {total===0?'No matching reviews':'Showing '+(page*100+1)+'–'+Math.min((page+1)*100,total)+' of '+total}
+    </Text>
+    <Flex gap="1">
+     <Button size="1" variant="soft" disabled={page===0}
+      onClick={()=>setPage(n=>Math.max(0,n-1))}>Previous</Button>
+     <Button size="1" variant="soft" disabled={!hasMore}
+      onClick={()=>setPage(n=>n+1)}>Next</Button>
+    </Flex>
    </Flex><div role="list" className="inbox">{visible.map(r=><button type="button" role="listitem" key={r.id}
       className={'inboxItem '+(selected===r.id?'current':'')} onClick={()=>setSelected(r.id)}>
      <Flex justify="between"><Text weight="bold">{r.project}</Text><Badge color={
