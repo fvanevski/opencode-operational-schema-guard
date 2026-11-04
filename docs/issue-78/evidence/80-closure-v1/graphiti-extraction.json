@@ -1,0 +1,83 @@
+{
+  "artifact": "graphiti-extraction.json",
+  "issue": 80,
+  "campaign": "80-closure-v1",
+  "as_of": "2026-11-03T16:30PST (evidence collection window; live read-only get_episodes, no mutation)",
+  "endpoint": {
+    "url": "http://127.0.0.1:8766/mcp",
+    "transport": "MCP streamable HTTP (loopback)",
+    "worker": "shared loopback Graphiti worker under mcp-mux.service (Main PID 1657 uvicorn; active since 2026-11-03T08:53:17PST); MUST NOT be stopped"
+  },
+  "scoped_episode_lists": {
+    "cur80_qual02": {
+      "episode_count": 0,
+      "note": "ZERO remote episodes: proves the 15:34:05PST write-intent staging of ca268f5d... was a local-only operation (never submitted). The genuine FIRST add_memory is pending the post-exit automatic admission."
+    },
+    "cur80_qual01": {
+      "episode_count": 1,
+      "episodes": [
+        { "uuid": "26299f65-f48c-45c1-abf0-9c7d521b1a03", "name": "curated-v1:924eee7a7f9760926f72280a8947c9e71b24de3766b6a642e8a85ccd133c0812" }
+      ]
+    },
+    "cur80_disposable": {
+      "episode_count": 1,
+      "episodes": [
+        { "uuid": "27a67cb8-c880-40ea-af99-e5722dfc8693", "name": "curated-v1:c95c124acbb04e39adb46020e08d0f308c8c14a0e1ab5e370f507ed590e2969e" }
+      ]
+    }
+  },
+  "qual01_recovery_facts": {
+    "state_root": "/home/filip/.local/state/ghdev-graphiti-issue80/closure80-qual (cur80_qual01)",
+    "success_record": {
+      "id": "924eee7a7f9760926f72280a8947c9e71b24de3766b6a642e8a85ccd133c0812",
+      "state": "persisted",
+      "revision": 4,
+      "remote_episode_uuid": "26299f65-f48c-45c1-abf0-9c7d521b1a03",
+      "episode_index": "curation-v1/cur80_qual01/_episode-index/26299f65-f48c-45c1-abf0-9c7d521b1a03.json -> maps to 924eee7a...",
+      "graph_readback": "2 nodes / 1 linked edge, source-index confirmed (Phase B of this campaign)"
+    },
+    "failed_record": {
+      "id": "d1ebf82a9eaf5b524c0ec2bf5a22626bebd5fbe1b96a9949da71bbf9e2aefb1b",
+      "state": "failed_extraction",
+      "revision": 5,
+      "remote_episode_uuid": null,
+      "failure_evidence": {
+        "kind": "graphiti_async_processing_failure",
+        "identity_binding": "anonymous_group_fifo_inference",
+        "operator_attested": true,
+        "journal_sha256": "c7ce020a9ee9dbd54deff3d4864859590bfdd9c37d7dce76884e2925dffa9109",
+        "other_success_episode_uuid": "26299f65-f48c-45c1-abf0-9c7d521b1a03"
+      },
+      "limitation": "FIFO attribution only: the failure is bound to the anonymous group FIFO ordering (first task failed) with the SUCCESS episode UUID as a corroborating anchor. This is NOT a UUID-level proof that d1ebf82a specifically was the task that failed; it is an explicitly operator-attested inference (identity_binding=anonymous_group_fifo_inference). No replay authorized."
+    }
+  },
+  "qual02_state": {
+    "id": "ca268f5dd77dee45d74494a604985fcf2c81fcad764f2d62ca66c49f4e764828",
+    "group": "cur80_qual02",
+    "state": "approved",
+    "revision": 4,
+    "remote_episode_uuid": null,
+    "origin": "qualification_operator_seed",
+    "never_submitted_evidence": {
+      "kind": "pre_exit_local_staging_no_remote_call",
+      "operator_attested": true,
+      "staging_proven": true,
+      "remote_readback_zero_episodes": true,
+      "evidence_sha256": "90c5e5693a7c375cfff2c94eaad2a3a3870cbd487fe276ffcfa0754db4bb3362",
+      "staging_at": "2026-11-03T23:34:05.044Z",
+      "observed_at": "2026-11-04T00:26:29.264862+00:00"
+    },
+    "audit_trail": [
+      "2026-11-03T23:33:45.018Z qualification_operator_seed -> deferred",
+      "2026-11-03T23:34:02.894Z edit-and-approve -> approved (operator browser approval)",
+      "2026-11-03T23:34:05.044Z state -> submission_unknown (premature local staging; NO EX marker, NO flock, NO add_memory)",
+      "2026-11-04T00:26:43.882Z operator_attested_never_submitted -> approved (rev 4, via never-submitted reconciliation)"
+    ],
+    "expected_post_exit": "approved -> submission_unknown (admitted promoteOne) -> queued (add_memory ACK) -> persisted (get_episodes readback of curated-v1:ca268f5d...), OR unresolved retention in reconcile_late if extraction is nonterminal within max-seconds 600. NO replay (no remote episode or call ever existed)."
+  },
+  "invariants": {
+    "graphiti_write_pre_exit": "none (read-only get_episodes for scoped lists; no add_memory issued while the interactive harness held the EX lease)",
+    "shared_worker_stopped": false,
+    "openviking_mutation": "none"
+  }
+}
