@@ -12,11 +12,11 @@ const group = option('group');
 const dir = option('state-dir') || path.join(process.env.XDG_STATE_HOME ||
   path.join(os.homedir(), '.local', 'state'), 'ghdev-graphiti');
 const endpoint = option('endpoint') || 'http://127.0.0.1:8766/mcp';
-const allowed = ['list', 'reconcile', 'forget', 'drain'];
+const allowed = ['list', 'reconcile', 'reconcile-only', 'forget', 'drain'];
 const maxSeconds = Number(option('max-seconds') || '600');
 if (!group || !allowed.includes(command) || !Number.isFinite(maxSeconds) ||
   maxSeconds < 5 || maxSeconds > 3600) {
-  console.error('Usage: node memory-cli.mjs list|reconcile|forget|drain --group GROUP ' +
+  console.error('Usage: node memory-cli.mjs list|reconcile|reconcile-only|forget|drain --group GROUP ' +
     '[--id UUID --yes] [--state-dir ABSOLUTE] [--endpoint LOOPBACK_URL] ' +
     '[--max-seconds 600]');
   process.exitCode = 2;
@@ -39,6 +39,22 @@ if (!group || !allowed.includes(command) || !Number.isFinite(maxSeconds) ||
     }));
   } else if (command === 'reconcile') {
     console.log(JSON.stringify({ persisted: await memory.reconcile() }));
+  } else if (command === 'reconcile-only') {
+    // Shared Python EX holder invokes this after an ambiguous timeout.
+    // It may reconcile positive remote persistence, but MUST NOT drain,
+    // call add_memory, or release EX with pending local work.
+    if (process.env.GHDEV_MEMORY_POST_EXIT_LEASE !== 'admitted')
+      throw Error('EX_POST_EXIT_ADMISSION_REQUIRED');
+    const reconciled = await memory.reconcile();
+    const rows = await allRows();
+    const unresolved = rows.filter(x=>
+      x.status==='submission_unknown'||x.status==='queued').length;
+    const pending = rows.filter(x=>x.status==='pending').length;
+    const status = unresolved?'unresolved':pending?'work_remaining':'settled';
+    console.log(JSON.stringify({mode:'reconcile-only',group,
+      reconciled_persisted:reconciled.length,unresolved,pending,status}));
+    if (unresolved) process.exitCode=3;
+    else if (pending) process.exitCode=4;
   } else if (command === 'forget') {
     const id = option('id');
     const item = await journal.get(id);

@@ -260,6 +260,14 @@ export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='loca
     stats.persisted+=result.persisted;
   }
   stats.unresolved=result.unresolved;
+  // A deadline/max-clusters bound may leave approved reviews or candidate
+  // source work behind after the remote episode has settled. Do not report a
+  // terminal drain to the EX wrapper while eligible work remains.
+  const queueLeft=await queue.status();
+  const pendingReviews=(await allRecords(store)).some(r=>
+    r.state==='approved'||(r.state==='deferred'&&r.reevaluate_requested));
+  const localWork=pendingReviews||queueLeft.counts.new>0||
+    queueLeft.counts.reserved>0;
   return {...stats,status:result.unresolved?'unresolved':
-    stats.deferred?'review_required':'settled'};
+    localWork?'incomplete':stats.deferred?'review_required':'settled'};
 }

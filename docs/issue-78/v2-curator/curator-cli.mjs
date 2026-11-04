@@ -50,25 +50,27 @@ if(!group||!['drain','status','list','reconcile-only'].includes(command)||
     const result=await reconcile(store,graphiti);
     const after=await store.list({limit:500});
     // reconcile() sees all pages; do not trust just the first list page.
-    // An interrupted drain may also leave new/reserved work or approved,
-    // not-yet-submitted review records. Such work is NOT settled merely
-    // because the remote pending list is empty.
+    // Distinguish remote ambiguity (exit 3) from local eligible work
+    // (exit 4). The Python EX holder must resume the admitted drain once
+    // remote uncertainty clears; otherwise it can hold EX forever.
     let pendingReview=false;
     for(let offset=0;;offset+=500){
       const page=await store.list({limit:500,offset});
-      if(page.items.some(r=>['approved','queued','submission_unknown'].includes(r.state)))
-        pendingReview=true;
+      if(page.items.some(r=>r.state==='approved'||
+        (r.state==='deferred'&&r.reevaluate_requested)))pendingReview=true;
       if(!page.has_more)break;
     }
     const queueStatus=await new CandidateQueue(root,group).status();
-    const incomplete=result.unresolved>0||pendingReview||
+    const eligible=pendingReview||
       queueStatus.counts.new>0||queueStatus.counts.reserved>0;
+    const status=result.unresolved?'unresolved':eligible?'work_remaining':'settled';
     console.log(JSON.stringify({mode:'reconcile-only',group,
       reconciled_persisted:result.persisted,unresolved:result.unresolved,
       review_count:after.total,queue_new:queueStatus.counts.new,
       queue_reserved:queueStatus.counts.reserved,
-      pending_review:pendingReview,status:incomplete?'unresolved':'settled'}));
-    if(incomplete)process.exitCode=3;
+      pending_review:pendingReview,status}));
+    if(result.unresolved)process.exitCode=3;
+    else if(eligible)process.exitCode=4;
   }else{
     const data=await runAdmitted({root,group,graphitiEndpoint:arg('endpoint'),
       modelEndpoint:process.env.LOCAL_CURATOR_URL,

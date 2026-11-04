@@ -95,29 +95,47 @@ def acquire_gate_lock(handle, timeout_seconds):
             time.sleep(min(0.25, remaining))
 
 
-def reconcile_late(cli, group, state_dir, endpoint, env, interval_seconds=15):
-    """Retain the existing EX lease; reconcile only, never resubmit.
+def reconcile_late(cli, group, state_dir, endpoint, env, interval_seconds=15,
+                   max_seconds=600):
+    """Retain EX while ambiguous remote work resolves, then resume local work.
 
-    A remote task can finish after the ordinary worker deadline. A successful
-    readback can then terminate without stopping a shared MCP-mux process.
-    A terminal Graphiti extraction failure has no positive episode identity:
-    keep the lease held for an explicitly operator-adjudicated disposition.
+    Child exit 3 means remote submission outcome still unknown; never replay.
+    Child exit 4 means no remote ambiguity but local eligible work remains:
+    resume the ordinary drain under the SAME admitted EX lock, not in an
+    interactive process or by blind add_memory replay. Both the #75 memory
+    CLI and the #80 curator CLI implement this shared exit contract.
     """
-    cmd = ["node", str(Path(cli).resolve(strict=False)), "reconcile-only",
-           "--group", group, "--state-dir", state_dir,
-           "--endpoint", endpoint]
+    script = str(Path(cli).resolve(strict=False))
+    common = ["--group", group, "--state-dir", state_dir, "--endpoint", endpoint]
+    reconcile_cmd = ["node", script, "reconcile-only", *common]
+    drain_cmd = ["node", script, "drain", *common,
+                 "--max-seconds", str(max_seconds)]
     while True:
         try:
-            result = subprocess.run(cmd, env=env, check=False, timeout=45)
+            result = subprocess.run(reconcile_cmd, env=env, check=False, timeout=45)
             if result.returncode == 0:
                 print("LATE_RECONCILIATION_SETTLED: verified terminal remote readback",
                       flush=True)
                 return 0
-            if result.returncode != 3:
+            if result.returncode == 4:
+                print("LATE_RECONCILIATION_LOCAL_WORK: resuming admitted drain "
+                      "under retained EX", flush=True)
+                try:
+                    resumed = subprocess.run(drain_cmd, env=env, check=False,
+                                             timeout=max_seconds + 45)
+                    if resumed.returncode == 0:
+                        return 0
+                    if resumed.returncode != 3:
+                        print("LATE_RESUMED_DRAIN_UNVERIFIABLE: retaining EX",
+                              file=sys.stderr, flush=True)
+                except subprocess.TimeoutExpired:
+                    print("LATE_RESUMED_DRAIN_TIMEOUT: retaining EX",
+                          file=sys.stderr, flush=True)
+            elif result.returncode != 3:
                 print("LATE_RECONCILIATION_UNVERIFIABLE: retaining EX admission",
                       file=sys.stderr, flush=True)
-        except subprocess.TimeoutExpired:
-            print("LATE_RECONCILIATION_TIMEOUT: retaining EX admission",
+        except (subprocess.TimeoutExpired, OSError):
+            print("LATE_RECONCILIATION_TIMEOUT_OR_SPAWN_ERROR: retaining EX admission",
                   file=sys.stderr, flush=True)
         time.sleep(interval_seconds)
 
@@ -190,7 +208,7 @@ def main():
               "Graphiti reconciliation; shared MCP worker remains running.",
               file=sys.stderr, flush=True)
         return reconcile_late(args.cli, args.group, args.state_dir,
-                              args.endpoint, env)
+                              args.endpoint, env, max_seconds=args.max_seconds)
 
 if __name__ == "__main__":
     try:

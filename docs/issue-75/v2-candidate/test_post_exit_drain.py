@@ -109,6 +109,43 @@ class PostExitAdmissionTests(TestCase):
                 self.assertNotIn('add_memory', call.args[0])
             sleep.assert_called_once_with(5)
 
+    def test_late_reconciliation_resumes_only_after_remote_ambiguity_clears(self):
+        with mock.patch.object(runner.subprocess, 'run') as run:
+            run.side_effect = [
+                SimpleNamespace(returncode=3),  # Ambiguous submission: no retry
+                SimpleNamespace(returncode=4),  # Remote settled, local approved
+                SimpleNamespace(returncode=0),  # Resumed admitted drain settled
+            ]
+            with mock.patch.object(runner.time, 'sleep') as sleep:
+                result = runner.reconcile_late('/tmp/curator-cli.mjs',
+                    'cur80_unit', '/tmp/state', 'http://127.0.0.1:8766/mcp',
+                    {'GHDEV_MEMORY_POST_EXIT_LEASE': 'admitted'},
+                    interval_seconds=5,max_seconds=30)
+            self.assertEqual(result, 0)
+            self.assertEqual(run.call_count, 3)
+            self.assertIn('reconcile-only', run.call_args_list[0].args[0])
+            self.assertIn('reconcile-only', run.call_args_list[1].args[0])
+            self.assertIn('drain', run.call_args_list[2].args[0])
+            self.assertIn('--max-seconds', run.call_args_list[2].args[0])
+            sleep.assert_called_once_with(5)
+
+    def test_late_reconciliation_keeps_lease_after_resumed_drain_unresolved(self):
+        with mock.patch.object(runner.subprocess, 'run') as run:
+            run.side_effect = [
+                SimpleNamespace(returncode=4),  # Local work resumes
+                SimpleNamespace(returncode=3),  # New async Graphiti work pending
+                SimpleNamespace(returncode=3),  # Still remote unresolved
+                SimpleNamespace(returncode=0),  # Finally reconciled
+            ]
+            with mock.patch.object(runner.time, 'sleep') as sleep:
+                self.assertEqual(runner.reconcile_late('/tmp/memory-cli.mjs',
+                    'legacy_group','/tmp/state','http://127.0.0.1:8766/mcp',
+                    {'GHDEV_MEMORY_POST_EXIT_LEASE':'admitted'},
+                    interval_seconds=1,max_seconds=15),0)
+            self.assertEqual(run.call_count, 4)
+            self.assertEqual(sum('drain' in call.args[0] for call in run.call_args_list),1)
+            self.assertEqual(sleep.call_count,2)
+
     def test_late_reconciliation_keeps_lease_on_unverifiable_remote(self):
         with mock.patch.object(runner.subprocess, 'run') as run:
             run.side_effect = [
