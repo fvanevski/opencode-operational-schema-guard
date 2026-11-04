@@ -1,0 +1,22 @@
+diff --git a/docs/issue-78/v2-benchmark/evaluate.mjs b/docs/issue-78/v2-benchmark/evaluate.mjs
+index a2686c0..2f1d4c1 100755
+--- a/docs/issue-78/v2-benchmark/evaluate.mjs
++++ b/docs/issue-78/v2-benchmark/evaluate.mjs
+@@ -73,7 +73,8 @@ function replay(x,scope){
+ export function evaluate(corpus,{observations=null,targets=null,corpusBytes=null,
+  targetsBytes=null,expectedCorpusSha=null,expectedTargetsSha=null}={}){
+  assertCorpus(corpus);
+- if(targets)assertTargets(targets,corpus);
++ // Holdout gates run in contract order: human adjudication, external digest
++// pinning, then target ratification (assertTargets below).
+  if(corpus.split==='holdout'){
+   if(corpus.label_status!=='operator_adjudicated')FAIL('unadjudicated_holdout');
+   if(!corpusBytes||!expectedCorpusSha||sha256(corpusBytes)!==expectedCorpusSha)
+@@ -82,6 +83,7 @@ export function evaluate(corpus,{observations=null,targets=null,corpusBytes=null
+     FAIL('unverified_targets_hash');
+   if(!targets)FAIL('holdout_targets_required');
+  }
++ if(targets)assertTargets(targets,corpus);
+  const byCase=new Map(),rows=[],forbidden=[];
+  for(const x of corpus.cases){
+   const {baseline,candidate}=replay(x,corpus.scope);

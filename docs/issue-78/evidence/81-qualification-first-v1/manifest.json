@@ -1,0 +1,76 @@
+{
+ "schema_version": 1,
+ "kind": "issue81-evidence-packet",
+ "campaign": "81-qualification-first-v1",
+ "generated_at": "2026-11-04T03:44:28.315Z",
+ "source": {
+  "repo": "fvanevski/opencode-operational-schema-guard",
+  "branch": "issue/81",
+  "head": "7922f31bdba125bac5a5f8a1380386ea15adda54",
+  "base_main": "d7c32f503eaa4cf4c52bb055b434e0ac71b76f45",
+  "worktree": "/tmp/opencode/issue81-qual/campaign-ce555621/worktree",
+  "worktree_token": "ce555621"
+ },
+ "host": {
+  "opencode_version": "v2.2.5",
+  "model_chain": "litellm-proxy:8002 (chat-fast) -> ninfer-serve:8001 (Qwen3.8-27B NVFP4 dflash2)",
+  "graphiti_endpoint": "http://127.0.0.1:8766/mcp (mcp-mux, FalkorDB)",
+  "ex_gate_source": "/home/filip/.local/share/openviking-commit-gate/openviking_commit_gate.py",
+  "ex_gate_config": "/home/filip/.config/openviking/commit-gate.toml",
+  "disposable_group": "cur81_dev_ce555621",
+  "state_root": "/home/filip/.local/state/ghdev-graphiti-issue81 (0700)"
+ },
+ "runtime_timing": {
+  "corpus_pinned": "2026-11-04T03:35:57.961Z (before any scoring)",
+  "dev_scored": "2026-11-04 (post-pin, same session)",
+  "preexit_failclosed": "2026-11-03T19:39:38 PST (journal)",
+  "packet_assembled": "this file generation time (post-exit drain pending)"
+ },
+ "external_artifacts": {
+  "corpus/development.json": "/tmp/opencode/issue81-qual/corpus/development.json sha256=22ae11e64a7a9c443d6f13a79c363115a28b43a27620e5383449bfe32d9fb5b4 (57 cases)",
+  "corpus/holdout.json": "/tmp/opencode/issue81-qual/corpus/holdout.json sha256=f904411e51d0bd9674b7f756f3df5bf44452ca8f63362d75102ceb9df677fce4 (9 cases, sealed, NOT SCORED)",
+  "corpus-pin.json": "/tmp/opencode/issue81-qual/corpus/corpus-pin.json",
+  "targets.proposed.json": "repo docs/issue-78/v2-benchmark/targets.proposed.json sha256=17ffb60515f5f96f2d546fd3abf951d0bc008325e38d83145ec4f75a8c76f049 (central_proposal, unratified)"
+ },
+ "missingness": {
+  "curator model decisions": "pending post-exit drain (typed in curator-results.json; zero pre-exit by construction)",
+  "graphiti cur81 episodes": "0 pre-exit (typed unresolved; positive readback pending post-exit)",
+  "shell stdout/exit observations": "not persisted by this host build; omitted from corpus (documented)",
+  "holdout labels": "provisional; operator ratification required before any holdout scoring"
+ },
+ "files": {
+  "benchmark-plan.md": {
+   "sha256": "03dc298ae29a0cef10a3e21feae6a98eebd7edd647fec5e97b43a608d1ebc46e",
+   "bytes": 5356
+  },
+  "curator-results.json": {
+   "sha256": "573481ad32427712a4475f5417fcd09b2ea6e19f8227f95289b0d897d5c552ba",
+   "bytes": 3460
+  },
+  "development-results.json": {
+   "sha256": "eb94abfe3a6bc6280e1ae671ead861d760dced114f559954a40c9edeac920280",
+   "bytes": 13959
+  },
+  "graphiti-readback.json": {
+   "sha256": "d167d941b0307a5e9a6bc9278bc03fbc5fd1223d28d188f4877b13a5f56be609",
+   "bytes": 1920
+  },
+  "host-identity.md": {
+   "sha256": "28da478c0f9fa82b6972cf339af166b9ede0fe6df27ddaa315d11ee7979c7bb2",
+   "bytes": 4514
+  },
+  "handback.md": {
+   "sha256": "0065e51bc8a2eb67e0f45b0873e90d23a378566ba1612a7eab1e652265cfaf99",
+   "bytes": 6375
+  },
+  "portal-acceptance.md": {
+   "sha256": "4d5fcb752d046aaa034435e013dc0dea99bd951747b16d64b7ac6fb2658448eb",
+   "bytes": 3860
+  },
+  "source.patch": {
+   "sha256": "13abb73e9068630e3c232efd2b1c14e815f545918fcc087b42d112f23baa3ef6",
+   "bytes": 1186
+  }
+ },
+ "note": "No self-hash of manifest.json; every other exported packet artifact is listed with its SHA-256."
+}
