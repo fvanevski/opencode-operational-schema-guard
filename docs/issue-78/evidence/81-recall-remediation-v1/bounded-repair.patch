@@ -1,0 +1,54 @@
+# Bounded proposed repair for Issue #81 (defect #1 + #2)
+# Verified on scratch-evalfix (78/78 pass); NOT applied to product source.
+# a/ = staged worktree @ 7b7d626, b/ = scratch-evalfix (repaired).
+diff --git a/docs/issue-78/v2-candidate/events.mjs b/tmp/opencode/issue81-qual/terminal81-a1f3c9/scratch-evalfix/docs/issue-78/v2-candidate/events.mjs
+index d32a2f9..e2c472c 100644
+--- a/docs/issue-78/v2-candidate/events.mjs
++++ b/tmp/opencode/issue81-qual/terminal81-a1f3c9/scratch-evalfix/docs/issue-78/v2-candidate/events.mjs
+@@ -82,7 +82,18 @@ function promptText(event) {
+   const raw = event?.prompt?.text;
+   let text = typeof raw === 'string' ? raw : '';
+   if (text.startsWith('"')) {
+-    try { const value = JSON.parse(text); text = typeof value === 'string' ? value : ''; }
++    // Native prompt payloads are JSON-encoded strings. Some producers emit
++    // unescaped control characters (raw newlines) inside the wrapper, which
++    // is not strict JSON; escape them before decoding so a multi-line long
++    // user prompt is not lost as a whole. A still-malformed wrapper fails
++    // closed exactly as before.
++    const repair = x => x.replace(/[\u0000-\u001f]/g,
++      c => '\\u' + ('0000' + c.charCodeAt(0).toString(16)).slice(-4));
++    try {
++      try { const value = JSON.parse(text); text = typeof value === 'string' ? value : ''; }
++      catch { const value = JSON.parse(repair(text));
++        text = typeof value === 'string' ? value : ''; }
++    }
+     catch { return ''; }
+   }
+   return text;
+diff --git a/docs/issue-78/v2-benchmark/evaluate.mjs b/tmp/opencode/issue81-qual/terminal81-a1f3c9/scratch-evalfix/docs/issue-78/v2-benchmark/evaluate.mjs
+index f4e27db..06d5c96 100755
+--- a/docs/issue-78/v2-benchmark/evaluate.mjs
++++ b/tmp/opencode/issue81-qual/terminal81-a1f3c9/scratch-evalfix/docs/issue-78/v2-benchmark/evaluate.mjs
+@@ -102,7 +102,11 @@ export function evaluate(corpus,{observations=null,targets=null,corpusBytes=null
+          /^cur81_holdout_[a-f0-9]{8}$/.test(s.group))))
+     FAIL('qualification_scope_mismatch');
+  }
+- const byCase=new Map(),rows=[],forbidden=[];
++ // A declared receipt in a distinct disposable qualification group is a
++// group-specific source-identity binding, not a generic missing candidate.
++const qualifying=Boolean(observations?.scope&&
++  observations.scope.group!==corpus.scope.group);
++const byCase=new Map(),rows=[],forbidden=[];
+  for(const x of corpus.cases){
+   const {baseline,candidate,candidates}=replay(x,corpus.scope);
+   const row={id:x.id,category:x.category,truth:x.label?.valuable??null,
+@@ -135,7 +139,8 @@ export function evaluate(corpus,{observations=null,targets=null,corpusBytes=null
+     const matching=options.filter(e=>!used.has(e.event_id)&&
+       (!requested.size||requested.has(e.event_id)))
+       .sort((a,b)=>a.event_id.localeCompare(b.event_id));
+-    if(!matching.length)FAIL('missing_candidate:'+id);
++    if(!matching.length)FAIL(requested.size&&qualifying?
++      'qualification_source_identity_mismatch':'missing_candidate:'+id);
+     if(!requested.size&&matching.length>1)
+       FAIL('span_identity_receipt_required:'+id);
+     const found=matching[0];

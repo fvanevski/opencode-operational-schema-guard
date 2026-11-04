@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "kind": "issue81-quality-results-recall-remediation-v1",
+  "tested_head": "7b7d62685993e56e2b71b77846a6a0c1092d7d01",
+  "source_under_test": "staged candidate (issue/81 @ 7b7d626)",
+  "human_ratification": "PENDING (operator packet 1 READY_FOR_OPERATOR_REVIEW; no AI-invented verdicts)",
+  "post_exit_drain": "ARMED, completes post-exit via canonical EX gate (chat-fast, non-thinking)",
+  "targets": {
+    "candidate_recall_min": {
+      "threshold": 0.85,
+      "staged_dev_recall": 0.8333,
+      "staged_holdout_recall": 1.0,
+      "patched_dev_recall": 1.0,
+      "status": "FAIL (staged source); PASS under bounded repair (scratch-evalfix)"
+    },
+    "durable_grounded_precision_min": {
+      "threshold": 0.9,
+      "status": "UNVERIFIED (requires post-exit model drain + operator fact verdicts)"
+    },
+    "semantic_recall_min": {
+      "threshold": 0.8,
+      "status": "UNVERIFIED_UNTIL_FRESH_CLIENT"
+    },
+    "context_p95_ms_max": {
+      "threshold": 300,
+      "observed_dev_p95_ms": 2,
+      "observed_holdout_p95_ms": 2,
+      "status": "PASS"
+    },
+    "post_exit_p95_seconds_max": {
+      "threshold": 900,
+      "status": "UNVERIFIED (pending post-exit drain)"
+    },
+    "zero_secret_leakage": {
+      "status": "PASS (staged source: secret-late dev + secret holdout both whole-source vetoed, 0 spans)"
+    },
+    "zero_wrong_group": {
+      "status": "PASS (cross-scope forged group rejected; no wrong-group case selected)"
+    },
+    "zero_false_verified": {
+      "status": "PASS (evidence class is user-stated, never verified; invariant probe 16/16)"
+    }
+  },
+  "denominators": {
+    "development": { "cases": 12, "valuable": 6, "sha256": "d3822a30ed906372679fc7d2f9ee2e9540279b92d04cda3e8656b628674f0cd7" },
+    "independent_holdout": { "cases": 5, "valuable": 4, "sha256": "2435236a249ba871ab9dff4f3060031cc6a4762d0ae1873689d363d3ac8bed2a", "blind": true }
+  },
+  "three_path_staged": {
+    "baseline": { "tp": 1, "fp": 0, "tn": 6, "fn": 5, "precision": 1.0, "recall": 0.1667 },
+    "broad_capture": { "tp": 5, "fp": 2, "tn": 4, "fn": 1, "precision": 0.7143, "recall": 0.8333 },
+    "curator": "UNVERIFIED (post-exit pending)"
+  },
+  "three_path_patched": {
+    "broad_capture": { "tp": 6, "fp": 2, "tn": 4, "fn": 0, "precision": 0.75, "recall": 1.0 }
+  },
+  "historical_replay": {
+    "dev_frozen_sha256": "22ae11e64a7a9c443d6f13a79c363115a28b43a27620e5383449bfe32d9fb5b4",
+    "holdout_frozen_sha256": "f904411e51d0bd9674b7f756f3df5bf44452ca8f63362d75102ceb9df677fce4",
+    "historical_immutable": { "dev": "27/37", "holdout": "3/6" },
+    "new_counterfactual": {
+      "dev_baseline": { "tp": 3, "fp": 1, "tn": 19, "fn": 34, "recall": 0.0811 },
+      "dev_candidate": { "tp": 29, "fp": 6, "tn": 14, "fn": 8, "recall": 0.7838, "precision": 0.8286 },
+      "holdout_candidate": { "tp": 4, "fp": 2, "tn": 1, "fn": 2, "recall": 0.6667 }
+    }
+  },
+  "note": "A selected event is not a fact; emission is not independently fact-verified. Remote Graphiti and assembled fresh-client recall require distinct host receipts. This file is the pre-ratification quality snapshot; durable-fact precision and post-exit latency finalize after the drain + operator verdicts."
+}
