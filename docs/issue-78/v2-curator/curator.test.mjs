@@ -399,6 +399,45 @@ test('reconcile-only CLI rejects callers without inherited EX admission',()=>tem
   else process.env.GHDEV_MEMORY_POST_EXIT_LEASE=saved;
  }
 }));
+test('model reasoning control is opt-in and reports actual token/finish details',()=>temp(async()=>{
+ const prior=process.env.GHDEV_MEMORY_POST_EXIT_LEASE;
+ process.env.GHDEV_MEMORY_POST_EXIT_LEASE='admitted';
+ try{
+  const requests=[];
+  const fetchImpl=async (_url,init)=>{
+    requests.push(JSON.parse(init.body));
+    return {ok:true,json:async()=>({choices:[{finish_reason:'stop',
+      message:{content:JSON.stringify(modelProposal(U))}}],
+      usage:{prompt_tokens:170,completion_tokens:55,
+        completion_tokens_details:{reasoning_tokens:12},
+        prompt_tokens_details:{cached_tokens:30}}})};
+  };
+  const common={endpoint:'http://127.0.0.1:8002/v1/chat/completions',
+    model:'chat-fast',fetchImpl};
+  const baseline=await curateCluster(cluster(),common);
+  assert.equal(requests[0].max_tokens,1600);
+  assert.equal('reasoning_effort' in requests[0],false);
+  assert.deepEqual(baseline.usage,{prompt_tokens:170,completion_tokens:55,
+    reasoning_tokens:12,cached_prompt_tokens:30});
+  assert.equal(baseline.finish_reason,'stop');
+  await curateCluster(cluster(),{...common,maxTokens:512,reasoningEffort:'none'});
+  assert.equal(requests[1].max_tokens,512);
+  assert.equal(requests[1].reasoning_effort,'none');
+  await assert.rejects(curateCluster(cluster(),{...common,maxTokens:0}),
+    /Invalid model completion budget/);
+  await assert.rejects(curateCluster(cluster(),{...common,reasoningEffort:'invalid'}),
+    /Invalid model reasoning effort/);
+  assert.equal(requests.length,2);
+  const unknown=await curateCluster(cluster(),{...common,fetchImpl:async()=>({
+    ok:true,json:async()=>({choices:[{message:{content:'{}'}}],
+      usage:{prompt_tokens:40,completion_tokens:20}})})});
+  assert.equal(unknown.usage.reasoning_tokens,null);
+  assert.equal(unknown.finish_reason,null);
+ }finally{
+  if(prior===undefined)delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;
+  else process.env.GHDEV_MEMORY_POST_EXIT_LEASE=prior;
+ }
+}));
 test('no model or graph work without admitted post-exit lease',()=>temp(async root=>{
  delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;
  await assert.rejects(runAdmitted({root,group:scope.group}),/ADMISSION_REQUIRED/);
@@ -426,9 +465,20 @@ test('one admitted model cluster emits exactly one source-linked Graphiti episod
     throw Error('unexpected call '+method);
   }};
   const result=await runAdmitted({root,group:scope.group,queue:q,store,graphiti,
-    curate:async()=>({content:JSON.stringify(modelProposal(U)),duration_ms:25}),maxSeconds:20});
+    curate:async()=>({content:JSON.stringify(modelProposal(U)),duration_ms:25,
+      usage:{prompt_tokens:210,completion_tokens:50,reasoning_tokens:37},
+      finish_reason:'length'}),maxSeconds:20});
   assert.equal(result.status,'settled');
   assert.equal(result.persisted,1);
+  assert.equal(result.model_attempts,1);
+  assert.equal(result.model_calls,1);
+  assert.equal(result.model_errors,0);
+  assert.equal(result.usage_reported_calls,1);
+  assert.equal(result.reasoning_reported_calls,1);
+  assert.equal(result.prompt_tokens,210);
+  assert.equal(result.completion_tokens,50);
+  assert.equal(result.reasoning_tokens,37);
+  assert.equal(result.length_limited_responses,1);
   assert.equal(writes,1);
   assert.equal((await store.get(id)).state,'persisted');
   assert.equal((await store.get(id)).remote_episode_uuid,uuid);

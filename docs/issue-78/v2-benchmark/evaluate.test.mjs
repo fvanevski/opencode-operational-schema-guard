@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {evaluate,sha256,quantiles,confusion} from './evaluate.mjs';
 import {fromPrompt} from '../v2-candidate/events.mjs';
-const scope={group:'issue81_dev',project:'benchmark',workspace:'/tmp/issue81/benchmark'};
+const scope={group:'cur81_dev',project:'benchmark',workspace:'/tmp/issue81/benchmark'};
 const timestamp='2026-11-03T18:15:00Z';
 const prompt=(id,text,valuable,category='implicit')=>({
  id,source_type:'prompt',category,source_locator:'synthetic:unit:'+id,
