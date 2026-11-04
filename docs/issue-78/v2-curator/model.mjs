@@ -14,9 +14,12 @@ export async function curateCluster(cluster,{
     throw Error('Invalid model settings');
   if(!Number.isInteger(maxTokens)||maxTokens<128||maxTokens>1600)
     throw Error('Invalid model completion budget');
-  if(reasoningEffort!==null&&
-    !['none','minimal','low','medium','high','xhigh'].includes(reasoningEffort))
-    throw Error('Invalid model reasoning effort');
+  if(reasoningEffort!==null){
+    if(model==='chat-fast')throw Error('CHAT_FAST_NO_REASONING_OVERRIDE');
+    if(!['chat-review','chat-audit'].includes(model)||
+      !['low','medium','high','xhigh'].includes(reasoningEffort))
+      throw Error('THINKING_PROFILE_REQUIRED_FOR_REASONING_EFFORT');
+  }
   const started=Date.now();
   const response=await fetchImpl(url,{method:'POST',signal:AbortSignal.timeout(timeoutMs),
     headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},

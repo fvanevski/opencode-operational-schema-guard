@@ -420,14 +420,20 @@ test('model reasoning control is opt-in and reports actual token/finish details'
   assert.deepEqual(baseline.usage,{prompt_tokens:170,completion_tokens:55,
     reasoning_tokens:12,cached_prompt_tokens:30});
   assert.equal(baseline.finish_reason,'stop');
-  await curateCluster(cluster(),{...common,maxTokens:512,reasoningEffort:'none'});
+  await curateCluster(cluster(),{...common,maxTokens:512});
   assert.equal(requests[1].max_tokens,512);
-  assert.equal(requests[1].reasoning_effort,'none');
+  assert.equal('reasoning_effort' in requests[1],false);
+  await assert.rejects(curateCluster(cluster(),{...common,reasoningEffort:'none'}),
+    /CHAT_FAST_NO_REASONING_OVERRIDE/);
+  await assert.rejects(curateCluster(cluster(),{...common,reasoningEffort:'low'}),
+    /CHAT_FAST_NO_REASONING_OVERRIDE/);
+  await curateCluster(cluster(),{...common,model:'chat-review',reasoningEffort:'low'});
+  assert.equal(requests[2].reasoning_effort,'low');
   await assert.rejects(curateCluster(cluster(),{...common,maxTokens:0}),
     /Invalid model completion budget/);
-  await assert.rejects(curateCluster(cluster(),{...common,reasoningEffort:'invalid'}),
-    /Invalid model reasoning effort/);
-  assert.equal(requests.length,2);
+  await assert.rejects(curateCluster(cluster(),{...common,model:'chat-review',reasoningEffort:'invalid'}),
+    /THINKING_PROFILE_REQUIRED/);
+  assert.equal(requests.length,3);
   const unknown=await curateCluster(cluster(),{...common,fetchImpl:async()=>({
     ok:true,json:async()=>({choices:[{message:{content:'{}'}}],
       usage:{prompt_tokens:40,completion_tokens:20}})})});

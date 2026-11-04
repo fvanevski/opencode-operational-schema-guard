@@ -1,10 +1,15 @@
-/** Optional #81 curator-only model controls; absent env leaves #80 default untouched. */
+/** Profile ownership: chat-fast is always non-thinking; thinking uses chat-review/audit. */
 export function modelPolicy(env={}){
  const result={};
+ const alias=env.LOCAL_CURATOR_MODEL;
  const effort=env.GHDEV_CURATOR_REASONING_EFFORT;
  const budget=env.GHDEV_CURATOR_MAX_TOKENS;
  if(effort!==undefined&&effort!==''){
-  if(!['none','low'].includes(effort))throw Error('CURATOR_POLICY_INVALID_EFFORT');
+  if(alias==='chat-fast')throw Error('CURATOR_POLICY_CHAT_FAST_NO_REASONING_OVERRIDE');
+  if(!['chat-review','chat-audit'].includes(alias))
+   throw Error('CURATOR_POLICY_THINKING_PROFILE_REQUIRED');
+  if(!['low','medium','high','xhigh'].includes(effort))
+   throw Error('CURATOR_POLICY_INVALID_EFFORT');
   result.reasoningEffort=effort;
  }
  if(budget!==undefined&&budget!==''){
