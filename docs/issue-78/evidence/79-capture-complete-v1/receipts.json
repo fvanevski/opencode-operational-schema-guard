@@ -1,0 +1,48 @@
+{
+  "receipts": {
+    "privacy": {
+      "implicit_user_captured": true,
+      "chatter_rejected": true,
+      "secret_rejected": true,
+      "self_context_rejected": true,
+      "unsafe_workspace_rejected": true,
+      "unadmitted_rejected": true,
+      "cross_group_fenced": true,
+      "long_assistant_truncated": true,
+      "secret_after_truncation_rejected": true,
+      "oversized_assistant_rejected": true,
+      "file_op_scoped": true,
+      "file_op_out_of_workspace_rejected": true,
+      "file_op_private_path_rejected": true,
+      "large_tool_output_rejected": true,
+      "noisy_read_rejected": true
+    },
+    "queue": {
+      "capacity": 501,
+      "staged": 501,
+      "overflow_status": "queue_full",
+      "drops": {
+        "queue_full": 1,
+        "pending_prompt_overflow": 1
+      },
+      "last_drop_reason": "pending_prompt_overflow",
+      "full": true,
+      "total_after_restart": 501,
+      "drop_counter_survives_restart": 1,
+      "restart_dedup_status": "duplicate",
+      "no_rows_dropped": true
+    },
+    "legacy_journal": {
+      "records": 501,
+      "pages_scanned": 4,
+      "rows_via_pages": 501,
+      "list_default_throws": true,
+      "list_600_rows": 501,
+      "drained_submitted": 0,
+      "add_memory_calls": 1,
+      "ambiguous_submission_state": "submission_unknown",
+      "no_row_loss": true,
+      "no_replay_of_submission_unknown": true
+    }
+  }
+}

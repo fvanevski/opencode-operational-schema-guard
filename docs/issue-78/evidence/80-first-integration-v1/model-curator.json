@@ -1,0 +1,68 @@
+{
+  "artifact": "model-curator.json",
+  "issue": 80,
+  "campaign": "80-first-integration-v1",
+  "sanitized": true,
+  "omitted": [
+    "raw prompts (none were sent beyond a 1-token probe; probe text omitted)",
+    "raw model output text (content/reasoning_content values omitted)",
+    "LOCAL_CURATOR_API_KEY value (held only in 0600 /home/filip/.local/state/ghdev-graphiti-issue80/curator.env; never staged)"
+  ],
+  "endpoint": {
+    "type": "openai-compatible chat completions (litellm proxy)",
+    "base_url": "http://127.0.0.1:8002",
+    "path": "/v1/chat/completions",
+    "transport": "http loopback",
+    "env_binding": {
+      "LOCAL_CURATOR_URL": "http://127.0.0.1:8002/v1/chat/completions (value in 0600 env file)",
+      "LOCAL_CURATOR_MODEL": "chat-fast (value in 0600 env file)",
+      "LOCAL_CURATOR_API_KEY": "present in 0600 env file; value omitted"
+    }
+  },
+  "model_selection": {
+    "chosen": "chat-fast",
+    "rejected": "chat (reasoning variant): under response_format=json_object it spends max_tokens on reasoning_content and returns empty content",
+    "reason": "chat-fast honors response_format json_object and returns usable content plus usage/timings"
+  },
+  "shape_probe": {
+    "request_shape": {
+      "model": "chat-fast",
+      "response_format": "json_object",
+      "max_tokens": 64,
+      "messages": "[one user message (text omitted)]"
+    },
+    "response_structure": {
+      "id": "string, prefix chatcmpl- (value omitted)",
+      "created": "unix-epoch integer",
+      "model": "string (echoes requested model id)",
+      "object": "chat.completion",
+      "choices": [
+        {
+          "finish_reason": "string (observed: stop)",
+          "message.role": "assistant",
+          "message.content": "string carrying the JSON object payload (text omitted)",
+          "message.reasoning_content": "present on reasoning-capable models (text omitted)"
+        }
+      ],
+      "usage": {
+        "prompt_tokens": 57,
+        "completion_tokens": 47,
+        "total_tokens": 104,
+        "completion_tokens_details.reasoning_tokens": 38
+      },
+      "timings": {
+        "predicted_ms": 252.35,
+        "predicted_per_second": 182.28,
+        "prompt_ms": 25.01,
+        "predicted_per_token_ms": 5.49
+      }
+    },
+    "json_object_mode": "honored (content is a JSON object string)",
+    "latency_class": "sub-second single probe (predicted ~0.25 s decode)"
+  },
+  "curator_integration": {
+    "consumer": "docs/issue-78/v2-curator/model.mjs (deterministic structured validator over the response)",
+    "lease": "model lane runs only with GHDEV_MEMORY_POST_EXIT_LEASE=admitted inside the accepted post-exit wrapper (deterministic test: model_lane_requires_lease PASS, MODEL_ADMISSION_REQUIRED without lease)",
+    "positive_real_run": "pending post-exit operator run (see graphiti-receipt.json status)"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "frozen_at": "2026-11-03",
+  "kind": "synthetic CPU design pilot, NOT a native host trace",
+  "cases": [
+    {"id":"implicit-action","source":"user","text":"The cache invalidation is stale after rebuild; update the invalidation path and preserve existing CLI behavior.","valuable":true},
+    {"id":"explicit-preference","source":"user","text":"I prefer the existing Graphiti interface and want to keep the OpenViking service separate.","valuable":true},
+    {"id":"implicit-constraint","source":"user","text":"Do not change the lease admission semantics when implementing the new memory queue.","valuable":true},
+    {"id":"clarifying-request","source":"user","text":"Explain why the scheduler metric name differs for the two backends before changing the parser.","valuable":true},
+    {"id":"chatter","source":"user","text":"Thanks!","valuable":false},
+    {"id":"sensitive","source":"user","text":"I decided to set password=secret123 in the configuration.","valuable":false},
+    {"id":"test-failure","source":"tool","callID":"c1","command":"pytest -q","output":"2 failed, 4 passed; error in test_queue","exit":1,"valuable":true},
+    {"id":"test-fixed","source":"tool","callID":"c2","command":"pytest -q","output":"6 passed in 0.3s","exit":0,"valuable":true},
+    {"id":"noisy-read","source":"tool","callID":"c3","command":"cat README.md","output":"some output","exit":0,"valuable":false},
+    {"id":"large-output","source":"tool","callID":"c4","command":"pytest -q","output_length":20001,"exit":1,"valuable":false}
+  ]
+}

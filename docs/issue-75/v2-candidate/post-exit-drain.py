@@ -11,8 +11,6 @@ from types import SimpleNamespace
 import fcntl
 import importlib.util
 import os
-import socket
-from urllib.parse import urlparse
 from pathlib import Path
 import subprocess
 import sys
@@ -97,6 +95,51 @@ def acquire_gate_lock(handle, timeout_seconds):
             time.sleep(min(0.25, remaining))
 
 
+def reconcile_late(cli, group, state_dir, endpoint, env, interval_seconds=15,
+                   max_seconds=600):
+    """Retain EX while ambiguous remote work resolves, then resume local work.
+
+    Child exit 3 means remote submission outcome still unknown; never replay.
+    Child exit 4 means no remote ambiguity but local eligible work remains:
+    resume the ordinary drain under the SAME admitted EX lock, not in an
+    interactive process or by blind add_memory replay. Both the #75 memory
+    CLI and the #80 curator CLI implement this shared exit contract.
+    """
+    script = str(Path(cli).resolve(strict=False))
+    common = ["--group", group, "--state-dir", state_dir, "--endpoint", endpoint]
+    reconcile_cmd = ["node", script, "reconcile-only", *common]
+    drain_cmd = ["node", script, "drain", *common,
+                 "--max-seconds", str(max_seconds)]
+    while True:
+        try:
+            result = subprocess.run(reconcile_cmd, env=env, check=False, timeout=45)
+            if result.returncode == 0:
+                print("LATE_RECONCILIATION_SETTLED: verified terminal remote readback",
+                      flush=True)
+                return 0
+            if result.returncode == 4:
+                print("LATE_RECONCILIATION_LOCAL_WORK: resuming admitted drain "
+                      "under retained EX", flush=True)
+                try:
+                    resumed = subprocess.run(drain_cmd, env=env, check=False,
+                                             timeout=max_seconds + 45)
+                    if resumed.returncode == 0:
+                        return 0
+                    if resumed.returncode != 3:
+                        print("LATE_RESUMED_DRAIN_UNVERIFIABLE: retaining EX",
+                              file=sys.stderr, flush=True)
+                except subprocess.TimeoutExpired:
+                    print("LATE_RESUMED_DRAIN_TIMEOUT: retaining EX",
+                          file=sys.stderr, flush=True)
+            elif result.returncode != 3:
+                print("LATE_RECONCILIATION_UNVERIFIABLE: retaining EX admission",
+                      file=sys.stderr, flush=True)
+        except (subprocess.TimeoutExpired, OSError):
+            print("LATE_RECONCILIATION_TIMEOUT_OR_SPAWN_ERROR: retaining EX admission",
+                  file=sys.stderr, flush=True)
+        time.sleep(interval_seconds)
+
+
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--gate-source", required=True,
@@ -144,37 +187,28 @@ def main():
             exit_code = 3
         if exit_code == 0:
             return 0
-        # Graphiti add_memory ACKs asynchronously. On nonterminal timeout,
-        # releasing EX might admit an agent while already-queued extraction
-        # wakes later. Fail closed: require the operator to quiesce the
-        # isolated MCP worker, NOT simply to acknowledge the error.
-        print("UNRESOLVED: holding exclusive lease. Stop the disposable Graphiti "
-              "MCP worker and confirm its listener is closed before resuming "
-              "interactive agents.", file=sys.stderr, flush=True)
-        parsed = urlparse(args.endpoint)
-        if parsed.hostname not in ('127.0.0.1', 'localhost', '::1'):
-            raise RuntimeError('unsafe Graphiti endpoint in quiescence check')
-        while True:
-            try:
-                answer = input('After stopping ONLY the disposable Graphiti worker, '
-                               'type VERIFY_STOPPED to check listener: ').strip()
-            except EOFError:
-                # No unattended unlock of an unknown remote extraction job.
-                while True:
-                    time.sleep(3600)
-            if answer != 'VERIFY_STOPPED':
-                continue
-            try:
-                with socket.create_connection((parsed.hostname, parsed.port or 80), timeout=2):
-                    print('Graphiti endpoint still live: EX retained', file=sys.stderr)
-                    continue
-            except ConnectionRefusedError:
-                print('Graphiti endpoint refused connection; preserve unresolved '
-                      'journal and service logs for reconciliation.', file=sys.stderr)
-                return exit_code
-            except OSError as exc:
-                print('Graphiti listener state uncertain: ' + str(exc) +
-                      '; EX retained', file=sys.stderr)
+        if exit_code != 3:
+            # A non-3 exit does not attest that any queued remote submission
+            # exists. Never reinterpret an arbitrary CLI/programming failure
+            # as a successfully reconciled drain.
+            print("DRAIN_ERROR_UNCLASSIFIED: retaining EX; inspect worker and "
+                  "state before operator-adjudicated release.",
+                  file=sys.stderr, flush=True)
+            while True:
+                time.sleep(3600)
+        # The installed MCP-mux Graphiti worker is shared. Do NOT require
+        # stopping it to release admission. Keep the same exclusive flock and
+        # perform read-only Graphiti reconciliation until every submitted
+        # episode has a uniquely confirmed group/name/UUID identity.
+        #
+        # A failed asynchronous extraction has no positive receipt and will
+        # stay unresolved. This is intentional: no blind resubmission and no
+        # lease release merely because a polling deadline elapsed.
+        print("UNRESOLVED: retaining EX admission for late positive "
+              "Graphiti reconciliation; shared MCP worker remains running.",
+              file=sys.stderr, flush=True)
+        return reconcile_late(args.cli, args.group, args.state_dir,
+                              args.endpoint, env, max_seconds=args.max_seconds)
 
 if __name__ == "__main__":
     try:

@@ -1,0 +1,19 @@
+[Unit]
+Description=Admitted post-exit candidate curator
+# Do not launch a second model server or Graphiti instance.
+# The pre-existing Python gate retains exclusive inference admission.
+StartLimitIntervalSec=0
+
+[Service]
+Type=oneshot
+EnvironmentFile=@@PRIVATE_ENV_FILE@@
+ExecStart=@@PYTHON_EXEC@@ @@POST_EXIT_GATE_WRAPPER@@ --gate-source @@INSTALLED_GATE_SOURCE@@ --gate-config @@INSTALLED_GATE_CONFIG@@ --cli @@CURATOR_CLI@@ --group @@GROUP@@ --state-dir @@PRIVATE_STATE_DIR@@ --endpoint @@GRAPHITI_MCP_LOOPBACK@@ --max-seconds 600 --lock-timeout 120
+Restart=on-failure
+RestartSec=30s
+TimeoutStartSec=infinity
+NoNewPrivileges=yes
+UMask=0077
+# This is a *user* systemd disposable service, never run as root; avoid
+# root-owned review/queue files. Production install needs separate approval.
+# A nonterminal Graphiti write may hold the accepted EX admission until
+# safe worker quiescence. Never stop a shared Graphiti worker to release it.

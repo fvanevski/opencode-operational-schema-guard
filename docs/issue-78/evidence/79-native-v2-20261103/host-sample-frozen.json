@@ -1,0 +1,71 @@
+{
+  "frozen_at": "2026-11-03",
+  "kind": "real sanitized stock-V2 host sample (disposable native pilot, local provider)",
+  "note": "Bounded sanitized excerpts from the native pilot; no private payloads, credentials or full transcripts. Valuable labels fixed before selector comparison.",
+  "cases": [
+    {
+      "id": "real-7",
+      "source": "tool",
+      "session": "ses_79ft01",
+      "sourceID": "call_4176a7ad678791ec",
+      "text": "tool exit 1; command: node --test score3.test.js; output: ℹ pass 0 ℹ fail 1 test at score3.test.js:4:1",
+      "valuable": true
+    },
+    {
+      "id": "real-4",
+      "source": "tool",
+      "session": "ses_79ft01",
+      "sourceID": "call_fa514124df4e85cc",
+      "text": "tool exit 0; command: node --test score3.test.js; output: ℹ pass 1 ℹ fail 0",
+      "valuable": true
+    },
+    {
+      "id": "real-2",
+      "source": "user",
+      "session": "ses_79ft01",
+      "sourceID": "msg_1a275a158001pTWa2i0L4M0ZNb",
+      "text": "The score3.js median function is broken; run 'node --test score3.test.js' in this directory and report the test outcome.",
+      "valuable": true
+    },
+    {
+      "id": "real-6",
+      "source": "assistant",
+      "session": "ses_79ft01",
+      "sourceID": "msg_1a275ad4e0018cEwGTZDRzNeOq",
+      "text": "The test is failing as expected. Bug: `score3.js` returns `s[m] + 1` (off-by-one), so `median([1, 2, 3])` returns `3` instead of `2`. Fixing now:",
+      "valuable": true
+    },
+    {
+      "id": "real-3",
+      "source": "assistant",
+      "session": "ses_79ft01",
+      "sourceID": "msg_1a275b524001DGAKfJfipseMO3",
+      "text": "Done. Summary: **Initial test run (before fix):** 1 test, 0 passed, 1 failed — `AssertionError: 3 !== 2`. The `median` in `score3.js` had an off-by-one bug: `return s[m] + 1;` added 1 to the middle element, so `median([1, 2, 3])` returned `3` instead of `2`. **Fix:** Removed the `+ 1` and also handled even-length arrays by averaging the two middle elements (standard median definition): ```js export function median(nums) { const s = [...nums].sort((a, b) => a - b); const m = Math.floor(s.length / 2); return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; } ``` **Re-run:** 1 test, 1 passed, 0 failed. ✔",
+      "valuable": true
+    },
+    {
+      "id": "real-1",
+      "source": "user",
+      "session": "ses_79ft01",
+      "sourceID": "msg_1a275c119001562R00tilt3T38",
+      "text": "Summarize in one sentence what you changed and the final test result.",
+      "valuable": true
+    },
+    {
+      "id": "real-5",
+      "source": "assistant",
+      "session": "ses_79ft01",
+      "sourceID": "msg_1a275c2de001xMGGFzvSVu5aCA",
+      "text": "I removed the off-by-one `+ 1` in `median` in `score3.js` (and added proper even-length averaging), after which `node --test score3.test.js` passed: 1 test, 1 pass, 0 fail.",
+      "valuable": true
+    },
+    {
+      "id": "real-0",
+      "source": "user",
+      "session": "ses_79ft01",
+      "sourceID": "msg_1a275c679001WjKw33MmEZCfAW",
+      "text": "Reply with the single word: done",
+      "valuable": false
+    }
+  ]
+}
