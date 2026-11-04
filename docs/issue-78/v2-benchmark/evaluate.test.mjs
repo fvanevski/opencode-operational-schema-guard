@@ -35,6 +35,12 @@ test('applies authentic selector/adapter functions to identical source fixtures'
  assert.equal(result.targets.candidate_recall,true);
  assert.equal(result.targets.semantic_recall,'UNVERIFIED_UNTIL_FRESH_CLIENT');
 });
+test('preserves host sealed-holdout tool category without changing its labels',()=>{
+ const c=corpus();c.cases[0].category='tool';
+ const result=evaluate(c);
+ assert.equal(result.rows[0].category,'tool');
+ assert.equal(result.rows[0].truth,true);
+});
 test('incomplete ground truth never masquerades as complete metrics',()=>{
  const c=corpus();delete c.cases[0].label;
  const r=evaluate(c);

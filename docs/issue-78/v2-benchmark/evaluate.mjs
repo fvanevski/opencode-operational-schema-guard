@@ -11,7 +11,7 @@ import {validateDecision,validateModelDecision} from '../v2-curator/core.mjs';
 export const sha256=x=>createHash('sha256').update(x).digest('hex');
 const FAIL=s=>{throw Error('INVALID_BENCHMARK:'+s);};
 const TARGETS=['candidate_recall_min','durable_grounded_precision_min','semantic_recall_min'];
-const CATEGORIES=new Set(['direct','implicit','error_fix','negative_finding','chatter','duplicate','privacy','wrong_group','conflict','historical']);
+const CATEGORIES=new Set(['direct','implicit','error_fix','tool','negative_finding','chatter','duplicate','privacy','wrong_group','conflict','historical']);
 const pct=(a,b)=>b?a/b:null;
 export function quantiles(data){
  const xs=data.filter(x=>Number.isFinite(x)&&x>=0).sort((a,b)=>a-b);

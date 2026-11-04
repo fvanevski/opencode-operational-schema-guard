@@ -53,7 +53,7 @@ The input JSON file is private/sanitized. Required shape:
 
 `source_type` is `prompt`, `tool`, or `assistant`. Use the **actual qualified V2 event fields**; an assistant requires `status=completed`, `role=assistant`, stable message ID and `text`, while a tool requires its actual command/status/result or write/edit file-operation fields. Do not invent a native event ID, timestamp, output, or source anchor. For historical sanitized #79 samples that omit native timestamps, use a clearly documented **reconstruction fixture** only for development-selector comparisons; never present the reconstructed timestamp as an observed native timestamp. A `label` can be null during draft collection; scoring remains UNVERIFIED until every event is labelled. `source_locator` is a sanitized trace pointer, not private transcript contents or an unredacted path.
 
-Categories: `direct`, `implicit`, `error_fix`, `negative_finding`, `chatter`, `duplicate`, `privacy`, `wrong_group`, `conflict`, `historical`. Scope can be overridden on a case to test fencing (it must not be selected as part of this target scope); `capture_admitted=false` tests opt-out. All reported case ids are source-unique. A valid corpus is not automatically a human-adjudicated gold set.
+Categories: `direct`, `implicit`, `error_fix`, `tool`, `negative_finding`, `chatter`, `duplicate`, `privacy`, `wrong_group`, `conflict`, `historical`. Scope can be overridden on a case to test fencing (it must not be selected as part of this target scope); `capture_admitted=false` tests opt-out. All reported case ids are source-unique. A valid corpus is not automatically a human-adjudicated gold set.
 
 ### Curator observations JSON schema, v1
 
@@ -63,6 +63,7 @@ Categories: `direct`, `implicit`, `error_fix`, `negative_finding`, `chatter`, `d
   "records": [{
     "cluster_id": "<SHA256 of sorted newline-joined real captured event IDs>",
     "source_case_ids": ["dev-implicit-001"],
+    "source_event_ids": ["<exact captured event ID for qualification scope>"],
     "origin": "model",
     "decision": "EMIT",
     "reason": "source-grounded",
@@ -82,7 +83,7 @@ Categories: `direct`, `implicit`, `error_fix`, `negative_finding`, `chatter`, `d
 }
 ```
 
-Replace the placeholders with **readbacks**, never guessed values. `origin=model` enforces the exact-extractive #80 adapter. `fact_verdicts` with boolean `grounded/useful/authority_correct/scope_correct` and independent `evaluator_id` belong only in a truly operator-adjudicated corpus. If a record has no actual model usage, omit tokens or latency fields: do not write zero. Model DEFER/SKIP and service failures are important outcomes and must remain in the dataset. Use `ReviewStore`/queue/Graphiti source identities, not text similarity, to associate host receipts.
+Replace the placeholders with **readbacks**, never guessed values. If the separately captured disposable model qualification uses a different group than the frozen corpus, put its actual `scope` (group, project, workspace) on the top-level **observations** object; project/workspace must agree with the corpus, and the group must be the matching `cur81_dev_<8-hex>` disposable group. Each observation then **must** include `source_event_ids` of the actual qualification-group capture, which are recomputed and matched; the original frozen corpus bytes and labels remain untouched. Missing, mismatched or production-group event identities fail closed. `origin=model` enforces the exact-extractive #80 adapter. `fact_verdicts` with boolean `grounded/useful/authority_correct/scope_correct` and independent `evaluator_id` belong only in a truly operator-adjudicated corpus. If a record has no actual model usage, omit tokens or latency fields: do not write zero. Model DEFER/SKIP and service failures are important outcomes and must remain in the dataset. Use `ReviewStore`/queue/Graphiti source identities, not text similarity, to associate host receipts.
 
 ### Commands
 
