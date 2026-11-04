@@ -552,6 +552,23 @@ test('filtered review paging includes deferred items after 500 earlier records',
  assert.equal(skipped.has_more,false);
  await assert.rejects(store.list({filter:{state:'untrusted'}}),/INVALID_REVIEW_FILTER/);
 }));
+test('empty review store with staged new sources resumes admitted work, not an indefinite EX stall',()=>temp(async root=>{
+ const q=new CandidateQueue(root,scope.group);
+ assert.equal((await q.stage(U)).status,'staged');
+ const result=spawnSync(process.execPath,[
+  new URL('./curator-cli.mjs',import.meta.url).pathname,
+  'reconcile-only','--group',scope.group,'--state-dir',root,
+  '--endpoint','http://127.0.0.1:8766/mcp'],{
+  encoding:'utf8',timeout:10000,
+  env:{...process.env,GHDEV_MEMORY_POST_EXIT_LEASE:'admitted'}});
+ assert.equal(result.status,4,result.stderr);
+ const parsed=JSON.parse(result.stdout);
+ assert.equal(parsed.mode,'reconcile-only');
+ assert.equal(parsed.review_count,0);
+ assert.equal(parsed.queue_new,1);
+ assert.equal(parsed.status,'work_remaining');
+ assert.equal((await q.get(U.event_id)).state,'new');
+}));
 test('curator reconcile-only reports local approved work without Graphiti write',()=>temp(async root=>{
  const store=new ReviewStore(root,scope.group),c=cluster();
  await store.create(c,proposal(U));

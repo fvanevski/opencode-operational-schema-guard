@@ -42,8 +42,11 @@ if(!group||!['drain','status','list','reconcile-only'].includes(command)||
     // Graphiti add_memory, even if pending candidate records exist.
     if(process.env.GHDEV_MEMORY_POST_EXIT_LEASE!=='admitted')
       throw Error('EX_POST_EXIT_ADMISSION_REQUIRED');
-    const before=await store.list({limit:500});
-    if(before.total===0)throw Error('EMPTY_REVIEW_STORE_CANNOT_PROVE_TERMINAL');
+    // Timeout can occur before the first model decision/review is created.
+    // In that case there is no remotely submitted record to reconcile,
+    // but new source events still require an admitted drain under this EX.
+    // The returned work_remaining status below must trigger resumption,
+    // not strand the canonical lease because the review store is empty.
     const endpoint=arg('endpoint');
     if(!endpoint)throw Error('Graphiti endpoint required for reconciliation');
     const graphiti=new GraphitiMcp(endpoint,{timeoutMs:12000});
