@@ -53,7 +53,7 @@ test('native multi-line quoted prompt recovers exact text under bounded whole-so
  assert.deepEqual(raw,encoded); // no inferred text or new source identity
  assert.ok(raw.every(e=>e.source_refs[0].includes(':span:')));
  assert.ok(raw.some(e=>e.excerpt.includes('final decision')));
- assert.deepEqual(accepted(native(wrapped+' password=secret123',id)),[]);
+ assert.deepEqual(accepted(native('"'+input+' password=secret123"',id)),[]);
  assert.deepEqual(accepted(native('\"'+input+' [GHDEV_GRAPHITI_CONTEXT]\"',id)),[]);
  assert.deepEqual(accepted(native('\"'+input+'\u0001\"',id)),[]);
  assert.deepEqual(accepted(native('\"'+input.slice(0,180)+'',id)),[]);
