@@ -25,13 +25,15 @@ export function plan(corpus,group){
   }
   // Preserve capture opt-out; drop ONLY the already-validated original case
   // scope before applying the new group to the existing real event adapter.
-  const candidate=replay({...c,scope:undefined},target).candidate;
-  if(!candidate){
+  const options=replay({...c,scope:undefined},target).candidates;
+  if(!options.length){
    excluded.push({id:c.id,reason:'not_selected_or_scope_excluded'});
-  }else if(candidate.source_strength!=='native-id'){
-   excluded.push({id:c.id,reason:'weak_source_identity'});
   }else{
-   selected.push({id:c.id,event:candidate});
+   for(const candidate of options){
+    if(candidate.source_strength!=='native-id')
+      excluded.push({id:c.id,reason:'weak_source_identity'});
+    else selected.push({id:c.id,event:candidate});
+   }
   }
  }
  if(!selected.length)deny('NO_NATIVE_CANDIDATES');

@@ -5,7 +5,7 @@ import {readFile,writeFile} from 'node:fs/promises';
 import path from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {selectUserDecision,selectCompletedTest} from '../../issue-75/v2-candidate/memory-core.mjs';
-import {fromPrompt,fromTool,fromFinishedTurn} from '../v2-candidate/events.mjs';
+import {fromPromptCandidates,fromTool,fromFinishedTurn} from '../v2-candidate/events.mjs';
 import {validateDecision,validateModelDecision} from '../v2-curator/core.mjs';
 
 export const sha256=x=>createHash('sha256').update(x).digest('hex');
@@ -62,13 +62,15 @@ export function replay(x,scope){
  const admitted=x.capture_admitted!==false&&
    (!x.scope||['group','project','workspace'].every(k=>x.scope[k]===scope[k]));
  const e=x.native_event;
- if(!admitted)return {baseline:false,candidate:null};
- if(x.source_type==='prompt')
+ if(!admitted)return {baseline:false,candidate:null,candidates:[]};
+ if(x.source_type==='prompt'){
+  const candidates=fromPromptCandidates(e,scope,{admitted:true});
   return {baseline:Boolean(selectUserDecision(e.prompt?.text)),
-    candidate:fromPrompt(e,scope,{admitted:true})};
- if(x.source_type==='tool')
-  return {baseline:Boolean(selectCompletedTest(e)),candidate:fromTool(e,scope)};
- return {baseline:false,candidate:fromFinishedTurn(e,scope)};
+    candidate:candidates[0]||null,candidates};
+ }
+ const candidate=x.source_type==='tool'?fromTool(e,scope):fromFinishedTurn(e,scope);
+ return {baseline:x.source_type==='tool'?Boolean(selectCompletedTest(e)):false,
+   candidate,candidates:candidate?[candidate]:[]};
 }
 export function evaluate(corpus,{observations=null,targets=null,corpusBytes=null,
  targetsBytes=null,expectedCorpusSha=null,expectedTargetsSha=null}={}){
@@ -102,12 +104,13 @@ export function evaluate(corpus,{observations=null,targets=null,corpusBytes=null
  }
  const byCase=new Map(),rows=[],forbidden=[];
  for(const x of corpus.cases){
-  const {baseline,candidate}=replay(x,corpus.scope);
+  const {baseline,candidate,candidates}=replay(x,corpus.scope);
   const row={id:x.id,category:x.category,truth:x.label?.valuable??null,
     baseline_selected:baseline,candidate_selected:Boolean(candidate),
-    event_id:candidate?.event_id??null};
-  rows.push(row);byCase.set(x.id,{case:x,row,candidate});
-  if(candidate&&['privacy','wrong_group'].includes(x.category))forbidden.push(x.id);
+    event_id:candidate?.event_id??null,candidate_count:candidates.length,
+    candidate_event_ids:candidates.map(e=>e.event_id)};
+  rows.push(row);byCase.set(x.id,{case:x,row,candidates});
+  if(candidates.length&&['privacy','wrong_group'].includes(x.category))forbidden.push(x.id);
  }
  const goldComplete=rows.every(r=>typeof r.truth==='boolean');
  let curated=null;
@@ -122,13 +125,21 @@ export function evaluate(corpus,{observations=null,targets=null,corpusBytes=null
       o.source_case_ids.length>12||!Array.isArray(o.facts)||
       !['model','operator_seed'].includes(o.origin))FAIL('observation_shape_or_origin');
    const events=[];
+   // One native message may provide several distinctly indexed, bounded
+   // contiguous spans; model receipts must bind exact adapter-produced IDs.
+   // Older source receipts may sort IDs independently of their case order.
+   const requested=new Set(o.source_event_ids||[]);
    for(const id of o.source_case_ids){
-    if(used.has(id))FAIL('duplicate_observation_case:'+id);
-    used.add(id);
     const info=byCase.get(id);
-    const found=info?.case&&replay(info.case,observedScope).candidate;
-    if(!found)FAIL('missing_candidate:'+id);
-    events.push(found);
+    const options=info?.case?replay(info.case,observedScope).candidates:[];
+    const matching=options.filter(e=>!used.has(e.event_id)&&
+      (!requested.size||requested.has(e.event_id)))
+      .sort((a,b)=>a.event_id.localeCompare(b.event_id));
+    if(!matching.length)FAIL('missing_candidate:'+id);
+    if(!requested.size&&matching.length>1)
+      FAIL('span_identity_receipt_required:'+id);
+    const found=matching[0];
+    used.add(found.event_id);events.push(found);
    }
    if(new Set(events.map(e=>[e.group,e.project,e.workspace,e.session_id].join('|'))).size!==1)
     FAIL('cross_scope_cluster');
