@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "kind": "issue81-efficiency-final",
+  "probe_receipt": {
+    "path": "private qual81/probe-out.json (not published; model-only, 5 previously staged reviews)",
+    "sha256": "2dfb7648844aaecd8c62e0bb79565ec4fad6f59d3754d3f1d12683c64164c641",
+    "group": "cur81_dev_ce555621",
+    "variant": {"reasoning_effort": "none", "max_tokens": 768},
+    "valid_decisions": "5/5",
+    "errors": 0,
+    "graphiti_calls": 0,
+    "source_changes": 0
+  },
+  "case_ids": [
+    "f584c1bfba64afdaeda0bc595f3bf63c59c13e4e34be77964dcdcf8671d2f0d5",
+    "4ab73c43df15e0141b535cf1bcda1047e23545d31a590a1c93084a7549b487bd",
+    "8c44c2ffecccb16418d736391e04ca6204cfdece233216c84090f90b10f09cdd",
+    "9f8612665eaada1346d2c054517d552da05471b47a1f3f79a5940d99d10867ee",
+    "492668aa62f948b92729f6ac10e5e4c5e497e3ebb2b9e0462fc8f6338b494716"
+  ],
+  "aggregate": {
+    "attempts": 5,
+    "completed": 5,
+    "prompt_tokens": 7428,
+    "completion_tokens": 563,
+    "total_tokens": 7991,
+    "reasoning_tokens": 0,
+    "reasoning_reported": 5,
+    "model_ms_total": 2394,
+    "output_limit_hits": 0,
+    "baseline_same_five": {"total_tokens": 13398, "model_ms_total": 22405}
+  },
+  "decision_validity": "5/5 valid; 3 cases changed to/into EMIT (f584c1bf, 4ab73c43, 8c44c2ff), 2 exact-baseline match (9f861266 DEFER, 492668aa SKIP)",
+  "changed_emit_source_verdicts": {
+    "note": "Operator source-grounded verdicts on the 3 changed EMIT assertions are recorded privately; aggregate conclusion only.",
+    "f584c1bf": "tool-reported test outcome, verbatim extract, useful (operator-accepted)",
+    "4ab73c43": "tool-reported test outcome, verbatim extract, useful (operator-accepted)",
+    "8c44c2ff": "user-stated durable implementation requirement, source-grounded (operator-accepted)"
+  },
+  "proxy_forwarding": {
+    "status": "PROVEN",
+    "evidence": "NInfer /metrics ninfer_requests_total{completed} advanced past the 883 pre-probe anchor (read 964 at preflight); LiteLLM active config readback drop_params=false, 4 aliases -> one NInfer chat engine; provider-reported reasoning_tokens=0 in all 5 responses."
+  },
+  "conclusion": "none/768 cuts total tokens 7991 vs 13398 (-40%) and model time 2.394 s vs 22.405 s (-89%) with 5/5 valid decisions and zero Graphiti writes. Semantic quality of the 3 changed EMITs accepted by operator review; the opt-in policy is curator-only and left the global LiteLLM/NInfer defaults untouched."
+}

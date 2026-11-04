@@ -1,0 +1,687 @@
+{
+  "schema_version": 1,
+  "kind": "issue81-adjudicated-score",
+  "authority": {
+    "frozen_corpus_sha256": "22ae11e64a7a9c443d6f13a79c363115a28b43a27620e5383449bfe32d9fb5b4",
+    "adjudication_sha256": "0a6c657ac825f3bf33f7b7308698f6018eb42f94f2aa9705c791a5013920a18d",
+    "original_target_sha256": "17ffb60515f5f96f2d546fd3abf951d0bc008325e38d83145ec4f75a8c76f049",
+    "target_ratification_sha256": "ced9b984b17c1131984184b1bd9c666df3bdca9f20a3a067ee79763f4a05f3d4",
+    "observation_sha256": "543ad0100535790702b91b89743236506c7758d9f49ea7bc16fb917088fd2b53",
+    "case_label_changes_from_provisional": 0,
+    "source_bytes_unchanged": true,
+    "human_attestation_supplied": true
+  },
+  "report": {
+    "schema_version": 1,
+    "kind": "issue81-three-path-comparison",
+    "corpus_sha256": "22ae11e64a7a9c443d6f13a79c363115a28b43a27620e5383449bfe32d9fb5b4",
+    "targets_sha256": "80e90149618a287b1061798c84abf0b313cb2bc99a8d05e6cffb4fdc25f05c90",
+    "split": "development",
+    "label_status": "operator_adjudicated",
+    "gold_complete": true,
+    "case_count": 57,
+    "baseline": {
+      "tp": 3,
+      "fp": 1,
+      "tn": 19,
+      "fn": 34,
+      "precision": 0.75,
+      "recall": 0.08108108108108109
+    },
+    "broad_capture": {
+      "tp": 27,
+      "fp": 6,
+      "tn": 14,
+      "fn": 10,
+      "precision": 0.8181818181818182,
+      "recall": 0.7297297297297297
+    },
+    "curator": {
+      "record_count": 13,
+      "decisions": {
+        "DEFER": 3,
+        "EMIT": 9,
+        "SKIP": 1
+      },
+      "invalid_model_or_source_decisions": 0,
+      "facts_proposed": 9,
+      "facts_human_judged": 9,
+      "proposed_fact_grounded_precision": 1,
+      "grounded_precision": 1,
+      "model_emitted_facts": 9,
+      "remote_receipt_bound_model_facts": 9,
+      "useful_facts": 9,
+      "false_authority": 0,
+      "wrong_scope": 0,
+      "model_ms": {
+        "count": 13,
+        "p50": 3689,
+        "p95": 5885
+      },
+      "post_exit_ms": {
+        "count": 0,
+        "p50": null,
+        "p95": null
+      },
+      "tokens": {
+        "count": 13,
+        "p50": 2165,
+        "p95": 3403
+      },
+      "tokens_total": 28538,
+      "records": [
+        {
+          "cluster_id": "148b95fa3cf59edaf23fa0705f1d43c6a17b6fc3fa21237902ad7b4de1a01558",
+          "source_case_ids": [
+            "dev-chatter-continue"
+          ],
+          "decision": "DEFER",
+          "validation": "PASS",
+          "terminal_state": "deferred"
+        },
+        {
+          "cluster_id": "1cd1f3b12d13c0514e2aa199f25291f7a860fa075289b9dd220fa6e8d3f2fe49",
+          "source_case_ids": [
+            "dev-dec-reactflow"
+          ],
+          "decision": "EMIT",
+          "validation": "PASS",
+          "terminal_state": "persisted"
+        },
+        {
+          "cluster_id": "492668aa62f948b92729f6ac10e5e4c5e497e3ebb2b9e0462fc8f6338b494716",
+          "source_case_ids": [
+            "dev-dup-history"
+          ],
+          "decision": "SKIP",
+          "validation": "PASS",
+          "terminal_state": "skipped"
+        },
+        {
+          "cluster_id": "4ab73c43df15e0141b535cf1bcda1047e23545d31a590a1c93084a7549b487bd",
+          "source_case_ids": [
+            "dev79-host-7",
+            "dev79-host-2",
+            "dev79-host-1",
+            "dev79-host-3",
+            "dev79-host-6",
+            "dev79-host-8",
+            "dev79-host-5",
+            "dev79-host-4"
+          ],
+          "decision": "EMIT",
+          "validation": "PASS",
+          "terminal_state": "persisted"
+        },
+        {
+          "cluster_id": "5fc80d9e8c82f723b9e2338404a546835c79fcd5585a7b2a7894d592bf758293",
+          "source_case_ids": [
+            "dev-c81-note",
+            "dev-c81-decision"
+          ],
+          "decision": "EMIT",
+          "validation": "PASS",
+          "terminal_state": "persisted"
+        },
+        {
+          "cluster_id": "6c4aa8ab248cc724880eda60653fc247bf9a122fd67b65863be0989d4bb56459",
+          "source_case_ids": [
+            "dev-negzero-001"
+          ],
+          "decision": "EMIT",
+          "validation": "PASS",
+          "terminal_state": "persisted"
+        },
+        {
+          "cluster_id": "7b76aa0b5187a91cff828c42152f7d175de6e6a6d0dcee1e3ab58581e61421fa",
+          "source_case_ids": [
+            "dev-conflict-scheduler"
+          ],
+          "decision": "EMIT",
+          "validation": "PASS",
+          "terminal_state": "persisted"
+        },
+        {
+          "cluster_id": "8c44c2ffecccb16418d736391e04ca6204cfdece233216c84090f90b10f09cdd",
+          "source_case_ids": [
+            "dev-median-prompt",
+            "dev-median-write",
+            "dev-median-diagnosis",
+            "dev-median-fix",
+            "dev-median-summary"
+          ],
+          "decision": "DEFER",
+          "validation": "PASS",
+          "terminal_state": "deferred"
+        },
+        {
+          "cluster_id": "8e7901a8aa35dee0aa960c3824f510ea31a4b47324c70be7ac3b4f5dd131cfa1",
+          "source_case_ids": [
+            "dev-c80-finding"
+          ],
+          "decision": "EMIT",
+          "validation": "PASS",
+          "terminal_state": "persisted"
+        },
+        {
+          "cluster_id": "9f8612665eaada1346d2c054517d552da05471b47a1f3f79a5940d99d10867ee",
+          "source_case_ids": [
+            "dev-sum-prompt",
+            "dev-sum-style",
+            "dev-sum-write"
+          ],
+          "decision": "DEFER",
+          "validation": "PASS",
+          "terminal_state": "deferred"
+        },
+        {
+          "cluster_id": "a492d36f221069e485959fab43f249f06100fdb35dc441731525adb4826778a0",
+          "source_case_ids": [
+            "dev-dec-qualitygate"
+          ],
+          "decision": "EMIT",
+          "validation": "PASS",
+          "terminal_state": "persisted"
+        },
+        {
+          "cluster_id": "e445aeec638c9dd254b331ecb87af1594baf4a0b37018935c80ef93605b10356",
+          "source_case_ids": [
+            "dev-c75-finding"
+          ],
+          "decision": "EMIT",
+          "validation": "PASS",
+          "terminal_state": "persisted"
+        },
+        {
+          "cluster_id": "f584c1bfba64afdaeda0bc595f3bf63c59c13e4e34be77964dcdcf8671d2f0d5",
+          "source_case_ids": [
+            "dev79-supp-5",
+            "dev79-supp-2",
+            "dev79-supp-4",
+            "dev79-supp-3",
+            "dev79-supp-7",
+            "dev79-supp-1",
+            "dev79-supp-6"
+          ],
+          "decision": "EMIT",
+          "validation": "PASS",
+          "terminal_state": "persisted"
+        }
+      ]
+    },
+    "privacy_or_wrong_group_selected": [],
+    "rows": [
+      {
+        "id": "dev-median-prompt",
+        "category": "direct",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "4c3593f1cce47ecd771b8ad24e0af12351124194956185336a11f1ce2ce85e80"
+      },
+      {
+        "id": "dev-median-write",
+        "category": "implicit",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "f24e5e0a1c8c15e7a3764d6903de9797b6c86ad279b7f08a1016cea04b685c9f"
+      },
+      {
+        "id": "dev-median-testfail",
+        "category": "error_fix",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": false,
+        "event_id": null
+      },
+      {
+        "id": "dev-median-diagnosis",
+        "category": "implicit",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "da9fc43ff15e8798614cb2c3d5a48ae3fb35ac5e28f47cbee5dd39f70a6525fb"
+      },
+      {
+        "id": "dev-median-fix",
+        "category": "error_fix",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "783a91664d5fcd23ed60ff80b97e9aca07c31a136241f8658af874987dbbbc26"
+      },
+      {
+        "id": "dev-median-testpass",
+        "category": "error_fix",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": false,
+        "event_id": null
+      },
+      {
+        "id": "dev-median-summary",
+        "category": "chatter",
+        "truth": false,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "d1090fcf28fc323142eef6f390e55d389f4318ec368e26d8199fd4057dcce928"
+      },
+      {
+        "id": "dev-sum-prompt",
+        "category": "direct",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "bdf1528ed5069c3dad41285562728fb9be69fee09789660475f8517cfdc91a5d"
+      },
+      {
+        "id": "dev-sum-write",
+        "category": "implicit",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "17d3e0304bffbc86e954ae64d713f051d3c94826adf4c90b8b934ab02c95f0ae"
+      },
+      {
+        "id": "dev-sum-test",
+        "category": "error_fix",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": false,
+        "event_id": null
+      },
+      {
+        "id": "dev-sum-style",
+        "category": "implicit",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "e8b8451d1806466caa9f7a14aac85613fe81154b1654e1f556e9083fe0096b44"
+      },
+      {
+        "id": "dev-c81-prompt",
+        "category": "direct",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": false,
+        "event_id": null
+      },
+      {
+        "id": "dev-c81-decision",
+        "category": "implicit",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "6232c0b657467465e7fda76fa98e60cdca7120e97cba987aa03e88dcf0dafb9f"
+      },
+      {
+        "id": "dev-c81-fetch",
+        "category": "direct",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": false,
+        "event_id": null
+      },
+      {
+        "id": "dev-c81-note",
+        "category": "chatter",
+        "truth": false,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "3e7d723ce661cb15aee77eb41ed15e4a4c4731bb8ab222926c84cfc5c3274024"
+      },
+      {
+        "id": "dev-c80-prompt",
+        "category": "historical",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": false,
+        "event_id": null
+      },
+      {
+        "id": "dev-c80-finding",
+        "category": "historical",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "c4328f9ff75109213c3cee666cc22494e811a51b113b8bebfbe54e07a3a6a065"
+      },
+      {
+        "id": "dev-c80-survey",
+        "category": "historical",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": false,
+        "event_id": null
+      },
+      {
+        "id": "dev-c75-prompt",
+        "category": "historical",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": false,
+        "event_id": null
+      },
+      {
+        "id": "dev-c75-finding",
+        "category": "historical",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "0034bef23503573104b90757aab373f71fbde3782c9cea3341a84ccfd15e2bca"
+      },
+      {
+        "id": "dev-dec-reactflow",
+        "category": "direct",
+        "truth": true,
+        "baseline_selected": true,
+        "candidate_selected": true,
+        "event_id": "23946dc7cfd3ff160ed8f65185aaf3dd4a6c7e559c99f9e9a51cc56faba2bffc"
+      },
+      {
+        "id": "dev-dec-qualitygate",
+        "category": "direct",
+        "truth": true,
+        "baseline_selected": true,
+        "candidate_selected": true,
+        "event_id": "f3951d7817299a805dc58097d8139c0a1d6f7bb2cd1e95b39b3f9447485296fe"
+      },
+      {
+        "id": "dev-dup-b75-1",
+        "category": "direct",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": false,
+        "event_id": null
+      },
+      {
+        "id": "dev-dup-b75-2",
+        "category": "duplicate",
+        "truth": false,
+        "baseline_selected": false,
+        "candidate_selected": false,
+        "event_id": null
+      },
+      {
+        "id": "dev-dup-b75-3",
+        "category": "duplicate",
+        "truth": false,
+        "baseline_selected": true,
+        "candidate_selected": false,
+        "event_id": null
+      },
+      {
+        "id": "dev-dup-ok-1",
+        "category": "duplicate",
+        "truth": false,
+        "baseline_selected": false,
+        "candidate_selected": false,
+        "event_id": null
+      },
+      {
+        "id": "dev-dup-ok-2",
+        "category": "duplicate",
+        "truth": false,
+        "baseline_selected": false,
+        "candidate_selected": false,
+        "event_id": null
+      },
+      {
+        "id": "dev-dup-hello-1",
+        "category": "duplicate",
+        "truth": false,
+        "baseline_selected": false,
+        "candidate_selected": false,
+        "event_id": null
+      },
+      {
+        "id": "dev-dup-hello-2",
+        "category": "duplicate",
+        "truth": false,
+        "baseline_selected": false,
+        "candidate_selected": false,
+        "event_id": null
+      },
+      {
+        "id": "dev-dup-history",
+        "category": "duplicate",
+        "truth": false,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "427ecb31c42fdd1c58b9a7a728bc5720df095934fbcb087c461adea5e42708c2"
+      },
+      {
+        "id": "dev-chatter-hi",
+        "category": "chatter",
+        "truth": false,
+        "baseline_selected": false,
+        "candidate_selected": false,
+        "event_id": null
+      },
+      {
+        "id": "dev-chatter-continue",
+        "category": "chatter",
+        "truth": false,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "a1aaebd7cf7bb6f2381eb027ed5f88a7cd4ce33f78c8137c28c6653c69f3ede4"
+      },
+      {
+        "id": "dev-privacy-prompt",
+        "category": "privacy",
+        "truth": false,
+        "baseline_selected": false,
+        "candidate_selected": false,
+        "event_id": null
+      },
+      {
+        "id": "dev-privacy-tool",
+        "category": "privacy",
+        "truth": false,
+        "baseline_selected": false,
+        "candidate_selected": false,
+        "event_id": null
+      },
+      {
+        "id": "dev-wronggroup-1",
+        "category": "wrong_group",
+        "truth": false,
+        "baseline_selected": false,
+        "candidate_selected": false,
+        "event_id": null
+      },
+      {
+        "id": "dev-conflict-keep",
+        "category": "conflict",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": false,
+        "event_id": null
+      },
+      {
+        "id": "dev-conflict-scheduler",
+        "category": "conflict",
+        "truth": false,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "57f9a56bd6ab1bc86e1da7ddf9ed64fa4986fcc82cc303ab8ca24d2cbebdb9f6"
+      },
+      {
+        "id": "dev-negzero-001",
+        "category": "negative_finding",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "9f15927b4c96a961a9ac22400cee70ed079cb70ba6297822abceba787f46b7f9"
+      },
+      {
+        "id": "dev79-host-1",
+        "category": "error_fix",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "8c161624d7227f5afbf8c6a5f83f7bd918959b68f30d87ef7d333fecf3e42420"
+      },
+      {
+        "id": "dev79-host-2",
+        "category": "error_fix",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "559a22c242272d3b850a6adb33cf593ec46f1b5ff64f0d5c03cda8e2a7bf5bc3"
+      },
+      {
+        "id": "dev79-host-3",
+        "category": "direct",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "cfe226dcbb8eab540d10220202f0f978da276298978d7ffe60ba4df02c4a1edd"
+      },
+      {
+        "id": "dev79-host-4",
+        "category": "implicit",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "5930aa98cba0791b2a370263b06f525104b56eb7847d5d9ec9978d14200b9d69"
+      },
+      {
+        "id": "dev79-host-5",
+        "category": "implicit",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "d2d09d23c41b8fe24ee86d82c315e0cdccf755db409e4b8c5a51658f2ad3cd29"
+      },
+      {
+        "id": "dev79-host-6",
+        "category": "direct",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "29d41111ffbe2143370f137aa0428f20d0adcbb9b78c9c287478f9b7a90e3cbb"
+      },
+      {
+        "id": "dev79-host-7",
+        "category": "implicit",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "800870101a3cba66ce55bab11443c797bdcafe4fd62b33cd78b33c2a83ff2b3d"
+      },
+      {
+        "id": "dev79-host-8",
+        "category": "direct",
+        "truth": false,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "20a6733cdef79bbdb0c2a95f635f1d4c1eaa8168c3da29e1566cf5ba67b4a1cb"
+      },
+      {
+        "id": "dev79-supp-1",
+        "category": "direct",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "b3f41d3c6f652291b3a2b6eb5d8f5da85ccf000462dc66b788d5e85155e7a76b"
+      },
+      {
+        "id": "dev79-supp-2",
+        "category": "implicit",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "51538e2338f1b3d1004ef19153d9e925538b1e1e960c8892bc15921e25565a3c"
+      },
+      {
+        "id": "dev79-supp-3",
+        "category": "implicit",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "00cd4518b2ca7333d32ce45059a7339fd5cbb14e455784fd28ab79ffb652775e"
+      },
+      {
+        "id": "dev79-supp-4",
+        "category": "error_fix",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "995181d4893052c28b1e2e42ff983a5fbd60e445ddb8d7211c020c49a2208079"
+      },
+      {
+        "id": "dev79-supp-5",
+        "category": "implicit",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "60cb39ba08381b44452f57081fb6c8e23acafe549e053bacfbe832be632426ab"
+      },
+      {
+        "id": "dev79-supp-6",
+        "category": "error_fix",
+        "truth": true,
+        "baseline_selected": true,
+        "candidate_selected": true,
+        "event_id": "554ad34ca055a601e7d3e7122555553333cc8cf7fa830020443a7addc55fc48f"
+      },
+      {
+        "id": "dev79-supp-7",
+        "category": "implicit",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "f766a9d4a4fc4962b1a770301c6f88d1d81d8abf18285eae3a096dbd372f9a19"
+      },
+      {
+        "id": "dev79-supp-8",
+        "category": "privacy",
+        "truth": false,
+        "baseline_selected": false,
+        "candidate_selected": false,
+        "event_id": null
+      },
+      {
+        "id": "dev79-supp-9",
+        "category": "wrong_group",
+        "truth": false,
+        "baseline_selected": false,
+        "candidate_selected": false,
+        "event_id": null
+      },
+      {
+        "id": "dev79-supp-10",
+        "category": "chatter",
+        "truth": false,
+        "baseline_selected": false,
+        "candidate_selected": false,
+        "event_id": null
+      },
+      {
+        "id": "dev79-supp-11",
+        "category": "privacy",
+        "truth": false,
+        "baseline_selected": false,
+        "candidate_selected": false,
+        "event_id": null
+      }
+    ],
+    "notes": [
+      "A selected event is not a fact; emission is not independently fact-verified.",
+      "Remote Graphiti and assembled fresh-client recall require distinct host receipts."
+    ],
+    "target_status": "operator_ratified",
+    "targets": {
+      "candidate_recall": false,
+      "grounded_precision": true,
+      "no_privacy_wrong_group": true,
+      "no_false_authority": true,
+      "no_wrong_scope": true,
+      "semantic_recall": "UNVERIFIED_UNTIL_FRESH_CLIENT",
+      "context_latency": "UNVERIFIED_UNTIL_INSTALLED",
+      "post_exit_latency": null
+    }
+  }
+}

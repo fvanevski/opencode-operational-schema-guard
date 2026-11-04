@@ -1,0 +1,46 @@
+{
+ "schema_version": 1,
+ "kind": "issue81-evidence-manifest-v1",
+ "campaign": "81-adjudicated-quality-v1",
+ "source_sha": "85c92809b04a25088d5b959626670f114d97d6b7",
+ "base_sha": "d7c32f503eaa4cf4c52bb055b434e0ac71b76f45",
+ "note": "Lists every published byte of this packet except manifest.json itself. Published commit SHA and remote readback are recorded in the campaign handback (publish receipt), not here, to keep the manifest self-consistent.",
+ "files": {
+  "development-score.json": {
+   "sha256": "5bcd21975653c5871a4651f170ab23b6576f483c3723c108afc3ea71710905a7",
+   "bytes": 20755
+  },
+  "efficiency-final.json": {
+   "sha256": "7c322f58813123938d4c3cfe83695aade7dad1bb6df8d635297734251ec03f04",
+   "bytes": 2439
+  },
+  "graphiti-holdout.json": {
+   "sha256": "0f3d3ca564bac4f1f49709fca860b4f98b6d8b331c41ea9e7eb99ff28181dbc7",
+   "bytes": 2485
+  },
+  "handback.md": {
+   "sha256": "cd7f05d001297641a82175ad062375ee0c98a7993ab3797851f4a9b3296afc7a",
+   "bytes": 4337
+  },
+  "holdout-score.json": {
+   "sha256": "4c0d18472c835349a7441b40329af2c2f138247fea3d21dd789be0624ca12284",
+   "bytes": 5807
+  },
+  "holdout-stage-receipt.json": {
+   "sha256": "b983ecb742735d487263ddab2f11c46184fbff014a420a35aebdcbb2f9fb3780",
+   "bytes": 2160
+  },
+  "host-identity.md": {
+   "sha256": "c4bf98419e90174186f90eb9a90a6ed502ae1b1b0d88e30bb51aabde943f7b8c",
+   "bytes": 2062
+  },
+  "native-gap-analysis.md": {
+   "sha256": "a2a899ada7408cb4cc1b2e444f0c354f4a7527867c3a46d88302ebe9a404d646",
+   "bytes": 2586
+  },
+  "quality-report.md": {
+   "sha256": "fe3e76b9c3b2f3e67433b9e77379bd37fe22ce354d7dad54fb732a72f3c8004b",
+   "bytes": 6260
+  }
+ }
+}

@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "kind": "issue81-graphiti-holdout-readback",
+  "endpoint": "loopback Graphiti MCP (anonymized; 127.0.0.1:8766/mcp)",
+  "read_at": "2026-11-04 (post-exit re-drain continuation)",
+  "disposable_group": {
+    "group": "cur81_holdout_4c3ab514",
+    "episode_count": 1,
+    "duplicates": 0,
+    "episodes": [
+      {
+        "review_id": "2cb31461c861a0159d230a3a9f901f8ef1e543ebd9566fbb4a84597157294b85",
+        "remote_episode_uuid": "69fde784-17ea-4fd9-b484-30978cc0e5fd",
+        "episode_name": "curated-v1:2cb31461c861a0159d230a3a9f901f8ef1e543ebd9566fbb4a84597157294b85",
+        "name_match": true,
+        "inspect_status": "verified_readback",
+        "source_ref": "opencode:ses_e5c3d3bb3ffedqoZCz10Lc3ZOU:message:msg_1a3c2d805001X4qgG56xyro6mH (anonymized native source index)",
+        "evidence_class": "assistant-reported",
+        "node_count": 2,
+        "edge_count": 1,
+        "linked_edge_count": 1,
+        "sample_nodes": ["prime.js", "isPrime"],
+        "sample_edges": ["prime.js EXPORTS isPrime(n)"]
+      }
+    ]
+  },
+  "model_decisions": {
+    "EMIT": 1,
+    "SKIP": 1,
+    "DEFER": 1,
+    "persisted": 1,
+    "unresolved": 0,
+    "note": "1 real Graphiti write reached terminal persisted state; 1 SKIP and 1 DEFER are valid non-EMIT outcomes, not forced model EMITs. No blind replay."
+  },
+  "drain_usage": {
+    "model_calls": 3,
+    "model_errors": 0,
+    "model_ms": 6219,
+    "prompt_tokens": 2913,
+    "completion_tokens": 1677,
+    "reasoning_tokens": 1454,
+    "policy": "unchanged default (no reasoning_effort override, max_tokens=1600); opt-in none/768 unavailable after provider enable_thinking change"
+  },
+  "extraction_cost": {
+    "status": "UNVERIFIED",
+    "reason": "Graphiti extraction uses the same shared LiteLLM->NInfer engine as the curator; the shared request counter (964->1053) mixes curator, extraction and other consumers with no per-request worker identification, so the separate extraction-model token/time is not independently attributable. No wall-time gap is allocated to LLM time."
+  },
+  "production_invariant_control": {
+    "ghdev_gh_mcp": {"episode_count": 4, "status": "unchanged (baseline-identical)"},
+    "cur81_dev_ce555621": {"episode_count": 9, "status": "unchanged"}
+  },
+  "acceptance": "1/1 EMIT persisted: verified_readback with exact native source index, real extracted entities+relationship (2 nodes, 1 linked edge), zero duplicates, zero unresolved; production groups untouched."
+}
