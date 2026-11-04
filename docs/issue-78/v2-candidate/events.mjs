@@ -98,7 +98,11 @@ function promptSpans(text) {
       if (wordEnd >= start + 600) end = wordEnd;
     }
     const excerpt = text.slice(start, end).trim();
-    if (excerpt.length >= 24 && !CHATTER.test(excerpt)) spans.push({ excerpt, offset: start });
+    // Retain narrative spans, not source/JSON fragments. This check is
+    // applied per span, not to an otherwise useful entire long message.
+    if (excerpt.length >= 24 && !CHATTER.test(excerpt) &&
+      !/[{}]/.test(excerpt) && /\s/.test(excerpt))
+      spans.push({ excerpt, offset: start });
     start = end;
     while (text[start] === ' ') start++;
   }
@@ -117,20 +121,22 @@ export function fromPromptCandidates(event, scope, { admitted = false } = {}) {
     /[\0-\u0008\u000b\u000e-\u001f]/u.test(text)) return [];
   const condensed = text.replace(/\s+/g, ' ').trim();
   if (!condensed || CHATTER.test(condensed) || /^[?!. ]+$/.test(condensed) ||
-    (condensed.length > 400 && /[{}]/.test(condensed))) return [];
+    (condensed.length <= 1100 && condensed.length > 400 && /[{}]/.test(condensed))) return [];
   const nativeID = field(event, ['messageID', 'messageId', 'promptID', 'promptId']) ||
     field(event?.prompt, ['messageID', 'messageId', 'id']);
   const qualified = valid(nativeID);
   // Weak content-hash fallback is retained for short prompts only. Long
   // message segmentation requires an authentic stable native message ID.
   if (condensed.length > 1100 && !qualified) return [];
-  const segments = condensed.length <= 1100
+  const isLong = condensed.length > 1100;
+  const segments = !isLong
     ? [{ excerpt: condensed, offset: 0 }]
     : promptSpans(condensed);
   return segments.map(({ excerpt, offset }) => {
     if (!cleanExcerpt(excerpt) || excerpt.length < 24) return null;
+    // Even one surviving span of a long message remains PARTIAL evidence.
     const sourceID = qualified
-      ? (segments.length === 1 ? nativeID : nativeID + ':span:' + offset)
+      ? (isLong ? nativeID + ':span:' + offset : nativeID)
       : sha(excerpt).slice(0, 32);
     if (!valid(sourceID)) return null;
     return envelope(scope, { kind: 'user_turn', evidenceClass: 'user-stated',
