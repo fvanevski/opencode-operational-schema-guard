@@ -180,13 +180,14 @@ export function evaluate(corpus,{observations=null,targets=null,corpusBytes=null
      Array.isArray(receipt?.source_refs)&&o.facts.every(f=>
        Array.isArray(f.source_refs)&&f.source_refs.every(ref=>receipt.source_refs.includes(ref)))&&
      typeof receipt?.evidence_ref==='string'&&receipt.evidence_ref.length>0);
+   // Latency is one observation per persisted review/episode, not per fact.
+   // A multi-fact proposal must not gain extra weight in p50/p95.
+   if(terminalReadback&&Number.isFinite(o.post_exit_ms))
+     persistedMs.push(o.post_exit_ms);
    for(let j=0;j<o.facts.length;j++){
     nFacts++;
     if(isModelEmit)modelEmitted++;
-    if(terminalReadback){
-      modelDurable++;
-      if(Number.isFinite(o.post_exit_ms))persistedMs.push(o.post_exit_ms);
-    }
+    if(terminalReadback)modelDurable++;
     const v=o.fact_verdicts?.[j];
     if(!v||corpus.label_status!=='operator_adjudicated')continue;
     if(!['grounded','useful','authority_correct','scope_correct'].every(k=>typeof v[k]==='boolean')||

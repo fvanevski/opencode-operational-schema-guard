@@ -226,3 +226,38 @@ test('named holdout qualification retains case-level native IDs and rejects cros
  assert.throws(()=>run({...observations,scope:{...target,group:'ghdev_gh_mcp'}}),
   /qualification_scope_mismatch/);
 });
+
+
+test('persisted latency has one sample per episode, not per model-emitted fact',()=>{
+ // Evaluator-only synthetic multi-fact receipt; the live worker currently
+ // holds multi-fact proposals for operator review instead of persisting them.
+ const c=corpus();c.label_status='operator_adjudicated';c.adjudicated_by='human_judge';
+ const native=c.cases[0].native_event;
+ const event=fromPrompt(native,scope,{admitted:true});
+ assert.ok(event);
+ const source=event.source_refs[0];
+ const assertion1='The root cause is an off-by-one median calculation';
+ const assertion2='correct the implementation and rerun the test.';
+ assert.ok(native.prompt.text.includes(assertion1)&&native.prompt.text.includes(assertion2));
+ const uuid='123e4567-e89b-12d3-a456-426614174002';
+ const clusterId=sha256(event.event_id);
+ const facts=[assertion1,assertion2].map(assertion=>({
+  assertion,kind:'implementation',temporal_status:'observed',source_refs:[source]}));
+ const verdicts=facts.map(()=>({grounded:true,useful:true,authority_correct:true,
+  scope_correct:true,evaluator_id:'human_judge'}));
+ const record={source_case_ids:['implicit'],cluster_id:clusterId,
+  origin:'model',decision:'EMIT',reason:'Two independently cited source spans',
+  facts,terminal_state:'persisted',remote_episode_uuid:uuid,post_exit_ms:12345,
+  fact_verdicts:verdicts,remote_readback:{episode_uuid:uuid,
+   episode_name:'curated-v1:'+clusterId,group_id:scope.group,
+   source_index_verified:true,source_refs:[source],
+   evidence_ref:'synthetic:bounded-two-fact-readback'}};
+ const output=evaluate(c,{observations:{schema_version:1,records:[record]}});
+ assert.equal(output.curator.invalid_model_or_source_decisions,0);
+ assert.equal(output.curator.model_emitted_facts,2);
+ assert.equal(output.curator.remote_receipt_bound_model_facts,2);
+ assert.equal(output.curator.grounded_precision,1);
+ assert.equal(output.curator.post_exit_ms.count,1);
+ assert.deepEqual(output.curator.post_exit_persisted_ms,
+  {count:1,p50:12345,p95:12345});
+});
