@@ -172,3 +172,35 @@ test('quantiles and confusion are explicit and null for unobserved denominators'
  assert.deepEqual(confusion([{truth:true,found:true},{truth:false,found:true}],'found'),
   {tp:1,fp:1,tn:0,fn:0,precision:.5,recall:1});
 });
+
+
+test('missing usage telemetry is unknown, and persisted-only latency excludes DEFER',()=>{
+ const c=corpus();c.label_status='operator_adjudicated';c.adjudicated_by='human_judge';
+ const initial=evaluate(c);
+ const a=initial.rows.find(r=>r.id==='implicit');
+ const b=initial.rows.find(r=>r.id==='explicit');
+ const uuid='123e4567-e89b-12d3-a456-426614174001';
+ const source='opencode:ses_81test:message:msg_implicit';
+ const recorded={cluster_id:sha256(a.event_id),source_case_ids:['implicit'],
+  origin:'model',decision:'EMIT',reason:'Exact source extraction',
+  terminal_state:'persisted',remote_episode_uuid:uuid,post_exit_ms:58000,
+  facts:[{assertion:c.cases[0].native_event.prompt.text,kind:'implementation',
+   temporal_status:'observed',source_refs:[source]}],
+  remote_readback:{episode_uuid:uuid,episode_name:'curated-v1:'+sha256(a.event_id),
+   group_id:scope.group,source_index_verified:true,source_refs:[source],
+   evidence_ref:'sanitized:group-readback'},
+  fact_verdicts:[{grounded:true,useful:true,authority_correct:true,
+   scope_correct:true,evaluator_id:'human_judge'}]};
+ const defer={cluster_id:sha256(b.event_id),source_case_ids:['explicit'],
+  origin:'model',decision:'DEFER',reason:'No durable fact in this cluster',
+  terminal_state:'deferred',facts:[],post_exit_ms:3000};
+ const result=evaluate(c,{observations:{schema_version:1,records:[recorded,defer]}});
+ assert.equal(result.curator.grounded_precision,1);
+ assert.equal(result.curator.post_exit_ms.count,2);
+ assert.equal(result.curator.post_exit_ms.p50,3000);
+ assert.equal(result.curator.post_exit_persisted_ms.count,1);
+ assert.equal(result.curator.post_exit_persisted_ms.p50,58000);
+ assert.equal(result.curator.tokens.count,0);
+ assert.equal(result.curator.tokens_total,null,'missing per-record usage is not zero actual tokens');
+ assert.equal(result.curator.model_ms.count,0);
+});

@@ -264,7 +264,8 @@ test('admitted user prompts link later tool and assistant events without upgradi
   for(const cb of sessions.context) await cb({sessionID:'ses-1',system:[]});
   for(const cb of tools['execute.after']) await cb(tool('call-work','1 failed during validation',1));
   for(const cb of sessions.context) await cb({sessionID:'ses-1',system:[],
-    messages:[{id:'msg-complete',role:'assistant',parts:[{type:'text',
+    messages:[{id:'msg-1',role:'user',parts:[{type:'text',text:original.prompt.text}]},
+      {id:'msg-complete',role:'assistant',parts:[{type:'text',
       text:'The input schema rejected a valid setting; I corrected validation and the focused test now passes.'}]}]});
   await stop();
   const all=(await new CandidateQueue(root,scope.group).list()).items;

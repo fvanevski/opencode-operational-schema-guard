@@ -122,7 +122,7 @@ export function evaluate(corpus,{observations=null,targets=null,corpusBytes=null
  if(observations){
   if(observations.schema_version!==1||!Array.isArray(observations.records))
     FAIL('observations_schema');
-  const used=new Set(),decisions={},modelMs=[],postMs=[],tokenTotals=[],records=[];
+  const used=new Set(),decisions={},modelMs=[],postMs=[],persistedMs=[],tokenTotals=[],records=[];
   let nFacts=0,nJudged=0,nSupported=0,nUseful=0,invalid=0,wrongAuthority=0,wrongScope=0;
   let modelEmitted=0,modelDurable=0,durableJudged=0,durableSupported=0;
   for(const o of observations.records){
@@ -186,7 +186,10 @@ export function evaluate(corpus,{observations=null,targets=null,corpusBytes=null
    for(let j=0;j<o.facts.length;j++){
     nFacts++;
     if(isModelEmit)modelEmitted++;
-    if(terminalReadback)modelDurable++;
+    if(terminalReadback){
+      modelDurable++;
+      if(Number.isFinite(o.post_exit_ms))persistedMs.push(o.post_exit_ms);
+    }
     const v=o.fact_verdicts?.[j];
     if(!v||corpus.label_status!=='operator_adjudicated')continue;
     if(!['grounded','useful','authority_correct','scope_correct'].every(k=>typeof v[k]==='boolean')||
@@ -214,7 +217,9 @@ export function evaluate(corpus,{observations=null,targets=null,corpusBytes=null
     false_authority:nFacts===nJudged?wrongAuthority:null,
     wrong_scope:nFacts===nJudged?wrongScope:null,
     model_ms:quantiles(modelMs),post_exit_ms:quantiles(postMs),
-    tokens:quantiles(tokenTotals),tokens_total:tokenTotals.reduce((a,b)=>a+b,0),
+    post_exit_persisted_ms:quantiles(persistedMs),
+    tokens:quantiles(tokenTotals),
+    tokens_total:tokenTotals.length?tokenTotals.reduce((a,b)=>a+b,0):null,
     records};
  }
  const result={schema_version:1,kind:'issue81-three-path-comparison',
