@@ -14,6 +14,17 @@ export async function inspectFreshProductionGroup({root,group,graphiti}={}){
  if(typeof root!=='string'||!path.isAbsolute(root)||
   group!==PRODUCTION_GROUP||typeof graphiti?.call!=='function')
   throw Error('CUTOVER_PRODUCTION_SCOPE_INVALID');
+ const rootInfo=await lstat(root);
+ if(rootInfo.isSymbolicLink()||!rootInfo.isDirectory())
+  throw Error('CUTOVER_STATE_ROOT_UNSAFE');
+ for(const base of ['candidate-events-v1','curation-v1']){
+  const parent=await lstat(path.join(root,base)).catch(e=>{
+   if(e.code==='ENOENT')return null;
+   throw e;
+  });
+  if(parent&&(parent.isSymbolicLink()||!parent.isDirectory()))
+   throw Error('CUTOVER_TARGET_PARENT_UNSAFE');
+ }
  const local=[];
  for(const rel of [group,path.join('candidate-events-v1',group),
    path.join('curation-v1',group)])

@@ -36,3 +36,10 @@ test('nonempty remote, invalid remote and old namespace fail closed',
  await assert.rejects(inspectFreshProductionGroup({...x,group:PRODUCTION_GROUP}),/REMOTE_EPISODES_NOT_EMPTY/);
  await assert.rejects(inspectFreshProductionGroup({...x,group:RETIRED_GROUP}),/SCOPE_INVALID/);
 }));
+
+test('symlinked queue parent is rejected before Graphiti read',()=>fixture(async x=>{
+ await symlink(x.root,path.join(x.root,'candidate-events-v1'));
+ await assert.rejects(inspectFreshProductionGroup({...x,group:PRODUCTION_GROUP}),
+  /TARGET_PARENT_UNSAFE/);
+ assert.equal(x.graphiti.calls.length,0);
+}));
