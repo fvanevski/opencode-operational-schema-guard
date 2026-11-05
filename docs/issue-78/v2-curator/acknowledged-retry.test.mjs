@@ -231,3 +231,38 @@ test('late positive readback settles authorized review without spending retry or
   assert.equal(row.audit.at(-1).action,'acknowledged_retry_remote_preexisting');
   assert.equal(s.mock.calls.includes('add_memory'),false);
 })));
+
+test('ordinary review actions cannot bypass acknowledged one-use retry authority',admitted(()=>fixture(async s=>{
+  const arg={store:s.store,graphiti:s.mock,root:s.root,group,
+    reviewId:s.record.id,expectedRevision:3,evidence:s.evidence};
+  const dry=await assessAcknowledgedRetry(arg);
+  await assessAcknowledgedRetry({...arg,apply:true,attest:true,
+    acknowledgePartialEffects:true,expectedRemoteSha:dry.remote_inventory_sha256});
+  const original=await s.store.get(s.record.id);
+  for(const action of ['approve','edit-and-approve','discard','defer','reevaluate']){
+    await assert.rejects(s.store.change(s.record.id,original.revision,action,{
+      reason:'No alternate authority',facts:original.facts}),/REMOTE_WRITE_ALREADY_POSSIBLE/);
+  }
+  assert.equal((await s.store.get(s.record.id)).state,'retry_authorized');
+})));
+test('never-submitted adjudicator cannot reset a spent, acknowledged retry after a timeout',admitted(()=>fixture(async s=>{
+  const arg={store:s.store,graphiti:s.mock,root:s.root,group,
+    reviewId:s.record.id,expectedRevision:3,evidence:s.evidence};
+  const dry=await assessAcknowledgedRetry(arg);
+  await assessAcknowledgedRetry({...arg,apply:true,attest:true,
+    acknowledgePartialEffects:true,expectedRemoteSha:dry.remote_inventory_sha256});
+  await s.store.advance(s.record.id,'retry_authorized','submission_unknown',
+    {expected_revision:4});
+  const spent=await s.store.get(s.record.id);
+  const initialStaging=spent.audit.find(a=>a.action==='state'&&a.outcome==='submission_unknown').at;
+  await assert.rejects(s.store.reconcileNeverSubmitted(s.record.id,spent.revision,{
+    kind:'pre_exit_local_staging_no_remote_call',operator_attested:true,
+    staging_proven:true,remote_readback_zero_episodes:true,
+    evidence_sha256:'c'.repeat(64),staging_at:initialStaging,
+    observed_at:s.evidence.observed_at
+  }),/NEVER_SUBMITTED_HAS_PRIOR_REMOTE_ACK_OR_RETRY/);
+  const afterwards=await s.store.get(s.record.id);
+  assert.equal(afterwards.state,'submission_unknown');
+  assert.equal(afterwards.orphaned_retry_evidence.retry_used_at!==null,true);
+  assert.equal(await s.store.advance(s.record.id,'submission_unknown','approved'),false);
+})));

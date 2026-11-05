@@ -295,7 +295,7 @@ export class ReviewStore {
       const old=await this.get(id);
       if(!old)throw Error('Unknown review');
       if(old.revision!==expectedRevision)throw Error('STALE_REVIEW_REVISION');
-      if(['submission_unknown','queued','persisted','failed_extraction'].includes(old.state))
+      if(['submission_unknown','queued','persisted','failed_extraction','retry_authorized'].includes(old.state))
         throw Error('REMOTE_WRITE_ALREADY_POSSIBLE');
       if(!['approve','edit-and-approve','discard','defer','reevaluate','merge','propose-supersession'].includes(action))
         throw Error('Unknown review action');
@@ -441,8 +441,15 @@ export class ReviewStore {
       if(old.revision!==expectedRevision)throw Error('STALE_REVIEW_REVISION');
       if(old.state!=='submission_unknown'||old.remote_episode_uuid)
         throw Error('NEVER_SUBMITTED_REQUIRES_UNRESOLVED_SUBMISSION_UNKNOWN');
-      const staging=old.audit.find(a=>a.action==='state'&&a.outcome==='submission_unknown');
-      if(!staging||staging.at!==evidence.staging_at)
+      // 'Never submitted' is inapplicable once ANY remote ACK or explicit
+      // acknowledged retry is in the immutable audit history, even when the
+      // most recent attempt currently has state submission_unknown.
+      if(old.orphaned_retry_evidence||old.audit.some(a=>
+        a.outcome==='queued'||a.action==='acknowledged_retry_write_intent'))
+        throw Error('NEVER_SUBMITTED_HAS_PRIOR_REMOTE_ACK_OR_RETRY');
+      const staging=old.audit.filter(a=>
+        a.action==='state'&&a.outcome==='submission_unknown');
+      if(staging.length!==1||staging[0].at!==evidence.staging_at)
         throw Error('NEVER_SUBMITTED_STAGING_AUDIT_MISMATCH');
       const now=new Date().toISOString();
       const updated={...old,state:'approved',revision:old.revision+1,updated_at:now,
