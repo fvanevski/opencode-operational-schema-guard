@@ -11,6 +11,7 @@ import {ReviewStore} from './core.mjs';
 import {CandidateQueue} from '../v2-candidate/queue.mjs';
 import {GraphitiMcp} from '../../issue-75/v2-candidate/memory-core.mjs';
 import {assessOperatorRecovery,assessNeverSubmittedRecovery} from './terminal-recovery.mjs';
+import {validRecoveryBinding} from '../fixture-groups.mjs';
 function command(program,args,{allowFailure=false}={}){
  const p=spawnSync(program,args,{encoding:'utf8',maxBuffer:2_000_000,timeout:20_000});
  if(p.error)throw p.error;
@@ -44,9 +45,8 @@ export async function cli(args=process.argv.slice(2)){
   const neverMode=Boolean(neverId);
   if(neverMode===Boolean(failedId))
    throw Error('EXACTLY_ONE_RECOVERY_MODE_REQUIRED');
-  if(!/^cur80_[a-z0-9_-]{3,60}$/.test(group)||
-    !path.isAbsolute(root)||!/^http:\/\/(?:127\.0\.0\.1|localhost):\d{2,5}\/mcp\/?$/.test(endpoint)||
-    !/^ghdev-curator80-[a-z0-9-]{1,40}$/.test(unit))
+  if(!validRecoveryBinding(group,unit)||
+    !path.isAbsolute(root)||!/^http:\/\/(?:127\.0\.0\.1|localhost):\d{2,5}\/mcp\/?$/.test(endpoint))
    throw Error('REQUIRED_DISPOSABLE_GROUP_STATE_DIR_ENDPOINT_AND_UNIT');
   if(!neverMode&&!/^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d$/.test(since))
    throw Error('REQUIRED_SINCE_FOR_QUEUE_LOG_MODE');

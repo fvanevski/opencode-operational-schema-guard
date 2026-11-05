@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {plan} from './stage-holdout.mjs';
-const group='cur81_holdout_01a2b3c4';
+const group='graphiti-cron-holdout-r01';
 const base={group:'cur81_dev',project:'qualified_project',workspace:'/tmp/opencode'};
 const prompt=(id,text,extra={})=>({id,source_type:'prompt',category:'implicit',
  source_locator:'private:'+id,native_event:{sessionID:'ses123',messageID:'msg'+id,
@@ -35,4 +35,13 @@ test('rejects production group and weak fallback identifiers',()=>{
    native_event:{sessionID:'ses123',timestamp:'2026-11-04T00:00:00Z',
     prompt:{text:'I prefer to keep this Graphiti review policy.'}}})]};
  assert.throws(()=>plan(x,group),/NO_NATIVE_CANDIDATES/);
+});
+
+test('named source and target must share the real fixture domain',()=>{
+ const scope={...base,group:'graphiti-cron-development-r01'};
+ const named={...c,scope,cases:[prompt('named',
+  'Keep exact source identities for the cron parser.',{scope})]};
+ assert.equal(plan(named,'graphiti-cron-holdout-r02').selected.length,1);
+ assert.throws(()=>plan(named,'graphiti-webvtt-holdout-r01'),/HOLDOUT_SCOPE_REQUIRED/);
+ assert.equal(plan(c,'cur81_holdout_01a2b3c4').selected.length,1);
 });

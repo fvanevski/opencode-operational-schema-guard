@@ -6,13 +6,15 @@ import path from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {ReviewStore,validateModelDecision} from './core.mjs';
 import {curateCluster} from './model.mjs';
+import {isFixtureGroup} from '../fixture-groups.mjs';
 const fail=x=>{throw Error('PROBE_'+x);};
 const digest=x=>createHash('sha256').update(x).digest('hex');
 const HEX=/^[a-f0-9]{64}$/;
 export async function runProbe({root,group,ids,endpoint,model,apiKey='local',
   reasoningEffort=null,maxTokens=768,store=null,curate=curateCluster}={}){
   if(process.env.GHDEV_MEMORY_POST_EXIT_LEASE!=='admitted')fail('EX_ADMISSION_REQUIRED');
-  if(!/^cur81_dev_[a-f0-9]{8}$/.test(group||'')||
+  if(!(isFixtureGroup(group,'efficiency')||
+       /^cur81_dev_[a-f0-9]{8}$/.test(group||''))||
      typeof root!=='string'||!path.isAbsolute(root))fail('DISPOSABLE_SCOPE_REQUIRED');
   if(!Array.isArray(ids)||ids.length<1||ids.length>5||
      new Set(ids).size!==ids.length||ids.some(id=>!HEX.test(id)))

@@ -6,11 +6,12 @@ import {pathToFileURL} from 'node:url';
 import {CandidateQueue} from '../v2-candidate/queue.mjs';
 import {replay} from './evaluate.mjs';
 import {bindAdjudication,digest} from './adjudicate.mjs';
+import {isFixtureGroup,permittedQualificationGroup} from '../fixture-groups.mjs';
 
 const deny=s=>{throw Error('HOLDOUT_STAGE_DENIED:'+s);};
 export function plan(corpus,group){
- if(corpus?.split!=='holdout'||corpus?.scope?.group!=='cur81_dev'||
-    !/^cur81_holdout_[a-f0-9]{8}$/.test(group||''))
+ if(corpus?.split!=='holdout'||!isFixtureGroup(group,'holdout',{allowLegacy:true})||
+    !permittedQualificationGroup(corpus?.scope?.group,group,'holdout'))
    deny('HOLDOUT_SCOPE_REQUIRED');
  const target={...corpus.scope,group};
  const selected=[],excluded=[];

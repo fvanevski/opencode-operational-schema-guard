@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {runProbe} from './efficiency-probe.mjs';
 const id=n=>n.toString(16).padStart(64,'0');
 const fact='The median defect was an incorrect middle index and the correction preserves the existing CLI.';
-const event={event_id:id(99),group:'cur81_dev_ce555621',project:'bench',
+const event={event_id:id(99),group:'graphiti-curator-efficiency-r01',project:'bench',
  workspace:'/tmp/bench',session_id:'ses_test',kind:'user_turn',
  evidence_class:'user-stated',source_strength:'native-id',
  source_refs:['opencode:ses_test:message:msg_test'],
@@ -56,5 +56,24 @@ test('backend HTTP rejection stays typed and cannot trigger Graphiti replay',asy
  }finally{
   if(prev===undefined)delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;
   else process.env.GHDEV_MEMORY_POST_EXIT_LEASE=prev;
+ }
+});
+
+test('old development group remains eligible for read-only probe after naming change',async()=>{
+ const prior=process.env.GHDEV_MEMORY_POST_EXIT_LEASE;
+ process.env.GHDEV_MEMORY_POST_EXIT_LEASE='admitted';
+ const group='cur81_dev_ce555621';
+ const old={...rec,group,events:[{...event,group}]};
+ try{
+  const value=await runProbe({root:'/tmp/bench',group,ids:[rec.id],
+   store:{get:async()=>old},curate:async()=>({
+    content:JSON.stringify({decision:'DEFER',
+     reason:'No independently useful persistent source assertion',facts:[]}),
+    duration_ms:1,usage:{prompt_tokens:1,completion_tokens:1}})});
+  assert.equal(value.group,group);
+  assert.equal(value.totals.completed,1);
+ }finally{
+  if(prior===undefined)delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;
+  else process.env.GHDEV_MEMORY_POST_EXIT_LEASE=prior;
  }
 });

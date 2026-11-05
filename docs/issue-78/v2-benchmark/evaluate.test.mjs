@@ -204,3 +204,25 @@ test('missing usage telemetry is unknown, and persisted-only latency excludes DE
  assert.equal(result.curator.tokens_total,null,'missing per-record usage is not zero actual tokens');
  assert.equal(result.curator.model_ms.count,0);
 });
+
+test('named holdout qualification retains case-level native IDs and rejects cross-domain rebind',()=>{
+ const c=corpus();c.split='holdout';c.label_status='operator_adjudicated';
+ c.adjudicated_by='human';c.scope={...scope,group:'graphiti-cron-development-r01'};
+ const target={...c.scope,group:'graphiti-cron-holdout-r01'};
+ const event=fromPrompt(c.cases[0].native_event,target,{admitted:true});
+ assert.ok(event);
+ const observations={schema_version:1,scope:target,records:[{
+  source_case_ids:['implicit'],source_event_ids:[event.event_id],
+  cluster_id:sha256(event.event_id),origin:'model',decision:'DEFER',
+  reason:'No independently useful persistent source assertion',facts:[]}]};
+ const ratified={...targets,status:'operator_ratified'};
+ const corpusBytes=JSON.stringify(c),targetsBytes=JSON.stringify(ratified);
+ const run=obs=>evaluate(c,{targets:ratified,corpusBytes,targetsBytes,
+  expectedCorpusSha:sha256(corpusBytes),
+  expectedTargetsSha:sha256(targetsBytes),observations:obs});
+ assert.equal(run(observations).curator.record_count,1);
+ assert.throws(()=>run({...observations,scope:{...target,group:'graphiti-webvtt-holdout-r01'}}),
+  /qualification_scope_mismatch/);
+ assert.throws(()=>run({...observations,scope:{...target,group:'ghdev_gh_mcp'}}),
+  /qualification_scope_mismatch/);
+});

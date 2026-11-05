@@ -6,7 +6,7 @@ import {ReviewStore,selectClusters} from './core.mjs';
 import {CandidateQueue} from '../v2-candidate/queue.mjs';
 import {fromPrompt} from '../v2-candidate/events.mjs';
 import {assessQueueLog,assessOperatorRecovery,assessNeverSubmittedRecovery} from './terminal-recovery.mjs';
-const group='cur80_qualtest',rootScope={group,project:'test',workspace:'/workspace/test'};
+const group='graphiti-curator-recovery-r01',rootScope={group,project:'test',workspace:'/workspace/test'};
 const successUUID='26299f65-f48c-45c1-abf0-9c7d521b1a03';
 function log(extra=''){
  return [
@@ -25,7 +25,7 @@ test('anonymous chronological evidence is explicitly inference, not UUID-level p
  assert.throws(()=>assessQueueLog(log().replace('Successfully processed','Failed to process'),group),/NOT_PROVEN/);
 });
 async function setup(fn){
- const root=await mkdtemp(path.join(os.tmpdir(),'cur80-recovery-'));
+ const root=await mkdtemp(path.join(os.tmpdir(),'graphiti-recovery-'));
  process.env.GHDEV_MEMORY_POST_EXIT_LEASE='admitted';
  try{
   const store=new ReviewStore(root,group),queue=new CandidateQueue(root,group);
@@ -98,7 +98,7 @@ function stagingAtOf(record){
  return record.audit.find(a=>a.action==='state'&&a.outcome==='submission_unknown').at;
 }
 async function setupNeverSubmitted(fn){
- const root=await mkdtemp(path.join(os.tmpdir(),'cur80-recovery-ns-'));
+ const root=await mkdtemp(path.join(os.tmpdir(),'graphiti-recovery-ns-'));
  process.env.GHDEV_MEMORY_POST_EXIT_LEASE='admitted';
  try{
   const store=new ReviewStore(root,group);

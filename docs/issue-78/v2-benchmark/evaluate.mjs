@@ -6,6 +6,7 @@ import path from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {selectUserDecision,selectCompletedTest} from '../../issue-75/v2-candidate/memory-core.mjs';
 import {fromPromptCandidates,fromTool,fromFinishedTurn} from '../v2-candidate/events.mjs';
+import {permittedQualificationGroup} from '../fixture-groups.mjs';
 import {validateDecision,validateModelDecision} from '../v2-curator/core.mjs';
 
 export const sha256=x=>createHash('sha256').update(x).digest('hex');
@@ -95,11 +96,7 @@ export function evaluate(corpus,{observations=null,targets=null,corpusBytes=null
   const s=observations.scope,b=corpus.scope;
   if(!s||typeof s!=='object'||s.project!==b.project||
      s.workspace!==b.workspace||
-     !(s.group===b.group||
-       (corpus.split==='development'&&b.group==='cur81_dev'&&
-         /^cur81_dev_[a-f0-9]{8}$/.test(s.group))||
-       (corpus.split==='holdout'&&b.group==='cur81_dev'&&
-         /^cur81_holdout_[a-f0-9]{8}$/.test(s.group))))
+     !permittedQualificationGroup(b.group,s.group,corpus.split))
     FAIL('qualification_scope_mismatch');
  }
  // An independently declared, permitted disposable qualification group
