@@ -131,3 +131,7 @@ Keep real raw event text, tokens, model responses, secrets and host config outsi
 ## Descriptive new fixture IDs
 
 For new cohorts use `graphiti-<domain>-<purpose>-rNN`, for example `graphiti-cron-development-r01`, `graphiti-cron-capture-r01`, and `graphiti-cron-holdout-r01`. The run number is assigned deliberately and never reused for an occupied group. Existing frozen `cur80_*`/`cur81_*` identities remain exact and immutable; the scorer retains explicit legacy group compatibility. See [fixture naming and the historical group ledger](../FIXTURE_GROUP_NAMING.md).
+
+## Codex #83 disposition: latency populations
+
+The operator-ratified `post_exit_p95_seconds_max` is **terminal** post-exit p95, including genuine DEFER/SKIP outcomes, not a persistence-only metric. Its existing `targets.post_exit_latency` field continues to apply the same numeric limit to explicitly terminal observed outcomes; unresolved `queued`/`submission_unknown` jobs are censored, not treated as fast successes. A distinct additive `targets.post_exit_persisted_latency` checks receipt-bound persisted episodes against that same bound and is `null` with no verified persistence. Both metrics must be inspected separately: rapid deferrals do not prove persistence, and rapid deferrals cannot mask a slow persisted episode in the persisted-only diagnostic. Frozen historical scores and signed ratification bytes remain unchanged.

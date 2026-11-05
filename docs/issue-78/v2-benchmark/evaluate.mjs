@@ -13,6 +13,8 @@ export const sha256=x=>createHash('sha256').update(x).digest('hex');
 const FAIL=s=>{throw Error('INVALID_BENCHMARK:'+s);};
 const TARGETS=['candidate_recall_min','durable_grounded_precision_min','semantic_recall_min'];
 const CATEGORIES=new Set(['direct','implicit','error_fix','tool','negative_finding','chatter','duplicate','privacy','wrong_group','conflict','historical']);
+// A record with an unresolved or staged remote write is censored, not terminal.
+const POST_EXIT_TERMINAL=new Set(['persisted','deferred','skipped','failed_extraction']);
 const pct=(a,b)=>b?a/b:null;
 export function quantiles(data){
  const xs=data.filter(x=>Number.isFinite(x)&&x>=0).sort((a,b)=>a-b);
@@ -133,7 +135,15 @@ export function evaluate(corpus,{observations=null,targets=null,corpusBytes=null
    const requested=new Set(o.source_event_ids||[]);
    for(const id of o.source_case_ids){
     const info=byCase.get(id);
-    const options=info?.case?replay(info.case,observedScope).candidates:[];
+    // The frozen case scope authenticates its ORIGINAL capture group.
+    // Verify it BEFORE rebinding for a separately qualified destination.
+    const originalScopeValid=Boolean(info?.case&&(!info.case.scope||
+      ['group','project','workspace'].every(k=>
+        info.case.scope[k]===corpus.scope[k])));
+    const candidateCase=qualifying&&originalScopeValid?
+      {...info.case,scope:undefined}:info?.case;
+    const options=originalScopeValid?
+      replay(candidateCase,observedScope).candidates:[];
     const matching=options.filter(e=>!used.has(e.event_id)&&
       (!requested.size||requested.has(e.event_id)))
       .sort((a,b)=>a.event_id.localeCompare(b.event_id));
@@ -162,7 +172,8 @@ export function evaluate(corpus,{observations=null,targets=null,corpusBytes=null
    if(!validated.ok)invalid++;
    decisions[o.decision]=(decisions[o.decision]||0)+1;
    if(Number.isFinite(o.model_ms))modelMs.push(o.model_ms);
-   if(Number.isFinite(o.post_exit_ms))postMs.push(o.post_exit_ms);
+   if(POST_EXIT_TERMINAL.has(o.terminal_state)&&Number.isFinite(o.post_exit_ms))
+     postMs.push(o.post_exit_ms);
    if(Number.isFinite(o.prompt_tokens)&&Number.isFinite(o.completion_tokens))
      tokenTotals.push(o.prompt_tokens+o.completion_tokens);
    // Only a real model EMIT with independently inspectable positive remote
@@ -244,7 +255,13 @@ export function evaluate(corpus,{observations=null,targets=null,corpusBytes=null
    no_wrong_scope:curated?.wrong_scope===null||!curated?null:curated.wrong_scope===0,
    semantic_recall:'UNVERIFIED_UNTIL_FRESH_CLIENT',
    context_latency:'UNVERIFIED_UNTIL_INSTALLED',
+   // Keep the operator-ratified TERMINAL-p95 population unchanged.
    post_exit_latency:curated?.post_exit_ms.count?curated.post_exit_ms.p95<=
+     targets.thresholds.post_exit_p95_seconds_max*1000:null,
+   // Additional persisted-episode-specific diagnostic against the SAME
+   // ratified numerical limit. No qualified persistence => unknown, not PASS.
+   post_exit_persisted_latency:curated?.post_exit_persisted_ms.count?
+     curated.post_exit_persisted_ms.p95<=
      targets.thresholds.post_exit_p95_seconds_max*1000:null};
  }
  return result;

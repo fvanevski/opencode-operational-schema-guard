@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {evaluate,sha256,quantiles,confusion} from './evaluate.mjs';
 import {fromPrompt,fromPromptCandidates} from '../v2-candidate/events.mjs';
+import {plan} from './stage-holdout.mjs';
 const scope={group:'cur81_dev',project:'benchmark',workspace:'/tmp/issue81/benchmark'};
 const timestamp='2026-11-03T18:15:00Z';
 const prompt=(id,text,valuable,category='implicit')=>({
@@ -260,4 +261,84 @@ test('persisted latency has one sample per episode, not per model-emitted fact',
  assert.equal(output.curator.post_exit_ms.count,1);
  assert.deepEqual(output.curator.post_exit_persisted_ms,
   {count:1,p50:12345,p95:12345});
+});
+
+test('Codex #83: qualified replay uses validated original case scope rather than destination scope',()=>{
+ const c=corpus();c.split='holdout';c.label_status='operator_adjudicated';
+ c.adjudicated_by='human';c.scope={...scope,group:'graphiti-cron-development-r01'};
+ c.cases=[{...c.cases[0],scope:{...c.scope}},
+  {...c.cases[6],scope:{...c.scope,group:'graphiti-webvtt-development-r01'}}];
+ const target={...c.scope,group:'graphiti-cron-holdout-r01'};
+ const staged=plan(c,target.group);
+ assert.equal(staged.selected.length,1);
+ assert.equal(staged.excluded[0].reason,'wrong_original_source_scope');
+ const e=staged.selected[0].event;
+ const record={source_case_ids:[c.cases[0].id],source_event_ids:[e.event_id],
+  cluster_id:sha256(e.event_id),origin:'model',decision:'DEFER',
+  reason:'No independently durable source assertion',facts:[],terminal_state:'deferred'};
+ const ratified={...targets,status:'operator_ratified'};
+ const corpusBytes=JSON.stringify(c),targetsBytes=JSON.stringify(ratified);
+ const run=records=>evaluate(c,{targets:ratified,corpusBytes,targetsBytes,
+  expectedCorpusSha:sha256(corpusBytes),expectedTargetsSha:sha256(targetsBytes),
+  observations:{schema_version:1,scope:target,records}});
+ const result=run([record]);
+ assert.equal(result.curator.record_count,1);
+ assert.equal(result.curator.invalid_model_or_source_decisions,0);
+ assert.equal(result.rows[1].candidate_selected,false);
+ const forged=fromPrompt(c.cases[1].native_event,target,{admitted:true});
+ assert.ok(forged);
+ assert.throws(()=>run([{...record,source_case_ids:[c.cases[1].id],
+  source_event_ids:[forged.event_id],cluster_id:sha256(forged.event_id)}]),
+  /qualification_source_identity_mismatch/);
+});
+
+test('Codex #83: unresolved and all-DEFER observations cannot establish persistence-latency PASS',()=>{
+ const c=corpus(),e=evaluate(c).rows.find(r=>r.id==='implicit');
+ const record={source_case_ids:['implicit'],cluster_id:sha256(e.event_id),
+  origin:'model',decision:'DEFER',reason:'No durable fact',facts:[],
+  terminal_state:'deferred',post_exit_ms:1};
+ const run=x=>evaluate(c,{targets,observations:{schema_version:1,records:[x]}});
+ const deferred=run(record);
+ assert.equal(deferred.curator.post_exit_ms.count,1);
+ assert.equal(deferred.targets.post_exit_latency,true);
+ assert.equal(deferred.targets.post_exit_persisted_latency,null);
+ const unknown=run({...record,terminal_state:'submission_unknown'});
+ assert.equal(unknown.curator.post_exit_ms.count,0);
+ assert.equal(unknown.targets.post_exit_latency,null);
+ assert.equal(unknown.targets.post_exit_persisted_latency,null);
+});
+
+test('Codex #83: fast deferred decisions cannot mask slow receipt-bound persistence',()=>{
+ const c=corpus();c.label_status='operator_adjudicated';c.adjudicated_by='human';
+ const template=c.cases[0];
+ c.cases=Array.from({length:25},(_,i)=>({
+  ...template,id:'latency-'+i,source_locator:'synthetic:latency-'+i,
+  native_event:{...template.native_event,messageID:'msg_latency_'+i}}));
+ const records=c.cases.map((x,i)=>{
+  const e=fromPrompt(x.native_event,scope,{admitted:true});
+  assert.ok(e);
+  const cluster=sha256(e.event_id);
+  const base={source_case_ids:[x.id],cluster_id:cluster,origin:'model',
+    post_exit_ms:i===0?900001:1};
+  if(i>0)return {...base,decision:'DEFER',reason:'No durable source claim',
+    terminal_state:'deferred',facts:[]};
+  const uuid='123e4567-e89b-12d3-a456-426614174007',source=e.source_refs[0];
+  return {...base,decision:'EMIT',reason:'Exact extractive source claim',
+    terminal_state:'persisted',remote_episode_uuid:uuid,
+    remote_readback:{episode_uuid:uuid,episode_name:'curated-v1:'+cluster,
+      group_id:scope.group,source_index_verified:true,source_refs:[source],
+      evidence_ref:'synthetic:scoped-readback'},
+    facts:[{assertion:x.native_event.prompt.text,kind:'implementation',
+      temporal_status:'observed',source_refs:[source]}],
+    fact_verdicts:[{grounded:true,useful:true,authority_correct:true,
+      scope_correct:true,evaluator_id:'human'}]};
+ });
+ const output=evaluate(c,{targets,observations:{schema_version:1,records}});
+ assert.equal(output.curator.invalid_model_or_source_decisions,0);
+ assert.equal(output.curator.post_exit_ms.count,25);
+ assert.equal(output.curator.post_exit_ms.p95,1);
+ assert.equal(output.curator.post_exit_persisted_ms.count,1);
+ assert.equal(output.curator.post_exit_persisted_ms.p95,900001);
+ assert.equal(output.targets.post_exit_latency,true,'original terminal target');
+ assert.equal(output.targets.post_exit_persisted_latency,false,'separate persistence diagnostic');
 });
