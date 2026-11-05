@@ -197,3 +197,7 @@ converted into `EMIT` simply to obtain a real remote write.
 **Evidence contract:** `docs/issue-78/REVIEW_EVIDENCE_PACKET.md`.
 **PR:** none in this campaign. Use the same issue/79 branch for the combined
 #79/#80 implementation, then #81 integrated benchmark/fresh-session acceptance.
+
+## New fixture naming
+
+New disposable Graphiti qualification groups use `graphiti-<domain>-<purpose>-rNN`. For recovery instances, pair `graphiti-curator-recovery-r01` with `ghdev-curator-recovery-r01.service` and preserve their literal group binding. Historic `cur80_*`/`cur81_*` names in the recovery discussion above are immutable receipt-bound machine identities, not new-fixture naming recommendations. CLI status/list and the portal display a read-only purpose label without aliasing remote group IDs. See [naming policy and legacy ledger](../FIXTURE_GROUP_NAMING.md).

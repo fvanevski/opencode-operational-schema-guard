@@ -31,7 +31,7 @@ The input JSON file is private/sanitized. Required shape:
   "split": "development",
   "label_status": "provisional",
   "scope": {
-    "group": "cur81_dev",
+    "group": "graphiti-cron-development-r01",
     "project": "qualified_project",
     "workspace": "/tmp/opencode/safe_workspace"
   },
@@ -91,7 +91,7 @@ Categories: `direct`, `implicit`, `error_fix`, `tool`, `negative_finding`, `chat
 }
 ```
 
-Replace the placeholders with **readbacks**, never guessed values. If the separately captured disposable model qualification uses a different group than the frozen corpus, put its actual `scope` (group, project, workspace) on the top-level **observations** object; project/workspace must agree with the corpus, and the group must be the matching `cur81_dev_<8-hex>` disposable group. Each observation then **must** include `source_event_ids` of the actual qualification-group capture, which are recomputed and matched; the original frozen corpus bytes and labels remain untouched. Missing, mismatched or production-group event identities fail closed. `origin=model` enforces the exact-extractive #80 adapter. `fact_verdicts` with boolean `grounded/useful/authority_correct/scope_correct` and independent `evaluator_id` belong only in a truly operator-adjudicated corpus. If a record has no actual model usage, omit tokens or latency fields: do not write zero. Model DEFER/SKIP and service failures are important outcomes and must remain in the dataset. Do not mark durable precision PASS from a model proposal, operator seed or Graphiti queued ACK; a JSON attestation alone does not establish independent remote acceptance. Use `ReviewStore`/queue/Graphiti source identities, not text similarity, to associate host receipts.
+Replace the placeholders with **readbacks**, never guessed values. If the separately captured disposable model qualification uses a different group than the frozen corpus, put its actual `scope` (group, project, workspace) on the top-level **observations** object; project/workspace must agree with the corpus, and the group must be a compatible descriptive development fixture, for example `graphiti-cron-development-r02`. Historical `cur81_dev_<8-hex>` groups remain accepted for readback of previously frozen evidence. See [fixture naming](../FIXTURE_GROUP_NAMING.md). Each observation then **must** include `source_event_ids` of the actual qualification-group capture, which are recomputed and matched; the original frozen corpus bytes and labels remain untouched. Missing, mismatched or production-group event identities fail closed. `origin=model` enforces the exact-extractive #80 adapter. `fact_verdicts` with boolean `grounded/useful/authority_correct/scope_correct` and independent `evaluator_id` belong only in a truly operator-adjudicated corpus. If a record has no actual model usage, omit tokens or latency fields: do not write zero. Model DEFER/SKIP and service failures are important outcomes and must remain in the dataset. Do not mark durable precision PASS from a model proposal, operator seed or Graphiti queued ACK; a JSON attestation alone does not establish independent remote acceptance. Use `ReviewStore`/queue/Graphiti source identities, not text similarity, to associate host receipts.
 
 ### Commands
 
@@ -127,3 +127,7 @@ Reuse without altering:
 ## Evidence boundaries
 
 Keep real raw event text, tokens, model responses, secrets and host config outside Git. Stage only a sanitized, manifest-covered packet and external SHA-bound corpus/label/targets identities; scrub model excerpts and private paths. Publish the exact aggregate confusion matrices with numerator/denominator, the case-level IDs/outcomes, model/provider/quantization, duration/token summaries, group-scoped Graphiti episode/edge/source-index receipts, and typed failure/DEFER counts. Unsupported metrics stay `UNVERIFIED`; do not mark the campaign PASS by omitting weak cases. Preserve OpenViking and legacy #75 evidence, and record every CLI/host interface observation rather than silently rewriting the tool contract.
+
+## Descriptive new fixture IDs
+
+For new cohorts use `graphiti-<domain>-<purpose>-rNN`, for example `graphiti-cron-development-r01`, `graphiti-cron-capture-r01`, and `graphiti-cron-holdout-r01`. The run number is assigned deliberately and never reused for an occupied group. Existing frozen `cur80_*`/`cur81_*` identities remain exact and immutable; the scorer retains explicit legacy group compatibility. See [fixture naming and the historical group ledger](../FIXTURE_GROUP_NAMING.md).

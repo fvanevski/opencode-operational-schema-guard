@@ -150,3 +150,7 @@ CPU regression repair, and an evidence-only GitHub packet are in scope.
 No production activation, separate PR, Graphiti `add_memory` or model-curator
 integration is authorized. Final last-reply capture where no subsequent context
 exists is a documented API limitation, not a reason to invent a bus hook.
+
+## New qualification fixture identities
+
+Use `graphiti-<domain>-<purpose>-rNN` rather than issue-number prefixes or opaque random suffixes for new disposable candidate groups. `candidate-cli.mjs status|list --group <exact-id>` reports the exact unchanged machine group and a read-only descriptive `fixture` field. It never changes a source event's group or remote Graphiti lookup identity. See [the fixture naming contract](../FIXTURE_GROUP_NAMING.md).
