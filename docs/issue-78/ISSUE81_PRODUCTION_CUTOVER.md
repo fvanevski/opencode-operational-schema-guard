@@ -1,118 +1,84 @@
-# Issue #81 — Production extraction reliability and fresh graph cutover
+# Issue #81 — Graphiti extraction policy and fresh production namespace
 
-## Authority and ordering
+## Operator decision
 
-The future production group is **development-knowledge**. The historical
-**ghdev_gh_mcp** group contains development-era data and MUST NOT be migrated,
-cloned, reindexed, or silently aliased. This is not a rename of the existing
-FalkorDB graph: Graphiti resolves group IDs to distinct graph namespaces.
+Canonical production Graphiti group: **development-knowledge**.
+The old **ghdev_gh_mcp** FalkorDB graph and local review/queue/index
+records are development data, not durable production knowledge. There is
+**no migration or data-retention requirement** for this old namespace.
+Graphiti maps group IDs to real graph storage; a display alias or string
+replace does not migrate storage.
 
-The stock-V2 plugin remains opt-in and its group is supplied by live plugin
-options. The post-exit wrapper receives its group explicitly; source alone
-does not update host config, systemd units or existing state directories.
-Update all producers and consumers at one controlled cutover; do not merely
-change the display label. Read old identities only to adjudicate the currently
-blocked historical submission, then retire them.
+The old curator is holding EX for one known failed old-group episode
+(fb4042ad...). Since the entire old group will be retired, terminal
+adjudication of that individual review is NO LONGER A CUTOVER GATE.
+Disable new old-group capture; retire the old canonical wrapper via
+normal systemd user-service stop so it releases its own EX lock.
+Do not unlink an owned lock, replay the task, or try to drain hundreds
+of disposable development candidates. Capture bounded failure
+evidence and unit/process identity for diagnostic value only.
 
-### 1. Correct the extraction model's response budget, not the curator budget
+## Graphiti-only output budget correction
 
-The observed error is in Graphiti's **OpenAIGenericClient** using LiteLLM and
-NInfer, not in GHDEV_CURATOR_MAX_TOKENS. Captured NInfer requests ended with
-output_limit at 8,192/16,384 tokens; the 5th FIFO task failed after four
-tries, whereas the 6th completed on a later attempt.
+The host evidence ties Graphiti OpenAIGenericClient → LiteLLM:8002
+→ NInfer:8001 (Qwen3.8-27B) to output_limit at 8,192/16,384 tokens
+with JSON decode errors. max_tokens includes reasoning plus final content.
+This is NOT the GHDEV_CURATOR_MAX_TOKENS option in model-policy.mjs.
 
-Select the lowest-risk Graphiti-only policy by observing effective request
-payloads across Graphiti → LiteLLM → NInfer. Preferred: route Graphiti
-extraction to a dedicated non-thinking model alias, using an actual
-per-request disable-thinking option supported end-to-end, with a sufficient
-structured-output token limit. If this cannot be supported, cap thinking
-independently of max_tokens (e.g. 2,048 thinking / 8,192 total) and verify
-sufficient headroom for both forced thinking close and a complete JSON body.
-Do not apply NInfer's global --no-thinking or default-thinking changes to
-other clients. The non-thinking route must be proven effective at NInfer:
-a LiteLLM alias name is not proof of disabled thinking.
+Implement a *dedicated Graphiti extraction route*, not a global NInfer
+default change or a new model/server. Inspect effective host Graphiti
+request, LiteLLM alias and actual NInfer request; Graphiti sends explicit
+max_tokens per call, so NInfer's --default-max-tokens alone cannot fix it.
 
-For Graphiti extraction, return finite request budgets and prefer native JSON
-constraint only if the current installed Graphiti client and NInfer support
-the same schema contract. Verify whether OpenAIGenericClient sets its own
-max_tokens on calls, so a server default is not silently shadowed. Validate
-a real sanitized representative extraction on the host after the canonical
-EX admission has been safely released, or through an isolated service test
-that does NOT consume the live EX-held inference slot.
+Preferred: per-request Qwen thinking OFF (e.g. reasoning_effort:none)
+and max_tokens 8,192. If this option does not traverse LiteLLM, use a
+verified per-request thinking_budget 2,048 with total max_tokens 8,192.
+Increase to 16,384 only if observed structured JSON needs it.
+NInfer thinking-close control tokens count against max_tokens and
+do not guarantee a nonempty answer. Never silently change ordinary
+chat-client thinking behavior. Use existing config/alias mechanism,
+not an unreviewed upstream monkeypatch.
 
-Acceptance: positive nonempty content, schema-parseable JSON, quality adequate
-for the frozen Issue #81 rubric, finish_reason=stop/stop_token, no output_limit
-on the representative heavy prompt, no secrets logged, and unchanged ordinary
-client inference profiles. Preserve resource contention/serialization policy.
-An output-limit failure is never proof of no partial Graphiti graph effects.
+Validate at the effective NInfer request: thinking policy, nonempty
+structured final content, valid JSON/schema, stop/stop_token finish,
+grounded extraction of named components/edges, and acceptable latency
+on representative sanitized Issue #81 inputs. Preserve frozen rubric;
+do not bypass output-limit failures or Graphiti's EX admission.
 
-### 2. Single old-group terminal failure (before cutover)
+## New empty namespace
 
-Use terminal-failure-cli.mjs from this reviewed/merged source, not the
-fixture-only terminal-recovery.mjs. The new CLI is deliberately fenced to the
-old group and only performs read-only assessment or a single local
-ReviewStore.markExtractionFailure CAS. It never sends Graphiti add_memory.
+The source includes a read-only preflight:
 
-Evidence JSON shape (private 0600 file):
-{
- "kind":"graphiti_async_processing_failure",
- "identity_binding":"anonymous_group_fifo_inference",
- "journal_sha256":"<SHA256 OF EXACT BOUNDED JOURNAL FILE>",
- "window_start_at":"2026-11-05T18:47:57Z",
- "window_end_at":"2026-11-05T19:10:30Z",
- "failed_at":"2026-11-05T19:02:56.042Z",
- "ordered_review_ids":["<SIX FULL HEX IDS IN ACTUAL ACK ORDER>"],
- "success_review_id":"<SIXTH REVIEW FULL HEX ID>",
- "other_success_episode_uuid":"576e82f1-8a2e-428a-b577-0cf581635245",
- "source_event_count":8,
- "serial_fifo_verified":true,
- "other_group_interleaving_excluded":true,
- "error_code":"graphiti_json_decode_error",
- "reason":"FIFO fifth task failed JSON decode; sixth succeeded. No replay authorized."
-}
+ node docs/issue-78/v2-curator/production-cutover-cli.mjs \
+   --group development-knowledge \
+   --state-dir /home/filip/.local/state/ghdev-graphiti \
+   --endpoint http://127.0.0.1:8766/mcp
 
-The source's admitted six-task journal parser requires exactly six complete
-start/end pairs within the scoped window, with failure at position 5, and
-an authenticated exact journal digest. It checks all six review audit orders,
-a full unique remote inventory, all persisted review/source-index bindings,
-and current target state/revision before presenting DRY_RUN_READY.
-For apply, add --apply --attest-anonymous-fifo --ack-partial-effects and
---expect-remote-sha <FRESH DRY-RUN SHA256>. The only effect is queued rev3
-→ failed_extraction rev4. No replay and no third submission. Do not apply
-if target or backend evidence changed. Preserve private pre-CAS snapshot.
+Require FRESH_PRODUCTION_EPISODES_EMPTY, empty/absent paths:
+state-root/development-knowledge, candidate-events-v1/development-knowledge,
+curation-v1/development-knowledge. Independently query FalkorDB read-only
+for graph-name absence or zero nodes/edges; zero Graphiti episodes alone
+does not establish an empty graph.
 
-### 3. Fresh production graph, no historical migration
+With old capture off and old wrapper stopped/EX released, change all
+live producers/consumers coherently: stock V2 plugin group option,
+post-exit wrapper --group/service, candidate/review/index paths,
+status/portal default and native recall group filters. Keep the accepted
+EX scheduler/service topology, source attribution, fixture groups and
+historical benchmark identities unchanged. Test the new system on an
+actual source-grounded episode through EX-held post-exit ingestion,
+then assert Graphiti UUID, source index, true fresh OpenCode session
+context injection, wrong-group exclusion and concurrent OpenViking.
 
-Cutover acceptance requirements:
-- Old EX-held wrapper reaches a terminal state and exits normally after
-  the old-group failure CAS; do not force-unlock and do not allow an
-  interactive client to contend with EX.
-- The new group development-knowledge is absent/empty in both Graphiti's
-  group-scoped inventory and the local candidate/review/index roots before
-  activation. A truly absent FalkorDB graph, or an empty newly provisioned
-  graph, is acceptable; never attach to occupied state.
-- Change the live stock-V2 plugin group option, opt-in capture config,
-  canonical post-exit wrapper unit/group selectors, status portal and
-  operator commands together. Keep the same existing service/gate topology,
-  unless an actual host contract demonstrates a narrower unit override.
-- Check that group=development-knowledge traverses capture → persisted
-  ReviewStore record → Graphiti group → episode index → native fresh-session
-  recall and that wrong-group exclusion holds. Never copy or rewrite old
-  episode UUIDs/source references or expose old group through an alias.
-- Old ghdev_gh_mcp state and FalkorDB graph may be deleted after the new
-  graph's fresh-session acceptance, using a separately enumerated exact
-  deletion inventory and operator's existing permission to discard
-  development data; do not delete while it remains the rollback target.
-- Capture pre/post source/config/process identity and a reversible activation
-  config/unit snapshot. No special backup of old graph content is required.
-  Rollback before deletion restores old effective configs and units without
-  pretending that the new namespace contains the old data.
+Retain a reversible snapshot of the exact live config and unit definition.
+Old graph contents need not be backed up. Do not delete the old
+FalkorDB graph before successful new-group acceptance: it remains
+an exact rollback target until cutover is confirmed. After success,
+delete only enumerated old group resources with checked names, never
+use a wildcard or implicit cross-group cleanup. New graph state must
+not be deleted by rollback.
 
-### 4. Validation and work limits
-
-Retain original Issue #81 benchmark rubric and privacy/source attribution.
-Issue #84's distinct relevance-filter correction stays separate and must
-be independently integrated against current main. Do not create new issues,
-additional PRs, speculative durable-queue infrastructure, or new inference
-services. Host service changes, cold-client acceptance and actual LiteLLM
-parameters are HOST-bound evidence: never mark them PASS from static tests.
+PR #84's sentence-initial recall correction remains independent and
+requires integration against the then-current main before final Issue #81
+fresh-session acceptance. No extra feature PR, new queue platform,
+model replacement or broad naming refactor is authorized by this slice.
