@@ -143,3 +143,29 @@ test('reranker uses loopback only, validates bounded score and request', async (
   assert.equal(body.documents.length,1);
   assert.throws(()=>localReranker('http://0.0.0.0:8004/v1/rerank'),/loopback/);
 });
+
+test('fresh native recall: later-sentence question word is not a mandatory proper name', async () => {
+  // Reproduces Issue #81 P1's admission root cause without publishing the
+  // private operator-frozen query or modifying its acceptance labels.
+  const query = 'What is the close criterion for Issue #75? When is fresh native recall required?';
+  const correct = {fact:
+    'Issue 75 closes only after a fresh native session demonstrates source-attributed Graphiti recall.'};
+  const wrongIssue = {fact:
+    'Issue 70 closes only after a fresh native session demonstrates source-attributed Graphiti recall.'};
+  assert.ok(lexicalSupport(query, correct.fact).count >= 3);
+  assert.equal(relevanceSignals(query, correct.fact).eligible, true,
+    'sentence-initial When cannot block otherwise source- and topic-qualified evidence');
+  assert.deepEqual(await relevanceFilter(query, [wrongIssue, correct]), [correct]);
+  assert.equal(relevanceSignals(query, wrongIssue.fact).eligible, false,
+    'numbered-issue identity remains mandatory');
+});
+
+test('fresh native recall: true named entities remain hard qualifiers after punctuation', async () => {
+  const query = 'What was the conclusion? Graphiti required source-bound evidence.';
+  const unrelated = {fact:'The accepted review used a source-bound evidence record.'};
+  const named = {fact:'Graphiti required source-bound evidence for the accepted review.'};
+  assert.equal(relevanceSignals(query, unrelated.fact).eligible, false,
+    'a sentence-initial proper name must still be matched');
+  assert.equal(relevanceSignals(query, named.fact).eligible, true);
+  assert.deepEqual(await relevanceFilter(query, [unrelated,named]), [named]);
+});

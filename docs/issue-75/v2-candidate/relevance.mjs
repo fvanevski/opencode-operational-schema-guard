@@ -85,11 +85,19 @@ const INTENT_TERMS = new Set('settle decided decide chosen choose select selecte
 // exemption from named-entity matching. Otherwise Issue-7 vs Issue 7 can
 // either evade the scope guard or be rejected despite an exact ID match.
 const ISSUE_REFERENCE = /\bissues?\s*[-#]?\s*(\d+)\b/gi;
+const SENTENCE_INTERROGATIVES = new Set(
+  ['What', 'When', 'Where', 'Who', 'Why', 'Which', 'How']);
 function namedQueryTerms(query) {
   // Preserve proper-name constraints, but issue labels have their own exact
   // scope check and must not become spelling-dependent proper names.
-  return [...stripIssueReferences(query).matchAll(/\b[A-Z][A-Za-z0-9_-]{2,}\b/g)]
-    .filter(match => match.index !== 0 && !['Our', 'We', 'The'].includes(match[0]))
+  // A question word capitalized solely because it begins a later sentence
+  // is not a named entity (e.g. "...? When ..."). Do NOT exempt other
+  // sentence-initial names or relax issue/number/topic evidence fences.
+  const text = stripIssueReferences(query);
+  return [...text.matchAll(/\b[A-Z][A-Za-z0-9_-]{2,}\b/g)]
+    .filter(match => match.index !== 0 && !['Our', 'We', 'The'].includes(match[0]) &&
+      !(SENTENCE_INTERROGATIVES.has(match[0]) &&
+        /[.!?]\s+$/.test(text.slice(0, match.index))))
     .map(match => match[0].toLowerCase());
 }
 function issueReferences(value) {
