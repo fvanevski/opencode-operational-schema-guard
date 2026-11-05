@@ -11,7 +11,7 @@ const DECISIONS = new Set(['SKIP','EMIT','MERGE','SUPERSEDE_PROPOSED','DEFER']);
 const CLASSES = new Set(['user-stated','tool-reported','assistant-reported']);
 const TEMPORAL = new Set(['observed','historical','proposed','unknown']);
 const KINDS = new Set(['decision','implementation','test_result','architecture','dependency','procedure','blocker','relationship','observation']);
-const STATES = new Set(['deferred','approved','skipped','submission_unknown','queued','persisted','failed_extraction']);
+const STATES = new Set(['deferred','approved','skipped','submission_unknown','queued','persisted','failed_extraction','retry_authorized']);
 const digest = input => createHash('sha256').update(input).digest('hex');
 const validDate = s => typeof s === 'string' && Number.isFinite(Date.parse(s));
 const validText = (s,max,min=1) => typeof s==='string' && s.length>=min &&
@@ -371,6 +371,56 @@ export class ReviewStore {
       return updated;
     });
   }
+  /** Operator-attested one-use retry authorization of an ACKNOWLEDGED Graphiti
+   * task no longer live in its retired backend generation. This is a second
+   * remote attempt, NEVER a 'never submitted' record. It preserves the original
+   * audit, sources and fact, and cannot itself call Graphiti.
+   */
+  async authorizeOrphanedRetry(id,expectedRevision,evidence){
+    if(!evidence||evidence.kind!=='acknowledged_graphiti_orphaned_task'||
+      evidence.identity_binding!=='anonymous_group_fifo_inference'||
+      evidence.operator_attested!==true||
+      evidence.acknowledged_submission!==true||
+      evidence.partial_effect_risk_acknowledged!==true||
+      evidence.prior_process_retired!==true||
+      !HEX.test(evidence.journal_sha256||'')||
+      !HEX.test(evidence.diagnostic_manifest_sha256||'')||
+      !HEX.test(evidence.remote_inventory_sha256||'')||
+      !validDate(evidence.original_ack_at)||
+      !validDate(evidence.process_retired_at)||
+      !validDate(evidence.observed_at)||
+      !Number.isSafeInteger(evidence.prior_backend_pid)||
+      evidence.prior_backend_pid<1||
+      !Number.isSafeInteger(evidence.current_backend_pid)||
+      evidence.current_backend_pid<1||
+      evidence.prior_backend_pid===evidence.current_backend_pid)
+      throw Error('INVALID_ACKNOWLEDGED_RETRY_EVIDENCE');
+    return this._mutex(id,async()=>{
+      const old=await this.get(id);
+      if(!old)throw Error('UNKNOWN_REVIEW');
+      if(old.revision!==expectedRevision)throw Error('STALE_REVIEW_REVISION');
+      if(old.state!=='queued'||old.remote_episode_uuid||
+        old.orphaned_retry_evidence||old.facts?.length!==1)
+        throw Error('ACKNOWLEDGED_RETRY_REQUIRES_UNRETRIED_QUEUED');
+      const queued=old.audit?.filter(a=>a.action==='state'&&a.outcome==='queued')||[];
+      const staged=old.audit?.filter(a=>a.action==='state'&&a.outcome==='submission_unknown')||[];
+      if(queued.length!==1||staged.length!==1||
+        queued[0].at!==evidence.original_ack_at||
+        Date.parse(staged[0].at)>Date.parse(queued[0].at)||
+        Date.parse(queued[0].at)>=Date.parse(evidence.process_retired_at)||
+        Date.parse(evidence.process_retired_at)>Date.parse(evidence.observed_at))
+        throw Error('ACKNOWLEDGED_RETRY_AUDIT_OR_TIME_MISMATCH');
+      const now=new Date().toISOString();
+      const updated={...old,state:'retry_authorized',
+        revision:old.revision+1,updated_at:now,
+        orphaned_retry_evidence:{...evidence,authorized_at:now,retry_used_at:null},
+        audit:[...old.audit.slice(-59),{at:now,
+          action:'operator_attested_acknowledged_retry',
+          outcome:'retry_authorized'}]};
+      await atomic(this.filename(id),updated);
+      return updated;
+    });
+  }
   /** Operator-attested reconciliation of a locally staged write-intent that
    * was proven never submitted remotely. This is NOT a replay: no remote
    * write was ever issued for this record, so restoring the pre-staging
@@ -410,6 +460,7 @@ export class ReviewStore {
   }
   async advance(id,expectedState,next,extra={}){
     const allowed={approved:['submission_unknown','deferred'],
+      retry_authorized:['submission_unknown'],
       submission_unknown:['queued','persisted'],queued:['persisted']};
     // Durable remote-write intent (and its settlement) may only be recorded
     // by an admitted post-exit caller. The marker is declared by the EX
@@ -438,10 +489,19 @@ export class ReviewStore {
       const remoteUUID=extra.remote_episode_uuid||old.remote_episode_uuid;
       if(next==='persisted'&&!UUID.test(remoteUUID||''))
         throw Error('Confirmed remote episode UUID required');
+      if(expectedState==='retry_authorized'&&
+        (!old.orphaned_retry_evidence||
+         old.orphaned_retry_evidence.retry_used_at!==null))
+        throw Error('ACKNOWLEDGED_RETRY_NOT_AUTHORIZED_OR_ALREADY_SPENT');
       const updated={...old,state:next,revision:old.revision+1,updated_at:now,
         reason:typeof extra.reason==='string'?extra.reason:old.reason,
         remote_episode_uuid:remoteUUID,
-        audit:[...old.audit.slice(-59),{at:now,action:'state',outcome:next}]};
+        ...(expectedState==='retry_authorized'?{
+          orphaned_retry_evidence:{...old.orphaned_retry_evidence,retry_used_at:now}
+        }:{}),
+        audit:[...old.audit.slice(-59),{at:now,
+          action:expectedState==='retry_authorized'?'acknowledged_retry_write_intent':'state',
+          outcome:next}]};
       if(next==='persisted'){
         // O(1) source lookup in native prompt recall. Write index first;
         // readers re-check the referenced record's persisted identity, so

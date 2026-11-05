@@ -55,7 +55,7 @@ async function duplicateState(record,store,graphiti) {
   const listed=await allRecords(store);
   const ours=new Set(record.facts.map(f=>normalizedAssertion(f.assertion)));
   for(const other of listed){
-    if(other.id===record.id||!['persisted','queued','submission_unknown','failed_extraction'].includes(other.state))continue;
+    if(other.id===record.id||!['persisted','queued','submission_unknown','failed_extraction','retry_authorized'].includes(other.state))continue;
     for(const f of other.facts||[])if(ours.has(normalizedAssertion(f.assertion)))
       return other.state==='failed_extraction'?'LOCAL_PRIOR_FAILED_EXTRACTION_NO_REPLAY':'LOCAL_REPEATED_ASSERTION';
   }
@@ -78,25 +78,30 @@ async function deferValidatedSnapshot(store,record,reason){
 }
 export async function promoteOne(store,record,graphiti){
   admitted();
-  if(record.state!=='approved')return {status:'not_approved'};
+  const retry=record.state==='retry_authorized';
+  if(record.state!=='approved'&&!retry)return {status:'not_approved'};
   const check=validateDecision({decision:'EMIT',reason:record.reason,
     facts:record.facts},record);
   // A single episode can contain extracted facts with different supporting
   // source classes. Until per-fact remote identities are implemented, keep
   // multi-fact output in operator review instead of misattributing recall.
   if(check.ok&&record.facts.length!==1){
-    return deferValidatedSnapshot(store,record,'multi_fact_requires_split');
+    return retry?{status:'recovery_preflight_blocked',reason:'multi_fact_requires_split'}:
+      deferValidatedSnapshot(store,record,'multi_fact_requires_split');
   }
   if(!check.ok){
-    return deferValidatedSnapshot(store,record,'validation:'+check.reason);
+    return retry?{status:'recovery_preflight_blocked',reason:'validation:'+check.reason}:
+      deferValidatedSnapshot(store,record,'validation:'+check.reason);
   }
   let duplicate;
   try{duplicate=await duplicateState(record,store,graphiti);}
   catch(e){
-    return deferValidatedSnapshot(store,record,'duplicate_check_unavailable');
+    return retry?{status:'recovery_preflight_blocked',reason:'duplicate_check_unavailable'}:
+      deferValidatedSnapshot(store,record,'duplicate_check_unavailable');
   }
   if(duplicate){
-    return deferValidatedSnapshot(store,record,duplicate);
+    return retry?{status:'recovery_preflight_blocked',reason:duplicate}:
+      deferValidatedSnapshot(store,record,duplicate);
   }
   // Verify the positive readback protocol *before* any remote write intent.
   // An incompatible list shape must not first surface after add_memory,
@@ -106,12 +111,22 @@ export async function promoteOne(store,record,graphiti){
       group_ids:[record.group],max_episodes:1000});
     if(!Array.isArray(episodes?.episodes))
       throw Error('GRAPHITI_EPISODES_UNAVAILABLE');
+    if(retry){
+      const rows=episodes.episodes;
+      if(rows.length>=1000||rows.some(e=>e?.group_id!==record.group)||
+        new Set(rows.map(e=>e?.uuid)).size!==rows.length||
+        new Set(rows.map(e=>e?.name)).size!==rows.length||
+        rows.some(e=>e?.name===nameOf(record)))
+        throw Error('ACKNOWLEDGED_RETRY_REMOTE_NOT_UNIQUE_OR_ABSENT');
+    }
   } catch {
-    return deferValidatedSnapshot(store,record,'graphiti_readback_preflight_unavailable');
+    return retry?{status:'recovery_preflight_blocked',reason:'graphiti_readback_preflight_unavailable'}:
+      deferValidatedSnapshot(store,record,'graphiti_readback_preflight_unavailable');
   }
-  // Write-intent is durable BEFORE the first remote call: timeout may mean
-  // accepted+queued. A retry must reconcile, never call add_memory again.
-  if(!await store.advance(record.id,'approved','submission_unknown',
+  // Every authorized attempt stages durable intent BEFORE the remote call.
+  // The single retry is consumed by this transition; timeout/crash forbids
+  // further automatic retries, even if no remote episode can be read back.
+  if(!await store.advance(record.id,record.state,'submission_unknown',
     {expected_revision:record.revision}))
     return {status:'concurrent_transition'};
   const args={group_id:record.group,name:nameOf(record),episode_body:episodeBody({
@@ -205,7 +220,7 @@ export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='loca
         if(row.state==='new'||row.state==='reserved')
           await queue.transition(id,row.state,terminal);
       }else if(['approved','submission_unknown','queued','persisted',
-        'failed_extraction'].includes(prior.state)){
+        'failed_extraction','retry_authorized'].includes(prior.state)){
         if(row.state==='new')await queue.transition(id,'new','reserved');
         else if(row.state==='deferred')
           await queue.transition(id,'deferred','reserved');
@@ -264,16 +279,26 @@ export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='loca
   // The durable review record is authoritative. Restore source-queue
   // admission after operator re-evaluation or a crash between review CAS
   // and individual source transitions. Never replay a Graphiti write.
-  for(const entry of after.filter(x=>['approved','submission_unknown','queued','persisted'].includes(x.state))){
+  for(const entry of after.filter(x=>['approved','submission_unknown','queued','persisted','retry_authorized'].includes(x.state))){
     for(const id of entry.source_event_ids){
       if(!await queue.transition(id,'new','reserved'))
         await queue.transition(id,'deferred','reserved');
       await queue.transition(id,'reserved','approved');
     }
   }
-  for(const entry of after.filter(x=>x.state==='approved')){
+  let recoveryBlocked=false;
+  // Process specifically authorized retries first; never grant retry
+  // authority implicitly to ordinary approved/queued records.
+  const promotable=[
+    ...after.filter(x=>x.state==='retry_authorized'),
+    ...after.filter(x=>x.state==='approved')
+  ];
+  for(const entry of promotable){
     if(Date.now()>deadline-5000)break;
     const wrote=await promoteOne(store,entry,graphiti);
+    if(wrote.status==='recovery_preflight_blocked'){
+      recoveryBlocked=true;break;
+    }
     if(wrote.status==='queued')stats.queued++;
     if(wrote.status==='submission_unknown')stats.unresolved++;
     if(wrote.status==='deferred')stats.deferred++;
@@ -288,15 +313,15 @@ export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='loca
     result=await reconcile(store,graphiti);
     stats.persisted+=result.persisted;
   }
-  stats.unresolved=result.unresolved;
+  stats.unresolved=result.unresolved+(recoveryBlocked?1:0);
   // A deadline/max-clusters bound may leave approved reviews or candidate
   // source work behind after the remote episode has settled. Do not report a
   // terminal drain to the EX wrapper while eligible work remains.
   const queueLeft=await queue.status();
   const pendingReviews=(await allRecords(store)).some(r=>
-    r.state==='approved'||(r.state==='deferred'&&r.reevaluate_requested));
+    ['approved','retry_authorized'].includes(r.state)||(r.state==='deferred'&&r.reevaluate_requested));
   const localWork=pendingReviews||queueLeft.counts.new>0||
     queueLeft.counts.reserved>0;
-  return {...stats,status:result.unresolved?'unresolved':
+  return {...stats,status:stats.unresolved?'unresolved':
     localWork?'incomplete':stats.deferred?'review_required':'settled'};
 }

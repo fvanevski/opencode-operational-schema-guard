@@ -65,7 +65,7 @@ if(command==='validate-config'){
     let pendingReview=false;
     for(let offset=0;;offset+=500){
       const page=await store.list({limit:500,offset});
-      if(page.items.some(r=>r.state==='approved'||
+      if(page.items.some(r=>r.state==='approved'||r.state==='retry_authorized'||
         (r.state==='deferred'&&r.reevaluate_requested)))pendingReview=true;
       if(!page.has_more)break;
     }
