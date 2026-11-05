@@ -267,3 +267,25 @@ test('never-submitted adjudicator cannot reset a spent, acknowledged retry after
   await assert.rejects(s.store.advance(s.record.id,'submission_unknown','approved'),
     /Illegal remote state transition/);
 })));
+
+test('malformed remote episode identity fails closed before second add_memory',admitted(()=>fixture(async s=>{
+  const arg={store:s.store,graphiti:s.mock,root:s.root,group,
+    reviewId:s.record.id,expectedRevision:3,evidence:s.evidence};
+  const dry=await assessAcknowledgedRetry(arg);
+  await assessAcknowledgedRetry({...arg,apply:true,attest:true,
+    acknowledgePartialEffects:true,expectedRemoteSha:dry.remote_inventory_sha256});
+  const malformed=[
+    {group_id:group,uuid:remoteUUID},
+    {group_id:group,name:'unrelated'},
+    {group_id:group,name:'unrelated',uuid:'not-a-uuid'},
+    {group_id:group,name:'',uuid:remoteUUID},
+    {group_id:'foreign',name:'unrelated',uuid:remoteUUID}
+  ];
+  for(const entry of malformed){
+    s.mock.episodes=[entry];
+    const out=await promoteOne(s.store,await s.store.get(s.record.id),s.mock);
+    assert.equal(out.status,'recovery_preflight_blocked',JSON.stringify(entry));
+    assert.equal((await s.store.get(s.record.id)).state,'retry_authorized');
+    assert.equal(s.mock.calls.includes('add_memory'),false);
+  }
+})));

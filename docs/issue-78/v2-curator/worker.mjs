@@ -117,10 +117,12 @@ export async function promoteOne(store,record,graphiti){
       throw Error('GRAPHITI_EPISODES_UNAVAILABLE');
     if(retry){
       const rows=episodes.episodes;
-      if(rows.length>=1000||rows.some(e=>e?.group_id!==record.group)||
-        new Set(rows.map(e=>e?.uuid)).size!==rows.length||
-        new Set(rows.map(e=>e?.name)).size!==rows.length||
-        rows.some(e=>e?.name===nameOf(record)))
+      if(rows.length>=1000||
+        rows.some(e=>e?.group_id!==record.group||
+          !validUUID(e?.uuid)||typeof e?.name!=='string'||!e.name.trim())||
+        new Set(rows.map(e=>e.uuid)).size!==rows.length||
+        new Set(rows.map(e=>e.name)).size!==rows.length||
+        rows.some(e=>e.name===nameOf(record)))
         throw Error('ACKNOWLEDGED_RETRY_REMOTE_NOT_UNIQUE_OR_ABSENT');
     }
   } catch {
