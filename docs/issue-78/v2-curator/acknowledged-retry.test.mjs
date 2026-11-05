@@ -41,9 +41,10 @@ async function fixture(fn){
       partial_effect_risk_acknowledged:true,
       journal_sha256:'a'.repeat(64),diagnostic_manifest_sha256:'b'.repeat(64),
       original_ack_at:ack,
-      process_retired_at:new Date(Date.parse(ack)+5000).toISOString(),
+      backend_generation_binding:'fresh_graphiti_process_after_ack',
+      current_backend_started_at:new Date(Date.parse(ack)+5000).toISOString(),
       observed_at:new Date(Date.parse(ack)+10000).toISOString(),
-      prior_backend_pid:123456,current_backend_pid:123457};
+      prior_backend_pid:null,current_backend_pid:123457};
     const mock={calls:[],episodes:[],async call(name,args){
       this.calls.push(name);
       if(name==='get_episodes')return {episodes:this.episodes};
@@ -288,4 +289,30 @@ test('malformed remote episode identity fails closed before second add_memory',a
     assert.equal((await s.store.get(s.record.id)).state,'retry_authorized');
     assert.equal(s.mock.calls.includes('add_memory'),false);
   }
+})));
+
+test('production generation evidence rejects representative dead PIDs and time mismatches',admitted(()=>fixture(async s=>{
+  const arg={store:s.store,graphiti:s.mock,root:s.root,group,
+    reviewId:s.record.id,expectedRevision:3};
+  for(const invalid of [
+    {...s.evidence,prior_backend_pid:3000000},
+    {...s.evidence,backend_generation_binding:'dead_placeholder_pid'},
+    {...s.evidence,current_backend_started_at:s.evidence.original_ack_at},
+    {...s.evidence,current_backend_started_at:'2099-01-01T00:00:00Z'},
+    {...s.evidence,current_backend_pid:null}
+  ])await assert.rejects(assessAcknowledgedRetry({...arg,evidence:invalid}),
+    /ACKNOWLEDGED_RETRY_SCOPE_OR_EVIDENCE_INVALID|ACKNOWLEDGED_RETRY_AUDIT_UNVERIFIABLE/);
+  assert.equal((await s.store.get(s.record.id)).state,'queued');
+})));
+test('backend generation is reauthenticated immediately before retry authorization CAS',admitted(()=>fixture(async s=>{
+  const arg={store:s.store,graphiti:s.mock,root:s.root,group,
+    reviewId:s.record.id,expectedRevision:3,evidence:s.evidence};
+  const plan=await assessAcknowledgedRetry(arg);
+  let checked=0;
+  await assert.rejects(assessAcknowledgedRetry({...arg,apply:true,attest:true,
+    acknowledgePartialEffects:true,expectedRemoteSha:plan.remote_inventory_sha256,
+    verifyBackendGeneration:()=>{checked++;throw Error('BACKEND_GENERATION_CHANGED');}
+  }),/BACKEND_GENERATION_CHANGED/);
+  assert.equal(checked,1);
+  assert.equal((await s.store.get(s.record.id)).state,'queued');
 })));

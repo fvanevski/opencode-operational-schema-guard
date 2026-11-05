@@ -387,13 +387,12 @@ export class ReviewStore {
       !HEX.test(evidence.diagnostic_manifest_sha256||'')||
       !HEX.test(evidence.remote_inventory_sha256||'')||
       !validDate(evidence.original_ack_at)||
-      !validDate(evidence.process_retired_at)||
+      evidence.backend_generation_binding!=='fresh_graphiti_process_after_ack'||
+      evidence.prior_backend_pid!==null||
+      !validDate(evidence.current_backend_started_at)||
       !validDate(evidence.observed_at)||
-      !Number.isSafeInteger(evidence.prior_backend_pid)||
-      evidence.prior_backend_pid<1||
       !Number.isSafeInteger(evidence.current_backend_pid)||
-      evidence.current_backend_pid<1||
-      evidence.prior_backend_pid===evidence.current_backend_pid)
+      evidence.current_backend_pid<1)
       throw Error('INVALID_ACKNOWLEDGED_RETRY_EVIDENCE');
     return this._mutex(id,async()=>{
       const old=await this.get(id);
@@ -407,8 +406,8 @@ export class ReviewStore {
       if(queued.length!==1||staged.length!==1||
         queued[0].at!==evidence.original_ack_at||
         Date.parse(staged[0].at)>Date.parse(queued[0].at)||
-        Date.parse(queued[0].at)>=Date.parse(evidence.process_retired_at)||
-        Date.parse(evidence.process_retired_at)>Date.parse(evidence.observed_at))
+        Date.parse(queued[0].at)>=Date.parse(evidence.current_backend_started_at)||
+        Date.parse(evidence.current_backend_started_at)>Date.parse(evidence.observed_at))
         throw Error('ACKNOWLEDGED_RETRY_AUDIT_OR_TIME_MISMATCH');
       const now=new Date().toISOString();
       const updated={...old,state:'retry_authorized',

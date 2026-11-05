@@ -43,18 +43,29 @@ host's actual logs and independent backend/task inventory:
   "journal_sha256": "<64-hex>",
   "diagnostic_manifest_sha256": "<64-hex>",
   "original_ack_at": "<the EXACT queued audit UTC timestamp>",
-  "process_retired_at": "<observed prior backend retirement ISO timestamp>",
+  "backend_generation_binding": "fresh_graphiti_process_after_ack",
+  "current_backend_started_at": "<UTC start time of ACTUAL live run_graphiti.py PID>",
   "observed_at": "<remote/process readback ISO timestamp>",
-  "prior_backend_pid": 11111,
+  "prior_backend_pid": null,
   "current_backend_pid": 22222
 }
 ```
 
-PID placeholders above are **not** run instructions. Verify old PID really
-retired and the current backend is the intended one. The utility checks
-PID liveness on production and verifies canonical curator service state,
-but cannot independently prove an anonymous upstream FIFO event identity.
-The operator must assess residual partial-graph and provenance risk.
+The current PID above is a **placeholder**, not an observed identity.
+When the original backend PID is unavailable because journal records rotated,
+record `prior_backend_pid: null`; never substitute an arbitrary dead PID.
+The production CLI independently requires exactly one live
+`run_graphiti.py` process, compares that process's actual `ps -o lstart`
+timestamp (host-local, interpreted into UTC) with the claimed
+`current_backend_started_at` within two seconds, and requires that the
+new process started **after the original queued ACK**. It repeats this
+check immediately before applying local retry authorization.
+
+This establishes fresh backend generation continuity under the verified
+single-process topology, not the exact historical retirement timestamp or
+the exact point the asynchronous task disappeared. The journal/diagnostic
+manifest remains an operator-attested source and the potential for partial
+graph effects must still be assessed explicitly.
 
 From the installed plugin directory, first run:
 

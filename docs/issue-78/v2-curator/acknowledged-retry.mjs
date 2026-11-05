@@ -31,15 +31,16 @@ function evidenceShape(e){
     HEX.test(e.diagnostic_manifest_sha256||'')&&
     typeof e.original_ack_at==='string'&&
     Number.isFinite(Date.parse(e.original_ack_at))&&
-    Number.isSafeInteger(e.prior_backend_pid)&&e.prior_backend_pid>0&&
+    e.backend_generation_binding==='fresh_graphiti_process_after_ack'&&
+    e.prior_backend_pid===null&&
     Number.isSafeInteger(e.current_backend_pid)&&e.current_backend_pid>0&&
-    e.prior_backend_pid!==e.current_backend_pid&&
-    Number.isFinite(Date.parse(e.process_retired_at))&&
+    Number.isFinite(Date.parse(e.current_backend_started_at))&&
     Number.isFinite(Date.parse(e.observed_at));
 }
 export async function assessAcknowledgedRetry({store,graphiti,root,group,
   reviewId,expectedRevision,evidence,apply=false,attest=false,
-  acknowledgePartialEffects=false,expectedRemoteSha=null}={}){
+  acknowledgePartialEffects=false,expectedRemoteSha=null,
+  verifyBackendGeneration=null}={}){
   if(!store||store.group!==group||!allowedGroup(group)||
     !HEX.test(reviewId||'')||!Number.isInteger(expectedRevision)||
     expectedRevision<1||typeof root!=='string'||!path.isAbsolute(root)||
@@ -54,8 +55,8 @@ export async function assessAcknowledgedRetry({store,graphiti,root,group,
   const intent=record.audit?.filter(x=>x.action==='state'&&x.outcome==='submission_unknown')||[];
   if(ack.length!==1||intent.length!==1||ack[0].at!==evidence.original_ack_at||
     Date.parse(intent[0].at)>Date.parse(ack[0].at)||
-    Date.parse(ack[0].at)>=Date.parse(evidence.process_retired_at)||
-    Date.parse(evidence.process_retired_at)>Date.parse(evidence.observed_at))
+    Date.parse(ack[0].at)>=Date.parse(evidence.current_backend_started_at)||
+    Date.parse(evidence.current_backend_started_at)>Date.parse(evidence.observed_at))
     throw Error('ACKNOWLEDGED_RETRY_AUDIT_UNVERIFIABLE');
   const result=await graphiti.call('get_episodes',{
     group_ids:[group],max_episodes:1000});
@@ -95,6 +96,10 @@ export async function assessAcknowledgedRetry({store,graphiti,root,group,
     expectedRemoteSha!==fingerprint||
     !HEX.test(expectedRemoteSha||''))
     throw Error('EXPLICIT_ACKNOWLEDGED_RETRY_ATTESTATION_REQUIRED');
+  // Reauthenticate the live backend generation just before the local CAS.
+  // This is operator authority, not proof that the old asynchronous task
+  // completed; all uncertainty remains explicit in the evidence record.
+  if(verifyBackendGeneration)await verifyBackendGeneration(evidence);
   const updated=await store.authorizeOrphanedRetry(reviewId,expectedRevision,{
     ...evidence,remote_inventory_sha256:fingerprint,
     operator_attested:true,partial_effect_risk_acknowledged:true
