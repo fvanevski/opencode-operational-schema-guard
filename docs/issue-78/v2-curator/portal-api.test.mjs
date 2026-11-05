@@ -26,7 +26,7 @@ test('loopback API requires token, exact origin, source-bound review and revisio
   await chmod(tokenFile,0o600);
   const dist=path.join(root,'dist');await mkdir(dist);
   await writeFile(path.join(dist,'index.html'),'<html><title>private review</title></html>');
-  const group='api80';
+  const group='graphiti-curator-qualification-r01';
   const event=fromPrompt({sessionID:'ses_api',messageID:'msg_api',
     prompt:{text:'Fix median invalidation and preserve the CLI interface with a regression test.'},
     timestamp:'2026-11-03T18:00:00.000Z'},
@@ -75,7 +75,11 @@ test('loopback API requires token, exact origin, source-bound review and revisio
   assert.equal(resp.status,400);
   resp=await fetch(origin+'/api/status',{headers:{'x-review-token':token}});
   assert.equal(resp.status,200);
-  assert.ok((await resp.json()).evidence_classes.includes('user-stated'));
+  const status=await resp.json();
+  assert.ok(status.evidence_classes.includes('user-stated'));
+  assert.equal(status.scope,group);
+  assert.equal(status.fixture.kind,'named_fixture');
+  assert.match(status.fixture.label,/Curator \/ Qualification \/ Run 01/);
   resp=await fetch(url,{method:'POST',headers:{'x-review-token':token,
     'Origin':origin,'Content-Type':'application/json'},
     body:JSON.stringify({action:'discard',revision:1,reason:'Not useful'})});

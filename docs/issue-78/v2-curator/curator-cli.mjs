@@ -7,6 +7,7 @@ import { ReviewStore } from './core.mjs';
 import { runAdmitted, reconcile } from './worker.mjs';
 import { modelPolicy } from './model-policy.mjs';
 import { GraphitiMcp } from '../../issue-75/v2-candidate/memory-core.mjs';
+import {describeFixtureGroup} from '../fixture-groups.mjs';
 const [, ,command,...args]=process.argv;
 const arg=k=>{const i=args.indexOf('--'+k);return i<0?'':args[i+1]||'';};
 const group=arg('group');
@@ -32,11 +33,11 @@ if(command==='validate-config'){
       for(const r of page.items)counts[r.state]=(counts[r.state]||0)+1;
       reviewCount=page.total;if(!page.has_more)break;
     }
-    console.log(JSON.stringify({group,counts,review_count:reviewCount,
+    console.log(JSON.stringify({group,fixture:describeFixtureGroup(group),counts,review_count:reviewCount,
       queue:await new CandidateQueue(root,group).status()},null,2));
   }else if(command==='list'){
     const rows=await store.list({limit:100});
-    console.log(JSON.stringify({group,total:rows.total,
+    console.log(JSON.stringify({group,fixture:describeFixtureGroup(group),total:rows.total,
       items:rows.items.map(({id,state,decision,reason,revision,remote_episode_uuid,source_event_ids,failure_evidence})=>
         ({id,state,decision,reason,revision,remote_episode_uuid,source_event_ids,
           failure_code:failure_evidence?.error_code||null,

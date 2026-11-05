@@ -6,7 +6,7 @@ import {pathToFileURL} from 'node:url';
 import {CandidateQueue} from '../v2-candidate/queue.mjs';
 import {replay} from './evaluate.mjs';
 import {bindAdjudication,digest} from './adjudicate.mjs';
-import {isFixtureGroup,permittedQualificationGroup} from '../fixture-groups.mjs';
+import {isFixtureGroup,permittedQualificationGroup,describeFixtureGroup} from '../fixture-groups.mjs';
 
 const deny=s=>{throw Error('HOLDOUT_STAGE_DENIED:'+s);};
 export function plan(corpus,group){
@@ -78,7 +78,7 @@ export async function main(args=process.argv.slice(2)){
  }
  const receipt={
   schema_version:1,kind:'issue81-holdout-stage',
-  state:'STAGED_NOT_CURATED',group,
+  state:'STAGED_NOT_CURATED',group,fixture:describeFixtureGroup(group),
   frozen_corpus_sha256:binding.authority.frozen_corpus_sha256,
   adjudication_sha256:binding.authority.adjudication_sha256,
   target_ratification_sha256:binding.authority.target_ratification_sha256,
