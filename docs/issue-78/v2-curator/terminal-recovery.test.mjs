@@ -165,3 +165,11 @@ test('never-submitted adjudication rejects present remote episodes, stale revisi
   {...evidence,operator_attested:false}),/INVALID_NEVER_SUBMITTED_EVIDENCE/);
  assert.equal((await s.store.get(s.record.id)).state,'submission_unknown');
 }));
+
+test('legacy recovery remains accepted, while new non-recovery or production groups stay denied',()=>{
+ const old='cur80_qualtest';
+ const legacyLog=log().replaceAll(group,old);
+ assert.equal(assessQueueLog(legacyLog,old).processing_starts,2);
+ assert.throws(()=>assessQueueLog(log(),'graphiti-cron-holdout-r01'),/INVALID_QUEUE_LOG_INPUT/);
+ assert.throws(()=>assessQueueLog(log(),'ghdev_gh_mcp'),/INVALID_QUEUE_LOG_INPUT/);
+});
