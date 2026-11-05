@@ -26,11 +26,13 @@ async function withHarness(run){
   const prompt=e=>call(sessions.prompt,e);
   const context=messages=>call(sessions.context,{sessionID,system:[],messages});
   const outcome=id=>call(tools['execute.after'],tool(id));
-  try{await run({prompt,context,outcome,root});}
-  finally{await stop();}
+  let inspect;
+  try{inspect=await run({prompt,context,outcome});}
+  finally{await stop();} // Flush all asynchronous candidate writes before assertion.
+  if(typeof inspect==='function')await inspect(root);
  }finally{await rm(root,{recursive:true,force:true});}
 }
-test('assistant history retains preceding admitted native user, not the later prompt; rejected prompt clears tool association',()=>withHarness(async({prompt,context,outcome,root})=>{
+test('assistant history retains preceding admitted native user, not the later prompt; rejected prompt clears tool association',()=>withHarness(async({prompt,context,outcome})=>{
  const a=nativePrompt('msg-a','Fix the cron alias parser and preserve the existing public interface.');
  const b=nativePrompt('msg-b','Add and test wrap-around ranges while preserving earlier behavior.');
  const rejected=nativePrompt('msg-filtered','Thanks!');
@@ -52,46 +54,36 @@ test('assistant history retains preceding admitted native user, not the later pr
  await context([user('msg-b'),assistantB,user('msg-filtered'),assistantFiltered]);
  await outcome('call-c');
  await context([user('msg-c'),assistantC]);
- // Host queue flush occurs at stop; the callback writes are deliberately async.
- const q=new CandidateQueue(root,scope.group);
- await q.status(); // no authority asserted from this non-blocking snapshot
- // Explicitly wait for accepted per-source rows without creating another turn.
- const staged=async()=>{
-  for(let n=0;n<100;n++){
-   const rows=(await q.list()).items;
-   if(rows.length>=10)return rows;
-   await new Promise(resolve=>setTimeout(resolve,5));
-  }
-  throw Error('pending candidate writes did not finish');
+ // Assertions run only after the plugin's stop() flushes its queue.
+ return async root=>{
+  const entries=(await new CandidateQueue(root,scope.group).list({limit:100})).items;
+  assert.equal(entries.length,11); // 3 admitted prompts, 4 assistants, 4 tools
+  const find=(kind,id)=>entries.find(e=>e.source_refs[0]==='opencode:'+sessionID+':'+kind+':'+id);
+  const sourceA=find('message','msg-a'),sourceB=find('message','msg-b'),sourceC=find('message','msg-c');
+  assert.ok(sourceA&&sourceB&&sourceC);
+  assert.equal(find('message','msg-filtered'),undefined);
+  assert.deepEqual(find('message','assist-a').related_event_ids,[sourceA.event_id]);
+  assert.deepEqual(find('message','assist-b').related_event_ids,[sourceB.event_id]);
+  assert.deepEqual(find('message','assist-filtered').related_event_ids,[]);
+  assert.deepEqual(find('message','assist-c').related_event_ids,[sourceC.event_id]);
+  assert.deepEqual(find('tool','call-a').related_event_ids,[sourceA.event_id]);
+  assert.deepEqual(find('tool','call-b').related_event_ids,[sourceB.event_id]);
+  assert.deepEqual(find('tool','call-filtered').related_event_ids,[]);
+  assert.deepEqual(find('tool','call-c').related_event_ids,[sourceC.event_id]);
  };
- const entries=await staged();
- const find=(kind,id)=>entries.find(e=>e.source_refs[0]==='opencode:'+sessionID+':'+kind+':'+id);
- const sourceA=find('message','msg-a'),sourceB=find('message','msg-b'),sourceC=find('message','msg-c');
- assert.ok(sourceA&&sourceB&&sourceC);
- assert.equal(find('message','msg-filtered'),undefined);
- assert.deepEqual(find('message','assist-a').related_event_ids,[sourceA.event_id]);
- assert.deepEqual(find('message','assist-b').related_event_ids,[sourceB.event_id]);
- assert.deepEqual(find('message','assist-filtered').related_event_ids,[]);
- assert.deepEqual(find('message','assist-c').related_event_ids,[sourceC.event_id]);
- assert.deepEqual(find('tool','call-a').related_event_ids,[sourceA.event_id]);
- assert.deepEqual(find('tool','call-b').related_event_ids,[sourceB.event_id]);
- assert.deepEqual(find('tool','call-filtered').related_event_ids,[]);
- assert.deepEqual(find('tool','call-c').related_event_ids,[sourceC.event_id]);
 }));
-test('a rejected prompt at the end of one pending batch does not borrow an earlier accepted anchor',()=>withHarness(async({prompt,context,outcome,root})=>{
+test('a rejected prompt at the end of one pending batch does not borrow an earlier accepted anchor',()=>withHarness(async({prompt,context,outcome})=>{
  await prompt(nativePrompt('msg-accepted','Fix the parser and add the focused regression test.'));
  await prompt(nativePrompt('msg-rejected','Thanks!'));
  await context([]);
  await outcome('call-later');
- const q=new CandidateQueue(root,scope.group);
- const rows=await (async()=>{for(let n=0;n<100;n++){
-  const found=(await q.list()).items;
-  if(found.length>=2)return found;
-  await new Promise(resolve=>setTimeout(resolve,5));
- }throw Error('pending candidate writes did not finish');})();
- const accepted=rows.find(e=>e.source_refs[0]==='opencode:'+sessionID+':message:msg-accepted');
- const later=rows.find(e=>e.source_refs[0]==='opencode:'+sessionID+':tool:call-later');
- assert.ok(accepted&&later);
- assert.equal(rows.some(e=>e.source_refs[0].endsWith(':msg-rejected')),false);
- assert.deepEqual(later.related_event_ids,[]);
+ return async root=>{
+  const rows=(await new CandidateQueue(root,scope.group).list({limit:100})).items;
+  assert.equal(rows.length,2);
+  const accepted=rows.find(e=>e.source_refs[0]==='opencode:'+sessionID+':message:msg-accepted');
+  const later=rows.find(e=>e.source_refs[0]==='opencode:'+sessionID+':tool:call-later');
+  assert.ok(accepted&&later);
+  assert.equal(rows.some(e=>e.source_refs[0].endsWith(':msg-rejected')),false);
+  assert.deepEqual(later.related_event_ids,[]);
+ };
 }));
