@@ -5,14 +5,20 @@ import os from 'node:os';
 import { CandidateQueue } from '../v2-candidate/queue.mjs';
 import { ReviewStore } from './core.mjs';
 import { runAdmitted, reconcile } from './worker.mjs';
+import { modelPolicy } from './model-policy.mjs';
 import { GraphitiMcp } from '../../issue-75/v2-candidate/memory-core.mjs';
+import {describeFixtureGroup} from '../fixture-groups.mjs';
 const [, ,command,...args]=process.argv;
 const arg=k=>{const i=args.indexOf('--'+k);return i<0?'':args[i+1]||'';};
 const group=arg('group');
 const root=arg('state-dir')||path.join(process.env.XDG_STATE_HOME||path.join(os.homedir(),'.local','state'),'ghdev-graphiti');
 const maxSeconds=Number(arg('max-seconds')||'600');
 const maxClusters=Number(arg('max-clusters')||'6');
-if(!group||!['drain','status','list','reconcile-only'].includes(command)||
+if(command==='validate-config'){
+  const policy=modelPolicy(process.env);
+  console.log(JSON.stringify({status:'VALID_CURATOR_MODEL_OPTIONS',
+    modelOptions:policy,default_behavior:!Object.keys(policy).length}));
+}else if(!group||!['drain','status','list','reconcile-only'].includes(command)||
    !Number.isInteger(maxSeconds)||maxSeconds<5||maxSeconds>3600){
   console.error('Usage: node curator-cli.mjs drain|status|list|reconcile-only --group GROUP --state-dir DIR '+
     '[--endpoint LOOPBACK_GRAPHITI_MCP --max-seconds 600 --max-clusters 6]. '+
@@ -27,11 +33,11 @@ if(!group||!['drain','status','list','reconcile-only'].includes(command)||
       for(const r of page.items)counts[r.state]=(counts[r.state]||0)+1;
       reviewCount=page.total;if(!page.has_more)break;
     }
-    console.log(JSON.stringify({group,counts,review_count:reviewCount,
+    console.log(JSON.stringify({group,fixture:describeFixtureGroup(group),counts,review_count:reviewCount,
       queue:await new CandidateQueue(root,group).status()},null,2));
   }else if(command==='list'){
     const rows=await store.list({limit:100});
-    console.log(JSON.stringify({group,total:rows.total,
+    console.log(JSON.stringify({group,fixture:describeFixtureGroup(group),total:rows.total,
       items:rows.items.map(({id,state,decision,reason,revision,remote_episode_uuid,source_event_ids,failure_evidence})=>
         ({id,state,decision,reason,revision,remote_episode_uuid,source_event_ids,
           failure_code:failure_evidence?.error_code||null,
@@ -78,7 +84,8 @@ if(!group||!['drain','status','list','reconcile-only'].includes(command)||
     const data=await runAdmitted({root,group,graphitiEndpoint:arg('endpoint'),
       modelEndpoint:process.env.LOCAL_CURATOR_URL,
       modelId:process.env.LOCAL_CURATOR_MODEL,
-      apiKey:process.env.LOCAL_CURATOR_API_KEY||'local',maxSeconds,maxClusters});
+      apiKey:process.env.LOCAL_CURATOR_API_KEY||'local',
+      modelOptions:modelPolicy(process.env),maxSeconds,maxClusters});
     console.log(JSON.stringify(data));
     if(data.status==='unresolved'||data.status==='incomplete')process.exitCode=3;
   }

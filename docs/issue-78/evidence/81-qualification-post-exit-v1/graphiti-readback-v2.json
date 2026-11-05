@@ -1,0 +1,201 @@
+{
+ "schema_version": 1,
+ "kind": "issue81-graphiti-readback-post-exit",
+ "endpoint": "http://127.0.0.1:8766/mcp",
+ "read_at": "2026-11-04T15:22:17.857Z",
+ "disposable_group": {
+  "group": "cur81_dev_ce555621",
+  "episode_count": 9,
+  "duplicates": 0,
+  "episodes": [
+   {
+    "review_id": "1cd1f3b12d13c0514e2aa199f25291f7a860fa075289b9dd220fa6e8d3f2fe49",
+    "remote_episode_uuid": "ca2352d0-372a-40c7-9fd2-55340defa347",
+    "episode_name": "curated-v1:1cd1f3b12d13c0514e2aa199f25291f7a860fa075289b9dd220fa6e8d3f2fe49",
+    "name_match": true,
+    "inspect_status": "verified_readback",
+    "source_ref": "opencode:ses_e66c687e7ffeqJ28qy48k7bQ1O:message:msg_199397990001OXw2eXQyBiVDhD",
+    "evidence_class": "user-stated",
+    "node_count": 2,
+    "edge_count": 1,
+    "linked_edge_count": 1,
+    "sample_nodes": [
+     "React Flow",
+     "backlog dependency visualization"
+    ],
+    "sample_edges": [
+     "React Flow was decided to be used for the backlog dependency visualization in the project."
+    ]
+   },
+   {
+    "review_id": "4ab73c43df15e0141b535cf1bcda1047e23545d31a590a1c93084a7549b487bd",
+    "remote_episode_uuid": "f1afd4fc-8993-475e-87b1-d8c147318e0c",
+    "episode_name": "curated-v1:4ab73c43df15e0141b535cf1bcda1047e23545d31a590a1c93084a7549b487bd",
+    "name_match": true,
+    "inspect_status": "verified_readback",
+    "source_ref": "opencode:ses_79ft01:tool:call_fa514124df4e85cc",
+    "evidence_class": "tool-reported",
+    "node_count": 2,
+    "edge_count": 1,
+    "linked_edge_count": 1,
+    "sample_nodes": [
+     "node",
+     "score3.test.js"
+    ],
+    "sample_edges": [
+     "node ran the test command node --test score3.test.js for score3.test.js, which exited 0 and reported output ℹ pass 1 ℹ fail 0."
+    ]
+   },
+   {
+    "review_id": "5fc80d9e8c82f723b9e2338404a546835c79fcd5585a7b2a7894d592bf758293",
+    "remote_episode_uuid": "2b034482-98aa-4b9d-8534-184a90709698",
+    "episode_name": "curated-v1:5fc80d9e8c82f723b9e2338404a546835c79fcd5585a7b2a7894d592bf758293",
+    "name_match": true,
+    "inspect_status": "verified_readback",
+    "source_ref": "opencode:ses_e5b66d739ffesDXWXunYRF11r9:message:msg_1a49a5425001Vs7h5EoHgFJYNy",
+    "evidence_class": "assistant-reported",
+    "node_count": 3,
+    "edge_count": 2,
+    "linked_edge_count": 2,
+    "sample_nodes": [
+     "evaluator tests",
+     "disposable worktree",
+     "host interface inventory"
+    ],
+    "sample_edges": [
+     "All 6 evaluator tests pass in the disposable worktree.",
+     "After all 6 evaluator tests pass in the disposable worktree and the patch is recorded, the workflow moves to host interface inventory."
+    ]
+   },
+   {
+    "review_id": "6c4aa8ab248cc724880eda60653fc247bf9a122fd67b65863be0989d4bb56459",
+    "remote_episode_uuid": "71addc8a-1b5a-49a0-8c7c-63c791b61c6c",
+    "episode_name": "curated-v1:6c4aa8ab248cc724880eda60653fc247bf9a122fd67b65863be0989d4bb56459",
+    "name_match": true,
+    "inspect_status": "verified_readback",
+    "source_ref": "opencode:ses_e5c142240ffe581PUuBXcFaAqz:message:msg_1a3edd9a10018KvIEQfY9ZusZF",
+    "evidence_class": "assistant-reported",
+    "node_count": 2,
+    "edge_count": 1,
+    "linked_edge_count": 1,
+    "sample_nodes": [
+     "Graphiti",
+     "cur80_qual02"
+    ],
+    "sample_edges": [
+     "Graphiti shows zero episodes for cur80_qual02 as of 2026-11-04T00:20:36.485Z."
+    ]
+   },
+   {
+    "review_id": "7b76aa0b5187a91cff828c42152f7d175de6e6a6d0dcee1e3ab58581e61421fa",
+    "remote_episode_uuid": "aa48b69d-09e0-4d7f-8021-0d7e1d58244d",
+    "episode_name": "curated-v1:7b76aa0b5187a91cff828c42152f7d175de6e6a6d0dcee1e3ab58581e61421fa",
+    "name_match": true,
+    "inspect_status": "verified_readback",
+    "source_ref": "opencode:ses_81recon:message:msg_81recon_conf1",
+    "evidence_class": "user-stated",
+    "node_count": 2,
+    "edge_count": 1,
+    "linked_edge_count": 1,
+    "sample_nodes": [
+     "permanent production scheduler group",
+     "disposable journal"
+    ],
+    "sample_edges": [
+     "The permanent production scheduler group replaces the disposable journal entirely in the migration of the curation state."
+    ]
+   },
+   {
+    "review_id": "8e7901a8aa35dee0aa960c3824f510ea31a4b47324c70be7ac3b4f5dd131cfa1",
+    "remote_episode_uuid": "67326f6a-6850-41d4-8309-dce7b32ab970",
+    "episode_name": "curated-v1:8e7901a8aa35dee0aa960c3824f510ea31a4b47324c70be7ac3b4f5dd131cfa1",
+    "name_match": true,
+    "inspect_status": "verified_readback",
+    "source_ref": "opencode:ses_e5d02fa91ffeeEtLfGYg4pLXJf:message:msg_1a2fd5a1a001vcm58L2dbIV5K3",
+    "evidence_class": "assistant-reported",
+    "node_count": 5,
+    "edge_count": 4,
+    "linked_edge_count": 4,
+    "sample_nodes": [
+     "litellm",
+     "OpenAI",
+     "litellm OpenAI-compatible API on 8002",
+     "OK service on 46151"
+    ],
+    "sample_edges": [
+     "litellm provides the litellm OpenAI-compatible API on 8002.",
+     "The litellm OpenAI-compatible API on 8002 and the OK service on 46151 were identified together in the same observation.",
+     "The litellm OpenAI-compatible API on 8002 has a 'chat' model.",
+     "The litellm OpenAI-compatible API on 8002 is compatible with OpenAI."
+    ]
+   },
+   {
+    "review_id": "a492d36f221069e485959fab43f249f06100fdb35dc441731525adb4826778a0",
+    "remote_episode_uuid": "511e8a52-8362-4e13-9b01-f8649cdf337e",
+    "episode_name": "curated-v1:a492d36f221069e485959fab43f249f06100fdb35dc441731525adb4826778a0",
+    "name_match": true,
+    "inspect_status": "verified_readback",
+    "source_ref": "opencode:ses_e66c19314ffemnBawIwPoeA42O:message:msg_1993e6e9b001eWiRa0zuhvEodc",
+    "evidence_class": "user-stated",
+    "node_count": 1,
+    "edge_count": 0,
+    "linked_edge_count": 0,
+    "sample_nodes": [
+     "release quality gate"
+    ],
+    "sample_edges": []
+   },
+   {
+    "review_id": "e445aeec638c9dd254b331ecb87af1594baf4a0b37018935c80ef93605b10356",
+    "remote_episode_uuid": "b718e11b-d5f8-4714-aed2-c12ae93c9dba",
+    "episode_name": "curated-v1:e445aeec638c9dd254b331ecb87af1594baf4a0b37018935c80ef93605b10356",
+    "name_match": true,
+    "inspect_status": "verified_readback",
+    "source_ref": "opencode:ses_e606c13afffe6Yy2H5QterYFZt:message:msg_19f94510a001xy31qcQAVp6W3N",
+    "evidence_class": "assistant-reported",
+    "node_count": 2,
+    "edge_count": 1,
+    "linked_edge_count": 1,
+    "sample_nodes": [
+     "opencode serve --service",
+     "OPENCODE_SERVICE_NEW_PID"
+    ],
+    "sample_edges": [
+     "The shared service PID 2782749 for opencode serve --service, started at 19:32:03 local, matches OPENCODE_SERVICE_NEW_PID."
+    ]
+   },
+   {
+    "review_id": "f584c1bfba64afdaeda0bc595f3bf63c59c13e4e34be77964dcdcf8671d2f0d5",
+    "remote_episode_uuid": "ab748387-5b36-41bb-a024-7f0721165243",
+    "episode_name": "curated-v1:f584c1bfba64afdaeda0bc595f3bf63c59c13e4e34be77964dcdcf8671d2f0d5",
+    "name_match": true,
+    "inspect_status": "verified_readback",
+    "source_ref": "opencode:ses_supp:tool:call_supp_s2",
+    "evidence_class": "tool-reported",
+    "node_count": 2,
+    "edge_count": 1,
+    "linked_edge_count": 1,
+    "sample_nodes": [
+     "node",
+     "score3.test.js"
+    ],
+    "sample_edges": [
+     "node ran the command \"node --test score3.test.js\" on 2026-11-03T23:00:00Z, producing exit code 0 and the test result 1 test, 1 passed, 0 failed."
+    ]
+   }
+  ]
+ },
+ "production_invariant_control": {
+  "group": "ghdev_gh_mcp",
+  "episode_count": 4,
+  "names": [
+   "user_decision:961923ff-c67e-46ad-a3fc-02636c255983",
+   "git-source:a7877b6c3484049f808c6bdb",
+   "git-source:4956452511d349e19a92bfaf",
+   "git-source:072b6d07b9f3132bbe950d8e"
+  ],
+  "last_updated": "2026-11-03T01:47:36.450687+00:00",
+  "baseline_match": "identical to pre-campaign baseline (4 episodes, last updated 2026-11-03T01:47:36.450687+00:00)"
+ },
+ "acceptance": "9/9 persisted records: verified_readback with exact native source index, real extracted entities+relationships (8/9 with >=1 linked edge; 1 single-entity episode), zero duplicates, zero unresolved"
+}

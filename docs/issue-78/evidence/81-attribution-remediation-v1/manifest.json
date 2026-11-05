@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "packet": "81-attribution-remediation-v1",
+  "kind": "issue81-attribution-remediation-evidence",
+  "campaign": "ISSUE81_INDEPENDENT_HOLDOUT",
+  "phase": "C_ATTRIBUTION_REMEDIATION",
+  "repository": "fvanevski/opencode-operational-schema-guard",
+  "branch": "issue/81",
+  "pr": 83,
+  "pr_state": "draft (unchanged by this packet)",
+  "tested_source_head": "8dcdf199c8b53d8e213c07427525cb0766f726ca",
+  "previous_evidence_head": "941706acf155aa00502255c7ede97434e81170ba",
+  "evidence_commit_parent": "8dcdf199c8b53d8e213c07427525cb0766f726ca",
+  "remote_head_before": "8dcdf199c8b53d8e213c07427525cb0766f726ca",
+  "remote_head_after": "full SHA of this packet commit (recorded in the session handback; a file cannot contain its own commit SHA)",
+  "identities": {
+    "frozen_corrected_corpus_sha256": "524de3ff36877442c6dc4e75edf5da9f317ba1c2e25e267b117233514e425863",
+    "signed_case_worksheet_sha256": "f6241a46ce66f2d3d29b1eb4f81f31cb498472c6d03db5b65307cfc8f9ceddb1",
+    "signed_fact_worksheet_sha256": "26c7692ddb32b8483e80c43f5cd9b93d2977d7a06e6cdaca4e581bd43095c98c",
+    "receipt_bound_observations_sha256": "ab66cdbe76fce2dede447b847b49157830ec74d212ed29e914714850b09b5ca3",
+    "original_target_proposal_sha256": "17ffb60515f5f96f2d546fd3abf951d0bc008325e38d83145ec4f75a8c76f049",
+    "signed_target_ratification_sha256": "3e9581114047ac7416f6014a0dd6a57304dc5e5784efe39b176ced61fbb8626a",
+    "historical_redrain_score_sha256": "c0fcb59982fdbc1f327ec2d4dd2ee0bea9c5a5b395fc225374f53a00e645b823",
+    "fresh_post_correction_score_sha256": "522f9285393f0e90ad36d623715faafd04a1d7a230cd8ed803412e61c4aa2c60",
+    "native_cohort_session_id": "ses_e577a8c27ffeixiiSob1B8tbFo",
+    "live_capture_group": "cur81_native_8cd61d76",
+    "host_journal_aggregates": {
+      "prompt_tokens": 6548,
+      "completion_tokens": 564,
+      "model_ms_total": 2334,
+      "note": "preserved as host-journal evidence only; never distributed across per-record observations"
+    }
+  },
+  "dispositions": {
+    "result": "PASS_READY_FOR_CENTRAL_REVIEW",
+    "source_attribution_tests": "PASS (81/81 focused CPU tests, exit 0)",
+    "source_attribution_review": "PASS (5-file diff verified; invariants A-G confirmed; no defects found)",
+    "native_host_provenance": "PASS (bounded replay: 3 cross-turn mis-anchors corrected; envelope identities byte-identical; tool anchors unchanged)",
+    "frozen_score_compatibility": "PASS (all required accounting values met; no targets/labels/facts modified)",
+    "benchmark_telemetry": "PASS (persisted-only latency series separate; missing per-record usage null/unknown)",
+    "nonmutation": "PASS (frozen corpus, signed worksheets, capture group, production Graphiti, installed plugins and EX gate untouched)"
+  },
+  "files": {
+    "focused-tests.md": "33c67f37f76d5c28e5f415dcbc76150c6403fdf033b0b6148304c3f01d818af4",
+    "source-review.md": "917424020f617d2c0254a82698a9541326cef37d58bcea59b50569dcb22dc0d7",
+    "native-provenance.md": "041fec231a8845dd49483d5298f511b9543f87f1a4463c36e4985983af613a97",
+    "benchmark-compatibility.md": "925608fe8d9654a196bb939c40b10242b6658cce14529bb8b04f0495f7c2158e",
+    "friction-ledger.json": "20b9bb7fee39b33c0707475d82e1394899aec76138b73a10481f3f7a3f1c76f4",
+    "handback.md": "89472db1444a68175cc82ccdbc5797bb9125419cff6a3f315f2e422ed1908f1e"
+  },
+  "sanitization": "No raw native transcripts, credentials, signed operator identity, real host home paths (shown as <host-home>), model private reasoning, or private worksheet bytes. Session and group identifiers, digests, and accounting values only.",
+  "boundaries": "One sanitized evidence-only commit on issue/81 whose parent is the authenticated source head; no source remote update beyond the existing issue/81 branch, no new PR, no merge, no issue closure, no production deployment, no EX-gate edit, no model replay, no Graphiti write, no sealed-holdout relabeling, no reconcile-only invocation."
+}

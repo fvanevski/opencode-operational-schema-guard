@@ -1,0 +1,195 @@
+{
+  "schema_version": 1,
+  "kind": "issue81-adjudicated-score",
+  "authority": {
+    "frozen_corpus_sha256": "f904411e51d0bd9674b7f756f3df5bf44452ca8f63362d75102ceb9df677fce4",
+    "adjudication_sha256": "e432b47fd8af5529a959c04939868ead81105809f9c5600fed8e57dd5b280ecd",
+    "original_target_sha256": "17ffb60515f5f96f2d546fd3abf951d0bc008325e38d83145ec4f75a8c76f049",
+    "target_ratification_sha256": "ced9b984b17c1131984184b1bd9c666df3bdca9f20a3a067ee79763f4a05f3d4",
+    "observation_sha256": "6a441af31cd08bea1c528bf9590b5add069754b1fc7fc62d8f6193a03356ed75",
+    "case_label_changes_from_provisional": 0,
+    "source_bytes_unchanged": true,
+    "human_attestation_supplied": true
+  },
+  "report": {
+    "schema_version": 1,
+    "kind": "issue81-three-path-comparison",
+    "corpus_sha256": "f904411e51d0bd9674b7f756f3df5bf44452ca8f63362d75102ceb9df677fce4",
+    "targets_sha256": "80e90149618a287b1061798c84abf0b313cb2bc99a8d05e6cffb4fdc25f05c90",
+    "split": "holdout",
+    "label_status": "operator_adjudicated",
+    "gold_complete": true,
+    "case_count": 9,
+    "baseline": {
+      "tp": 0,
+      "fp": 0,
+      "tn": 3,
+      "fn": 6,
+      "precision": null,
+      "recall": 0
+    },
+    "broad_capture": {
+      "tp": 3,
+      "fp": 2,
+      "tn": 1,
+      "fn": 3,
+      "precision": 0.6,
+      "recall": 0.5
+    },
+    "curator": {
+      "record_count": 3,
+      "decisions": {
+        "EMIT": 1,
+        "SKIP": 1,
+        "DEFER": 1
+      },
+      "invalid_model_or_source_decisions": 0,
+      "facts_proposed": 1,
+      "facts_human_judged": 1,
+      "proposed_fact_grounded_precision": 1,
+      "grounded_precision": 1,
+      "model_emitted_facts": 1,
+      "remote_receipt_bound_model_facts": 1,
+      "useful_facts": 1,
+      "false_authority": 0,
+      "wrong_scope": 0,
+      "model_ms": {
+        "count": 0,
+        "p50": null,
+        "p95": null
+      },
+      "post_exit_ms": {
+        "count": 0,
+        "p50": null,
+        "p95": null
+      },
+      "tokens": {
+        "count": 0,
+        "p50": null,
+        "p95": null
+      },
+      "tokens_total": 0,
+      "records": [
+        {
+          "cluster_id": "2cb31461c861a0159d230a3a9f901f8ef1e543ebd9566fbb4a84597157294b85",
+          "source_case_ids": [
+            "ho-prime-prompt",
+            "ho-prime-write",
+            "ho-prime-summary"
+          ],
+          "decision": "EMIT",
+          "validation": "PASS",
+          "terminal_state": "persisted"
+        },
+        {
+          "cluster_id": "311fe04231783efd31d678810e80a7acf7ab96d8a1fd8d23b633b6a01f3d7852",
+          "source_case_ids": [
+            "ho-chatter-ping"
+          ],
+          "decision": "SKIP",
+          "validation": "PASS",
+          "terminal_state": "skipped"
+        },
+        {
+          "cluster_id": "820abcb4553b799bbb1849a13c99ed3f5c5f6295e994b831bf26e1f0d65bad0c",
+          "source_case_ids": [
+            "ho-gui-head"
+          ],
+          "decision": "DEFER",
+          "validation": "PASS",
+          "terminal_state": "deferred"
+        }
+      ]
+    },
+    "privacy_or_wrong_group_selected": [],
+    "rows": [
+      {
+        "id": "ho-prime-prompt",
+        "category": "direct",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "f4cc5838e7abb639923371829e53f92c5d93db8a0a260f2c5c4d635023a28f33"
+      },
+      {
+        "id": "ho-prime-write",
+        "category": "implicit",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "2c90313d5857a3f8b846542d267033cba737c389e4e359183b4a462738ec86ca"
+      },
+      {
+        "id": "ho-prime-test",
+        "category": "error_fix",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": false,
+        "event_id": null
+      },
+      {
+        "id": "ho-prime-summary",
+        "category": "chatter",
+        "truth": false,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "2ef994c9b5ee59b2b7de09746c909be113b3cccaebbc2ee85c74e51dc5976d28"
+      },
+      {
+        "id": "ho-gui-prompt",
+        "category": "direct",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": false,
+        "event_id": null
+      },
+      {
+        "id": "ho-gui-head",
+        "category": "implicit",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "8ebfac369eff7817a565df5cf3372ea993892288ca69e2f9de596d86ca5d92c6"
+      },
+      {
+        "id": "ho-gui-read",
+        "category": "tool",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": false,
+        "event_id": null
+      },
+      {
+        "id": "ho-chatter-ping",
+        "category": "chatter",
+        "truth": false,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "ab1dbbf2d5dcfa464f1c74a6ca71c15946f935db0398c3bb4c799fdeafc20c40"
+      },
+      {
+        "id": "ho-dup-hello",
+        "category": "duplicate",
+        "truth": false,
+        "baseline_selected": false,
+        "candidate_selected": false,
+        "event_id": null
+      }
+    ],
+    "notes": [
+      "A selected event is not a fact; emission is not independently fact-verified.",
+      "Remote Graphiti and assembled fresh-client recall require distinct host receipts."
+    ],
+    "target_status": "operator_ratified",
+    "targets": {
+      "candidate_recall": false,
+      "grounded_precision": true,
+      "no_privacy_wrong_group": true,
+      "no_false_authority": true,
+      "no_wrong_scope": true,
+      "semantic_recall": "UNVERIFIED_UNTIL_FRESH_CLIENT",
+      "context_latency": "UNVERIFIED_UNTIL_INSTALLED",
+      "post_exit_latency": null
+    }
+  }
+}

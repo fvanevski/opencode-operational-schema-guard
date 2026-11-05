@@ -1,0 +1,451 @@
+{
+ "schema_version": 1,
+ "scope": {
+  "group": "cur81_dev_ce555621",
+  "project": "qualified_project",
+  "workspace": "/tmp/opencode"
+ },
+ "records": [
+  {
+   "source_case_ids": [
+    "dev-chatter-continue"
+   ],
+   "source_event_ids": [
+    "6b49acc86eb3a2b890d953c3a9320c7b590b520d0e1ed7c57796f68d661dfd2e"
+   ],
+   "cluster_id": "148b95fa3cf59edaf23fa0705f1d43c6a17b6fc3fa21237902ad7b4de1a01558",
+   "origin": "model",
+   "decision": "DEFER",
+   "reason": "The only evidence is a user continuation instruction, not a durable decision, procedure, or technical fact worth storing.",
+   "facts": [],
+   "terminal_state": "deferred",
+   "model_ms": 2680,
+   "prompt_tokens": 774,
+   "completion_tokens": 523
+  },
+  {
+   "source_case_ids": [
+    "dev-dec-reactflow"
+   ],
+   "source_event_ids": [
+    "49897922c3d935e36d065a39a400678084bf59eb7237cb3324c0f56a5024cafc"
+   ],
+   "cluster_id": "1cd1f3b12d13c0514e2aa199f25291f7a860fa075289b9dd220fa6e8d3f2fe49",
+   "origin": "model",
+   "decision": "EMIT",
+   "reason": "User explicitly stated a durable project decision to use React Flow for backlog dependency visualization.",
+   "facts": [
+    {
+     "assertion": "I decided to use React Flow for the backlog dependency visualization in this project.",
+     "kind": "decision",
+     "temporal_status": "observed",
+     "source_refs": [
+      "opencode:ses_e66c687e7ffeqJ28qy48k7bQ1O:message:msg_199397990001OXw2eXQyBiVDhD"
+     ]
+    }
+   ],
+   "terminal_state": "persisted",
+   "model_ms": 2478,
+   "prompt_tokens": 829,
+   "completion_tokens": 786,
+   "remote_episode_uuid": "ca2352d0-372a-40c7-9fd2-55340defa347",
+   "remote_readback": {
+    "episode_uuid": "ca2352d0-372a-40c7-9fd2-55340defa347",
+    "episode_name": "curated-v1:1cd1f3b12d13c0514e2aa199f25291f7a860fa075289b9dd220fa6e8d3f2fe49",
+    "group_id": "cur81_dev_ce555621",
+    "source_index_verified": true,
+    "source_refs": [
+     "opencode:ses_e66c687e7ffeqJ28qy48k7bQ1O:message:msg_199397990001OXw2eXQyBiVDhD"
+    ],
+    "evidence_ref": "docs/issue-78/evidence/81-qualification-first-v1/graphiti-readback-v2.json"
+   }
+  },
+  {
+   "source_case_ids": [
+    "dev-dup-history"
+   ],
+   "source_event_ids": [
+    "e6f2dea93928a4d6cbfa66651bc4aadc3874e217f961b3c27aec2f1ae4f1ffb8"
+   ],
+   "cluster_id": "492668aa62f948b92729f6ac10e5e4c5e497e3ebb2b9e0462fc8f6338b494716",
+   "origin": "model",
+   "decision": "SKIP",
+   "reason": "User question only; no durable decision, procedure, or result stated.",
+   "facts": [],
+   "terminal_state": "skipped",
+   "model_ms": 3031,
+   "prompt_tokens": 779,
+   "completion_tokens": 654
+  },
+  {
+   "source_case_ids": [
+    "dev79-host-7",
+    "dev79-host-2",
+    "dev79-host-1",
+    "dev79-host-3",
+    "dev79-host-6",
+    "dev79-host-8",
+    "dev79-host-5",
+    "dev79-host-4"
+   ],
+   "source_event_ids": [
+    "3fc8877228f38089e605b9110720491820a272d59fd14625df39814554867f78",
+    "5edbd2ae994fbcec4f8fdfe8ea264530110fb38907d8470f4267f6597eaefcff",
+    "8ea5d1bc7d2b959e5c8a3227d410b51bb1f27e438e361a68888101c9cfada5f3",
+    "9c47225a39a65334242d5816b062d06fd3cfe0872128c9200c5a66c47f20b9fb",
+    "ceb2af4e9e89d0dd1b6884097898e9350484e88b85ed571d729a0a756e0fe303",
+    "ed9bd4e4f3a1a8c855e0465d2bdf6d7e31fdb6320a31135f6f577327cf5ecf22",
+    "f2a7de440a1e773141a0ca8765fd0cc0ce9ce269e97f2fc8e7d141811581ede2",
+    "f3ea22bc8dd6f8306e4a3fa6902d0834ce551b78962ee527b4a6188658468894"
+   ],
+   "cluster_id": "4ab73c43df15e0141b535cf1bcda1047e23545d31a590a1c93084a7549b487bd",
+   "origin": "model",
+   "decision": "EMIT",
+   "reason": "Single tool-reported final test result is durable and source-grounded.",
+   "facts": [
+    {
+     "assertion": "tool exit 0; command: node --test score3.test.js; output: output: ℹ pass 1 ℹ fail 0",
+     "kind": "test_result",
+     "temporal_status": "observed",
+     "source_refs": [
+      "opencode:ses_79ft01:tool:call_fa514124df4e85cc"
+     ]
+    }
+   ],
+   "terminal_state": "persisted",
+   "model_ms": 4695,
+   "prompt_tokens": 2190,
+   "completion_tokens": 1088,
+   "remote_episode_uuid": "f1afd4fc-8993-475e-87b1-d8c147318e0c",
+   "remote_readback": {
+    "episode_uuid": "f1afd4fc-8993-475e-87b1-d8c147318e0c",
+    "episode_name": "curated-v1:4ab73c43df15e0141b535cf1bcda1047e23545d31a590a1c93084a7549b487bd",
+    "group_id": "cur81_dev_ce555621",
+    "source_index_verified": true,
+    "source_refs": [
+     "opencode:ses_79ft01:tool:call_fa514124df4e85cc"
+    ],
+    "evidence_ref": "docs/issue-78/evidence/81-qualification-first-v1/graphiti-readback-v2.json"
+   }
+  },
+  {
+   "source_case_ids": [
+    "dev-c81-note",
+    "dev-c81-decision"
+   ],
+   "source_event_ids": [
+    "142498be7bb13e8073d4567e70df5d26c16c17844fc8217b29e4d91f84336d13",
+    "fdf254963296a846c54708aa54b8b50d2623d7e6521619a3d77166e38b44c4aa"
+   ],
+   "cluster_id": "5fc80d9e8c82f723b9e2338404a546835c79fcd5585a7b2a7894d592bf758293",
+   "origin": "model",
+   "decision": "EMIT",
+   "reason": "Assistant-reported test result from a single source excerpt; grounded verbatim.",
+   "facts": [
+    {
+     "assertion": "All 6 evaluator tests pass in the disposable worktree. Recording the patch and moving to host interface inventory.",
+     "kind": "test_result",
+     "temporal_status": "observed",
+     "source_refs": [
+      "opencode:ses_e5b66d739ffesDXWXunYRF11r9:message:msg_1a49a5425001Vs7h5EoHgFJYNy"
+     ]
+    }
+   ],
+   "terminal_state": "persisted",
+   "model_ms": 3689,
+   "prompt_tokens": 998,
+   "completion_tokens": 1167,
+   "remote_episode_uuid": "2b034482-98aa-4b9d-8534-184a90709698",
+   "remote_readback": {
+    "episode_uuid": "2b034482-98aa-4b9d-8534-184a90709698",
+    "episode_name": "curated-v1:5fc80d9e8c82f723b9e2338404a546835c79fcd5585a7b2a7894d592bf758293",
+    "group_id": "cur81_dev_ce555621",
+    "source_index_verified": true,
+    "source_refs": [
+     "opencode:ses_e5b66d739ffesDXWXunYRF11r9:message:msg_1a49a5425001Vs7h5EoHgFJYNy"
+    ],
+    "evidence_ref": "docs/issue-78/evidence/81-qualification-first-v1/graphiti-readback-v2.json"
+   }
+  },
+  {
+   "source_case_ids": [
+    "dev-negzero-001"
+   ],
+   "source_event_ids": [
+    "d99bbd0b58c5ea333162554b75ee8937cd265a5488d508281ad8b36138e22bf5"
+   ],
+   "cluster_id": "6c4aa8ab248cc724880eda60653fc247bf9a122fd67b65863be0989d4bb56459",
+   "origin": "model",
+   "decision": "EMIT",
+   "reason": "Assistant-reported observation of Graphiti episode count; grounded verbatim extract.",
+   "facts": [
+    {
+     "assertion": "Graphiti shows zero episodes for `cur80_qual02`.",
+     "kind": "observation",
+     "temporal_status": "observed",
+     "source_refs": [
+      "opencode:ses_e5c142240ffe581PUuBXcFaAqz:message:msg_1a3edd9a10018KvIEQfY9ZusZF"
+     ]
+    }
+   ],
+   "terminal_state": "persisted",
+   "model_ms": 3528,
+   "prompt_tokens": 801,
+   "completion_tokens": 955,
+   "remote_episode_uuid": "71addc8a-1b5a-49a0-8c7c-63c791b61c6c",
+   "remote_readback": {
+    "episode_uuid": "71addc8a-1b5a-49a0-8c7c-63c791b61c6c",
+    "episode_name": "curated-v1:6c4aa8ab248cc724880eda60653fc247bf9a122fd67b65863be0989d4bb56459",
+    "group_id": "cur81_dev_ce555621",
+    "source_index_verified": true,
+    "source_refs": [
+     "opencode:ses_e5c142240ffe581PUuBXcFaAqz:message:msg_1a3edd9a10018KvIEQfY9ZusZF"
+    ],
+    "evidence_ref": "docs/issue-78/evidence/81-qualification-first-v1/graphiti-readback-v2.json"
+   }
+  },
+  {
+   "source_case_ids": [
+    "dev-conflict-scheduler"
+   ],
+   "source_event_ids": [
+    "fcb7d06fcc43a82bc234a3c2c0bee3855a253e97d2c83bb5bc9e377f923d38a5"
+   ],
+   "cluster_id": "7b76aa0b5187a91cff828c42152f7d175de6e6a6d0dcee1e3ab58581e61421fa",
+   "origin": "model",
+   "decision": "EMIT",
+   "reason": "User-stated durable migration decision; verbatim extract fits.",
+   "facts": [
+    {
+     "assertion": "The curation state is migrated to a permanent production scheduler group, replacing the disposable journal entirely.",
+     "kind": "decision",
+     "temporal_status": "observed",
+     "source_refs": [
+      "opencode:ses_81recon:message:msg_81recon_conf1"
+     ]
+    }
+   ],
+   "terminal_state": "persisted",
+   "model_ms": 3959,
+   "prompt_tokens": 760,
+   "completion_tokens": 1014,
+   "remote_episode_uuid": "aa48b69d-09e0-4d7f-8021-0d7e1d58244d",
+   "remote_readback": {
+    "episode_uuid": "aa48b69d-09e0-4d7f-8021-0d7e1d58244d",
+    "episode_name": "curated-v1:7b76aa0b5187a91cff828c42152f7d175de6e6a6d0dcee1e3ab58581e61421fa",
+    "group_id": "cur81_dev_ce555621",
+    "source_index_verified": true,
+    "source_refs": [
+     "opencode:ses_81recon:message:msg_81recon_conf1"
+    ],
+    "evidence_ref": "docs/issue-78/evidence/81-qualification-first-v1/graphiti-readback-v2.json"
+   }
+  },
+  {
+   "source_case_ids": [
+    "dev-median-prompt",
+    "dev-median-write",
+    "dev-median-diagnosis",
+    "dev-median-fix",
+    "dev-median-summary"
+   ],
+   "source_event_ids": [
+    "184c85bb4ad19ba24b7775adf0fe8718e037c3c7b828f21085803646791ebef9",
+    "9306d2147d0b3acb2c4d950b9499abc92d6a2e5bc4554bd900e42910d8faabe5",
+    "49813b8aca273d05a6b7d5227a1421d444382eff69b498f5ff6a3573ee8942b3",
+    "d3a82af0ed7c9a2b5c779f38dcb3eeffe5a00ce6bbf6ecb872d9e9c240476f83",
+    "8964a6a759ad2fcf76ec8a07d2cd2ac70ee6cd8a62f713cbbe1353a4a50dc6e5"
+   ],
+   "cluster_id": "8c44c2ffecccb16418d736391e04ca6204cfdece233216c84090f90b10f09cdd",
+   "origin": "model",
+   "decision": "DEFER",
+   "reason": "invalid_model_json",
+   "facts": [],
+   "terminal_state": "deferred",
+   "model_ms": 5885,
+   "prompt_tokens": 1803,
+   "completion_tokens": 1600
+  },
+  {
+   "source_case_ids": [
+    "dev-c80-finding"
+   ],
+   "source_event_ids": [
+    "2530412cace2d631c601a9da5dd2949f0559b9c80114af38d346577c8a350273"
+   ],
+   "cluster_id": "8e7901a8aa35dee0aa960c3824f510ea31a4b47324c70be7ac3b4f5dd131cfa1",
+   "origin": "model",
+   "decision": "EMIT",
+   "reason": "Assistant-reported observation of local service endpoints; verbatim extract is useful.",
+   "facts": [
+    {
+     "assertion": "I've identified a litellm OpenAI-compatible API on 8002 with a \"chat\" model and an \"OK\" service on 46151.",
+     "kind": "observation",
+     "temporal_status": "observed",
+     "source_refs": [
+      "opencode:ses_e5d02fa91ffeeEtLfGYg4pLXJf:message:msg_1a2fd5a1a001vcm58L2dbIV5K3"
+     ]
+    }
+   ],
+   "terminal_state": "persisted",
+   "model_ms": 5732,
+   "prompt_tokens": 829,
+   "completion_tokens": 1558,
+   "remote_episode_uuid": "67326f6a-6850-41d4-8309-dce7b32ab970",
+   "remote_readback": {
+    "episode_uuid": "67326f6a-6850-41d4-8309-dce7b32ab970",
+    "episode_name": "curated-v1:8e7901a8aa35dee0aa960c3824f510ea31a4b47324c70be7ac3b4f5dd131cfa1",
+    "group_id": "cur81_dev_ce555621",
+    "source_index_verified": true,
+    "source_refs": [
+     "opencode:ses_e5d02fa91ffeeEtLfGYg4pLXJf:message:msg_1a2fd5a1a001vcm58L2dbIV5K3"
+    ],
+    "evidence_ref": "docs/issue-78/evidence/81-qualification-first-v1/graphiti-readback-v2.json"
+   }
+  },
+  {
+   "source_case_ids": [
+    "dev-sum-prompt",
+    "dev-sum-style",
+    "dev-sum-write"
+   ],
+   "source_event_ids": [
+    "0d562b93a3aa2a2fb7dbb2ef6f44a69a85355e78bd721dded165e65f1d42510c",
+    "3da3499a3f7d02eb7c9d5ca415417022ce733e18dde1e46ee20dbeac14e5571a",
+    "b62faee4905d4beba81468deb06fc71df162d7829e171d8c3bd254aadad3f950"
+   ],
+   "cluster_id": "9f8612665eaada1346d2c054517d552da05471b47a1f3f79a5940d99d10867ee",
+   "origin": "model",
+   "decision": "DEFER",
+   "reason": "invalid_model_json",
+   "facts": [],
+   "terminal_state": "deferred",
+   "model_ms": 5761,
+   "prompt_tokens": 1202,
+   "completion_tokens": 1600
+  },
+  {
+   "source_case_ids": [
+    "dev-dec-qualitygate"
+   ],
+   "source_event_ids": [
+    "c49c21503880bc08a5f0914537c135083d118dbd9aa8dde6d52016fd444953f6"
+   ],
+   "cluster_id": "a492d36f221069e485959fab43f249f06100fdb35dc441731525adb4826778a0",
+   "origin": "model",
+   "decision": "EMIT",
+   "reason": "User-stated durable workflow decision suitable for memory.",
+   "facts": [
+    {
+     "assertion": "We decided to keep the release quality gate as a hard prerequisite in this workflow.",
+     "kind": "decision",
+     "temporal_status": "observed",
+     "source_refs": [
+      "opencode:ses_e66c19314ffemnBawIwPoeA42O:message:msg_1993e6e9b001eWiRa0zuhvEodc"
+     ]
+    }
+   ],
+   "terminal_state": "persisted",
+   "model_ms": 2672,
+   "prompt_tokens": 824,
+   "completion_tokens": 807,
+   "remote_episode_uuid": "511e8a52-8362-4e13-9b01-f8649cdf337e",
+   "remote_readback": {
+    "episode_uuid": "511e8a52-8362-4e13-9b01-f8649cdf337e",
+    "episode_name": "curated-v1:a492d36f221069e485959fab43f249f06100fdb35dc441731525adb4826778a0",
+    "group_id": "cur81_dev_ce555621",
+    "source_index_verified": true,
+    "source_refs": [
+     "opencode:ses_e66c19314ffemnBawIwPoeA42O:message:msg_1993e6e9b001eWiRa0zuhvEodc"
+    ],
+    "evidence_ref": "docs/issue-78/evidence/81-qualification-first-v1/graphiti-readback-v2.json"
+   }
+  },
+  {
+   "source_case_ids": [
+    "dev-c75-finding"
+   ],
+   "source_event_ids": [
+    "33faab3af9d57cf69ff0f36f82b04ed248412018e9ffe3f2b71f2741693539db"
+   ],
+   "cluster_id": "e445aeec638c9dd254b331ecb87af1594baf4a0b37018935c80ef93605b10356",
+   "origin": "model",
+   "decision": "EMIT",
+   "reason": "Assistant-reported process map observation with a verbatim extract.",
+   "facts": [
+    {
+     "assertion": "- **Shared service**: PID `2782749` (`opencode serve --service`), started 19:32:03 local — matches `OPENCODE_SERVICE_NEW_PID`.",
+     "kind": "observation",
+     "temporal_status": "observed",
+     "source_refs": [
+      "opencode:ses_e606c13afffe6Yy2H5QterYFZt:message:msg_19f94510a001xy31qcQAVp6W3N"
+     ]
+    }
+   ],
+   "terminal_state": "persisted",
+   "model_ms": 4670,
+   "prompt_tokens": 984,
+   "completion_tokens": 1531,
+   "remote_episode_uuid": "b718e11b-d5f8-4714-aed2-c12ae93c9dba",
+   "remote_readback": {
+    "episode_uuid": "b718e11b-d5f8-4714-aed2-c12ae93c9dba",
+    "episode_name": "curated-v1:e445aeec638c9dd254b331ecb87af1594baf4a0b37018935c80ef93605b10356",
+    "group_id": "cur81_dev_ce555621",
+    "source_index_verified": true,
+    "source_refs": [
+     "opencode:ses_e606c13afffe6Yy2H5QterYFZt:message:msg_19f94510a001xy31qcQAVp6W3N"
+    ],
+    "evidence_ref": "docs/issue-78/evidence/81-qualification-first-v1/graphiti-readback-v2.json"
+   }
+  },
+  {
+   "source_case_ids": [
+    "dev79-supp-5",
+    "dev79-supp-2",
+    "dev79-supp-4",
+    "dev79-supp-3",
+    "dev79-supp-7",
+    "dev79-supp-1",
+    "dev79-supp-6"
+   ],
+   "source_event_ids": [
+    "24c21baf270d093b2ea6c53be3b19cb880ca3ba077bac7dc2955ca98182d4390",
+    "5e14cd45b5bb9ea262aba93e1f1f46a31edfeda0e0d7d9772fbbb08dc8e19e30",
+    "624be739c83b6d86507ae990f579d92e6d009ae101d9d577d9f5ac1f6ad38f00",
+    "9b7e5b8d0bd3bb4dd3b09b5d3e54415bb3b9a9fe5b7834034bdccf5a6a84371e",
+    "a7c0e27e3ac433c1219eaa54d66758547f9022da849f20c6c77c34b66116c4e4",
+    "ab343ebb87071ead4da6e94c58bf5404fcba2d46b816ce74f5e6295b2a832574",
+    "d4b16d4176d968bbe3435deabd84476e927bc831e99e993cc41572a50af93c11"
+   ],
+   "cluster_id": "f584c1bfba64afdaeda0bc595f3bf63c59c13e4e34be77964dcdcf8671d2f0d5",
+   "origin": "model",
+   "decision": "EMIT",
+   "reason": "Final tool-reported test outcome is verbatim and useful.",
+   "facts": [
+    {
+     "assertion": "tool exit 0; command: node --test score3.test.js; output: 1 test, 1 passed, 0 failed",
+     "kind": "test_result",
+     "temporal_status": "observed",
+     "source_refs": [
+      "opencode:ses_supp:tool:call_supp_s2"
+     ]
+    }
+   ],
+   "terminal_state": "persisted",
+   "model_ms": 3033,
+   "prompt_tokens": 1634,
+   "completion_tokens": 848,
+   "remote_episode_uuid": "ab748387-5b36-41bb-a024-7f0721165243",
+   "remote_readback": {
+    "episode_uuid": "ab748387-5b36-41bb-a024-7f0721165243",
+    "episode_name": "curated-v1:f584c1bfba64afdaeda0bc595f3bf63c59c13e4e34be77964dcdcf8671d2f0d5",
+    "group_id": "cur81_dev_ce555621",
+    "source_index_verified": true,
+    "source_refs": [
+     "opencode:ses_supp:tool:call_supp_s2"
+    ],
+    "evidence_ref": "docs/issue-78/evidence/81-qualification-first-v1/graphiti-readback-v2.json"
+   }
+  }
+ ]
+}

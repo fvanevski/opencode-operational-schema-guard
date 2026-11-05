@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "ledger_id": "GHDEV-10",
+  "session": "issue81-final-verification (terminal81-a1f3c9)",
+  "friction_encountered": true,
+  "commands_match_handoff": true,
+  "events": [
+    {
+      "id": "F-1",
+      "class": "interface_discovery",
+      "event": "OpenViking read tool first invoked with argument 'uri' (singular); guard rejected with 'Missing key: uris'; corrected to 'uris' (array) and succeeded on retry",
+      "attribution": "agent command shape (host tool interface); transparent harness behavior",
+      "effect": "context/memory lookup only; no acceptance-bearing evidence affected",
+      "outcome": "recovered"
+    }
+  ],
+  "notes": [
+    "All handoff-literal commands (6-file node --test, node --check on 3 changed sources, git fetch/checkout on the disposable worktree) matched the requested shape and workdir.",
+    "Producer exit codes preserved for all acceptance-bearing commands (suite exit 0; node --check exits 0; reevaluation script exit 0).",
+    "No guard rejections on literal commands; no RTK wrapping; no masked producer failures."
+  ]
+}

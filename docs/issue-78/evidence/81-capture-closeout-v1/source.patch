@@ -1,0 +1,13 @@
+diff --git a/docs/issue-78/v2-candidate/events.mjs b/docs/issue-78/v2-candidate/events.mjs
+index 795039d..ccb1805 100644
+--- a/docs/issue-78/v2-candidate/events.mjs
++++ b/docs/issue-78/v2-candidate/events.mjs
+@@ -94,7 +94,7 @@ export function fromPrompt(event, scope, { admitted = false } = {}) {
+ // tools do not have shell-command inputs. Their receipts are observations,
+ // NOT independently verified repository changes. Never persist file contents,
+ // patch hunks, raw tool output, or external/secret-looking filenames.
+-const FILE_TOOLS = new Set(['edit', 'write', 'apply_patch']);
++const FILE_TOOLS = new Set(['edit', 'write', 'apply_patch', 'read']);
+ const PRIVATE_PATH = /(?:^|\/)(?:\.env(?:\.[^/]*)?|\.ssh|\.npmrc|\.pypirc|id_(?:rsa|ed25519)|credentials?(?:\.[^/]*)?|secrets?(?:\.[^/]*)?)(?:\/|$)/i;
+ function scopedFile(raw, workspace) {
+   if (typeof raw !== 'string' || raw.length < 1 || raw.length > 512 ||

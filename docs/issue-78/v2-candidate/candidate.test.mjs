@@ -83,6 +83,19 @@ test('native edit/write/apply_patch receipts are scoped, content-free and tool-r
   assert.ok(failure);
   assert.match(failure.excerpt, /tool error/);
 });
+test('read-only file access does not assert a file change or durable source fact',()=>{
+ const base={sessionID:'ses-read',callID:'call-read',tool:'read',status:'completed',
+  input:{path:scope.workspace+'/docs/reference.md'},
+  result:{output:{exit:0,output:'A file was read; its contents are not a change.'}}};
+ assert.equal(fromTool(base,scope),null);
+ // The preexisting mutation-only adapter remains available and distinct.
+ const write=fromTool({...base,callID:'call-write',tool:'write',
+  input:{path:scope.workspace+'/docs/reference.md',content:'Updated documentation.'}},scope);
+ assert.ok(write);
+ assert.equal(write.kind,'file_change');
+ assert.equal(write.evidence_class,'tool-reported');
+ assert.doesNotMatch(write.excerpt,/Updated documentation/);
+});
 test('long assistant text uses bounded whole-message privacy scan before truncation', () => {
   const base = { sessionID:'ses-1', messageID:'msg-long',role:'assistant',status:'completed' };
   const text = 'Identified a reproducible parser failure and fixed the module: ' +
@@ -251,7 +264,8 @@ test('admitted user prompts link later tool and assistant events without upgradi
   for(const cb of sessions.context) await cb({sessionID:'ses-1',system:[]});
   for(const cb of tools['execute.after']) await cb(tool('call-work','1 failed during validation',1));
   for(const cb of sessions.context) await cb({sessionID:'ses-1',system:[],
-    messages:[{id:'msg-complete',role:'assistant',parts:[{type:'text',
+    messages:[{id:'msg-1',role:'user',parts:[{type:'text',text:original.prompt.text}]},
+      {id:'msg-complete',role:'assistant',parts:[{type:'text',
       text:'The input schema rejected a valid setting; I corrected validation and the focused test now passes.'}]}]});
   await stop();
   const all=(await new CandidateQueue(root,scope.group).list()).items;

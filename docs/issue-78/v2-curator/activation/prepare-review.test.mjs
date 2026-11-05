@@ -6,6 +6,8 @@ import {fromPrompt,fromTool} from '../../v2-candidate/events.mjs';
 import {CandidateQueue} from '../../v2-candidate/queue.mjs';
 import {ReviewStore} from '../core.mjs';
 import {prepareReview} from './prepare-review.mjs';
+import {spawnSync} from 'node:child_process';
+import {fileURLToPath} from 'node:url';
 const group='cur80_reviewtest',scope={group,project:'reviewtest',workspace:'/workspace/reviewtest'};
 test('qualification review preserves source identities and never impersonates local model',async()=>{
  const root=await mkdtemp(path.join(os.tmpdir(),'cur80-review-prep-'));
@@ -41,5 +43,25 @@ test('weak ID fallback is never promoted into a fake native source',async()=>{
   await queue.stage(e);
   assert.equal((await prepareReview({queue,store})).status,'NO_ELIGIBLE_REAL_CLUSTER');
   assert.equal((await queue.status()).counts.new,1);
+ }finally{await rm(root,{recursive:true,force:true});}
+});
+
+test('prepare-review CLI accepts named and historical recovery groups but rejects unrelated scope',async()=>{
+ const root=await mkdtemp(path.join(os.tmpdir(),'graphiti-prep-cli-'));
+ try{
+  const program=fileURLToPath(new URL('./prepare-review.mjs',import.meta.url));
+  const invoke=group=>spawnSync(process.execPath,[program,
+    '--state-dir',root,'--group',group],{encoding:'utf8'});
+  for(const g of ['graphiti-curator-recovery-r01','cur80_reviewtest']){
+   const output=invoke(g);
+   assert.equal(output.status,2,'empty group has no review-worthy source');
+   assert.match(output.stdout,/NO_ELIGIBLE_REAL_CLUSTER/);
+   assert.doesNotMatch(output.stderr,/DESCRIPTIVE_RECOVERY_FIXTURE_OR_LEGACY_CUR80/);
+  }
+  for(const g of ['graphiti-cron-holdout-r01','ghdev_gh_mcp']){
+   const output=invoke(g);
+   assert.notEqual(output.status,0);
+   assert.match(output.stderr,/DESCRIPTIVE_RECOVERY_FIXTURE_OR_LEGACY_CUR80/);
+  }
  }finally{await rm(root,{recursive:true,force:true});}
 });

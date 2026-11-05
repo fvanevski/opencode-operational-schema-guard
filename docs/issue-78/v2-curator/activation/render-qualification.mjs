@@ -2,6 +2,7 @@
 /** Render disposable *user* systemd units only. No install, enable, or host service mutation. */
 import {readFile,writeFile,mkdir,stat,chmod} from 'node:fs/promises';
 import path from 'node:path';
+import {fixtureUnitName,isFixtureGroup,validRecoveryBinding} from '../../fixture-groups.mjs';
 const args=process.argv.slice(2);
 const get=k=>{const i=args.indexOf('--'+k);return i<0?'':args[i+1]||'';};
 export function renderUnits(templates,values){
@@ -23,16 +24,15 @@ export function renderUnits(templates,values){
 }
 export async function cli(){
  const worktree=get('worktree'),state=get('state-dir'),group=get('group'),
-   output=get('output-dir'),env=get('env-file'),gate=get('gate-source'),
+   output=get('output-dir'),env=get('private-env-file'),gate=get('gate-source'),
    config=get('gate-config'),endpoint=get('endpoint'),
-   unit=get('unit')||'ghdev-curator80-qual',
+   unit=get('unit')||(isFixtureGroup(group,'recovery')?
+     fixtureUnitName(group):'ghdev-curator80-qual'),
    python=get('python')||'/usr/bin/python3';
  if(![worktree,state,output,env,gate,config,python].every(x=>path.isAbsolute(x)))
    throw Error('All local paths must be absolute');
- if(!/^cur80_[a-z0-9_-]{3,60}$/.test(group))
-   throw Error('Only disposable cur80_* groups may be rendered');
- if(!/^ghdev-curator80-[a-z0-9-]{1,40}$/.test(unit))
-   throw Error('Only disposable ghdev-curator80-* user units may be rendered');
+ if(!validRecoveryBinding(group,unit))
+   throw Error('Matching disposable recovery group and unit required');
  if(!/^http:\/\/(?:127\.0\.0\.1|localhost):[0-9]{2,5}\/mcp\/?$/.test(endpoint))
    throw Error('A loopback Graphiti MCP endpoint is required');
  if(!output.startsWith('/tmp/')&&!output.startsWith(process.env.HOME+'/'))

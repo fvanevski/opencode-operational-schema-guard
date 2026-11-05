@@ -1,0 +1,87 @@
+{
+ "probe": "source-invariants",
+ "tested_head": "7b7d62685993e56e2b71b77846a6a0c1092d7d01",
+ "checks": [
+  {
+   "name": "whole-source secret at tail rejects all spans",
+   "ok": true,
+   "detail": "true"
+  },
+  {
+   "name": "whole-source SELF marker at tail rejects all spans",
+   "ok": true,
+   "detail": "true"
+  },
+  {
+   "name": "span count bounded to 6",
+   "ok": true,
+   "detail": "true"
+  },
+  {
+   "name": "each span <=900 chars",
+   "ok": true,
+   "detail": "true"
+  },
+  {
+   "name": "every span excerpt is an exact substring of source",
+   "ok": true,
+   "detail": "true"
+  },
+  {
+   "name": "span handle format opencode:<ses>:message:<id>:span:<offset>",
+   "ok": true,
+   "detail": "true"
+  },
+  {
+   "name": "long prompt without native message ID rejected",
+   "ok": true,
+   "detail": "true"
+  },
+  {
+   "name": "short prompt retains session-scoped fallback",
+   "ok": true,
+   "detail": "true"
+  },
+  {
+   "name": "event IDs deterministic and distinct per span",
+   "ok": true,
+   "detail": "true"
+  },
+  {
+   "name": "queue stages all spans exactly once (dedup on re-stage)",
+   "ok": true,
+   "detail": "true"
+  },
+  {
+   "name": "queue rejects cross-scope forged group",
+   "ok": true,
+   "detail": "true"
+  },
+  {
+   "name": "queue status reports staged counts",
+   "ok": true,
+   "detail": "true"
+  },
+  {
+   "name": "evidence class is user-stated (never verified)",
+   "ok": true,
+   "detail": "true"
+  },
+  {
+   "name": "staged source: read tool produces no file_change receipt (distinct, not substituted)",
+   "ok": true,
+   "detail": "true"
+  },
+  {
+   "name": "edit tool produces tool-reported file_change receipt",
+   "ok": true,
+   "detail": "true"
+  },
+  {
+   "name": "cleanExcerpt enforces 1100-char bound",
+   "ok": true,
+   "detail": "true"
+  }
+ ],
+ "all_ok": true
+}

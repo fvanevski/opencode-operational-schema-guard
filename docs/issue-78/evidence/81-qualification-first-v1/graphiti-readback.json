@@ -1,0 +1,38 @@
+{
+ "schema_version": 1,
+ "kind": "issue81-graphiti-readback",
+ "endpoint": "http://127.0.0.1:8766/mcp",
+ "transport": "Graphiti MCP via shared mcp-mux.service (FalkorDB); read-only get_episodes through the accepted #75 memory-core client",
+ "pre_exit": {
+  "disposable_group": {
+   "group_id": "cur81_dev_ce555621",
+   "status": "typed_unresolved_no_episodes_yet",
+   "episode_count": 0,
+   "note": "Cohort is staged in the candidate queue (33 events) but no model curation has run; the canonical EX lease held by the active Build harness excludes the drain. Zero episodes is the expected pre-admission state, not a failure."
+  },
+  "invariant_control_production_group": {
+   "group_id": "ghdev_gh_mcp",
+   "episode_count": 4,
+   "names": [
+    "user_decision:961923ff-c67e-46ad-a3fc-02636c255983",
+    "git-source:a7877b6c3484049f808c6bdb",
+    "git-source:4956452511d349e19a92bfaf",
+    "git-source:072b6d07b9f3132bbe950d8e"
+   ],
+   "last_updated": "2026-11-03T01:47:36.450687+00:00",
+   "baseline_binding": "Identical to the pre-campaign baseline recorded in /tmp/opencode/issue81-qual/graphiti-baseline.mjs output (same 4 episodes, same last-updated). Production group untouched by this campaign."
+  }
+ },
+ "post_exit": {
+  "status": "pending",
+  "required": [
+   "authenticated get_episodes for cur81_dev_ce555621 after the armed drain admits under EX",
+   "matching episode UUID and name (curated-v1:<review-id>) for each persisted review record",
+   "exact native source index binding for the model-curated implicit cluster",
+   "at least one real extracted entity and relationship (not merely portal association)",
+   "zero duplicate episodes for the cohort",
+   "production group ghdev_gh_mcp remains at the 4-episode baseline"
+  ],
+  "rule": "Never replay a Graphiti write after a timeout; an unresolved submission remains submission_unknown and is reported as typed unresolved until positive readback."
+ }
+}

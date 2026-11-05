@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "packet": "81-fixture-naming-v1",
+  "kind": "issue81-descriptive-fixture-naming-evidence",
+  "campaign": "ISSUE81_DESCRIPTIVE_FIXTURE_NAMING",
+  "phase": "NAMING_SLICE_INTEGRATION_AND_VERIFICATION",
+  "repository": "fvanevski/opencode-operational-schema-guard",
+  "branch": "issue/81",
+  "pr": 83,
+  "pr_state": "draft (unchanged by this packet)",
+  "issue": 81,
+  "tested_source_head": "0e30106ced8da710b23b4e474b57f4e184752ce1",
+  "previous_accepted_head": "b92c57f8c6f8379b72a2dcafa502392dc2cd16d0",
+  "evidence_commit_parent": "0e30106ced8da710b23b4e474b57f4e184752ce1",
+  "remote_head_before": "0e30106ced8da710b23b4e474b57f4e184752ce1",
+  "remote_head_after": "full SHA of this packet commit (recorded in the session handback; a file cannot contain its own commit SHA)",
+  "tested_source_commits": [
+    "4aac6ae (Issue #81: canonical functional Graphiti fixture identities in qualification)",
+    "5863894 (Issue #81: expose descriptive fixture identities in CLI and portal)",
+    "0e30106 (docs(issue-81): name new Graphiti fixtures by function and preserve historical group identities)"
+  ],
+  "identities": {
+    "frozen_corpus_sha256": "524de3ff36877442c6dc4e75edf5da9f317ba1c2e25e267b117233514e425863",
+    "signed_case_worksheet_sha256": "f6241a46ce66f2d3d29b1eb4f81f31cb498472c6d03db5b65307cfc8f9ceddb1",
+    "signed_fact_worksheet_sha256": "26c7692ddb32b8483e80c43f5cd9b93d2977d7a06e6cdaca4e581bd43095c98c",
+    "receipt_bound_observations_sha256": "ab66cdbe76fce2dede447b847b49157830ec74d212ed29e914714850b09b5ca3",
+    "original_target_proposal_sha256": "17ffb60515f5f96f2d546fd3abf951d0bc008325e38d83145ec4f75a8c76f049",
+    "signed_target_ratification_sha256": "3e9581114047ac7416f6014a0dd6a57304dc5e5784efe39b176ced61fbb8626a",
+    "previous_accepted_score_sha256": "522f9285393f0e90ad36d623715faafd04a1d7a230cd8ed803412e61c4aa2c60",
+    "fresh_naming_v1_score_sha256": "522f9285393f0e90ad36d623715faafd04a1d7a230cd8ed803412e61c4aa2c60",
+    "score_identity_note": "fresh score output byte-identical to previous accepted score (zero drift)",
+    "historical_cron_holdout_episodes": [
+      "56b75c2c-e2f8-404f-baed-531ef76ce260",
+      "d4b8fff6-e89f-40c4-a81b-f3c2bf7723a1"
+    ],
+    "production_group": "ghdev_gh_mcp",
+    "production_remote_baseline_episodes": [
+      "81dd997d-4ff5-4e94-9bf7-4ca087e1c5a4",
+      "7211e2bd-1759-4b3d-b9d1-0f16eb36609e",
+      "b3a21d33-8b95-4da6-a4af-4aba7d7ffb8e",
+      "4126ba20-3ee6-40e7-a398-3577338cefb3"
+    ],
+    "integration_script_sha256": "4a5e89553e3d287083e1378c9009c49fa24682f5c01f437d7a067f265c6291d9",
+    "integration_staged_event_sample_sha256": "294f2c25424a05449e09d654359387d5f75c67996e27cb2acc26b8899b0c5f55",
+    "integration_note": "synthetic consumer-integration test in an isolated 0700 scratch root; not a new acceptance cohort; no synthetic event promoted to Graphiti"
+  },
+  "dispositions": {
+    "result": "PARTIAL",
+    "naming_contract": "PASS (invariants A-F verified; G partial pending F-1)",
+    "focused_cpu_tests": "81 pass / 6 fail at committed source (single root cause F-1); 87/87 with verified uncommitted minimal patch",
+    "wider_cpu_tests": "129 pass / 6 fail (same 6; existing group handling and source-attribution correction intact)",
+    "portal_typecheck_build": "PASS (npm ci + tsc --noEmit + vite build, all exit 0)",
+    "disposable_new_name_lifecycle": "PASS (all 8 integration checks; scratch cleaned)",
+    "host_fixture_inventory": "COMPLETE (16 machine groups + 4 units; unlisted IDs unclassified)",
+    "legacy_group_compatibility": "PASS (frozen score byte-identical; historical episodes verified)",
+    "production_nonmutation": "PASS (read-only remote readback; no Graphiti writes; signed inputs unchanged)",
+    "source_review": "1 blocking defect (F-1, patch proposed/verified), 2 important non-blocking (F-2, F-3)"
+  },
+  "files": {
+    "naming-inventory.md": "c307a4a67ad134783561e52f67ff5f35cc40ef90131ac2f8bcc3665bf66c07e6",
+    "validation.md": "2f848f4e383d4faa11c3ef3b997f253331eff3584901595bb7c4c36882357751",
+    "historical-compatibility.md": "f55b750f2c7e00eedba8196b3efbb68a7355fc614e1b8abaa51b526d50a8cc01",
+    "source-review.md": "2c09eb9b229c60457c82cbebf36985b6845beaec2b921bf3dd0ce8ea16430dae",
+    "friction-ledger.json": "c74160fd9d840d910354cc650464160b300005359939333cfd98e3d6d91185f6",
+    "handback.md": "100867f2af0cd3c1f01f6ce990b0d57d6fe115b768389a83d444def85ef383c0"
+  },
+  "sanitization": "No private Graphiti facts, native transcripts, signed operator identity, credentials, raw home paths (shown as <host-home>), or host-local secrets. Group/session/episode identifiers, digests, and accounting values only.",
+  "boundaries": "One sanitized evidence-only commit on issue/81 whose parent is the authenticated source head 0e30106…; no source remote update beyond the existing issue/81 branch (non-force, single push), no new PR, no merge, no issue closure, no production deployment, no EX-gate edit, no model calls, no Graphiti write, no fixture migration, no fresh-client acceptance in this phase."
+}

@@ -1,0 +1,250 @@
+{
+  "schema_version": 1,
+  "kind": "issue81-three-path-prospective",
+  "tested_head": "7b7d62685993e56e2b71b77846a6a0c1092d7d01",
+  "source_under_test": "staged candidate (issue/81 @ 7b7d626) — includes long-prompt span capture; multi-line JSON-wrapped prompts are lost by the staged promptText (defect #2), so the code+prose case is an honest FN here",
+  "development": {
+    "sha256": "d3822a30ed906372679fc7d2f9ee2e9540279b92d04cda3e8656b628674f0cd7",
+    "label_status": "provisional",
+    "cases": 12,
+    "gold_complete": true,
+    "baseline": {
+      "tp": 1,
+      "fp": 0,
+      "tn": 6,
+      "fn": 5,
+      "precision": 1,
+      "recall": 0.16666666666666666
+    },
+    "broad_capture": {
+      "tp": 5,
+      "fp": 2,
+      "tn": 4,
+      "fn": 1,
+      "precision": 0.7142857142857143,
+      "recall": 0.8333333333333334
+    },
+    "curator": {
+      "status": "UNVERIFIED_NO_MODEL_OBSERVATIONS"
+    },
+    "privacy_or_wrong_group_selected": [],
+    "target_status": "central_proposal",
+    "targets": {
+      "candidate_recall": false,
+      "grounded_precision": null,
+      "no_privacy_wrong_group": true,
+      "no_false_authority": null,
+      "no_wrong_scope": null,
+      "semantic_recall": "UNVERIFIED_UNTIL_FRESH_CLIENT",
+      "context_latency": "UNVERIFIED_UNTIL_INSTALLED",
+      "post_exit_latency": null
+    },
+    "rows": [
+      {
+        "id": "dev-p-chatter1",
+        "category": "chatter",
+        "truth": false,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "91aba66805abf03981bdfbc759d65a7b0ff65a149cdd67f27b42bf7420fe38f2",
+        "candidate_count": 1,
+        "candidate_event_ids": [
+          "91aba66805abf03981bdfbc759d65a7b0ff65a149cdd67f27b42bf7420fe38f2"
+        ]
+      },
+      {
+        "id": "dev-p-longdecision",
+        "category": "direct",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "290a80774515b02cc2961628f11cbf33392faa71f0a959472473bb14dceee2e5",
+        "candidate_count": 2,
+        "candidate_event_ids": [
+          "290a80774515b02cc2961628f11cbf33392faa71f0a959472473bb14dceee2e5",
+          "b030c254d4451c6c640291e8b3f4ceff38aa1152cf6fe6db8800ec4a59e6c3ff"
+        ]
+      },
+      {
+        "id": "dev-p-codeprose",
+        "category": "direct",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": false,
+        "event_id": null,
+        "candidate_count": 0,
+        "candidate_event_ids": []
+      },
+      {
+        "id": "dev-p-secretlate",
+        "category": "privacy",
+        "truth": false,
+        "baseline_selected": false,
+        "candidate_selected": false,
+        "event_id": null,
+        "candidate_count": 0,
+        "candidate_event_ids": []
+      },
+      {
+        "id": "dev-p-self",
+        "category": "negative_finding",
+        "truth": false,
+        "baseline_selected": false,
+        "candidate_selected": false,
+        "event_id": null,
+        "candidate_count": 0,
+        "candidate_event_ids": []
+      },
+      {
+        "id": "dev-p-shell",
+        "category": "error_fix",
+        "truth": true,
+        "baseline_selected": true,
+        "candidate_selected": true,
+        "event_id": "9155863df1c615390725f70c3580145b4de24796b227b3d402b8d95df35e030a",
+        "candidate_count": 1,
+        "candidate_event_ids": [
+          "9155863df1c615390725f70c3580145b4de24796b227b3d402b8d95df35e030a"
+        ]
+      },
+      {
+        "id": "dev-p-read",
+        "category": "tool",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "e5cfa7f45b7a193e8be4f430c5982cc57062e17d5d99f410af4811544185914a",
+        "candidate_count": 1,
+        "candidate_event_ids": [
+          "e5cfa7f45b7a193e8be4f430c5982cc57062e17d5d99f410af4811544185914a"
+        ]
+      },
+      {
+        "id": "dev-p-dup",
+        "category": "duplicate",
+        "truth": false,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "d3eae4b67285c19361258cbdbb79736dd94c6652f24bcc3d6a8026fe063457c6",
+        "candidate_count": 2,
+        "candidate_event_ids": [
+          "d3eae4b67285c19361258cbdbb79736dd94c6652f24bcc3d6a8026fe063457c6",
+          "186787f51d9e4e312d8f453f936a76d6bddfac665d0b324a39141cbf99f2a78b"
+        ]
+      },
+      {
+        "id": "dev-p-chatter2",
+        "category": "chatter",
+        "truth": false,
+        "baseline_selected": false,
+        "candidate_selected": false,
+        "event_id": null,
+        "candidate_count": 0,
+        "candidate_event_ids": []
+      },
+      {
+        "id": "dev-p-historical",
+        "category": "historical",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "0cc8c5eca9c3c60a89256aed9f7b407d2461e27acc0fedb91035ff53bd711d01",
+        "candidate_count": 1,
+        "candidate_event_ids": [
+          "0cc8c5eca9c3c60a89256aed9f7b407d2461e27acc0fedb91035ff53bd711d01"
+        ]
+      },
+      {
+        "id": "dev-p-superseded",
+        "category": "historical",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "ec284f26df12c2aaff727ef93a4cc4be93de918e8946d0e30202f03efc669b53",
+        "candidate_count": 1,
+        "candidate_event_ids": [
+          "ec284f26df12c2aaff727ef93a4cc4be93de918e8946d0e30202f03efc669b53"
+        ]
+      },
+      {
+        "id": "dev-p-chatter3",
+        "category": "chatter",
+        "truth": false,
+        "baseline_selected": false,
+        "candidate_selected": false,
+        "event_id": null,
+        "candidate_count": 0,
+        "candidate_event_ids": []
+      }
+    ]
+  },
+  "holdout": {
+    "sha256": "2435236a249ba871ab9dff4f3060031cc6a4762d0ae1873689d363d3ac8bed2a",
+    "label_status": "provisional",
+    "note": "Blind prospective holdout; PROVISIONAL labels -> counterfactual matrix only, NOT a ratifiable blind score until operator adjudication",
+    "counterfactual_matrix": {
+      "tp": 4,
+      "fp": 0,
+      "tn": 1,
+      "fn": 0,
+      "recall": 1,
+      "precision": 1
+    },
+    "rows": [
+      {
+        "id": "ho-p-longdecision",
+        "category": "direct",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "candidate_count": 1,
+        "candidate_event_ids": [
+          "25b9394fdaf5c023f91bcdd5ee5c822178a3211c10d58e367a92678e25cf43dc"
+        ]
+      },
+      {
+        "id": "ho-p-shell",
+        "category": "error_fix",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "candidate_count": 1,
+        "candidate_event_ids": [
+          "bc7b7052c348429376a9dd6ad381065c54709d32873540b4337f126c85ed6739"
+        ]
+      },
+      {
+        "id": "ho-p-secret",
+        "category": "privacy",
+        "truth": false,
+        "baseline_selected": false,
+        "candidate_selected": false,
+        "candidate_count": 0,
+        "candidate_event_ids": []
+      },
+      {
+        "id": "ho-p-longdecision2",
+        "category": "direct",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "candidate_count": 1,
+        "candidate_event_ids": [
+          "d359ff7937ee324a2f114ab2f4d17361d69e4f42706380e492a087648ebd858d"
+        ]
+      },
+      {
+        "id": "ho-p-longdecision3",
+        "category": "direct",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "candidate_count": 2,
+        "candidate_event_ids": [
+          "7b89a91599d42d0aecc65f1acdf885f22c2a103c4c0901936225279db4940d0b",
+          "5907f40338755f1a2858ae75aeec71dcd2f6ece75c9ed6b9443d3d99b33623ab"
+        ]
+      }
+    ]
+  }
+}

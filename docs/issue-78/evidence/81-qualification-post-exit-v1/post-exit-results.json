@@ -1,0 +1,32 @@
+{
+ "schema_version": 1,
+ "kind": "issue81-post-exit-drain-terminal-result",
+ "group": "cur81_dev_ce555621",
+ "unit": "ghdev-curator81-qual.service (oneshot, Restart=on-failure 30s, trigger ghdev-curator81-qual.path on the cur81 state dirs)",
+ "exec": "python3 post-exit-drain.py --gate-source /home/filip/.local/share/openviking-commit-gate/openviking_commit_gate.py --gate-config /home/filip/.config/openviking/commit-gate.toml --cli /tmp/opencode/issue81-qual/cur81/usage-drain-cli.mjs --group cur81_dev_ce555621 --state-dir /home/filip/.local/state/ghdev-graphiti-issue81/qual81 --endpoint http://127.0.0.1:8766/mcp --max-seconds 600 --lock-timeout 120",
+ "sequence": [
+  {"at":"2026-11-04T07:06:14PST","event":"EX admission proven; invoking candidate drain with lock retained"},
+  {"at":"2026-11-04T07:09:42PST","event":"drain run 1: curated=6 deferred=1 skipped=1 approved=4 queued=4 persisted=4 unresolved=0 model_calls=6 model_ms=21263 status=incomplete; UNRESOLVED: retaining EX admission for late positive Graphiti reconciliation (shared MCP worker running)"},
+  {"at":"2026-11-04T07:09:42PST","event":"reconcile-only: review_count=6 queue_new=27 status=work_remaining -> LATE_RECONCILIATION_LOCAL_WORK resume under retained EX"},
+  {"at":"2026-11-04T07:11:02PST","event":"drain run 2: curated=6 deferred=2 approved=4 queued=4 persisted=4 unresolved=0 model_calls(cum)=6 model_ms(cum)=26861 status=incomplete"},
+  {"at":"2026-11-04T07:11:17PST","event":"reconcile-only: review_count=12 queue_new=2 status=work_remaining -> resume"},
+  {"at":"2026-11-04T07:11:43PST","event":"drain run 3: curated=1 approved=1 queued=1 persisted=1 unresolved=0 model_calls=1 model_ms=3689 status=settled"},
+  {"at":"2026-11-04T07:11:43PST","event":"systemd: Finished Admitted post-exit candidate curator (code=exited, status=0/SUCCESS)"}
+ ],
+ "pre_exit_control": "While any Build harness was active, the same unit repeatedly exited 2 with 'FAIL_CLOSED: shared agent/gate lease held; bounded wait exhausted' (e.g. 19:37-07:06 PST, restart counter 258+); zero model calls and zero cur81 episodes in that window (usage.jsonl first entry 15:06:17Z = 07:06:17PST, i.e. after admission).",
+ "terminal_state": {
+  "service": "inactive/dead after 'settled' (exit 0); a subsequent path-triggered wake at 07:21:28PST (state-dir mtime touch by a read-only CLI status call) re-entered the pre-admission bounded lock wait while the new Build harness held the shared gate lease; safe to stop because queue_new=0 and unresolved=0",
+  "review_store": {"persisted": 9, "deferred": 3, "skipped": 1, "review_count": 13},
+  "queue": {"total": 33, "new": 0, "reserved": 0, "deferred": 9, "skipped": 1, "approved": 23, "submission_unknown": 0, "queued": 0, "persisted": 0},
+  "unresolved_submissions": 0,
+  "model_calls_total": 13,
+  "note": "No manual drain, no replay of a remotely ambiguous submission, no canonical gate alteration. The retained-EX late-reconciliation path (runs 2-3) is the accepted worker's own continuation under the retained lease, not a manual re-invocation."
+ },
+ "model_binding": {
+  "provider": "litellm-proxy 127.0.0.1:8002 -> ninfer-serve 127.0.0.1:8001",
+  "model": "chat-fast",
+  "underlying": "Qwen3.8-27B-swift15 NVFP4 (RTX 5090, dflash2)",
+  "env_binding": "private 0600 /home/filip/.local/state/ghdev-graphiti-issue81/curator.env"
+ },
+ "usage_receipt": "/home/filip/.local/state/ghdev-graphiti-issue81/usage.jsonl (13 entries; one per curated cluster; durations sum 51813 ms; tokens total 28538)"
+}

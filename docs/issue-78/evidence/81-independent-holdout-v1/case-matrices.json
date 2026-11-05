@@ -1,0 +1,412 @@
+{
+  "schema_version": 1,
+  "kind": "issue81-independent-holdout-case-matrices",
+  "campaign": "ISSUE81_INDEPENDENT_HOLDOUT",
+  "cohort": "cron-acceptance",
+  "source_tested_sha": "3271a97be43d25f6646a63cce71fc0e907fd1059",
+  "frozen_corpus_sha256": "524de3ff36877442c6dc4e75edf5da9f317ba1c2e25e267b117233514e425863",
+  "adjudication_sha256": "19f21b9db8e2a2ebda7a76f9d300bf1b35093d286c745a8c0a36ebcde587d59b",
+  "original_target_sha256": "17ffb60515f5f96f2d546fd3abf951d0bc008325e38d83145ec4f75a8c76f049",
+  "target_ratification_sha256": "3e9581114047ac7416f6014a0dd6a57304dc5e5784efe39b176ced61fbb8626a",
+  "observation_sha256": "5ccdb95b085f148314b376faf88935c6fcdeb4810fc2f5292a212707f16eb86d",
+  "case_label_changes_from_provisional": 0,
+  "report": {
+    "split": "holdout",
+    "label_status": "operator_adjudicated",
+    "gold_complete": true,
+    "case_count": 24,
+    "baseline": {
+      "tp": 0,
+      "fp": 0,
+      "tn": 10,
+      "fn": 14,
+      "precision": null,
+      "recall": 0
+    },
+    "broad_capture": {
+      "tp": 14,
+      "fp": 8,
+      "tn": 2,
+      "fn": 0,
+      "precision": 0.6363636363636364,
+      "recall": 1
+    },
+    "curator": {
+      "record_count": 3,
+      "decisions": {
+        "DEFER": 3
+      },
+      "invalid_model_or_source_decisions": 0,
+      "facts_proposed": 0,
+      "facts_human_judged": 0,
+      "proposed_fact_grounded_precision": null,
+      "grounded_precision": null,
+      "model_emitted_facts": 0,
+      "remote_receipt_bound_model_facts": 0,
+      "useful_facts": 0,
+      "false_authority": 0,
+      "wrong_scope": 0,
+      "model_ms": {
+        "count": 0,
+        "p50": null,
+        "p95": null
+      },
+      "post_exit_ms": {
+        "count": 3,
+        "p50": 30000,
+        "p95": 30000
+      },
+      "tokens": {
+        "count": 0,
+        "p50": null,
+        "p95": null
+      },
+      "tokens_total": 0,
+      "records": [
+        {
+          "cluster_id": "1fdf0eeded05f02698e3a9c45dc9279742e9664686af3c4b6bf2e41ccef0cb9b",
+          "source_case_ids": [
+            "ho2-user-impl",
+            "ho2-init-src-write",
+            "ho2-init-test-write",
+            "ho2-red-init",
+            "ho2-neg-testbugs",
+            "ho2-green-init",
+            "ho2-user-wrap",
+            "ho2-chatter-run"
+          ],
+          "decision": "DEFER",
+          "validation": "PASS",
+          "terminal_state": "deferred"
+        },
+        {
+          "cluster_id": "8915afb0a48d171cac8d13a18177b6cd174dfb10d891e76fd1c4f1446653daf7",
+          "source_case_ids": [
+            "ho2-fix-wrap-src",
+            "ho2-superseded",
+            "ho2-user-range-raw",
+            "ho2-red-range",
+            "ho2-green-range",
+            "ho2-user-alias-probe",
+            "ho2-neg-alias",
+            "ho2-chatter-verify"
+          ],
+          "decision": "DEFER",
+          "validation": "PASS",
+          "terminal_state": "deferred"
+        },
+        {
+          "cluster_id": "9036df0aaa06fb4153b704c9be35068895b547ed41f731ec9e8adefcf2bc0b08",
+          "source_case_ids": [
+            "ho2-dup-green-a",
+            "ho2-user-notes",
+            "ho2-final-honest",
+            "ho2-notes-write-dup",
+            "ho2-dup-green-b",
+            "ho2-dup-green-c"
+          ],
+          "decision": "DEFER",
+          "validation": "PASS",
+          "terminal_state": "deferred"
+        }
+      ]
+    },
+    "privacy_or_wrong_group_selected": [],
+    "rows": [
+      {
+        "id": "ho2-user-impl",
+        "category": "direct",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "611eb0a34349f37aac1c8f535ca2f81e07941da50fd88ec415ca049177305bc6",
+        "candidate_count": 1,
+        "candidate_event_ids": [
+          "611eb0a34349f37aac1c8f535ca2f81e07941da50fd88ec415ca049177305bc6"
+        ]
+      },
+      {
+        "id": "ho2-user-wrap",
+        "category": "direct",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "521189edc270e2041ed6d602960b677925c5935ed3534556a96f1d695d283fd4",
+        "candidate_count": 1,
+        "candidate_event_ids": [
+          "521189edc270e2041ed6d602960b677925c5935ed3534556a96f1d695d283fd4"
+        ]
+      },
+      {
+        "id": "ho2-user-range-raw",
+        "category": "direct",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "804941c0831a1a2d61097d72fa9aff959324093fc97314a03a8165143d2433ff",
+        "candidate_count": 1,
+        "candidate_event_ids": [
+          "804941c0831a1a2d61097d72fa9aff959324093fc97314a03a8165143d2433ff"
+        ]
+      },
+      {
+        "id": "ho2-user-alias-probe",
+        "category": "direct",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "0314f98e497019cd6ace76eb3d064416075afb1784ddfbc72fa70d5b4b4f8564",
+        "candidate_count": 1,
+        "candidate_event_ids": [
+          "0314f98e497019cd6ace76eb3d064416075afb1784ddfbc72fa70d5b4b4f8564"
+        ]
+      },
+      {
+        "id": "ho2-user-notes",
+        "category": "direct",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "3ac188e8f0027a498993a99f656f9999fea512e0fccd8551b4f24f90ce010fb7",
+        "candidate_count": 1,
+        "candidate_event_ids": [
+          "3ac188e8f0027a498993a99f656f9999fea512e0fccd8551b4f24f90ce010fb7"
+        ]
+      },
+      {
+        "id": "ho2-red-init",
+        "category": "error_fix",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "f6a1acbba2ab0ebc08eeb3b8d78bc2ab3bfb09a633ab2555badacd006894bf8a",
+        "candidate_count": 1,
+        "candidate_event_ids": [
+          "f6a1acbba2ab0ebc08eeb3b8d78bc2ab3bfb09a633ab2555badacd006894bf8a"
+        ]
+      },
+      {
+        "id": "ho2-green-init",
+        "category": "error_fix",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "ac8d0cf0415b043724f298a3fc1933e38890ec051033375de8ed02ce62f8e11c",
+        "candidate_count": 1,
+        "candidate_event_ids": [
+          "ac8d0cf0415b043724f298a3fc1933e38890ec051033375de8ed02ce62f8e11c"
+        ]
+      },
+      {
+        "id": "ho2-red-range",
+        "category": "error_fix",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "a45bfdf3b8c437de176368b21e70b702e7e6de928a5b57535dd668bcadc0d283",
+        "candidate_count": 1,
+        "candidate_event_ids": [
+          "a45bfdf3b8c437de176368b21e70b702e7e6de928a5b57535dd668bcadc0d283"
+        ]
+      },
+      {
+        "id": "ho2-green-range",
+        "category": "error_fix",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "aaa95c6acf54f83ee409188a7bc3721046ca45f4476f3e7687270c9d667acdb1",
+        "candidate_count": 1,
+        "candidate_event_ids": [
+          "aaa95c6acf54f83ee409188a7bc3721046ca45f4476f3e7687270c9d667acdb1"
+        ]
+      },
+      {
+        "id": "ho2-fix-wrap-src",
+        "category": "tool",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "d7189e48d8334c79ac032c617bf509a3bc252a61208ca20eaf4af660c23c69db",
+        "candidate_count": 1,
+        "candidate_event_ids": [
+          "d7189e48d8334c79ac032c617bf509a3bc252a61208ca20eaf4af660c23c69db"
+        ]
+      },
+      {
+        "id": "ho2-neg-testbugs",
+        "category": "negative_finding",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "ac78feedfc1fac3c95766ea0902116746b0b5d0bcd6a1fa36c26252fc13ffc40",
+        "candidate_count": 1,
+        "candidate_event_ids": [
+          "ac78feedfc1fac3c95766ea0902116746b0b5d0bcd6a1fa36c26252fc13ffc40"
+        ]
+      },
+      {
+        "id": "ho2-neg-alias",
+        "category": "negative_finding",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "31c94708aacefa72f7e5c2874bb9581c4161dfa34a9f0ca98e404179c26f8dfc",
+        "candidate_count": 1,
+        "candidate_event_ids": [
+          "31c94708aacefa72f7e5c2874bb9581c4161dfa34a9f0ca98e404179c26f8dfc"
+        ]
+      },
+      {
+        "id": "ho2-superseded",
+        "category": "historical",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "119aa69bbc1e7b31d9eac1fe730c7edb182d099d8f788a65505347c30cb02444",
+        "candidate_count": 1,
+        "candidate_event_ids": [
+          "119aa69bbc1e7b31d9eac1fe730c7edb182d099d8f788a65505347c30cb02444"
+        ]
+      },
+      {
+        "id": "ho2-final-honest",
+        "category": "implicit",
+        "truth": true,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "d85d8e16fc8c678c6a2373668d645fe81d8795cef563ff376b3967995094b762",
+        "candidate_count": 1,
+        "candidate_event_ids": [
+          "d85d8e16fc8c678c6a2373668d645fe81d8795cef563ff376b3967995094b762"
+        ]
+      },
+      {
+        "id": "ho2-dup-green-a",
+        "category": "duplicate",
+        "truth": false,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "4c6401dd331f7b220e6eeaf9f757b9ebca14ca5ceff6c792820f1d9525c2c627",
+        "candidate_count": 1,
+        "candidate_event_ids": [
+          "4c6401dd331f7b220e6eeaf9f757b9ebca14ca5ceff6c792820f1d9525c2c627"
+        ]
+      },
+      {
+        "id": "ho2-dup-green-b",
+        "category": "duplicate",
+        "truth": false,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "82fffb76f67dcd0014507edfc1bac3c0ddd0476889fd25a25d7e8e733dd1c1a7",
+        "candidate_count": 1,
+        "candidate_event_ids": [
+          "82fffb76f67dcd0014507edfc1bac3c0ddd0476889fd25a25d7e8e733dd1c1a7"
+        ]
+      },
+      {
+        "id": "ho2-dup-green-c",
+        "category": "duplicate",
+        "truth": false,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "3d6a523c4cdad25a097a672ff13bc63169f6b538a3dcb33fded44dedc429636a",
+        "candidate_count": 1,
+        "candidate_event_ids": [
+          "3d6a523c4cdad25a097a672ff13bc63169f6b538a3dcb33fded44dedc429636a"
+        ]
+      },
+      {
+        "id": "ho2-chatter-run",
+        "category": "chatter",
+        "truth": false,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "fe4b0b2ff186fe4f6831c88185ab78a8b8051af5ab8841599e5099db5348a741",
+        "candidate_count": 1,
+        "candidate_event_ids": [
+          "fe4b0b2ff186fe4f6831c88185ab78a8b8051af5ab8841599e5099db5348a741"
+        ]
+      },
+      {
+        "id": "ho2-chatter-verify",
+        "category": "chatter",
+        "truth": false,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "bd60a11a3a7c25c9850b1499b7218527c5f8cf0cf6d06dd41eca6a467ce1ea92",
+        "candidate_count": 1,
+        "candidate_event_ids": [
+          "bd60a11a3a7c25c9850b1499b7218527c5f8cf0cf6d06dd41eca6a467ce1ea92"
+        ]
+      },
+      {
+        "id": "ho2-init-src-write",
+        "category": "duplicate",
+        "truth": false,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "ba952f444192a92c74b1a6419ba39881facee07c6a6733e4f9272271b08bf8ab",
+        "candidate_count": 1,
+        "candidate_event_ids": [
+          "ba952f444192a92c74b1a6419ba39881facee07c6a6733e4f9272271b08bf8ab"
+        ]
+      },
+      {
+        "id": "ho2-init-test-write",
+        "category": "duplicate",
+        "truth": false,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "183d8a8ce1b1036d90ea1d9e61c86d5e43478c2263920298af9d68e370b11c9f",
+        "candidate_count": 1,
+        "candidate_event_ids": [
+          "183d8a8ce1b1036d90ea1d9e61c86d5e43478c2263920298af9d68e370b11c9f"
+        ]
+      },
+      {
+        "id": "ho2-cred-fake",
+        "category": "privacy",
+        "truth": false,
+        "baseline_selected": false,
+        "candidate_selected": false,
+        "event_id": null,
+        "candidate_count": 0,
+        "candidate_event_ids": []
+      },
+      {
+        "id": "ho2-wrong-scope",
+        "category": "wrong_group",
+        "truth": false,
+        "baseline_selected": false,
+        "candidate_selected": false,
+        "event_id": null,
+        "candidate_count": 0,
+        "candidate_event_ids": []
+      },
+      {
+        "id": "ho2-notes-write-dup",
+        "category": "duplicate",
+        "truth": false,
+        "baseline_selected": false,
+        "candidate_selected": true,
+        "event_id": "8e969a658b508434a514e9e775facf91869c4bd6793136b122e7ae498d7463a3",
+        "candidate_count": 1,
+        "candidate_event_ids": [
+          "8e969a658b508434a514e9e775facf91869c4bd6793136b122e7ae498d7463a3"
+        ]
+      }
+    ],
+    "targets": {
+      "candidate_recall": true,
+      "grounded_precision": null,
+      "no_privacy_wrong_group": true,
+      "no_false_authority": true,
+      "no_wrong_scope": true,
+      "semantic_recall": "UNVERIFIED_UNTIL_FRESH_CLIENT",
+      "context_latency": "UNVERIFIED_UNTIL_INSTALLED",
+      "post_exit_latency": true
+    }
+  }
+}

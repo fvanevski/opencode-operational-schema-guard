@@ -3,6 +3,7 @@
 import path from 'node:path';
 import os from 'node:os';
 import { CandidateQueue } from './queue.mjs';
+import {describeFixtureGroup} from '../fixture-groups.mjs';
 const [, , command, ...args] = process.argv;
 function opt(key) { const i = args.indexOf('--' + key); return i === -1 ? '' : args[i + 1] || ''; }
 const group = opt('group');
@@ -15,5 +16,5 @@ if (!['status', 'list'].includes(command) || !group || !Number.isInteger(n) || n
 } else {
   const q = new CandidateQueue(stateDir, group);
   const result = command === 'status' ? await q.status() : await q.list({ limit: n });
-  console.log(JSON.stringify(result, null, 2));
+  console.log(JSON.stringify({...result,fixture:describeFixtureGroup(group)}, null, 2));
 }

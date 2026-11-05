@@ -3,6 +3,7 @@
 import path from 'node:path';
 import {CandidateQueue} from '../../v2-candidate/queue.mjs';
 import {ReviewStore,selectClusters} from '../core.mjs';
+import {isFixtureGroup} from '../../fixture-groups.mjs';
 export async function prepareReview({queue,store,minEvents=2}={}){
  if(!queue||!store||!Number.isInteger(minEvents)||minEvents<2||minEvents>8)
   throw Error('INVALID_PREP_ARGUMENTS');
@@ -27,8 +28,8 @@ async function main(){
  const args=process.argv.slice(2);
  const get=k=>{const i=args.indexOf('--'+k);return i<0?'':args[i+1]||'';};
  const root=get('state-dir'),group=get('group');
- if(!path.isAbsolute(root)||!/^cur80_[a-z0-9_-]{3,60}$/.test(group))
-  throw Error('Use --state-dir ABS --group cur80_DISPOSABLE');
+ if(!path.isAbsolute(root)||!isFixtureGroup(group,'recovery',{allowLegacy:true}))
+  throw Error('Use --state-dir ABS --group DESCRIPTIVE_RECOVERY_FIXTURE_OR_LEGACY_CUR80');
  const data=await prepareReview({queue:new CandidateQueue(root,group),
   store:new ReviewStore(root,group)});
  console.log(JSON.stringify(data,null,2));

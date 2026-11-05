@@ -1,0 +1,35 @@
+{
+ "schema_version": 1,
+ "kind": "issue81-curator-results",
+ "group": "cur81_dev_ce555621",
+ "status": "READY_FOR_POST_EXIT",
+ "summary": "Real local-model curation and Graphiti persistence require the canonical EX admission, which is held by the active Build harness (shared openviking-agent.lock via the installed commit gate). The disposable drain unit is armed and will process the staged cohort automatically after the harness exits. No model call or Graphiti write has occurred yet; no ambiguous submission exists.",
+ "model_binding": {
+  "provider": "litellm-proxy (user service, 127.0.0.1:8002) -> ninfer-serve (127.0.0.1:8001)",
+  "model": "chat-fast",
+  "underlying": "Qwen3.8-27B-swift15-uncensored-ajgazin-nvfp4full-dflash2-NInfer-v3 (NVFP4, RTX 5090, dflash2 spec)",
+  "settings": "defaults of the accepted #80 model.mjs request path; usage and latency recorded per cluster by the instrumented drain CLI (usage.jsonl)",
+  "env_binding": "private 0600 EnvironmentFile /home/filip/.local/state/ghdev-graphiti-issue81/curator.env (LOCAL_CURATOR_URL=http://127.0.0.1:8002/v1/chat/completions, LOCAL_CURATOR_MODEL=chat-fast)"
+ },
+ "pre_exit": {
+  "ex_lease": "EX_BLOCKED: exclusive flock on /run/user/1000/openviking-agent.lock not acquirable while the active opencode harness holds the gate's shared lease (holder pid 4150156, flock -s via /home/filip/.local/share/openviking-commit-gate/openviking_commit_gate.py)",
+  "fail_closed_evidence": "post-exit-drain.py exited 2 with 'FAIL_CLOSED: shared agent/gate lease held; bounded wait exhausted' (journal 19:39:38; unit log /tmp/opencode/issue81-qual/cur81/preexit-failclosed.log)",
+  "model_calls": 0,
+  "review_records": 0,
+  "queue": {"total": 33, "counts": {"new": 33, "reserved": 0, "deferred": 0, "skipped": 0, "approved": 0, "submission_unknown": 0, "queued": 0, "persisted": 0}},
+  "graphiti_episodes_cur81": 0
+ },
+ "post_exit_continuation": {
+  "unit": "ghdev-curator81-qual.service (oneshot, Restart=on-failure, RestartSec=30s) triggered by ghdev-curator81-qual.path on /home/filip/.local/state/ghdev-graphiti-issue81/qual81/{candidate-events-v1,curation-v1}/cur81_dev_ce555621",
+  "exec": "python3 post-exit-drain.py --gate-source /home/filip/.local/share/openviking-commit-gate/openviking_commit_gate.py --gate-config /home/filip/.config/openviking/commit-gate.toml --cli /tmp/opencode/issue81-qual/cur81/usage-drain-cli.mjs --group cur81_dev_ce555621 --state-dir /home/filip/.local/state/ghdev-graphiti-issue81/qual81 --endpoint http://127.0.0.1:8766/mcp --max-seconds 600 --lock-timeout 120",
+  "expected_transitions": "new -> reserved -> (model decision) approved -> queued -> persisted, or deferred/skipped/submission_unknown (typed); no replay of a timed-out Graphiti write",
+  "usage_receipt": "/home/filip/.local/state/ghdev-graphiti-issue81/usage.jsonl (per-cluster model usage/latency appended by the instrumented drain CLI)",
+  "acceptance_readback": "authenticated get_episodes for cur81_dev_ce555621: matching episode UUID/name, exact native source index, >=1 real extracted entity+relationship, zero duplicates"
+ },
+ "decisions": {
+  "EMIT": 0,
+  "DEFER": 0,
+  "SKIP": 0,
+  "note": "All counters are 0 pre-exit by construction (no model invocation admitted). Final counts are produced by the post-exit drain and must be read back from the review store and usage.jsonl; they are NOT reported here to avoid substituting a pre-exit placeholder for measured model decisions."
+ }
+}

@@ -2,6 +2,9 @@
 Description=Admitted post-exit candidate curator
 # Do not launch a second model server or Graphiti instance.
 # The pre-existing Python gate retains exclusive inference admission.
+# NEW disposable group IDs: graphiti-<domain>-<purpose>-rNN.
+# Recovery service name must match: ghdev-<domain>-recovery-rNN.service.
+# Historical group/unit IDs are immutable; do not relabel active units.
 StartLimitIntervalSec=0
 
 [Service]

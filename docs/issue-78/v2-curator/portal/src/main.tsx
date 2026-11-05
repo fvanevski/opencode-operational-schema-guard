@@ -17,6 +17,7 @@ type Detail=Item & {group:string;workspace:string;events:Event[];facts:Fact[];au
   at:string;action:string;outcome:string}[];failure_evidence?:{
   kind:string;identity_binding:string;journal_sha256:string;error_code:string;observed_at:string;operator_attested:boolean}};
 type Preview={nodes:Node[];edges:Edge[];note:string;scope:{group:string;project:string};remote_graph?:{status:string;node_count:number;edge_count:number;linked_edge_count:number;unlinked_edge_count:number}};
+type FixtureDescriptor={group_id:string;kind:string;label:string|null};
 const api=async <T,>(path:string,token:string,init:RequestInit={}):Promise<T>=>{
  const res=await fetch(path,{...init,headers:{'x-review-token':token,...(init.body?{'Content-Type':'application/json'}:{})}});
  const data=await res.json();
@@ -30,6 +31,7 @@ function App(){
  const [evidenceTypes,setEvidenceTypes]=useState<string[]>([]),[eventTypes,setEventTypes]=useState<string[]>([]);
  const refreshSequence=useRef(0);
  const [selected,setSelected]=useState<string|null>(null);const [detail,setDetail]=useState<Detail|null>(null);
+ const [fixture,setFixture]=useState<FixtureDescriptor|null>(null);
  const [preview,setPreview]=useState<Preview|null>(null);const [counts,setCounts]=useState<Record<string,number>>({});
  const [filter,setFilter]=useState('all');const [search,setSearch]=useState('');
  const [evidenceFilter,setEvidenceFilter]=useState('all');const [kindFilter,setKindFilter]=useState('all');
@@ -45,10 +47,10 @@ function App(){
   try{
    const [list,status]=await Promise.all([
     api<{items:Item[];total:number;has_more:boolean}>('/api/clusters?'+params,k),
-    api<{review_counts:Record<string,number>;evidence_classes:string[];event_kinds:string[]}>('/api/status',k)]);
+    api<{review_counts:Record<string,number>;evidence_classes:string[];event_kinds:string[];fixture?:FixtureDescriptor}>('/api/status',k)]);
    if(seq!==refreshSequence.current)return;
    setRows(list.items);setTotal(list.total);setHasMore(list.has_more);
-   setCounts(status.review_counts);
+   setCounts(status.review_counts);setFixture(status.fixture||null);
    setEvidenceTypes(status.evidence_classes);setEventTypes(status.event_kinds);
    setError('');
   }catch(e){if(seq===refreshSequence.current)setError(String(e));}
@@ -109,7 +111,10 @@ function App(){
  return <Theme appearance={theme}><div className="layout">
   <header><Flex justify="between" align="center"><Box>
    <Text color="gray" size="1">LOCAL GRAPHITI / SOURCE-GROUNDED REVIEW</Text>
-   <Heading size="6">Deferred memory inbox</Heading></Box>
+   <Heading size="6">Deferred memory inbox</Heading>
+    {fixture&&<Text size="1" color="gray" title={fixture.group_id}>
+     {fixture.label ? "Fixture: "+fixture.label : "Group: "+fixture.group_id}
+    </Text>}</Box>
    <Flex align="center" gap="2"><Button variant="soft" onClick={()=>{void refresh();setDetailTick(n=>n+1);}}>Refresh</Button>
     <Button variant="outline" onClick={()=>setTheme(theme==='dark'?'light':'dark')}>{theme==='dark'?'Light':'Dark'}</Button>
     <Button variant="outline" color="gray" onClick={()=>{setToken('');setSelected(null);}}>Lock</Button></Flex>

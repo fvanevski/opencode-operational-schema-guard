@@ -6,9 +6,10 @@ import {createHash} from 'node:crypto';
 import {CandidateQueue} from '../v2-candidate/queue.mjs';
 import {positiveEpisode} from './worker.mjs';
 import {sourcedEpisodeResolver} from './sourced-recall.mjs';
+import {isFixtureGroup} from '../fixture-groups.mjs';
 const HEX=/^[a-f0-9]{64}$/;
 const UUID=/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i;
-const GROUP=/^cur80_[a-z0-9_-]{3,60}$/;
+const recoveryGroup=g=>isFixtureGroup(g,'recovery',{allowLegacy:true});
 const digest=s=>createHash('sha256').update(s).digest('hex');
 function timeOf(line){
  const date=/^(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d+)?(?:Z|[-+]\d\d:\d\d))/.exec(line);
@@ -17,7 +18,7 @@ function timeOf(line){
  return date[1];
 }
 export function assessQueueLog(journal,group){
- if(!GROUP.test(group||'')||typeof journal!=='string'||journal.length>2_000_000)
+ if(!recoveryGroup(group)||typeof journal!=='string'||journal.length>2_000_000)
   throw Error('INVALID_QUEUE_LOG_INPUT');
  const messages=journal.split(/\r?\n/).filter(line=>line.includes('services.queue_service')&&
    line.includes(group)&&line.includes('for group '+group));
@@ -49,7 +50,7 @@ function queuedAt(record){
 export async function assessOperatorRecovery({store,queue,graphiti,root,group,failedId,
   successId,successUUID,failedRevision,successRevision,journal,apply=false,
   acknowledgeAnonymousOrder=false}={}){
- if(!store||store.group!==group||!queue||!graphiti||!GROUP.test(group||'')||
+ if(!store||store.group!==group||!queue||!graphiti||!recoveryGroup(group)||
    !HEX.test(failedId||'')||!HEX.test(successId||'')||failedId===successId||
    !UUID.test(successUUID||'')||
    !Number.isInteger(failedRevision)||!Number.isInteger(successRevision)||
@@ -121,7 +122,7 @@ export async function assessOperatorRecovery({store,queue,graphiti,root,group,fa
  */
 export async function assessNeverSubmittedRecovery({store,graphiti,group,reviewId,
   expectedRevision,evidence,apply=false,attestNoRemoteCall=false}={}){
-  if(!store||store.group!==group||!graphiti||!GROUP.test(group||'')||
+  if(!store||store.group!==group||!graphiti||!recoveryGroup(group)||
     !HEX.test(reviewId||'')||!Number.isInteger(expectedRevision))
    throw Error('INVALID_NEVER_SUBMITTED_SCOPE');
   const record=await store.get(reviewId);

@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "kind": "ghdev10-command-shape-friction",
+  "campaign": "ISSUE81_INDEPENDENT_HOLDOUT",
+  "phase": "C_ATTRIBUTION_REMEDIATION",
+  "session": "issue81-holdout-64d32eb7 attribution remediation campaign (source 8dcdf199, evidence-only)",
+  "encountered": "yes",
+  "commands_match_handoff": "yes",
+  "note": "Required handoff command shapes (git fetch/switch, node --check, the 10-file node --test suite, adjudicate.mjs score with absolute paths and matching SHA-256 pins, push HEAD:refs/heads/issue/81) were submitted exactly as prescribed, with no guard rejections. The two events below are agent-side interface discovery (gh CLI field names) and a disposable-fixture ordering slip in the self-authored native replay, both recovered without changing any task-bound identity (source SHA, corpus, worksheets, targets, observations, group).",
+  "events": [
+    {
+      "scenario": "PR #83 state readback",
+      "requested_shape": "gh pr view 83 --repo fvanevski/opencode-operational-schema-guard --json state,isDraft,headRef,headRefOid,title",
+      "effective_shape": "gh rejected field 'headRef' (Unknown JSON field; available field is headRefName/headRefOid)",
+      "rewrite_provenance": "agent",
+      "event_kind": "interface_discovery",
+      "execution_effect": "recovered_after_retry",
+      "correction_or_annotation": "re-ran with --json state,isDraft,headRefName,headRefOid,title,baseRefName; OPEN/draft confirmed, headRefOid matches the authenticated source SHA",
+      "replacement_shape": "same command with corrected field names (succeeded, exit 0)",
+      "recipe_reference": "GHDEV-10",
+      "resource_reference": "gh pr view --json",
+      "contract_conflict": "no",
+      "durable_gap_candidate": "no"
+    },
+    {
+      "scenario": "Native provenance replay, first run (disposable fixture)",
+      "requested_shape": "node raw/native-replay.mjs (agent-authored bounded replay of the preserved native session sequence against corrected plugin.mjs)",
+      "effective_shape": "AssertionError: completed assistant turn msg_1a887d4d3001vF2wCZVcQmRkaN anchored to the preceding user message present in the fixture (de99f94e) instead of the expected user#4 anchor (aa0d7d5f)",
+      "rewrite_provenance": "agent",
+      "event_kind": "execution_failure",
+      "execution_effect": "recovered_after_retry",
+      "correction_or_annotation": "fixture-ordering slip in the agent-authored replay (the turn-4 completion was placed before user#4 in the reconstructed last context build, so the adapter correctly anchored it to the user message that actually preceded it); corrected the fixture to conversation order and added the turn-3 completion regression message. Not an implementation defect: the corrected adapter behaved exactly per its preceding-admitted-user contract.",
+      "replacement_shape": "same replay script with corrected fixture ordering (succeeded, exit 0, NATIVE_REPLAY_PASS)",
+      "recipe_reference": "GHDEV-10",
+      "resource_reference": "raw/native-replay.mjs (disposable, not published)",
+      "contract_conflict": "no",
+      "durable_gap_candidate": "no"
+    }
+  ],
+  "omitted_sensitive_values": "yes"
+}

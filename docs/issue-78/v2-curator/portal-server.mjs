@@ -6,6 +6,7 @@ import { timingSafeEqual } from 'node:crypto';
 import path from 'node:path';
 import os from 'node:os';
 import { CandidateQueue } from '../v2-candidate/queue.mjs';
+import {describeFixtureGroup} from '../fixture-groups.mjs';
 import { ReviewStore } from './core.mjs';
 import { inspectEpisodeGraph } from './graph-evidence.mjs';
 import { addReadOnlyGraph } from './graph-preview.mjs';
@@ -110,7 +111,7 @@ const server=createServer(async(req,res)=>{
         }
         total=page.total;if(!page.has_more)break;
       }
-      return respond(res,200,{scope:group,review_count:total,
+      return respond(res,200,{scope:group,fixture:describeFixtureGroup(group),review_count:total,
         review_counts:counts,evidence_classes:[...evidenceClasses].sort(),
         event_kinds:[...eventKinds].sort(),candidate_queue:await queue.status()});
     }

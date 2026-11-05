@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "kind": "issue81-holdout-stage",
+  "state": "STAGED_NOT_CURATED",
+  "group": "cur81_holdout_4c3ab514",
+  "frozen_corpus_sha256": "f904411e51d0bd9674b7f756f3df5bf44452ca8f63362d75102ceb9df677fce4",
+  "adjudication_sha256": "c7aafbd266711d4b02aacf56b61271e2b8668d8082523973f066067781fee9c7",
+  "target_ratification_sha256": "ced9b984b17c1131984184b1bd9c666df3bdca9f20a3a067ee79763f4a05f3d4",
+  "queued_count": 5,
+  "events": [
+    {
+      "case_id": "ho-prime-prompt",
+      "event_id": "d641bee460d42823fe27643cb1d5adb808b0d80d8054da3681fcfd7b13a51845",
+      "kind": "user_turn"
+    },
+    {
+      "case_id": "ho-prime-write",
+      "event_id": "f88acafca8cd99bf9afd569747ca26b820ca957f748d32140035a237092f6289",
+      "kind": "file_change"
+    },
+    {
+      "case_id": "ho-prime-summary",
+      "event_id": "7181609ad83b28511ce965d89905978b181b9c061a11f2c94d97cb9500faa95b",
+      "kind": "assistant_turn"
+    },
+    {
+      "case_id": "ho-gui-head",
+      "event_id": "91a4334e968d7d25dd1bc323c0312c3657fa99dd3e677532d7593c6f9f29626f",
+      "kind": "assistant_turn"
+    },
+    {
+      "case_id": "ho-chatter-ping",
+      "event_id": "c5f7472883bda6c27015fca6e4b5f0780e2ba8f06e51fbc68b5e2427a81f2232",
+      "kind": "user_turn"
+    }
+  ],
+  "excluded": [
+    {
+      "id": "ho-prime-test",
+      "reason": "not_selected_or_scope_excluded"
+    },
+    {
+      "id": "ho-gui-prompt",
+      "reason": "not_selected_or_scope_excluded"
+    },
+    {
+      "id": "ho-gui-read",
+      "reason": "not_selected_or_scope_excluded"
+    },
+    {
+      "id": "ho-dup-hello",
+      "reason": "not_selected_or_scope_excluded"
+    }
+  ],
+  "queue_status": {
+    "schema_version": 1,
+    "group": "cur81_holdout_4c3ab514",
+    "total": 5,
+    "capacity": 4000,
+    "counts": {
+      "new": 5,
+      "reserved": 0,
+      "deferred": 0,
+      "skipped": 0,
+      "approved": 0,
+      "submission_unknown": 0,
+      "queued": 0,
+      "persisted": 0
+    },
+    "drops": {},
+    "last_drop_reason": null,
+    "full": false
+  },
+  "caveat": "Local staging only. No LLM, Graphiti write or holdout scoring. Post-exit curator must use canonical EX gate."
+}
