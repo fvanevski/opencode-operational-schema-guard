@@ -36,7 +36,8 @@ export function positiveEpisode(record, episodes){
 }
 export async function reconcile(store,graphiti,{maxEpisodes=1000}={}){
   admitted();
-  const records=(await allRecords(store)).filter(r=>['queued','submission_unknown'].includes(r.state));
+  const records=(await allRecords(store)).filter(r=>
+    ['queued','submission_unknown','retry_authorized'].includes(r.state));
   if(!records.length)return {persisted:0,unresolved:0};
   const reply=await graphiti.call('get_episodes',{group_ids:[store.group],max_episodes:maxEpisodes});
   if(!Array.isArray(reply?.episodes))throw Error('GRAPHITI_EPISODES_UNAVAILABLE');
@@ -45,7 +46,10 @@ export async function reconcile(store,graphiti,{maxEpisodes=1000}={}){
     const uuid=positiveEpisode(r,reply.episodes);
     if(uuid){
       if(await store.advance(r.id,r.state,'persisted',{remote_episode_uuid:uuid}))persisted++;
-    }else unresolved++;
+    }else if(r.state!=='retry_authorized')unresolved++;
+    // A retry authorization without a remote episode is *eligible local
+    // work*, not a pending remote submission. The wrapper must dispatch the
+    // EX-admitted one-use attempt, not wait indefinitely for a first try.
   }
   // Recent-window absence never proves non-submission. Do not replay.
   return {persisted,unresolved};

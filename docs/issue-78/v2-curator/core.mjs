@@ -460,7 +460,7 @@ export class ReviewStore {
   }
   async advance(id,expectedState,next,extra={}){
     const allowed={approved:['submission_unknown','deferred'],
-      retry_authorized:['submission_unknown'],
+      retry_authorized:['submission_unknown','persisted'],
       submission_unknown:['queued','persisted'],queued:['persisted']};
     // Durable remote-write intent (and its settlement) may only be recorded
     // by an admitted post-exit caller. The marker is declared by the EX
@@ -493,14 +493,17 @@ export class ReviewStore {
         (!old.orphaned_retry_evidence||
          old.orphaned_retry_evidence.retry_used_at!==null))
         throw Error('ACKNOWLEDGED_RETRY_NOT_AUTHORIZED_OR_ALREADY_SPENT');
+      const attemptSpent=expectedState==='retry_authorized'&&next==='submission_unknown';
+      const remoteAppeared=expectedState==='retry_authorized'&&next==='persisted';
       const updated={...old,state:next,revision:old.revision+1,updated_at:now,
         reason:typeof extra.reason==='string'?extra.reason:old.reason,
         remote_episode_uuid:remoteUUID,
-        ...(expectedState==='retry_authorized'?{
+        ...(attemptSpent?{
           orphaned_retry_evidence:{...old.orphaned_retry_evidence,retry_used_at:now}
         }:{}),
         audit:[...old.audit.slice(-59),{at:now,
-          action:expectedState==='retry_authorized'?'acknowledged_retry_write_intent':'state',
+          action:attemptSpent?'acknowledged_retry_write_intent':
+            remoteAppeared?'acknowledged_retry_remote_preexisting':'state',
           outcome:next}]};
       if(next==='persisted'){
         // O(1) source lookup in native prompt recall. Write index first;

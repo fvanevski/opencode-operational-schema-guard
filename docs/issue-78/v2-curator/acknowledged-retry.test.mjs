@@ -215,3 +215,19 @@ test('recovered record survives normal admitted drain without new curator infere
   assert.equal(calls,1);
   assert.equal((await s.store.get(s.record.id)).state,'persisted');
 })));
+
+test('late positive readback settles authorized review without spending retry or add_memory',admitted(()=>fixture(async s=>{
+  const arg={store:s.store,graphiti:s.mock,root:s.root,group,
+    reviewId:s.record.id,expectedRevision:3,evidence:s.evidence};
+  const dry=await assessAcknowledgedRetry(arg);
+  await assessAcknowledgedRetry({...arg,apply:true,attest:true,
+    acknowledgePartialEffects:true,expectedRemoteSha:dry.remote_inventory_sha256});
+  assert.deepEqual(await reconcile(s.store,s.mock),{persisted:0,unresolved:0});
+  s.mock.episodes.push({group_id:group,name:'curated-v1:'+s.record.id,uuid:remoteUUID});
+  assert.deepEqual(await reconcile(s.store,s.mock),{persisted:1,unresolved:0});
+  const row=await s.store.get(s.record.id);
+  assert.equal(row.state,'persisted');
+  assert.equal(row.orphaned_retry_evidence.retry_used_at,null);
+  assert.equal(row.audit.at(-1).action,'acknowledged_retry_remote_preexisting');
+  assert.equal(s.mock.calls.includes('add_memory'),false);
+})));
