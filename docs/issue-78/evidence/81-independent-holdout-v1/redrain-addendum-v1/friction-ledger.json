@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "kind": "ghdev10-command-shape-friction",
+  "campaign": "ISSUE81_INDEPENDENT_HOLDOUT",
+  "phase": "B_POST_REDRAIN_VERIFICATION",
+  "session": "64d32eb7 re-drain verification + operator fact adjudication session",
+  "encountered": "yes",
+  "commands_match_handoff": "yes",
+  "note": "The operator handoff prescribed the existing adjudicate.mjs score workflow with absolute paths and matching hashes; the CLI shape was followed exactly. The events below are agent-side interface discovery (evaluator receipt contract) and write-once output collisions, all recovered without changing task-bound identities (corpus, targets, labels, group, Graphiti state).",
+  "events": [
+    {
+      "scenario": "Self-authored signed-worksheet script: operator reason strings",
+      "requested_shape": "node -e '<sign worksheet>' with 2 reason strings (327 and 295 chars)",
+      "effective_shape": "threw 'reason too long: 327' (adjudicate.mjs has() bound is 300 chars)",
+      "rewrite_provenance": "none",
+      "event_kind": "execution_failure",
+      "execution_effect": "recovered_after_retry",
+      "correction_or_annotation": "agent-authored script; trimmed the FACT 1 reason to 289 chars preserving the operator's substance",
+      "replacement_shape": "same script with trimmed reasons (succeeded, exit 0)",
+      "recipe_reference": "GHDEV-10",
+      "resource_reference": "node -e / adjudicate.mjs has()",
+      "contract_conflict": "no",
+      "durable_gap_candidate": "no"
+    },
+    {
+      "scenario": "adjudicate.mjs score first run (pre-receipt observations)",
+      "requested_shape": "node docs/issue-78/v2-benchmark/adjudicate.mjs score --corpus <abs> ... --observations <pre-receipt obs> --out final-score-redrain.json",
+      "effective_shape": "exit 0 but remote_receipt_bound_model_facts=0 / grounded_precision=null: evaluator requires a remote_readback receipt object per persisted EMIT record",
+      "rewrite_provenance": "none",
+      "event_kind": "interface_discovery",
+      "execution_effect": "executed_succeeded",
+      "correction_or_annotation": "not a shape error: the evaluator's durable-precision contract requires episode_uuid/episode_name/group_id/source_index_verified/source_refs/evidence_ref per receipt-bound record; receipts were added from the independently performed group-scoped readbacks",
+      "replacement_shape": "same score command with receipt-bound observations (succeeded, all accounting checks PASS)",
+      "recipe_reference": "GHDEV-10",
+      "resource_reference": "adjudicate.mjs score / evaluate.mjs terminalReadback",
+      "contract_conflict": "no",
+      "durable_gap_candidate": "no"
+    },
+    {
+      "scenario": "adjudicate.mjs score rerun (write-once output)",
+      "requested_shape": "same score command, --out final-score-redrain.json (file already created by the first run)",
+      "effective_shape": "EEXIST: the CLI writes with flag wx (write-once)",
+      "rewrite_provenance": "none",
+      "event_kind": "execution_failure",
+      "execution_effect": "recovered_after_retry",
+      "correction_or_annotation": "preserved the pre-receipt score as final-score-redrain-prereceipt.json (digest recorded) and reran into a fresh output path",
+      "replacement_shape": "mv pre-receipt output to historical name; same score command (succeeded, exit 0)",
+      "recipe_reference": "GHDEV-10",
+      "resource_reference": "adjudicate.mjs put(wx)",
+      "contract_conflict": "no",
+      "durable_gap_candidate": "no"
+    }
+  ],
+  "omitted_sensitive_values": "yes"
+}
