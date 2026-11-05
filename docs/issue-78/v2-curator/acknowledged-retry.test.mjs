@@ -264,5 +264,6 @@ test('never-submitted adjudicator cannot reset a spent, acknowledged retry after
   const afterwards=await s.store.get(s.record.id);
   assert.equal(afterwards.state,'submission_unknown');
   assert.equal(afterwards.orphaned_retry_evidence.retry_used_at!==null,true);
-  assert.equal(await s.store.advance(s.record.id,'submission_unknown','approved'),false);
+  await assert.rejects(s.store.advance(s.record.id,'submission_unknown','approved'),
+    /Illegal remote state transition/);
 })));
