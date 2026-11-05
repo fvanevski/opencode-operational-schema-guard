@@ -29,7 +29,7 @@ test('renderer CLI admits paired named recovery group, keeps legacy, rejects mis
   '--worktree','/tmp/issue81-naming-unavailable-worktree',
   '--state-dir','/tmp/issue81-naming-unavailable-state',
   '--output-dir','/tmp/issue81-naming-unavailable-output',
-  '--env-file','/tmp/issue81-naming-unavailable-env',
+  '--private-env-file','/tmp/issue81-naming-unavailable-env',
   '--gate-source','/tmp/issue81-naming-unavailable-gate',
   '--gate-config','/tmp/issue81-naming-unavailable-config',
   '--python','/usr/bin/python3',

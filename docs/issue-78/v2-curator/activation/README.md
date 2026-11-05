@@ -22,11 +22,18 @@ The candidate queue group directory must already exist (the capture plugin
 creates it), or first create it in the **disposable** state root.
 
 For disposable qualification, use `render-qualification.mjs` to generate
- private unit files, then install them under the current user's
- `~/.config/systemd/user/` and operate with `systemctl --user` only.
- Do not use `sudo systemctl` or create root-owned queue/review records.
- Install only disposable `ghdev-curator80-*` units. The renderer never
- installs or enables a service and never touches the real plugin list.
+private unit files. Its private environment-file argument is
+`--private-env-file ABS_PATH`, **not** `--env-file` (reserved by modern
+Node runtimes for Node's own environment-file loading). The generated
+systemd service still uses the standard `EnvironmentFile=` directive.
+For new recovery fixtures use a matching descriptive pair such as
+`graphiti-curator-recovery-r01` with `ghdev-curator-recovery-r01`;
+historical `cur80_*` / `ghdev-curator80-*` identities remain usable.
+The renderer only writes disposable template outputs; it never installs,
+enables or starts them. Any later operator-authorized installation belongs
+under the current user's `~/.config/systemd/user/` and uses
+`systemctl --user`, never `sudo systemctl`. Do not create root-owned
+queue/review records or modify the live plugin list.
 
 The oneshot service may fail with "interactive harness active" while the client
 is still running; systemd retry is a 30-second event-wake continuation, not

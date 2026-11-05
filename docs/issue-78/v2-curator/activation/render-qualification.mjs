@@ -24,7 +24,7 @@ export function renderUnits(templates,values){
 }
 export async function cli(){
  const worktree=get('worktree'),state=get('state-dir'),group=get('group'),
-   output=get('output-dir'),env=get('env-file'),gate=get('gate-source'),
+   output=get('output-dir'),env=get('private-env-file'),gate=get('gate-source'),
    config=get('gate-config'),endpoint=get('endpoint'),
    unit=get('unit')||(isFixtureGroup(group,'recovery')?
      fixtureUnitName(group):'ghdev-curator80-qual'),
