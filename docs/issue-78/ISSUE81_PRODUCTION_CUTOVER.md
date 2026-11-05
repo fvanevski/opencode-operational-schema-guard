@@ -78,7 +78,8 @@ delete only enumerated old group resources with checked names, never
 use a wildcard or implicit cross-group cleanup. New graph state must
 not be deleted by rollback.
 
-PR #84's sentence-initial recall correction remains independent and
-requires integration against the then-current main before final Issue #81
-fresh-session acceptance. No extra feature PR, new queue platform,
+The sentence-initial interrogative relevance fix from PR #84 is staged
+byte-identically in this same Issue #81 PR, including both targeted tests.
+The old PR #84 remains historical until this consolidated PR is merged;
+no second production promotion is needed for that correction. No extra feature PR, new queue platform,
 model replacement or broad naming refactor is authorized by this slice.
