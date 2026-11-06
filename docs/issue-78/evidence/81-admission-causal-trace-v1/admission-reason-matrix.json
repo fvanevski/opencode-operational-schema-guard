@@ -1,0 +1,400 @@
+{
+  "schema": "issue81-admission-reason-matrix.v1",
+  "campaign": "ISSUE81_ADMISSION_CAUSAL_TRACE_V1",
+  "implementation_head": "57d25648bb73f86de84009e3f4ead98897d29370",
+  "diagnostic_script": "docs/issue-78/v2-benchmark/issue81-admission-audit.mjs (schema issue81-admission-audit.v1)",
+  "roster_sha256": "47e141bdc81f1f2cdc2e98c7697162dbbf3250a5eb209a56361b358bc2441652",
+  "roster_reverified": true,
+  "private_adapter_sha256": "d34726830ec2f91ae1a00dc3f69d46353e893e175036d528bbe4b5cd4106debf",
+  "private_adapter_mode": "0600 inside 0700 scratch (host-private, not committed)",
+  "trace_exit_code": 0,
+  "score_floor_034_in_automatic_selector": false,
+  "score_floor_note": "explainRelevanceAdmission() reports scoreFloor034Applied=false for all four cases. The automatic recall path (shortlistQualifiedCandidates -> relevanceFilter) enforces overlap.count>=2 plus independent-topic, named, Issue and numeric fences; the 0.34 floor belongs only to the separate on-demand admitFact() helper and is NOT a gate of the automatic selector.",
+  "linked_fallback_prerequisite_note": "For S03/S05/S13 the linked-fallback prerequisite (direct overlap count >= 2 and exact Issue/numeric identity inside the assertion) was met (linked_fallback_blocked=false); the linked (assertion+native excerpt) evaluation was performed and still failed on the named fence because the missing named term is absent from the excerpt as well.",
+  "cases": [
+    {
+      "case_id": "S03",
+      "query_sha256": "f5713d4aaddf4bbf873e32fa34406cd3fccef4185751b794317ab51ae3a49004",
+      "fact_text_exported": false,
+      "expected": {
+        "episode_uuid": "082fe673-8cf9-4da1-bc43-aaa9e04f68d8",
+        "evidence_class": "assistant-reported",
+        "source_sha256": "74e232f5c5239bd9e606f7e214ff5d4bc1111511c125d5299fc7bb91bd0af591",
+        "admitted": false,
+        "linked_used": false,
+        "linked_fallback_blocked": false,
+        "direct": {
+          "overlap_count": 2,
+          "overlap_score": 0.2222222222222222,
+          "named_match": false,
+          "issue_match": true,
+          "numeric_match": true,
+          "independent_topic": true,
+          "topical": true,
+          "eligible": false,
+          "failures": [
+            "NAMED_IDENTITY"
+          ]
+        },
+        "linked": {
+          "overlap_count": 3,
+          "overlap_score": 0.3333333333333333,
+          "named_match": false,
+          "eligible": false,
+          "failures": [
+            "NAMED_IDENTITY"
+          ]
+        },
+        "effective_priority": 0,
+        "answer_type": 0,
+        "source_context_overlap": {
+          "count": 3,
+          "score": 0.3333333333333333
+        }
+      },
+      "observed": {
+        "episode_uuid": "ea8cedd4-bece-498c-a903-710b20d7e6be",
+        "evidence_class": "assistant-reported",
+        "source_sha256": "e1085468db72088d54843ecd41e6ecb5aa7ffe78e5187e2ae1504d7a9049edd4",
+        "admitted": true,
+        "linked_used": false,
+        "linked_fallback_blocked": false,
+        "direct": {
+          "overlap_count": 5,
+          "overlap_score": 0.5555555555555556,
+          "named_match": true,
+          "issue_match": true,
+          "numeric_match": true,
+          "independent_topic": true,
+          "topical": true,
+          "eligible": true,
+          "failures": []
+        },
+        "linked": {
+          "overlap_count": 5,
+          "overlap_score": 0.5555555555555556,
+          "named_match": true,
+          "eligible": true,
+          "failures": []
+        },
+        "effective_priority": 0,
+        "answer_type": 0,
+        "source_context_overlap": {
+          "count": 5,
+          "score": 0.5555555555555556
+        }
+      },
+      "pairwise": {
+        "shortlist_observed_first": [
+          "observed"
+        ],
+        "shortlist_expected_first": [
+          "observed"
+        ],
+        "selected_observed_first": "observed",
+        "selected_expected_first": "observed",
+        "input_order_sensitive": false
+      },
+      "first_failed_predicate": "NAMED_IDENTITY: one of two requested named terms is satisfied in the assertion+native-excerpt composite (via a product-qualified substring) while the second is absent from both; the multi-name case has no single-missing fallback, so the named fence fails in both the direct and linked evaluations. The 0.34 floor is not the cause (topical=true; scoreFloor034Applied=false).",
+      "named_term_analysis": {
+        "requested_named_count": 2,
+        "missing_in_assertion": 2,
+        "missing_in_assertion_plus_excerpt": 1,
+        "named_term_text_exported": false
+      },
+      "source_context_is": "original native evidence (excerpt is the native-id event carrying the assertion source ref)",
+      "diagnostic_class": "PURE_SOURCE_BOUND_EVALUATION_NOT_NATIVE_ACCEPTANCE"
+    },
+    {
+      "case_id": "S05",
+      "query_sha256": "cb8c0b4c3628dfbf25298abae39f83f470093e0d7f7e3a4a631799c9b257a1e4",
+      "fact_text_exported": false,
+      "expected": {
+        "episode_uuid": "1a20d974-b5a7-4367-8da5-8c9d7dbb06c5",
+        "evidence_class": "assistant-reported",
+        "source_sha256": "46ebbc682f9cf65b8ac9e0c89cff9943c117a0d5d4e7f91c5b211c75044ac5bc",
+        "admitted": false,
+        "linked_used": false,
+        "linked_fallback_blocked": false,
+        "direct": {
+          "overlap_count": 2,
+          "overlap_score": 0.3333333333333333,
+          "named_match": false,
+          "issue_match": true,
+          "numeric_match": true,
+          "independent_topic": true,
+          "topical": true,
+          "eligible": false,
+          "failures": [
+            "NAMED_IDENTITY"
+          ]
+        },
+        "linked": {
+          "overlap_count": 3,
+          "overlap_score": 0.5,
+          "named_match": false,
+          "eligible": false,
+          "failures": [
+            "NAMED_IDENTITY"
+          ]
+        },
+        "effective_priority": 0,
+        "answer_type": 0,
+        "source_context_overlap": {
+          "count": 3,
+          "score": 0.5
+        }
+      },
+      "observed": {
+        "episode_uuid": "c48cd614-4f98-49f7-90d0-5b6a418368fc",
+        "evidence_class": "assistant-reported",
+        "source_sha256": "85397a269c2d3dde6e1b9b69602774d03f17684d8fb1925b72dc57831f08dc68",
+        "admitted": true,
+        "linked_used": false,
+        "linked_fallback_blocked": false,
+        "direct": {
+          "overlap_count": 4,
+          "overlap_score": 0.6666666666666666,
+          "named_match": true,
+          "issue_match": true,
+          "numeric_match": true,
+          "independent_topic": true,
+          "topical": true,
+          "eligible": true,
+          "failures": []
+        },
+        "linked": {
+          "overlap_count": 4,
+          "overlap_score": 0.6666666666666666,
+          "named_match": true,
+          "eligible": true,
+          "failures": []
+        },
+        "effective_priority": 0,
+        "answer_type": 0,
+        "source_context_overlap": {
+          "count": 4,
+          "score": 0.6666666666666666
+        }
+      },
+      "pairwise": {
+        "shortlist_observed_first": [
+          "observed"
+        ],
+        "shortlist_expected_first": [
+          "observed"
+        ],
+        "selected_observed_first": "observed",
+        "selected_expected_first": "observed",
+        "input_order_sensitive": false
+      },
+      "first_failed_predicate": "NAMED_IDENTITY: the single requested named term is absent from the assertion and from its native source excerpt; the DB-suffix identifier alias rule does not apply (no matching identifier component) and the 2-4 char acronym fallback does not apply. The 0.34 floor is not the cause (topical=true).",
+      "named_term_analysis": {
+        "requested_named_count": 1,
+        "missing_in_assertion": 1,
+        "missing_in_assertion_plus_excerpt": 1,
+        "named_term_text_exported": false
+      },
+      "source_context_is": "original native evidence (excerpt is the native-id event carrying the assertion source ref)",
+      "diagnostic_class": "PURE_SOURCE_BOUND_EVALUATION_NOT_NATIVE_ACCEPTANCE"
+    },
+    {
+      "case_id": "S10",
+      "query_sha256": "8be465fd892a80b41554dfb8d02f56b9063546ef93aeaa3ee1db1aca1a8db526",
+      "fact_text_exported": false,
+      "expected": {
+        "episode_uuid": "0de3cdc8-07ff-46a5-a0bc-ed7f9bc5e47b",
+        "evidence_class": "tool-reported",
+        "source_sha256": "67c8d757f569f20a570f79ebac94f5c3fd75956ed451954f53e5aae8722ca4a9",
+        "admitted": true,
+        "linked_used": false,
+        "linked_fallback_blocked": false,
+        "direct": {
+          "overlap_count": 3,
+          "overlap_score": 0.5,
+          "named_match": true,
+          "issue_match": true,
+          "numeric_match": true,
+          "independent_topic": true,
+          "topical": true,
+          "eligible": true,
+          "failures": []
+        },
+        "linked": {
+          "overlap_count": 3,
+          "overlap_score": 0.5,
+          "named_match": true,
+          "eligible": true,
+          "failures": []
+        },
+        "effective_priority": 0,
+        "answer_type": 0,
+        "source_context_overlap": {
+          "count": 3,
+          "score": 0.5
+        }
+      },
+      "observed": {
+        "episode_uuid": "c059ab8f-0b24-4fc6-b0cd-730178acb247",
+        "evidence_class": "tool-reported",
+        "source_sha256": "559c8d8bcf54adefe26a152c4f8e6bfea8bf6a0356b79d295f65e7e45e7c4abe",
+        "admitted": true,
+        "linked_used": false,
+        "linked_fallback_blocked": false,
+        "direct": {
+          "overlap_count": 3,
+          "overlap_score": 0.5,
+          "named_match": true,
+          "issue_match": true,
+          "numeric_match": true,
+          "independent_topic": true,
+          "topical": true,
+          "eligible": true,
+          "failures": []
+        },
+        "linked": {
+          "overlap_count": 3,
+          "overlap_score": 0.5,
+          "named_match": true,
+          "eligible": true,
+          "failures": []
+        },
+        "effective_priority": 0,
+        "answer_type": 0,
+        "source_context_overlap": {
+          "count": 3,
+          "score": 0.5
+        }
+      },
+      "pairwise": {
+        "shortlist_observed_first": [
+          "observed",
+          "expected"
+        ],
+        "shortlist_expected_first": [
+          "expected",
+          "observed"
+        ],
+        "selected_observed_first": "observed",
+        "selected_expected_first": "expected",
+        "input_order_sensitive": true
+      },
+      "first_failed_predicate": "NONE: both candidates admitted; complete metric tie (identical overlap/priority/answer-type/source-context metrics) resolved by input order in the stable tie-break.",
+      "named_term_analysis": {
+        "requested_named_count": 0,
+        "missing_in_assertion": 0,
+        "missing_in_assertion_plus_excerpt": 0,
+        "named_term_text_exported": false
+      },
+      "source_context_is": "original native evidence (tool event carrying the assertion source ref)",
+      "diagnostic_class": "PURE_SOURCE_BOUND_EVALUATION_NOT_NATIVE_ACCEPTANCE"
+    },
+    {
+      "case_id": "S13",
+      "query_sha256": "ccf9aacf8df56220c9d83dd6e79b003c5569fc95073bfe549a1aef9e04830be8",
+      "fact_text_exported": false,
+      "expected": {
+        "episode_uuid": "009974d2-f051-45fd-ac0c-f259dcfdd1a8",
+        "evidence_class": "assistant-reported",
+        "source_sha256": "4c7ab17718a64eecbf15a845e1c5ba3b2ef5a071ae35e66149b3addd8536232e",
+        "admitted": false,
+        "linked_used": false,
+        "linked_fallback_blocked": false,
+        "direct": {
+          "overlap_count": 2,
+          "overlap_score": 0.3333333333333333,
+          "named_match": false,
+          "issue_match": true,
+          "numeric_match": true,
+          "independent_topic": true,
+          "topical": true,
+          "eligible": false,
+          "failures": [
+            "NAMED_IDENTITY"
+          ]
+        },
+        "linked": {
+          "overlap_count": 2,
+          "overlap_score": 0.3333333333333333,
+          "named_match": false,
+          "eligible": false,
+          "failures": [
+            "NAMED_IDENTITY"
+          ]
+        },
+        "effective_priority": 0,
+        "answer_type": 0,
+        "source_context_overlap": {
+          "count": 2,
+          "score": 0.3333333333333333
+        }
+      },
+      "observed": {
+        "episode_uuid": "00c83bb0-eb79-48bc-90b2-be30121c4905",
+        "evidence_class": "assistant-reported",
+        "source_sha256": "8ad8958ea9b31e3bfd6340e1a0f21fcb4a2611fa0a978d22ce8d54f7966a2f8e",
+        "admitted": true,
+        "linked_used": false,
+        "linked_fallback_blocked": false,
+        "direct": {
+          "overlap_count": 2,
+          "overlap_score": 0.3333333333333333,
+          "named_match": true,
+          "issue_match": true,
+          "numeric_match": true,
+          "independent_topic": true,
+          "topical": true,
+          "eligible": true,
+          "failures": []
+        },
+        "linked": {
+          "overlap_count": 3,
+          "overlap_score": 0.5,
+          "named_match": true,
+          "eligible": true,
+          "failures": []
+        },
+        "effective_priority": 0,
+        "answer_type": 0,
+        "source_context_overlap": {
+          "count": 3,
+          "score": 0.5
+        }
+      },
+      "pairwise": {
+        "shortlist_observed_first": [
+          "observed"
+        ],
+        "shortlist_expected_first": [
+          "observed"
+        ],
+        "selected_observed_first": "observed",
+        "selected_expected_first": "observed",
+        "input_order_sensitive": false
+      },
+      "first_failed_predicate": "NAMED_IDENTITY: the single requested named term is absent from the assertion and from its native source excerpt (the excerpt repeats the assertion sentence). The 0.34 floor is not the cause (topical=true).",
+      "named_term_analysis": {
+        "requested_named_count": 1,
+        "missing_in_assertion": 1,
+        "missing_in_assertion_plus_excerpt": 1,
+        "named_term_text_exported": false
+      },
+      "source_context_is": "original native evidence (excerpt is the native-id event carrying the assertion source ref)",
+      "diagnostic_class": "PURE_SOURCE_BOUND_EVALUATION_NOT_NATIVE_ACCEPTANCE"
+    }
+  ],
+  "residual_summary": {
+    "S03": "rejection cause NAMED_IDENTITY (second of two requested named terms absent from assertion and native excerpt); not the 0.34 floor",
+    "S05": "rejection cause NAMED_IDENTITY (single requested named term absent from assertion and native excerpt); not the 0.34 floor",
+    "S13": "rejection cause NAMED_IDENTITY (single requested named term absent from assertion and native excerpt); not the 0.34 floor",
+    "S10": "complete metric tie between same-session sibling tool sources; selection is input-order sensitive (INPUT_ORDER_AMBIGUITY); propositions independently inspected and distinguishable (see s10-tie-authority.json)"
+  },
+  "unchanged_scores": {
+    "exposed_offline": "12/16 (prior exact-source, unchanged; no new offline replay launched)",
+    "frozen_phase_a": "8/16",
+    "frozen_post_s06_native": "9/16",
+    "control_campaign": "11/16",
+    "s06_temporal_preference": "protected (historical/superseded selection unchanged in prior matrix)",
+    "n02": "frozen FAIL_INJECTED preserved; no cross-group leakage inferred"
+  }
+}

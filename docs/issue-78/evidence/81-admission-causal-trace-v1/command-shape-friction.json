@@ -1,0 +1,33 @@
+{
+  "schema": "issue81-command-shape-friction.v1",
+  "campaign": "ISSUE81_ADMISSION_CAUSAL_TRACE_V1",
+  "commands_match_handoff": true,
+  "match_note": "Contract-literal commands ran with the exact shapes: node --check on both staged modules; node --test on the two staged test files (producer exit 1 captured separately to a scratch log, TAP 23 pass / 1 fail); the single audit run node docs/issue-78/v2-benchmark/issue81-admission-audit.mjs --input <private-adapter> (exit 0, stdout/stderr captured to the private scratch). No RTK prefixing, no substituted tool routes, no remote calls from the diagnostic, no workdir drift beyond the authorized isolated worktree at the exact commit.",
+  "events": [
+    {
+      "type": "shell_shape",
+      "where": "Prior-packet extraction (Phase A.3)",
+      "detail": "An unquoted \"echo ===\" separator was glob-interpreted by zsh (\"== not found\", exit 1) before the git ls-tree listing; the listing was re-run with a quoted separator. Display-level shell-shape error only; no producer result was masked.",
+      "effect": "interface_discovery (harmless; corrected immediately)",
+      "outcome": "corrected_and_preserved"
+    },
+    {
+      "type": "interface_discovery",
+      "where": "Roster location (Phase B.6)",
+      "detail": "A full /workspace grep for the expected episode UUID exceeded the 120 s shell timeout; the search was narrowed to the known ghdev-graphiti state roots and /tmp/opencode campaign scratch, locating the frozen roster at its prior campaign path. No producer result was masked.",
+      "effect": "interface_discovery (bounded re-scope; host search cost only)",
+      "outcome": "corrected_and_preserved"
+    },
+    {
+      "type": "agent_harness_correction",
+      "where": "Syntax-check chain (Phase A.4)",
+      "detail": "The two contract node --check commands were run as one && chain with echo OK markers to keep the record compact; each producer exit was preserved by the chain semantics (both checks passed; chain exit 0). Shape variance only, no substitution of the checked modules.",
+      "effect": "agent-authored shape variance (transparent; exits preserved)",
+      "outcome": "preserved"
+    }
+  ],
+  "guard_rejections": 0,
+  "rtk_usage": "none",
+  "harness_rewrites": 0,
+  "masked_producer_failures": 0
+}

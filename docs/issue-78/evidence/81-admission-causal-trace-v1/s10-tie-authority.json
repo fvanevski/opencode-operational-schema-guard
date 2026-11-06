@@ -1,0 +1,45 @@
+{
+  "schema": "issue81-s10-tie-authority.v1",
+  "campaign": "ISSUE81_ADMISSION_CAUSAL_TRACE_V1",
+  "implementation_head": "57d25648bb73f86de84009e3f4ead98897d29370",
+  "case_id": "S10",
+  "query_sha256": "8be465fd892a80b41554dfb8d02f56b9063546ef93aeaa3ee1db1aca1a8db526",
+  "session_scope": "both source refs share the identical native session component (verified pre-digest); same-session sibling tool sources",
+  "expected": {
+    "episode_uuid": "0de3cdc8-07ff-46a5-a0bc-ed7f9bc5e47b",
+    "evidence_class": "tool-reported",
+    "source_sha256": "67c8d757f569f20a570f79ebac94f5c3fd75956ed451954f53e5aae8722ca4a9",
+    "proposition_class": "commit-subject statement: states what commit 52863ae changed in the graphiti test suite (answers the requested proposition)"
+  },
+  "observed": {
+    "episode_uuid": "c059ab8f-0b24-4fc6-b0cd-730178acb247",
+    "evidence_class": "tool-reported",
+    "source_sha256": "559c8d8bcf54adefe26a152c4f8e6bfea8bf6a0356b79d295f65e7e45e7c4abe",
+    "proposition_class": "worktree-setup command record: references commit 52863ae incidentally (checkout/rev-parse output); does not state what the commit changed"
+  },
+  "metric_tie": {
+    "overlap": "3/0.500 == 3/0.500",
+    "priority": "0 == 0",
+    "answer_type": "0 == 0",
+    "source_context_overlap": "3/0.500 == 3/0.500",
+    "complete_tie": true
+  },
+  "pairwise": {
+    "shortlist_observed_first": [
+      "observed",
+      "expected"
+    ],
+    "shortlist_expected_first": [
+      "expected",
+      "observed"
+    ],
+    "selected_observed_first": "observed",
+    "selected_expected_first": "expected",
+    "input_order_sensitive": true
+  },
+  "classification": "INPUT_ORDER_AMBIGUITY",
+  "proposition_difference_independently_inspected": true,
+  "proposition_note": "The expected source evidence supports the requested proposition (states the commit change); the observed source evidence does not (a setup command that mentions the commit). Stated propositions are genuinely distinguishable by the user question, so this tie is not proposition-equivalent even though the automatic metrics cannot see the difference.",
+  "source_ref_identity_is_relevance_evidence": false,
+  "tie_break_note": "A deterministic, source-stable tie-break (e.g., native event order / valid_at within the session, not input order) would make the selection order-independent. Episode-UUID ordering is a stability device only, never a correctness proof."
+}
