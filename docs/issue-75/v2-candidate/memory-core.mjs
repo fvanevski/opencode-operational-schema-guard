@@ -407,7 +407,11 @@ export class Memory {
     // never follow an arbitrary raw search/index slice. This keeps Graphiti
     // facts 13-24 usable and prevents irrelevant index records from filling
     // the shared model-facing candidate budget.
-    const fromGraphiti=shortlistQualifiedCandidates(text,candidates);
+    // The optional independent reranker can admit well-scoped paraphrased
+    // choices without literal overlap. Preserve its original complete
+    // 24-fact Graphiti input instead of hard-fencing it before scoring.
+    const fromGraphiti=this.ranker?candidates.slice(0,maxFacts):
+      shortlistQualifiedCandidates(text,candidates);
     const fromCurator=shortlistQualifiedCandidates(text,indexedCandidates);
     const combined=[],seen=new Set();
     const add=(item)=>{

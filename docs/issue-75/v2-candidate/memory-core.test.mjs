@@ -247,3 +247,28 @@ test('source-correct fact at Graphiti result position 19 survives the 24-candida
   assert.equal(result[0].source,'opencode:ses-test:message:msg-'+allowed.slice(-12));
   assert.deepEqual(seen,['search_memory_facts','get_episodes']);
 }));
+
+
+test('independent reranker retains bounded semantic-choice admission when no index is installed', () => sandbox(async dir => {
+  const ids=['70000000-0000-4000-8000-000000000001','70000000-0000-4000-8000-000000000002'];
+  const facts=[
+    {fact:'React Flow chosen for backlog dependency visualization',group_id:'alpha',episodes:[ids[0]]},
+    {fact:'Archive exporter requires a VMAF quality gate before replacement',group_id:'alpha',episodes:[ids[1]]},
+  ];
+  const graphiti={call:async(name)=>{
+    assert.equal(name,'search_memory_facts');
+    return {facts};
+  }};
+  const resolver=async idsArg=>idsArg.map(id=>({status:'persisted',group:'alpha',
+    remoteEpisodeUuid:id,sourceRef:'opencode:ses-rerank:message:msg-'+id.slice(-12),
+    evidenceClass:'tool-reported'}));
+  const ranker=async (_q,items)=>{
+    assert.equal(items.length,2,'all semantically scored Graphiti candidates retained');
+    return new Map([[0,.91],[1,.22]]);
+  };
+  const mem=new Memory({journal:new Journal(dir,'alpha'),graphiti,group:'alpha',
+    extraSourceResolver:resolver,ranker});
+  const found=await mem.search('What did we settle on for interactive issue map?');
+  assert.equal(found.length,1);
+  assert.equal(found[0].fact,'React Flow chosen for backlog dependency visualization');
+}));
