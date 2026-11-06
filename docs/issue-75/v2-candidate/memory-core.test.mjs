@@ -291,8 +291,14 @@ test('shared Graphiti MCP client serializes overlapping native searches, not onl
         ?{facts:[]}:{episodes:[]}}};
     }finally{active--;}
   };
+  // Both queries must have a qualifying indexed candidate to require an
+  // episode-proof call; empty inventories now deliberately skip that call.
+  const row={group:'alpha',
+    remoteEpisodeUuid:'70000000-0000-4000-8000-000000000001',
+    fact:'The Graphiti storage archive retention pipeline was configured active.',
+    source:'opencode:ses-queue:message:msg-1',evidenceClass:'tool-reported'};
   const mem=new Memory({journal:{pages:async function*(){}},graphiti:client,
-    group:'alpha',curatedCandidateRetriever:async()=>[]});
+    group:'alpha',curatedCandidateRetriever:async()=>[row]});
   const [a,b]=await Promise.all([
     mem.search('Which archive retention pipeline is active?'),
     mem.search('Which Graphiti storage pipeline was configured?')
