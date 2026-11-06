@@ -37,7 +37,7 @@ Source edits/push to IMPLEMENTATION_BRANCH; any production install/config/runtim
 - Verify origin/main is MAIN_BASE, PR #89 remains draft, and working branch is precisely the new commit containing this handoff and probe. Authenticate current commit, parent, tree, source delta and probe/blob.
 - Fetch remote branch before local checkout/object proof; use a clean isolated noncolliding worktree, not the owner's checkout. Do not reset, clean or overwrite any active checkout.
 - Read this entire file and CENTRAL_PROBE from authenticated working branch before acting.
-- Run node --check on CENTRAL_PROBE and inspect its imports against the actual GraphitiMcp, ReviewStore and sourcedEpisodeResolver interfaces. Do not change code merely because an optional probe fails. If a pure scratch adapter needs a repair, record original failure + private patch; no production source write.
+- Run node --check and the co-staged issue81-retrieval-feasibility.test.mjs on CENTRAL_PROBE; inspect its imports against the actual GraphitiMcp, ReviewStore and sourcedEpisodeResolver interfaces. The probe must call safeText on all queries and facts before Graphiti, and must never send rejected private/short N03/N04 prompts to Graphiti. An import/parser failure is a stop for probe execution until correctly diagnosed. Do not change code merely because an optional probe fails. If a pure scratch adapter needs a repair, record original failure + private patch; no production source write.
 - Authenticate previous evidence commit def2be8f... and five-case depth findings; previous diagnostics are immutable current-snapshot records, not a new acceptance population.
 
 ## Phase 2: private roster adapter
@@ -52,13 +52,13 @@ Source edits/push to IMPLEMENTATION_BRANCH; any production install/config/runtim
   node docs/issue-78/v2-benchmark/issue81-retrieval-feasibility.mjs --input PRIVATE_ADAPTER --root VERIFIED_STATE_ROOT --group development-knowledge --workspace /workspace/mcp_servers/gh_mcp --project gh_mcp --endpoint http://127.0.0.1:8766/mcp
 - Capture raw stdout, stderr and process rc privately. Keep private evidence protected and do not publish source assertions or full model messages.
 - Probe checks only scoped curated records whose remote episode UUID maps through the existing positive persisted source-index resolver; mere local evidence is NOT independent proof of current remote persistence. Report this difference explicitly.
-- Graphiti full query uses depth 24; reduced derived query uses depth 12. These are serial read-only probes, NOT proposed live hook timing.
+- Graphiti full query uses depth 24; reduced derived query uses depth 12. Both use the native safeText privacy/length fence; N03/N04 should have zero Graphiti calls and zero selected facts. These are serial read-only probes, NOT proposed live hook timing.
 - Score query-union and blended alternatives by exact episode/source ID separately from proposition-equivalent siblings. Record false admissions, group violations, unexpected source classes or private/secret material on negatives.
 - If the probe has a standard local JSON/layout mismatch, correct only private input projection. If its source-selection semantics are invalid, report the exact source defect to Central instead of editing deployed or staged code.
 - One run is sufficient; bounded retry only for independently identified transient network error or local adapter corruption. Do not expand into another campaign.
 
 ## Phase 4: decision quality
-- For each of seven residual positives, record exact expected episode position in original 24, reduced 12, and authenticated local-index candidates. Record whether the original, query union, index-only and blended alternatives select the expected episode; distinguish exact source and proposition equivalence.
+- For each of seven residual positives, record exact expected episode position in original 24, reduced 12, and authenticated local-index candidates. Private or too-short prompts must fail native admission before Graphiti or the local selector. Record whether the original, query union, index-only and blended alternatives select the expected episode; distinguish exact source and proposition equivalence.
 - For all negatives, report supported source group, identity and content-policy failures. Frozen N02=FAIL_INJECTED remains preserved; classify policy separately without changing original score.
 - Report measured Graphiti request and curated index scan latency separately (p50/p95 with n and quantile definition). Context-hook <=300ms is a separate strict actual requirement and remains UNVERIFIED unless native hook start/end data are available.
 - Do not recommend source-index injection unless the source strength, positive remote persisted evidence, live scope and temporal validity and latency can be established by a product-level design. It is an architectural choice for Central, not an agent-created workaround.

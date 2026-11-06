@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 /** Issue #81 read-only feasibility probe. Raw stdout is PRIVATE evidence. */
 import { readFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
 import { performance } from 'node:perf_hooks';
-import { GraphitiMcp } from '../../issue-75/v2-candidate/memory-core.mjs';
+import { GraphitiMcp, safeText } from '../../issue-75/v2-candidate/memory-core.mjs';
 import { relevanceFilter, relevanceSignals } from '../../issue-75/v2-candidate/relevance.mjs';
 import { ReviewStore } from '../v2-curator/core.mjs';
 import { sourcedEpisodeResolver } from '../v2-curator/sourced-recall.mjs';
@@ -24,7 +26,7 @@ function parseArgs(argv) {
   return obj;
 }
 export function reducedQuery(text) {
-  const tokens=String(text).match(/[a-z0-9][a-z0-9_-]{2,}/gi)||[];
+  const tokens=String(text).match(/[a-z0-9][a-z0-9_-]{2,}|\b\d+\b/gi)||[];
   const kept=[];
   for(const token of tokens){
     const x=token.toLowerCase();
@@ -46,8 +48,9 @@ async function curated(o) {
   const byId=new Map(mapped.map(s=>[s.remoteEpisodeUuid,s]));
   const candidates=records.flatMap(r=>{
     const s=byId.get(r.remote_episode_uuid),f=r.facts[0];
-    return s&&f.evidence_class===s.evidenceClass&&typeof f.assertion==='string'
-      ?[{fact:f.assertion,source:s.sourceRef,evidenceClass:s.evidenceClass,
+    const assertion=safeText(f.assertion,480);
+    return s&&f.evidence_class===s.evidenceClass&&assertion
+      ?[{fact:assertion,source:s.sourceRef,evidenceClass:s.evidenceClass,
          episode_uuid:s.remoteEpisodeUuid,origin:'curated-positive-index'}]:[];
   });
   return {candidates,sourceMap:byId,record_count:page.total,
@@ -69,9 +72,11 @@ async function graphiti(mcp,query,group,limit,map) {
   if(!Array.isArray(response?.facts))throw Error('Graphiti facts unavailable');
   const raw=response.facts;
   const selected=raw.flatMap(f=>{
-    if(f.group_id&&f.group_id!==group||typeof f.fact!=='string')return [];
+    if(f.group_id&&f.group_id!==group)return [];
+    const text=safeText(f.fact,480);
+    if(!text)return [];
     const s=(Array.isArray(f.episodes)?f.episodes:[]).map(id=>map.get(id)).find(Boolean);
-    return s?[{fact:f.fact,source:s.sourceRef,evidenceClass:s.evidenceClass,
+    return s?[{fact:text,source:s.sourceRef,evidenceClass:s.evidenceClass,
       episode_uuid:s.remoteEpisodeUuid,origin:'Graphiti-source-index'}]:[];
   });
   return {raw_count:raw.length,episodes:raw.flatMap(f=>f.episodes||[]),
@@ -97,11 +102,20 @@ async function main() {
     throw Error('Invalid case');
   const local=await curated(o),mcp=new GraphitiMcp(o.endpoint),results=[];
   for(const c of input.cases){
-    const original=await graphiti(mcp,c.question,o.group,24,local.sourceMap);
-    const shortened=reducedQuery(c.question);
-    const alt=shortened&&shortened!==c.question.toLowerCase()
+    // Native prompt admission is authoritative even for a diagnostic probe.
+    // A private, control-character, overlength or <10-char prompt must NEVER
+    // reach Graphiti or a local-memory selector.
+    const query=safeText(c.question,500);
+    if(!query||query.length<10){
+      results.push({case_id:c.case_id,admission:'NATIVE_SAFE_TEXT_REJECTED',
+        graphiti_calls:0,local_selection_count:0});
+      continue;
+    }
+    const original=await graphiti(mcp,query,o.group,24,local.sourceMap);
+    const shortened=reducedQuery(query);
+    const alt=shortened&&shortened!==query.toLowerCase()
       ?await graphiti(mcp,shortened,o.group,12,local.sourceMap):null;
-    const localRanked=rank(c.question,local.candidates);
+    const localRanked=rank(query,local.candidates);
     const union=distinct([...original.candidates,...(alt?.candidates||[])]).slice(0,24);
     const blended=distinct([...original.candidates.slice(0,18),...localRanked.slice(0,6)]);
     const expected=c.expected_episode_uuid||null;
@@ -113,14 +127,15 @@ async function main() {
       alternate_contains_expected:expected&&alt?alt.episodes.includes(expected):null,
       local_contains_expected:expected?localRanked.some(x=>x.episode_uuid===expected):null,
       local_ranked_top8:localRanked.slice(0,8),
-      original:await choice(c.question,original.candidates,expected),
-      union:await choice(c.question,union,expected),
-      local_only:await choice(c.question,localRanked.slice(0,24),expected),
-      blended:await choice(c.question,blended,expected)});
+      original:await choice(query,original.candidates,expected),
+      union:await choice(query,union,expected),
+      local_only:await choice(query,localRanked.slice(0,24),expected),
+      blended:await choice(query,blended,expected)});
   }
   process.stdout.write(JSON.stringify({schema:'issue81-readonly-probe.v1',
     evidence_class:'CURRENT_SNAPSHOT_DIAGNOSTIC_NOT_NATIVE_ACCEPTANCE',
     curator_records_scanned:local.record_count,curator_sources_verified:local.verified_sources,
     curator_scan_ms:local.elapsed_ms,scope:o.group,results},null,2)+'\n');
 }
-main().catch(error=>{process.stderr.write('PROBE_BLOCKED: '+error.message+'\n');process.exitCode=2;});
+if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url))
+  main().catch(error=>{process.stderr.write('PROBE_BLOCKED: '+error.message+'\n');process.exitCode=2;});
