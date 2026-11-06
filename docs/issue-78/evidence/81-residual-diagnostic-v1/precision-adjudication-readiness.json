@@ -1,0 +1,40 @@
+{
+ "schema": "issue81-residual-precision-adjudication-readiness.v1",
+ "campaign": "ISSUE81_RESIDUAL_DIAGNOSTIC_V1",
+ "generated_at_utc": "2026-11-06T11:10:00+00:00",
+ "human_precision": "UNVERIFIED",
+ "worksheet_path_host": "/tmp/opencode/issue81-fresh-native-acceptance/fresh-native-v1/precision/precision-adjudication-worksheet.json",
+ "worksheet_md_path_host": "/tmp/opencode/issue81-fresh-native-acceptance/fresh-native-v1/precision/precision-adjudication-worksheet.md",
+ "worksheet_sha256": "b080f058b8f5edc0afabcdc59db4c7bd1ac7ff7216ce574a4a2a7eb737bd43cb",
+ "worksheet_md_sha256": "508cc0ccf6550194cd6a7435b89d036a1121d26dcbf8deca6a022d484f26fb3d",
+ "source_packet": {
+  "path_host": "/tmp/opencode/issue81-fresh-native-acceptance/fresh-native-v1/precision/operator-review-packet-126-consolidated.json",
+  "sha256": "a7d38d607fcd518af8f242a1fe56d6b34dc6fc4b17500c065e97aa12b43cb83f",
+  "mode": "600"
+ },
+ "population": 126,
+ "all_item_ids_retained": true,
+ "null_verdict_preserved": true,
+ "operator_verdicts_supplied": false,
+ "adjudication_status": "AWAITING_OPERATOR_ADJUDICATION",
+ "authority_risk_tier_counts": {
+  "T1_user_stated_interrogative_instructional": 5,
+  "T2": 8,
+  "T3_tool_reported": 14,
+  "T4_assistant_reported": 99
+ },
+ "target_ratification": {
+  "status": "OPERATOR_RATIFIED",
+  "receipt_path_host": "/home/filip/.local/state/ghdev-graphiti-issue81/holdout81-64d32eb7/private/target-ratification.json",
+  "receipt_sha256": "3e9581114047ac7416f6014a0dd6a57304dc5e5784efe39b176ced61fbb8626a",
+  "proposal_sha256": "17ffb60515f5f96f2d546fd3abf951d0bc008325e38d83145ec4f75a8c76f049",
+  "authenticated": true,
+  "authentication_note": "receipt SHA 3e958111... and proposal SHA 17ffb605... re-verified against the on-host receipt file and the committed a29bf26 targets.proposed.json bytes"
+ },
+ "thresholds": {
+  "durable_grounded_precision_min": 0.9,
+  "fixed": true,
+  "note": "thresholds fixed by target-ratification; NOT revised in this worksheet"
+ },
+ "note": "126-item operator adjudication worksheet (JSON + Markdown) staged on host with per-item review instructions and 4 authority risk tiers; every human_verdict field is null and no agent has populated or signed a human verdict. Disposition of the precision gate remains with the operator."
+}

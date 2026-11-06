@@ -1,0 +1,266 @@
+{
+ "schema": "issue81-residual-seven-case-root-causes.v1",
+ "campaign": "ISSUE81_RESIDUAL_DIAGNOSTIC_V1",
+ "evidence_class_note": "Candidate-set presence/eligibility is a CURRENT-SNAPSHOT reconstruction via read-only Graphiti search_memory_facts (group development-knowledge, max_facts=12), NOT historical request-time evidence. relevanceFilter run with ranker=null (the installed plugin config has no rerankEndpoint), so selection = priority -> lexical.count -> lexical.score -> candidate index.",
+ "relevance_mjs_sha256": "9767486ef71fa6cf88497a1af801540dc401550a0a472c98cef64f9b4b380100",
+ "cases": [
+  {
+   "case_id": "S01",
+   "category": "direct",
+   "frozen_question": "Which Graphiti group does the production recall service use, and on which FalkorDB port does it run?",
+   "expected": {
+    "proposition": "GRAPHITI_RECALL_GROUP=development-knowledge with Falkor port 6382 and a local recall service",
+    "source_ref": "opencode:ses_e5158f35cffeu6tZOnjp1XwQko:message:msg_1aea7648a001V2JzUtwYv5kkjY",
+    "episode_uuid": "1409c260-92e9-474f-96be-6da4216908f7",
+    "temporal_status": "observed",
+    "evidence_class": "assistant-reported"
+   },
+   "injected": {
+    "proposition": "When group_id is 'development-knowledge', FalkorDB does not route queries to the graphiti_live graph.",
+    "source_ref": "opencode:ses_e513390dcffekimm001xBGtcI0:message:msg_1aecd887c001GaCs8HD5eGI0R9",
+    "episode_uuid": "d19c4f9e-7216-499a-8057-b638b88e2fa3",
+    "temporal_status": "current state not independently verified"
+   },
+   "expected_in_top12_current_snapshot": true,
+   "expected_candidate_index": 2,
+   "expected_fact_text_in_candidates": "The environment variable GRAPHITI_RECALL_FALKOR_PORT is set to 6382.",
+   "expected_source_resolution": "resolved (episode present in candidates, maps via curation index to source ref)",
+   "relevance_signal": "rejected",
+   "rejection_reason": "named-entity fence: query term 'FalkorDB'->'falkordb' is not a substring of the fact (the fact tokenizes the env-var name GRAPHITI_RECALL_FALKOR_PORT to 'falkor', not 'falkordb'); relevanceSignals returns eligible=false",
+   "competing_selected": {
+    "index": 3,
+    "fact": "When group_id is 'development-knowledge', FalkorDB does not route queries to the graphiti_live graph.",
+    "signals": "priority=0, overlap=4/0.444 (eligible, topical); wins over the fence-rejected expected candidate"
+   },
+   "source_correct_proposition_in_any_request": false,
+   "answer_provenance": "live host inspection (systemd unit / env file / FalkorDB corroboration) per central disposition; answer_match_ratio=1.0 is a supporting signal only",
+   "alternate_source_equivalence": "competitor candidate [3] is a different proposition (query routing), not equivalent to the expected recall-group+port fact",
+   "earliest_stage_lost": "relevance admission (named-entity fence)",
+   "root_cause": "LEXICAL_ADMISSION",
+   "secondary_root_cause": null
+  },
+  {
+   "case_id": "S03",
+   "category": "paraphrased",
+   "frozen_question": "How does the Graphiti MCP server keep each group's data separate?",
+   "expected": {
+    "proposition": "clone(database) makes each group_id a distinct FalkorDriver bound to a per-group FalkorDB graph named after the group",
+    "source_ref": "opencode:ses_e516e7ab7ffehIYi0ezLjIffWR:message:msg_1ae94561b001W2ocylmntpmpJV",
+    "episode_uuid": "082fe673-8cf9-4da1-bc43-aaa9e04f68d8",
+    "temporal_status": "observed",
+    "evidence_class": "assistant-reported"
+   },
+   "injected": {
+    "proposition": "mcp-test.mjs uses the group ID 'development-knowledge' when calling the graphiti MCP server.",
+    "source_ref": "opencode:ses_e514f306cffe3F3Hy1nkJgjujC:message:msg_1aeb281c9001k9aQzqmnBUQ1oE",
+    "episode_uuid": "e1244d4f-aee5-4bbe-a4f9-ac0f8516fd68",
+    "temporal_status": "current state not independently verified"
+   },
+   "expected_in_top12_current_snapshot": false,
+   "expected_candidate_index": null,
+   "expected_fact_text_in_candidates": null,
+   "expected_source_resolution": "not retrieved (episode absent from current top-12)",
+   "relevance_signal": "n/a (not in candidate set)",
+   "rejection_reason": "expected episode 082fe673 (clone(database) per-group FalkorDriver) not in the current top-12 candidate set",
+   "competing_selected": {
+    "index": 1,
+    "fact": "mcp-test.mjs uses the group ID 'development-knowledge' when calling the graphiti MCP server.",
+    "signals": "priority=0, topical; lower-overlap competitor selected"
+   },
+   "source_correct_proposition_in_any_request": false,
+   "answer_provenance": "injected memory (block present); answer_match_ratio=0.786",
+   "alternate_source_equivalence": "proposition-equivalent facts ARE present in the candidate set via sibling episodes 560d782f ('MCP server clones the driver per group_id...') and cb399069 ('per-group graph routing via _driver_for_group'), but BOTH are rejected by the 'graphiti' named-entity fence (they lack the literal token 'graphiti')",
+   "earliest_stage_lost": "retrieval (search_memory_facts top-12) for the exact episode; secondary lexical admission for the proposition-equivalent siblings",
+   "root_cause": "RETRIEVAL_COVERAGE",
+   "secondary_root_cause": "LEXICAL_ADMISSION"
+  },
+  {
+   "case_id": "S04",
+   "category": "implicit_relationship",
+   "frozen_question": "Why does the production data physically live in the development-knowledge graph even though the MCP config points at graphiti_live?",
+   "expected": {
+    "proposition": "per-group graphs: data lives in development-knowledge while the MCP config names graphiti_live (empty)",
+    "source_ref": "opencode:ses_e5276247fffewUAeyTeAea2tia:message:msg_1ad8c14d6001aDoSonKPyEUW9E",
+    "episode_uuid": "c48cd614-4f98-49f7-90d0-5b6a418368fc",
+    "temporal_status": "observed",
+    "evidence_class": "assistant-reported"
+   },
+   "injected": {
+    "proposition": "The data physically lives in the development-knowledge graph (35 nodes) while ghdev_gh_mcp has 0 nodes.",
+    "source_ref": "opencode:ses_e51631cbfffeIAww75wYB0QLvR:message:msg_1ae9d8d9e0011vCYAm7ru8Z44E",
+    "episode_uuid": "07f247f9-f4d4-47f7-bf5f-6a748b60758b",
+    "temporal_status": "historical/superseded"
+   },
+   "expected_in_top12_current_snapshot": true,
+   "expected_candidate_index": 10,
+   "expected_fact_text_in_candidates": "A script queries the 'graphiti_live' graph filtered by group_id='development-knowledge'.",
+   "expected_source_resolution": "resolved (episode present in candidates, maps via curation index to source ref)",
+   "relevance_signal": "rejected",
+   "rejection_reason": "named-entity fence: query term 'MCP'->'mcp' is not a substring of the expected fact (which names graphiti_live + group_id but not 'mcp'); relevanceSignals returns eligible=false (overlap 4/0.308)",
+   "competing_selected": {
+    "index": 2,
+    "fact": "The data physically lives in the development-knowledge graph (35 nodes) while ghdev_gh_mcp has 0 nodes.",
+    "signals": "priority=0, topical (development-knowledge + graphiti/g0-nodes overlap); proposition-adjacent competitor selected"
+   },
+   "source_correct_proposition_in_any_request": false,
+   "answer_provenance": "injected memory (block present); answer_match_ratio=0.7",
+   "alternate_source_equivalence": "selected fact [2] is proposition-adjacent (data lives in development-knowledge, other graph 0 nodes) but is a DIFFERENT source (ses_e51631cb / ep 07f247f9) than the expected source (ses_e5276247 / ep c48cd614)",
+   "earliest_stage_lost": "relevance admission (named-entity fence 'mcp')",
+   "root_cause": "LEXICAL_ADMISSION",
+   "secondary_root_cause": null
+  },
+  {
+   "case_id": "S05",
+   "category": "multi_event",
+   "frozen_question": "What is the FalkorDB graph layout and which graph actually holds the nodes?",
+   "expected": {
+    "proposition": "development-knowledge has the nodes; graphiti_live and ghdev_gh_mcp are empty (0 nodes)",
+    "source_ref": "opencode:ses_e51508dcfffe9svEPYbBvkQzfn:message:msg_1aeafef5e001tFSncgFcjcwsi6",
+    "episode_uuid": "1a20d974-b5a7-4367-8da5-8c9d7dbb06c5",
+    "temporal_status": "observed",
+    "evidence_class": "assistant-reported"
+   },
+   "injected": {
+    "proposition": "The FalkorDB layout includes an empty graph named 'graphiti_live' with 0 nodes.",
+    "source_ref": "opencode:ses_e5276247fffewUAeyTeAea2tia:message:msg_1ad8c14d6001aDoSonKPyEUW9E",
+    "episode_uuid": "c48cd614-4f98-49f7-90d0-5b6a418368fc",
+    "temporal_status": "historical/superseded"
+   },
+   "expected_in_top12_current_snapshot": false,
+   "expected_candidate_index": null,
+   "expected_fact_text_in_candidates": null,
+   "expected_source_resolution": "not retrieved (episode absent from current top-12)",
+   "relevance_signal": "n/a (not in candidate set)",
+   "rejection_reason": "expected episode 1a20d974 ('development-knowledge has the nodes; graphiti_live and ghdev_gh_mcp are empty') not in the current top-12 candidate set",
+   "competing_selected": {
+    "index": 0,
+    "fact": "The FalkorDB layout includes an empty graph named 'graphiti_live' with 0 nodes.",
+    "signals": "priority=0, topical; selected"
+   },
+   "source_correct_proposition_in_any_request": false,
+   "answer_provenance": "injected memory (block present); answer_match_ratio=1.0",
+   "alternate_source_equivalence": "S04/S05 source-equivalence cluster: S05's injected source (ses_e5276247 / ep c48cd614) IS S04's expected source. This does NOT establish equivalence to S05's own expected source (ses_e51508dc / ep 1a20d974). The injected fact is a partial subset of the expected proposition (only the 'graphiti_live 0 nodes' clause).",
+   "earliest_stage_lost": "retrieval (search_memory_facts top-12) for the exact expected episode",
+   "root_cause": "RETRIEVAL_COVERAGE",
+   "secondary_root_cause": "SOURCE_EQUIVALENCE"
+  },
+  {
+   "case_id": "S07",
+   "category": "direct",
+   "frozen_question": "Why does the canonical post-exit drain fail closed while an interactive harness is active?",
+   "expected": {
+    "proposition": "every drain invocation exits FAIL_CLOSED: interactive harness active/unknown, cannot drain",
+    "source_ref": "opencode:ses_e5276247fffewUAeyTeAea2tia:message:msg_1ad89db84001rJAb8M2vcBA9IP:span:0",
+    "episode_uuid": "7dcfa76f-8fa5-436a-bdd5-ad340a62f27d",
+    "temporal_status": "observed",
+    "evidence_class": "user-stated"
+   },
+   "injected": {
+    "proposition": "The Production admitted post-exit candidate curator service uses the canonical EX gate.",
+    "source_ref": "opencode:ses_e50cc1c26ffeKCmAyMkiTNIVKE:tool:call_8e9d27d04e918e97",
+    "episode_uuid": "e147822f-d6ea-439a-967b-ad6eb78ae428",
+    "temporal_status": "current state not independently verified"
+   },
+   "expected_in_top12_current_snapshot": false,
+   "expected_candidate_index": null,
+   "expected_fact_text_in_candidates": null,
+   "expected_source_resolution": "not retrieved (episode absent from current top-12)",
+   "relevance_signal": "n/a (not in candidate set)",
+   "rejection_reason": "expected episode 7dcfa76f ('every drain invocation exits FAIL_CLOSED: interactive harness active/unknown, cannot drain') not in the current top-12 candidate set; retrieved candidates are on a different topic (curator service / systemd / EX gate)",
+   "competing_selected": {
+    "index": 1,
+    "fact": "The Production admitted post-exit candidate curator service uses the canonical EX gate.",
+    "signals": "priority=0, topical (post-exit / harness overlap); selected"
+   },
+   "source_correct_proposition_in_any_request": false,
+   "answer_provenance": "injected memory (block present); answer_match_ratio=0.9",
+   "alternate_source_equivalence": "selected fact is about the curator service's EX gate, NOT the drain FAIL_CLOSED invariant; not proposition-equivalent to the expected fact",
+   "earliest_stage_lost": "retrieval (search_memory_facts top-12) for the expected episode",
+   "root_cause": "RETRIEVAL_COVERAGE",
+   "secondary_root_cause": null
+  },
+  {
+   "case_id": "S10",
+   "category": "direct",
+   "frozen_question": "What did commit 52863ae change in the graphiti test suite?",
+   "expected": {
+    "proposition": "52863ae test(graphiti): reject stale fallback after unbound long prompt (#81)",
+    "source_ref": "opencode:ses_e50efdb27ffep7alMZaj9wkl3x:tool:call_1e0445fde85fa221",
+    "episode_uuid": "0de3cdc8-07ff-46a5-a0bc-ed7f9bc5e47b",
+    "temporal_status": "observed",
+    "evidence_class": "tool-reported"
+   },
+   "injected": {
+    "proposition": "The graphiti component is part of the gh_mcp project, as indicated by the test commit 'test(graphiti): reject stale fallback after unbound long prompt (#81)' in the opencode-operational-schema-guard repository.",
+    "source_ref": "opencode:ses_e50efdb27ffep7alMZaj9wkl3x:tool:call_0485ce2600ec5dba",
+    "episode_uuid": "c059ab8f-0b24-4fc6-b0cd-730178acb247",
+    "temporal_status": "current state not independently verified"
+   },
+   "expected_in_top12_current_snapshot": false,
+   "expected_candidate_index": null,
+   "expected_fact_text_in_candidates": null,
+   "expected_source_resolution": "not retrieved (episode absent from current top-12)",
+   "relevance_signal": "n/a (not in candidate set)",
+   "rejection_reason": "expected episode 0de3cdc8 (tool:call_1e0445fde85fa221) not in the current top-12 candidate set; the expected PROPOSITION (52863ae test change) is present via a sibling episode",
+   "competing_selected": {
+    "index": 0,
+    "fact": "The graphiti component is part of the gh_mcp project, as indicated by the test commit 'test(graphiti): reject stale fallback after unbound long prompt (#81)'...",
+    "signals": "priority=0, topical (commit/graphiti overlap); selected"
+   },
+   "source_correct_proposition_in_any_request": false,
+   "answer_provenance": "LIVE GIT INSPECTION: the S10 native session ran `git log`/`git show 52863ae` in a /tmp/opencode/issue81-52863ae worktree; the correct answer was obtained from live git, NOT from the injected memory. Frozen WRONG_SOURCE verdict preserved.",
+   "alternate_source_equivalence": "injected fact IS proposition-equivalent to the expected fact (both name the 52863ae test commit) but sourced from a sibling tool-call in the same session (ses_e50efdb27ffe:tool:call_0485ce2600ec5dba vs expected tool:call_1e0445fde85fa221); authority-equivalent (same session, tool-reported), source-different",
+   "earliest_stage_lost": "retrieval (search_memory_facts top-12) for the exact expected episode",
+   "root_cause": "RETRIEVAL_COVERAGE",
+   "secondary_root_cause": "SOURCE_EQUIVALENCE"
+  },
+  {
+   "case_id": "S13",
+   "category": "multi_event",
+   "frozen_question": "What is the installed Graphiti plugin architecture on this host?",
+   "expected": {
+    "proposition": "installed architecture uses the issue-78 capture wrapper with a fixed issue-75 baseline plugin",
+    "source_ref": "opencode:ses_e50efdb27ffep7alMZaj9wkl3x:message:msg_1af1287e7001qq7UBQ8qBctKK1",
+    "episode_uuid": "009974d2-f051-45fd-ac0c-f259dcfdd1a8",
+    "temporal_status": "observed",
+    "evidence_class": "assistant-reported"
+   },
+   "injected": {
+    "proposition": "The live plugin root for ghdev-graphiti-memory is /home/filip/.config/opencode/plugins/ghdev-graphiti-memory, and it connects to the Graphiti endpoint at http://127.0.0.1:8766/mcp.",
+    "source_ref": "opencode:ses_e4e1ec14bffeB8M0b0Sn2XxErw:message:msg_1b1e1aaee001r673t8FEqDVzHY",
+    "episode_uuid": "00c83bb0-eb79-48bc-90b2-be30121c4905",
+    "temporal_status": "current state not independently verified"
+   },
+   "expected_in_top12_current_snapshot": false,
+   "expected_candidate_index": null,
+   "expected_fact_text_in_candidates": null,
+   "expected_source_resolution": "not retrieved (episode absent from current top-12)",
+   "relevance_signal": "n/a (not in candidate set)",
+   "rejection_reason": "expected episode 009974d2 ('installed architecture uses the issue-78 capture wrapper with a fixed issue-75 baseline plugin') not in the current top-12 candidate set",
+   "competing_selected": {
+    "index": 0,
+    "fact": "The live plugin root for ghdev-graphiti-memory is /home/filip/.config/opencode/plugins/ghdev-graphiti-memory, and it connects to the Graphiti endpoint at http://127.0.0.1:8766/mcp.",
+    "signals": "priority=0, topical (plugin/graphiti/endpoint overlap); selected"
+   },
+   "source_correct_proposition_in_any_request": false,
+   "answer_provenance": "injected memory (block present) + live inspection; answer_match_ratio=0.818",
+   "alternate_source_equivalence": "NOT a context-absent failure (a GHDEV block WAS injected, with a wrong source). The specific expected source (ep 009974d2 / ses_e50efdb27ffe:msg_1af1287e, the capture-wrapper+issue-75-baseline architecture fact) was omitted at retrieval; a related plugin-root/endpoint fact (ep 00c83bb0 / ses_e4e1ec14bffe) was retrieved and injected instead.",
+   "earliest_stage_lost": "retrieval (search_memory_facts top-12) for the expected episode",
+   "root_cause": "RETRIEVAL_COVERAGE",
+   "secondary_root_cause": null
+  }
+ ],
+ "N02_special_adjudication": {
+  "case_id": "N02",
+  "category": "wrong_group",
+  "frozen_label": "FAIL_INJECTED (retained unchanged)",
+  "injected_episode": "e1d8e764-26fa-45ea-9483-8e64a71e3de7",
+  "persisted_group": "development-knowledge",
+  "persisted_state": "persisted / decision=EMIT / origin=curated",
+  "proposition": "The active production curation records are under curation-v1/development-knowledge/, while ghdev_gh_mcp is the historical pre-cutover set.",
+  "source_ref": "opencode:ses_e508c6d53ffeWrJEJftz60lqXB:message:msg_1af753f0d001GPlDjAoAckQ3EK",
+  "question": "Which legacy pre-cutover group stored the original ghdev_gh_mcp episodes before development-knowledge?",
+  "disposition": "POLICY_FALSE_POSITIVE (not a spurious/irrelevant injection). The 'wrong_group' negative-control assumption that a legacy-group question has no development-knowledge memory is too strict: the development-knowledge group legitimately contains cutover-curation facts that mention the legacy group (ghdev_gh_mcp). The recall policy's lexical match on 'ghdev_gh_mcp' surfaced a proposition-correct, topically-relevant development-knowledge fact. Not a genuine undesirable (off-topic) injection.",
+  "frozen_label_changed": false
+ }
+}

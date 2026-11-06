@@ -1,0 +1,52 @@
+{
+ "schema": "issue81-command-shape-friction.v1",
+ "campaign": "ISSUE81_RESIDUAL_DIAGNOSTIC_V1",
+ "encountered": true,
+ "commands_match_handoff": true,
+ "note": "All acceptance-bearing commands matched the handoff shape: read-only Graphiti search_memory_facts calls (group development-knowledge, max_facts=12), candidate-set reconstruction via agent-authored scripts with producer exit statuses preserved, and the publication commit/push via native git in the bound worktree. Events below are agent-authored probe/exploration shape issues; all recovered with no state change and no acceptance-bearing command was altered.",
+ "events": [
+  {
+   "scenario": "exploratory full-filesystem locate of the operator review packet",
+   "requested_shape": "find / -name 'operator-review-packet-126-consolidated.json'",
+   "effective_shape": "timeout (full-filesystem scan); re-run also timed out before the known campaign root was used",
+   "rewrite_provenance": "agent-authored exploration (unbounded find from /)",
+   "event_kind": "interface_discovery",
+   "execution_effect": "two timed-out probes; no state change; packet then located under the known campaign root /tmp/opencode/issue81-fresh-native-acceptance/fresh-native-v1/precision/",
+   "correction_or_annotation": "subsequent locates scoped to /tmp/opencode/issue81-fresh-native-acceptance",
+   "replacement_shape": "find /tmp/opencode/issue81-fresh-native-acceptance -name 'operator-review-packet-126-consolidated.json'",
+   "recipe_reference": null,
+   "resource_reference": "/tmp/opencode/issue81-fresh-native-acceptance/fresh-native-v1/precision/operator-review-packet-126-consolidated.json",
+   "contract_conflict": "no",
+   "durable_gap_candidate": "no"
+  },
+  {
+   "scenario": "initial worktree checkout of expected evidence-branch head",
+   "requested_shape": "git worktree add /tmp/opencode/wt-81-residual (on issue/81-recall-acceptance @ df53c64677f3ffa3bf04ac7bdecc353d25732b26)",
+   "effective_shape": "bad-object errors: the primary repo had not fetched the canonical ref; df53c64 (and main@9a27b73) were not local objects",
+   "rewrite_provenance": "agent repo state (stale local object set), resolved by an authorized fetch of the task-bound refs",
+   "event_kind": "interface_discovery",
+   "execution_effect": "worktree creation failed once; no state change; `git fetch origin main issue/81-recall-acceptance` then succeeded and the worktree was created at the expected head (verified df53c64)",
+   "correction_or_annotation": "fetch of the two task-bound refs before worktree creation; also revealed the earlier observed 11f7fd6 tracking ref was stale, not source drift (origin/issue/81-recall-acceptance == df53c64 after fetch)",
+   "replacement_shape": "git fetch origin main issue/81-recall-acceptance && git worktree add ...",
+   "recipe_reference": null,
+   "resource_reference": null,
+   "contract_conflict": "no",
+   "durable_gap_candidate": "no"
+  },
+  {
+   "scenario": "multi-part status probe with unquoted === delimiter",
+   "requested_shape": "cat command-shape-friction.json && echo === && python3 -c '...'",
+   "effective_shape": "zsh treated bare === as =-expansion: 'zsh:1: == not found', exit 1; the first part (cat) printed successfully",
+   "rewrite_provenance": "agent-authored probe shape (zsh =-expansion of bare ===)",
+   "event_kind": "interface_discovery",
+   "execution_effect": "partial output only; no state change; the second part was re-run as a standalone command",
+   "correction_or_annotation": "re-ran the python3 part separately",
+   "replacement_shape": "... ; echo '---'; ...",
+   "recipe_reference": null,
+   "resource_reference": null,
+   "contract_conflict": "no",
+   "durable_gap_candidate": "no"
+  }
+ ],
+ "rtk_note": "no acceptance-bearing command's shape or producer exit was altered by harness wrapping. No guard rejections occurred during this campaign; the publication commit/push ran only after the local verify/review generations caught up to the edit generation."
+}

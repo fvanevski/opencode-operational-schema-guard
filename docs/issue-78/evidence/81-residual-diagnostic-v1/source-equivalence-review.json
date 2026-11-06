@@ -1,0 +1,60 @@
+{
+ "schema": "issue81-residual-source-equivalence-review.v1",
+ "campaign": "ISSUE81_RESIDUAL_DIAGNOSTIC_V1",
+ "note": "Source/proposition equivalence findings for the special-adjudication cases. Equivalence is assessed on proposition AND authority (source group, evidence class, session), not on surface similarity.",
+ "cases": [
+  {
+   "case_pair": "S04 / S05",
+   "finding": "SOURCE_EQUIVALENCE_CLUSTER",
+   "s04_expected": {
+    "source_ref": "opencode:ses_e5276247fffewUAeyTeAea2tia:message:msg_1ad8c14d6001aDoSonKPyEUW9E",
+    "episode_uuid": "c48cd614-4f98-49f7-90d0-5b6a418368fc",
+    "proposition": "per-group graphs: data lives in development-knowledge while the MCP config names graphiti_live (empty)"
+   },
+   "s05_expected": {
+    "source_ref": "opencode:ses_e51508dcfffe9svEPYbBvkQzfn:message:msg_1aeafef5e001tFSncgFcjcwsi6",
+    "episode_uuid": "1a20d974-b5a7-4367-8da5-8c9d7dbb06c5",
+    "proposition": "development-knowledge has the nodes; graphiti_live and ghdev_gh_mcp are empty (0 nodes)"
+   },
+   "s05_injected": {
+    "source_ref": "opencode:ses_e5276247fffewUAeyTeAea2tia:message:msg_1ad8c14d6001aDoSonKPyEUW9E",
+    "episode_uuid": "c48cd614-4f98-49f7-90d0-5b6a418368fc",
+    "proposition": "The FalkorDB layout includes an empty graph named 'graphiti_live' with 0 nodes."
+   },
+   "determination": "S05 injected S04's expected source (ses_e5276247 / ep c48cd614). This does NOT establish equivalence to S05's OWN expected source (ses_e51508dc / ep 1a20d974). The injected fact is a partial subset of S05's expected proposition (only the 'graphiti_live 0 nodes' clause, omitting 'development-knowledge has the nodes' and 'ghdev_gh_mcp empty'). S04 and S05 are a source-equivalence cluster on the same cutover source, but S05's verdict remains WRONG_SOURCE because its own expected source was not retrieved (retrieval coverage).",
+   "frozen_verdicts_preserved": true
+  },
+  {
+   "case_id": "S10",
+   "finding": "PROPOSITION_EQUIVALENT_SIBLING_SOURCE",
+   "expected": {
+    "source_ref": "opencode:ses_e50efdb27ffep7alMZaj9wkl3x:tool:call_1e0445fde85fa221",
+    "episode_uuid": "0de3cdc8-07ff-46a5-a0bc-ed7f9bc5e47b",
+    "proposition": "52863ae test(graphiti): reject stale fallback after unbound long prompt (#81)"
+   },
+   "injected": {
+    "source_ref": "opencode:ses_e50efdb27ffep7alMZaj9wkl3x:tool:call_0485ce2600ec5dba",
+    "episode_uuid": "c059ab8f-0b24-4fc6-b0cd-730178acb247",
+    "proposition": "The graphiti component is part of the gh_mcp project, as indicated by the test commit 'test(graphiti): reject stale fallback after unbound long prompt (#81)'..."
+   },
+   "determination": "The injected fact IS proposition-equivalent to the expected fact (both name the 52863ae test-commit change) and authority-equivalent (same session ses_e50efdb27ffe, tool-reported) but is a SIBLING source (a different tool-call in the same session). The exact expected source (tool:call_1e0445fde85fa221 / ep 0de3cdc8) was not retrieved. The correct ANSWER was obtained via live git inspection (git log/git show 52863ae in a worktree), not from the injected memory, so the frozen WRONG_SOURCE verdict is preserved. This is not a Graphiti memory-recall success.",
+   "frozen_verdicts_preserved": true
+  },
+  {
+   "case_id": "S13",
+   "finding": "BLOCK_PRESENT_WRONG_SOURCE_NOT_CONTEXT_ABSENT",
+   "expected": {
+    "source_ref": "opencode:ses_e50efdb27ffep7alMZaj9wkl3x:message:msg_1af1287e7001qq7UBQ8qBctKK1",
+    "episode_uuid": "009974d2-f051-45fd-ac0c-f259dcfdd1a8",
+    "proposition": "installed architecture uses the issue-78 capture wrapper with a fixed issue-75 baseline plugin"
+   },
+   "injected": {
+    "source_ref": "opencode:ses_e4e1ec14bffeB8M0b0Sn2XxErw:message:msg_1b1e1aaee001r673t8FEqDVzHY",
+    "episode_uuid": "00c83bb0-eb79-48bc-90b2-be30121c4905",
+    "proposition": "The live plugin root for ghdev-graphiti-memory is /home/filip/.config/opencode/plugins/ghdev-graphiti-memory, and it connects to the Graphiti endpoint at http://127.0.0.1:8766/mcp."
+   },
+   "determination": "S13 is NOT a context-absent failure: a GHDEV block WAS injected (with a wrong source). The specific expected source (ep 009974d2, the capture-wrapper+issue-75-baseline architecture fact) was omitted at the retrieval stage (absent from the current top-12); a related plugin-root/endpoint fact (ep 00c83bb0) was retrieved and injected instead. The expected source is proposition-different (architecture wiring vs endpoint path), so the injected source is not equivalent to the expected source.",
+   "frozen_verdicts_preserved": true
+  }
+ ]
+}

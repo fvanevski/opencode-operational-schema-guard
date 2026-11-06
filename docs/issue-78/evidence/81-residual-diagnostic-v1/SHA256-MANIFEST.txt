@@ -1,0 +1,11 @@
+# SHA-256 manifest — docs/issue-78/evidence/81-residual-diagnostic-v1/
+# campaign: ISSUE81_RESIDUAL_DIAGNOSTIC_V1
+# generated: 2026-11-06T18:48:00Z (UTC)
+
+9ad7293da3a4c5235df0722914d5451baac052c9711307773089e1560aa29910  README.md
+a609b6576bb9e3022de8ab8c9450da28588a4594383774fda36e2a505235b6e2  observer-erratum.json
+1f2bf7a09d2e378c15ff240d7e88a747aec9a4922e471dc707aed6ed948e6a24  seven-case-root-causes.json
+3d52ed4ff8022415a28cf7f7099c8fb3d5d5e1b5dedc18374e1f9f1b346c8d20  source-equivalence-review.json
+45ef942ec97cb234599ac33bf9e65c0945529a5a05cd56bf33348ee2d19e019f  precision-adjudication-readiness.json
+2249b565ec4ee6a0e4354ce3e987d47849d903646ecf6ca244a9a0297713a57b  central-remediation-plan.md
+529d47955fe8ac70d73ea0c19d949af1659915d5f332fe2c91adeb88187c1108  command-shape-friction.json

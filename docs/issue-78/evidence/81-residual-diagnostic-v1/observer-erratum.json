@@ -1,0 +1,320 @@
+{
+ "schema": "issue81-residual-observer-erratum.v1",
+ "campaign": "ISSUE81_RESIDUAL_DIAGNOSTIC_V1",
+ "supersedes_metric": "injected_fact_count and duplicate_block_in_request in 81-postmerge-fresh-native-v1/recall-case-matrix.json and fresh-native-results.json",
+ "s12_verdict": "OBSERVER_ERROR",
+ "s12_finding": {
+  "request_identity": {
+   "litellm_call_id": "608a476b-57bf-4856-ad2b-696b399a077c",
+   "trace_id": "ses_e4deff439ffewNtCMFttehz0oW",
+   "startTime": 1793988759.410755,
+   "model": "openai/chat",
+   "nmsgs": 2
+  },
+  "open_marker_count": 2,
+  "close_marker_count": 1,
+  "complete_block_pairs": 1,
+  "explanation": "The single request held exactly ONE complete [GHDEV_GRAPHITI_CONTEXT]...[/GHDEV_GRAPHITI_CONTEXT] block pair (1 fact, 1 source ref). The second [GHDEV_GRAPHITI_CONTEXT] string is a QUOTED reference inside an OpenViking memory fact (\"inject a tagged context block (e.g., [GHDEV_GRAPHITI_CONTEXT])\"), not a second injected block. The original observer used a naive open-marker substring count (b.count(marker) > 1) over the whole system message (GHDEV + OpenViking + model-info), producing a false positive.",
+  "sanitized_block": "[GHDEV_GRAPHITI_CONTEXT]\n[Graphiti memory: ...]\n- The v2-harness 0/25 failures were caused by stale-process contamination from orphan standalone opencode processes. (assistant-reported; current state not independently verified; source=opencode:ses_e518d2926ffe4iAujvBdg4SxaG:message:msg_1aea02541001WqFYEGis61N1Vr)\n[/GHDEV_GRAPHITI_CONTEXT]",
+  "within_request_duplicate_confirmed": false,
+  "production_code_reproduction_required": false,
+  "invariant": "At most one complete [GHDEV]...[/GHDEV] block pair per model request (the plugin pushes a single formatContext body). Holds for all 20 cases."
+ },
+ "distinct_fact_count_method": "Count unique Graphiti fact assertions strictly within a [GHDEV_GRAPHITI_CONTEXT]...[/GHDEV_GRAPHITI_CONTEXT] block pair, where a fact line matches \"- <text> (<metadata>)\" AND the metadata contains source=opencode:<ref>. Distinctness is by (fact text, source ref). Model-info lines (e.g. \"- Name: Qwen3.8 Chat (xhigh reasoning, bounded)\") and OpenViking memory bullets carry no source=opencode: in the parenthetical and are excluded.",
+ "recomputed_metrics_all_cases": [
+  {
+   "case_id": "S01",
+   "requests_in_slice": 20,
+   "block_bearing_requests": 19,
+   "complete_block_pairs_total": 19,
+   "max_complete_pairs_in_one_request": 1,
+   "duplicate_block_in_request_corrected": false,
+   "duplicate_block_in_request_original": false,
+   "distinct_fact_count_corrected": 1,
+   "injected_fact_count_original": 38,
+   "distinct_source_refs": [
+    "opencode:ses_e513390dcffekimm001xBGtcI0:message:msg_1aecd887c001GaCs8HD5eGI0R9"
+   ]
+  },
+  {
+   "case_id": "S02",
+   "requests_in_slice": 6,
+   "block_bearing_requests": 5,
+   "complete_block_pairs_total": 5,
+   "max_complete_pairs_in_one_request": 1,
+   "duplicate_block_in_request_corrected": false,
+   "duplicate_block_in_request_original": false,
+   "distinct_fact_count_corrected": 1,
+   "injected_fact_count_original": 10,
+   "distinct_source_refs": [
+    "opencode:ses_e513f00aaffeQSVvSV3YJ3170Z:message:msg_1aec148ed001YQXpy2B88RxtjY"
+   ]
+  },
+  {
+   "case_id": "S03",
+   "requests_in_slice": 8,
+   "block_bearing_requests": 7,
+   "complete_block_pairs_total": 7,
+   "max_complete_pairs_in_one_request": 1,
+   "duplicate_block_in_request_corrected": false,
+   "duplicate_block_in_request_original": false,
+   "distinct_fact_count_corrected": 1,
+   "injected_fact_count_original": 14,
+   "distinct_source_refs": [
+    "opencode:ses_e514f306cffe3F3Hy1nkJgjujC:message:msg_1aeb281c9001k9aQzqmnBUQ1oE"
+   ]
+  },
+  {
+   "case_id": "S04",
+   "requests_in_slice": 17,
+   "block_bearing_requests": 16,
+   "complete_block_pairs_total": 16,
+   "max_complete_pairs_in_one_request": 1,
+   "duplicate_block_in_request_corrected": false,
+   "duplicate_block_in_request_original": false,
+   "distinct_fact_count_corrected": 1,
+   "injected_fact_count_original": 32,
+   "distinct_source_refs": [
+    "opencode:ses_e51631cbfffeIAww75wYB0QLvR:message:msg_1ae9d8d9e0011vCYAm7ru8Z44E"
+   ]
+  },
+  {
+   "case_id": "S05",
+   "requests_in_slice": 7,
+   "block_bearing_requests": 6,
+   "complete_block_pairs_total": 6,
+   "max_complete_pairs_in_one_request": 1,
+   "duplicate_block_in_request_corrected": false,
+   "duplicate_block_in_request_original": false,
+   "distinct_fact_count_corrected": 1,
+   "injected_fact_count_original": 12,
+   "distinct_source_refs": [
+    "opencode:ses_e5276247fffewUAeyTeAea2tia:message:msg_1ad8c14d6001aDoSonKPyEUW9E"
+   ]
+  },
+  {
+   "case_id": "S06",
+   "requests_in_slice": 5,
+   "block_bearing_requests": 4,
+   "complete_block_pairs_total": 4,
+   "max_complete_pairs_in_one_request": 1,
+   "duplicate_block_in_request_corrected": false,
+   "duplicate_block_in_request_original": false,
+   "distinct_fact_count_corrected": 1,
+   "injected_fact_count_original": 9,
+   "distinct_source_refs": [
+    "opencode:ses_e51cb9c19ffem7rxqiNNhlbbQ1:message:msg_1ae367654001nlYZtg6lC5m03l"
+   ]
+  },
+  {
+   "case_id": "S07",
+   "requests_in_slice": 24,
+   "block_bearing_requests": 23,
+   "complete_block_pairs_total": 23,
+   "max_complete_pairs_in_one_request": 1,
+   "duplicate_block_in_request_corrected": false,
+   "duplicate_block_in_request_original": false,
+   "distinct_fact_count_corrected": 1,
+   "injected_fact_count_original": 46,
+   "distinct_source_refs": [
+    "opencode:ses_e50cc1c26ffeKCmAyMkiTNIVKE:tool:call_8e9d27d04e918e97"
+   ]
+  },
+  {
+   "case_id": "S08",
+   "requests_in_slice": 22,
+   "block_bearing_requests": 21,
+   "complete_block_pairs_total": 21,
+   "max_complete_pairs_in_one_request": 1,
+   "duplicate_block_in_request_corrected": false,
+   "duplicate_block_in_request_original": false,
+   "distinct_fact_count_corrected": 1,
+   "injected_fact_count_original": 42,
+   "distinct_source_refs": [
+    "opencode:ses_e529e87f6ffe70o8b0iVRkat83:message:msg_1ad677b39001fEWaII5bvS0d0n"
+   ]
+  },
+  {
+   "case_id": "S09",
+   "requests_in_slice": 19,
+   "block_bearing_requests": 18,
+   "complete_block_pairs_total": 18,
+   "max_complete_pairs_in_one_request": 1,
+   "duplicate_block_in_request_corrected": false,
+   "duplicate_block_in_request_original": false,
+   "distinct_fact_count_corrected": 1,
+   "injected_fact_count_original": 36,
+   "distinct_source_refs": [
+    "opencode:ses_e51cb9c19ffem7rxqiNNhlbbQ1:message:msg_1ae357b5f001zi64jgXG7LK6Ca"
+   ]
+  },
+  {
+   "case_id": "S10",
+   "requests_in_slice": 14,
+   "block_bearing_requests": 13,
+   "complete_block_pairs_total": 13,
+   "max_complete_pairs_in_one_request": 1,
+   "duplicate_block_in_request_corrected": false,
+   "duplicate_block_in_request_original": false,
+   "distinct_fact_count_corrected": 1,
+   "injected_fact_count_original": 27,
+   "distinct_source_refs": [
+    "opencode:ses_e50efdb27ffep7alMZaj9wkl3x:tool:call_0485ce2600ec5dba"
+   ]
+  },
+  {
+   "case_id": "S11",
+   "requests_in_slice": 8,
+   "block_bearing_requests": 7,
+   "complete_block_pairs_total": 7,
+   "max_complete_pairs_in_one_request": 1,
+   "duplicate_block_in_request_corrected": false,
+   "duplicate_block_in_request_original": false,
+   "distinct_fact_count_corrected": 1,
+   "injected_fact_count_original": 14,
+   "distinct_source_refs": [
+    "opencode:ses_e5153da9effexLtJUGtbne2huA:message:msg_1aeaeba84001br8HMsJ3RwNb9H"
+   ]
+  },
+  {
+   "case_id": "S12",
+   "requests_in_slice": 6,
+   "block_bearing_requests": 5,
+   "complete_block_pairs_total": 5,
+   "max_complete_pairs_in_one_request": 1,
+   "duplicate_block_in_request_corrected": false,
+   "duplicate_block_in_request_original": true,
+   "distinct_fact_count_corrected": 1,
+   "injected_fact_count_original": 10,
+   "distinct_source_refs": [
+    "opencode:ses_e518d2926ffe4iAujvBdg4SxaG:message:msg_1aea02541001WqFYEGis61N1Vr"
+   ]
+  },
+  {
+   "case_id": "S13",
+   "requests_in_slice": 19,
+   "block_bearing_requests": 18,
+   "complete_block_pairs_total": 18,
+   "max_complete_pairs_in_one_request": 1,
+   "duplicate_block_in_request_corrected": false,
+   "duplicate_block_in_request_original": false,
+   "distinct_fact_count_corrected": 1,
+   "injected_fact_count_original": 36,
+   "distinct_source_refs": [
+    "opencode:ses_e4e1ec14bffeB8M0b0Sn2XxErw:message:msg_1b1e1aaee001r673t8FEqDVzHY"
+   ]
+  },
+  {
+   "case_id": "S14",
+   "requests_in_slice": 2,
+   "block_bearing_requests": 1,
+   "complete_block_pairs_total": 1,
+   "max_complete_pairs_in_one_request": 1,
+   "duplicate_block_in_request_corrected": false,
+   "duplicate_block_in_request_original": false,
+   "distinct_fact_count_corrected": 1,
+   "injected_fact_count_original": 2,
+   "distinct_source_refs": [
+    "opencode:ses_e518d2926ffe4iAujvBdg4SxaG:message:msg_1ae72d6dc00148hViRhCkatbe6:span:9846"
+   ]
+  },
+  {
+   "case_id": "S15",
+   "requests_in_slice": 7,
+   "block_bearing_requests": 6,
+   "complete_block_pairs_total": 6,
+   "max_complete_pairs_in_one_request": 1,
+   "duplicate_block_in_request_corrected": false,
+   "duplicate_block_in_request_original": false,
+   "distinct_fact_count_corrected": 1,
+   "injected_fact_count_original": 15,
+   "distinct_source_refs": [
+    "opencode:ses_e518d2926ffe4iAujvBdg4SxaG:message:msg_1ae8280fc001I6XqE8vOZyDAdn"
+   ]
+  },
+  {
+   "case_id": "S16",
+   "requests_in_slice": 15,
+   "block_bearing_requests": 14,
+   "complete_block_pairs_total": 14,
+   "max_complete_pairs_in_one_request": 1,
+   "duplicate_block_in_request_corrected": false,
+   "duplicate_block_in_request_original": false,
+   "distinct_fact_count_corrected": 1,
+   "injected_fact_count_original": 28,
+   "distinct_source_refs": [
+    "opencode:ses_e518d2926ffe4iAujvBdg4SxaG:message:msg_1aeabaa00001iH7nwDEfUsJj3Y"
+   ]
+  },
+  {
+   "case_id": "N01",
+   "requests_in_slice": 3,
+   "block_bearing_requests": 0,
+   "complete_block_pairs_total": 0,
+   "max_complete_pairs_in_one_request": 0,
+   "duplicate_block_in_request_corrected": false,
+   "duplicate_block_in_request_original": null,
+   "distinct_fact_count_corrected": 0,
+   "injected_fact_count_original": 0,
+   "distinct_source_refs": []
+  },
+  {
+   "case_id": "N02",
+   "requests_in_slice": 6,
+   "block_bearing_requests": 5,
+   "complete_block_pairs_total": 5,
+   "max_complete_pairs_in_one_request": 1,
+   "duplicate_block_in_request_corrected": false,
+   "duplicate_block_in_request_original": null,
+   "distinct_fact_count_corrected": 1,
+   "injected_fact_count_original": 10,
+   "distinct_source_refs": [
+    "opencode:ses_e508c6d53ffeWrJEJftz60lqXB:message:msg_1af753f0d001GPlDjAoAckQ3EK"
+   ]
+  },
+  {
+   "case_id": "N03",
+   "requests_in_slice": 39,
+   "block_bearing_requests": 0,
+   "complete_block_pairs_total": 0,
+   "max_complete_pairs_in_one_request": 0,
+   "duplicate_block_in_request_corrected": false,
+   "duplicate_block_in_request_original": null,
+   "distinct_fact_count_corrected": 0,
+   "injected_fact_count_original": 0,
+   "distinct_source_refs": []
+  },
+  {
+   "case_id": "N04",
+   "requests_in_slice": 427,
+   "block_bearing_requests": 188,
+   "complete_block_pairs_total": 188,
+   "max_complete_pairs_in_one_request": 1,
+   "duplicate_block_in_request_corrected": false,
+   "duplicate_block_in_request_original": null,
+   "distinct_fact_count_corrected": 17,
+   "injected_fact_count_original": 0,
+   "distinct_source_refs": [
+    "opencode:ses_e4e1ec14bffeB8M0b0Sn2XxErw:message:msg_1b1e1aaee001r673t8FEqDVzHY",
+    "opencode:ses_e508c6d53ffeWrJEJftz60lqXB:message:msg_1af753f0d001GPlDjAoAckQ3EK",
+    "opencode:ses_e50cc1c26ffeKCmAyMkiTNIVKE:tool:call_8e9d27d04e918e97",
+    "opencode:ses_e50efdb27ffep7alMZaj9wkl3x:tool:call_0485ce2600ec5dba",
+    "opencode:ses_e513390dcffekimm001xBGtcI0:message:msg_1aecd887c001GaCs8HD5eGI0R9",
+    "opencode:ses_e513f00aaffeQSVvSV3YJ3170Z:message:msg_1aec148ed001YQXpy2B88RxtjY",
+    "opencode:ses_e514f306cffe3F3Hy1nkJgjujC:message:msg_1aeb281c9001k9aQzqmnBUQ1oE",
+    "opencode:ses_e5153da9effexLtJUGtbne2huA:message:msg_1aeaeba84001br8HMsJ3RwNb9H",
+    "opencode:ses_e51631cbfffeIAww75wYB0QLvR:message:msg_1ae9d8d9e0011vCYAm7ru8Z44E",
+    "opencode:ses_e518d2926ffe4iAujvBdg4SxaG:message:msg_1ae72d6dc00148hViRhCkatbe6:span:9846",
+    "opencode:ses_e518d2926ffe4iAujvBdg4SxaG:message:msg_1ae8280fc001I6XqE8vOZyDAdn",
+    "opencode:ses_e518d2926ffe4iAujvBdg4SxaG:message:msg_1aea02541001WqFYEGis61N1Vr",
+    "opencode:ses_e518d2926ffe4iAujvBdg4SxaG:message:msg_1aeabaa00001iH7nwDEfUsJj3Y",
+    "opencode:ses_e51cb9c19ffem7rxqiNNhlbbQ1:message:msg_1ae357b5f001zi64jgXG7LK6Ca",
+    "opencode:ses_e51cb9c19ffem7rxqiNNhlbbQ1:message:msg_1ae367654001nlYZtg6lC5m03l",
+    "opencode:ses_e5276247fffewUAeyTeAea2tia:message:msg_1ad8c14d6001aDoSonKPyEUW9E",
+    "opencode:ses_e529e87f6ffe70o8b0iVRkat83:message:msg_1ad677b39001fEWaII5bvS0d0n"
+   ]
+  }
+ ],
+ "score_impact": "The source-correct verdict axis is unchanged: corrected distinct_source_refs equal the matrix injected_source_refs for all 16 positives (N02 is a negative with 1 injected wrong-group ref). The 9/16 PASS_SOURCE_CORRECT score and 8/16 Phase-A baseline are preserved; no rescoring.",
+ "original_score_preserved": "9/16 PASS_SOURCE_CORRECT (S02,S06,S08,S09,S11,S12,S14,S15,S16); threshold 13/16; result FAIL (unchanged)"
+}
