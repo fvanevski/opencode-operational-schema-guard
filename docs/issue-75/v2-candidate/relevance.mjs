@@ -319,30 +319,41 @@ export function explainRelevanceAdmission(query,item,{hasRerankScore=false}={}) 
     direct:fact,linked:contextual,linkedFallbackBlocked,
     scoreFloor034Applied:false,sourceContextRequiredNativeSourceAuthority:true};
 }
-export async function relevanceFilter(query, candidates, ranker = null, { maxSelected = 1 } = {}) {
-  if (!Array.isArray(candidates) || !candidates.length || !Number.isInteger(maxSelected) ||
-      maxSelected < 1 || maxSelected > 4) return [];
+// Common admission/ranking path for the final one-fact selector and the
+// optional pre-merge reranker. Keep all original provenance-independent
+// guards, semantic-choice background test and 24-document reranker limit.
+async function rankedCandidates(query, candidates, ranker = null, cachedScores = null) {
+  if (!Array.isArray(candidates) || !candidates.length)
+    return { ranked: [], scoreByItem: new Map() };
   const bounded = candidates.slice(0, MAX_AUTOMATIC_CANDIDATES);
   let scores = null;
-  if (ranker) {
+  if (cachedScores instanceof Map) {
+    scores = new Map();
+    for (let i = 0; i < bounded.length; i++) {
+      if (cachedScores.has(bounded[i])) scores.set(i, cachedScores.get(bounded[i]));
+    }
+  } else if (ranker) {
     try {
       const response = await ranker(query, bounded);
       if (response instanceof Map) scores = response;
-    } catch { /* Degrade to lexical evidence only, not unfiltered top-k. */ }
+    } catch { /* Degrade to lexical evidence only, never unfiltered top-k. */ }
+  }
+  const scoreByItem = new Map();
+  for (let i = 0; i < bounded.length; i++) {
+    const score = scores?.get(i);
+    if (typeof score === 'number' && Number.isFinite(score) && score >= 0 && score <= 1)
+      scoreByItem.set(bounded[i], score);
   }
   const otherScores = bounded.map((item, i) => {
-    const score = scores?.get(i);
+    const score = scoreByItem.get(item);
     return !DIRECT_DECISION.test(item.fact) && !HISTORICAL_STATEMENT.test(item.fact) &&
-      typeof score === 'number' && Number.isFinite(score) && score >= 0 && score <= 1
-      ? score : null;
+      typeof score === 'number' ? score : null;
   }).filter(score => score !== null);
   const background = otherScores.length ? Math.max(...otherScores) : null;
   const admitted = [];
   for (let i = 0; i < bounded.length; i++) {
-    const item = bounded[i];
-    const score = scores?.get(i);
-    const validScore = typeof score === 'number' && Number.isFinite(score) &&
-      score >= 0 && score <= 1;
+    const item = bounded[i], score = scoreByItem.get(item);
+    const validScore = scoreByItem.has(item);
     const signals = linkedSourceSignals(query, item, validScore);
     if (!signals.eligible) continue;
     if (signals.choiceOnly && (background === null || !validScore || score <= 2 * background))
@@ -356,5 +367,21 @@ export async function relevanceFilter(query, candidates, ranker = null, { maxSel
     (a.rankScore !== null && b.rankScore !== null ? b.rankScore - a.rankScore : 0) ||
     b.lexical.count - a.lexical.count || b.lexical.score - a.lexical.score ||
     a.index - b.index);
-  return admitted.slice(0, maxSelected).map(x => x.item);
+  return { ranked: admitted.map(x=>x.item), scoreByItem };
+}
+/**
+ * Rerank the complete 24-fact Graphiti pool before any shared candidate
+ * merge. Returned scores are bound to the original candidate objects and
+ * reused by the final selector, so no second HTTP reranker call is needed.
+ * This does not authorize any fact that fails normal relevance admission.
+ */
+export async function rankQualifiedForMerge(query, candidates, ranker) {
+  return rankedCandidates(query,candidates,ranker);
+}
+export async function relevanceFilter(query, candidates, ranker = null,
+  { maxSelected = 1, cachedScores = null } = {}) {
+  if (!Array.isArray(candidates) || !candidates.length || !Number.isInteger(maxSelected) ||
+      maxSelected < 1 || maxSelected > 4) return [];
+  const { ranked } = await rankedCandidates(query,candidates,ranker,cachedScores);
+  return ranked.slice(0,maxSelected);
 }
