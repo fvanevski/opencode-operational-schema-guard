@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "packet": "81-integrated-recall-acceptance-v1",
+  "kind": "issue81-integrated-recall-acceptance-build-evidence",
+  "campaign": "ISSUE81_INTEGRATED_RECALL_ACCEPTANCE",
+  "repository": "fvanevski/opencode-operational-schema-guard",
+  "branch": "issue/81-recall-acceptance",
+  "tested_source_head": "52863aed0498521b181f44bbb454ce314d60fa8c",
+  "source_stage_base_commit": "ef1d62de1942061bb4441fc3606996a6faa7d327",
+  "result": "READY_FOR_POST_EXIT_OPERATOR_RUN",
+  "identities": {
+    "native_probe_sessions": [
+      "ses-issue81-probe-seq",
+      "ses-issue81-probe-lat",
+      "ses-issue81-probe-neg",
+      "ses-issue81-probe-block"
+    ],
+    "native_message_ids": {
+      "P1_real": "msg_1af17edf6001iMo2DH0NvTHVeX",
+      "P2_long_aux": "msg_1af19ca8e0013V3UOXBtlXOSK2",
+      "P3_short_aux": "msg_1af1a6210001nAj9KVvYRMfUCQ",
+      "P4_real_repeat": "msg_1af1a719e0016DASx4V6ZQlI4F",
+      "L1_real": "msg_1af1c06d70017d9ueufM5ulZ4o",
+      "L2_short": "msg_1af1c360b001oCbOuFBE3deV8o",
+      "L3_repeat": "msg_1af1c4a9b001MrYsJ727PR3UsT"
+    },
+    "injected_fact": {
+      "curation_record": "f97780f5e1f9408e3874daa0d99eb4a0445709844094e11aff6913bf5ad105b",
+      "remote_episode_uuid": "877a5de5-d3fe-4540-93f4-30d5b9182f8c",
+      "source_ref": "opencode:ses_e5161e002ffeUFAxdC5lo1zi1m:message:msg_1ae9e73a20015ET1Y2L1znvlKE"
+    },
+    "stage_h_frozen_corpus_sha256_inherited": "524de3ff36877442c6dc4e75edf5da9f317ba1c2e25e267b117233514e425863"
+  },
+  "plugin_bytes": {
+    "installed_production_pair": {
+      "issue78_wrapper": "e54884baacc44f383ae7ee24e17f8036b3fa85fee60ae11fa436dd2afc5b0758",
+      "issue75_baseline_main": "1c76f36eebb6df0477d4a1f5ae92bd2b85d0ac4fe9831f4712c73edf2af1b954"
+    },
+    "branch_pair_tested_in_probe": {
+      "issue78_wrapper": "e54884baacc44f383ae7ee24e17f8036b3fa85fee60ae11fa436dd2afc5b0758",
+      "issue75_baseline_fixed": "7550f0b681cb440f98704b3808b1093eab4dfa160021c88583a91bc13bf48680"
+    }
+  },
+  "dispositions": {
+    "cpu_validation": "PASS",
+    "native_hook_shape": "PASS",
+    "zero_secret_leakage_observed": "PASS",
+    "zero_wrong_group_observed": "PASS",
+    "zero_false_verified_observed": "PASS",
+    "graph_duplication": "none observed",
+    "context_latency_p95": "PASS (256.92 ms <= 300 ms)",
+    "candidate_recall_holdout_inherited": "PASS (1.00, frozen Stage H corpus)",
+    "semantic_recall": "UNVERIFIED_UNTIL_FRESH_CLIENT",
+    "durable_grounded_precision": "UNVERIFIED (post-exit)",
+    "post_exit_terminal_receipts": "READY_FOR_POST_EXIT_OPERATOR_RUN"
+  },
+  "files": {
+    "README.md": "38ef6dd5ded5a6e7b5ebd4f40f7699c41e986f15b520344d8ca3ced18bbfcea1",
+    "cpu-validation.md": "1449b4f86c2906e0e874d0bfd7214aa7b7c1c5a55643570c0966d31a66d8c905",
+    "ex-wake-status.md": "43d99854b13a2674069f353aa6f4eb4062e4aa9df16743f29b292ae197624458",
+    "friction-ledger.json": "b976d814192d4ade523f6bbcfd62eee0edc8f6ab3fe0e5742aac0ded49b2feca",
+    "handback.md": "19caf7c9f87269d83cc5567e8de60bf42f05543a150184316e04b6baca72a573",
+    "latency-aggregates.json": "2be1de1369e0dd14b6dba0cc7ee1d74320bafd49bf1bc9fd492b28de513f3be7",
+    "native-probe-traces.md": "378cdb8fcb65ef144843f05a9374118220b8c4a5a09e11c3a54c8a3e8296e28e",
+    "probe-traces.jsonl": "f1a78947b909063769bf74dc1efe6f7c3b79287f315097bdf15494850bc2c49c",
+    "rollback-inventory.md": "064e8f4d8ae2957ee6b48f3c0d550e5e16c1ca2cf74f42e23c1d47d1dcc61a0e",
+    "rubric-matrix.json": "2e3bd31ff9bb7d35180599c427618762e5972c4cea9af5d4a7aa5d7173e0ca37"
+  },
+  "sanitization": "No raw native transcripts, private worksheet bytes, real credentials, model private reasoning, or unredacted source text. The single invented fake secret token is redacted as <fake-secret-token>. Native session/message/episode identifiers are included as source-anchored identities.",
+  "boundaries": "One sanitized evidence-only commit on issue/81-recall-acceptance; no source remote update, no new PR, no merge, no issue closure, no production deployment, no EX-gate edit, no model replay, no Graphiti write, no sealed-holdout relabeling."
+}

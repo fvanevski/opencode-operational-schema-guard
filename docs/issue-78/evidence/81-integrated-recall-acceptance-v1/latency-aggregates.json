@@ -1,0 +1,43 @@
+{
+  "population": {
+    "description": "Per-context-build duration (ms) of the native Graphiti recall context hook in the disposable source-scoped probe, measured around the branch-staged plugin's context handler (search await + format + system push).",
+    "runs": "3 prompt turns (real question, short 'ok', repeated real question) across 3 fresh standalone OpenCode processes; 19 context builds total (17 within the first turn's tool loop).",
+    "n_builds": 19
+  },
+  "raw_durations_ms": [
+    0.02,
+    0.02,
+    0.03,
+    0.03,
+    0.03,
+    0.03,
+    0.03,
+    0.03,
+    0.03,
+    0.03,
+    0.03,
+    0.03,
+    0.03,
+    0.03,
+    0.05,
+    0.05,
+    0.21,
+    61.28,
+    256.92
+  ],
+  "aggregates_ms": {
+    "min": 0.02,
+    "p50": 0.03,
+    "p95": 256.92,
+    "p99": 256.92,
+    "max": 256.92,
+    "mean": 16.785
+  },
+  "method_notes": [
+    "Network time INCLUDED: cold-process builds perform a fresh Graphiti MCP initialize + search_memory_facts round trip (127.0.0.1:8766) inside the 300 ms race allowance.",
+    "No prewarming cache across processes: each `opencode run --standalone` is a fresh process; warm in-turn builds reuse the in-flight search promise (~0.02-0.05 ms).",
+    "p95=256.92 ms <= 300 ms guard (43.08 ms headroom). The 256.92 ms case is the cold-process worst case in this population."
+  ],
+  "guard": "context_p95_ms_max = 300 (frozen, targets.proposed.json)",
+  "verdict": "PASS (p95 <= 300 ms) on the observed disposable-host population; fresh-client re-measure required for the installed-post-merge gate."
+}

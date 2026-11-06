@@ -1,0 +1,78 @@
+{
+  "encountered": "yes",
+  "commands_match_handoff": "yes",
+  "note": "All 7 contract step-1 commands were executed with the exact requested shape at the authenticated repo root (final authoritative pass pipe-free, raw producer exit codes preserved). Other commands in this campaign were agent-chosen (probe runs, read-only service inspection).",
+  "events": [
+    {
+      "scenario": "zsh equals-prefix echo marker",
+      "requested_shape": "echo === / echo ===PATH=== (section markers in compound shell lines)",
+      "effective_shape": "zsh expands leading '=...' as a command-name lookup -> 'zsh:1: == not found' / 'no matches found' (3 occurrences across compound lines)",
+      "rewrite_provenance": "shell_or_alias",
+      "event_kind": "execution_failure",
+      "execution_effect": "executed_failed",
+      "correction_or_annotation": "marker-only failure; the preceding command in each compound line had already completed; markers rewritten without leading '=' on retry",
+      "replacement_shape": "plain text markers without leading '='",
+      "recipe_reference": "none",
+      "resource_reference": "zsh =command expansion",
+      "contract_conflict": "no",
+      "durable_gap_candidate": "no"
+    },
+    {
+      "scenario": "probe session id format",
+      "requested_shape": "opencode run --standalone --session issue81-probe-01 '<prompt>'",
+      "effective_shape": "rejected: 'Expected a string starting with \"ses\"' (exit 1)",
+      "rewrite_provenance": "none",
+      "event_kind": "interface_discovery",
+      "execution_effect": "not_executed",
+      "correction_or_annotation": "stock V2 session IDs must start with 'ses'; retried with ses-issue81-probe-01",
+      "replacement_shape": "opencode run --standalone --session ses-issue81-probe-01 '<prompt>'",
+      "recipe_reference": "none",
+      "resource_reference": "OpenCode v2.2.5 run CLI session id validation",
+      "contract_conflict": "no",
+      "durable_gap_candidate": "no"
+    },
+    {
+      "scenario": "file plugin path must be a directory",
+      "requested_shape": "plugins: [\"file:///tmp/opencode/issue81-probe/probe-plugin.mjs\"]",
+      "effective_shape": "server WARN 'configured plugin path must be a directory'; after file move: 'failed to load plugin ... ENOENT'",
+      "rewrite_provenance": "none",
+      "event_kind": "interface_discovery",
+      "execution_effect": "executed_failed",
+      "correction_or_annotation": "stock V2 file:// plugin entries must be directories carrying a package.json entry; probe restructured to probe-plugin/ (package.json + probe.mjs)",
+      "replacement_shape": "plugins: [\"file:///tmp/opencode/issue81-probe/probe-plugin\"]",
+      "recipe_reference": "none",
+      "resource_reference": "OpenCode v2.2.5 plugin loader",
+      "contract_conflict": "no",
+      "durable_gap_candidate": "no"
+    },
+    {
+      "scenario": "probe model hung on unavailable web tool",
+      "requested_shape": "probe run with default tool set",
+      "effective_shape": "model invoked Web Search (not available in the isolated config) -> 'Web search cancelled'; first 240 s run timed out",
+      "rewrite_provenance": "none",
+      "event_kind": "execution_failure",
+      "execution_effect": "recovered_after_retry",
+      "correction_or_annotation": "probe config set tool.websearch=false and tool.webfetch=false; subsequent runs completed (bounded, chat-fast, non-thinking)",
+      "replacement_shape": "probe config with websearch/webfetch disabled",
+      "recipe_reference": "none",
+      "resource_reference": "isolated probe config /tmp/opencode/issue81-probe/config/opencode.json",
+      "contract_conflict": "no",
+      "durable_gap_candidate": "no"
+    },
+    {
+      "scenario": "step-1 exact commands with display filter",
+      "requested_shape": "the 7 exact contract commands (no pipes)",
+      "effective_shape": "first pass appended '| tail -N' with zsh pipestatus capture of the producer exit; final authoritative pass ran pipe-free with raw producer exit codes to /tmp/opencode/issue81-probe/verify-logs/",
+      "rewrite_provenance": "shell_or_alias",
+      "event_kind": "harness_rewrite",
+      "execution_effect": "executed_succeeded",
+      "correction_or_annotation": "producer exit status preserved in both passes (pipestatus, then raw exit); the pipe-free pass is the record cited in cpu-validation.md",
+      "replacement_shape": "pipe-free producer with log capture",
+      "recipe_reference": "none",
+      "resource_reference": "/tmp/opencode/issue81-probe/verify-logs/exits.txt",
+      "contract_conflict": "no",
+      "durable_gap_candidate": "no"
+    }
+  ],
+  "omitted_sensitive_values": "yes"
+}

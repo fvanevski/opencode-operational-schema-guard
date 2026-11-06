@@ -1,7 +1,7 @@
 /** Stock OpenCode V2 candidate. Opt-in only; no host mutation on import. */
 import path from 'node:path';
 import os from 'node:os';
-import { GraphitiMcp, Journal, Memory, selectUserDecision, selectCompletedTest, formatContext } from './memory-core.mjs';
+import { GraphitiMcp, Journal, Memory, selectUserDecision, selectCompletedTest, formatContext, safeText } from './memory-core.mjs';
 import { localReranker } from './relevance.mjs';
 const OPEN = '[GHDEV_GRAPHITI_CONTEXT]';
 const CLOSE = '[/GHDEV_GRAPHITI_CONTEXT]';
@@ -30,6 +30,48 @@ export function promptText(value) {
     return typeof parsed === 'string' ? parsed : '';
   } catch { return ''; }
 }
+
+const MAX_RECALL_PROMPTS_PER_SESSION = 8;
+const MAX_RECALL_SESSIONS = 100;
+function nativePromptID(event) {
+  const id = event?.messageID ?? event?.messageId ?? event?.promptID ??
+    event?.promptId ?? event?.prompt?.messageID ?? event?.prompt?.messageId ??
+    event?.prompt?.id;
+  return typeof id === 'string' && id.length > 0 && id.length <= 200 ? id : null;
+}
+function nativeUserText(message) {
+  const parts = Array.isArray(message?.parts) ? message.parts :
+    Array.isArray(message?.content) ? message.content : [];
+  return safeText(parts.filter(p => p?.type === 'text' && typeof p.text === 'string')
+    .map(p => p.text).join(' '), 500);
+}
+// Associate native context with an actual user message, not whichever
+// auxiliary/title prompt happened to fire last for this session.
+function requestForContext(entries, event, legacyFallbackBlocked = false) {
+  if (!entries?.length) return null;
+  const messages = event.messages;
+  if (Array.isArray(messages) && messages.length) {
+    const currentUser = [...messages].reverse().find(m => m?.role === 'user');
+    if (!currentUser) return null;
+    const id = typeof currentUser.id === 'string' ? currentUser.id :
+      (typeof currentUser.messageID === 'string' ? currentUser.messageID : null);
+    if (id) {
+      const exact = entries.filter(e => e.nativeID === id);
+      if (exact.length) return exact[exact.length - 1];
+    }
+    // Some stock-V2 prompt hooks lack a native ID. A text-exact match
+    // against the current native user is then admissible, but a different
+    // native ID is never silently treated as the same message.
+    const text = nativeUserText(currentUser);
+    if (!text) return null;
+    const exactText = entries.filter(e => e.nativeID === null && e.text === text);
+    return exactText.length ? exactText[exactText.length - 1] : null;
+  }
+  // Legacy hook surfaces expose no native messages. Never select an
+  // arbitrary winner after multiple same-session prompts.
+  return !legacyFallbackBlocked && entries.length === 1 ? entries[0] : null;
+}
+
 function removeOwn(parts) {
   for (let i = parts.length - 1; i >= 0; i--) {
     if (parts[i]?.type === 'text' && parts[i].text?.startsWith(OPEN)) parts.splice(i, 1);
@@ -51,7 +93,21 @@ export default {
       ranker, extraSourceResolver });
     const registrations = [];
     const pending = new Map();
-    const latest = new Map();
+    const recallPrompts = new Map();
+    const legacyFallbackBlocked = new Set();
+    // Repeated native message IDs supersede earlier prompt content, including
+    // when the replacement is rejected by parsing/privacy/length fences.
+    // Preserve recall/capture belonging to other native message identities.
+    const supersedeNativePrompt = (sessionID, nativeID) => {
+      if (!nativeID) return;
+      const entries = recallPrompts.get(sessionID);
+      if (entries) {
+        const retained = entries.filter(entry => entry.nativeID !== nativeID);
+        if (retained.length) recallPrompts.set(sessionID, retained);
+        else recallPrompts.delete(sessionID);
+      }
+      if (pending.get(sessionID)?.nativeID === nativeID) pending.delete(sessionID);
+    };
     let stopped = false;
     // Only stage candidates in live hooks. A post-harness exclusive runner
     // owns Graphiti submissions and must hold the lease until terminal readback.
@@ -59,16 +115,35 @@ export default {
     try {
       await register(() => ctx.session.hook('prompt', event => {
         if (!event?.sessionID) return;
+        const nativeID = nativePromptID(event);
+        supersedeNativePrompt(event.sessionID, nativeID);
         const text = promptText(event.prompt?.text);
-        if (!text) return;
+        if (!text) {
+          legacyFallbackBlocked.add(event.sessionID);
+          return;
+        }
         // Only remember after the admitted prompt reaches a model context build.
         if (settings.capture) {
           const candidate = selectUserDecision(text);
-          if (candidate) pending.set(event.sessionID, { candidate, time: new Date().toISOString() });
+          if (candidate) pending.set(event.sessionID, { candidate, nativeID,
+            time: new Date().toISOString() });
         }
-        const request = memory.search(text).catch(() => []);
-        latest.set(event.sessionID, { text, request });
-        if (latest.size > 100) latest.delete(latest.keys().next().value);
+        // The entire normalized query is subject to the original privacy,
+        // control-character and 500-character fence. Rejected auxiliary
+        // prompts must not evict a valid, source-bound user search.
+        const bounded = safeText(text, 500);
+        if (!bounded || bounded.length < 10) {
+          legacyFallbackBlocked.add(event.sessionID);
+          return;
+        }
+        const entries = recallPrompts.get(event.sessionID) || [];
+        entries.push({ nativeID, text: bounded,
+          request: memory.search(bounded).catch(() => []) });
+        if (entries.length > MAX_RECALL_PROMPTS_PER_SESSION) entries.shift();
+        recallPrompts.delete(event.sessionID);
+        recallPrompts.set(event.sessionID, entries);
+        if (recallPrompts.size > MAX_RECALL_SESSIONS)
+          recallPrompts.delete(recallPrompts.keys().next().value);
       }));
       await register(() => ctx.tool.hook('execute.after', async event => {
         if (!settings.capture || !event?.sessionID || stopped) return;
@@ -87,7 +162,8 @@ export default {
             await memory.stage(queued.candidate, { sessionID: event.sessionID, time: queued.time });
           } catch { /* Nonessential memory cannot block agent operation. */ }
         }
-        const selected = latest.get(event.sessionID);
+        const selected = requestForContext(recallPrompts.get(event.sessionID), event,
+          legacyFallbackBlocked.has(event.sessionID));
         if (!selected) return;
         // Never wait for Graphiti beyond this context allowance.
         const items = await Promise.race([
@@ -97,7 +173,10 @@ export default {
         if (body) event.system.push({ type: 'text', text: OPEN + '\n' + body + '\n' + CLOSE });
       }));
       await register(() => ctx.session.hook('compaction', event => {
-        if (event?.sessionID) latest.delete(event.sessionID);
+        if (event?.sessionID) {
+          recallPrompts.delete(event.sessionID);
+          legacyFallbackBlocked.delete(event.sessionID);
+        }
         // Broad compaction content stays with OpenViking, not Graphiti.
       }));
     } catch (error) {
@@ -107,7 +186,7 @@ export default {
     // No startup ingestion or reconciliation while the interactive model is active.
     return async () => {
       stopped = true;
-      pending.clear(); latest.clear();
+      pending.clear(); recallPrompts.clear(); legacyFallbackBlocked.clear();
       await Promise.allSettled(registrations.map(r => r.dispose()));
     };
   },
