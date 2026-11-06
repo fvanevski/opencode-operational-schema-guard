@@ -1,0 +1,437 @@
+{
+  "schema": "issue81-recovery-matrix.v1",
+  "evidence_class": "CURRENT_SNAPSHOT_DIAGNOSTIC_NOT_NATIVE_ACCEPTANCE",
+  "campaign": "ISSUE81_RETRIEVAL_RECOVERY_FEASIBILITY_V1",
+  "implementation_head": "4060fa9403d3cb72fb4e7490a159d1564032cab5",
+  "probe_blob": "5ca8fd0980c6721eeb37787848eef388210977e2",
+  "roster_sha256": "47e141bdc81f1f2cdc2e98c7697162dbbf3250a5eb209a56361b358bc2441652",
+  "private_adapter_sha256": "33912564b88de00e5b05078eea5bd1fa7ba80885d7db25a63b5db3985997ccd1",
+  "curator_root": "/home/filip/.local/state/ghdev-graphiti",
+  "curator_records_scanned": 274,
+  "curator_sources_verified": 165,
+  "scope": {
+    "group": "development-knowledge",
+    "workspace": "/workspace/mcp_servers/gh_mcp",
+    "project": "gh_mcp"
+  },
+  "remote_persistence_note": "Local curated-index evidence is NOT independent proof of current remote Graphiti persistence; Graphiti d24/d12 search results are the remote-side evidence.",
+  "prior_immutable_results": {
+    "phase_a": "8/16",
+    "post_s06": "9/16",
+    "s06": "PASS",
+    "n02": "FAIL_INJECTED",
+    "human_precision": "UNVERIFIED"
+  },
+  "positive_cases": [
+    {
+      "case_id": "S01",
+      "expected_episode_uuid": "1409c260-92e9-474f-96be-6da4216908f7",
+      "admission": "ADMITTED",
+      "graphiti_calls": 2,
+      "original_d24": {
+        "contains_expected": true,
+        "raw_count": 24,
+        "elapsed_ms": 293.0
+      },
+      "alternate_d12": {
+        "reduced_query": "graphiti production recall falkordb port run",
+        "contains_expected": true,
+        "raw_count": 12,
+        "elapsed_ms": 83.9
+      },
+      "local_index": {
+        "in_index": true,
+        "resolver_mapped": true,
+        "source_strength": "native-id",
+        "evidence_class": "assistant-reported",
+        "eligible": true,
+        "top8_rank": 2
+      },
+      "selectors": {
+        "original": {
+          "selected_episode_uuid": "d19c4f9e-7216-499a-8057-b638b88e2fa3",
+          "expected_selected": false,
+          "count": 1
+        },
+        "union": {
+          "selected_episode_uuid": "d19c4f9e-7216-499a-8057-b638b88e2fa3",
+          "expected_selected": false,
+          "count": 1
+        },
+        "local_only": {
+          "selected_episode_uuid": "dcc0c14b-c6f8-45ee-abce-989796829af8",
+          "expected_selected": false,
+          "count": 1
+        },
+        "blended": {
+          "selected_episode_uuid": "dcc0c14b-c6f8-45ee-abce-989796829af8",
+          "expected_selected": false,
+          "count": 1
+        }
+      },
+      "classification": "SELECTOR_MISS_PRESENT_ALL_SETS"
+    },
+    {
+      "case_id": "S03",
+      "expected_episode_uuid": "082fe673-8cf9-4da1-bc43-aaa9e04f68d8",
+      "admission": "ADMITTED",
+      "graphiti_calls": 2,
+      "original_d24": {
+        "contains_expected": false,
+        "raw_count": 24,
+        "elapsed_ms": 142.8
+      },
+      "alternate_d12": {
+        "reduced_query": "graphiti mcp separate",
+        "contains_expected": false,
+        "raw_count": 12,
+        "elapsed_ms": 78.2
+      },
+      "local_index": {
+        "in_index": true,
+        "resolver_mapped": true,
+        "source_strength": "native-id",
+        "evidence_class": "assistant-reported",
+        "eligible": false,
+        "top8_rank": null
+      },
+      "selectors": {
+        "original": {
+          "selected_episode_uuid": "e1244d4f-aee5-4bbe-a4f9-ac0f8516fd68",
+          "expected_selected": false,
+          "count": 1
+        },
+        "union": {
+          "selected_episode_uuid": "e1244d4f-aee5-4bbe-a4f9-ac0f8516fd68",
+          "expected_selected": false,
+          "count": 1
+        },
+        "local_only": {
+          "selected_episode_uuid": "ea8cedd4-bece-498c-a903-710b20d7e6be",
+          "expected_selected": false,
+          "count": 1
+        },
+        "blended": {
+          "selected_episode_uuid": "ea8cedd4-bece-498c-a903-710b20d7e6be",
+          "expected_selected": false,
+          "count": 1
+        }
+      },
+      "classification": "INDEX_PRESENT_LEXICAL_GATE_MISS"
+    },
+    {
+      "case_id": "S04",
+      "expected_episode_uuid": "c48cd614-4f98-49f7-90d0-5b6a418368fc",
+      "admission": "ADMITTED",
+      "graphiti_calls": 2,
+      "original_d24": {
+        "contains_expected": true,
+        "raw_count": 24,
+        "elapsed_ms": 144.1
+      },
+      "alternate_d12": {
+        "reduced_query": "production physically live development-knowledge graph mcp config points graphiti_live",
+        "contains_expected": true,
+        "raw_count": 12,
+        "elapsed_ms": 80.7
+      },
+      "local_index": {
+        "in_index": true,
+        "resolver_mapped": true,
+        "source_strength": "native-id",
+        "evidence_class": "assistant-reported",
+        "eligible": true,
+        "top8_rank": 5
+      },
+      "selectors": {
+        "original": {
+          "selected_episode_uuid": "07f247f9-f4d4-47f7-bf5f-6a748b60758b",
+          "expected_selected": false,
+          "count": 1
+        },
+        "union": {
+          "selected_episode_uuid": "07f247f9-f4d4-47f7-bf5f-6a748b60758b",
+          "expected_selected": false,
+          "count": 1
+        },
+        "local_only": {
+          "selected_episode_uuid": "07f247f9-f4d4-47f7-bf5f-6a748b60758b",
+          "expected_selected": false,
+          "count": 1
+        },
+        "blended": {
+          "selected_episode_uuid": "07f247f9-f4d4-47f7-bf5f-6a748b60758b",
+          "expected_selected": false,
+          "count": 1
+        }
+      },
+      "classification": "SELECTOR_MISS_PROPOSITION_EQUIV_SIBLING"
+    },
+    {
+      "case_id": "S05",
+      "expected_episode_uuid": "1a20d974-b5a7-4367-8da5-8c9d7dbb06c5",
+      "admission": "ADMITTED",
+      "graphiti_calls": 2,
+      "original_d24": {
+        "contains_expected": false,
+        "raw_count": 24,
+        "elapsed_ms": 147.2
+      },
+      "alternate_d12": {
+        "reduced_query": "falkordb graph layout holds nodes",
+        "contains_expected": false,
+        "raw_count": 12,
+        "elapsed_ms": 88.7
+      },
+      "local_index": {
+        "in_index": true,
+        "resolver_mapped": true,
+        "source_strength": "native-id",
+        "evidence_class": "assistant-reported",
+        "eligible": false,
+        "top8_rank": null
+      },
+      "selectors": {
+        "original": {
+          "selected_episode_uuid": "c48cd614-4f98-49f7-90d0-5b6a418368fc",
+          "expected_selected": false,
+          "count": 1
+        },
+        "union": {
+          "selected_episode_uuid": "c48cd614-4f98-49f7-90d0-5b6a418368fc",
+          "expected_selected": false,
+          "count": 1
+        },
+        "local_only": {
+          "selected_episode_uuid": "c48cd614-4f98-49f7-90d0-5b6a418368fc",
+          "expected_selected": false,
+          "count": 1
+        },
+        "blended": {
+          "selected_episode_uuid": "c48cd614-4f98-49f7-90d0-5b6a418368fc",
+          "expected_selected": false,
+          "count": 1
+        }
+      },
+      "classification": "INDEX_PRESENT_LEXICAL_GATE_MISS"
+    },
+    {
+      "case_id": "S07",
+      "expected_episode_uuid": "7dcfa76f-8fa5-436a-bdd5-ad340a62f27d",
+      "admission": "ADMITTED",
+      "graphiti_calls": 2,
+      "original_d24": {
+        "contains_expected": false,
+        "raw_count": 24,
+        "elapsed_ms": 150.7
+      },
+      "alternate_d12": {
+        "reduced_query": "canonical post-exit drain fail closed interactive harness active",
+        "contains_expected": false,
+        "raw_count": 12,
+        "elapsed_ms": 92.5
+      },
+      "local_index": {
+        "in_index": true,
+        "resolver_mapped": true,
+        "source_strength": "native-id",
+        "evidence_class": "user-stated",
+        "eligible": true,
+        "top8_rank": 1
+      },
+      "selectors": {
+        "original": {
+          "selected_episode_uuid": "e147822f-d6ea-439a-967b-ad6eb78ae428",
+          "expected_selected": false,
+          "count": 1
+        },
+        "union": {
+          "selected_episode_uuid": "e147822f-d6ea-439a-967b-ad6eb78ae428",
+          "expected_selected": false,
+          "count": 1
+        },
+        "local_only": {
+          "selected_episode_uuid": "7dcfa76f-8fa5-436a-bdd5-ad340a62f27d",
+          "expected_selected": true,
+          "count": 1
+        },
+        "blended": {
+          "selected_episode_uuid": "7dcfa76f-8fa5-436a-bdd5-ad340a62f27d",
+          "expected_selected": true,
+          "count": 1
+        }
+      },
+      "classification": "INDEX_EXACT_RECOVERED"
+    },
+    {
+      "case_id": "S10",
+      "expected_episode_uuid": "0de3cdc8-07ff-46a5-a0bc-ed7f9bc5e47b",
+      "admission": "ADMITTED",
+      "graphiti_calls": 2,
+      "original_d24": {
+        "contains_expected": false,
+        "raw_count": 24,
+        "elapsed_ms": 140.6
+      },
+      "alternate_d12": {
+        "reduced_query": "commit 52863ae change graphiti test suite",
+        "contains_expected": false,
+        "raw_count": 12,
+        "elapsed_ms": 86.7
+      },
+      "local_index": {
+        "in_index": true,
+        "resolver_mapped": true,
+        "source_strength": "native-id",
+        "evidence_class": "tool-reported",
+        "eligible": true,
+        "top8_rank": 2
+      },
+      "selectors": {
+        "original": {
+          "selected_episode_uuid": "c059ab8f-0b24-4fc6-b0cd-730178acb247",
+          "expected_selected": false,
+          "count": 1
+        },
+        "union": {
+          "selected_episode_uuid": "c059ab8f-0b24-4fc6-b0cd-730178acb247",
+          "expected_selected": false,
+          "count": 1
+        },
+        "local_only": {
+          "selected_episode_uuid": "88a49ad0-3378-4c14-bbad-726472a030f5",
+          "expected_selected": false,
+          "count": 1
+        },
+        "blended": {
+          "selected_episode_uuid": "c059ab8f-0b24-4fc6-b0cd-730178acb247",
+          "expected_selected": false,
+          "count": 1
+        }
+      },
+      "classification": "INDEX_PRESENT_TIEBREAK_MISS"
+    },
+    {
+      "case_id": "S13",
+      "expected_episode_uuid": "009974d2-f051-45fd-ac0c-f259dcfdd1a8",
+      "admission": "ADMITTED",
+      "graphiti_calls": 2,
+      "original_d24": {
+        "contains_expected": false,
+        "raw_count": 24,
+        "elapsed_ms": 147.0
+      },
+      "alternate_d12": {
+        "reduced_query": "installed graphiti plugin architecture",
+        "contains_expected": false,
+        "raw_count": 12,
+        "elapsed_ms": 75.2
+      },
+      "local_index": {
+        "in_index": true,
+        "resolver_mapped": true,
+        "source_strength": "native-id",
+        "evidence_class": "assistant-reported",
+        "eligible": false,
+        "top8_rank": null
+      },
+      "selectors": {
+        "original": {
+          "selected_episode_uuid": "00c83bb0-eb79-48bc-90b2-be30121c4905",
+          "expected_selected": false,
+          "count": 1
+        },
+        "union": {
+          "selected_episode_uuid": "00c83bb0-eb79-48bc-90b2-be30121c4905",
+          "expected_selected": false,
+          "count": 1
+        },
+        "local_only": {
+          "selected_episode_uuid": "3408d3d7-5de7-4673-a3b4-3f1c51e29f57",
+          "expected_selected": false,
+          "count": 1
+        },
+        "blended": {
+          "selected_episode_uuid": "00c83bb0-eb79-48bc-90b2-be30121c4905",
+          "expected_selected": false,
+          "count": 1
+        }
+      },
+      "classification": "INDEX_PRESENT_LEXICAL_GATE_MISS"
+    }
+  ],
+  "negative_cases": [
+    {
+      "case_id": "N01",
+      "admission": "ADMITTED",
+      "graphiti_calls": 2,
+      "selections": {
+        "original": 0,
+        "union": 0,
+        "local_only": 0,
+        "blended": 0
+      },
+      "selected_episode_uuid": null,
+      "classification": "NO_INJECTION",
+      "policy": "unrelated; zero selections in all four selectors"
+    },
+    {
+      "case_id": "N02",
+      "admission": "ADMITTED",
+      "graphiti_calls": 2,
+      "selections": {
+        "original": 1,
+        "union": 1,
+        "local_only": 1,
+        "blended": 1
+      },
+      "selected_episode_uuid": "e1d8e764-26fa-45ea-9483-8e64a71e3de7",
+      "classification": "FAIL_INJECTED_PRESERVED",
+      "policy": "frozen FAIL_INJECTED verdict preserved; same-group (development-knowledge) content-policy miss, original score unchanged"
+    },
+    {
+      "case_id": "N03",
+      "admission": "NATIVE_SAFE_TEXT_REJECTED",
+      "graphiti_calls": 0,
+      "selections": {
+        "original": 0,
+        "union": 0,
+        "local_only": 0,
+        "blended": 0
+      },
+      "selected_episode_uuid": null,
+      "classification": "NATIVE_SAFE_TEXT_REJECTED",
+      "policy": "private markers (api_key=/sk-) fence; zero Graphiti calls, zero local selections"
+    },
+    {
+      "case_id": "N04",
+      "admission": "NATIVE_SAFE_TEXT_REJECTED",
+      "graphiti_calls": 0,
+      "selections": {
+        "original": 0,
+        "union": 0,
+        "local_only": 0,
+        "blended": 0
+      },
+      "selected_episode_uuid": null,
+      "classification": "NATIVE_SAFE_TEXT_REJECTED",
+      "policy": "length<10 admission fence; zero Graphiti calls, zero local selections"
+    }
+  ],
+  "totals": {
+    "graphiti_requests": 18,
+    "alternate_recovered_of_missing_5": 0,
+    "index_exact_recovered": 1,
+    "index_exact_recovered_cases": [
+      "S07"
+    ],
+    "union_exact_source_count": 0,
+    "blended_exact_source_count": 1,
+    "blended_exact_source_cases": [
+      "S07"
+    ],
+    "false_admissions_negatives": 0,
+    "group_violations": 0,
+    "private_leaks_negatives": 0
+  }
+}

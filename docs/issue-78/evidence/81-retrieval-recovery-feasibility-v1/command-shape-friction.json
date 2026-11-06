@@ -1,0 +1,36 @@
+{
+  "schema": "issue81-command-shape-friction.v1",
+  "friction_encountered": true,
+  "commands_match_handoff": true,
+  "note": "The Phase 3 probe execution command matched the handoff shape exactly (node probe --input --root --group --workspace --project --endpoint). Events below are agent-authored discovery/syntax recoveries, not handoff divergences.",
+  "events": [
+    {
+      "id": "F1",
+      "type": "interface_discovery",
+      "effect": "pre_execution_rejection",
+      "attribution": "agent_command",
+      "detail": "A host-wide `grep -rl` for the roster SHA256 across /workspace timed out at 90 s; scope was narrowed to the known private campaign directories, where the roster file and its SHA check were found and authenticated.",
+      "outcome": "recovered"
+    },
+    {
+      "id": "F2",
+      "type": "interface_discovery",
+      "effect": "guard_annotation",
+      "attribution": "agent_command",
+      "detail": "Probe import resolution: `../../issue-75/v2-candidate/memory-core.mjs` and `relevance.mjs` resolve to the sibling issue-75 directory (not issue-78); an initial directory listing under issue-78 suggested missing modules. Verified by path resolution + node --check + co-staged test (2/2 pass); no code changed.",
+      "outcome": "recovered"
+    },
+    {
+      "id": "F3",
+      "type": "interface_discovery",
+      "effect": "pre_execution_rejection",
+      "attribution": "agent_command",
+      "detail": "Two private scratch diagnostic scripts had local defects (relative import paths from the scratch directory; readFileSync imported from node:fs/promises). Both were fixed in the private scratch only; no production or staged source write.",
+      "outcome": "recovered"
+    }
+  ],
+  "guard_rejections": 0,
+  "harness_rewrites": 0,
+  "probe_rc": 0,
+  "probe_runs": 1
+}

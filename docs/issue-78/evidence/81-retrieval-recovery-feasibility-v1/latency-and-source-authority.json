@@ -1,0 +1,51 @@
+{
+  "schema": "issue81-latency-and-source-authority.v1",
+  "evidence_class": "CURRENT_SNAPSHOT_DIAGNOSTIC_NOT_NATIVE_ACCEPTANCE",
+  "quantile_definition": "nearest-rank: value at ceil(p/100*n)-th position of the sorted sample (1-based)",
+  "graphiti_d24": {
+    "n": 9,
+    "p50_ms": 144.4,
+    "p95_ms": 293.0,
+    "min_ms": 140.6,
+    "max_ms": 293.0,
+    "note": "first call includes MCP session initialize; subsequent calls 140.6-150.7 ms"
+  },
+  "graphiti_d12": {
+    "n": 9,
+    "p50_ms": 83.9,
+    "p95_ms": 92.5,
+    "min_ms": 75.2,
+    "max_ms": 92.5
+  },
+  "curated_index_scan": {
+    "n": 1,
+    "ms": 51.2,
+    "bound": "list limit 500, records 274, episode anchors 165<=288"
+  },
+  "context_hook": {
+    "p50": "UNVERIFIED",
+    "p95": "UNVERIFIED",
+    "reason": "no native hook start/end data available to this probe; the <=300 ms strict requirement remains unverified"
+  },
+  "source_authority": {
+    "missing_5_expected_episodes_in_episode_index": 5,
+    "resolver_verified_native_id": 7,
+    "resolver_verified_cases": [
+      "S01",
+      "S03",
+      "S04",
+      "S05",
+      "S07",
+      "S10",
+      "S13"
+    ],
+    "remote_graphiti_absent_both_depths": [
+      "S03",
+      "S05",
+      "S07",
+      "S10",
+      "S13"
+    ],
+    "verdict": "All five missing expected episodes are persisted, in-scope, resolver-verified (native-id source strength) in the local curated source index; Graphiti search_memory_facts surfaces none of them at depth 12 or 24. The gap is Graphiti fact-search ranking/coverage plus the lexical eligibility gate, not curation-store coverage. Local index evidence is not independent proof of remote persistence. Source-index injection remains a Central product-level decision; the probe does not by itself establish source strength, live scope, temporal validity and latency jointly."
+  }
+}
