@@ -1,0 +1,80 @@
+{
+ "schema": "issue81-command-shape-friction.v1",
+ "campaign": "ISSUE81_POSTMERGE_FRESH_NATIVE_ACCEPTANCE_V1",
+ "encountered": true,
+ "commands_match_handoff": true,
+ "note": "All acceptance-bearing commands matched the handoff shape: roster launches used the literal accepted form `<shim> run --standalone --agent build --format json \"<EXACT FROZEN QUESTION>\"` (no --session/--continue/--attach), admission probes were read-only sqlite predicates, harvest/snapshot/manifest commands were agent-authored scripts with producer exit statuses preserved. Events below are agent-authored shell-shape issues in non-acceptance probes only; all recovered with no state change.",
+ "events": [
+  {
+   "scenario": "runner progress probe (continuation log + run-log tail)",
+   "requested_shape": "tail -n 20 <shell.out>; echo ---; tail -n 25 raw/run-log.tsv",
+   "effective_shape": "shell.out empty at that moment (runner redirects its own stdout/stderr to raw/runner-continuation.log); run-log tail printed S01/S02 rows; overall exit 0",
+   "rewrite_provenance": "agent-authored probe shape; transparent harness redirection of the background runner's output",
+   "event_kind": "interface_discovery",
+   "execution_effect": "informational only; switched progress monitoring to raw/runner-continuation.log",
+   "correction_or_annotation": "subsequent probes read raw/runner-continuation.log directly",
+   "replacement_shape": "tail -n N raw/runner-continuation.log",
+   "recipe_reference": null,
+   "resource_reference": "raw/runner-continuation.log",
+   "contract_conflict": "no",
+   "durable_gap_candidate": "no"
+  },
+  {
+   "scenario": "campaign-root listing probe",
+   "requested_shape": "ls -la *.json *.md",
+   "effective_shape": "zsh aborted with 'no matches found: *.md' (glob failure aborts the whole command), exit 1",
+   "rewrite_provenance": "agent-authored shell shape (zsh glob abort on zero-match pattern)",
+   "event_kind": "interface_discovery",
+   "execution_effect": "no state change; listing redone without the empty pattern",
+   "correction_or_annotation": "re-ran as plain `ls -la`",
+   "replacement_shape": "ls -la",
+   "recipe_reference": null,
+   "resource_reference": null,
+   "contract_conflict": "no",
+   "durable_gap_candidate": "no"
+  },
+  {
+   "scenario": "multi-part probe with unquoted === delimiter",
+   "requested_shape": "... ; echo ===; ...",
+   "effective_shape": "zsh treated bare === as =-expansion: 'zsh:1: == not found', exit 1; preceding parts executed",
+   "rewrite_provenance": "agent-authored shell shape (zsh =-expansion of bare ===)",
+   "event_kind": "interface_discovery",
+   "execution_effect": "partial output only; no state change",
+   "correction_or_annotation": "re-ran missing parts with quoted delimiters",
+   "replacement_shape": "... ; echo '---'; ...",
+   "recipe_reference": null,
+   "resource_reference": null,
+   "contract_conflict": "no",
+   "durable_gap_candidate": "no"
+  },
+  {
+   "scenario": "independent spot-check of S13 via analyze-case.py",
+   "requested_shape": "python3 runner/analyze-case.py S13 | python3 -c 'json.load(...)'",
+   "effective_shape": "analyze-case.py takes 3 args (<cid> <question-file> <out.json>) and writes the JSON to the out path; piping its (empty) stdout to a JSON reader failed with JSONDecodeError, exit 1",
+   "rewrite_provenance": "agent-authored invocation shape (assumed 1-arg + stdout output; actual interface is 3-arg + file output)",
+   "event_kind": "interface_discovery",
+   "execution_effect": "one failed invocation; no state change",
+   "correction_or_annotation": "re-ran as `python3 runner/analyze-case.py S13 raw/q-S13.txt case-analyses/S13.json` and read the written file; cross-verification then passed",
+   "replacement_shape": "python3 runner/analyze-case.py S13 raw/q-S13.txt case-analyses/S13.json",
+   "recipe_reference": null,
+   "resource_reference": "runner/analyze-case.py",
+   "contract_conflict": "no",
+   "durable_gap_candidate": "no"
+  },
+  {
+   "scenario": "packet builder first pass (execution-identities native_sessions)",
+   "requested_shape": "derive native_sessions from fresh-native-results.json entries' `session` field",
+   "effective_shape": "results schema uses `native_session`; first pass produced unique_session_count=0 (silently empty mapping)",
+   "rewrite_provenance": "agent-authored builder bug (wrong key name)",
+   "event_kind": "interface_discovery",
+   "execution_effect": "first-pass execution-identities.json had an empty native_sessions map; caught by the builder's own summary line before publication; no published artifact affected",
+   "correction_or_annotation": "fixed the key to `native_session` and re-ran the builder; verified unique_session_count=20",
+   "replacement_shape": "r.get(\"native_session\")",
+   "recipe_reference": null,
+   "resource_reference": "runner/build-packet.py",
+   "contract_conflict": "no",
+   "durable_gap_candidate": "no"
+  }
+ ],
+ "rtk_note": "the harness may prefix some shell invocations with an rtk wrapper; no acceptance-bearing command's shape or producer exit was altered by it. No guard rejections occurred during this campaign."
+}

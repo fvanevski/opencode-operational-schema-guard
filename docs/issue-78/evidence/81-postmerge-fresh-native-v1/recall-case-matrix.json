@@ -1,0 +1,650 @@
+{
+ "schema": "issue81-pmnv1-recall-case-matrix.v1",
+ "campaign": "ISSUE81_POSTMERGE_FRESH_NATIVE_ACCEPTANCE_V1",
+ "generated_at_utc": "2026-11-06T18:20:13.984648+00:00",
+ "scoring_method": "frozen Phase A method preserved: PASS iff GHDEV block present AND expected base source ref among injected refs; answer term coverage as supporting signal (floor 0.5); extended verdict labels per contract item 12. Label assignment: PROCESS_OR_OBSERVER_FAILURE (rc!=0 / no session / no attributable requests), MISS_NO_CONTEXT (no block in window), WRONG_SOURCE (block present, expected base ref absent from injected refs), WRONG_PROPOSITION (expected source injected, answer term coverage < 0.5), PASS_SOURCE_CORRECT (all axes satisfied). UNSUPPORTED_CLAIM is reserved for answers that are term-covered on the expected source yet assert a proposition contradicting the injected facts; it is not produced by the mechanical pass and would require a manual contradiction finding per case. Negatives: PASS_NO_INJECTION / FAIL_INJECTED (N02 keeps its historical label).",
+ "score": "9/16",
+ "threshold": "13/16",
+ "result": "FAIL",
+ "phase_a_baseline": "8/16 PASS, N02 FAIL_INJECTED (frozen semantic-recall-results.json)",
+ "positives": [
+  {
+   "case_id": "S01",
+   "category": "direct",
+   "native_session": "ses_e4dfe92dbffejvImwAVwpQu1L4",
+   "process": {
+    "shim_pid": "2148869",
+    "pid": "2148871",
+    "start": "Fri Nov 6 09:56:39 2026",
+    "t0": 1793987799.9827094,
+    "t1": 1793987889.5506842,
+    "rc": 0
+   },
+   "verdict": "WRONG_SOURCE",
+   "ghdev_block_present": true,
+   "injected_fact_count": 38,
+   "injected_source_refs": [
+    "opencode:ses_e513390dcffekimm001xBGtcI0:message:msg_1aecd887c001GaCs8HD5eGI0R9"
+   ],
+   "expected_source_ref": "opencode:ses_e5158f35cffeu6tZOnjp1XwQko:message:msg_1aea7648a001V2JzUtwYv5kkjY",
+   "expected_episode_uuid": "1409c260-92e9-474f-96be-6da4216908f7",
+   "source_correct": false,
+   "answer_match_ratio": 1.0,
+   "model_requests_in_window": 20,
+   "attribution": {
+    "axis": "trace_id==native_session",
+    "trace_matched": 20,
+    "question_matched": 20,
+    "clean": true
+   },
+   "openviking_coexists": true,
+   "duplicate_block_in_request": false,
+   "tool_uses": 23,
+   "first_block_request_t": 1793987801.379516
+  },
+  {
+   "case_id": "S02",
+   "category": "direct",
+   "native_session": "ses_e4dfc7c33ffeRlUTx2slWH3sSo",
+   "process": {
+    "shim_pid": "2163901",
+    "pid": "2163903",
+    "start": "Fri Nov 6 09:58:56 2026",
+    "t0": 1793987936.8657262,
+    "t1": 1793988000.925788,
+    "rc": 0
+   },
+   "verdict": "PASS_SOURCE_CORRECT",
+   "ghdev_block_present": true,
+   "injected_fact_count": 10,
+   "injected_source_refs": [
+    "opencode:ses_e513f00aaffeQSVvSV3YJ3170Z:message:msg_1aec148ed001YQXpy2B88RxtjY"
+   ],
+   "expected_source_ref": "opencode:ses_e513f00aaffeQSVvSV3YJ3170Z:message:msg_1aec148ed001YQXpy2B88RxtjY",
+   "expected_episode_uuid": "49d891de-1298-4799-89ac-967f37036c85",
+   "source_correct": true,
+   "answer_match_ratio": 1.0,
+   "model_requests_in_window": 6,
+   "attribution": {
+    "axis": "trace_id==native_session",
+    "trace_matched": 6,
+    "question_matched": 6,
+    "clean": true
+   },
+   "openviking_coexists": true,
+   "duplicate_block_in_request": false,
+   "tool_uses": 4,
+   "first_block_request_t": 1793987938.187602
+  },
+  {
+   "case_id": "S03",
+   "category": "paraphrased",
+   "native_session": "ses_e4dfb81f3ffe57rsmJVVDq2ctH",
+   "process": {
+    "shim_pid": "2170588",
+    "pid": "2170592",
+    "start": "Fri Nov 6 10:00:00 2026",
+    "t0": 1793988000.955222,
+    "t1": 1793988144.2088902,
+    "rc": 0
+   },
+   "verdict": "WRONG_SOURCE",
+   "ghdev_block_present": true,
+   "injected_fact_count": 14,
+   "injected_source_refs": [
+    "opencode:ses_e514f306cffe3F3Hy1nkJgjujC:message:msg_1aeb281c9001k9aQzqmnBUQ1oE"
+   ],
+   "expected_source_ref": "opencode:ses_e516e7ab7ffehIYi0ezLjIffWR:message:msg_1ae94561b001W2ocylmntpmpJV",
+   "expected_episode_uuid": "082fe673-8cf9-4da1-bc43-aaa9e04f68d8",
+   "source_correct": false,
+   "answer_match_ratio": 0.786,
+   "model_requests_in_window": 8,
+   "attribution": {
+    "axis": "trace_id==native_session",
+    "trace_matched": 8,
+    "question_matched": 8,
+    "clean": true
+   },
+   "openviking_coexists": true,
+   "duplicate_block_in_request": false,
+   "tool_uses": 11,
+   "first_block_request_t": 1793988002.220208
+  },
+  {
+   "case_id": "S04",
+   "category": "implicit_relationship",
+   "native_session": "ses_e4df9520dffejIU5LIPS0k16rZ",
+   "process": {
+    "shim_pid": "2185576",
+    "pid": "2185578",
+    "start": "Fri Nov 6 10:02:24 2026",
+    "t0": 1793988144.23979,
+    "t1": 1793988266.6803493,
+    "rc": 0
+   },
+   "verdict": "WRONG_SOURCE",
+   "ghdev_block_present": true,
+   "injected_fact_count": 32,
+   "injected_source_refs": [
+    "opencode:ses_e51631cbfffeIAww75wYB0QLvR:message:msg_1ae9d8d9e0011vCYAm7ru8Z44E"
+   ],
+   "expected_source_ref": "opencode:ses_e5276247fffewUAeyTeAea2tia:message:msg_1ad8c14d6001aDoSonKPyEUW9E",
+   "expected_episode_uuid": "c48cd614-4f98-49f7-90d0-5b6a418368fc",
+   "source_correct": false,
+   "answer_match_ratio": 0.7,
+   "model_requests_in_window": 17,
+   "attribution": {
+    "axis": "trace_id==native_session",
+    "trace_matched": 17,
+    "question_matched": 17,
+    "clean": true
+   },
+   "openviking_coexists": true,
+   "duplicate_block_in_request": false,
+   "tool_uses": 28,
+   "first_block_request_t": 1793988145.573632
+  },
+  {
+   "case_id": "S05",
+   "category": "multi_event",
+   "native_session": "ses_e4df77391ffeUTHrUoanPEkSo0",
+   "process": {
+    "shim_pid": "2198755",
+    "pid": "2198758",
+    "start": "Fri Nov 6 10:04:26 2026",
+    "t0": 1793988266.7164352,
+    "t1": 1793988315.300974,
+    "rc": 0
+   },
+   "verdict": "WRONG_SOURCE",
+   "ghdev_block_present": true,
+   "injected_fact_count": 12,
+   "injected_source_refs": [
+    "opencode:ses_e5276247fffewUAeyTeAea2tia:message:msg_1ad8c14d6001aDoSonKPyEUW9E"
+   ],
+   "expected_source_ref": "opencode:ses_e51508dcfffe9svEPYbBvkQzfn:message:msg_1aeafef5e001tFSncgFcjcwsi6",
+   "expected_episode_uuid": "1a20d974-b5a7-4367-8da5-8c9d7dbb06c5",
+   "source_correct": false,
+   "answer_match_ratio": 1.0,
+   "model_requests_in_window": 7,
+   "attribution": {
+    "axis": "trace_id==native_session",
+    "trace_matched": 7,
+    "question_matched": 7,
+    "clean": true
+   },
+   "openviking_coexists": true,
+   "duplicate_block_in_request": false,
+   "tool_uses": 5,
+   "first_block_request_t": 1793988268.121193
+  },
+  {
+   "case_id": "S06",
+   "category": "historical_superseded",
+   "native_session": "ses_e4df6b5e2ffeTYu6Pah3ZXuXZQ",
+   "process": {
+    "shim_pid": "2203912",
+    "pid": "2203914",
+    "start": "Fri Nov 6 10:05:15 2026",
+    "t0": 1793988315.3320968,
+    "t1": 1793988350.4255955,
+    "rc": 0
+   },
+   "verdict": "PASS_SOURCE_CORRECT",
+   "ghdev_block_present": true,
+   "injected_fact_count": 9,
+   "injected_source_refs": [
+    "opencode:ses_e51cb9c19ffem7rxqiNNhlbbQ1:message:msg_1ae367654001nlYZtg6lC5m03l"
+   ],
+   "expected_source_ref": "opencode:ses_e51cb9c19ffem7rxqiNNhlbbQ1:message:msg_1ae367654001nlYZtg6lC5m03l",
+   "expected_episode_uuid": "6e7956be-498c-47cf-af4d-07220ee8507e",
+   "source_correct": true,
+   "answer_match_ratio": 0.846,
+   "model_requests_in_window": 5,
+   "attribution": {
+    "axis": "trace_id==native_session",
+    "trace_matched": 5,
+    "question_matched": 5,
+    "clean": true
+   },
+   "openviking_coexists": true,
+   "duplicate_block_in_request": false,
+   "tool_uses": 3,
+   "first_block_request_t": 1793988316.527317
+  },
+  {
+   "case_id": "S07",
+   "category": "direct",
+   "native_session": "ses_e4df62ca9ffeTJnF2hBchdq7mZ",
+   "process": {
+    "shim_pid": "2207354",
+    "pid": "2207356",
+    "start": "Fri Nov 6 10:05:50 2026",
+    "t0": 1793988350.4571075,
+    "t1": 1793988505.5310943,
+    "rc": 0
+   },
+   "verdict": "WRONG_SOURCE",
+   "ghdev_block_present": true,
+   "injected_fact_count": 46,
+   "injected_source_refs": [
+    "opencode:ses_e50cc1c26ffeKCmAyMkiTNIVKE:tool:call_8e9d27d04e918e97"
+   ],
+   "expected_source_ref": "opencode:ses_e5276247fffewUAeyTeAea2tia:message:msg_1ad89db84001rJAb8M2vcBA9IP:span:0",
+   "expected_episode_uuid": "7dcfa76f-8fa5-436a-bdd5-ad340a62f27d",
+   "source_correct": false,
+   "answer_match_ratio": 0.9,
+   "model_requests_in_window": 24,
+   "attribution": {
+    "axis": "trace_id==native_session",
+    "trace_matched": 24,
+    "question_matched": 24,
+    "clean": true
+   },
+   "openviking_coexists": true,
+   "duplicate_block_in_request": false,
+   "tool_uses": 27,
+   "first_block_request_t": 1793988351.69824
+  },
+  {
+   "case_id": "S08",
+   "category": "paraphrased",
+   "native_session": "ses_e4df3ceccffeMUmVpFdOSH7BOu",
+   "process": {
+    "shim_pid": "2223140",
+    "pid": "2223142",
+    "start": "Fri Nov 6 10:08:25 2026",
+    "t0": 1793988505.5605772,
+    "t1": 1793988572.5499997,
+    "rc": 0
+   },
+   "verdict": "PASS_SOURCE_CORRECT",
+   "ghdev_block_present": true,
+   "injected_fact_count": 42,
+   "injected_source_refs": [
+    "opencode:ses_e529e87f6ffe70o8b0iVRkat83:message:msg_1ad677b39001fEWaII5bvS0d0n"
+   ],
+   "expected_source_ref": "opencode:ses_e529e87f6ffe70o8b0iVRkat83:message:msg_1ad677b39001fEWaII5bvS0d0n",
+   "expected_episode_uuid": "90f8048e-1fb9-40fb-928a-9c0326e0d4e5",
+   "source_correct": true,
+   "answer_match_ratio": 1.0,
+   "model_requests_in_window": 22,
+   "attribution": {
+    "axis": "trace_id==native_session",
+    "trace_matched": 22,
+    "question_matched": 22,
+    "clean": true
+   },
+   "openviking_coexists": true,
+   "duplicate_block_in_request": false,
+   "tool_uses": 24,
+   "first_block_request_t": 1793988506.778805
+  },
+  {
+   "case_id": "S09",
+   "category": "direct",
+   "native_session": "ses_e4df2c8d4ffe4gDUe2CPPFMaGo",
+   "process": {
+    "shim_pid": "2230358",
+    "pid": "2230363",
+    "start": "Fri Nov 6 10:09:32 2026",
+    "t0": 1793988572.585605,
+    "t1": 1793988623.09919,
+    "rc": 0
+   },
+   "verdict": "PASS_SOURCE_CORRECT",
+   "ghdev_block_present": true,
+   "injected_fact_count": 36,
+   "injected_source_refs": [
+    "opencode:ses_e51cb9c19ffem7rxqiNNhlbbQ1:message:msg_1ae357b5f001zi64jgXG7LK6Ca"
+   ],
+   "expected_source_ref": "opencode:ses_e51cb9c19ffem7rxqiNNhlbbQ1:message:msg_1ae357b5f001zi64jgXG7LK6Ca",
+   "expected_episode_uuid": "067e0206-f628-42cb-b9a1-65e6783db4f6",
+   "source_correct": true,
+   "answer_match_ratio": 0.75,
+   "model_requests_in_window": 19,
+   "attribution": {
+    "axis": "trace_id==native_session",
+    "trace_matched": 19,
+    "question_matched": 19,
+    "clean": true
+   },
+   "openviking_coexists": true,
+   "duplicate_block_in_request": false,
+   "tool_uses": 29,
+   "first_block_request_t": 1793988573.880974
+  },
+  {
+   "case_id": "S10",
+   "category": "direct",
+   "native_session": "ses_e4df2038dffe018F2ApG53wNrI",
+   "process": {
+    "shim_pid": "2237679",
+    "pid": "2237681",
+    "start": "Fri Nov 6 10:10:23 2026",
+    "t0": 1793988623.1304033,
+    "t1": 1793988670.1558185,
+    "rc": 0
+   },
+   "verdict": "WRONG_SOURCE",
+   "ghdev_block_present": true,
+   "injected_fact_count": 27,
+   "injected_source_refs": [
+    "opencode:ses_e50efdb27ffep7alMZaj9wkl3x:tool:call_0485ce2600ec5dba"
+   ],
+   "expected_source_ref": "opencode:ses_e50efdb27ffep7alMZaj9wkl3x:tool:call_1e0445fde85fa221",
+   "expected_episode_uuid": "0de3cdc8-07ff-46a5-a0bc-ed7f9bc5e47b",
+   "source_correct": false,
+   "answer_match_ratio": 1.0,
+   "model_requests_in_window": 14,
+   "attribution": {
+    "axis": "trace_id==native_session",
+    "trace_matched": 14,
+    "question_matched": 14,
+    "clean": true
+   },
+   "openviking_coexists": true,
+   "duplicate_block_in_request": false,
+   "tool_uses": 18,
+   "first_block_request_t": 1793988624.554845
+  },
+  {
+   "case_id": "S11",
+   "category": "paraphrased",
+   "native_session": "ses_e4df14bb3ffetUo0XD9F0t2s3Y",
+   "process": {
+    "shim_pid": "2242365",
+    "pid": "2242367",
+    "start": "Fri Nov 6 10:11:10 2026",
+    "t0": 1793988670.1847546,
+    "t1": 1793988758.093189,
+    "rc": 0
+   },
+   "verdict": "PASS_SOURCE_CORRECT",
+   "ghdev_block_present": true,
+   "injected_fact_count": 14,
+   "injected_source_refs": [
+    "opencode:ses_e5153da9effexLtJUGtbne2huA:message:msg_1aeaeba84001br8HMsJ3RwNb9H"
+   ],
+   "expected_source_ref": "opencode:ses_e5153da9effexLtJUGtbne2huA:message:msg_1aeaeba84001br8HMsJ3RwNb9H",
+   "expected_episode_uuid": "1343d893-6c6d-413b-8795-69ee6e35831a",
+   "source_correct": true,
+   "answer_match_ratio": 0.75,
+   "model_requests_in_window": 8,
+   "attribution": {
+    "axis": "trace_id==native_session",
+    "trace_matched": 8,
+    "question_matched": 8,
+    "clean": true
+   },
+   "openviking_coexists": true,
+   "duplicate_block_in_request": false,
+   "tool_uses": 9,
+   "first_block_request_t": 1793988671.489444
+  },
+  {
+   "case_id": "S12",
+   "category": "implicit_relationship",
+   "native_session": "ses_e4deff439ffewNtCMFttehz0oW",
+   "process": {
+    "shim_pid": "2250969",
+    "pid": "2250971",
+    "start": "Fri Nov 6 10:12:38 2026",
+    "t0": 1793988758.12147,
+    "t1": 1793988796.1171768,
+    "rc": 0
+   },
+   "verdict": "PASS_SOURCE_CORRECT",
+   "ghdev_block_present": true,
+   "injected_fact_count": 10,
+   "injected_source_refs": [
+    "opencode:ses_e518d2926ffe4iAujvBdg4SxaG:message:msg_1aea02541001WqFYEGis61N1Vr"
+   ],
+   "expected_source_ref": "opencode:ses_e518d2926ffe4iAujvBdg4SxaG:message:msg_1aea02541001WqFYEGis61N1Vr",
+   "expected_episode_uuid": "33088c81-1857-47ba-85b8-0e336e0a54ac",
+   "source_correct": true,
+   "answer_match_ratio": 0.889,
+   "model_requests_in_window": 6,
+   "attribution": {
+    "axis": "trace_id==native_session",
+    "trace_matched": 6,
+    "question_matched": 6,
+    "clean": true
+   },
+   "openviking_coexists": true,
+   "duplicate_block_in_request": true,
+   "tool_uses": 8,
+   "first_block_request_t": 1793988759.410755
+  },
+  {
+   "case_id": "S13",
+   "category": "multi_event",
+   "native_session": "ses_e4def5fb7ffecGWYGwf3aBaTZw",
+   "process": {
+    "shim_pid": "2254692",
+    "pid": "2254694",
+    "start": "Fri Nov 6 10:13:16 2026",
+    "t0": 1793988796.146596,
+    "t1": 1793988855.1573513,
+    "rc": 0
+   },
+   "verdict": "WRONG_SOURCE",
+   "ghdev_block_present": true,
+   "injected_fact_count": 36,
+   "injected_source_refs": [
+    "opencode:ses_e4e1ec14bffeB8M0b0Sn2XxErw:message:msg_1b1e1aaee001r673t8FEqDVzHY"
+   ],
+   "expected_source_ref": "opencode:ses_e50efdb27ffep7alMZaj9wkl3x:message:msg_1af1287e7001qq7UBQ8qBctKK1",
+   "expected_episode_uuid": "009974d2-f051-45fd-ac0c-f259dcfdd1a8",
+   "source_correct": false,
+   "answer_match_ratio": 0.818,
+   "model_requests_in_window": 19,
+   "attribution": {
+    "axis": "trace_id==native_session",
+    "trace_matched": 19,
+    "question_matched": 19,
+    "clean": true
+   },
+   "openviking_coexists": true,
+   "duplicate_block_in_request": false,
+   "tool_uses": 31,
+   "first_block_request_t": 1793988799.628124
+  },
+  {
+   "case_id": "S14",
+   "category": "direct",
+   "native_session": "ses_e4dee78f4ffePuP7ykc2KHnsve",
+   "process": {
+    "shim_pid": "2260622",
+    "pid": "2260624",
+    "start": "Fri Nov 6 10:14:15 2026",
+    "t0": 1793988855.19012,
+    "t1": 1793988866.668776,
+    "rc": 0
+   },
+   "verdict": "PASS_SOURCE_CORRECT",
+   "ghdev_block_present": true,
+   "injected_fact_count": 2,
+   "injected_source_refs": [
+    "opencode:ses_e518d2926ffe4iAujvBdg4SxaG:message:msg_1ae72d6dc00148hViRhCkatbe6:span:9846"
+   ],
+   "expected_source_ref": "opencode:ses_e518d2926ffe4iAujvBdg4SxaG:message:msg_1ae72d6dc00148hViRhCkatbe6:span:9846",
+   "expected_episode_uuid": "13ef46fa-d8a7-4414-a73a-821d4e9495dd",
+   "source_correct": true,
+   "answer_match_ratio": 0.833,
+   "model_requests_in_window": 2,
+   "attribution": {
+    "axis": "trace_id==native_session",
+    "trace_matched": 2,
+    "question_matched": 2,
+    "clean": true
+   },
+   "openviking_coexists": true,
+   "duplicate_block_in_request": false,
+   "tool_uses": 0,
+   "first_block_request_t": 1793988856.508596
+  },
+  {
+   "case_id": "S15",
+   "category": "implicit_relationship",
+   "native_session": "ses_e4dee4c21ffe16vVwS2naNKdEj",
+   "process": {
+    "shim_pid": "2261892",
+    "pid": "2261894",
+    "start": "Fri Nov 6 10:14:26 2026",
+    "t0": 1793988866.6979365,
+    "t1": 1793988889.346198,
+    "rc": 0
+   },
+   "verdict": "PASS_SOURCE_CORRECT",
+   "ghdev_block_present": true,
+   "injected_fact_count": 15,
+   "injected_source_refs": [
+    "opencode:ses_e518d2926ffe4iAujvBdg4SxaG:message:msg_1ae8280fc001I6XqE8vOZyDAdn"
+   ],
+   "expected_source_ref": "opencode:ses_e518d2926ffe4iAujvBdg4SxaG:message:msg_1ae8280fc001I6XqE8vOZyDAdn",
+   "expected_episode_uuid": "bbdd92f2-ea6b-4c35-ac36-7f7a81a59b2e",
+   "source_correct": true,
+   "answer_match_ratio": 1.0,
+   "model_requests_in_window": 7,
+   "attribution": {
+    "axis": "trace_id==native_session",
+    "trace_matched": 7,
+    "question_matched": 7,
+    "clean": true
+   },
+   "openviking_coexists": true,
+   "duplicate_block_in_request": false,
+   "tool_uses": 9,
+   "first_block_request_t": 1793988867.864703
+  },
+  {
+   "case_id": "S16",
+   "category": "paraphrased",
+   "native_session": "ses_e4dedf35effeJ1TpWN8wRqwO5g",
+   "process": {
+    "shim_pid": "2264345",
+    "pid": "2264347",
+    "start": "Fri Nov 6 10:14:49 2026",
+    "t0": 1793988889.378002,
+    "t1": 1793988933.3033154,
+    "rc": 0
+   },
+   "verdict": "PASS_SOURCE_CORRECT",
+   "ghdev_block_present": true,
+   "injected_fact_count": 28,
+   "injected_source_refs": [
+    "opencode:ses_e518d2926ffe4iAujvBdg4SxaG:message:msg_1aeabaa00001iH7nwDEfUsJj3Y"
+   ],
+   "expected_source_ref": "opencode:ses_e518d2926ffe4iAujvBdg4SxaG:message:msg_1aeabaa00001iH7nwDEfUsJj3Y",
+   "expected_episode_uuid": "a8770371-c715-417b-b2e7-cdc9cba06fdd",
+   "source_correct": true,
+   "answer_match_ratio": 0.818,
+   "model_requests_in_window": 15,
+   "attribution": {
+    "axis": "trace_id==native_session",
+    "trace_matched": 15,
+    "question_matched": 15,
+    "clean": true
+   },
+   "openviking_coexists": true,
+   "duplicate_block_in_request": false,
+   "tool_uses": 18,
+   "first_block_request_t": 1793988890.594111
+  }
+ ],
+ "negatives": [
+  {
+   "case_id": "N01",
+   "category": "unrelated",
+   "native_session": "ses_e4ded47d5ffeT0SIqMxaXgP1pH",
+   "process": {
+    "shim_pid": "2269009",
+    "pid": "2269011",
+    "start": "Fri Nov 6 10:15:33 2026",
+    "t0": 1793988933.3345134,
+    "t1": 1793988943.977165,
+    "rc": 0
+   },
+   "verdict": "PASS_NO_INJECTION",
+   "ghdev_block_present": false,
+   "injected_fact_count": 0,
+   "model_requests_in_window": 3,
+   "attribution": {
+    "axis": "trace_id==native_session",
+    "trace_matched": 3,
+    "question_matched": 3,
+    "clean": true
+   }
+  },
+  {
+   "case_id": "N02",
+   "category": "wrong_group",
+   "native_session": "ses_e4ded1e31ffeBe1agWuBIT2aru",
+   "process": {
+    "shim_pid": "2270009",
+    "pid": "2270011",
+    "start": "Fri Nov 6 10:15:44 2026",
+    "t0": 1793988944.005353,
+    "t1": 1793988972.679444,
+    "rc": 0
+   },
+   "verdict": "FAIL_INJECTED",
+   "ghdev_block_present": true,
+   "injected_fact_count": 10,
+   "model_requests_in_window": 6,
+   "attribution": {
+    "axis": "trace_id==native_session",
+    "trace_matched": 6,
+    "question_matched": 6,
+    "clean": true
+   }
+  },
+  {
+   "case_id": "N03",
+   "category": "private_marker",
+   "native_session": "ses_e4decae09ffe6KviO62AUw17XX",
+   "process": {
+    "shim_pid": "2273657",
+    "pid": "2273659",
+    "start": "Fri Nov 6 10:16:12 2026",
+    "t0": 1793988972.7095616,
+    "t1": 1793989113.4229236,
+    "rc": 0
+   },
+   "verdict": "PASS_NO_INJECTION",
+   "ghdev_block_present": false,
+   "injected_fact_count": 0,
+   "model_requests_in_window": 39,
+   "attribution": {
+    "axis": "trace_id==native_session",
+    "trace_matched": 39,
+    "question_matched": 39,
+    "clean": true
+   }
+  },
+  {
+   "case_id": "N04",
+   "category": "too_brief",
+   "native_session": "ses_e4dea883effe7cCGVWGfs40hGb",
+   "process": {
+    "shim_pid": "2293113",
+    "pid": "2293115",
+    "start": "Fri Nov 6 10:18:33 2026",
+    "t0": 1793989113.451573,
+    "t1": 1793989117.109995,
+    "rc": 0
+   },
+   "verdict": "PASS_NO_INJECTION",
+   "ghdev_block_present": false,
+   "injected_fact_count": 0,
+   "model_requests_in_window": 2,
+   "attribution": {
+    "axis": "trace_id==native_session",
+    "trace_matched": 2,
+    "question_matched": 2,
+    "clean": true
+   }
+  }
+ ]
+}

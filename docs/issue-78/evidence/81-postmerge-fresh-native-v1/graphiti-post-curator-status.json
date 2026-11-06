@@ -1,0 +1,33 @@
+{
+  "group": "development-knowledge",
+  "fixture": {
+    "group_id": "development-knowledge",
+    "kind": "production",
+    "label": "Development Knowledge"
+  },
+  "counts": {
+    "persisted": 165,
+    "deferred": 106,
+    "skipped": 3
+  },
+  "review_count": 274,
+  "queue": {
+    "schema_version": 1,
+    "group": "development-knowledge",
+    "total": 2108,
+    "capacity": 4000,
+    "counts": {
+      "new": 256,
+      "reserved": 0,
+      "deferred": 358,
+      "skipped": 5,
+      "approved": 1489,
+      "submission_unknown": 0,
+      "queued": 0,
+      "persisted": 0
+    },
+    "drops": {},
+    "last_drop_reason": null,
+    "full": false
+  }
+}

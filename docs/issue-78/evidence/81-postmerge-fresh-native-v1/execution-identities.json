@@ -1,0 +1,245 @@
+{
+ "schema": "issue81-pmnv1-execution-identities.v1",
+ "campaign": "ISSUE81_POSTMERGE_FRESH_NATIVE_ACCEPTANCE_V1",
+ "generated_at_utc": "2026-11-06T18:20:13.984648+00:00",
+ "native_sessions": {
+  "S01": "ses_e4dfe92dbffejvImwAVwpQu1L4",
+  "S02": "ses_e4dfc7c33ffeRlUTx2slWH3sSo",
+  "S03": "ses_e4dfb81f3ffe57rsmJVVDq2ctH",
+  "S04": "ses_e4df9520dffejIU5LIPS0k16rZ",
+  "S05": "ses_e4df77391ffeUTHrUoanPEkSo0",
+  "S06": "ses_e4df6b5e2ffeTYu6Pah3ZXuXZQ",
+  "S07": "ses_e4df62ca9ffeTJnF2hBchdq7mZ",
+  "S08": "ses_e4df3ceccffeMUmVpFdOSH7BOu",
+  "S09": "ses_e4df2c8d4ffe4gDUe2CPPFMaGo",
+  "S10": "ses_e4df2038dffe018F2ApG53wNrI",
+  "S11": "ses_e4df14bb3ffetUo0XD9F0t2s3Y",
+  "S12": "ses_e4deff439ffewNtCMFttehz0oW",
+  "S13": "ses_e4def5fb7ffecGWYGwf3aBaTZw",
+  "S14": "ses_e4dee78f4ffePuP7ykc2KHnsve",
+  "S15": "ses_e4dee4c21ffe16vVwS2naNKdEj",
+  "S16": "ses_e4dedf35effeJ1TpWN8wRqwO5g",
+  "N01": "ses_e4ded47d5ffeT0SIqMxaXgP1pH",
+  "N02": "ses_e4ded1e31ffeBe1agWuBIT2aru",
+  "N03": "ses_e4decae09ffe6KviO62AUw17XX",
+  "N04": "ses_e4dea883effe7cCGVWGfs40hGb"
+ },
+ "unique_session_count": 20,
+ "runs": {
+  "S01": {
+   "rc": 0,
+   "t0": "1793987799.982709314",
+   "t1": "1793987889.550684249",
+   "shim_pid": "2148869",
+   "native_pid": "2148871",
+   "native_start": "Fri Nov 6 09:56:39 2026"
+  },
+  "S02": {
+   "rc": 0,
+   "t0": "1793987936.865726189",
+   "t1": "1793988000.925787836",
+   "shim_pid": "2163901",
+   "native_pid": "2163903",
+   "native_start": "Fri Nov 6 09:58:56 2026"
+  },
+  "S03": {
+   "rc": 0,
+   "t0": "1793988000.955221779",
+   "t1": "1793988144.208890151",
+   "shim_pid": "2170588",
+   "native_pid": "2170592",
+   "native_start": "Fri Nov 6 10:00:00 2026"
+  },
+  "S04": {
+   "rc": 0,
+   "t0": "1793988144.239789860",
+   "t1": "1793988266.680349375",
+   "shim_pid": "2185576",
+   "native_pid": "2185578",
+   "native_start": "Fri Nov 6 10:02:24 2026"
+  },
+  "S05": {
+   "rc": 0,
+   "t0": "1793988266.716435099",
+   "t1": "1793988315.300973926",
+   "shim_pid": "2198755",
+   "native_pid": "2198758",
+   "native_start": "Fri Nov 6 10:04:26 2026"
+  },
+  "S06": {
+   "rc": 0,
+   "t0": "1793988315.332096933",
+   "t1": "1793988350.425595551",
+   "shim_pid": "2203912",
+   "native_pid": "2203914",
+   "native_start": "Fri Nov 6 10:05:15 2026"
+  },
+  "S07": {
+   "rc": 0,
+   "t0": "1793988350.457107447",
+   "t1": "1793988505.531094264",
+   "shim_pid": "2207354",
+   "native_pid": "2207356",
+   "native_start": "Fri Nov 6 10:05:50 2026"
+  },
+  "S08": {
+   "rc": 0,
+   "t0": "1793988505.560577248",
+   "t1": "1793988572.549999643",
+   "shim_pid": "2223140",
+   "native_pid": "2223142",
+   "native_start": "Fri Nov 6 10:08:25 2026"
+  },
+  "S09": {
+   "rc": 0,
+   "t0": "1793988572.585604832",
+   "t1": "1793988623.099189974",
+   "shim_pid": "2230358",
+   "native_pid": "2230363",
+   "native_start": "Fri Nov 6 10:09:32 2026"
+  },
+  "S10": {
+   "rc": 0,
+   "t0": "1793988623.130403238",
+   "t1": "1793988670.155818367",
+   "shim_pid": "2237679",
+   "native_pid": "2237681",
+   "native_start": "Fri Nov 6 10:10:23 2026"
+  },
+  "S11": {
+   "rc": 0,
+   "t0": "1793988670.184754511",
+   "t1": "1793988758.093189088",
+   "shim_pid": "2242365",
+   "native_pid": "2242367",
+   "native_start": "Fri Nov 6 10:11:10 2026"
+  },
+  "S12": {
+   "rc": 0,
+   "t0": "1793988758.121470069",
+   "t1": "1793988796.117176682",
+   "shim_pid": "2250969",
+   "native_pid": "2250971",
+   "native_start": "Fri Nov 6 10:12:38 2026"
+  },
+  "S13": {
+   "rc": 0,
+   "t0": "1793988796.146595948",
+   "t1": "1793988855.157351178",
+   "shim_pid": "2254692",
+   "native_pid": "2254694",
+   "native_start": "Fri Nov 6 10:13:16 2026"
+  },
+  "S14": {
+   "rc": 0,
+   "t0": "1793988855.190119927",
+   "t1": "1793988866.668775986",
+   "shim_pid": "2260622",
+   "native_pid": "2260624",
+   "native_start": "Fri Nov 6 10:14:15 2026"
+  },
+  "S15": {
+   "rc": 0,
+   "t0": "1793988866.697936466",
+   "t1": "1793988889.346198107",
+   "shim_pid": "2261892",
+   "native_pid": "2261894",
+   "native_start": "Fri Nov 6 10:14:26 2026"
+  },
+  "S16": {
+   "rc": 0,
+   "t0": "1793988889.378001925",
+   "t1": "1793988933.303315505",
+   "shim_pid": "2264345",
+   "native_pid": "2264347",
+   "native_start": "Fri Nov 6 10:14:49 2026"
+  },
+  "N01": {
+   "rc": 0,
+   "t0": "1793988933.334513451",
+   "t1": "1793988943.977165042",
+   "shim_pid": "2269009",
+   "native_pid": "2269011",
+   "native_start": "Fri Nov 6 10:15:33 2026"
+  },
+  "N02": {
+   "rc": 0,
+   "t0": "1793988944.005352901",
+   "t1": "1793988972.679443963",
+   "shim_pid": "2270009",
+   "native_pid": "2270011",
+   "native_start": "Fri Nov 6 10:15:44 2026"
+  },
+  "N03": {
+   "rc": 0,
+   "t0": "1793988972.709561704",
+   "t1": "1793989113.422923564",
+   "shim_pid": "2273657",
+   "native_pid": "2273659",
+   "native_start": "Fri Nov 6 10:16:12 2026"
+  },
+  "N04": {
+   "rc": 0,
+   "t0": "1793989113.451572894",
+   "t1": "1793989117.109994902",
+   "shim_pid": "2293113",
+   "native_pid": "2293115",
+   "native_start": "Fri Nov 6 10:18:33 2026"
+  }
+ },
+ "frozen_inputs": {
+  "paths": {
+   "roster": "/tmp/opencode/issue81-merged-promotion/evidence/phase-b/semantic-recall-roster.json",
+   "phase_a_results": "/tmp/opencode/issue81-fresh-native-acceptance/semantic-recall-results.json",
+   "negative_controls": "/tmp/opencode/issue81-fresh-native-acceptance/negative-controls.json",
+   "precision_packet": "/tmp/opencode/issue81-fresh-native-acceptance/precision/operator-review-packet-126.json",
+   "inventory": "/tmp/opencode/issue81-fresh-native-acceptance/precision/adjudication-inventory-126.json"
+  },
+  "sha256": {
+   "roster": "47e141bdc81f1f2cdc2e98c7697162dbbf3250a5eb209a56361b358bc2441652",
+   "phase_a_results": "57c7846393e1ce99b90253c0b8e9bed174e3a9b52ad6196ffaa6d9ed95b9f740",
+   "negative_controls": "2a1c4122c12e313641d6790cb537b978d41cb2e6c86d362ae69c09c9b0d70894",
+   "precision_packet": "c110acd3bcc9fa6e62f347c285bd61fd542e2a826634fa1134bac78a1f204e52",
+   "inventory": "3f62d11d4f0474f7f1caa3b78f102d3cc9c35a894a59e5eec76e3acbd3b77b6c"
+  },
+  "expected": {
+   "roster": "47e141bdc81f1f2cdc2e98c7697162dbbf3250a5eb209a56361b358bc2441652",
+   "phase_a_results": "57c7846393e1ce99b90253c0b8e9bed174e3a9b52ad6196ffaa6d9ed95b9f740",
+   "negative_controls": "2a1c4122c12e313641d6790cb537b978d41cb2e6c86d362ae69c09c9b0d70894",
+   "precision_packet": "c110acd3bcc9fa6e62f347c285bd61fd542e2a826634fa1134bac78a1f204e52",
+   "inventory": "3f62d11d4f0474f7f1caa3b78f102d3cc9c35a894a59e5eec76e3acbd3b77b6c"
+  },
+  "status": {
+   "roster": "match",
+   "phase_a_results": "match",
+   "negative_controls": "match",
+   "precision_packet": "match",
+   "inventory": "match"
+  }
+ },
+ "deployment": {
+  "relevance_mjs_sha256": "9767486ef71fa6cf88497a1af801540dc401550a0a472c98cef64f9b4b380100",
+  "expected": "9767486ef71fa6cf88497a1af801540dc401550a0a472c98cef64f9b4b380100",
+  "opencode_json_sha256": "ea7653be3a21451da75cbd65741d0d2f4f7be54cba052552fb20798b0978744f",
+  "expected_config": "ea7653be3a21451da75cbd65741d0d2f4f7be54cba052552fb20798b0978744f"
+ },
+ "remote": {
+  "github_main_sha": "9a27b73de882c0af6fec4d86de81945338611479",
+  "evidence_branch": "issue/81-recall-acceptance",
+  "expected_evidence_head": "11f7fd645f0d4aac691db1701babbe8414abfe63"
+ },
+ "trace_slice": {
+  "campaign": "ISSUE81_POSTMERGE_FRESH_NATIVE_ACCEPTANCE_V1",
+  "trace_file": "/tmp/opencode/issue81-qual/litellm-trace.jsonl",
+  "campaign_start_offset_bytes": 644259321,
+  "marked_at_utc": "2026-11-06T17:58:00Z"
+ },
+ "graphiti_snapshots": {
+  "pre": "d5dbf77dcfb744e4d131391df94d30cbaa849f61795ae358b0bf8e793d95a86b",
+  "post": "df7e6739e5ea2fd031fbebc74901aa6547c8b9ba5c1fdf0de181731d1d8e4351"
+ },
+ "results_sha256": "c4f7700c8bb1786c915dc794abaa6220378eb6b809d6324dd4de230fc1631f3e",
+ "score": "9/16",
+ "threshold": "13/16",
+ "result": "FAIL"
+}

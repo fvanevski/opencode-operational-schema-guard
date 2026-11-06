@@ -1,0 +1,23 @@
+{
+ "schema": "issue81-pmnv1-precision-readiness.v1",
+ "campaign": "ISSUE81_POSTMERGE_FRESH_NATIVE_ACCEPTANCE_V1",
+ "generated_at_utc": "2026-11-06T18:20:13.984648+00:00",
+ "human_precision": "UNVERIFIED",
+ "packet_path_host": "/tmp/opencode/issue81-fresh-native-acceptance/fresh-native-v1/precision/operator-review-packet-126-consolidated.json",
+ "packet_sha256": "a7d38d607fcd518af8f242a1fe56d6b34dc6fc4b17500c065e97aa12b43cb83f",
+ "packet_mode": "600",
+ "items": 126,
+ "all_human_verdicts_null": true,
+ "packet_summary": {
+  "evidence_class_counts": {
+   "assistant-reported": 103,
+   "tool-reported": 18,
+   "user-stated": 5
+  },
+  "null_human_verdict_items": 126,
+  "verdicts_complete": false,
+  "adjudication_status": "AWAITING_OPERATOR_ADJUDICATION"
+ },
+ "operator_verdicts_supplied": false,
+ "note": "consolidated 126-fact operator review packet staged with flags and per-item review instructions; disposition of the precision gate remains with the operator"
+}

@@ -1,0 +1,130 @@
+{
+ "schema": "issue81-pmnv1-graphiti-source-readback.v1",
+ "campaign": "ISSUE81_POSTMERGE_FRESH_NATIVE_ACCEPTANCE_V1",
+ "generated_at_utc": "2026-11-06T18:19:30.145842+00:00",
+ "pre": {
+  "captured_at_utc": "2026-11-06T17:56:04.715885+00:00",
+  "remote_episodes": 165,
+  "remote_uuids_sha256": "4338be06d7bdcbab05c238c1ee01630aa2a9945eb12da7788db8c6124a522745",
+  "legacy_remote_episodes": 0,
+  "local_curation": {
+   "development-knowledge": {
+    "curation_records": 274,
+    "episode_index_receipts": 165,
+    "index_duplicate_identities": 0
+   },
+   "ghdev_gh_mcp": {
+    "curation_records": 78,
+    "episode_index_receipts": 52,
+    "index_duplicate_identities": 0
+   }
+  },
+  "candidate_events": {
+   "development-knowledge": {
+    "curation_records": 1884,
+    "episode_index_receipts": 0,
+    "index_duplicate_identities": 0
+   },
+   "ghdev_gh_mcp": {
+    "curation_records": 860,
+    "episode_index_receipts": 0,
+    "index_duplicate_identities": 0
+   }
+  },
+  "candidate_queue": {
+   "schema_version": 1,
+   "group": "development-knowledge",
+   "total": 1886,
+   "capacity": 4000,
+   "counts": {
+    "new": 34,
+    "reserved": 0,
+    "deferred": 358,
+    "skipped": 5,
+    "approved": 1489,
+    "submission_unknown": 0,
+    "queued": 0,
+    "persisted": 0
+   },
+   "drops": {},
+   "last_drop_reason": null,
+   "full": false
+  }
+ },
+ "post": {
+  "captured_at_utc": "2026-11-06T18:19:28.397512+00:00",
+  "remote_episodes": 165,
+  "remote_uuids_sha256": "4338be06d7bdcbab05c238c1ee01630aa2a9945eb12da7788db8c6124a522745",
+  "legacy_remote_episodes": 0,
+  "local_curation": {
+   "development-knowledge": {
+    "curation_records": 274,
+    "episode_index_receipts": 165,
+    "index_duplicate_identities": 0
+   },
+   "ghdev_gh_mcp": {
+    "curation_records": 78,
+    "episode_index_receipts": 52,
+    "index_duplicate_identities": 0
+   }
+  },
+  "candidate_events": {
+   "development-knowledge": {
+    "curation_records": 2108,
+    "episode_index_receipts": 0,
+    "index_duplicate_identities": 0
+   },
+   "ghdev_gh_mcp": {
+    "curation_records": 860,
+    "episode_index_receipts": 0,
+    "index_duplicate_identities": 0
+   }
+  }
+ },
+ "deltas": {
+  "remote_episodes": 0,
+  "legacy_remote_episodes": 0
+ },
+ "invariants": {
+  "legacy_isolation_holds": true,
+  "no_duplicate_remote_uuids": true,
+  "no_duplicate_index_receipts": true
+ },
+ "curator_probe": {
+  "mcp_endpoint_http_status": "",
+  "curator_status": {
+   "group": "development-knowledge",
+   "fixture": {
+    "group_id": "development-knowledge",
+    "kind": "production",
+    "label": "Development Knowledge"
+   },
+   "counts": {
+    "persisted": 165,
+    "deferred": 106,
+    "skipped": 3
+   },
+   "review_count": 274,
+   "queue": {
+    "schema_version": 1,
+    "group": "development-knowledge",
+    "total": 2108,
+    "capacity": 4000,
+    "counts": {
+     "new": 256,
+     "reserved": 0,
+     "deferred": 358,
+     "skipped": 5,
+     "approved": 1489,
+     "submission_unknown": 0,
+     "queued": 0,
+     "persisted": 0
+    },
+    "drops": {},
+    "last_drop_reason": null,
+    "full": false
+   }
+  }
+ },
+ "campaign_mutation_note": "campaign is evidence-only: no source/config/Graphiti mutation authorized. Any post-snapshot delta is attributable to background curation/candidate activity or to Graphiti persisting the 20 native session episodes themselves, NOT to a campaign write; the campaign did not call add_memory/curator mutations."
+}

@@ -1,0 +1,56 @@
+{
+ "schema": "issue81-pmnv1-activation-health.v1",
+ "campaign": "ISSUE81_POSTMERGE_FRESH_NATIVE_ACCEPTANCE_V1",
+ "phase_a_admission_utc": "2026-11-06T17:55:00Z (local 09:55 PST)",
+ "client_authentication": {
+  "session_id": "ses_e4e035478ffeitpyZ3hTzBMwhN",
+  "agent": "build",
+  "model": "local/chat-fast",
+  "opencode_version": "2.2.5",
+  "resumed": false,
+  "working_dir": "/tmp/opencode/issue81-fresh-native-acceptance"
+ },
+ "remote_state": {
+  "github_main_sha": "9a27b73de882c0af6fec4d86de81945338611479",
+  "evidence_branch": "issue/81-recall-acceptance",
+  "evidence_branch_head": "11f7fd645f0d4aac691db1701babbe8414abfe63",
+  "note": "verified by fetch/read at phase A admission; re-verified immediately before the publication write"
+ },
+ "deployed_source_identity": {
+  "relevance_mjs_path": "/home/filip/.config/opencode/plugins/ghdev-graphiti-memory/docs/issue-75/v2-candidate/relevance.mjs",
+  "relevance_mjs_sha256": "9767486ef71fa6cf88497a1af801540dc401550a0a472c98cef64f9b4b380100",
+  "opencode_json_sha256": "ea7653be3a21451da75cbd65741d0d2f4f7be54cba052552fb20798b0978744f",
+  "live_match": true,
+  "note": "live file digests matched the contract DEPLOYED_SOURCE_SHA256 and CONFIG hashes at admission"
+ },
+ "service_state": {
+  "opencode_service_pid": 2053567,
+  "service_start": "Fri Nov 6 09:40:32 2026",
+  "listener": "127.0.0.1:49374",
+  "listener_state": "OK at admission",
+  "graphiti_mcp_endpoint": "http://127.0.0.1:8766/mcp",
+  "graphiti_mcp_get_status": "ok",
+  "graphiti_mcp_search_nodes": "returned real content at admission",
+  "openviking_health": "ok",
+  "new_epoch_log_errors": 0,
+  "historical_bad_gateway_warnings": "confirmed as old-process shutdown events, not current-epoch",
+  "recall_service_port_9091": {
+   "state": "CLOSED (graphiti-ghdev-recall.service inactive/dead)",
+   "disposition": "recorded observed state; not a blocker: the plugin recalls via the Graphiti MCP endpoint 8766 directly"
+  }
+ },
+ "target_ratification": {
+  "receipt_path": "/home/filip/.local/state/ghdev-graphiti-issue81/holdout81-64d32eb7/private/target-ratification.json",
+  "receipt_sha256": "3e9581114047ac7416f6014a0dd6a57304dc5e5784efe39b176ced61fbb8626a",
+  "status": "OPERATOR_RATIFIED",
+  "proposal_sha256": "17ffb60515f5f96f2d546fd3abf951d0bc008325e38d83145ec4f75a8c76f049",
+  "ratified_by": "filip",
+  "ratified_at": "2026-11-04T21:37:19Z",
+  "verification": "proposal bytes verified against committed targets.proposed.json at origin/main (commit a29bf26)"
+ },
+ "activation_proof": {
+  "method": "S01 executed first as the activation proof and registered as the first positive case (contract item 5); identity and query preserved exactly",
+  "result_ref": "case-analyses/S01.json"
+ },
+ "recheck_at_assembly": "service PID/listener/log epoch and remote head re-verified at packet assembly (see execution-identities.json)"
+}

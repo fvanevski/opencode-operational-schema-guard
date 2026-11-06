@@ -1,0 +1,72 @@
+{
+ "schema": "issue81-pmnv1-graphiti-snapshot.v1",
+ "captured_at_utc": "2026-11-06T17:56:04.715885+00:00",
+ "group": "development-knowledge",
+ "remote": {
+  "episodes_total": 165,
+  "uuids_sha256": "4338be06d7bdcbab05c238c1ee01630aa2a9945eb12da7788db8c6124a522745",
+  "duplicate_remote_uuids": 0
+ },
+ "legacy_group_ghdev_gh_mcp": {
+  "remote_episodes_total": 0,
+  "uuids_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+ },
+ "local_curation": {
+  "development-knowledge": {
+   "curation_records": 274,
+   "episode_index_receipts": 165,
+   "index_duplicate_identities": 0
+  },
+  "ghdev_gh_mcp": {
+   "curation_records": 78,
+   "episode_index_receipts": 52,
+   "index_duplicate_identities": 0
+  }
+ },
+ "candidate_events": {
+  "development-knowledge": {
+   "curation_records": 1884,
+   "episode_index_receipts": 0,
+   "index_duplicate_identities": 0
+  },
+  "ghdev_gh_mcp": {
+   "curation_records": 860,
+   "episode_index_receipts": 0,
+   "index_duplicate_identities": 0
+  }
+ },
+ "mcp_session": "e5ecf6f498cd420ab067c22e47e7c186",
+ "candidate_queue_status": {
+  "group": "development-knowledge",
+  "fixture": {
+   "group_id": "development-knowledge",
+   "kind": "production",
+   "label": "Development Knowledge"
+  },
+  "counts": {
+   "persisted": 165,
+   "deferred": 106,
+   "skipped": 3
+  },
+  "review_count": 274,
+  "queue": {
+   "schema_version": 1,
+   "group": "development-knowledge",
+   "total": 1886,
+   "capacity": 4000,
+   "counts": {
+    "new": 34,
+    "reserved": 0,
+    "deferred": 358,
+    "skipped": 5,
+    "approved": 1489,
+    "submission_unknown": 0,
+    "queued": 0,
+    "persisted": 0
+   },
+   "drops": {},
+   "last_drop_reason": null,
+   "full": false
+  }
+ }
+}

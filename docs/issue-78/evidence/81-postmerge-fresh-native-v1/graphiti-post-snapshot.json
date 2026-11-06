@@ -1,0 +1,39 @@
+{
+ "schema": "issue81-pmnv1-graphiti-snapshot.v1",
+ "captured_at_utc": "2026-11-06T18:19:28.397512+00:00",
+ "group": "development-knowledge",
+ "remote": {
+  "episodes_total": 165,
+  "uuids_sha256": "4338be06d7bdcbab05c238c1ee01630aa2a9945eb12da7788db8c6124a522745",
+  "duplicate_remote_uuids": 0
+ },
+ "legacy_group_ghdev_gh_mcp": {
+  "remote_episodes_total": 0,
+  "uuids_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+ },
+ "local_curation": {
+  "development-knowledge": {
+   "curation_records": 274,
+   "episode_index_receipts": 165,
+   "index_duplicate_identities": 0
+  },
+  "ghdev_gh_mcp": {
+   "curation_records": 78,
+   "episode_index_receipts": 52,
+   "index_duplicate_identities": 0
+  }
+ },
+ "candidate_events": {
+  "development-knowledge": {
+   "curation_records": 2108,
+   "episode_index_receipts": 0,
+   "index_duplicate_identities": 0
+  },
+  "ghdev_gh_mcp": {
+   "curation_records": 860,
+   "episode_index_receipts": 0,
+   "index_duplicate_identities": 0
+  }
+ },
+ "mcp_session": "cb75331827b0426ca47d332a2082315c"
+}
