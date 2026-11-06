@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { admitFact, lexicalSupport, relevanceSignals, relevanceFilter, localReranker , shortlistQualifiedCandidates } from './relevance.mjs';
+import { admitFact, lexicalSupport, relevanceSignals, relevanceFilter, localReranker, shortlistQualifiedCandidates, explainRelevanceAdmission } from './relevance.mjs';
 test('lexical floor rejects unrelated facts but admits direct multi-term evidence', async () => {
   assert.equal(admitFact('Which library is used for backlog dependency visualization?',
     'React Flow chosen for backlog dependency visualization'), true);
@@ -254,4 +254,44 @@ test('qualified shortlist resolves equal direct overlap using original source-co
   assert.equal(ranked[0],relevant);
   assert.equal(ranked.length,2);
   assert.equal(relevanceSignals(query,'Issue #80 discusses the test suite.').eligible,false);
+});
+
+
+test('diagnostic proves 0.34 admitFact floor is not an automatic-recall selector gate', async () => {
+  const query='Which alpha beta gamma delta epsilon zeta?';
+  const fact='The alpha beta observation.';
+  const signal=relevanceSignals(query,fact);
+  assert.equal(signal.overlap.count,2);
+  assert.ok(signal.overlap.score<0.34);
+  assert.equal(admitFact(query,fact),false,'on-demand public helper still applies 0.34');
+  assert.equal(signal.eligible,true,'automatic recall permits independently topical two-term support');
+  assert.equal(explainRelevanceAdmission(query,{fact}).admitted,true);
+  assert.equal(explainRelevanceAdmission(query,{fact}).scoreFloor034Applied,false);
+});
+test('diagnostic exposes named/issue/numeric failure without emitting source content', () => {
+  const named=explainRelevanceAdmission('Which MongoDB archive storage is configured?',{
+    fact:'The PostgreSQL archive storage is configured.'});
+  assert.equal(named.admitted,false);
+  assert.ok(named.direct.failures.includes('NAMED_IDENTITY'));
+  const issue=explainRelevanceAdmission('Which change in Issue #81 affects Graphiti tests?',{
+    fact:'Issue 80 changed Graphiti tests.'});
+  assert.ok(issue.direct.failures.includes('ISSUE_IDENTITY'));
+  const num=explainRelevanceAdmission('What changed in pipeline 6382?',{
+    fact:'Pipeline 6383 changed the service.'});
+  assert.ok(num.direct.failures.includes('NUMERIC_IDENTITY'));
+  assert.equal(JSON.stringify(named).includes('PostgreSQL'),false);
+  assert.equal(JSON.stringify(named).includes('MongoDB'),false);
+});
+test('diagnostic labels linked source-context gating without changing production recall', async () => {
+  const q='How does the Graphiti MCP service isolate each group driver?';
+  const item={fact:'Each group driver clones an isolated workspace graph.',
+    sourceContext:'The Graphiti MCP service uses the group driver in this implementation.'};
+  assert.equal(relevanceSignals(q,item.fact).eligible,false);
+  const d=explainRelevanceAdmission(q,item);
+  assert.equal(d.admitted,true);
+  assert.equal(d.linkedUsed,true);
+  assert.equal(d.direct.namedMatch,false);
+  assert.equal(d.linked.namedMatch,true);
+  assert.deepEqual(await relevanceFilter(q,[item]),[item]);
+  assert.equal(JSON.stringify(d).includes('workspace graph'),false);
 });
