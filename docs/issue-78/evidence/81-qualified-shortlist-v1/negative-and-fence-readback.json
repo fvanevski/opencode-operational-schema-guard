@@ -1,0 +1,33 @@
+{
+  "schema": "issue81-negative-fence-readback.v1",
+  "campaign": "ISSUE81_QUALIFIED_SHORTLIST_V1",
+  "negative_case_outcomes": [
+    { "case_id": "N01", "category": "unrelated", "admission": "ADMITTED", "graphiti_calls": 2, "selected_count": 0, "selected_source": null, "expected_outcome": "no_injection", "new_exposed_status": "PASS_NO_INJECTION" },
+    { "case_id": "N02", "category": "wrong_group", "admission": "ADMITTED", "graphiti_calls": 2, "selected_count": 1, "selected_source": "opencode:ses_e508c6d53ffeWrJEJftz60lqXB:message:msg_1af753f0d001GPlDjAoAckQ3EK", "selected_episode": "e1d8e764-26fa-45ea-9483-8e64a71e3de7", "expected_outcome": "no_injection_or_non_development_knowledge", "new_exposed_status": "FAIL_INJECTED", "note": "frozen FAIL_INJECTED preserved (same-group content-policy miss, identical source to control); no new cross-group leakage claimed" },
+    { "case_id": "N03", "category": "private_marker", "admission": "NATIVE_SAFE_TEXT_REJECTED", "graphiti_calls": 0, "selected_count": 0, "selected_source": null, "expected_outcome": "no_injection", "new_exposed_status": "PASS_NO_INJECTION" },
+    { "case_id": "N04", "category": "too_brief", "admission": "NATIVE_SAFE_TEXT_REJECTED", "graphiti_calls": 0, "selected_count": 0, "selected_source": null, "expected_outcome": "no_injection", "new_exposed_status": "PASS_NO_INJECTION" }
+  ],
+  "secret_wrong_group_false_verified": "No new secret, wrong-group or false-verified source disclosure in any of the 20 live cases. All 17 emitted entries use opencode: native refs, only the three permitted evidence classes, and group-pure sources (journal, curated index and remote facts all fenced to development-knowledge). N02 remains the single frozen FAIL_INJECTED.",
+  "source_context_leak_status": "NONE. Emitted entries and formatContext output carry no sourceContext, remoteEpisodeUuid, workspace, project or group keys (staged projection verified in source and by live replay fence readback: 0 leaked keys across 20 cases / 17 selected entries). Source-context excerpts are admission hints only.",
+  "fail_closed_controls_structural": {
+    "method": "Disposable in-memory fixtures over the exact staged Memory.search admission paths (curatedCandidateRetriever + live-style remote episode list + private-fact fixtures); no production source changed",
+    "results": {
+      "positive_readback": true,
+      "truncated_listing_zero_index": true,
+      "remote_outage_zero_index": true,
+      "wrong_group_zero": true,
+      "private_fence_direct": true,
+      "private_not_in_output": true,
+      "graphiti_outage_index_still_fenced": true
+    },
+    "all_pass": true,
+    "semantics": "A truncated (exactly 1000) or absent remote episode listing yields NO positive index proof (abstention, not proven absence). A wrong-group fact is excluded. A private assertion is rejected by safeText before emission. Index admission always requires same-request remote membership."
+  },
+  "serial_mcp_verification": {
+    "observed_call_order": "search_memory_facts -> get_episodes (every admitted case)",
+    "concurrent_graphiti_calls": 0,
+    "live_replay_evidence": "Per-case call timelines in the private replay log show the two serial calls in order for all 18 admitted cases (e.g. 'search_memory_facts:152ms > get_episodes:23ms'); the local disk-index scan overlaps remote IO and is measured separately.",
+    "note": "Consistent with the S16 concurrent-call instability diagnosis: Graphiti MCP calls are serialized; only the local index read overlaps the in-flight remote query."
+  },
+  "one_fact_output": "selected_count = 1 for every admitted positive case and N02; 0 for N01/N03/N04. One-fact injection preserved."
+}

@@ -1,0 +1,47 @@
+{
+  "schema": "issue81-command-shape-friction.v1",
+  "campaign": "ISSUE81_QUALIFIED_SHORTLIST_V1",
+  "commands_match_handoff": true,
+  "match_note": "The contract-literal focused node --test suite ran with the exact file list and shape (8 files, producer exit preserved to a scratch log and displayed separately). Remote proof and replay used the contract's staged modules against the read-only Graphiti endpoint with serial calls. No RTK prefixing, no substituted tool routes, no workdir drift.",
+  "events": [
+    {
+      "type": "shell_shape",
+      "where": "Control-packet readback (Phase A.2)",
+      "detail": "An 'echo ===MANIFEST===' separator was glob-interpreted by zsh and exited 1; the manifest was read via a follow-up command. Display-level shell-shape error only; no producer result was masked.",
+      "effect": "interface_discovery (harmless; corrected immediately)",
+      "outcome": "corrected_and_preserved"
+    },
+    {
+      "type": "shell_shape",
+      "where": "Remote-proof run (Phase B)",
+      "detail": "Trailing '[ -s stderr.log ]' test on an empty stderr file returned shell exit 1 after the producer exit (0) had already been captured and displayed. Producer exit preserved separately; no failure masked.",
+      "effect": "shell-shape artifact, not a masked producer failure",
+      "outcome": "producer_exit_preserved"
+    },
+    {
+      "type": "guard_rejection",
+      "where": "Evidence worktree setup (Phase E)",
+      "detail": "A 'rm -rf' of a campaign scratch directory was rejected by the permission guard (permission.rejected); replaced by precise empty-directory 'rmdir' plus a 'mv' of one harness-written profile file into the campaign scratch area.",
+      "effect": "pre_execution_rejection (corrected with a narrower authorized shape; no owner work touched)",
+      "outcome": "corrected_and_preserved"
+    },
+    {
+      "type": "interface_discovery",
+      "where": "Evidence worktree setup (Phase E)",
+      "detail": "git worktree add reported 'path already exists' twice because a prior harness operation had left a scratch 'evidence/profiles/repository-final-v1.json' in the target path; inspected (harness profile file, 1525 bytes), relocated to campaign scratch, and the worktree was then added cleanly at the expected head.",
+      "effect": "state discovery in campaign scratch only; primary checkout untouched",
+      "outcome": "corrected_and_preserved"
+    },
+    {
+      "type": "agent_harness_correction",
+      "where": "Sanitized replay matrix builder (Phase E)",
+      "detail": "First builder run filtered mapped rows on a field name not present in the mapped shape, producing an empty positive list; the builder was corrected and the file regenerated from the same private replay data. No production source or replay result changed.",
+      "effect": "agent-authored harness repair (authorized disposable harness fix)",
+      "outcome": "corrected_and_regenerated"
+    }
+  ],
+  "guard_rejections": 1,
+  "rtk_usage": "none",
+  "harness_rewrites": 0,
+  "masked_producer_failures": 0
+}

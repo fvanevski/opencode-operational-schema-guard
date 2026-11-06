@@ -1,0 +1,59 @@
+{
+  "schema": "issue81-remote-persistence-latency.v1",
+  "campaign": "ISSUE81_QUALIFIED_SHORTLIST_V1",
+  "graphiti_endpoint": "http://127.0.0.1:8766/mcp",
+  "group": "development-knowledge",
+  "get_episodes_proof": {
+    "args": { "group_ids": ["development-knowledge"], "max_episodes": 1000 },
+    "returned_count": 219,
+    "unique_uuids": 219,
+    "group_ids_observed": ["development-knowledge"],
+    "episodes_outside_group": 0,
+    "invalid_uuid_count": 0,
+    "error_field": null,
+    "truncated_at_max": false,
+    "structural_verdict": "COMPLETE_UNTRUNCATED_GROUP_PURE",
+    "five_expected_uuids_present": true,
+    "verdict": "POSITIVE_REMOTE_PROOF: every persisted index UUID (219/219) is confirmed present in the live read-only episode list, including all five previously-missing S03/S05/S07/S10/S13 expected UUIDs. Architecture is NOT blocked."
+  },
+  "five_expected_uuids": [
+    { "case_id": "S03", "expected_uuid": "082fe673-8cf9-4da1-bc43-aaa9e04f68d8", "remote_present": true },
+    { "case_id": "S05", "expected_uuid": "1a20d974-b5a7-4367-8da5-8c9d7dbb06c5", "remote_present": true },
+    { "case_id": "S07", "expected_uuid": "7dcfa76f-8fa5-436a-bdd5-ad340a62f27d", "remote_present": true },
+    { "case_id": "S10", "expected_uuid": "0de3cdc8-07ff-46a5-a0bc-ed7f9bc5e47b", "remote_present": true },
+    { "case_id": "S13", "expected_uuid": "009974d2-f051-45fd-ac0c-f259dcfdd1a8", "remote_present": true }
+  ],
+  "persisted_index_uuids_confirmed": 219,
+  "persisted_index_uuids_missing": [],
+  "host_index_recheck_b6": {
+    "store_total_records": 366,
+    "records_by_state": { "deferred": 143, "persisted": 219, "skipped": 4 },
+    "production_scope_records": 366,
+    "production_scope_persisted": 219,
+    "unique_persisted_remote_uuids": 219,
+    "curation_dir_mode": "700",
+    "curator_env_mode": "600",
+    "previous_snapshot": "358 records / 214 persisted unique UUIDs (control campaign)",
+    "change_report": "Current snapshot GROWN to 366 records / 219 persisted unique UUIDs (219/219 remote-confirmed). Reported, not ignored: no immutable input was altered; the frozen roster (sha256 47e141bd...) is unchanged and all 16 expected UUIDs remain remote-present."
+  },
+  "installed_config_readback_b6": {
+    "plugin": "file:///home/filip/.config/opencode/plugins/ghdev-graphiti-memory",
+    "options": {
+      "enabled": true, "capture": true, "group": "development-knowledge",
+      "workspace": "/workspace/mcp_servers/gh_mcp", "project": "gh_mcp",
+      "endpoint": "http://127.0.0.1:8766/mcp", "stateDir": "/home/filip/.local/state/ghdev-graphiti"
+    },
+    "scope_matches_contract": true,
+    "installed_bytes_note": "Installed plugin copy is dated 2026-11-04 and does NOT contain the new exact-head source (curated-recall-candidates.mjs absent; 5 core modules differ). Dated provenance only: the campaign replayed the STAGED worktree source; no deployment was authorized or performed."
+  },
+  "latency_d14": {
+    "methodology": "Serial Graphiti MCP calls (search_memory_facts then get_episodes per case, never concurrent); local disk-index reads overlap remote IO and are measured separately. First-call (cold session) vs warm captured. Quantiles: nearest-rank on the per-case sample (p50 = median of 20; p95 = 95th percentile). n stated per measurement. Censored cases: N03/N04 (native safe-text rejection) made no remote calls; their e2e samples are ~0 ms and included in the e2e n=20 distribution.",
+    "get_episodes": { "first_ms": 117, "warm_p50_ms": 23, "warm_p95_ms": 34, "n": 18 },
+    "d24_search_memory_facts": { "first_ms": 232, "warm_p50_ms": 152, "warm_p95_ms": 497, "n": 18, "note": "Single 497 ms outlier on the N01 case (one-off service spike); reprobe of the same frozen query returned 148/156/195 ms — not consistent slowness." },
+    "curated_scan_resolve": { "p50_ms": 34, "p95_ms": 78, "n": 18 },
+    "combined_memory_search_e2e": { "n": 20, "p50_ms": 187, "p95_ms": 257, "max_ms": 526, "over_300_ms": [526], "note": "The single 526 ms sample is the N01 case (497 ms search spike + 21 ms proof + 35 ms index). With the unchanged 300 ms Promise.race fence, that injection would have been suppressed at runtime — matching N01's expected NO_INJECTION outcome. All other 19 samples are within the 300 ms allowance (max 257 ms)." },
+    "allowance_300ms": "unchanged in staged source (Promise.race at docs/issue-75/v2-candidate/plugin.mjs:172); raising it was not in scope",
+    "hook_p95": "UNVERIFIED",
+    "hook_note": "Native context-hook start/end telemetry is not exposed on the CPU-only probe path. One transient e2e outlier (526 ms, N01) and warm p95 (257 ms) are reported as measured MCP/index stages, not as a hook measurement. No fresh-session hook trace was staged: the joined e2e p95 is within the fence and D.16 permits a fresh trace only if necessary; it is not necessary for this verdict."
+  }
+}
