@@ -1,0 +1,6 @@
+ISSUE81_POSTMERGE_DEPLOYMENT_V1 evidence packet manifest
+generated: 2026-11-06T17:55:00Z (non-circular: does not list itself)
+c48e6467e6004597e3c0be620d90f7e173a37c4e924c487e0ead3da1abb6c0db  deployment-receipt.json
+ff65280f5e1b9195a37abf1f16689c73ee170a2079fb3398ebf52565f5161275  acceptance-readiness.json
+ade9552a8804e90eb921aa48d36298ca61f58c2f492a3bf4eda2a0ff7c811d08  handback.md
+be3900dccfa79d743d67044e3eec09fb7c9c492a41ef3b2477d57fc9bd8233fc  command-shape-friction.json

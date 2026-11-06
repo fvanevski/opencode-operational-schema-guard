@@ -1,0 +1,89 @@
+{
+  "schema": "issue81-acceptance-readiness.v1",
+  "campaign": "ISSUE81_POSTMERGE_DEPLOYMENT_V1",
+  "generated_at": "2026-11-06T17:50:00Z",
+  "frozen_recall": {
+    "score": "8/16",
+    "threshold": "13/16",
+    "result": "FAIL",
+    "n02": "FAIL_INJECTED",
+    "roster_path": "/tmp/opencode/issue81-merged-promotion/evidence/phase-b/semantic-recall-roster.json",
+    "roster_sha256": "47e141bdc81f1f2cdc2e98c7697162dbbf3250a5eb209a56361b358bc2441652",
+    "roster_contents": "16 positives (S01-S16) + 4 negatives (N01-N04), pre-scored, frozen",
+    "results_path": "/tmp/opencode/issue81-fresh-native-acceptance/semantic-recall-results.json",
+    "results_sha256": "57c7846393e1ce99b90253c0b8e9bed174e3a9b52ad6196ffaa6d9ed95b9f740",
+    "negative_controls_path": "/tmp/opencode/issue81-fresh-native-acceptance/negative-controls.json",
+    "negative_controls_sha256": "2a1c4122c12e313641d6790cb537b978d41cb2e6c86d362ae69c09c9b0d70894",
+    "case_list_path": "/tmp/opencode/issue81-fresh-native-acceptance/raw/case-list.tsv",
+    "case_list_sha256": "b44db51bcc69322c1f8b86948ef229d5eb245f6967b95cd8f309a9c7bba1b0c6",
+    "frozen_against_source": "b39e1ff7d950075273fc2dab7206c5f8a17add70 (pre-S06 merged main)",
+    "note": "frozen run is not rescored and the S06 selector is not retroactively applied to historical model requests"
+  },
+  "precision": {
+    "packet_path": "/tmp/opencode/issue81-fresh-native-acceptance/precision/operator-review-packet-126.json",
+    "packet_sha256": "c110acd3bcc9fa6e62f347c285bd61fd542e2a826634fa1134bac78a1f204e52",
+    "items": 126,
+    "evidence_class_counts": { "assistant-reported": 103, "tool-reported": 18, "user-stated": 5 },
+    "human_verdicts_null": 126,
+    "adjudication_status": "AWAITING_OPERATOR_ADJUDICATION",
+    "threshold": 0.9,
+    "threshold_basis": ">=90% of independently adjudicated facts, with verified remote persistence",
+    "adjudication_inventory_path": "/tmp/opencode/issue81-fresh-native-acceptance/precision/adjudication-inventory-126.json",
+    "adjudication_inventory_sha256": "3f62d11d4f0474f7f1caa3b78f102d3cc9c35a894a59e5eec76e3acbd3b77b6c",
+    "inventory_is_private": true,
+    "flagged_items": {
+      "user_interrogative": [55, 79],
+      "user_instructional": [62],
+      "other_user_stated": [13, 74],
+      "compound_proposition": [22, 36, 63, 71, 74, 81, 95, 112, 116]
+    },
+    "human_grounded_precision": "UNVERIFIED (no human verdicts supplied; extractive matching alone does not PASS it)"
+  },
+  "targets": {
+    "repository_targets_file": "docs/issue-78/v2-benchmark/targets.proposed.json",
+    "status": "central_proposal",
+    "human_ratified": false,
+    "governing_frozen_or_ratified_target": "unavailable",
+    "classification": "UNVERIFIED (no human-ratified recall/precision target located; not invented)"
+  },
+  "evidence_packets": {
+    "native_source_audit": {
+      "dir": "docs/issue-78/evidence/81-native-source-audit-v1/",
+      "commit": "e94356e6bd041f44ff13aabdc65485b10f493bf0",
+      "branch": "issue/81-recall-acceptance"
+    },
+    "corrective_diagnosis": {
+      "dir": "docs/issue-78/evidence/81-corrective-evidence-v1/",
+      "commit": "0583808c0f94fe118484005def967cce9c1c5266",
+      "branch": "issue/81-recall-acceptance (branch head)"
+    },
+    "merged_s06_implementation": {
+      "dir": "docs/issue-78/evidence/81-relevance-priority-implementation-v1/",
+      "commit": "9a27b73de882c0af6fec4d86de81945338611479",
+      "branch": "main"
+    }
+  },
+  "phase_b_inventory": {
+    "launch_directory": "/tmp/opencode/issue81-fresh-native-acceptance",
+    "launch_directory_state": "authenticated private root; frozen campaign artifacts + SHA256-MANIFEST.txt present",
+    "new_client_route": "/home/filip/.local/lib/openviking-agent-shims/opencode run --standalone --session <unique> --agent build --format json <question> </dev/null",
+    "new_client_binary": "/home/filip/.opencode/bin/opencode v2.2.5 (via shim; OpenViking hybrid recall env active; OpenViking commit-gate admission flock)",
+    "fresh_process_semantics": "each --standalone invocation is a new process that loads the installed plugin bytes at start; the promoted S06 relevance.mjs is therefore picked up by Phase B clients without restarting the long-lived service",
+    "native_session_identity_requirement": "unique --session per case; session PIDs/start times recorded in a run log (raw/run-log.tsv pattern)",
+    "expected_module_config_pair": {
+      "module": "/home/filip/.config/opencode/plugins/ghdev-graphiti-memory/docs/issue-75/v2-candidate/relevance.mjs (sha256 9767486ef71fa6cf88497a1af801540dc401550a0a472c98cef64f9b4b380100)",
+      "config": "/home/filip/.config/opencode/opencode.json (sha256 ea7653be3a21451da75cbd65741d0d2f4f7be54cba052552fb20798b0978744f)"
+    },
+    "model_request_observer": "litellm trace collector (GHDEV block present in a model request = Graphiti context injection proof; litellm-first-request offset for latency upper bound)",
+    "latency_route": "p50/p95 from per-run litellm offsets (methodology in native-context-latency.json: injection-proof primary; NInfer log reference-only)",
+    "openviking_observer": "OpenViking hybrid-recall shim (OPENVIKING_HYBRID_RECALL=active) + openviking mcp-proxy children + openviking-commit-gate.service (active); coexistence readback pattern per graph-and-curator-readback.json",
+    "graphiti_observer": "graphiti-readback.py pattern against http://127.0.0.1:8766/mcp (group development-knowledge, stateDir /home/filip/.local/state/ghdev-graphiti); pre/post remote-uuids/episodes snapshots",
+    "expected_counts": { "positives": 16, "negatives": 4, "precision_items": 126 },
+    "session_permission_constraints": "OpenViking commit-gate shared agent lease: curator EX admission fails closed while a Build session holds the lease; new clients acquire the lease per invocation; no lease bypass"
+  },
+  "blockers": [
+    "SERVICE_ACTIVATION_PENDING_OPERATOR: long-lived `opencode serve --service` (PID 1907917) still runs the pre-promotion module; operator must restart it (one-command) and supply post-restart epoch + plugin-load proof. Does not block Phase B new-client runs (standalone processes load installed bytes), but does block the deployment's live-service activation claim.",
+    "HUMAN_PRECISION_ADJUDICATION_PENDING: 126/126 human_verdict=null; precision target UNVERIFIED until independently supplied verdicts.",
+    "NO_HUMAN_RATIFIED_TARGET: targets.proposed.json is central_proposal only; the governing frozen/ratified recall/precision target is unavailable and classified UNVERIFIED."
+  ]
+}

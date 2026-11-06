@@ -1,0 +1,66 @@
+{
+  "schema": "issue81-command-shape-friction.v1",
+  "campaign": "ISSUE81_POSTMERGE_DEPLOYMENT_V1",
+  "encountered": true,
+  "commands_match_handoff": true,
+  "note": "handoff-literal commands (node --check / node --test triple) were executed verbatim with producer exit statuses preserved; no guard rejections occurred. Events below are agent-authored shape/interface issues, all recovered before any acceptance conclusion.",
+  "events": [
+    {
+      "scenario": "parallel shell probe of opencode dir + plugin listing",
+      "requested_shape": "ls -la ~/.config/opencode/plugins/ghdev-graphiti-memory/*.mjs; echo ===; ...",
+      "effective_shape": "zsh aborted on unquoted === (treated as =-expansion) with '== not found', exit 1; preceding parts executed",
+      "rewrite_provenance": "agent-authored shell shape (zsh =-expansion of bare ===)",
+      "event_kind": "interface_discovery",
+      "execution_effect": "partial output only; no state change",
+      "correction_or_annotation": "re-ran the missing parts with quoted delimiters",
+      "replacement_shape": "ls -la ... && echo '---' && ...",
+      "recipe_reference": null,
+      "resource_reference": null,
+      "contract_conflict": "no",
+      "durable_gap_candidate": "no"
+    },
+    {
+      "scenario": "OpenViking memory case read",
+      "requested_shape": "tools.openviking.read({ uri: 'viking://...' })",
+      "effective_shape": "invalid-argument rejection: tool requires 'uris' (array), not 'uri'",
+      "rewrite_provenance": "agent-authored tool argument shape",
+      "event_kind": "interface_discovery",
+      "execution_effect": "one failed tool call; no state change",
+      "correction_or_annotation": "retried with uris: [ ... ]",
+      "replacement_shape": "tools.openviking.read({ uris: [ 'viking://...' ] })",
+      "recipe_reference": null,
+      "resource_reference": "tools.openviking.read",
+      "contract_conflict": "no",
+      "durable_gap_candidate": "no"
+    },
+    {
+      "scenario": "pre/post plugin-tree manifest comparison",
+      "requested_shape": "diff <(sed 's|.*[[:space:]]|  |' pre) <(sed 's|.*[[:space:]]|  |' post)",
+      "effective_shape": "sed stripped the hash column, so exit 0 proved only file-inventory identity, not hash identity",
+      "rewrite_provenance": "agent-authored verification script (weaker-than-intended producer)",
+      "event_kind": "masked_producer_failure",
+      "execution_effect": "first pass would have reported tree equality from inventory alone; corrected before conclusion",
+      "correction_or_annotation": "re-ran plain line-wise diff of full sha256 manifests",
+      "replacement_shape": "diff plugin-pre.sha256 /tmp/opencode/issue81-plugin-post.sha256 (exactly one changed line: relevance.mjs)",
+      "recipe_reference": null,
+      "resource_reference": "/home/filip/.local/state/ghdev-rollback/issue81-postmerge-v1-20261106T172421Z/plugin-pre.sha256",
+      "contract_conflict": "no",
+      "durable_gap_candidate": "no"
+    },
+    {
+      "scenario": "adjudication-inventory generation script",
+      "requested_shape": "python3 tuple union (a | b) in set-membership guard",
+      "effective_shape": "TypeError on host python (tuple | requires 3.9+)",
+      "rewrite_provenance": "agent-authored script",
+      "event_kind": "interface_discovery",
+      "execution_effect": "script aborted before writing; no partial file",
+      "correction_or_annotation": "rewrote with set literals",
+      "replacement_shape": "USER_INTERROGATIVE={55,79}; n in USER_INTERROGATIVE",
+      "recipe_reference": null,
+      "resource_reference": null,
+      "contract_conflict": "no",
+      "durable_gap_candidate": "no"
+    }
+  ],
+  "omitted_sensitive_values": true
+}

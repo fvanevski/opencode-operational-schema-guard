@@ -1,0 +1,113 @@
+{
+  "schema": "issue81-postmerge-deployment-receipt.v1",
+  "campaign": "ISSUE81_POSTMERGE_DEPLOYMENT_V1",
+  "generated_at": "2026-11-06T17:50:00Z",
+  "source_identity": {
+    "repository": "fvanevski/opencode-operational-schema-guard",
+    "merged_main_commit": "9a27b73de882c0af6fec4d86de81945338611479",
+    "merged_main_tree": "d0ec0894144e686a13aa11d23f525981f881cc5c",
+    "source_path": "docs/issue-75/v2-candidate/relevance.mjs",
+    "source_git_blob": "35747ac8474d78d05d18a00b3badefd0f9ee8c04",
+    "source_sha256": "9767486ef71fa6cf88497a1af801540dc401550a0a472c98cef64f9b4b380100",
+    "pre_fix_source_sha256": "8db952332db85831ef947f3ac6cef6b96921af314d55e8d14dae70ab5f62da06",
+    "blob_authenticated_at_merged_commit": true,
+    "sha256_matches_contract": true
+  },
+  "origin_main_recheck": {
+    "checked_via": "git fetch + GitHub API (branches/main)",
+    "remote_main_head": "9a27b73de882c0af6fec4d86de81945338611479",
+    "advanced_since_pin": false,
+    "activation_contract_changed": false
+  },
+  "live_installation": {
+    "plugin_root": "/home/filip/.config/opencode/plugins/ghdev-graphiti-memory",
+    "entrypoint": "docs/issue-78/v2-candidate/plugin.mjs (capture wrapper; baseline import of issue-75 plugin.mjs)",
+    "promoted_file": "docs/issue-75/v2-candidate/relevance.mjs",
+    "file_mode_owner": "644 filip:filip",
+    "symlink": false,
+    "consumers": [
+      "docs/issue-75/v2-candidate/plugin.mjs (static import of ./relevance.mjs)",
+      "docs/issue-75/v2-candidate/memory-core.mjs (dynamic import of ./relevance.mjs)"
+    ],
+    "duplicate_plugin_roots": "none (single ghdev-graphiti-memory root; state-dir copies are rollback/staging artifacts, not plugin roots)",
+    "one_file_sufficiency": "all live consumers resolve the single installed module; entry chain issue-78/v2-candidate/plugin.mjs -> issue-75/v2-candidate/plugin.mjs -> ./relevance.mjs"
+  },
+  "promotion": {
+    "method": "git show <merged-commit>:<path> -> stage on same filesystem (/dev/nvme0n1p2) -> sha256 verify -> cp -p preserved pre-bytes to rollback root -> atomic mv (rename) -> readback sha256",
+    "staged_sha256": "9767486ef71fa6cf88497a1af801540dc401550a0a472c98cef64f9b4b380100",
+    "staged_sha256_matches_source": true,
+    "installed_sha256_before": "8db952332db85831ef947f3ac6cef6b96921af314d55e8d14dae70ab5f62da06",
+    "installed_sha256_after": "9767486ef71fa6cf88497a1af801540dc401550a0a472c98cef64f9b4b380100",
+    "installed_sha256_after_matches_source": true,
+    "installed_size_bytes": 11158,
+    "other_plugin_files_changed": 0,
+    "unrelated_file_tree_digest_check": "pre/post sha256 manifests of the full plugin tree differ in exactly one line (the promoted file)",
+    "result": "PASS"
+  },
+  "config_preservation": {
+    "generated_config": "/home/filip/.config/opencode/opencode.json",
+    "generated_config_sha256": "ea7653be3a21451da75cbd65741d0d2f4f7be54cba052552fb20798b0978744f",
+    "base_config": "/home/filip/.config/opencode/opencode.base.json",
+    "base_config_sha256": "ce54f076bdac124cd336ec8cb3531e667bf9e7082c362fbee5b22611c573eed2",
+    "group_binding": "development-knowledge",
+    "workspace_binding": "/workspace/mcp_servers/gh_mcp",
+    "project_binding": "gh_mcp",
+    "capture_enabled": true,
+    "endpoint": "http://127.0.0.1:8766/mcp",
+    "state_dir": "/home/filip/.local/state/ghdev-graphiti",
+    "config_changed_by_deployment": false,
+    "note": "generated opencode.json (group development-knowledge) and base template (group ghdev_gh_mcp) are distinct artifacts; the effective generated config carries the production binding and was not modified. No config migration required by the S06 patch."
+  },
+  "service_activation": {
+    "affected_service_identity": "bare process `opencode serve --service`, PID 1907917, started 2026-11-05 22:16:09, binary /home/filip/.opencode/bin/opencode v2.2.5, no systemd unit",
+    "service_epoch_before": "PID 1907917, start 2026-11-05 22:16:09",
+    "service_epoch_after": "PENDING_OPERATOR",
+    "module_activation": "UNVERIFIED (module loaded only at process start; the long-lived service predates the promotion)",
+    "reason_pending": "the executing Build session is a TCP client of this service (127.0.0.1:49374) and its MCP children (gitnexus/serena/probe/openviking mcp-proxy) are child processes of PID 1907917; a restart terminates the executing agent, so no detached restart controller was manufactured",
+    "operator_action_one_command": "stop the serving instance (kill 1907917) and relaunch: /home/filip/.opencode/bin/opencode serve --service",
+    "post_restart_proof": [
+      "new PID + start timestamp later than the promotion",
+      "ss -tlnp shows the new opencode listener",
+      "log /opt/filip/.local/share/opencode/log/opencode.log shows plugin load with no import errors in the new epoch",
+      "installed relevance.mjs sha256 readback == 9767486ef71fa6cf88497a1af801540dc401550a0a472c98cef64f9b4b380100"
+    ],
+    "health_pre_restart": {
+      "opencode_serve_http": "200 on 127.0.0.1:49374",
+      "graphiti_endpoint": "reachable (HTTP 400 on GET /mcp; MCP endpoint expects POST)",
+      "openviking_commit_gate": "active",
+      "graphiti_recall_unit": "inactive (pre-existing state, unchanged; not restarted per contract)"
+    }
+  },
+  "rollback": {
+    "path": "/home/filip/.local/state/ghdev-rollback/issue81-postmerge-v1-20261106T172421Z",
+    "pre_bytes_sha256": "8db952332db85831ef947f3ac6cef6b96921af314d55e8d14dae70ab5f62da06",
+    "contents": [
+      "relevance.mjs.pre (prior bytes, mode/owner preserved)",
+      "pre.sha256",
+      "pre.metadata",
+      "plugin-pre.sha256 (full pre-promotion plugin tree manifest)",
+      "config.sha256",
+      "service-epoch-before.txt",
+      "activation-status.txt",
+      "ROLLBACK.md (rollback instruction)"
+    ],
+    "outside_live_plugin_dir": true,
+    "ready": true,
+    "executed": false
+  },
+  "focused_verification": {
+    "syntax_check": "node --check docs/issue-75/v2-candidate/relevance.mjs -> OK",
+    "focused_tests": "node --test relevance-priority-regression.test.mjs relevance.test.mjs relevance-observation-replay.test.mjs -> 17 pass / 0 fail, exit 0",
+    "source_diff_scope": "single-line regex change: HISTORICAL_STATEMENT no longer includes standalone procedural 'then'; no other hunks",
+    "merged_main_ci": "push-to-main run 42259430882, head_sha 9a27b73d, conclusion success (re-verified via GitHub API)"
+  },
+  "negative_postconditions": {
+    "unexpected_service_outage": false,
+    "incompatible_config_generation": false,
+    "new_plugin_import_errors": "none observed (activation pending operator restart)",
+    "unrelated_unit_modification": false,
+    "ex_lease_or_queue_mutation": false,
+    "graphiti_or_persisted_fact_mutation": "none by the deployment (live capture events in the state dir are normal service activity, not deployment writes)",
+    "rollback_destruction": false
+  }
+}
