@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { admitFact, lexicalSupport, relevanceSignals, relevanceFilter, localReranker, shortlistQualifiedCandidates, explainRelevanceAdmission } from './relevance.mjs';
+import { admitFact, lexicalSupport, relevanceSignals, relevanceFilter, localReranker, shortlistQualifiedCandidates, explainRelevanceAdmission, answerTypeSupport } from './relevance.mjs';
 test('lexical floor rejects unrelated facts but admits direct multi-term evidence', async () => {
   assert.equal(admitFact('Which library is used for backlog dependency visualization?',
     'React Flow chosen for backlog dependency visualization'), true);
