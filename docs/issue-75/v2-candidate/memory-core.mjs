@@ -313,18 +313,22 @@ export class Memory {
     return persisted;
   }
   async search(query, { limit = 4, maxChars = 1400 } = {}) {
+    // Bounded candidate expansion only. Fact admission and maxSelected=1,
+    // exact source/group fencing, and the native 300 ms allowance do not change.
+    const maxFacts = 24;
     const text = safeText(query, 500);
     if (!text || text.length < 10) return [];
     // Facts are the injectible result. Native node search runs separately in
     // benchmarking/on-demand inspection; do not spend an extra embedding query
     // on every automatic context build if it cannot add sourced facts.
     const facts = await this.graphiti.call('search_memory_facts', {
-      query: text, group_ids: [this.group], max_facts: 12,
+      query: text, group_ids: [this.group], max_facts: maxFacts,
     });
     if (!Array.isArray(facts.facts)) return [];
+    const received = facts.facts.slice(0, maxFacts);
     // Only keep rows relevant to returned Graphiti episode anchors.
     // The journal scan is paged, so historical records >500 still resolve.
-    const wanted = new Set(facts.facts.flatMap(f =>
+    const wanted = new Set(received.flatMap(f =>
       (Array.isArray(f?.episodes) ? f.episodes.slice(0, 12) : []))
       .filter(id => validId(id)));
     const byRemote = new Map();
@@ -346,7 +350,7 @@ export class Memory {
       let extras = [];
       try { extras = await this.extraSourceResolver([...wanted]); }
       catch { extras = []; }
-      if (!Array.isArray(extras) || extras.length > 120) extras = [];
+      if (!Array.isArray(extras) || extras.length > maxFacts * 12) extras = [];
       for (const entry of extras) {
         if (entry?.status !== 'persisted' || entry.group !== this.group ||
           !wanted.has(entry.remoteEpisodeUuid) || byRemote.has(entry.remoteEpisodeUuid) ||
@@ -358,7 +362,7 @@ export class Memory {
     }
     const candidates = [];
     const unique = new Set();
-    for (const fact of facts.facts) {
+    for (const fact of received) {
       if (fact.group_id && fact.group_id !== this.group) continue;
       const assertion = safeText(fact.fact, 480);
       if (!assertion || unique.has(assertion.toLowerCase())) continue;

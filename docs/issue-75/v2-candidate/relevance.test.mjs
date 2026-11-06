@@ -169,3 +169,65 @@ test('fresh native recall: true named entities remain hard qualifiers after punc
   assert.equal(relevanceSignals(query, named.fact).eligible, true);
   assert.deepEqual(await relevanceFilter(query, [unrelated,named]), [named]);
 });
+
+
+test('structured DB-name alias retains source topical and identity gates', async () => {
+  const query = 'Which Graphiti group does the production recall service use, and on which FalkorDB port does it run?';
+  const supported = {fact:'The environment variable GRAPHITI_RECALL_FALKOR_PORT is set to 6382.'};
+  const distractor = {fact:'The unrelated Redis service runs on port 6382 in a different storage cluster.'};
+  assert.equal(relevanceSignals(query, supported.fact).eligible, true,
+    'FalkorDB may be named FALKOR inside a structured config identifier');
+  assert.equal(relevanceSignals(query, distractor.fact).eligible, false);
+  assert.deepEqual(await relevanceFilter(query, [distractor, supported]), [supported]);
+  assert.equal(relevanceSignals('Which MongoDB port runs the Graphiti service?', supported.fact).eligible,
+    false, 'an unrelated named product must not be admitted through a suffix alias');
+  assert.equal(relevanceSignals('Which Graphiti FalkorDB port is configured?',
+    'The ordinary Falkor team uses a separate Graphiti service port.').eligible, false,
+    'ordinary prose containing the shortened name is not a structured alias');
+});
+
+test('contextual acronyms require two opaque query identifiers and topical support', async () => {
+  const query = 'Why does the production data physically live in the development-knowledge graph even though the MCP config points at graphiti_live?';
+  const anchored = {fact:"A script queries the 'graphiti_live' graph filtered by group_id='development-knowledge'."};
+  const underqualified = {fact:"The MCP service uses a general per-project configuration."};
+  assert.equal(relevanceSignals(query, anchored.fact).eligible, true,
+    'two exact identifiers can support a contextual initialism absent from the fact');
+  assert.equal(relevanceSignals(query, underqualified.fact).eligible, false,
+    'MCP alone does not establish the asked graph identity');
+  assert.equal(relevanceSignals('Does MCP route through graphiti_live and development-knowledge?',
+    'The HTTP service routes through graphiti_live only.').eligible, false,
+    'an absent acronym cannot be waived with only one shared identifier');
+  assert.equal(relevanceSignals('Why is the MCP service configured for Issue #81 with graphiti_live and development-knowledge?',
+    'Issue 80 scripts query graphiti_live and development-knowledge with the expected group.').eligible,
+    false, 'exact Issue #81 identity remains mandatory');
+  assert.equal(relevanceSignals('How does Graphiti MCP isolate groups?',
+    'The MCP server separates each group through a dedicated driver.').eligible, false,
+    'a different named product is not waived by one acronym');
+});
+
+test('24-candidate selector admits a sourced relevant fact beyond the original top twelve', async () => {
+  const items = Array.from({length:26}, (_,i) => ({
+    fact:'Unrelated weather observation ' + i + ' outside the archive pipeline.',
+  }));
+  const supported = {fact:'The Parquet archive retention pipeline stores verified manifests.'};
+  items[18] = supported;
+  items[24] = {fact:'The Parquet archive retention pipeline stores verified manifests.'};
+  const query = 'Which Parquet archive retention pipeline stores verified manifests?';
+  assert.deepEqual(await relevanceFilter(query, items), [supported],
+    'the supported candidate at index 18 must survive the widened bounded selection');
+  let receivedCount = 0;
+  const scorer = async (_query, candidates) => {
+    receivedCount = candidates.length;
+    return new Map([[18, 0.9]]);
+  };
+  assert.deepEqual(await relevanceFilter(query, items, scorer), [supported]);
+  assert.equal(receivedCount, 24, 'optional reranker uses the same bounded candidate set');
+  const rerank = localReranker('http://127.0.0.1:8004/v1/rerank',{
+    fetchImpl: async (_url, options) => {
+      assert.equal(JSON.parse(options.body).documents.length, 24);
+      return {ok:true,json:async()=>({results:[{index:18,relevance_score:0.9}]})};
+    }
+  });
+  assert.equal((await rerank(query, items.slice(0, 24))).get(18), 0.9);
+  await assert.rejects(rerank(query, items), /candidate bound exceeded/);
+});

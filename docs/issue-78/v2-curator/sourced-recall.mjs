@@ -4,9 +4,12 @@ import path from 'node:path';
 import { ReviewStore } from './core.mjs';
 const UUID=/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i;
 const CLASSES=new Set(['user-stated','tool-reported','assistant-reported']);
+// 24 returned facts, at most 12 remote episode anchors each.
+// The caller still confirms exact group/project/workspace and persisted status.
+const MAX_AUTOMATIC_EPISODE_ANCHORS = 24 * 12;
 export async function sourcedEpisodeResolver(root,group,workspace,project,ids) {
   const wanted=new Set((Array.isArray(ids)?ids:[]).filter(id=>
-    typeof id==='string'&&UUID.test(id)).slice(0,120));
+    typeof id==='string'&&UUID.test(id)).slice(0,MAX_AUTOMATIC_EPISODE_ANCHORS));
   if(!wanted.size)return [];
   const store=new ReviewStore(root,group),result=[];
   for(const uuid of wanted){

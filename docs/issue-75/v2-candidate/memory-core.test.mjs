@@ -183,3 +183,40 @@ test('native MCP transport parses structured JSON or SSE and uses explicit group
   assert.equal(responses[1].params.arguments.group_ids[0], 'alpha');
   assert.throws(() => new GraphitiMcp('http://0.0.0.0:8000/mcp/'), /loopback/);
 });
+
+
+test('native sourced recall may use facts 13-24 but not an out-of-bound remote result', () => sandbox(async dir => {
+  const ids = Array.from({length: 25}, (_,i) =>
+    '60000000-0000-4000-8000-' + String(i).padStart(12, '0'));
+  const facts = ids.map((id,i) => ({
+    fact: i===18 ? 'The Parquet archive retention pipeline stores verified manifests.' :
+      'An unrelated weather observation at sample index ' + i + '.',
+    group_id: 'alpha', episodes: [id],
+  }));
+  const calls = [], resolverRequests=[];
+  const graphiti = { call: async (name, args) => {
+    calls.push({name,args});
+    if (name !== 'search_memory_facts') throw Error('unexpected Graphiti tool: '+name);
+    return {facts};
+  }};
+  const resolver = async idsArg => {
+    resolverRequests.push([...idsArg]);
+    return idsArg.map(id=>({
+      status:'persisted', group:'alpha', remoteEpisodeUuid:id,
+      sourceRef:'opencode:ses-bounded:message:msg-'+id.slice(-12),
+      evidenceClass:'tool-reported',
+    }));
+  };
+  const mem = new Memory({journal:new Journal(dir,'alpha'),graphiti,group:'alpha',
+    extraSourceResolver:resolver});
+  const result = await mem.search('Which Parquet archive retention pipeline stores verified manifests?');
+  assert.equal(calls.length,1);
+  assert.equal(calls[0].args.max_facts,24,'Graphiti request must match candidate admission bound');
+  assert.deepEqual(calls[0].args.group_ids,['alpha']);
+  assert.equal(resolverRequests[0].length,24,'remote over-return must be bounded locally');
+  assert.equal(resolverRequests[0].includes(ids[24]),false);
+  assert.equal(result.length,1);
+  assert.equal(result[0].source,
+    'opencode:ses-bounded:message:msg-'+ids[18].slice(-12));
+  assert.equal(result[0].evidenceClass,'tool-reported');
+}));

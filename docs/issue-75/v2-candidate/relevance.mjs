@@ -39,7 +39,7 @@ export function localReranker(url, { fetchImpl = fetch, timeoutMs = 160, model =
   if (parsed.protocol !== 'http:' || !['localhost', '127.0.0.1', '[::1]'].includes(parsed.hostname))
     throw new Error('Reranker must use loopback HTTP');
   return async (query, candidates) => {
-    if (!Array.isArray(candidates) || candidates.length > 12) throw new Error('Rerank candidate bound exceeded');
+    if (!Array.isArray(candidates) || candidates.length > MAX_AUTOMATIC_CANDIDATES) throw new Error('Rerank candidate bound exceeded');
     const res = await fetchImpl(parsed.toString(), {
       method: 'POST', headers: { 'content-type': 'application/json' },
       signal: AbortSignal.timeout(timeoutMs),
@@ -87,6 +87,40 @@ const INTENT_TERMS = new Set('settle decided decide chosen choose select selecte
 const ISSUE_REFERENCE = /\bissues?\s*[-#]?\s*(\d+)\b/gi;
 const SENTENCE_INTERROGATIVES = new Set(
   ['What', 'When', 'Where', 'Who', 'Why', 'Which', 'How']);
+// Bound the candidate set identically in Graphiti search and both selector
+// paths. The 300 ms native context allowance remains the controlling timeout.
+const MAX_AUTOMATIC_CANDIDATES = 24;
+// An opaque identifier shared by query and fact can qualify a contextual
+// acronym (e.g. an interface name), but never a different named product.
+// This is not a substitute for the issue/number identity fences below.
+function opaqueIdentifiers(text) {
+  return new Set(String(text).toLowerCase()
+    .match(/\b[a-z][a-z0-9]*(?:[_-][a-z0-9]+)+\b/g) || []);
+}
+function satisfiesNamedTerms(query, fact, names, overlap) {
+  const content = fact.toLowerCase();
+  const identifierParts = new Set([...opaqueIdentifiers(fact)]
+    .flatMap(id => id.split(/[_-]/)));
+  const missing = names.filter(name => {
+    if (content.includes(name)) return false;
+    // A product's *DB suffix may be abbreviated in a structured
+    // environment/config identifier: FalkorDB -> GRAPHITI_FALKOR_PORT.
+    // Requiring an identifier component avoids ordinary-word false aliases.
+    if (name.endsWith('db') && name.length >= 7 &&
+        identifierParts.has(name.slice(0, -2))) return false;
+    return true;
+  });
+  if (!missing.length) return true;
+  if (names.length !== 1 || missing.length !== 1 ||
+      !/^[a-z]{2,4}$/.test(missing[0]) ||
+      !new RegExp('\\b' + missing[0].toUpperCase() + '\\b').test(query))
+    return false;
+  const identifiers = opaqueIdentifiers(fact);
+  const shared = [...opaqueIdentifiers(query)].filter(id => identifiers.has(id));
+  // Never waive an acronym based on generic topic tokens alone. Two shared
+  // exact opaque identifiers plus the normal topical threshold are required.
+  return shared.length >= 2 && overlap.count >= 2 && overlap.score >= 0.30;
+}
 function namedQueryTerms(query) {
   // Preserve proper-name constraints, but issue labels have their own exact
   // scope check and must not become spelling-dependent proper names.
@@ -121,7 +155,7 @@ export function relevanceSignals(query, fact, { hasRerankScore = false } = {}) {
   // issue-specific check also covers one-digit issue numbers.
   const requestedNumbers = new Set(String(query).match(/\b\d{2,}\b/g) || []);
   const factNumbers = new Set(content.match(/\b\d{2,}\b/g) || []);
-  if (!content || names.some(name => !content.toLowerCase().includes(name)) ||
+  if (!content || !satisfiesNamedTerms(query, content, names, overlap) ||
       [...requestedIssues].some(id => !factIssues.has(id)) ||
       [...requestedNumbers].some(number => !factNumbers.has(number)))
     return { eligible: false, priority: 0, overlap };
@@ -152,7 +186,7 @@ function safeFact(value) { return typeof value === 'string' ? value.trim() : '';
 export async function relevanceFilter(query, candidates, ranker = null, { maxSelected = 1 } = {}) {
   if (!Array.isArray(candidates) || !candidates.length || !Number.isInteger(maxSelected) ||
       maxSelected < 1 || maxSelected > 4) return [];
-  const bounded = candidates.slice(0, 12);
+  const bounded = candidates.slice(0, MAX_AUTOMATIC_CANDIDATES);
   let scores = null;
   if (ranker) {
     try {
