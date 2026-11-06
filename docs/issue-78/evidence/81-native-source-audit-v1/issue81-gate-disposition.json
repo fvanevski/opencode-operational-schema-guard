@@ -1,0 +1,48 @@
+{
+  "schema": "issue81-gate-disposition.v1",
+  "campaign": "ISSUE81_NATIVE_SOURCE_AUDIT",
+  "generated_from": [
+    "docs/issue-78/evidence/81-native-source-audit-v1/* (this packet)"
+  ],
+  "problem_1_source_quality": {
+    "automated_126_source_match_reproducible": true,
+    "basis": "126/126 EXACT_NATIVE_SOURCE_MATCH; UTF-8 byte offsets verified against the private curation store events[] collection",
+    "displayed_excerpt_only_matchable_count": 8,
+    "displayed_excerpt_matchable_items": [11, 38, 47, 70, 75, 79, 80, 124],
+    "actor_role_complete": 126,
+    "timestamp_complete": 126,
+    "offset_verified": 126,
+    "assistant_reported": 103,
+    "tool_reported": 18,
+    "user_stated": 5,
+    "interrogative_user_text_promoted_to_fact": [55, 79],
+    "duplicated_graph_topology_cluster_size_approx": 29,
+    "record_denominator_usable_as_item_metric": true,
+    "atomic_claim_denominator": "SEPARATELY_UNCERTAIN_NOT_COMPUTED",
+    "human_certified_grounded_precision": "UNVERIFIED (all 126 human_verdict null)"
+  },
+  "problem_2_retrieval_correctness": {
+    "seven_wrong_source_cases": ["S01", "S03", "S04", "S05", "S06", "S07", "S10"],
+    "classification": "COMBINATION: ordinary semantically-related recall (primary) + exact-source evaluator overconstraint (contributing)",
+    "provenance_binding_defect": "not pure; memory-core.mjs:366 correctly picks a resolvable source for the retrieved (already topically-offset) fact",
+    "s13_first_supported_boundary": "absent GHDEV block; censored-or-no-match (indistinguishable without plugin modification); missing-source-index RULED OUT (expected episode 009974d2 present in _episode-index)",
+    "s13_root_cause": "UNVERIFIED at specific-cause level",
+    "n02_cross_group_leak": false,
+    "n02_classification": "correctly-grouped (development-knowledge) undesired topic-relevance; not a cross-group leak",
+    "smallest_necessary_correction": "scoring-policy only (credit related verified same-group source); no retrieval-code correction demonstrated necessary"
+  },
+  "preserved_frozen_results": {
+    "semantic_recall": "8/16 FAIL (required >=13/16)",
+    "n02": "FAIL_INJECTED",
+    "human_grounded_precision": "UNVERIFIED",
+    "episode_integrity": "140/140 (last host report)",
+    "installed_source": "merged main b39e1ff7d950075273fc2dab7206c5f8a17add70"
+  },
+  "need_central_source_change": "no (retrieval code); scoring-policy candidate optional",
+  "gates": {
+    "source_binding_complete": "PASS (126/126 bound and offset-verified)",
+    "recall_diagnosis_complete": "PASS (9/9 cases traced; S13 specific-cause UNVERIFIED, N02 classified)",
+    "production_repair_made": "none",
+    "frozen_evaluation_changed": "none"
+  }
+}

@@ -1,0 +1,23 @@
+# SHA256-MANIFEST - issue-81 native source audit v1
+# Non-circular: SHA256-MANIFEST.txt itself is not listed.
+# Paths are repo-relative. The Git-staged set must equal {this manifest} + {listed files}.
+# Generated 2026-11-06 for parent b58bde911a8a4f4aa1856315dc363f1fbaa68837.
+0d1663b66edb7c6c3864d5bc49013d5244e6b19297da4b6e886df3d54768a83c  docs/issue-78/evidence/81-native-source-audit-v1/authority-temporal-review.json
+f40b80dd3163253a04407db6415ed72c58eecc182df75b1f5d3e1c981c4e5f44  docs/issue-78/evidence/81-native-source-audit-v1/command-shape-friction.md
+0f0ffbda2d68266e86e9f4e289c226909343d03f718881e8dca1ee13436c9adc  docs/issue-78/evidence/81-native-source-audit-v1/diagnostic-summary.md
+f01032c70542bc0a3547a2466cb1ec16b6d2d32bfa7402af434c48f127a48b7d  docs/issue-78/evidence/81-native-source-audit-v1/fact-source-bindings.jsonl
+e3670cb76694fc670d3e184f1abfe70bae1d07cea06b5f6d8d9c85fd65faad0a  docs/issue-78/evidence/81-native-source-audit-v1/full-matrix.json
+c4fe47840d6912301751c6cb0ea1cc545fb32c96914e25ffa734e3cf59ee0b20  docs/issue-78/evidence/81-native-source-audit-v1/helpers/bind-source-events.py
+e3ede86ad588eb2557306bdb9c3f708f8597d5e8d37ba412a116ae43de62fe38  docs/issue-78/evidence/81-native-source-audit-v1/helpers/build-recall-diagnostics.py
+e6c9b9b5220d4f7433c749bd7acdb3a76ad24d290846e4263e3fc536a781ddef  docs/issue-78/evidence/81-native-source-audit-v1/input-identity-manifest.json
+d9eba4f5efabf6b256a8fdb0432b86db4b89358b2b91bcbfb85b75ca27a43000  docs/issue-78/evidence/81-native-source-audit-v1/issue81-gate-disposition.json
+7bb89df46730868972f3b1e13f258ec9b2a22ef1583ee0f1ffb900a0819281f6  docs/issue-78/evidence/81-native-source-audit-v1/native-event-source-evidence.jsonl
+8738f684fed34327ba8a79883643f5249b55d9524ef743be32f2b43875852582  docs/issue-78/evidence/81-native-source-audit-v1/negative-control-n02.md
+29a60d814a2439cf8ec79e08cd8949cd99ad39930c97aed3439d90cebfe16197  docs/issue-78/evidence/81-native-source-audit-v1/proposed-correction-contract.md
+e2f37e63f016f00c55565249d6729346eb1b4dc8914bcf8b6b5f1000c4b202f6  docs/issue-78/evidence/81-native-source-audit-v1/README.md
+5cf0a4fd040b709b75b978634ea4ef32f629e3f01fb8c6faf5198766abea10cb  docs/issue-78/evidence/81-native-source-audit-v1/recall-case-diagnostics.json
+7aaeaef0dba70f11ff61212aa99d8318363aac7eedda6964107844d1dbb99353  docs/issue-78/evidence/81-native-source-audit-v1/recall-evaluator-analysis.md
+d694bc0bfb8dc10ac7c2ccc2f99b35546effc9711b5987eadacb6ff8a96111f4  docs/issue-78/evidence/81-native-source-audit-v1/reproducibility.md
+8a086f00a80d5906f861212b15d026f44a437ee9c6366d873ad8895d247c52db  docs/issue-78/evidence/81-native-source-audit-v1/retrieval-pipeline-analysis.md
+6a12c89595f5f4f4bcbc7866845553a3818cbd059b9c69a68cdb334f2ab0dd27  docs/issue-78/evidence/81-native-source-audit-v1/source-extraction-method.md
+745580bdf1eabe5eb3d6c2e267793f1c50fd5314bac9216adc11e8846f836c28  docs/issue-78/evidence/81-native-source-audit-v1/source-match-reproduction.json

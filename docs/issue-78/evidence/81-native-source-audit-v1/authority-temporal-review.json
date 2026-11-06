@@ -1,0 +1,1496 @@
+{
+  "items": [
+    {
+      "item": 1,
+      "record_id": "78f3c529ca34a82203b069e5b4a4dd76dec2253a6876b8c5ead0bdf3e6024c7d",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 2,
+      "record_id": "f3c3d95b300ac31f79873db3664f6f9fc600859bf69324e153d02005242e7f92",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 3,
+      "record_id": "86147599e10b344ba13c7eb0c63c9d0fa479d18500e3dc081f8cdf89dfde1527",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 4,
+      "record_id": "3e844c00ffbdec8b3bb2ec309a3d1a7cf631366c9bd26d40774ba6f18fad001f",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 5,
+      "record_id": "bfebfeab6665c32b443d5a956f8bcc009221948fb4f1b00ad0eed29d1418998e",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 6,
+      "record_id": "b5cec545888a58b990c69100c779237d1ca708049506d12c74a01c467fd5184c",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 7,
+      "record_id": "7dae4a094f6ca3819dd731660b88fb7a445532240c4316d577587e403b1164c6",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 8,
+      "record_id": "8076d3a0db54906e5ab1dd303b53fea40aac6476ba903e2a98bf6447138e3bb4",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 9,
+      "record_id": "b129d7c18373eae4a930a3cc7dd939a1e456ec88679fbfadf8eca3833b1ba48d",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 10,
+      "record_id": "0d28cd60e4c95a6f6a4a4ec131ab20ed3b722f1ee3d227e63750630059a00279",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 11,
+      "record_id": "e76e557850c3ba364a8f25b98c4b6f2e3726a34575c0475ba8e944bea78bc2ab",
+      "evidence_class": "tool-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "tool-reported: source is observed tool output; authority limited to the tool run itself"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 12,
+      "record_id": "56fcb78d1f8f8503f3773b7c13995cdc74c34eded53d4aa02a5796231fdaa732",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 13,
+      "record_id": "4737b5dd7f2194c40e23f8ac7c123e66604e0263d32d4cf5d95eb0268d2550c1",
+      "evidence_class": "user-stated",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "user-stated: source is user text; interrogative/instructional user text is not by itself a verified fact"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 14,
+      "record_id": "c5bba7bd6d90b2719509681b90e5bcd08245f00bd259eead91788a83bede31fa",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 15,
+      "record_id": "6166dd13a8e7e63744a96b4d7e0d429a611fa47ad49fab506accb946a95199c8",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 16,
+      "record_id": "ff0b8ba56ec4dc26d6e145e6a769b6b1f3e01e1885efc7283d2f15f278c8203c",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 17,
+      "record_id": "f00d12f1a845b945852712ad898ed1e7f1406dc7e278556ac5fc23ceee06fac9",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 18,
+      "record_id": "dcab67a291cc99ff2f7c9721285f926f2ccbdac69de263c412d0dfe237bfbb63",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 19,
+      "record_id": "a96e8b1b7fc6f3ea6dcf478387bc642b7da5fd8dcca6e1cfd556425a8d6e472f",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 20,
+      "record_id": "62acfacdb201427ee32dd9ab930f874bf2f71e31754f468a17443881424d5f0e",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 21,
+      "record_id": "459c9a645be182e62cf9651bb1c95f632a587f25fd58a3e461d6c66da66d273b",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 22,
+      "record_id": "09d6311f8901a8eae994a80607ea7569a5a7eb5fdeb2ec7a0ff1328124047f05",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 23,
+      "record_id": "b4b5e2a2ee27cce8656c3c76fe13e73d49fa499b8737e29ba13ac8cf84bee91f",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 24,
+      "record_id": "1bda0b9326021c531391d3589ede10c4880e32c9b5800b7b64d49a2935ebcf6e",
+      "evidence_class": "tool-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "tool-reported: source is observed tool output; authority limited to the tool run itself"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 25,
+      "record_id": "08ed6f86f25645386ac7e7ad836547322878f527237f632f1bb83021a6310b1f",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 26,
+      "record_id": "a15421d644158967ab67c86d0c3b2b037720b242338f713d38edea94b889c698",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 27,
+      "record_id": "a066fae6ef86555e59a06b67cb7691be35a5f2a50c471cf0c028db80b7651dcd",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 28,
+      "record_id": "3a3caaea0551fadee31a3bc05292f92e6c1f92447edc407c654c5ea8c7fe8827",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 29,
+      "record_id": "23a10d61b11fde06b91133a9b0e6b1d04bdd25a9fb36bc426d3e2a2bee0f0746",
+      "evidence_class": "tool-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "tool-reported: source is observed tool output; authority limited to the tool run itself"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 30,
+      "record_id": "04cfade44a50ee89b4124f633307d2ab409cfeca99d4b8b0c4bd22981509cf7e",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 31,
+      "record_id": "1023ea405c264055aabd01aa1b1b1a1887c26e02ed702b108162f9dba3ecfe77",
+      "evidence_class": "tool-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "tool-reported: source is observed tool output; authority limited to the tool run itself"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 32,
+      "record_id": "9e7bbdbc9156a286581f78bf96c4570c5c7b2c75a5b509d09af51ead919e7fa3",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 33,
+      "record_id": "d93d13f1014b62408576168ba2d533cf8f15e1bc95c00acc31c527f518b57657",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 34,
+      "record_id": "a3e1add3cfb436c2ca39e34e70f6560ba4cf2b746c20769a19d66f6f52281d33",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 35,
+      "record_id": "535a8f4f563d70641ea768d1aaa4404372f430f93a25bf5315cc85a8fe03a4c1",
+      "evidence_class": "tool-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "tool-reported: source is observed tool output; authority limited to the tool run itself"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 36,
+      "record_id": "a435f1160deb3fc7ef44abb9f06024d1d45a7f632838633d7c77fd4be6897c60",
+      "evidence_class": "tool-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "tool-reported: source is observed tool output; authority limited to the tool run itself"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 37,
+      "record_id": "6dc1025799c66b767a0aa4e8090ff63a24fe3bdd7d34a6411b72d8fc089c4f7f",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 38,
+      "record_id": "1d5afcda249d78bf1f9baac8fe0bb92b1803f131b8eac7d1bf1070c54ea491fa",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 39,
+      "record_id": "927e64e51f8e3deed7e1145ae1128806a88f8b9a5ea36c935692f2f6ece98f1d",
+      "evidence_class": "tool-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "tool-reported: source is observed tool output; authority limited to the tool run itself"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 40,
+      "record_id": "e5eac8cd985dd72e9fe206b9f11a414184256fa68058c8714aa4164891b6a941",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 41,
+      "record_id": "58ee82d6a1711111354932a5f39e3a5dec40d1b12be04a292e777e764e8437f9",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 42,
+      "record_id": "698171e1f6c88cb9569ce3f2fa1f1d58e3cb608ed6f9efb7c3e14a14cecc1c90",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 43,
+      "record_id": "f29e7d280775603b83c5b34c9d88ec13ab22b81cc63acee3795e08650012b8d4",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 44,
+      "record_id": "ab74438460338f834725c2a80d4d8fae446538bd4ea9f33dbc2391d1307db682",
+      "evidence_class": "tool-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "tool-reported: source is observed tool output; authority limited to the tool run itself"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 45,
+      "record_id": "1b247bf99445e140b70368c79e5489287c620f37eda8744d7476a1ab6550a8a1",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 46,
+      "record_id": "55b3ab14067d08cacf135fdd0261dd65a845449289ed4105a695f6593236f4c1",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 47,
+      "record_id": "7d98f957cf43512c8faef37d92e909cbf2abcc70bd6887705c66263ffd5d5d50",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 48,
+      "record_id": "5bf51a6846d31eac71dc4b16fa7107b900e58781bc411befb6f01482d123d5e9",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 49,
+      "record_id": "2a74e03ac236825000c9725130854498c53eb3aa5c541aa6d0161fa06121d6f7",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 50,
+      "record_id": "7350b41eeaf8bb626e5a429dd4797427d3d6b53ad77ea9affc03fe59c3fbacc4",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 51,
+      "record_id": "f99c5fe36d4d93cd1376801de6705b91f7b5c1b83ba30f90089027390fe9c4f5",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 52,
+      "record_id": "b9a4d0f28b2f8262da59edb802ac800af5ce91669b9802d3838b0770e95dfcf1",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 53,
+      "record_id": "ccab4e6ef8336fef92d7b987d3f9442c50f01da7487d1aee846dd6e1d34a1b7d",
+      "evidence_class": "tool-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "tool-reported: source is observed tool output; authority limited to the tool run itself"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 54,
+      "record_id": "7419831d11d0a3e14401edfc8c735734b6a0c3ce353c359fdfce3c619a57fcec",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 55,
+      "record_id": "6ec7a26a52ce78c06215ef8d96314f4d3871087aa5c74e8fe82ddec74ea02e58",
+      "evidence_class": "user-stated",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "user-stated: source is user text; interrogative/instructional user text is not by itself a verified fact",
+        "user interrogative/instructional text promoted into a factual assertion"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 56,
+      "record_id": "a7137a15f4f5903a1f872f4cad3eefeec50d058b1943fc160837fed702c1745a",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 57,
+      "record_id": "411978b2ffe03fe8e713821fc9a9ec545917a62d925c0c87908b08103685548e",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 58,
+      "record_id": "28821b4905ac11fdccea53e74a51e7f39c60991cce19c0e4f52e814fcb40399c",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 59,
+      "record_id": "2e900efa19e8eabb610a5a109e0008e42be5f26c8568d87d13bb98c891357f3f",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 60,
+      "record_id": "e9dcae04ef125d5655cf73b9159ce26d70e8e0812f8170969d617fd137d6f035",
+      "evidence_class": "tool-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "tool-reported: source is observed tool output; authority limited to the tool run itself"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 61,
+      "record_id": "d23dbace842ae033cb15b69efd48bb70f9248c88a3d977ce10566a6468388d5b",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 62,
+      "record_id": "77790f7ee6bb3e4939e1fc90f1b21b8316837897c5f057f630a5e59d6120d833",
+      "evidence_class": "user-stated",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "user-stated: source is user text; interrogative/instructional user text is not by itself a verified fact",
+        "user interrogative/instructional text promoted into a factual assertion"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 63,
+      "record_id": "d534748f192aa1ea5a0307f66fc63385853f1f0475c0e77f3026310e1d3aa432",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 64,
+      "record_id": "28b64808be06fd9230dee67918160ced60797177ac048cf52ed43688946c8005",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 65,
+      "record_id": "a2e707c2ac3e0ecc1f788c0a17f5aa0e1fabbb1b259441ee0d5adc39ab526875",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 66,
+      "record_id": "3af30d7dbf3056142f366dfee770df7d2351c7fe9e601bd424b486821aeb0a4c",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 67,
+      "record_id": "98d737beb1da91be0b690c781f102448bdd1d32e5a87f49e6f36ac4a1864047c",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 68,
+      "record_id": "f97780f5e1f9408e3874daa0d99eb4a0445709844094e11aff6913bf5ad105b6",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 69,
+      "record_id": "77a01768569904919a93481a81f4e0ce7f367a5561214dbb2a7d785b515c690d",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 70,
+      "record_id": "3c1e08e2ec0661b6af9b20f3431c25a070be01c192c348f3497d88d2f7e481c6",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 71,
+      "record_id": "e2042eede2793db74c8190b898b62cb9472fd5abfffe2cfe98a9a0b8024de45c",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 72,
+      "record_id": "4b676fe5f0cb18aba3144f32c8bb574e11a1a34699d851cacc21faf4c4957524",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 73,
+      "record_id": "c80c39db9cbaf6dde91f6854fdf10fb18d4f5a75cef0b5b6494945abb12e245f",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 74,
+      "record_id": "d284a0c9fdccadbd6f56f6cae447b013b243dec868666886232b7ad59e19e162",
+      "evidence_class": "user-stated",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "user-stated: source is user text; interrogative/instructional user text is not by itself a verified fact"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 75,
+      "record_id": "63557b2e759e073b4777abffda043dc347bafd239940482324ce1b2f8faa481b",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 76,
+      "record_id": "07ac0bae9053723e486d63d50b94667dcf88b32580bab567b327dca7ff013896",
+      "evidence_class": "tool-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "tool-reported: source is observed tool output; authority limited to the tool run itself"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 77,
+      "record_id": "e2d56b5ad0b55e8c275e9d8aa9f8064001252e32e644919c88ac2fbe8e33d01d",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 78,
+      "record_id": "db8959b886100cb16838b808c33c915b2efb3f7608cc6291e29d79356622a146",
+      "evidence_class": "tool-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "tool-reported: source is observed tool output; authority limited to the tool run itself"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 79,
+      "record_id": "63b1ae37a114f2d11220bda6f44110861085fdd8aead7bb29e916ed5d592b1ff",
+      "evidence_class": "user-stated",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "user-stated: source is user text; interrogative/instructional user text is not by itself a verified fact",
+        "user interrogative/instructional text promoted into a factual assertion"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 80,
+      "record_id": "514a0b9af5ba2ede85d084e23f1b3d4d6ddcaeb7c83f9ec042ec298f5cdae3ce",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 81,
+      "record_id": "e9c65b105c337ef78174ceaaaf1ec7c0b951700aea56f886bb5e0cb5664830c2",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 82,
+      "record_id": "a052f98f666ffcd9758d76b3a3178f3f0695bc91b7bfd0a310618d5d0096796d",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 83,
+      "record_id": "0a73b18d5102de47d502627121dc462552b6575f369637530601529c1e80a83a",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 84,
+      "record_id": "120d489d0ebcf85d20ce793c3672a17366246d0e90b9a064ac0b128986ac3cac",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 85,
+      "record_id": "fdfcfac81acf616b3512761b2cbd0426dfceee7d2fb9a7ce2f151d629f311d63",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 86,
+      "record_id": "189c2e9a981dc4badbaf6a8959c79891af52a6d3055fbf3e674e991fc7ba5405",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 87,
+      "record_id": "8e3584e273f44f483ae25d070c2c13975cbb74113a01baad1913fcf4e0cffa90",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 88,
+      "record_id": "c3c2ff98b2a44011864be3ddfd90227d39b59689713008b399220965f98fb69d",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 89,
+      "record_id": "489ca447e3b85b7ae06d779008d22911b0fa50fc89838bbf7219ebd420feb7a1",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 90,
+      "record_id": "be27a1c6ae361743331b823df420cff26ac058afd97cfa08fd4af090c7631f2d",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 91,
+      "record_id": "4b37e68ac3022be82cdb9ee540ce31a0e8f11b3e2d9eebca4848f7946c43b7db",
+      "evidence_class": "tool-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "tool-reported: source is observed tool output; authority limited to the tool run itself"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 92,
+      "record_id": "e40abdba2ee76fb5609ee0a6808368a8c1a558f5522ea68edfda9d13dfc25333",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 93,
+      "record_id": "5db1bd16453a0ea9b95a99bfc7bb3a15b7eb43b3a5c9e80ead63ed31fb77fc7c",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 94,
+      "record_id": "3f6699e18aecb460ef7938da8a1793ffe43070cde13559a0e491aad53190c4b5",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 95,
+      "record_id": "c0bce468232a07f83959554fb2cefd4259f72ffbde36c07b0db56e60bbec5b60",
+      "evidence_class": "tool-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "tool-reported: source is observed tool output; authority limited to the tool run itself"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 96,
+      "record_id": "7f8761f0c565e5d47bd1b92a6023d69c59d8f2727709e4d5b7ff7fbad6155ed8",
+      "evidence_class": "tool-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "tool-reported: source is observed tool output; authority limited to the tool run itself"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 97,
+      "record_id": "ed868850ee280ef33c653d006de94d02248e8a69b9dc237afdbae7675cc9721b",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 98,
+      "record_id": "b23a6d18915b3af35eeaa2a613ad64913e2230a8582c09ea584bf3a64f4d6344",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 99,
+      "record_id": "57cb44732a419724a73a1e1f746f77ea26b4260f51b8add855223223b2712134",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 100,
+      "record_id": "cf8bb58d3b6243fe41209e7046cec6b9cd09817f2bef11c711883f482bfc6610",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 101,
+      "record_id": "8816add53a976d366560fa42cc914c8960cedac6c45d97b8ab6cf8154a7d4c11",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 102,
+      "record_id": "c1a912c529638fc14e5509808f62b5cf3ee3357220bd9789ed4f009c10d8b389",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 103,
+      "record_id": "853c96761f183ced8c03701be22bfa2e06ec11e0b38028760da5a9a5fcbe99d2",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 104,
+      "record_id": "b65de565adaebbc9e174d5d4dd040fb8f9602bff47ff825efbfefb4c4905aae5",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 105,
+      "record_id": "cc9c8efce3f738a046b9a29247604cd0d94e86fa8442eab3e44b2ca72e6e2d28",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 106,
+      "record_id": "f278235ac8bb707726fbbd07902a4bb288be34873d8c515a1993187d4b25ad9b",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 107,
+      "record_id": "85db1de6e390ec961b9b0b0902159d0f694b52f84b10b41151a276bb68308f2d",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 108,
+      "record_id": "0f4d014f609c8c0a489e76c4586a9058523aa577ca9a795133ad2269bc488140",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 109,
+      "record_id": "db8714fbbf0c63cc1fc425feb744678fdcc4b32d8b38cf2194f53d43b7829904",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 110,
+      "record_id": "d2d3c9f3efbb5c300dfdcdbe22bc3295c2bc9a28696bbcd09e408a74473f8501",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 111,
+      "record_id": "70ebcb31c2954ea802e0d6d3b010777f290884f5ba731b0f9487d4d17627254e",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 112,
+      "record_id": "d1e2fd64e2116e5eb660f0e501c1157c4912a00fcc09dc1511b630b042023423",
+      "evidence_class": "tool-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "tool-reported: source is observed tool output; authority limited to the tool run itself"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 113,
+      "record_id": "f81f3de150c8d96a2e67657527d331c899a203f12c1bb1a37daca60b5af00707",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 114,
+      "record_id": "c29e33d3c2017cdd69867e34a2b879ec15876576f62137fe9f8ecce8e3f04ca9",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 115,
+      "record_id": "df90f36609e14216ce3ea7de8960f416be80dc10556a732340073a6d22e44f9a",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 116,
+      "record_id": "c775bb5355c563f7e0d652601ce423746d0a64f6cb4a332e2590d0b4ff4b2fd2",
+      "evidence_class": "tool-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "tool-reported: source is observed tool output; authority limited to the tool run itself"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 117,
+      "record_id": "e4d6e4b3d7e2850bcd9d47519ca94e77916a2d65d1e3747b2b9c8b84244ae181",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 118,
+      "record_id": "0f7b4a84df0463a51c34b605202405e2c5192e5dc753e95a2b6a6a57dd58569c",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 119,
+      "record_id": "58cc5ba4c1b58f6402bda285ffa7f7ce6e6c0203e662a09de729e64fb47ffaa7",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 120,
+      "record_id": "078df4910b429933fd633084e9eee41595aa6846aa9c95dd6f18aa1fcea7816a",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 121,
+      "record_id": "971a09ce3e7dd2abfb030d8a5d8b4acf28ece1b3c8b9cfebc9d4b84a173920f7",
+      "evidence_class": "tool-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "tool-reported: source is observed tool output; authority limited to the tool run itself"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 122,
+      "record_id": "2cb9e8a8a55b4dfd05c95d500f1b4c3580d94ab4793df5ba3cc3416b4db7a6a9",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 123,
+      "record_id": "3a3e5c4388c60e5cdd26f8f59712301633786a1398940494548ab770c7573c92",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 124,
+      "record_id": "70bec61793ab916dac935b11affdde1444d2c1276ef9e6ede80338730c87c4c5",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 125,
+      "record_id": "2b9d861e71ef6d49e8df0fbd648bf0727185716c0ac88fff6537189e89e8fad9",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    },
+    {
+      "item": 126,
+      "record_id": "98a14b4f65d9078300b96caad0ec588972a1cc165a2f3ed55c40aa183896034c",
+      "evidence_class": "assistant-reported",
+      "evidence_status": "EXACT_NATIVE_SOURCE_MATCH",
+      "concerns": [
+        "assistant-reported: source proves the assistant said this; not independent verification of the proposition",
+        "temporal_status=observed retained, but assistant observation is not independently verified (not a currently verified fact)"
+      ],
+      "human_verdict_required": true,
+      "operator_review_recommendation": "independent operator verdict required for grounded/authority/scope; local match is extractive only"
+    }
+  ]
+}

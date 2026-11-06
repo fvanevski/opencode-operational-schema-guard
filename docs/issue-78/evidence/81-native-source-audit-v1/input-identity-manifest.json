@@ -1,0 +1,63 @@
+{
+  "schema": "issue81-input-identity-manifest.v1",
+  "campaign": "ISSUE81_NATIVE_SOURCE_AUDIT",
+  "repo": "fvanevski/opencode-operational-schema-guard",
+  "issue": 81,
+  "evidence_branch": "issue/81-recall-acceptance",
+  "remote_refs": {
+    "origin_main_sha": "b39e1ff7d950075273fc2dab7206c5f8a17add70",
+    "origin_main_tree_sha": "7c5486fefc12063c70c5839d63a300c630c925d0",
+    "working_branch_head_before": "b58bde911a8a4f4aa1856315dc363f1fbaa68837"
+  },
+  "open_prs_touching_branch": 0,
+  "input_artifacts": [
+    {
+      "name": "operator_review_packet_126",
+      "path": "/tmp/opencode/issue81-fresh-native-acceptance/precision/operator-review-packet-126.json",
+      "sha256": "c110acd3bcc9fa6e62f347c285bd61fd542e2a826634fa1134bac78a1f204e52",
+      "role": "frozen 126-item operator adjudication packet (input; unmodified)"
+    },
+    {
+      "name": "phase_a_durable_precision_worksheet",
+      "path": "/tmp/opencode/issue81-merged-promotion/evidence/phase-b/durable-precision-worksheet.json",
+      "sha256": "9f9152cc1a5c0defc616dcced2869d30aa21738f78d698a5b8b2777659b7b56c",
+      "role": "frozen Phase A worksheet (input; unmodified)"
+    },
+    {
+      "name": "as_of_snapshot",
+      "path": "/tmp/opencode/issue81-merged-promotion/evidence/phase-b/durable-precision-asof-snapshot.json",
+      "sha256": "c8d5053c16ac7a07447c71d0bb5e7c4ce665940cdba3263119bdb25d6524ef37",
+      "role": "frozen as-of snapshot (input; unmodified)"
+    },
+    {
+      "name": "semantic_recall_roster",
+      "path": "/tmp/opencode/issue81-merged-promotion/evidence/phase-b/semantic-recall-roster.json",
+      "sha256": "47e141bdc81f1f2cdc2e98c7697162dbbf3250a5eb209a56361b358bc2441652",
+      "role": "frozen recall roster (input; unmodified)"
+    },
+    {
+      "name": "semantic_recall_results",
+      "path": "/tmp/opencode/issue81-fresh-native-acceptance/semantic-recall-results.json",
+      "sha256": "57c7846393e1ce99b90253c0b8e9bed174e3a9b52ad6196ffaa6d9ed95b9f740",
+      "role": "frozen Phase B recall results (input; unmodified)"
+    },
+    {
+      "name": "curation_source_store",
+      "path": "/home/filip/.local/state/ghdev-graphiti/curation-v1/development-knowledge",
+      "record_count": 237,
+      "persisted_count": 140,
+      "episode_index_count": 140,
+      "role": "authoritative captured native-source store (read-only)"
+    }
+  ],
+  "candidate_source_files_at_merged_tree": [
+    "docs/issue-75/v2-candidate/memory-core.mjs",
+    "docs/issue-75/v2-candidate/plugin.mjs",
+    "docs/issue-75/v2-candidate/relevance.mjs",
+    "docs/issue-78/v2-candidate/plugin.mjs",
+    "docs/issue-78/v2-curator/sourced-recall.mjs",
+    "docs/issue-78/v2-curator/core.mjs",
+    "docs/issue-78/v2-benchmark/README.md"
+  ],
+  "note": "All input artifacts are read-only. This manifest records their immutable identities; none were modified by this campaign."
+}

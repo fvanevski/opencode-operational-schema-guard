@@ -1,0 +1,845 @@
+{
+  "schema": "issue81-recall-case-diagnostics.v1",
+  "source_of_truth": {
+    "semantic_recall_results": "semantic-recall-results.json (frozen Phase B)",
+    "negative_controls": "negative-controls.json (frozen Phase B)",
+    "curation_store": "/home/filip/.local/state/ghdev-graphiti/curation-v1/development-knowledge",
+    "source_index_count": 140
+  },
+  "score": {
+    "semantic_recall": "8/16 (FAIL, threshold 13/16)",
+    "n02": "FAIL_INJECTED"
+  },
+  "cases": {
+    "S01": {
+      "case_id": "S01",
+      "category": "direct",
+      "frozen_prompt_sha256": "6f5564559ef7437f4d433077ebe3645a8ea895693d8c3b6d8a1e180eafdfeaa3",
+      "native_session": "ses_81f_s01",
+      "native_user_message_id": "msg_1af8ea7ee001sy3a3TJSHWstBh",
+      "native_assistant_message_id": "msg_1af8ef980001evgWru3QPmys2z",
+      "verdict": "INJECTED_WRONG_SOURCE",
+      "source_correct": false,
+      "answer_match_ratio": 0.889,
+      "injected_fact_count": 8,
+      "group": "development-knowledge",
+      "project": "gh_mcp",
+      "workspace": "/workspace/mcp_servers/gh_mcp",
+      "provenance_path": {
+        "frozen_case_id_and_prompt_hash": {
+          "case_id": "S01",
+          "prompt_sha256": "6f5564559ef7437f4d433077ebe3645a8ea895693d8c3b6d8a1e180eafdfeaa3",
+          "recorded": true
+        },
+        "native_user_message_id": {
+          "value": "msg_1af8ea7ee001sy3a3TJSHWstBh",
+          "recorded": true
+        },
+        "prompt_hook_matching": {
+          "mechanism": "plugin.mjs prompt hook: nativePromptID(event) + safeText(text,500); entry stored per session",
+          "recorded": false,
+          "reason": "hook internals not in frozen trace; inferred from source (docs/issue-75/v2-candidate/plugin.mjs:116-147)"
+        },
+        "context_hook_current_user_matching": {
+          "mechanism": "requestForContext selects the most recent native user message id; exact nativeID match else text-exact",
+          "recorded": false,
+          "reason": "inferred from plugin.mjs:50-73"
+        },
+        "graphiti_search_request": {
+          "mechanism": "Memory.search -> search_memory_facts({query:safeText(prompt,500), group_ids:['development-knowledge'], max_facts:12})",
+          "recorded": false,
+          "reason": "search issues live MCP call; request not persisted in frozen trace"
+        },
+        "returned_facts_and_episodes": {
+          "recorded": false,
+          "reason": "Graphiti returned fact set not persisted; only the selected injected fact and the expected fact are recoverable from results + curation store"
+        },
+        "persisted_source_index_resolver": {
+          "mechanism": "sourcedEpisodeResolver reads _episode-index/<uuid>.json; byRemote built from journal + resolver; selection = episodes.slice(0,12).map(byRemote.get).find(Boolean) (memory-core.mjs:366)",
+          "recorded": false,
+          "reason": "resolver is read-only; byRemote contents reconstructable from curation store"
+        },
+        "relevance_dedup_budget": {
+          "mechanism": "relevanceFilter (lexicalSupport>=2 && score>=0.34, maxSelected=1) then 1400-char budget",
+          "recorded": false,
+          "reason": "not persisted in frozen trace"
+        },
+        "selected_injected_context": {
+          "injected_source_ref": "opencode:ses_e513390dcffekimm001xBGtcI0:message:msg_1aecd887c001GaCs8HD5eGI0R9",
+          "recorded": true
+        },
+        "final_model_request_evidence": {
+          "ghdev_block_present": true,
+          "model_requests_in_window": 6,
+          "recorded": true
+        },
+        "frozen_evaluator_result": {
+          "verdict": "INJECTED_WRONG_SOURCE",
+          "source_correct": false,
+          "recorded": true
+        }
+      },
+      "injected_source": {
+        "present_in_curation_store": true,
+        "record": "f278235ac8bb707726fbbd07902a4bb288be34873d8c515a1993187d4b25ad9b",
+        "episode": "d19c4f9e-7216-499a-8057-b638b88e2fa3",
+        "assertion": "For a single non-default `group_id` on FalkorDB, it routes to a call-scoped driver clone with `database=group_id` \u2014 so `group_id='development-knowledge'` queries the **`development-knowledge` graph, not `graphiti_live`**.",
+        "evidence_class": "assistant-reported",
+        "group": "development-knowledge"
+      },
+      "expected_source": {
+        "present_in_curation_store": true,
+        "record": "c5bba7bd6d90b2719509681b90e5bcd08245f00bd259eead91788a83bede31fa",
+        "episode": "1409c260-92e9-474f-96be-6da4216908f7",
+        "assertion": "Key evidence found: `GRAPHITI_RECALL_GROUP=development-knowledge`, `GRAPHITI_RECALL_FALKOR_PORT=6382`, and a recall service at `http://127.0.0.1:9091`.",
+        "evidence_class": "assistant-reported",
+        "group": "development-knowledge"
+      },
+      "injected_equals_expected_assertion": false,
+      "injected_equals_expected_episode": false,
+      "root_cause_classification": [
+        "SEMANTICALLY_SIMILAR_BUT_DIFFERENT_FACT",
+        "EVALUATOR_EXACT_SOURCE_OVERCONSTRAINT"
+      ],
+      "conclusion": "The injected fact is a DIFFERENT but topically-related persisted fact with legitimate native provenance (not the exact expected fact). The first-resolvable-episode selection (memory-core.mjs:366) picks a resolvable source for the retrieved fact; the frozen evaluator scores by exact source_ref/episode, so a related-but-different verified source is marked wrong. Not a pure provenance-binding defect: the retrieved fact is genuinely a different grounded proposition.",
+      "first_resolvable_episode_did_cause_it": "partially: the binding layer selects a source for an already-topically-offset retrieved fact; the topical offset originates in the search returning a related (not exact) fact",
+      "evaluator_counterfactual": "A different verified source (the injected one) supports a RELATED but not identical proposition; the exact-source gate is stricter than \"any verified source for the same proposition.\""
+    },
+    "S03": {
+      "case_id": "S03",
+      "category": "paraphrased",
+      "frozen_prompt_sha256": "f5713d4aaddf4bbf873e32fa34406cd3fccef4185751b794317ab51ae3a49004",
+      "native_session": "ses_81f_s03",
+      "native_user_message_id": "msg_1af8fa4c4001tdrnUidFFdN4kw",
+      "native_assistant_message_id": "msg_1af8fa726001toL5vEugTGDDaR",
+      "verdict": "INJECTED_WRONG_SOURCE",
+      "source_correct": false,
+      "answer_match_ratio": 0.786,
+      "injected_fact_count": 36,
+      "group": "development-knowledge",
+      "project": "gh_mcp",
+      "workspace": "/workspace/mcp_servers/gh_mcp",
+      "provenance_path": {
+        "frozen_case_id_and_prompt_hash": {
+          "case_id": "S03",
+          "prompt_sha256": "f5713d4aaddf4bbf873e32fa34406cd3fccef4185751b794317ab51ae3a49004",
+          "recorded": true
+        },
+        "native_user_message_id": {
+          "value": "msg_1af8fa4c4001tdrnUidFFdN4kw",
+          "recorded": true
+        },
+        "prompt_hook_matching": {
+          "mechanism": "plugin.mjs prompt hook: nativePromptID(event) + safeText(text,500); entry stored per session",
+          "recorded": false,
+          "reason": "hook internals not in frozen trace; inferred from source (docs/issue-75/v2-candidate/plugin.mjs:116-147)"
+        },
+        "context_hook_current_user_matching": {
+          "mechanism": "requestForContext selects the most recent native user message id; exact nativeID match else text-exact",
+          "recorded": false,
+          "reason": "inferred from plugin.mjs:50-73"
+        },
+        "graphiti_search_request": {
+          "mechanism": "Memory.search -> search_memory_facts({query:safeText(prompt,500), group_ids:['development-knowledge'], max_facts:12})",
+          "recorded": false,
+          "reason": "search issues live MCP call; request not persisted in frozen trace"
+        },
+        "returned_facts_and_episodes": {
+          "recorded": false,
+          "reason": "Graphiti returned fact set not persisted; only the selected injected fact and the expected fact are recoverable from results + curation store"
+        },
+        "persisted_source_index_resolver": {
+          "mechanism": "sourcedEpisodeResolver reads _episode-index/<uuid>.json; byRemote built from journal + resolver; selection = episodes.slice(0,12).map(byRemote.get).find(Boolean) (memory-core.mjs:366)",
+          "recorded": false,
+          "reason": "resolver is read-only; byRemote contents reconstructable from curation store"
+        },
+        "relevance_dedup_budget": {
+          "mechanism": "relevanceFilter (lexicalSupport>=2 && score>=0.34, maxSelected=1) then 1400-char budget",
+          "recorded": false,
+          "reason": "not persisted in frozen trace"
+        },
+        "selected_injected_context": {
+          "injected_source_ref": "opencode:ses_e514f306cffe3F3Hy1nkJgjujC:message:msg_1aeb281c9001k9aQzqmnBUQ1oE",
+          "recorded": true
+        },
+        "final_model_request_evidence": {
+          "ghdev_block_present": true,
+          "model_requests_in_window": 19,
+          "recorded": true
+        },
+        "frozen_evaluator_result": {
+          "verdict": "INJECTED_WRONG_SOURCE",
+          "source_correct": false,
+          "recorded": true
+        }
+      },
+      "injected_source": {
+        "present_in_curation_store": true,
+        "record": "df90f36609e14216ce3ea7de8960f416be80dc10556a732340073a6d22e44f9a",
+        "episode": "e1244d4f-aee5-4bbe-a4f9-ac0f8516fd68",
+        "assertion": "`mcp-test.mjs` calls the graphiti MCP server (`http://127.0.0.1:8766/mcp`, configured for graph `graphiti_live`) with `group_ids:['development-knowledge']`.",
+        "evidence_class": "assistant-reported",
+        "group": "development-knowledge"
+      },
+      "expected_source": {
+        "present_in_curation_store": true,
+        "record": "b5cec545888a58b990c69100c779237d1ca708049506d12c74a01c467fd5184c",
+        "episode": "082fe673-8cf9-4da1-bc43-aaa9e04f68d8",
+        "assertion": "The decisive mechanism is `clone(database)` at lines 334\u2013347: each `group_id` becomes a distinct `FalkorDriver` bound to a FalkorDB graph **named after that group_id**.",
+        "evidence_class": "assistant-reported",
+        "group": "development-knowledge"
+      },
+      "injected_equals_expected_assertion": false,
+      "injected_equals_expected_episode": false,
+      "root_cause_classification": [
+        "SEMANTICALLY_SIMILAR_BUT_DIFFERENT_FACT",
+        "EVALUATOR_EXACT_SOURCE_OVERCONSTRAINT"
+      ],
+      "conclusion": "The injected fact is a DIFFERENT but topically-related persisted fact with legitimate native provenance (not the exact expected fact). The first-resolvable-episode selection (memory-core.mjs:366) picks a resolvable source for the retrieved fact; the frozen evaluator scores by exact source_ref/episode, so a related-but-different verified source is marked wrong. Not a pure provenance-binding defect: the retrieved fact is genuinely a different grounded proposition.",
+      "first_resolvable_episode_did_cause_it": "partially: the binding layer selects a source for an already-topically-offset retrieved fact; the topical offset originates in the search returning a related (not exact) fact",
+      "evaluator_counterfactual": "A different verified source (the injected one) supports a RELATED but not identical proposition; the exact-source gate is stricter than \"any verified source for the same proposition.\""
+    },
+    "S04": {
+      "case_id": "S04",
+      "category": "implicit_relationship",
+      "frozen_prompt_sha256": "edef5ef179d32d41536dbf37c0c950517bfefb26485d1b3171eebff44d207c3e",
+      "native_session": "ses_81f_s04",
+      "native_user_message_id": "msg_1af91a79e001piMrIKhTDNQDg5",
+      "native_assistant_message_id": "msg_1af91a9f60016WB1LY0dxgD3D1",
+      "verdict": "INJECTED_WRONG_SOURCE",
+      "source_correct": false,
+      "answer_match_ratio": 0.9,
+      "injected_fact_count": 14,
+      "group": "development-knowledge",
+      "project": "gh_mcp",
+      "workspace": "/workspace/mcp_servers/gh_mcp",
+      "provenance_path": {
+        "frozen_case_id_and_prompt_hash": {
+          "case_id": "S04",
+          "prompt_sha256": "edef5ef179d32d41536dbf37c0c950517bfefb26485d1b3171eebff44d207c3e",
+          "recorded": true
+        },
+        "native_user_message_id": {
+          "value": "msg_1af91a79e001piMrIKhTDNQDg5",
+          "recorded": true
+        },
+        "prompt_hook_matching": {
+          "mechanism": "plugin.mjs prompt hook: nativePromptID(event) + safeText(text,500); entry stored per session",
+          "recorded": false,
+          "reason": "hook internals not in frozen trace; inferred from source (docs/issue-75/v2-candidate/plugin.mjs:116-147)"
+        },
+        "context_hook_current_user_matching": {
+          "mechanism": "requestForContext selects the most recent native user message id; exact nativeID match else text-exact",
+          "recorded": false,
+          "reason": "inferred from plugin.mjs:50-73"
+        },
+        "graphiti_search_request": {
+          "mechanism": "Memory.search -> search_memory_facts({query:safeText(prompt,500), group_ids:['development-knowledge'], max_facts:12})",
+          "recorded": false,
+          "reason": "search issues live MCP call; request not persisted in frozen trace"
+        },
+        "returned_facts_and_episodes": {
+          "recorded": false,
+          "reason": "Graphiti returned fact set not persisted; only the selected injected fact and the expected fact are recoverable from results + curation store"
+        },
+        "persisted_source_index_resolver": {
+          "mechanism": "sourcedEpisodeResolver reads _episode-index/<uuid>.json; byRemote built from journal + resolver; selection = episodes.slice(0,12).map(byRemote.get).find(Boolean) (memory-core.mjs:366)",
+          "recorded": false,
+          "reason": "resolver is read-only; byRemote contents reconstructable from curation store"
+        },
+        "relevance_dedup_budget": {
+          "mechanism": "relevanceFilter (lexicalSupport>=2 && score>=0.34, maxSelected=1) then 1400-char budget",
+          "recorded": false,
+          "reason": "not persisted in frozen trace"
+        },
+        "selected_injected_context": {
+          "injected_source_ref": "opencode:ses_e51631cbfffeIAww75wYB0QLvR:message:msg_1ae9d8d9e0011vCYAm7ru8Z44E",
+          "recorded": true
+        },
+        "final_model_request_evidence": {
+          "ghdev_block_present": true,
+          "model_requests_in_window": 8,
+          "recorded": true
+        },
+        "frozen_evaluator_result": {
+          "verdict": "INJECTED_WRONG_SOURCE",
+          "source_correct": false,
+          "recorded": true
+        }
+      },
+      "injected_source": {
+        "present_in_curation_store": true,
+        "record": "bfebfeab6665c32b443d5a956f8bcc009221948fb4f1b00ad0eed29d1418998e",
+        "episode": "07f247f9-f4d4-47f7-bf5f-6a748b60758b",
+        "assertion": "Critical evidence confirmed: - `development-knowledge`: **35 nodes** - `graphiti_live`: **0 nodes** - `ghdev_gh_mcp`: **0 nodes** The data physically lives in the `development-knowledge` graph.",
+        "evidence_class": "assistant-reported",
+        "group": "development-knowledge"
+      },
+      "expected_source": {
+        "present_in_curation_store": true,
+        "record": "57cb44732a419724a73a1e1f746f77ea26b4260f51b8add855223223b2712134",
+        "episode": "c48cd614-4f98-49f7-90d0-5b6a418368fc",
+        "assertion": "FalkorDB layout is **per-group graphs**: `development-knowledge`, `ghdev_gh_mcp`, and an empty `graphiti_live` (0 nodes). The script queries `graphiti_live` filtered by `group_id='development-knowledge'` \u2014 but the data lives in the `development-knowledge` graph.",
+        "evidence_class": "assistant-reported",
+        "group": "development-knowledge"
+      },
+      "injected_equals_expected_assertion": false,
+      "injected_equals_expected_episode": false,
+      "root_cause_classification": [
+        "SEMANTICALLY_SIMILAR_BUT_DIFFERENT_FACT",
+        "EVALUATOR_EXACT_SOURCE_OVERCONSTRAINT"
+      ],
+      "conclusion": "The injected fact is a DIFFERENT but topically-related persisted fact with legitimate native provenance (not the exact expected fact). The first-resolvable-episode selection (memory-core.mjs:366) picks a resolvable source for the retrieved fact; the frozen evaluator scores by exact source_ref/episode, so a related-but-different verified source is marked wrong. Not a pure provenance-binding defect: the retrieved fact is genuinely a different grounded proposition.",
+      "first_resolvable_episode_did_cause_it": "partially: the binding layer selects a source for an already-topically-offset retrieved fact; the topical offset originates in the search returning a related (not exact) fact",
+      "evaluator_counterfactual": "A different verified source (the injected one) supports a RELATED but not identical proposition; the exact-source gate is stricter than \"any verified source for the same proposition.\""
+    },
+    "S05": {
+      "case_id": "S05",
+      "category": "multi_event",
+      "frozen_prompt_sha256": "cb8c0b4c3628dfbf25298abae39f83f470093e0d7f7e3a4a631799c9b257a1e4",
+      "native_session": "ses_81f_s05",
+      "native_user_message_id": "msg_1af928359001Ig3tejkWTAB1a7",
+      "native_assistant_message_id": "msg_1af9285b9001xNBV05qgCEGPgt",
+      "verdict": "INJECTED_WRONG_SOURCE",
+      "source_correct": false,
+      "answer_match_ratio": 1.0,
+      "injected_fact_count": 12,
+      "group": "development-knowledge",
+      "project": "gh_mcp",
+      "workspace": "/workspace/mcp_servers/gh_mcp",
+      "provenance_path": {
+        "frozen_case_id_and_prompt_hash": {
+          "case_id": "S05",
+          "prompt_sha256": "cb8c0b4c3628dfbf25298abae39f83f470093e0d7f7e3a4a631799c9b257a1e4",
+          "recorded": true
+        },
+        "native_user_message_id": {
+          "value": "msg_1af928359001Ig3tejkWTAB1a7",
+          "recorded": true
+        },
+        "prompt_hook_matching": {
+          "mechanism": "plugin.mjs prompt hook: nativePromptID(event) + safeText(text,500); entry stored per session",
+          "recorded": false,
+          "reason": "hook internals not in frozen trace; inferred from source (docs/issue-75/v2-candidate/plugin.mjs:116-147)"
+        },
+        "context_hook_current_user_matching": {
+          "mechanism": "requestForContext selects the most recent native user message id; exact nativeID match else text-exact",
+          "recorded": false,
+          "reason": "inferred from plugin.mjs:50-73"
+        },
+        "graphiti_search_request": {
+          "mechanism": "Memory.search -> search_memory_facts({query:safeText(prompt,500), group_ids:['development-knowledge'], max_facts:12})",
+          "recorded": false,
+          "reason": "search issues live MCP call; request not persisted in frozen trace"
+        },
+        "returned_facts_and_episodes": {
+          "recorded": false,
+          "reason": "Graphiti returned fact set not persisted; only the selected injected fact and the expected fact are recoverable from results + curation store"
+        },
+        "persisted_source_index_resolver": {
+          "mechanism": "sourcedEpisodeResolver reads _episode-index/<uuid>.json; byRemote built from journal + resolver; selection = episodes.slice(0,12).map(byRemote.get).find(Boolean) (memory-core.mjs:366)",
+          "recorded": false,
+          "reason": "resolver is read-only; byRemote contents reconstructable from curation store"
+        },
+        "relevance_dedup_budget": {
+          "mechanism": "relevanceFilter (lexicalSupport>=2 && score>=0.34, maxSelected=1) then 1400-char budget",
+          "recorded": false,
+          "reason": "not persisted in frozen trace"
+        },
+        "selected_injected_context": {
+          "injected_source_ref": "opencode:ses_e5276247fffewUAeyTeAea2tia:message:msg_1ad8c14d6001aDoSonKPyEUW9E",
+          "recorded": true
+        },
+        "final_model_request_evidence": {
+          "ghdev_block_present": true,
+          "model_requests_in_window": 7,
+          "recorded": true
+        },
+        "frozen_evaluator_result": {
+          "verdict": "INJECTED_WRONG_SOURCE",
+          "source_correct": false,
+          "recorded": true
+        }
+      },
+      "injected_source": {
+        "present_in_curation_store": true,
+        "record": "57cb44732a419724a73a1e1f746f77ea26b4260f51b8add855223223b2712134",
+        "episode": "c48cd614-4f98-49f7-90d0-5b6a418368fc",
+        "assertion": "FalkorDB layout is **per-group graphs**: `development-knowledge`, `ghdev_gh_mcp`, and an empty `graphiti_live` (0 nodes). The script queries `graphiti_live` filtered by `group_id='development-knowledge'` \u2014 but the data lives in the `development-knowledge` graph.",
+        "evidence_class": "assistant-reported",
+        "group": "development-knowledge"
+      },
+      "expected_source": {
+        "present_in_curation_store": true,
+        "record": "a96e8b1b7fc6f3ea6dcf478387bc642b7da5fd8dcca6e1cfd556425a8d6e472f",
+        "episode": "1a20d974-b5a7-4367-8da5-8c9d7dbb06c5",
+        "assertion": "Layout confirmed: `development-knowledge` has 353 nodes, while `graphiti_live` and `ghdev_gh_mcp` have 0 nodes.",
+        "evidence_class": "assistant-reported",
+        "group": "development-knowledge"
+      },
+      "injected_equals_expected_assertion": false,
+      "injected_equals_expected_episode": false,
+      "root_cause_classification": [
+        "SEMANTICALLY_SIMILAR_BUT_DIFFERENT_FACT",
+        "EVALUATOR_EXACT_SOURCE_OVERCONSTRAINT"
+      ],
+      "conclusion": "The injected fact is a DIFFERENT but topically-related persisted fact with legitimate native provenance (not the exact expected fact). The first-resolvable-episode selection (memory-core.mjs:366) picks a resolvable source for the retrieved fact; the frozen evaluator scores by exact source_ref/episode, so a related-but-different verified source is marked wrong. Not a pure provenance-binding defect: the retrieved fact is genuinely a different grounded proposition.",
+      "first_resolvable_episode_did_cause_it": "partially: the binding layer selects a source for an already-topically-offset retrieved fact; the topical offset originates in the search returning a related (not exact) fact",
+      "evaluator_counterfactual": "A different verified source (the injected one) supports a RELATED but not identical proposition; the exact-source gate is stricter than \"any verified source for the same proposition.\""
+    },
+    "S06": {
+      "case_id": "S06",
+      "category": "historical_superseded",
+      "frozen_prompt_sha256": "7e14fc4edade633393e9edc1b7a5040d98128b02aa760568c00bb9cd979c0f62",
+      "native_session": "ses_81f_s06",
+      "native_user_message_id": "msg_1af931c19001cPn1rifteTaCbd",
+      "native_assistant_message_id": "msg_1af931e6c0016gaMwge03ExPpG",
+      "verdict": "INJECTED_WRONG_SOURCE",
+      "source_correct": false,
+      "answer_match_ratio": 0.615,
+      "injected_fact_count": 21,
+      "group": "development-knowledge",
+      "project": "gh_mcp",
+      "workspace": "/workspace/mcp_servers/gh_mcp",
+      "provenance_path": {
+        "frozen_case_id_and_prompt_hash": {
+          "case_id": "S06",
+          "prompt_sha256": "7e14fc4edade633393e9edc1b7a5040d98128b02aa760568c00bb9cd979c0f62",
+          "recorded": true
+        },
+        "native_user_message_id": {
+          "value": "msg_1af931c19001cPn1rifteTaCbd",
+          "recorded": true
+        },
+        "prompt_hook_matching": {
+          "mechanism": "plugin.mjs prompt hook: nativePromptID(event) + safeText(text,500); entry stored per session",
+          "recorded": false,
+          "reason": "hook internals not in frozen trace; inferred from source (docs/issue-75/v2-candidate/plugin.mjs:116-147)"
+        },
+        "context_hook_current_user_matching": {
+          "mechanism": "requestForContext selects the most recent native user message id; exact nativeID match else text-exact",
+          "recorded": false,
+          "reason": "inferred from plugin.mjs:50-73"
+        },
+        "graphiti_search_request": {
+          "mechanism": "Memory.search -> search_memory_facts({query:safeText(prompt,500), group_ids:['development-knowledge'], max_facts:12})",
+          "recorded": false,
+          "reason": "search issues live MCP call; request not persisted in frozen trace"
+        },
+        "returned_facts_and_episodes": {
+          "recorded": false,
+          "reason": "Graphiti returned fact set not persisted; only the selected injected fact and the expected fact are recoverable from results + curation store"
+        },
+        "persisted_source_index_resolver": {
+          "mechanism": "sourcedEpisodeResolver reads _episode-index/<uuid>.json; byRemote built from journal + resolver; selection = episodes.slice(0,12).map(byRemote.get).find(Boolean) (memory-core.mjs:366)",
+          "recorded": false,
+          "reason": "resolver is read-only; byRemote contents reconstructable from curation store"
+        },
+        "relevance_dedup_budget": {
+          "mechanism": "relevanceFilter (lexicalSupport>=2 && score>=0.34, maxSelected=1) then 1400-char budget",
+          "recorded": false,
+          "reason": "not persisted in frozen trace"
+        },
+        "selected_injected_context": {
+          "injected_source_ref": "opencode:ses_e5216f8ffffeoWWX3dJDu4rpL7:tool:call_2a73d67cddde989d",
+          "recorded": true
+        },
+        "final_model_request_evidence": {
+          "ghdev_block_present": true,
+          "model_requests_in_window": 11,
+          "recorded": true
+        },
+        "frozen_evaluator_result": {
+          "verdict": "INJECTED_WRONG_SOURCE",
+          "source_correct": false,
+          "recorded": true
+        }
+      },
+      "injected_source": {
+        "present_in_curation_store": true,
+        "record": "07ac0bae9053723e486d63d50b94667dcf88b32580bab567b327dca7ff013896",
+        "episode": "94a939f6-a4fc-4692-a387-29338ed9d2c4",
+        "assertion": "rtk git fetch origin pull/86/head:refs/pr/86 2>&1; rtk git log --oneline -10 refs/pr/86; output: d879a67 Stage source-backed production terminal failure adjudication and descriptive Graphiti cutover (#81)",
+        "evidence_class": "tool-reported",
+        "group": "development-knowledge"
+      },
+      "expected_source": {
+        "present_in_curation_store": true,
+        "record": "a7137a15f4f5903a1f872f4cad3eefeec50d058b1943fc160837fed702c1745a",
+        "episode": "6e7956be-498c-47cf-af4d-07220ee8507e",
+        "assertion": "the only semantic difference from the cutover backup is the graphiti group (`ghdev_gh_mcp` \u2192 `development-knowledge`) \u2014 production routing is intact, and must not be reverted",
+        "evidence_class": "assistant-reported",
+        "group": "development-knowledge"
+      },
+      "injected_equals_expected_assertion": false,
+      "injected_equals_expected_episode": false,
+      "root_cause_classification": [
+        "SEMANTICALLY_SIMILAR_BUT_DIFFERENT_FACT",
+        "EVALUATOR_EXACT_SOURCE_OVERCONSTRAINT"
+      ],
+      "conclusion": "The injected fact is a DIFFERENT but topically-related persisted fact with legitimate native provenance (not the exact expected fact). The first-resolvable-episode selection (memory-core.mjs:366) picks a resolvable source for the retrieved fact; the frozen evaluator scores by exact source_ref/episode, so a related-but-different verified source is marked wrong. Not a pure provenance-binding defect: the retrieved fact is genuinely a different grounded proposition.",
+      "first_resolvable_episode_did_cause_it": "partially: the binding layer selects a source for an already-topically-offset retrieved fact; the topical offset originates in the search returning a related (not exact) fact",
+      "evaluator_counterfactual": "A different verified source (the injected one) supports a RELATED but not identical proposition; the exact-source gate is stricter than \"any verified source for the same proposition.\""
+    },
+    "S07": {
+      "case_id": "S07",
+      "category": "direct",
+      "frozen_prompt_sha256": "59a5d42a7c98aa45942deee6053882acb6d457a9832fa81665d92d9349065b40",
+      "native_session": "ses_81f_s07",
+      "native_user_message_id": "msg_1af95f2cf0014gNdD6NDi5xWjt",
+      "native_assistant_message_id": "msg_1af95f53b001pHwXrAxRsRjLsW",
+      "verdict": "INJECTED_WRONG_SOURCE",
+      "source_correct": false,
+      "answer_match_ratio": 0.5,
+      "injected_fact_count": 2,
+      "group": "development-knowledge",
+      "project": "gh_mcp",
+      "workspace": "/workspace/mcp_servers/gh_mcp",
+      "provenance_path": {
+        "frozen_case_id_and_prompt_hash": {
+          "case_id": "S07",
+          "prompt_sha256": "59a5d42a7c98aa45942deee6053882acb6d457a9832fa81665d92d9349065b40",
+          "recorded": true
+        },
+        "native_user_message_id": {
+          "value": "msg_1af95f2cf0014gNdD6NDi5xWjt",
+          "recorded": true
+        },
+        "prompt_hook_matching": {
+          "mechanism": "plugin.mjs prompt hook: nativePromptID(event) + safeText(text,500); entry stored per session",
+          "recorded": false,
+          "reason": "hook internals not in frozen trace; inferred from source (docs/issue-75/v2-candidate/plugin.mjs:116-147)"
+        },
+        "context_hook_current_user_matching": {
+          "mechanism": "requestForContext selects the most recent native user message id; exact nativeID match else text-exact",
+          "recorded": false,
+          "reason": "inferred from plugin.mjs:50-73"
+        },
+        "graphiti_search_request": {
+          "mechanism": "Memory.search -> search_memory_facts({query:safeText(prompt,500), group_ids:['development-knowledge'], max_facts:12})",
+          "recorded": false,
+          "reason": "search issues live MCP call; request not persisted in frozen trace"
+        },
+        "returned_facts_and_episodes": {
+          "recorded": false,
+          "reason": "Graphiti returned fact set not persisted; only the selected injected fact and the expected fact are recoverable from results + curation store"
+        },
+        "persisted_source_index_resolver": {
+          "mechanism": "sourcedEpisodeResolver reads _episode-index/<uuid>.json; byRemote built from journal + resolver; selection = episodes.slice(0,12).map(byRemote.get).find(Boolean) (memory-core.mjs:366)",
+          "recorded": false,
+          "reason": "resolver is read-only; byRemote contents reconstructable from curation store"
+        },
+        "relevance_dedup_budget": {
+          "mechanism": "relevanceFilter (lexicalSupport>=2 && score>=0.34, maxSelected=1) then 1400-char budget",
+          "recorded": false,
+          "reason": "not persisted in frozen trace"
+        },
+        "selected_injected_context": {
+          "injected_source_ref": "opencode:ses_e50cc1c26ffeKCmAyMkiTNIVKE:tool:call_8e9d27d04e918e97",
+          "recorded": true
+        },
+        "final_model_request_evidence": {
+          "ghdev_block_present": true,
+          "model_requests_in_window": 2,
+          "recorded": true
+        },
+        "frozen_evaluator_result": {
+          "verdict": "INJECTED_WRONG_SOURCE",
+          "source_correct": false,
+          "recorded": true
+        }
+      },
+      "injected_source": {
+        "present_in_curation_store": true,
+        "record": "40a7907972826053391066536d6bdd9bf71e179fb2d90bedab6fe8d4affa1a8b",
+        "episode": "e147822f-d6ea-439a-967b-ad6eb78ae428",
+        "assertion": "Nov 05 20:52:56 garion systemd[1497]: Starting Production admitted post-exit candidate curator (group development-knowledge, canonical EX gate)...",
+        "evidence_class": "tool-reported",
+        "group": "development-knowledge"
+      },
+      "expected_source": {
+        "present_in_curation_store": true,
+        "record": "77790f7ee6bb3e4939e1fc90f1b21b8316837897c5f057f630a5e59d6120d833",
+        "episode": "7dcfa76f-8fa5-436a-bdd5-ad340a62f27d",
+        "assertion": "the canonical post-exit drain cannot reach inference. Every invocation exits with: `FAIL_CLOSED: interactive harness active/unknown: cannot drain`",
+        "evidence_class": "user-stated",
+        "group": "development-knowledge"
+      },
+      "injected_equals_expected_assertion": false,
+      "injected_equals_expected_episode": false,
+      "root_cause_classification": [
+        "SEMANTICALLY_SIMILAR_BUT_DIFFERENT_FACT",
+        "EVALUATOR_EXACT_SOURCE_OVERCONSTRAINT"
+      ],
+      "conclusion": "The injected fact is a DIFFERENT but topically-related persisted fact with legitimate native provenance (not the exact expected fact). The first-resolvable-episode selection (memory-core.mjs:366) picks a resolvable source for the retrieved fact; the frozen evaluator scores by exact source_ref/episode, so a related-but-different verified source is marked wrong. Not a pure provenance-binding defect: the retrieved fact is genuinely a different grounded proposition.",
+      "first_resolvable_episode_did_cause_it": "partially: the binding layer selects a source for an already-topically-offset retrieved fact; the topical offset originates in the search returning a related (not exact) fact",
+      "evaluator_counterfactual": "A different verified source (the injected one) supports a RELATED but not identical proposition; the exact-source gate is stricter than \"any verified source for the same proposition.\""
+    },
+    "S10": {
+      "case_id": "S10",
+      "category": "direct",
+      "frozen_prompt_sha256": "8be465fd892a80b41554dfb8d02f56b9063546ef93aeaa3ee1db1aca1a8db526",
+      "native_session": "ses_81f_s10",
+      "native_user_message_id": "msg_1af9ab02b001KEqlPWxUgZgRL7",
+      "native_assistant_message_id": "msg_1af9ab295001sA8i1x7V8jSiyH",
+      "verdict": "INJECTED_WRONG_SOURCE",
+      "source_correct": false,
+      "answer_match_ratio": 1.0,
+      "injected_fact_count": 33,
+      "group": "development-knowledge",
+      "project": "gh_mcp",
+      "workspace": "/workspace/mcp_servers/gh_mcp",
+      "provenance_path": {
+        "frozen_case_id_and_prompt_hash": {
+          "case_id": "S10",
+          "prompt_sha256": "8be465fd892a80b41554dfb8d02f56b9063546ef93aeaa3ee1db1aca1a8db526",
+          "recorded": true
+        },
+        "native_user_message_id": {
+          "value": "msg_1af9ab02b001KEqlPWxUgZgRL7",
+          "recorded": true
+        },
+        "prompt_hook_matching": {
+          "mechanism": "plugin.mjs prompt hook: nativePromptID(event) + safeText(text,500); entry stored per session",
+          "recorded": false,
+          "reason": "hook internals not in frozen trace; inferred from source (docs/issue-75/v2-candidate/plugin.mjs:116-147)"
+        },
+        "context_hook_current_user_matching": {
+          "mechanism": "requestForContext selects the most recent native user message id; exact nativeID match else text-exact",
+          "recorded": false,
+          "reason": "inferred from plugin.mjs:50-73"
+        },
+        "graphiti_search_request": {
+          "mechanism": "Memory.search -> search_memory_facts({query:safeText(prompt,500), group_ids:['development-knowledge'], max_facts:12})",
+          "recorded": false,
+          "reason": "search issues live MCP call; request not persisted in frozen trace"
+        },
+        "returned_facts_and_episodes": {
+          "recorded": false,
+          "reason": "Graphiti returned fact set not persisted; only the selected injected fact and the expected fact are recoverable from results + curation store"
+        },
+        "persisted_source_index_resolver": {
+          "mechanism": "sourcedEpisodeResolver reads _episode-index/<uuid>.json; byRemote built from journal + resolver; selection = episodes.slice(0,12).map(byRemote.get).find(Boolean) (memory-core.mjs:366)",
+          "recorded": false,
+          "reason": "resolver is read-only; byRemote contents reconstructable from curation store"
+        },
+        "relevance_dedup_budget": {
+          "mechanism": "relevanceFilter (lexicalSupport>=2 && score>=0.34, maxSelected=1) then 1400-char budget",
+          "recorded": false,
+          "reason": "not persisted in frozen trace"
+        },
+        "selected_injected_context": {
+          "injected_source_ref": "opencode:ses_e50efdb27ffep7alMZaj9wkl3x:tool:call_0485ce2600ec5dba",
+          "recorded": true
+        },
+        "final_model_request_evidence": {
+          "ghdev_block_present": true,
+          "model_requests_in_window": 17,
+          "recorded": true
+        },
+        "frozen_evaluator_result": {
+          "verdict": "INJECTED_WRONG_SOURCE",
+          "source_correct": false,
+          "recorded": true
+        }
+      },
+      "injected_source": {
+        "present_in_curation_store": true,
+        "record": "7f8761f0c565e5d47bd1b92a6023d69c59d8f2727709e4d5b7ff7fbad6155ed8",
+        "episode": "c059ab8f-0b24-4fc6-b0cd-730178acb247",
+        "assertion": "git -C /workspace/opencode-operational-schema-guard worktree add /tmp/opencode/issue81-52863ae 52863aed0498521b181f44bbb454ce314d60fa8c 2>&1; git -C /tmp/opencode/issue81-52863ae rev-parse HEAD; git -C /tmp/opencode/issue81-52863ae status --short; output: HEAD is now at 52863ae test(graphiti): reject stale fallback after unbound long prompt (#81)",
+        "evidence_class": "tool-reported",
+        "group": "development-knowledge"
+      },
+      "expected_source": {
+        "present_in_curation_store": true,
+        "record": "e76e557850c3ba364a8f25b98c4b6f2e3726a34575c0475ba8e944bea78bc2ab",
+        "episode": "0de3cdc8-07ff-46a5-a0bc-ed7f9bc5e47b",
+        "assertion": "52863ae test(graphiti): reject stale fallback after unbound long prompt (#81)",
+        "evidence_class": "tool-reported",
+        "group": "development-knowledge"
+      },
+      "injected_equals_expected_assertion": false,
+      "injected_equals_expected_episode": false,
+      "root_cause_classification": [
+        "SEMANTICALLY_SIMILAR_BUT_DIFFERENT_FACT",
+        "EVALUATOR_EXACT_SOURCE_OVERCONSTRAINT"
+      ],
+      "conclusion": "The injected fact is a DIFFERENT but topically-related persisted fact with legitimate native provenance (not the exact expected fact). The first-resolvable-episode selection (memory-core.mjs:366) picks a resolvable source for the retrieved fact; the frozen evaluator scores by exact source_ref/episode, so a related-but-different verified source is marked wrong. Not a pure provenance-binding defect: the retrieved fact is genuinely a different grounded proposition.",
+      "first_resolvable_episode_did_cause_it": "partially: the binding layer selects a source for an already-topically-offset retrieved fact; the topical offset originates in the search returning a related (not exact) fact",
+      "evaluator_counterfactual": "A different verified source (the injected one) supports a RELATED but not identical proposition; the exact-source gate is stricter than \"any verified source for the same proposition.\""
+    },
+    "S13": {
+      "case_id": "S13",
+      "category": "multi_event",
+      "frozen_prompt_sha256": "ccf9aacf8df56220c9d83dd6e79b003c5569fc95073bfe549a1aef9e04830be8",
+      "native_session": "ses_81f_s13",
+      "native_user_message_id": "msg_1af9c91d70019gG9gEJyVPH6w7",
+      "native_assistant_message_id": "msg_1af9db1cb001YX1C0iUJMzCf0l",
+      "verdict": "MISS",
+      "source_correct": false,
+      "answer_match_ratio": 0.909,
+      "injected_fact_count": 0,
+      "group": "development-knowledge",
+      "project": "gh_mcp",
+      "workspace": "/workspace/mcp_servers/gh_mcp",
+      "provenance_path": {
+        "frozen_case_id_and_prompt_hash": {
+          "case_id": "S13",
+          "prompt_sha256": "ccf9aacf8df56220c9d83dd6e79b003c5569fc95073bfe549a1aef9e04830be8",
+          "recorded": true
+        },
+        "native_user_message_id": {
+          "value": "msg_1af9c91d70019gG9gEJyVPH6w7",
+          "recorded": true
+        },
+        "prompt_hook_matching": {
+          "mechanism": "plugin.mjs prompt hook: nativePromptID(event) + safeText(text,500); entry stored per session",
+          "recorded": false,
+          "reason": "hook internals not in frozen trace; inferred from source (docs/issue-75/v2-candidate/plugin.mjs:116-147)"
+        },
+        "context_hook_current_user_matching": {
+          "mechanism": "requestForContext selects the most recent native user message id; exact nativeID match else text-exact",
+          "recorded": false,
+          "reason": "inferred from plugin.mjs:50-73"
+        },
+        "graphiti_search_request": {
+          "mechanism": "Memory.search -> search_memory_facts({query:safeText(prompt,500), group_ids:['development-knowledge'], max_facts:12})",
+          "recorded": false,
+          "reason": "search issues live MCP call; request not persisted in frozen trace"
+        },
+        "returned_facts_and_episodes": {
+          "recorded": false,
+          "reason": "Graphiti returned fact set not persisted; only the selected injected fact and the expected fact are recoverable from results + curation store"
+        },
+        "persisted_source_index_resolver": {
+          "mechanism": "sourcedEpisodeResolver reads _episode-index/<uuid>.json; byRemote built from journal + resolver; selection = episodes.slice(0,12).map(byRemote.get).find(Boolean) (memory-core.mjs:366)",
+          "recorded": false,
+          "reason": "resolver is read-only; byRemote contents reconstructable from curation store"
+        },
+        "relevance_dedup_budget": {
+          "mechanism": "relevanceFilter (lexicalSupport>=2 && score>=0.34, maxSelected=1) then 1400-char budget",
+          "recorded": false,
+          "reason": "not persisted in frozen trace"
+        },
+        "selected_injected_context": {
+          "injected_source_ref": null,
+          "recorded": true
+        },
+        "final_model_request_evidence": {
+          "ghdev_block_present": false,
+          "model_requests_in_window": 23,
+          "recorded": true
+        },
+        "frozen_evaluator_result": {
+          "verdict": "MISS",
+          "source_correct": false,
+          "recorded": true
+        }
+      },
+      "injected_source": null,
+      "expected_source": {
+        "present_in_curation_store": true,
+        "record": "78f3c529ca34a82203b069e5b4a4dd76dec2253a6876b8c5ead0bdf3e6024c7d",
+        "episode": "009974d2-f051-45fd-ac0c-f259dcfdd1a8",
+        "assertion": "I've confirmed the installed architecture uses the issue-78 wrapper with a fixed issue-75 baseline. Now I'll retest recall with production wiring and a curated resolver to verify it works.",
+        "evidence_class": "assistant-reported",
+        "group": "development-knowledge"
+      },
+      "injected_equals_expected_assertion": false,
+      "injected_equals_expected_episode": false,
+      "source_index_present": false,
+      "root_cause_classification": [
+        "CENSORED_OR_NO_MATCH"
+      ],
+      "conclusion": "ABSENT block. Per native-context-latency.json the absent block is censored-or-no-match and indistinguishable from the unmodified-plugin evidence (no Graphiti match vs 300ms timeout vs relevance-filter). Missing source index is RULED OUT: the expected episode (009974d2-f051-45fd-ac0c-f259dcfdd1a8) is present in _episode-index (False) and its record is persisted. Root cause therefore UNVERIFIED at the specific-cause level; the first supported boundary is the absent GHDEV block, not a missing index.",
+      "s13_root_cause": "UNVERIFIED (censored-or-no-match; missing-source-index ruled out)"
+    },
+    "N02": {
+      "case_id": "N02",
+      "category": "wrong_group",
+      "frozen_prompt_sha256": "821947953003583d6be52b40d39e13312165d8534aae88643f0a74e7a58a1d99",
+      "native_session": "ses_81f_n02",
+      "native_user_message_id": "msg_1af9f1ee5001MfAzHx1l10FzOk",
+      "native_assistant_message_id": "msg_1af9f2156001j9H1yQC2WL141V",
+      "verdict": "FAIL_INJECTED",
+      "source_correct": true,
+      "answer_match_ratio": 0.0,
+      "injected_fact_count": 2,
+      "group": "development-knowledge",
+      "project": "gh_mcp",
+      "workspace": "/workspace/mcp_servers/gh_mcp",
+      "provenance_path": {
+        "frozen_case_id_and_prompt_hash": {
+          "case_id": "N02",
+          "prompt_sha256": "821947953003583d6be52b40d39e13312165d8534aae88643f0a74e7a58a1d99",
+          "recorded": true
+        },
+        "native_user_message_id": {
+          "value": "msg_1af9f1ee5001MfAzHx1l10FzOk",
+          "recorded": true
+        },
+        "prompt_hook_matching": {
+          "mechanism": "plugin.mjs prompt hook: nativePromptID(event) + safeText(text,500); entry stored per session",
+          "recorded": false,
+          "reason": "hook internals not in frozen trace; inferred from source (docs/issue-75/v2-candidate/plugin.mjs:116-147)"
+        },
+        "context_hook_current_user_matching": {
+          "mechanism": "requestForContext selects the most recent native user message id; exact nativeID match else text-exact",
+          "recorded": false,
+          "reason": "inferred from plugin.mjs:50-73"
+        },
+        "graphiti_search_request": {
+          "mechanism": "Memory.search -> search_memory_facts({query:safeText(prompt,500), group_ids:['development-knowledge'], max_facts:12})",
+          "recorded": false,
+          "reason": "search issues live MCP call; request not persisted in frozen trace"
+        },
+        "returned_facts_and_episodes": {
+          "recorded": false,
+          "reason": "Graphiti returned fact set not persisted; only the selected injected fact and the expected fact are recoverable from results + curation store"
+        },
+        "persisted_source_index_resolver": {
+          "mechanism": "sourcedEpisodeResolver reads _episode-index/<uuid>.json; byRemote built from journal + resolver; selection = episodes.slice(0,12).map(byRemote.get).find(Boolean) (memory-core.mjs:366)",
+          "recorded": false,
+          "reason": "resolver is read-only; byRemote contents reconstructable from curation store"
+        },
+        "relevance_dedup_budget": {
+          "mechanism": "relevanceFilter (lexicalSupport>=2 && score>=0.34, maxSelected=1) then 1400-char budget",
+          "recorded": false,
+          "reason": "not persisted in frozen trace"
+        },
+        "selected_injected_context": {
+          "injected_source_ref": "opencode:ses_e508c6d53ffeWrJEJftz60lqXB:message:msg_1af753f0d001GPlDjAoAckQ3EK",
+          "recorded": true
+        },
+        "final_model_request_evidence": {
+          "ghdev_block_present": true,
+          "model_requests_in_window": 2,
+          "recorded": true
+        },
+        "frozen_evaluator_result": {
+          "verdict": "FAIL_INJECTED",
+          "source_correct": true,
+          "recorded": true
+        }
+      },
+      "injected_source": {
+        "present_in_curation_store": true,
+        "record": "f9680d785f569d7f618b94197e29de42fdb1386a29a684ff54832d60a4ed70a1",
+        "episode": "e1d8e764-26fa-45ea-9483-8e64a71e3de7",
+        "assertion": "The **active production curation records are under `curation-v1/development-knowledge/`** (the group the `.path` watches), while `ghdev_gh_mcp` is the historical pre-cutover set.",
+        "evidence_class": "assistant-reported",
+        "group": "development-knowledge"
+      },
+      "expected_source": null,
+      "injected_equals_expected_assertion": false,
+      "injected_equals_expected_episode": false,
+      "injected_group": "development-knowledge",
+      "root_cause_classification": [
+        "CORRECTLY_GROUPED_UNDESIRED_TOPIC_RELEVANCE"
+      ],
+      "conclusion": "The injected fact is in group 'development-knowledge' (the ACTIVE development-knowledge group), not the superseded ghdev_gh_mcp group. It is a development-knowledge fact ABOUT the historical ghdev_gh_mcp scope. This is a correctly-grouped (same-group) fact with undesired topic relevance, NOT a true cross-group source admission. The predeclared negative expectation (\"no development-knowledge fact\") is arguably overly broad. N02 remains FAIL_INJECTED under the frozen evaluation.",
+      "n02_classification": "correctly-grouped (development-knowledge) undesired topic relevance; not a cross-group leak"
+    }
+  }
+}

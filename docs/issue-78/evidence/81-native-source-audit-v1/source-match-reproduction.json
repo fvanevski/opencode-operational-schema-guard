@@ -1,0 +1,25 @@
+{
+  "total_items": 126,
+  "exact_native_source_match": 126,
+  "match_in_different_source": 0,
+  "source_ref_mismatch": 0,
+  "evidence_class_mismatch": 0,
+  "assertion_not_found": 0,
+  "source_text_unavailable": 0,
+  "actor_available": 126,
+  "actor_unavailable": 0,
+  "timestamp_available": 126,
+  "timestamp_unavailable": 0,
+  "offset_verified": 126,
+  "offset_unverified": 0,
+  "source_ref_consistent_match_found": 126,
+  "multiple_qualifying_matches": 1,
+  "by_evidence_class": {
+    "assistant-reported": 103,
+    "tool-reported": 18,
+    "user-stated": 5
+  },
+  "counts_by_status": {
+    "EXACT_NATIVE_SOURCE_MATCH": 126
+  }
+}
