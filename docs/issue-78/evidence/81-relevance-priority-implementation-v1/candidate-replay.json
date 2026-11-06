@@ -1,0 +1,274 @@
+{
+ "schema": "issue81-relevance-priority-candidate-replay.v1",
+ "campaign": "ISSUE81_RELEVANCE_PRIORITY_IMPLEMENTATION_V1",
+ "generated_at": "2026-11-06T16:56:17.728Z",
+ "source_binding": {
+  "candidate_commit": "ead09437f1207f31a183745a0f06da087ac0de83",
+  "candidate_relevance_mjs_sha256": "9767486ef71fa6cf88497a1af801540dc401550a0a472c98cef64f9b4b380100",
+  "base_commit": "b39e1ff7d950075273fc2dab7206c5f8a17add70",
+  "base_relevance_mjs_sha256": "8db952332db85831ef947f3ac6cef6b96921af314d55e8d14dae70ab5f62da06",
+  "memory_core_blob": "d35ae68aba0a77a5c2e3e6ca997643e87874b4eb (identical base/candidate)",
+  "sourced_recall_blob": "2762a98725125ee8f91f6d148df77415065408db (identical base/candidate)",
+  "ranker": "null (lexical/authority only, matches installed option)",
+  "state_root_readonly": "/home/filip/.local/state/ghdev-graphiti"
+ },
+ "nine_case": [
+  {
+   "case_id": "S01",
+   "probe_type": "pinned read-only search_memory_facts snapshot (2026-11-06T16:22:18-19Z, 12 facts)",
+   "original_selection": [
+    {
+     "fact_uuid": "a364f523-3b30-453c-80eb-01a2b438e3c2",
+     "source_ref": "opencode:ses_e513390dcffekimm001xBGtcI0:message:msg_1aecd887c001GaCs8HD5eGI0R9",
+     "evidence_class": "assistant-reported",
+     "fact_excerpt": "When group_id is 'development-knowledge', FalkorDB does not route queries to the graphiti_live graph."
+    }
+   ],
+   "candidate_selection": [
+    {
+     "fact_uuid": "a364f523-3b30-453c-80eb-01a2b438e3c2",
+     "source_ref": "opencode:ses_e513390dcffekimm001xBGtcI0:message:msg_1aecd887c001GaCs8HD5eGI0R9",
+     "evidence_class": "assistant-reported",
+     "fact_excerpt": "When group_id is 'development-knowledge', FalkorDB does not route queries to the graphiti_live graph."
+    }
+   ],
+   "selection_unchanged": true
+  },
+  {
+   "case_id": "S03",
+   "probe_type": "pinned read-only search_memory_facts snapshot (2026-11-06T16:22:18-19Z, 12 facts)",
+   "original_selection": [
+    {
+     "fact_uuid": "a98db709-4887-4d07-b755-8bff23760d2b",
+     "source_ref": "opencode:ses_e514f306cffe3F3Hy1nkJgjujC:message:msg_1aeb281c9001k9aQzqmnBUQ1oE",
+     "evidence_class": "assistant-reported",
+     "fact_excerpt": "mcp-test.mjs uses the group ID 'development-knowledge' when calling the graphiti MCP server."
+    }
+   ],
+   "candidate_selection": [
+    {
+     "fact_uuid": "a98db709-4887-4d07-b755-8bff23760d2b",
+     "source_ref": "opencode:ses_e514f306cffe3F3Hy1nkJgjujC:message:msg_1aeb281c9001k9aQzqmnBUQ1oE",
+     "evidence_class": "assistant-reported",
+     "fact_excerpt": "mcp-test.mjs uses the group ID 'development-knowledge' when calling the graphiti MCP server."
+    }
+   ],
+   "selection_unchanged": true
+  },
+  {
+   "case_id": "S04",
+   "probe_type": "pinned read-only search_memory_facts snapshot (2026-11-06T16:22:18-19Z, 12 facts)",
+   "original_selection": [
+    {
+     "fact_uuid": "ec313e91-1229-4ff6-92eb-311e59e3aa96",
+     "source_ref": "opencode:ses_e51631cbfffeIAww75wYB0QLvR:message:msg_1ae9d8d9e0011vCYAm7ru8Z44E",
+     "evidence_class": "assistant-reported",
+     "fact_excerpt": "The data physically lives in the development-knowledge graph (35 nodes) while ghdev_gh_mcp has 0 nodes."
+    }
+   ],
+   "candidate_selection": [
+    {
+     "fact_uuid": "ec313e91-1229-4ff6-92eb-311e59e3aa96",
+     "source_ref": "opencode:ses_e51631cbfffeIAww75wYB0QLvR:message:msg_1ae9d8d9e0011vCYAm7ru8Z44E",
+     "evidence_class": "assistant-reported",
+     "fact_excerpt": "The data physically lives in the development-knowledge graph (35 nodes) while ghdev_gh_mcp has 0 nodes."
+    }
+   ],
+   "selection_unchanged": true
+  },
+  {
+   "case_id": "S05",
+   "probe_type": "pinned read-only search_memory_facts snapshot (2026-11-06T16:22:18-19Z, 12 facts)",
+   "original_selection": [
+    {
+     "fact_uuid": "4640a08b-bf5d-437c-a447-7e9c87b96812",
+     "source_ref": "opencode:ses_e5276247fffewUAeyTeAea2tia:message:msg_1ad8c14d6001aDoSonKPyEUW9E",
+     "evidence_class": "assistant-reported",
+     "fact_excerpt": "The FalkorDB layout includes an empty graph named 'graphiti_live' with 0 nodes."
+    }
+   ],
+   "candidate_selection": [
+    {
+     "fact_uuid": "4640a08b-bf5d-437c-a447-7e9c87b96812",
+     "source_ref": "opencode:ses_e5276247fffewUAeyTeAea2tia:message:msg_1ad8c14d6001aDoSonKPyEUW9E",
+     "evidence_class": "assistant-reported",
+     "fact_excerpt": "The FalkorDB layout includes an empty graph named 'graphiti_live' with 0 nodes."
+    }
+   ],
+   "selection_unchanged": true
+  },
+  {
+   "case_id": "S06",
+   "probe_type": "pinned read-only search_memory_facts snapshot (2026-11-06T16:22:18-19Z, 12 facts)",
+   "original_selection": [
+    {
+     "fact_uuid": "f1e47f17-eaa5-4233-ae10-66a526323cfc",
+     "source_ref": "opencode:ses_e5216f8ffffeoWWX3dJDu4rpL7:tool:call_2a73d67cddde989d",
+     "evidence_class": "tool-reported",
+     "fact_excerpt": "The tool rtk invoked the git command to fetch origin pull/86/head into refs/pr/86 and then list the last 10 commits for "
+    }
+   ],
+   "candidate_selection": [
+    {
+     "fact_uuid": "28893e36-9bb0-42d0-9d9d-64c51e6edf21",
+     "source_ref": "opencode:ses_e51cb9c19ffem7rxqiNNhlbbQ1:message:msg_1ae367654001nlYZtg6lC5m03l",
+     "evidence_class": "assistant-reported",
+     "fact_excerpt": "The graphiti group for the gh_mcp project was changed from 'ghdev_gh_mcp' to 'development-knowledge', which is the only "
+    }
+   ],
+   "selection_unchanged": false
+  },
+  {
+   "case_id": "S07",
+   "probe_type": "pinned read-only search_memory_facts snapshot (2026-11-06T16:22:18-19Z, 12 facts)",
+   "original_selection": [
+    {
+     "fact_uuid": "d974a695-b35f-4565-9a23-6c769f2be341",
+     "source_ref": "opencode:ses_e50cc1c26ffeKCmAyMkiTNIVKE:tool:call_8e9d27d04e918e97",
+     "evidence_class": "tool-reported",
+     "fact_excerpt": "The Production admitted post-exit candidate curator service uses the canonical EX gate."
+    }
+   ],
+   "candidate_selection": [
+    {
+     "fact_uuid": "d974a695-b35f-4565-9a23-6c769f2be341",
+     "source_ref": "opencode:ses_e50cc1c26ffeKCmAyMkiTNIVKE:tool:call_8e9d27d04e918e97",
+     "evidence_class": "tool-reported",
+     "fact_excerpt": "The Production admitted post-exit candidate curator service uses the canonical EX gate."
+    }
+   ],
+   "selection_unchanged": true
+  },
+  {
+   "case_id": "S10",
+   "probe_type": "pinned read-only search_memory_facts snapshot (2026-11-06T16:22:18-19Z, 12 facts)",
+   "original_selection": [
+    {
+     "fact_uuid": "0fd53409-2d2b-46b4-9e22-2512f48b6f39",
+     "source_ref": "opencode:ses_e50efdb27ffep7alMZaj9wkl3x:tool:call_0485ce2600ec5dba",
+     "evidence_class": "tool-reported",
+     "fact_excerpt": "The graphiti component is part of the gh_mcp project, as indicated by the test commit 'test(graphiti): reject stale fall"
+    }
+   ],
+   "candidate_selection": [
+    {
+     "fact_uuid": "0fd53409-2d2b-46b4-9e22-2512f48b6f39",
+     "source_ref": "opencode:ses_e50efdb27ffep7alMZaj9wkl3x:tool:call_0485ce2600ec5dba",
+     "evidence_class": "tool-reported",
+     "fact_excerpt": "The graphiti component is part of the gh_mcp project, as indicated by the test commit 'test(graphiti): reject stale fall"
+    }
+   ],
+   "selection_unchanged": true
+  },
+  {
+   "case_id": "S13",
+   "probe_type": "pinned read-only search_memory_facts snapshot (2026-11-06T16:22:18-19Z, 12 facts)",
+   "original_selection": [],
+   "candidate_selection": [],
+   "selection_unchanged": true
+  },
+  {
+   "case_id": "N02",
+   "probe_type": "pinned read-only search_memory_facts snapshot (2026-11-06T16:22:18-19Z, 12 facts)",
+   "original_selection": [
+    {
+     "fact_uuid": "1afbcca0-d3d7-400e-b1a5-31146a9ac56c",
+     "source_ref": "opencode:ses_e508c6d53ffeWrJEJftz60lqXB:message:msg_1af753f0d001GPlDjAoAckQ3EK",
+     "evidence_class": "assistant-reported",
+     "fact_excerpt": "The active production curation records are under curation-v1/development-knowledge/, while ghdev_gh_mcp is the historica"
+    }
+   ],
+   "candidate_selection": [
+    {
+     "fact_uuid": "1afbcca0-d3d7-400e-b1a5-31146a9ac56c",
+     "source_ref": "opencode:ses_e508c6d53ffeWrJEJftz60lqXB:message:msg_1af753f0d001GPlDjAoAckQ3EK",
+     "evidence_class": "assistant-reported",
+     "fact_excerpt": "The active production curation records are under curation-v1/development-knowledge/, while ghdev_gh_mcp is the historica"
+    }
+   ],
+   "selection_unchanged": true
+  }
+ ],
+ "required_positive_s06": {
+  "expected": "S06 selects the cutover proposition (28893e36) ahead of the procedural git-then distractor (f1e47f17)",
+  "original": "f1e47f17 selected (distractor, priority 1 via bare then)",
+  "candidate": "28893e36 selected (priority 0, overlap 5 beats distractor priority 0, overlap 3)",
+  "outcome": "PASS"
+ },
+ "s13_abstention": {
+  "original_selected": 0,
+  "candidate_selected": 0,
+  "admitted_candidates": 11,
+  "outcome": "PASS (abstention preserved on the equivalent pinned snapshot; lexical floor rejects all admitted)"
+ },
+ "n02_grouping": {
+  "original_selection": [
+   {
+    "fact_uuid": "1afbcca0-d3d7-400e-b1a5-31146a9ac56c",
+    "source_ref": "opencode:ses_e508c6d53ffeWrJEJftz60lqXB:message:msg_1af753f0d001GPlDjAoAckQ3EK",
+    "evidence_class": "assistant-reported",
+    "fact_excerpt": "The active production curation records are under curation-v1/development-knowledge/, while ghdev_gh_mcp is the historica"
+   }
+  ],
+  "candidate_selection": [
+   {
+    "fact_uuid": "1afbcca0-d3d7-400e-b1a5-31146a9ac56c",
+    "source_ref": "opencode:ses_e508c6d53ffeWrJEJftz60lqXB:message:msg_1af753f0d001GPlDjAoAckQ3EK",
+    "evidence_class": "assistant-reported",
+    "fact_excerpt": "The active production curation records are under curation-v1/development-knowledge/, while ghdev_gh_mcp is the historica"
+   }
+  ],
+  "note": "fact 1afbcca0 is stored under development-knowledge and is ABOUT the legacy ghdev_gh_mcp group; selection unchanged by the candidate fix",
+  "outcome": "PASS (unchanged frozen negative; correctly grouped and scored)"
+ },
+ "negative_guards_live": {
+  "probe_type": "live read-only search_memory_facts (group_ids=[development-knowledge], max_facts=12) at 2026-11-06T16:55:40.439Z",
+  "prompts": "reconstructed from private raw traces (frozen prompt texts private, sha256-bound in frozen-target-results.json)",
+  "prior_captures": {
+   "N01": "PASS injected=0",
+   "N03": "PASS injected=0",
+   "N04": "PASS injected=0"
+  },
+  "base_selected": [
+   {
+    "case_id": "N01",
+    "selected": 0
+   },
+   {
+    "case_id": "N03",
+    "selected": 0
+   },
+   {
+    "case_id": "N04",
+    "selected": 0
+   }
+  ],
+  "candidate_selected": [
+   {
+    "case_id": "N01",
+    "selected": 0
+   },
+   {
+    "case_id": "N03",
+    "selected": 0
+   },
+   {
+    "case_id": "N04",
+    "selected": 0
+   }
+  ],
+  "outcome": "PASS (no new unwanted injection for N01/N03/N04; base and candidate behave identically)"
+ },
+ "graph_drift": {
+  "pinned_snapshot": "2026-11-06T16:22:18-19Z (9-case probes)",
+  "live_check": "development-knowledge episode count 140 (read-only get_episodes) at replay time",
+  "drift": "none observed (140 == prior invariant 140)"
+ },
+ "evidence_classes": [
+  "frozen native acceptance capture (2026-11-05, private litellm traces; published via sanitized summaries only)",
+  "pinned 9-case read-only probe snapshot (2026-11-06T16:22Z)",
+  "live read-only probe snapshot (2026-11-06T16:55Z) for N01/N03/N04",
+  "deterministic candidate-pipeline replay (ranker=null; CPU-only; no model answer, no new native sessions)"
+ ],
+ "in_sample_note": "replay is in-sample on the pinned 9-case snapshot; it is not an independent holdout and does not claim fresh installed-client acceptance"
+}

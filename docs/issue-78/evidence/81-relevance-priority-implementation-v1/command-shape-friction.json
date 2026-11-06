@@ -1,0 +1,69 @@
+{
+ "schema": "issue81-command-shape-friction.v1",
+ "campaign": "ISSUE81_RELEVANCE_PRIORITY_IMPLEMENTATION_V1",
+ "encountered": "yes",
+ "commands_match_handoff": "yes",
+ "note": "All contract-literal commands (B.5 checks/suites, npm check/test) were executed in their requested shape and workdir. The events below are agent-authored shape discoveries and one self-masked producer status, all corrected in place; none changed a task-bound identity (repo, branch, SHA, worktree, role).",
+ "events": [
+  {
+   "id": "F1",
+   "scenario": "B.5 second node --test suite (memory-core/plugin-behavior/association/candidate/long-prompt)",
+   "requested_shape": "node --test docs/issue-75/v2-candidate/memory-core.test.mjs docs/issue-75/v2-candidate/plugin-behavior.test.mjs docs/issue-78/v2-candidate/association.test.mjs docs/issue-78/v2-candidate/candidate.test.mjs docs/issue-78/v2-candidate/long-prompt.test.mjs",
+   "effective_shape": "node --test <five files> 2>&1 | tail -25; echo \"SUITE2_EXIT=$?\" (first run: $? captured tail's status, not the producer's)",
+   "rewrite_provenance": "agent-authored display shortening",
+   "event_kind": "masked_producer_failure_risk",
+   "effect": "display_summary_only; producer exit not retained on first run",
+   "correction": "re-ran the identical producer with '> .suite2.log 2>&1; rc=$?' and reported rc=0 with true 44/44 counts",
+   "replacement": "status-preserving log-capture run (same producer, same workdir)",
+   "resource_recipe": "producer > log 2>&1; rc=$?; tail log; exit/echo rc",
+   "contract_conflict": "none",
+   "durable_gap_candidate": "none",
+   "sensitive_value_omission": "none"
+  },
+  {
+   "id": "F2",
+   "scenario": "extracting 81-corrective-evidence-v1 from the evidence source commit 0583808",
+   "requested_shape": "git archive 0583808... docs/issue-78/evidence/81-corrective-evidence-v1 | tar -x -C .evidence-src-tmp",
+   "effective_shape": "same, but the -C target directory did not yet exist and the leading 'ls' probe had exited 2 (folder absent from the staged branch tree)",
+   "rewrite_provenance": "agent-authored scratch-path setup",
+   "event_kind": "interface_discovery",
+   "effect": "first extraction attempt failed (tar exit 2); folder exists only at evidence source commit 0583808, not in the staged branch",
+   "correction": "mkdir -p .evidence-src-tmp then re-ran the same git archive | tar pipeline successfully",
+   "replacement": "none (same command, target dir created first)",
+   "resource_recipe": "create scratch dir before git archive extraction",
+   "contract_conflict": "none",
+   "durable_gap_candidate": "none",
+   "sensitive_value_omission": "none"
+  },
+  {
+   "id": "F3",
+   "scenario": "persisting the live N01/N03/N04 probe results from Code Mode",
+   "requested_shape": "write JSON via require('fs').writeFileSync inside execute() Code Mode block",
+   "effective_shape": "Code Mode runtime has no require; returned the structure and wrote the file with a shell-side node -e",
+   "rewrite_provenance": "harness interface (Code Mode runtime surface)",
+   "event_kind": "interface_discovery",
+   "effect": "one failed execute() call (ReferenceError), no side effects",
+   "correction": "returned the data from execute() and persisted it via shell node -e to /tmp/opencode/issue81-replay/live-negatives.json",
+   "replacement": "return-from-execute + shell write",
+   "resource_recipe": "Code Mode: return values; persist outside the runtime",
+   "contract_conflict": "none",
+   "durable_gap_candidate": "none",
+   "sensitive_value_omission": "none (fake N03 marker sk-abcdefgh1234567890abcd is the previously published test marker; kept out of Git-bound packet files)"
+  },
+  {
+   "id": "F4",
+   "scenario": "reading nine-case-diagnostics.json structure",
+   "requested_shape": "assumed d.cases was an array and called d.cases.map",
+   "effective_shape": "d.cases is an object keyed by case id; used Object.keys(d.cases) instead",
+   "rewrite_provenance": "agent-authored exploration",
+   "event_kind": "interface_discovery",
+   "effect": "one trivial eval TypeError during discovery; no acceptance impact",
+   "correction": "object-key access",
+   "replacement": "none",
+   "resource_recipe": "inspect JSON top-level shape before array assumptions",
+   "contract_conflict": "none",
+   "durable_gap_candidate": "none",
+   "sensitive_value_omission": "none"
+  }
+ ]
+}
