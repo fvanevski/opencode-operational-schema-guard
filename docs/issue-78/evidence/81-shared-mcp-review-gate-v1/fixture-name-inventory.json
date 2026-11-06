@@ -1,0 +1,232 @@
+{
+  "schema": "issue81-shared-mcp-review-gate-v1/fixture-name-inventory",
+  "campaign": "ISSUE81_SHARED_MCP_REVIEW_GATE_V1",
+  "scope": "bounded read-only inventory of active issue-derived opaque Graphiti fixture identifiers (cur80_*/cur81_* families) and their direct consumers, at exact source head 7a82f0099bd5c281a12d2377326e0671aa8d5b33 and current host state; scoped repo grep plus targeted host config/state reads; no / or full-home searches, no host mutation",
+  "naming_scheme_status": {
+    "active_scheme": "graphiti-<domain>-<purpose>-rNN (domain + purpose + run discriminator)",
+    "authoritative_module": "docs/issue-78/fixture-groups.mjs (fixtureGroupName/parseFixtureGroup/isFixtureGroup/permittedQualificationGroup/fixtureUnitName/describeFixtureGroup)",
+    "contract_doc": "docs/issue-78/FIXTURE_GROUP_NAMING.md",
+    "accepted": "the descriptive scheme is the active canonical form for NEW fixtures; new descriptive names are ACCEPTED"
+  },
+  "active_producers": {
+    "finding": "NO active producer creates cur80_*/cur81_* (opaque) groups. All new fixture creation flows through fixtureGroupName(), which enforces the descriptive graphiti-<domain>-<purpose>-rNN form and rejects issue/PR numbers, raw UUIDs, hash fragments and opaque provenance labels in domain segments.",
+    "paths": [
+      "docs/issue-78/fixture-groups.mjs: fixtureGroupName (new-group factory)",
+      "docs/issue-78/v2-benchmark/stage-holdout.mjs: stages to same-domain named holdout; refuses present/partially initialized targets",
+      "docs/issue-78/v2-curator/activation/render-qualification.mjs: renders ghdev-<unit> from the same group (fixtureUnitName, with ghdev-curator80-qual legacy fallback unit label only)"
+    ]
+  },
+  "inventory": [
+    {
+      "id": "cur80_disposable",
+      "classification": "legacy_group_plus_immutable_historical",
+      "purpose": "Curator disposable qualification (Issue #80 closure)",
+      "producers": "Issue-80 disposable native capture (historical)",
+      "direct_consumers": ["LEGACY_FIXTURE_CATALOG (read-only display label)", "host state <host-home>/.local/state/ghdev-graphiti-issue80/candidate-events-v1+ curation-v1 (PRESENT)", "archived evidence receipts"],
+      "remote_state": "1 episode (prior remote readback)",
+      "recommended_canonical_label": "graphiti-curator-qualification-r01 (for FUTURE runs only)",
+      "legacy_alias": "retained exact ID cur80_disposable (display label 'Curator disposable qualification (legacy)')",
+      "action": "PRESERVE_IMMUTABLE",
+      "stateful_migration_risk": "low data volume, but signed receipts bind the ID; rename requires separate operator approval"
+    },
+    {
+      "id": "cur80_qual01",
+      "classification": "legacy_group_plus_immutable_historical",
+      "purpose": "Curator qualification run 01 (Issue #80 closure)",
+      "producers": "Issue-80 closure native capture (historical)",
+      "direct_consumers": ["LEGACY_FIXTURE_CATALOG", "host unit ghdev-curator80-qual01 (service failed/inactive, path disabled)", "host state <host-home>/.local/state/ghdev-graphiti-issue80/closure80-qual/ (PRESENT)", "test data in v2-curator tests", "archived contract docs (LOCAL_AGENT_CONTRACT_CLOSURE.md)"],
+      "remote_state": "1 episode (prior remote readback)",
+      "recommended_canonical_label": "graphiti-curator-qualification-r02 (for FUTURE runs only)",
+      "legacy_alias": "retained exact ID cur80_qual01 (display label 'Curator qualification run 01 (legacy)')",
+      "action": "PRESERVE_IMMUTABLE",
+      "stateful_migration_risk": "unit + queue + episode bindings; rename requires unit rebind (host change, operator-owned)"
+    },
+    {
+      "id": "cur80_qual02",
+      "classification": "legacy_group_plus_immutable_historical",
+      "purpose": "Curator qualification run 02 (second cohort)",
+      "producers": "Issue-80 closure second cohort (historical)",
+      "direct_consumers": ["LEGACY_FIXTURE_CATALOG", "host state <host-home>/.local/state/ghdev-graphiti-issue80/closure80-qual02/ (PRESENT)"],
+      "remote_state": "1 episode (prior remote readback)",
+      "recommended_canonical_label": "graphiti-curator-qualification-r03 (for FUTURE runs only)",
+      "legacy_alias": "retained exact ID cur80_qual02 (display label 'Curator qualification run 02 (legacy)')",
+      "action": "PRESERVE_IMMUTABLE",
+      "stateful_migration_risk": "low"
+    },
+    {
+      "id": "cur81_dev",
+      "classification": "legacy_group_plus_immutable_historical",
+      "purpose": "Frozen development-corpus source scope (local-only corpus; 0 remote episodes)",
+      "producers": "frozen corpus bytes (local, digests pinned in prior packets)",
+      "direct_consumers": ["LEGACY_FIXTURE_CATALOG", "permittedQualificationGroup cur81_dev source-split logic", "test data in v2-benchmark tests (stage-holdout/evaluate/diagnose-capture/adjudicate)", "evaluate.mjs/adjudicate.mjs scoring inputs"],
+      "remote_state": "0 episodes (corpus is local-only)",
+      "recommended_canonical_label": "graphiti-benchmark-development-r01 (for FUTURE runs only)",
+      "legacy_alias": "retained exact ID cur81_dev (display label 'Frozen development-corpus source scope (legacy)')",
+      "action": "PRESERVE_IMMUTABLE",
+      "stateful_migration_risk": "frozen signed corpus + ratified 12-of-16 control packet bind this ID; rename would invalidate receipt digests"
+    },
+    {
+      "id": "cur81_dev_ce555621",
+      "classification": "legacy_group_plus_immutable_historical",
+      "purpose": "Curated-memory development cohort",
+      "producers": "Issue-81 dev-cohort native capture (historical)",
+      "direct_consumers": ["LEGACY_FIXTURE_CATALOG", "LEGACY_DEVELOPMENT regex (efficiency-probe.mjs acceptance)", "host state <host-home>/.local/state/ghdev-graphiti-issue81/qual81/candidate-events-v1 (PRESENT)", "test data in efficiency-probe/evaluate tests"],
+      "remote_state": "9 episodes (prior remote readback)",
+      "recommended_canonical_label": "graphiti-curator-development-r01 (for FUTURE runs only)",
+      "legacy_alias": "retained exact ID cur81_dev_ce555621 (display label 'Curated-memory development cohort (legacy)')",
+      "action": "PRESERVE_IMMUTABLE",
+      "stateful_migration_risk": "queue + curation + 9 remote episodes + cohort receipts"
+    },
+    {
+      "id": "cur81_native_a1f3c9d7",
+      "classification": "legacy_group_plus_immutable_historical",
+      "purpose": "WebVTT diagnostic native capture (terminal campaign)",
+      "producers": "terminal81-a1f3c9 native capture (historical)",
+      "direct_consumers": ["LEGACY_FIXTURE_CATALOG", "host unit ghdev-curator81t-qual (service inactive; path ENABLED, watching now-absent /tmp state root)", "archived campaign state (ABSENT on current host; pruned /tmp worktree)"],
+      "remote_state": "12 episodes (prior remote readback)",
+      "recommended_canonical_label": "graphiti-webvtt-diagnostic-r02 (for FUTURE runs only)",
+      "legacy_alias": "retained exact ID cur81_native_a1f3c9d7 (display label 'WebVTT native diagnostic capture (legacy)')",
+      "action": "PRESERVE_IMMUTABLE",
+      "stateful_migration_risk": "enabled path unit with absent watch path is inert but installed; retirement is a host change (operator-owned)"
+    },
+    {
+      "id": "cur81_native_8cd61d76",
+      "classification": "legacy_group_plus_immutable_historical",
+      "purpose": "Cron native acceptance capture (campaign 64d32eb7)",
+      "producers": "campaign 64d32eb7 cron native capture (historical)",
+      "direct_consumers": ["LEGACY_FIXTURE_CATALOG", "host state <host-home>/.local/state/ghdev-graphiti-issue81/holdout81-64d32eb7/state/ghdev-graphiti/candidate-events-v1 (PRESENT, staged-only)"],
+      "remote_state": "0 episodes (staged only, prior remote readback)",
+      "recommended_canonical_label": "graphiti-cron-capture-r02 (for FUTURE runs only)",
+      "legacy_alias": "retained exact ID cur81_native_8cd61d76 (display label 'Cron native acceptance capture (legacy)')",
+      "action": "PRESERVE_IMMUTABLE",
+      "stateful_migration_risk": "staging state only; low"
+    },
+    {
+      "id": "cur81_holdout_cc5349fc",
+      "classification": "legacy_group_plus_immutable_historical",
+      "purpose": "Cron acceptance holdout (sealed, staged from cur81_dev scope)",
+      "producers": "sealed holdout staging (historical)",
+      "direct_consumers": ["LEGACY_FIXTURE_CATALOG + LEGACY_HOLDOUT regex (stage-holdout/evaluate binding checks)", "host unit ghdev81-holdout-cc5349fc (inactive, static)", "host state <host-home>/.local/state/ghdev-graphiti-issue81/holdout81-64d32eb7/state/ghdev-graphiti/candidate-events-v1 (PRESENT)", "test data in stage-holdout/fixture-groups tests", "operator adjudication worksheet bindings"],
+      "remote_state": "2 episodes (prior remote readback, UUIDs in 81-independent-holdout-v1)",
+      "recommended_canonical_label": "graphiti-cron-holdout-r01 (for FUTURE runs only)",
+      "legacy_alias": "retained exact ID cur81_holdout_cc5349fc (display label 'Cron acceptance holdout (legacy)')",
+      "action": "PRESERVE_IMMUTABLE",
+      "stateful_migration_risk": "sealed cohort + signed corpus + operator worksheet; highest sensitivity in the fixture set"
+    },
+    {
+      "id": "cur81_holdout_4c3ab514",
+      "classification": "legacy_group_unlisted_plus_active_host_consumer",
+      "purpose": "Issue-81 sealed-holdout admitted post-exit drain instance (separate sealed cohort from cc5349fc); purpose from unit description only",
+      "producers": "sealed-holdout campaign 33059a10 (historical)",
+      "direct_consumers": ["host units ghdev-cur81-holdout-4c3ab514.service (inactive) + .path (ENABLED, active watch)", "host state <host-home>/.local/state/ghdev-graphiti-issue81/holdout81-4c3ab514/candidate-events-v1 (PRESENT)", "describeFixtureGroup classifies it unmapped_legacy_fixture (matches LEGACY_HOLDOUT regex, not in the 8-name catalog)"],
+      "remote_state": "1 episode (prior remote readback)",
+      "recommended_canonical_label": "graphiti-cron-holdout-r02 (for FUTURE runs only; purpose from observed unit description, not independently verified)",
+      "legacy_alias": "retained exact ID cur81_holdout_4c3ab514 (no catalog display label; 'Historical fixture: purpose not independently verified')",
+      "action": "PRESERVE_IMMUTABLE (unlisted legacy; no fabricated purpose)",
+      "stateful_migration_risk": "the only opaque fixture with an ENABLED host path unit; any rename/retirement requires host unit rebind (operator-owned)"
+    },
+    {
+      "id": "cur81_native_af8e7d67",
+      "classification": "legacy_staged_only_unlisted",
+      "purpose": "UNCLASSIFIED - observed state only: webvtt workspace capture staging (campaign 64d32eb7)",
+      "producers": "campaign 64d32eb7 webvtt capture (historical)",
+      "direct_consumers": ["host state <host-home>/.local/state/ghdev-graphiti-issue81/holdout81-64d32eb7/state/ghdev-graphiti/candidate-events-v1 (PRESENT)"],
+      "remote_state": "0 episodes (staged only)",
+      "recommended_canonical_label": "graphiti-webvtt-capture-r01 (for FUTURE runs only)",
+      "legacy_alias": "retained exact ID (unclassified; no fabricated purpose)",
+      "action": "PRESERVE_IMMUTABLE",
+      "stateful_migration_risk": "low (staging only)"
+    },
+    {
+      "id": "cur81_native_b9ef56e8",
+      "classification": "legacy_staged_only_unlisted",
+      "purpose": "UNCLASSIFIED - observed state only: cronparse workspace capture staging (2 staged events)",
+      "producers": "campaign 64d32eb7 cronparse capture (historical)",
+      "direct_consumers": ["host state <host-home>/.local/state/ghdev-graphiti-issue81/holdout81-64d32eb7/state/ghdev-graphiti/candidate-events-v1 (PRESENT)"],
+      "remote_state": "0 episodes (staged only)",
+      "recommended_canonical_label": "graphiti-cronparse-capture-r01 (for FUTURE runs only)",
+      "legacy_alias": "retained exact ID (unclassified; no fabricated purpose)",
+      "action": "PRESERVE_IMMUTABLE",
+      "stateful_migration_risk": "low (staging only)"
+    },
+    {
+      "id": "cur81_native_holdout_a1f3c9",
+      "classification": "legacy_staged_only_unlisted",
+      "purpose": "UNCLASSIFIED - observed state only: terminal-campaign native holdout staging",
+      "producers": "terminal campaign native-config-holdout (historical)",
+      "direct_consumers": ["former host state /tmp/opencode/issue81-qual/terminal81-a1f3c9/state (ABSENT on current host; pruned /tmp worktree)"],
+      "remote_state": "0 episodes (staged only)",
+      "recommended_canonical_label": "graphiti-webvtt-holdout-r01 (for FUTURE runs only)",
+      "legacy_alias": "retained exact ID (unclassified; no fabricated purpose)",
+      "action": "PRESERVE_IMMUTABLE (no surviving local state; remote readback was 0)",
+      "stateful_migration_risk": "none locally; ID survives in remote receipts only if episodes were ever persisted"
+    },
+    {
+      "id": "cur81_native_p81a1f3c9",
+      "classification": "legacy_staged_only_unlisted",
+      "purpose": "UNCLASSIFIED - observed state only: terminal-campaign p81-variant staging",
+      "producers": "terminal campaign native-config-p81 (historical)",
+      "direct_consumers": ["former host state /tmp/opencode/issue81-qual/terminal81-a1f3c9/state (ABSENT on current host)"],
+      "remote_state": "0 episodes (staged only)",
+      "recommended_canonical_label": "graphiti-webvtt-capture-r02 (for FUTURE runs only)",
+      "legacy_alias": "retained exact ID (unclassified; no fabricated purpose)",
+      "action": "PRESERVE_IMMUTABLE (no surviving local state)",
+      "stateful_migration_risk": "none locally"
+    },
+    {
+      "id": "cur81_lifecycle",
+      "classification": "legacy_staged_only_unlisted",
+      "purpose": "UNCLASSIFIED - observed state only: portal lifecycle scratch (empty curation dir)",
+      "producers": "portal lifecycle scratch (historical)",
+      "direct_consumers": ["former host state /tmp/opencode/issue81-qual/cur81/portal/lifecycle (ABSENT on current host)"],
+      "remote_state": "0 episodes (no data)",
+      "recommended_canonical_label": "none recommended (no data; eligible for future retirement if operator authorizes)",
+      "legacy_alias": "retained exact ID (unclassified)",
+      "action": "PRESERVE_IMMUTABLE (no data to migrate)",
+      "stateful_migration_risk": "none"
+    },
+    {
+      "id": "test-data:cur80_qualtest / cur80_reviewtest / cur81_dev / cur81_dev_ce555621 / cur81_holdout_01a2b3c4",
+      "classification": "active_consumer_test_data",
+      "purpose": "opaque identifiers used as test data to exercise the legacy contract paths (allowLegacy matching, recovery bindings, scope fences) in v2-curator and v2-benchmark unit tests",
+      "producers": "unit-test authors (test source)",
+      "direct_consumers": ["terminal-recovery.test.mjs (cur80_qualtest)", "prepare-review.test.mjs (cur80_reviewtest)", "stage-holdout/evaluate/diagnose-capture/adjudicate/efficiency-probe tests (cur81_dev, cur81_dev_ce555621, cur81_holdout_01a2b3c4)"],
+      "remote_state": "n/a (no remote groups; local /tmp state only)",
+      "recommended_canonical_label": "Central may relabel test data to descriptive IDs; not required for fixture identity (they verify legacy acceptance, so at least one legacy-form case must remain per contract path)",
+      "legacy_alias": "n/a",
+      "action": "NO_LOCAL_CHANGE (source/test semantic changes are forbidden in this gate; Central-owned)",
+      "stateful_migration_risk": "none (test data)"
+    }
+  ],
+  "host_units": [
+    {"unit": "ghdev81-holdout-cc5349fc.service/.path", "state": "inactive/static", "bound_group": "cur81_holdout_cc5349fc", "note": "points at pruned /tmp campaign worktree path"},
+    {"unit": "ghdev-cur81-holdout-4c3ab514.service/.path", "state": "service inactive; PATH ENABLED", "bound_group": "cur81_holdout_4c3ab514", "note": "active watch on persistent state dir"},
+    {"unit": "ghdev-curator80-qual01.service/.path", "state": "service failed/inactive; path DISABLED", "bound_group": "cur80_qual01"},
+    {"unit": "ghdev-curator81t-qual.service/.path", "state": "inactive; path ENABLED", "bound_group": "cur81_native_a1f3c9d7", "note": "watch path /tmp state root now ABSENT (inert)"},
+    {"unit": "ghdev-curator-prod.service/.path", "state": "enabled", "bound_group": "development-knowledge", "note": "active production curator after 2026-11-05 cutover"}
+  ],
+  "production_namespaces": [
+    {"id": "development-knowledge", "classification": "production_namespace_active", "status": "canonical production group since 2026-11-05 operator cutover; live native plugin config binds group=development-knowledge, endpoint http://127.0.0.1:8766/mcp, stateDir <host-home>/.local/state/ghdev-graphiti; MUST remain unchanged"},
+    {"id": "ghdev_gh_mcp", "classification": "production_namespace_retired", "status": "retired development-era production group (production-cutover.mjs RETIRED_GROUP); 2 local receipt files remain; referenced read-only by acknowledged-retry.mjs and scope-fence tests; never renamed"}
+  ],
+  "active_consumer_paths": [
+    "docs/issue-78/fixture-groups.mjs (legacy catalog + regexes: read-only identity contract)",
+    "docs/issue-78/v2-curator/activation/prepare-review.mjs (--group DESCRIPTIVE_RECOVERY_FIXTURE_OR_LEGACY_CUR80)",
+    "docs/issue-78/v2-curator/activation/render-qualification.mjs (unit rendering from group)",
+    "docs/issue-78/v2-curator/efficiency-probe.mjs (LEGACY_DEVELOPMENT cohort acceptance)",
+    "docs/issue-78/v2-candidate/candidate-cli.mjs + v2-curator/curator-cli.mjs + portal /api/status (additive read-only fixture descriptor)",
+    "docs/issue-78/v2-curator/production-cutover.mjs (PRODUCTION_GROUP/RETIRED_GROUP fences)",
+    "docs/issue-78/v2-curator/acknowledged-retry.mjs (legacy production group allowance for queue-log retry)"
+  ],
+  "negative_scans": {
+    "descriptive_state_dirs": "bounded find -maxdepth 4 -type d -name 'graphiti-*' over the three host state roots (ghdev-graphiti, ghdev-graphiti-issue80, ghdev-graphiti-issue81): ZERO matches (verified scope, no traversal errors); no active descriptive fixture group has local state yet",
+    "active_opaque_producers": "bounded repo grep for cur80_/cur81_ in non-evidence .mjs/.js: only the read-only contract module, legacy-acceptance checks, and test data; NO code path creates a new opaque group",
+    "evidence_tree": "docs/issue-78/evidence/** references to cur80_*/cur81_* are immutable historical receipts (published packets), classified as archived evidence, not live configuration"
+  },
+  "conclusion": {
+    "active_opaque_names_remaining": "NONE as live fixture-creation names: every active creation path yields descriptive graphiti-<domain>-<purpose>-rNN IDs",
+    "opaque_names_that_remain": "legacy catalog entries (PRESERVE_IMMUTABLE, display labels only), test data (Central-owned), archived docs/evidence (immutable), legacy host units/state (operator-owned), and the retired production namespace",
+    "migration_authorized": "no stateful migration authorized by this gate; destructive or stateful migration requires separate operator approval with verified rollback",
+    "central_owned_next": "substantive naming edits (if any) are Central-owned under a later explicit handoff; this gate supplies the inventory only"
+  }
+}

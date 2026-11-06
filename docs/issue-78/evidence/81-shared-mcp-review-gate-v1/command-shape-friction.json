@@ -1,0 +1,45 @@
+{
+  "schema": "issue81-shared-mcp-review-gate-v1/command-shape-friction",
+  "campaign": "ISSUE81_SHARED_MCP_REVIEW_GATE_V1",
+  "friction_encountered": "yes",
+  "events": [
+    {
+      "id": "F1",
+      "type": "interface_discovery",
+      "attribution": "agent_command",
+      "command": "grep -rn -- \"--group\" --include=*.mjs docs/issue-78/ | grep -v evidence | head -20",
+      "observed": "producer (grep) emitted 'grep: --include=*.mjs: No such file or directory' (zsh operand misparse of the unexpanded include pattern); pipe exit 0 via head; error line visible, not masked; results re-captured on a corrected re-run with the intended quoting",
+      "effect": "pre_execution_rejection (partial producer failure, self-corrected; no impact on evidence)"
+    },
+    {
+      "id": "F2",
+      "type": "guard_annotation",
+      "attribution": "harness",
+      "command": "git ls-tree -r --name-only 77acfac -- docs/issue-78/evidence/ (display)",
+      "observed": "rtk display cap 'output capped at 200 results'; producer exit 0; full listing recovered from the saved output file and from targeted follow-up greps",
+      "effect": "transparent display cap only"
+    },
+    {
+      "id": "F3",
+      "type": "guard_annotation",
+      "attribution": "harness",
+      "command": "git show 77acfac:docs/issue-78/evidence/81-fixture-naming-v1/naming-inventory.md | tail -n 38 (display)",
+      "observed": "rtk display truncation of the tail; producer exit 0; full content recovered by writing the blob to a scratch file and reading it",
+      "effect": "transparent display cap only"
+    },
+    {
+      "id": "F4",
+      "type": "harness_fixture_repair",
+      "attribution": "agent_command",
+      "command": "node --test <scratch>/overlap-verify.test.mjs (first run)",
+      "observed": "INV-6 failed (expected 1 candidate, got 0) because the harness fixture used 'ep-uuid-0001', which does not satisfy the staged code's validId full-hex-UUID regex; fixture corrected to a valid UUID and the full harness re-ran 7/7 PASS (producer exit 0)",
+      "effect": "agent-authored fixture defect in a scratch harness (not staged source); repaired before evidence capture; staged code unchanged"
+    }
+  ],
+  "guard_rejections": 0,
+  "harness_rewrites": 0,
+  "masked_producer_failures": 0,
+  "notes": "All acceptance-bearing producer exits were captured before display filtering (node --check x2, node --test focused suite, per-file test runs, overlap harness). No command was re-submitted unchanged after a guard rejection; no literal handoff command was wrapped or substituted.",
+  "commands_match_handoff": "yes",
+  "commands_match_handoff_basis": "the handoff-prescribed commands (node --check x2, node --test over the three named files, scoped ripgrep/search, gh/ls-remote identity checks, bounded host reads) were executed in the stated shapes from the fresh isolated worktree at the exact kickoff SHA; evidence publication followed the CAS preflight (remote evidence-branch head == EVIDENCE_EXPECTED_HEAD) with one non-force commit under EVIDENCE_ROOT"
+}
