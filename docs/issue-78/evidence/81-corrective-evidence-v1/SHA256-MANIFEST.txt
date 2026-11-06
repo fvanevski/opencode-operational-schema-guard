@@ -1,0 +1,17 @@
+# SHA256-MANIFEST - issue-81 corrective evidence v2
+# Non-circular: SHA256-MANIFEST.txt itself is not listed.
+# Paths are repo-relative. The Git-staged set must equal {this manifest} + {listed files}.
+# Generated 2026-11-06 for parent e94356e6bd041f44ff13aabdc65485b10f493bf0.
+6c10e6e53c11a1caef1b0512db24af1700e616ec5d1262a37a4b65f6bfeea342  docs/issue-78/evidence/81-corrective-evidence-v1/central-correction-disposition.md
+20e9eda992d542866d9b5a68155d9fbf83c52b75d78054ae42c3032b8c4d95c5  docs/issue-78/evidence/81-corrective-evidence-v1/command-shape-friction.json
+ba154baa25dba9912ca6432000c5671f94df13334e598c168abdea76c0251863  docs/issue-78/evidence/81-corrective-evidence-v1/current-graphiti-search-results.json
+f25d3d604fe27ccf47a1f9ca9c137e707bd51ebcc943750b633f19ced5c42bd8  docs/issue-78/evidence/81-corrective-evidence-v1/helpers/run-resolver.mjs
+a395b7d7db41d4bfa08b2f6b785b250573b41b1f32e2a2c1e35870da84c9c522  docs/issue-78/evidence/81-corrective-evidence-v1/helpers/trace-recall.mjs
+62f3a312df6bdc437872e316c45e92af88f65499260e44661bf2fbea91bb4984  docs/issue-78/evidence/81-corrective-evidence-v1/input-identities.json
+17784143044ed031956cd2507dd22f08cc74e0f5e48dd4d017bb39300442b10c  docs/issue-78/evidence/81-corrective-evidence-v1/nine-case-diagnostics.json
+00c4515a25b9e57a307b8e12a0b8c749b1c5e81a1426943c423c17c0baf18775  docs/issue-78/evidence/81-corrective-evidence-v1/README.md
+56b00f7a8dfe478ebe09df04db71a166c101f4ac66fc0f9ae13ec2df64dc68fe  docs/issue-78/evidence/81-corrective-evidence-v1/relevance-decision-traces.json
+146ee56eba4ce86f5c7205cfdb7f8969f39b6c7888522e206e82e8f41e73f33c  docs/issue-78/evidence/81-corrective-evidence-v1/reproducibility.md
+1ecc09eff95e52dd9e622061ab37a706d8fddd2610f2cd953068bc7c064fe741  docs/issue-78/evidence/81-corrective-evidence-v1/s13-index-erratum.md
+df27fccd49ff9f3f2afb145db0cdc6226001a489a6b2f843ba23d95a2a29dc1f  docs/issue-78/evidence/81-corrective-evidence-v1/s13-index-readback.json
+4dc815bf5e0f6e1f13e5ce3c12819342c6ae072234712524a526b21e67816d90  docs/issue-78/evidence/81-corrective-evidence-v1/source-admission-traces.json

@@ -1,0 +1,136 @@
+{
+ "schema": "issue81-corrective-input-identities.v1",
+ "campaign": "ISSUE81_CORRECTIVE_EVIDENCE_V1",
+ "repo": "fvanevski/opencode-operational-schema-guard",
+ "issue": 81,
+ "branch": "issue/81-recall-acceptance",
+ "remote_refs": {
+  "origin_main_sha": "b39e1ff7d950075273fc2dab7206c5f8a17add70",
+  "origin_main_tree_sha": "7c5486fefc12063c70c5839d63a300c630c925d0",
+  "branch_head_before": "e94356e6bd041f44ff13aabdc65485b10f493bf0"
+ },
+ "working_tree": {
+  "path": "/tmp/opencode/issue81-native-source-audit",
+  "detached_head_before": "e94356e6bd041f44ff13aabdc65485b10f493bf0",
+  "note": "isolated worktree; primary checkouts and untracked files untouched"
+ },
+ "prior_evidence": {
+  "root": "docs/issue-78/evidence/81-native-source-audit-v1",
+  "manifest_sha256": "4d2ce2843ad97dd919d0ff3276e9105a5cab507303149c5635904263de1d9142",
+  "manifest_verification": "re-verified with sha256sum -c (PRIOR_MANIFEST_OK) at campaign start"
+ },
+ "frozen_inputs": [
+  {
+   "name": "operator_review_packet_126",
+   "path": "/tmp/opencode/issue81-fresh-native-acceptance/precision/operator-review-packet-126.json",
+   "sha256": "c110acd3bcc9fa6e62f347c285bd61fd542e2a826634fa1134bac78a1f204e52"
+  },
+  {
+   "name": "phase_a_durable_precision_worksheet",
+   "path": "/tmp/opencode/issue81-merged-promotion/evidence/phase-b/durable-precision-worksheet.json",
+   "sha256": "9f9152cc1a5c0defc616dcced2869d30aa21738f78d698a5b8b2777659b7b56c"
+  },
+  {
+   "name": "as_of_snapshot",
+   "path": "/tmp/opencode/issue81-merged-promotion/evidence/phase-b/durable-precision-asof-snapshot.json",
+   "sha256": "c8d5053c16ac7a07447c71d0bb5e7c4ce665940cdba3263119bdb25d6524ef37"
+  },
+  {
+   "name": "semantic_recall_roster",
+   "path": "/tmp/opencode/issue81-merged-promotion/evidence/phase-b/semantic-recall-roster.json",
+   "sha256": "47e141bdc81f1f2cdc2e98c7697162dbbf3250a5eb209a56361b358bc2441652"
+  },
+  {
+   "name": "semantic_recall_results",
+   "path": "/tmp/opencode/issue81-fresh-native-acceptance/semantic-recall-results.json",
+   "sha256": "57c7846393e1ce99b90253c0b8e9bed174e3a9b52ad6196ffaa6d9ed95b9f740"
+  }
+ ],
+ "frozen_verdicts": {
+  "S01": "INJECTED_WRONG_SOURCE",
+  "S03": "INJECTED_WRONG_SOURCE",
+  "S04": "INJECTED_WRONG_SOURCE",
+  "S05": "INJECTED_WRONG_SOURCE",
+  "S06": "INJECTED_WRONG_SOURCE",
+  "S07": "INJECTED_WRONG_SOURCE",
+  "S10": "INJECTED_WRONG_SOURCE",
+  "S13": "MISS",
+  "N02": "FAIL_INJECTED",
+  "note": "read-only; unmodified by this campaign"
+ },
+ "prompt_hash_verification": "all 20 frozen_prompt_sha256 values recomputed from roster question text: ALL_MATCH",
+ "installed_source_files": {
+  "verified_against": "b39e1ff7d950075273fc2dab7206c5f8a17add70 (git show <sha>:<path> vs installed bytes)",
+  "files": [
+   {
+    "path": "docs/issue-75/v2-candidate/plugin.mjs",
+    "sha256": "556f262cc155dbe9044cc38d445b308a099c61ab8d67643c7b66da832cf498ec"
+   },
+   {
+    "path": "docs/issue-75/v2-candidate/memory-core.mjs",
+    "sha256": "eac9d21ead6470dd13a38e8e50adc34925d673f5549c25256f9aa77dd6db71c0"
+   },
+   {
+    "path": "docs/issue-75/v2-candidate/relevance.mjs",
+    "sha256": "8db952332db85831ef947f3ac6cef6b96921af314d55e8d14dae70ab5f62da06"
+   },
+   {
+    "path": "docs/issue-78/v2-candidate/plugin.mjs",
+    "sha256": "e54884baacc44f383ae7ee24e17f8036b3fa85fee60ae11fa436dd2afc5b0758"
+   },
+   {
+    "path": "docs/issue-78/v2-curator/sourced-recall.mjs",
+    "sha256": "2fb468541b99b427b9d5fa25c5ebcc2d246acd684a35d28a686a50aeb1bab22c"
+   },
+   {
+    "path": "docs/issue-78/v2-curator/core.mjs",
+    "sha256": "37fca28041170a8e41cde24e14aaa323233ef5cd804f1e11b0e53bdc4301cf20"
+   }
+  ]
+ },
+ "production_observation_identity": {
+  "graphiti_endpoint": "http://127.0.0.1:8766/mcp",
+  "get_status": "ok - connected to falkordb database",
+  "group": "development-knowledge",
+  "workspace": "/workspace/mcp_servers/gh_mcp",
+  "project": "gh_mcp",
+  "curation_store": {
+   "records": 237,
+   "persisted": 140,
+   "episode_index": 140,
+   "states": {
+    "persisted": 140,
+    "deferred": 95,
+    "skipped": 2
+   }
+  },
+  "legacy_journal": {
+   "dir": "/home/filip/.local/state/ghdev-graphiti/development-knowledge",
+   "rows": 0
+  },
+  "legacy_curation_group": "curation-v1/ghdev_gh_mcp present (79 files) - historical pre-cutover set",
+  "episode_index_set_sha256": "75dc74af08152157c32b4e0fd7de4435a945070951100803b35f9a98692a1e56",
+  "observed_utc": "2026-11-06T16:22:18Z..16:22:19Z (probe window); counts unchanged vs prior 140/140"
+ },
+ "graphiti_probe_raw_capture": {
+  "path": "/tmp/opencode/issue81-corrective-evidence/private/raw/graphiti-probes-raw.json",
+  "sha256": "962424daf516ec348b85accab6ba9e239afa420da907c1bf9497cbb46674de70",
+  "note": "sanitized public excerpts are bound to this raw capture by raw_fact_sha256"
+ },
+ "private_helpers": {
+  "trace-recall.mjs": {
+   "sha256": "a395b7d7db41d4bfa08b2f6b785b250573b41b1f32e2a2c1e35870da84c9c522"
+  },
+  "run-resolver.mjs": {
+   "sha256": "f25d3d604fe27ccf47a1f9ca9c137e707bd51ebcc943750b633f19ced5c42bd8"
+  },
+  "build-packet.py": {
+   "sha256": "2437ce31a6eba007809ea49e480e501cc28d30ed257d5092f52b0bace4faf06a"
+  },
+  "note": "helpers import the INSTALLED production modules (no competing retrieval implementation); executed read-only"
+ },
+ "openviking_context": {
+  "note": "not used for this campaign"
+ },
+ "opencode_version_last_observed": "2.2.5"
+}

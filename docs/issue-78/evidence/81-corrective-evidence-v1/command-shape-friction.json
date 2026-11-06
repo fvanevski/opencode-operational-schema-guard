@@ -1,0 +1,50 @@
+{
+  "schema": "issue81-command-shape-friction.v1",
+  "campaign": "ISSUE81_CORRECTIVE_EVIDENCE_V1",
+  "encountered": "yes",
+  "commands_match_handoff": "yes",
+  "notes": "The handoff prescribes no literal command shapes; the only tool-routing class it pins is the read-only Graphiti MCP invocation (search_memory_facts), which was authenticated against the live MCP catalog before first use and matched (query/group_ids/max_facts). All other commands are agent-chosen diagnostic commands.",
+  "events": [
+    {
+      "scenario": "parsed frozen raw native trace raw/S01.json as a single JSON document",
+      "requested_shape": "json.load(open('raw/S01.json'))",
+      "effective_shape": "JSONDecodeError 'Extra data' -> file is JSONL (one JSON event per line)",
+      "rewrite_provenance": "none",
+      "event_kind": "interface_discovery",
+      "execution_effect": "first parse failed; recovered next attempt by line-wise JSONL parsing",
+      "correction_or_annotation": "raw/<cid>.json are OpenCode native event streams, JSONL not single-document JSON",
+      "replacement_shape": "for line in open(path): json.loads(line)",
+      "recipe_reference": "none",
+      "contract_conflict": "no",
+      "durable_gap_candidate": "no"
+    },
+    {
+      "scenario": "first sha256sum -c over the Phase B private manifest ran in a compound command before the cd to its directory",
+      "requested_shape": "sha256sum -c --quiet (from manifest dir)",
+      "effective_shape": "producer ran from the default workdir -> spurious 'No such file or directory' for relative paths",
+      "rewrite_provenance": "none",
+      "event_kind": "agent_command",
+      "execution_effect": "first check spuriously failed; re-run in the correct workdir passed (PHASEB_MANIFEST_OK)",
+      "correction_or_annotation": "cwd belongs to the command, not to a later clause of the same compound line",
+      "replacement_shape": "shell workdir set to the manifest directory",
+      "recipe_reference": "none",
+      "contract_conflict": "no",
+      "durable_gap_candidate": "no"
+    },
+    {
+      "scenario": "self-authored packet-builder Python had string-quote typos (mixed delimiters in dict literals)",
+      "requested_shape": "python3 build-packet2.py",
+      "effective_shape": "SyntaxError on first run; two mechanical quote fixes; clean parse after",
+      "rewrite_provenance": "none",
+      "event_kind": "agent_command",
+      "execution_effect": "recovered before any output was produced; no partial artifact published",
+      "correction_or_annotation": "builder syntax repaired in the private helper; published files generated only after clean parse",
+      "replacement_shape": "none (helper kept as-is after fix)",
+      "recipe_reference": "none",
+      "contract_conflict": "no",
+      "durable_gap_candidate": "no"
+    }
+  ],
+  "harness_behavior": "large execute() results were truncated to tool-output files by the harness (transparent; full content preserved at the cited paths) - not counted as agent friction",
+  "omitted_sensitive_values": "no"
+}

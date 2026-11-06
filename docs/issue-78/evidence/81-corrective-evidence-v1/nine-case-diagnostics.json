@@ -1,0 +1,382 @@
+{
+ "schema": "issue81-corrective-nine-case-diagnostics.v1",
+ "campaign": "ISSUE81_CORRECTIVE_EVIDENCE_V1",
+ "inference_labels": [
+  "DIRECTLY_OBSERVED_IN_FROZEN_RUN",
+  "DIRECTLY_OBSERVED_IN_CURRENT_REPLAY",
+  "REPRODUCED_WITH_REVIEWED_SOURCE_LOGIC",
+  "INFERRED_FROM_STATIC_SOURCE",
+  "HYPOTHESIS_ONLY",
+  "UNVERIFIED"
+ ],
+ "root_cause_classes": [
+  "SEMANTIC_SEARCH_RETRIEVAL_MISS",
+  "SEMANTIC_SEARCH_RANKING",
+  "RELEVANCE_FILTER_REJECTION",
+  "INCORRECT_PROPOSITION_SELECTED",
+  "FIRST_RESOLVABLE_EPISODE_MISBINDING",
+  "SOURCE_INDEX_OR_RESOLVER_FAILURE",
+  "SOURCE_SCOPE_MISMATCH",
+  "CONTEXT_TIMEOUT_CENSORED",
+  "PROMPT_CONTEXT_ASSOCIATION",
+  "HISTORICAL_GRAPH_DRIFT",
+  "EVALUATOR_EXACT_SOURCE_OVERCONSTRAINT",
+  "LEGITIMATE_ALTERNATIVE_SOURCE",
+  "OVERBROAD_NEGATIVE_EXPECTATION",
+  "INSUFFICIENT_HISTORICAL_TRACE",
+  "OTHER_EVIDENCE_BACKED"
+ ],
+ "cases": {
+  "S01": {
+   "frozen_verdict": "INJECTED_WRONG_SOURCE",
+   "expected": {
+    "fact": null,
+    "episode_uuid": "1409c260-92e9-474f-96be-6da4216908f7",
+    "source_ref": "opencode:ses_e5158f35cffeu6tZOnjp1XwQko:message:msg_1aea7648a001V2JzUtwYv5kkjY"
+   },
+   "historical_injected": {
+    "source_ref": "opencode:ses_e513390dcffekimm001xBGtcI0:message:msg_1aecd887c001GaCs8HD5eGI0R9",
+    "fact_note": "frozen results record source refs only; injected fact text is in the private litellm trace (PRIVATE_EVIDENCE_REQUIRED)"
+   },
+   "current_graph_status": "success (12 facts)",
+   "expected_episode_in_current_top12": true,
+   "expected_source_index_valid": true,
+   "selected_candidate": {
+    "fact_uuid": "a364f523-3b30-453c-80eb-01a2b438e3c2",
+    "fact_excerpt": "When group_id is 'development-knowledge', FalkorDB does not route queries to the graphiti_live graph.",
+    "source_ref": "opencode:ses_e513390dcffekimm001xBGtcI0:message:msg_1aecd887c001GaCs8HD5eGI0R9",
+    "same_as_historical_injection": true
+   },
+   "source_admission_result": "PASS (curated resolver; legacy journal empty)",
+   "relevance_ranking_result": "expected-proposition fact d14f3c13 (GRAPHITI_RECALL_FALKOR_PORT=6382) REJECTED by named-term fence: query term \"FalkorDB\" not present as substring; routing fact admitted and selected",
+   "query_to_context_outcome": "injected (1 fact)",
+   "proposition_equivalence": "related but non-equivalent (routing statement, not group+port configuration)",
+   "temporal_authority_correctness": "current state not independently verified; assistant-reported class preserved",
+   "demonstrated_root_cause": [
+    "LEGITIMATE_ALTERNATIVE_SOURCE",
+    "RELEVANCE_FILTER_REJECTION",
+    "EVALUATOR_EXACT_SOURCE_OVERCONSTRAINT"
+   ],
+   "evidence_confidence": "REPRODUCED_WITH_REVIEWED_SOURCE_LOGIC (current selection == historical injected source); historical top-12 ordering UNVERIFIED",
+   "unresolved_dependencies": [
+    "historical Graphiti top-12 ordering not recorded"
+   ],
+   "minimal_candidate_correction": "relevance.mjs named-term fence (see central-correction-disposition.md)"
+  },
+  "S03": {
+   "frozen_verdict": "INJECTED_WRONG_SOURCE",
+   "expected": {
+    "fact": null,
+    "episode_uuid": "082fe673-8cf9-4da1-bc43-aaa9e04f68d8",
+    "source_ref": "opencode:ses_e516e7ab7ffehIYi0ezLjIffWR:message:msg_1ae94561b001W2ocylmntpmpJV"
+   },
+   "historical_injected": {
+    "source_ref": "opencode:ses_e514f306cffe3F3Hy1nkJgjujC:message:msg_1aeb281c9001k9aQzqmnBUQ1oE",
+    "fact_note": "PRIVATE_EVIDENCE_REQUIRED (litellm trace)"
+   },
+   "current_graph_status": "success (12 facts)",
+   "expected_episode_in_current_top12": false,
+   "expected_source_index_valid": true,
+   "selected_candidate": {
+    "fact_uuid": "a98db709-4887-4d07-b755-8bff23760d2b",
+    "fact_excerpt": "mcp-test.mjs uses the group ID 'development-knowledge' when calling the graphiti MCP server.",
+    "source_ref": "opencode:ses_e514f306cffe3F3Hy1nkJgjujC:message:msg_1aeb281c9001k9aQzqmnBUQ1oE",
+    "same_as_historical_injection": true
+   },
+   "source_admission_result": "PASS",
+   "relevance_ranking_result": "closest equivalent fact e09206d7 (\"MCP server clones the driver per group_id to use per-group FalkorDB graphs\") REJECTED: lacks literal \"graphiti\" (named-term fence); selected fact admitted (overlap 4)",
+   "query_to_context_outcome": "injected (1 fact)",
+   "proposition_equivalence": "related but non-equivalent (usage statement, not the per-group driver-clone mechanism)",
+   "temporal_authority_correctness": "current state not independently verified; assistant-reported preserved",
+   "demonstrated_root_cause": [
+    "SEMANTIC_SEARCH_RETRIEVAL_MISS",
+    "RELEVANCE_FILTER_REJECTION",
+    "LEGITIMATE_ALTERNATIVE_SOURCE",
+    "EVALUATOR_EXACT_SOURCE_OVERCONSTRAINT"
+   ],
+   "evidence_confidence": "REPRODUCED_WITH_REVIEWED_SOURCE_LOGIC; historical top-12 ordering UNVERIFIED",
+   "unresolved_dependencies": [
+    "expected episode 082fe673 absent from current top-12 (retrieval property of current embeddings)"
+   ],
+   "minimal_candidate_correction": "relevance.mjs named-term fence (see central-correction-disposition.md)"
+  },
+  "S04": {
+   "frozen_verdict": "INJECTED_WRONG_SOURCE",
+   "expected": {
+    "fact": null,
+    "episode_uuid": "c48cd614-4f98-49f7-90d0-5b6a418368fc",
+    "source_ref": "opencode:ses_e5276247fffewUAeyTeAea2tia:message:msg_1ad8c14d6001aDoSonKPyEUW9E"
+   },
+   "historical_injected": {
+    "source_ref": "opencode:ses_e51631cbfffeIAww75wYB0QLvR:message:msg_1ae9d8d9e0011vCYAm7ru8Z44E",
+    "fact_note": "PRIVATE_EVIDENCE_REQUIRED (litellm trace)"
+   },
+   "current_graph_status": "success (12 facts)",
+   "expected_episode_in_current_top12": true,
+   "expected_source_index_valid": true,
+   "selected_candidate": {
+    "fact_uuid": "ec313e91-1229-4ff6-92eb-311e59e3aa96",
+    "fact_excerpt": "The data physically lives in the development-knowledge graph (35 nodes) while ghdev_gh_mcp has 0 nodes",
+    "source_ref": "opencode:ses_e51631cbfffeIAww75wYB0QLvR:message:msg_1ae9d8d9e0011vCYAm7ru8Z44E",
+    "same_as_historical_injection": true
+   },
+   "source_admission_result": "PASS",
+   "relevance_ranking_result": "most-equivalent candidate 6940cadb (overlap 6, graphiti_live-empty variant) REJECTED by named-term fence (lacks literal \"mcp\"); admitted ghdev_gh_mcp variant selected; it is historical/superseded (invalid_at 2026-11-06T02:28:51Z)",
+   "query_to_context_outcome": "injected (1 fact)",
+   "proposition_equivalence": "related but non-equivalent (names ghdev_gh_mcp as the empty graph, not graphiti_live; superseded state)",
+   "temporal_authority_correctness": "historical/superseded temporal label applied by production logic (invalid_at set)",
+   "demonstrated_root_cause": [
+    "RELEVANCE_FILTER_REJECTION",
+    "LEGITIMATE_ALTERNATIVE_SOURCE",
+    "EVALUATOR_EXACT_SOURCE_OVERCONSTRAINT"
+   ],
+   "evidence_confidence": "REPRODUCED_WITH_REVIEWED_SOURCE_LOGIC; historical top-12 ordering UNVERIFIED",
+   "unresolved_dependencies": [],
+   "minimal_candidate_correction": "relevance.mjs named-term fence (see central-correction-disposition.md)"
+  },
+  "S05": {
+   "frozen_verdict": "INJECTED_WRONG_SOURCE",
+   "expected": {
+    "fact": null,
+    "episode_uuid": "1a20d974-b5a7-4367-8da5-8c9d7dbb06c5",
+    "source_ref": "opencode:ses_e51508dcfffe9svEPYbBvkQzfn:message:msg_1aeafef5e001tFSncgFcjcwsi6"
+   },
+   "historical_injected": {
+    "source_ref": "opencode:ses_e5276247fffewUAeyTeAea2tia:message:msg_1ad8c14d6001aDoSonKPyEUW9E",
+    "fact_note": "PRIVATE_EVIDENCE_REQUIRED (litellm trace)"
+   },
+   "current_graph_status": "success (12 facts)",
+   "expected_episode_in_current_top12": false,
+   "expected_source_index_valid": true,
+   "selected_candidate": {
+    "fact_uuid": "4640a08b-bf5d-437c-a447-7e9c87b96812",
+    "fact_excerpt": "The FalkorDB layout includes an empty graph named 'graphiti_live' with 0 nodes.",
+    "source_ref": "opencode:ses_e5276247fffewUAeyTeAea2tia:message:msg_1ad8c14d6001aDoSonKPyEUW9E",
+    "same_as_historical_injection": true
+   },
+   "source_admission_result": "PASS",
+   "relevance_ranking_result": "admitted and selected (overlap 4); historical/superseded (invalid_at 2026-11-06T01:49:07Z)",
+   "query_to_context_outcome": "injected (1 fact)",
+   "proposition_equivalence": "partial: covers graphiti_live-empty half of the expected layout proposition; omits development-knowledge node holding and ghdev_gh_mcp emptiness",
+   "temporal_authority_correctness": "historical/superseded temporal label applied",
+   "demonstrated_root_cause": [
+    "SEMANTIC_SEARCH_RETRIEVAL_MISS",
+    "LEGITIMATE_ALTERNATIVE_SOURCE",
+    "EVALUATOR_EXACT_SOURCE_OVERCONSTRAINT"
+   ],
+   "evidence_confidence": "REPRODUCED_WITH_REVIEWED_SOURCE_LOGIC; historical top-12 ordering UNVERIFIED",
+   "unresolved_dependencies": [
+    "expected episode 1a20d974 absent from current top-12"
+   ],
+   "minimal_candidate_correction": "none beyond relevance.mjs (retrieval gap is an embedding property, not a code defect)"
+  },
+  "S06": {
+   "frozen_verdict": "INJECTED_WRONG_SOURCE",
+   "expected": {
+    "fact": null,
+    "episode_uuid": "6e7956be-498c-47cf-af4d-07220ee8507e",
+    "source_ref": "opencode:ses_e51cb9c19ffem7rxqiNNhlbbQ1:message:msg_1ae367654001nlYZtg6lC5m03l"
+   },
+   "historical_injected": {
+    "source_ref": "opencode:ses_e5216f8ffffeoWWX3dJDu4rpL7:tool:call_2a73d67cddde989d",
+    "fact_note": "PRIVATE_EVIDENCE_REQUIRED (litellm trace)"
+   },
+   "current_graph_status": "success (12 facts)",
+   "expected_episode_in_current_top12": true,
+   "expected_source_index_valid": true,
+   "selected_candidate": {
+    "fact_uuid": "f1e47f17-eaa5-4233-ae10-66a526323cfc",
+    "fact_excerpt": "The tool rtk invoked the git command to fetch origin pull/86/head into refs/pr/86 and then list the ...",
+    "source_ref": "opencode:ses_e5216f8ffffeoWWX3dJDu4rpL7:tool:call_2a73d67cddde989d",
+    "same_as_historical_injection": true
+   },
+   "source_admission_result": "PASS",
+   "relevance_ranking_result": "DEMONSTRATED RANKING DEFECT: expected-proposition candidate 28893e36 (\"group changed from ghdev_gh_mcp to development-knowledge\", overlap 5, eligible, priority 0) lost to distractor f1e47f17 (overlap 3, priority 1) because HISTORICAL_STATEMENT regex (relevance.mjs:82) matches bare \"then\", granting priority 1; sort puts priority before lexical overlap (relevance.mjs:184-187)",
+   "query_to_context_outcome": "injected (1 fact)",
+   "proposition_equivalence": "selected fact is not equivalent to the expected cutover proposition; the equivalent fact was present and eligible",
+   "temporal_authority_correctness": "tool-reported class preserved",
+   "demonstrated_root_cause": [
+    "SEMANTIC_SEARCH_RANKING",
+    "EVALUATOR_EXACT_SOURCE_OVERCONSTRAINT"
+   ],
+   "evidence_confidence": "REPRODUCED_WITH_REVIEWED_SOURCE_LOGIC (deterministic; ranker=null)",
+   "unresolved_dependencies": [],
+   "minimal_candidate_correction": "relevance.mjs:82 HISTORICAL_STATEMENT \"then\" over-match and priority-vs-overlap sort order (see central-correction-disposition.md)"
+  },
+  "S07": {
+   "frozen_verdict": "INJECTED_WRONG_SOURCE",
+   "expected": {
+    "fact": null,
+    "episode_uuid": "7dcfa76f-8fa5-436a-bdd5-ad340a62f27d",
+    "source_ref": "opencode:ses_e5276247fffewUAeyTeAea2tia:message:msg_1ad89db84001rJAb8M2vcBA9IP:span:0"
+   },
+   "historical_injected": {
+    "source_ref": "opencode:ses_e50cc1c26ffeKCmAyMkiTNIVKE:tool:call_8e9d27d04e918e97",
+    "fact_note": "PRIVATE_EVIDENCE_REQUIRED (litellm trace)"
+   },
+   "current_graph_status": "success (12 facts)",
+   "expected_episode_in_current_top12": false,
+   "expected_source_index_valid": true,
+   "selected_candidate": {
+    "fact_uuid": "d974a695-b35f-4565-9a23-6c769f2be341",
+    "fact_excerpt": "The Production admitted post-exit candidate curator service uses the canonical EX gate.",
+    "source_ref": "opencode:ses_e50cc1c26ffeKCmAyMkiTNIVKE:tool:call_8e9d27d04e918e97",
+    "same_as_historical_injection": true
+   },
+   "source_admission_result": "PASS",
+   "relevance_ranking_result": "only 2 of 12 facts admitted (overlap>=2 + named terms); selected overlap-2 candidate; expected FAIL_CLOSED drain fact absent from top-12",
+   "query_to_context_outcome": "injected (1 fact)",
+   "proposition_equivalence": "related but non-equivalent (gate usage statement, not the FAIL_CLOSED interactive-harness mechanism)",
+   "temporal_authority_correctness": "tool-reported class preserved",
+   "demonstrated_root_cause": [
+    "SEMANTIC_SEARCH_RETRIEVAL_MISS",
+    "LEGITIMATE_ALTERNATIVE_SOURCE",
+    "EVALUATOR_EXACT_SOURCE_OVERCONSTRAINT"
+   ],
+   "evidence_confidence": "REPRODUCED_WITH_REVIEWED_SOURCE_LOGIC; historical top-12 ordering UNVERIFIED",
+   "unresolved_dependencies": [
+    "expected episode 7dcfa76f absent from current top-12"
+   ],
+   "minimal_candidate_correction": "none beyond relevance.mjs (retrieval gap is an embedding property)"
+  },
+  "S10": {
+   "frozen_verdict": "INJECTED_WRONG_SOURCE",
+   "expected": {
+    "fact": null,
+    "episode_uuid": "0de3cdc8-07ff-46a5-a0bc-ed7f9bc5e47b",
+    "source_ref": "opencode:ses_e50efdb27ffep7alMZaj9wkl3x:tool:call_1e0445fde85fa221"
+   },
+   "historical_injected": {
+    "source_ref": "opencode:ses_e50efdb27ffep7alMZaj9wkl3x:tool:call_0485ce2600ec5dba",
+    "fact_note": "PRIVATE_EVIDENCE_REQUIRED (litellm trace)"
+   },
+   "current_graph_status": "success (12 facts)",
+   "expected_episode_in_current_top12": false,
+   "expected_source_index_valid": true,
+   "selected_candidate": {
+    "fact_uuid": "0fd53409-2d2b-46b4-9e22-2512f48b6f39",
+    "fact_excerpt": "The graphiti component is part of the gh_mcp project, as indicated by the test commit 'test(graphiti)...",
+    "source_ref": "opencode:ses_e50efdb27ffep7alMZaj9wkl3x:tool:call_0485ce2600ec5dba",
+    "same_as_historical_injection": true
+   },
+   "source_admission_result": "PASS",
+   "relevance_ranking_result": "tie at overlap 3 between the selected fact and the worktree fact (\"git was used to add a worktree at /tmp/opencode/issue81-52863ae ...\"); deterministic index-order tiebreak selected the weaker proposition; expected commit-message fact absent from top-12",
+   "query_to_context_outcome": "injected (1 fact)",
+   "proposition_equivalence": "related but non-equivalent (component/test-commit association, not the 52863ae commit message/behavior)",
+   "temporal_authority_correctness": "tool-reported class preserved",
+   "demonstrated_root_cause": [
+    "SEMANTIC_SEARCH_RETRIEVAL_MISS",
+    "SEMANTIC_SEARCH_RANKING",
+    "EVALUATOR_EXACT_SOURCE_OVERCONSTRAINT"
+   ],
+   "evidence_confidence": "REPRODUCED_WITH_REVIEWED_SOURCE_LOGIC; historical top-12 ordering UNVERIFIED",
+   "unresolved_dependencies": [
+    "expected episode 0de3cdc8 absent from current top-12"
+   ],
+   "minimal_candidate_correction": "tiebreak ordering in relevance.mjs:184-187 (see central-correction-disposition.md)"
+  },
+  "S13": {
+   "frozen_verdict": "MISS",
+   "expected": {
+    "fact": null,
+    "episode_uuid": "009974d2-f051-45fd-ac0c-f259dcfdd1a8",
+    "source_ref": "opencode:ses_e50efdb27ffep7alMZaj9wkl3x:message:msg_1af1287e7001qq7UBQ8qBctKK1"
+   },
+   "historical_injected": {
+    "source_ref": null,
+    "fact_note": "no injection (frozen MISS)"
+   },
+   "current_graph_status": "success (12 facts)",
+   "expected_episode_in_current_top12": false,
+   "expected_source_index_valid": true,
+   "selected_candidate": null,
+   "source_admission_result": "PASS: index file exists, JSON valid, record matches, resolver returns the expected episode (s13-index-readback.json)",
+   "relevance_ranking_result": "all 11 admitted candidates rejected: single-group lexical overlap (floor 2) - no candidate admitted",
+   "query_to_context_outcome": "no injection (reproduces historical MISS)",
+   "proposition_equivalence": "n/a (nothing injected)",
+   "temporal_authority_correctness": "n/a",
+   "demonstrated_root_cause": [
+    "SEMANTIC_SEARCH_RETRIEVAL_MISS",
+    "RELEVANCE_FILTER_REJECTION",
+    "INSUFFICIENT_HISTORICAL_TRACE"
+   ],
+   "evidence_confidence": "REPRODUCED_WITH_REVIEWED_SOURCE_LOGIC (current replay explains the no-injection); historical 300ms Promise.race censored path (plugin.mjs:169-171) remains a candidate explanation, UNVERIFIED (no timing evidence in frozen run)",
+   "unresolved_dependencies": [
+    "historical top-12 ordering unrecorded",
+    "300ms censoring cannot be excluded for the historical run"
+   ],
+   "minimal_candidate_correction": "none for the index (erratum corrects the prior diagnosis); retrieval/floor behavior is covered by the relevance.mjs surface"
+  },
+  "N02": {
+   "frozen_verdict": "FAIL_INJECTED",
+   "expected": {
+    "fact": null,
+    "episode_uuid": null,
+    "source_ref": null
+   },
+   "historical_injected": {
+    "source_ref": "opencode:ses_e508c6d53ffeWrJEJftz60lqXB:message:msg_1af753f0d001GPlDjAoAckQ3EK",
+    "fact_note": "PRIVATE_EVIDENCE_REQUIRED (litellm trace)"
+   },
+   "current_graph_status": "success (12 facts; all group_id=development-knowledge)",
+   "expected_episode_in_current_top12": null,
+   "expected_source_index_valid": null,
+   "selected_candidate": {
+    "fact_uuid": "1afbcca0-d3d7-400e-b1a5-31146a9ac56c",
+    "fact_excerpt": "The active production curation records are under curation-v1/development-knowledge/, while ghdev_gh_mcp ... (historical pre-cutover set)",
+    "source_ref": "opencode:ses_e508c6d53ffeWrJEJftz60lqXB:message:msg_1af753f0d001GPlDjAoAckQ3EK",
+    "same_as_historical_injection": true
+   },
+   "source_admission_result": "PASS: episode e1d8e764-26fa-45ea-9483-8e64a71e3de7 stored under development-knowledge (record f9680d78..., state=persisted)",
+   "relevance_ranking_result": "admitted (overlap 4) and selected",
+   "query_to_context_outcome": "injected (1 fact) - reproduces frozen FAIL_INJECTED",
+   "proposition_equivalence": "the injected fact ANSWERS the question (ghdev_gh_mcp is the historical pre-cutover set); it is a development-knowledge fact ABOUT the legacy group, not a fact RETRIEVED FROM the legacy group",
+   "temporal_authority_correctness": "assistant-reported class preserved",
+   "demonstrated_root_cause": [
+    "OVERBROAD_NEGATIVE_EXPECTATION"
+   ],
+   "evidence_confidence": "REPRODUCED_WITH_REVIEWED_SOURCE_LOGIC; no cross-group (development-knowledge vs ghdev_gh_mcp) scope leak is demonstrated - search was scoped to development-knowledge and every returned fact has group_id=development-knowledge",
+   "unresolved_dependencies": [],
+   "minimal_candidate_correction": "evaluation-design: the frozen N02 expectation disallows useful same-group historical-topic recall; no production change required for N02 (frozen control unmodified)"
+  }
+ },
+ "summary": {
+  "wrong_source_cases": [
+   "S01",
+   "S03",
+   "S04",
+   "S05",
+   "S06",
+   "S07",
+   "S10"
+  ],
+  "source_misbindings_confirmed": 0,
+  "source_misbindings_note": "no case demonstrates a proposition bound to a non-admitted or cross-group source; all selected sources are persisted curated records of development-knowledge with permitted evidence classes",
+  "retrieval_misses_confirmed": 5,
+  "retrieval_miss_cases": [
+   "S03",
+   "S05",
+   "S07",
+   "S10",
+   "S13"
+  ],
+  "ranking_defects_confirmed": 2,
+  "ranking_defect_cases": [
+   "S06",
+   "S10"
+  ],
+  "relevance_filter_rejections_confirmed": 4,
+  "relevance_filter_rejection_cases": [
+   "S01",
+   "S03",
+   "S04",
+   "S13"
+  ],
+  "historical_trace_gaps": 2,
+  "historical_trace_gap_detail": [
+   "historical Graphiti top-12 ordering unrecorded for all cases (systemic)",
+   "S13 historical 300ms censoring evidence absent"
+  ],
+  "frozen_verdicts_preserved": true
+ }
+}

@@ -1,0 +1,1107 @@
+{
+ "schema": "issue81-corrective-relevance-decision-traces.v1",
+ "mechanism": "relevance.mjs:112-149 relevanceSignals + 152-189 relevanceFilter (maxSelected=1): named-term literal-substring fence, issue/number exact checks, topical floor (overlap>=2 groups), historical/decision priority cue, sort by priority then rankScore (null) then lexical overlap then index",
+ "cases": [
+  {
+   "case_id": "S01",
+   "reranker_configured": false,
+   "reranker_note": "installed option has no rerankEndpoint (plugin.mjs:17,89) => ranker=null => deterministic lexical/authority ranking only; no reranker scores exist to record or invent",
+   "candidates_admitted": 12,
+   "candidate_signals": [
+    {
+     "fact_uuid": "ad5eef95-7ed6-46fb-af36-c0632722c739",
+     "fact": "FalkorDB (127.0.0.1:6382) contains the graph 'graphiti_live'.",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 2,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "4beafec6-da06-4458-85fa-6cefb1c9405b",
+     "fact": "The graphiti MCP server is configured to use the FalkorDB graph named 'graphiti_live' as its database.",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 2,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "d14f3c13-c7b5-469b-8693-3b818d991d4d",
+     "fact": "The environment variable GRAPHITI_RECALL_FALKOR_PORT is set to 6382.",
+     "eligible": false,
+     "priority": 0,
+     "overlap_count": 3,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "a364f523-3b30-453c-80eb-01a2b438e3c2",
+     "fact": "When group_id is 'development-knowledge', FalkorDB does not route queries to the graphiti_live graph.",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 4,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "6b258002-1844-4ec4-a7c9-cae1321f7bdf",
+     "fact": "The graphiti MCP is a remote server at https://mcp.<host>.us/graphiti connected to a remote FalkorDB.",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 2,
+     "choiceOnly": false,
+     "excerpt_redacted": true
+    },
+    {
+     "fact_uuid": "fdea781a-97c8-4ade-912e-4cb9ae212850",
+     "fact": "The MCP server's configuration uses the graphiti_live FalkorDB graph by default.",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 2,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "1562d34a-15d8-4350-90cd-3926d55db79f",
+     "fact": "The Graphiti driver derives the FalkorDB graph name from group_id.",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 3,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "c6d4c379-bfce-4e4b-b224-45db7e9f195b",
+     "fact": "The FalkorDB layout uses per-group graphs, including a graph named 'ghdev_gh_mcp'.",
+     "eligible": false,
+     "priority": 0,
+     "overlap_count": 1,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "1bc40d82-fdd4-4b9c-b103-5de27617b47f",
+     "fact": "FalkorDB is on port 6382 (not 6379) and is used by the gh_mcp project.",
+     "eligible": false,
+     "priority": 0,
+     "overlap_count": 2,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "e3c81b80-9ef2-4b89-aabf-eadd872c3abb",
+     "fact": "The GRAPH.LIST command confirmed the existence of the FalkorDB graph named graphiti_live.",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 2,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "c7ef60c0-4cb4-4cef-9d3d-272dded95216",
+     "fact": "The database configuration value 'graphiti_live' maps directly to the FalkorDB graph name.",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 2,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "e07fb561-4e2f-481e-94f4-420dffad41d5",
+     "fact": "The gh_mcp project configuration uses the group_id 'graphiti_live' and the FalkorDB database 'graphiti_live'.",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 3,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    }
+   ],
+   "final_selected": {
+    "fact": "When group_id is 'development-knowledge', FalkorDB does not route queries to the graphiti_live graph.",
+    "excerpt_redacted": false,
+    "raw_fact_sha256": "453bb24e4eed992ae6e0024251038b24f8bcfc0a144a2f10db35de3c3e7a581e",
+    "source_ref": "opencode:ses_e513390dcffekimm001xBGtcI0:message:msg_1aecd887c001GaCs8HD5eGI0R9",
+    "evidence_class": "assistant-reported",
+    "temporal": "current state not independently verified"
+   },
+   "budget_disposition": "maxSelected=1; 1400-char budget not binding for single-fact selections"
+  },
+  {
+   "case_id": "S03",
+   "reranker_configured": false,
+   "reranker_note": "installed option has no rerankEndpoint (plugin.mjs:17,89) => ranker=null => deterministic lexical/authority ranking only; no reranker scores exist to record or invent",
+   "candidates_admitted": 12,
+   "candidate_signals": [
+    {
+     "fact_uuid": "6950edd9-724e-4583-968b-c8f227d6a617",
+     "fact": "memory-core.mjs calls the Graphiti MCP at 127.0.0.1:8766 with group_ids: ['development-knowledge'].",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 3,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "a98db709-4887-4d07-b755-8bff23760d2b",
+     "fact": "mcp-test.mjs uses the group ID 'development-knowledge' when calling the graphiti MCP server.",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 4,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "8f1eff97-1f87-46b1-8861-8466b896afe0",
+     "fact": "mcp-test.mjs calls the graphiti MCP server at http://127.0.0.1:8766/mcp, which is configured for the graphiti_live graph",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 4,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "6b258002-1844-4ec4-a7c9-cae1321f7bdf",
+     "fact": "The graphiti MCP is a remote server at https://mcp.<host>.us/graphiti connected to a remote FalkorDB.",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 3,
+     "choiceOnly": false,
+     "excerpt_redacted": true
+    },
+    {
+     "fact_uuid": "f1c171a8-f836-4ec7-b909-b3448aa3839e",
+     "fact": "The Graphiti MCP server is an upstream component of the gh_mcp project, providing semantic search on port 8766.",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 3,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "c25f096a-3d8f-4474-93a4-2ff9fe08be59",
+     "fact": "The gh_mcp script calls the Graphiti MCP server at 127.0.0.1:8766 using get_episodes and search_memory_facts with group_",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 4,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "e09206d7-9a10-436a-afa7-92c5165b0893",
+     "fact": "The MCP server clones the driver per group_id to use per-group FalkorDB graphs.",
+     "eligible": false,
+     "priority": 0,
+     "overlap_count": 3,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "24e12aff-49e0-417f-9262-dd33c5b394be",
+     "fact": "The Graphiti MCP server is implemented by the script /workspace/mcp_servers/graphiti/run_graphiti.py.",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 3,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "513fa969-eeab-4750-ac46-0baac49b7af5",
+     "fact": "The MCP server is bound to the graphiti_live graph, which is empty, while the development-knowledge graph has 35 nodes.",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 3,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "a067058e-a7e4-407f-9719-c9a8186e5873",
+     "fact": "The graphiti MCP server is located at http://127.0.0.1:8766/mcp.",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 3,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "f679c703-92b2-4bd6-9797-fcf6c1b8bcc7",
+     "fact": "The MCP server implements per-group graph routing via the _driver_for_group function (lines 191\u2013203), where the driver i",
+     "eligible": false,
+     "priority": 0,
+     "overlap_count": 3,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "310b859b-8d2d-4dbe-a655-aa83240d6f8b",
+     "fact": "The local Graphiti MCP service at 127.0.0.1:8766 is implemented via run_graphiti.py and config.yaml.",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 2,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    }
+   ],
+   "final_selected": {
+    "fact": "mcp-test.mjs uses the group ID 'development-knowledge' when calling the graphiti MCP server.",
+    "excerpt_redacted": false,
+    "raw_fact_sha256": "f2a1dd5169604bccad4c1e16831331a658f59aa84aa69a138fb9428c4452e596",
+    "source_ref": "opencode:ses_e514f306cffe3F3Hy1nkJgjujC:message:msg_1aeb281c9001k9aQzqmnBUQ1oE",
+    "evidence_class": "assistant-reported",
+    "temporal": "current state not independently verified"
+   },
+   "budget_disposition": "maxSelected=1; 1400-char budget not binding for single-fact selections"
+  },
+  {
+   "case_id": "S04",
+   "reranker_configured": false,
+   "reranker_note": "installed option has no rerankEndpoint (plugin.mjs:17,89) => ranker=null => deterministic lexical/authority ranking only; no reranker scores exist to record or invent",
+   "candidates_admitted": 12,
+   "candidate_signals": [
+    {
+     "fact_uuid": "6940cadb-0c61-4196-9ff7-e1c54a4ceee9",
+     "fact": "The data physically lives in the development-knowledge graph (35 nodes) while graphiti_live has 0 nodes.",
+     "eligible": false,
+     "priority": 0,
+     "overlap_count": 6,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "513fa969-eeab-4750-ac46-0baac49b7af5",
+     "fact": "The MCP server is bound to the graphiti_live graph, which is empty, while the development-knowledge graph has 35 nodes.",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 5,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "ec313e91-1229-4ff6-92eb-311e59e3aa96",
+     "fact": "The data physically lives in the development-knowledge graph (35 nodes) while ghdev_gh_mcp has 0 nodes.",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 6,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "34e120c2-80e1-444d-87ec-eef9b3402cea",
+     "fact": "The graphiti_live graph, which is empty with 0 nodes, is part of the gh_mcp project.",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 4,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "fdea781a-97c8-4ade-912e-4cb9ae212850",
+     "fact": "The MCP server's configuration uses the graphiti_live FalkorDB graph by default.",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 4,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "6950edd9-724e-4583-968b-c8f227d6a617",
+     "fact": "memory-core.mjs calls the Graphiti MCP at 127.0.0.1:8766 with group_ids: ['development-knowledge'].",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 3,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "f18dddf9-5279-4d10-8663-2c5feef46867",
+     "fact": "The graph name graphiti_live comes from the Graphiti MCP server configuration.",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 4,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "a364f523-3b30-453c-80eb-01a2b438e3c2",
+     "fact": "When group_id is 'development-knowledge', FalkorDB does not route queries to the graphiti_live graph.",
+     "eligible": false,
+     "priority": 0,
+     "overlap_count": 5,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "d7054007-4c7d-4857-a0e2-ce688bfecb05",
+     "fact": "The development-knowledge graph, which contains 35 nodes, is part of the gh_mcp project.",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 3,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "8d1e7656-2a72-4bf8-bd0a-1a92d5e9759c",
+     "fact": "A script queries the 'graphiti_live' graph filtered by group_id='development-knowledge'.",
+     "eligible": false,
+     "priority": 0,
+     "overlap_count": 4,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "8f1eff97-1f87-46b1-8861-8466b896afe0",
+     "fact": "mcp-test.mjs calls the graphiti MCP server at http://127.0.0.1:8766/mcp, which is configured for the graphiti_live graph",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 5,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "4beafec6-da06-4458-85fa-6cefb1c9405b",
+     "fact": "The graphiti MCP server is configured to use the FalkorDB graph named 'graphiti_live' as its database.",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 4,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    }
+   ],
+   "final_selected": {
+    "fact": "The data physically lives in the development-knowledge graph (35 nodes) while ghdev_gh_mcp has 0 nodes.",
+    "excerpt_redacted": false,
+    "raw_fact_sha256": "e72c6f6f169a1462a2d13b2e84a058f56f810df4184378b3da6546b536fc52e9",
+    "source_ref": "opencode:ses_e51631cbfffeIAww75wYB0QLvR:message:msg_1ae9d8d9e0011vCYAm7ru8Z44E",
+    "evidence_class": "assistant-reported",
+    "temporal": "historical/superseded"
+   },
+   "budget_disposition": "maxSelected=1; 1400-char budget not binding for single-fact selections"
+  },
+  {
+   "case_id": "S05",
+   "reranker_configured": false,
+   "reranker_note": "installed option has no rerankEndpoint (plugin.mjs:17,89) => ranker=null => deterministic lexical/authority ranking only; no reranker scores exist to record or invent",
+   "candidates_admitted": 12,
+   "candidate_signals": [
+    {
+     "fact_uuid": "4640a08b-bf5d-437c-a447-7e9c87b96812",
+     "fact": "The FalkorDB layout includes an empty graph named 'graphiti_live' with 0 nodes.",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 4,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "b82fa813-081e-4711-827c-e3f59601ccf5",
+     "fact": "The FalkorDB layout uses per-group graphs, including a graph named 'development-knowledge'.",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 3,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "ad5eef95-7ed6-46fb-af36-c0632722c739",
+     "fact": "FalkorDB (127.0.0.1:6382) contains the graph 'graphiti_live'.",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 2,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "c6d4c379-bfce-4e4b-b224-45db7e9f195b",
+     "fact": "The FalkorDB layout uses per-group graphs, including a graph named 'ghdev_gh_mcp'.",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 3,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "e3c81b80-9ef2-4b89-aabf-eadd872c3abb",
+     "fact": "The GRAPH.LIST command confirmed the existence of the FalkorDB graph named graphiti_live.",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 2,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "1f34eddf-4ec8-4bd9-9779-81f4a972d8a5",
+     "fact": "FalkorDB on port 6382 contains the graph named development-knowledge, as confirmed by GRAPH.LIST showing exactly three g",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 2,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "0586f0da-c82d-4e25-ba10-4cf018ddd990",
+     "fact": "The GRAPH.LIST command confirmed the existence of the FalkorDB graph named development-knowledge.",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 2,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "fe4c81b9-aa63-4b17-9ade-aaa50601ba2f",
+     "fact": "The GRAPH.LIST command confirmed the existence of the FalkorDB graph named ghdev_gh_mcp.",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 2,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "6f3a7615-3e2e-463d-893e-648b3fe49254",
+     "fact": "FalkorDB on port 6382 contains the graph named ghdev_gh_mcp, as confirmed by GRAPH.LIST showing exactly three graphs.",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 2,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "c7ef60c0-4cb4-4cef-9d3d-272dded95216",
+     "fact": "The database configuration value 'graphiti_live' maps directly to the FalkorDB graph name.",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 2,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "fdea781a-97c8-4ade-912e-4cb9ae212850",
+     "fact": "The MCP server's configuration uses the graphiti_live FalkorDB graph by default.",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 2,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "708447e6-8f47-4a4d-aaf6-d9674bd0e75d",
+     "fact": "As of 2026-11-06T02:21:02.894Z, the live FalkorDB state shows that the development-knowledge graph contains 35 nodes.",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 3,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    }
+   ],
+   "final_selected": {
+    "fact": "The FalkorDB layout includes an empty graph named 'graphiti_live' with 0 nodes.",
+    "excerpt_redacted": false,
+    "raw_fact_sha256": "e46096e69d2ebb1b84209900c35029ea5f6b13e81ea42f291cd0401ddcdafb6e",
+    "source_ref": "opencode:ses_e5276247fffewUAeyTeAea2tia:message:msg_1ad8c14d6001aDoSonKPyEUW9E",
+    "evidence_class": "assistant-reported",
+    "temporal": "historical/superseded"
+   },
+   "budget_disposition": "maxSelected=1; 1400-char budget not binding for single-fact selections"
+  },
+  {
+   "case_id": "S06",
+   "reranker_configured": false,
+   "reranker_note": "installed option has no rerankEndpoint (plugin.mjs:17,89) => ranker=null => deterministic lexical/authority ranking only; no reranker scores exist to record or invent",
+   "candidates_admitted": 12,
+   "candidate_signals": [
+    {
+     "fact_uuid": "28893e36-9bb0-42d0-9d9d-64c51e6edf21",
+     "fact": "The graphiti group for the gh_mcp project was changed from 'ghdev_gh_mcp' to 'development-knowledge', which is the only ",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 5,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "a9ff82e1-404d-4bf1-9133-92cda3f422b9",
+     "fact": "The git log for refs/pr/86 shows commit d879a67 with the message 'Stage source-backed production terminal failure adjudi",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 3,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "b6c03227-0af9-462a-b7be-cf5601f2c5d6",
+     "fact": "The environment variable GRAPHITI_RECALL_GROUP is set to development-knowledge.",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 2,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "f18dddf9-5279-4d10-8663-2c5feef46867",
+     "fact": "The graph name graphiti_live comes from the Graphiti MCP server configuration.",
+     "eligible": false,
+     "priority": 0,
+     "overlap_count": 1,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "a364f523-3b30-453c-80eb-01a2b438e3c2",
+     "fact": "When group_id is 'development-knowledge', FalkorDB does not route queries to the graphiti_live graph.",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 2,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "0fd53409-2d2b-46b4-9e22-2512f48b6f39",
+     "fact": "The graphiti component is part of the gh_mcp project, as indicated by the test commit 'test(graphiti): reject stale fall",
+     "eligible": false,
+     "priority": 0,
+     "overlap_count": 1,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "1562d34a-15d8-4350-90cd-3926d55db79f",
+     "fact": "The Graphiti driver derives the FalkorDB graph name from group_id.",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 2,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "2f7d2c15-bd2a-45b3-85c7-7b9322e04014",
+     "fact": "The absence of Graphiti context injection in Q2's session, while Q1 and Q3 each had 6 injection markers, aligns with the",
+     "eligible": false,
+     "priority": 0,
+     "overlap_count": 1,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "34e120c2-80e1-444d-87ec-eef9b3402cea",
+     "fact": "The graphiti_live graph, which is empty with 0 nodes, is part of the gh_mcp project.",
+     "eligible": false,
+     "priority": 0,
+     "overlap_count": 1,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "f1e47f17-eaa5-4233-ae10-66a526323cfc",
+     "fact": "The tool rtk invoked the git command to fetch origin pull/86/head into refs/pr/86 and then list the last 10 commits for ",
+     "eligible": true,
+     "priority": 1,
+     "overlap_count": 3,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "3c079981-ee4c-48cc-aa95-2325856bb3e1",
+     "fact": "The gh_mcp project is associated with the 'development-knowledge' scope group, replacing the previous 'ghdev_gh_mcp' ide",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 3,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "6950edd9-724e-4583-968b-c8f227d6a617",
+     "fact": "memory-core.mjs calls the Graphiti MCP at 127.0.0.1:8766 with group_ids: ['development-knowledge'].",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 2,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    }
+   ],
+   "final_selected": {
+    "fact": "The tool rtk invoked the git command to fetch origin pull/86/head into refs/pr/86 and then list the last 10 commits for that ref, which revealed commit d879a67 titled 'Stage source-backed production terminal failure adjudication and descriptive Graphiti cutover (#81)'.",
+    "excerpt_redacted": false,
+    "raw_fact_sha256": "61e0f6103f625346b46b18efaf0e4f0bd098a68613deae8d53c7910ae826bb73",
+    "source_ref": "opencode:ses_e5216f8ffffeoWWX3dJDu4rpL7:tool:call_2a73d67cddde989d",
+    "evidence_class": "tool-reported",
+    "temporal": "current state not independently verified"
+   },
+   "budget_disposition": "maxSelected=1; 1400-char budget not binding for single-fact selections"
+  },
+  {
+   "case_id": "S07",
+   "reranker_configured": false,
+   "reranker_note": "installed option has no rerankEndpoint (plugin.mjs:17,89) => ranker=null => deterministic lexical/authority ranking only; no reranker scores exist to record or invent",
+   "candidates_admitted": 12,
+   "candidate_signals": [
+    {
+     "fact_uuid": "97d9e4ab-1f82-4cf7-943d-3e82a8b945ef",
+     "fact": "The ExecStart command for post-exit-drain.py uses openviking_commit_gate.py as its --gate-source argument.",
+     "eligible": false,
+     "priority": 0,
+     "overlap_count": 0,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "d974a695-b35f-4565-9a23-6c769f2be341",
+     "fact": "The Production admitted post-exit candidate curator service uses the canonical EX gate.",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 2,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "e827f6a2-d138-42a8-be20-808ef3366cc4",
+     "fact": "systemd manages ghdev-curator-prod.service, which exited with status 2/INVALIDARGUMENT and failed with result 'exit-code",
+     "eligible": false,
+     "priority": 0,
+     "overlap_count": 1,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "6dfd751e-63af-4c23-b9ec-4128b30b178a",
+     "fact": "The native hook-shape and recall-association probe is part of the PRE_EXIT_ACTIONS for the gh_mcp project.",
+     "eligible": false,
+     "priority": 0,
+     "overlap_count": 0,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "e9ff87a2-0650-4701-bed0-0cac7b35efc3",
+     "fact": "The host <host> ran the ghdev-curator-prod.service, which exited with status 2/INVALIDARGUMENT on Nov 05 at 20:43:26.",
+     "eligible": false,
+     "priority": 0,
+     "overlap_count": 0,
+     "choiceOnly": false,
+     "excerpt_redacted": true
+    },
+    {
+     "fact_uuid": "2f53a672-78c4-4ada-b328-abc64a0e4f87",
+     "fact": "The ghdev-curator-prod.service ran on the host <host> and its main process exited with code=exited, status=2/INVALIDARGU",
+     "eligible": false,
+     "priority": 0,
+     "overlap_count": 1,
+     "choiceOnly": false,
+     "excerpt_redacted": true
+    },
+    {
+     "fact_uuid": "e9a396fd-80c4-4b78-a12a-39ccf7335327",
+     "fact": "The host <host> runs the Production admitted post-exit candidate curator service via systemd.",
+     "eligible": false,
+     "priority": 0,
+     "overlap_count": 1,
+     "choiceOnly": false,
+     "excerpt_redacted": true
+    },
+    {
+     "fact_uuid": "fedd5812-87d4-455a-bf11-a08190f78de8",
+     "fact": "On the host <host>, systemd managed the ghdev-curator-prod.service, which exited with status 2/INVALIDARGUMENT on Nov 05",
+     "eligible": false,
+     "priority": 0,
+     "overlap_count": 0,
+     "choiceOnly": false,
+     "excerpt_redacted": true
+    },
+    {
+     "fact_uuid": "706b72f5-f8bb-4d95-bc36-aa67f6180516",
+     "fact": "FalkorDB's persisted AOF is in effects format v2, while the running build can only load v3, causing a crash loop.",
+     "eligible": false,
+     "priority": 0,
+     "overlap_count": 1,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "10631248-64a4-4bca-8581-0a4e3c6d1baf",
+     "fact": "On Nov 05 20:52:56, systemd on host <host> started the Production admitted post-exit candidate curator service, which is",
+     "eligible": false,
+     "priority": 0,
+     "overlap_count": 1,
+     "choiceOnly": false,
+     "excerpt_redacted": true
+    },
+    {
+     "fact_uuid": "d6b6e219-c3ec-42d1-8aef-71da375bb748",
+     "fact": "The v2-harness 0/25 failures were caused by stale-process contamination from orphan standalone opencode processes.",
+     "eligible": false,
+     "priority": 0,
+     "overlap_count": 0,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "c941d0b0-2b38-4a43-a188-00920f03415f",
+     "fact": "The ghdev-curator-prod.service, a production admitted post-exit candidate curator with canonical EX gate, belongs to the",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 2,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    }
+   ],
+   "final_selected": {
+    "fact": "The Production admitted post-exit candidate curator service uses the canonical EX gate.",
+    "excerpt_redacted": false,
+    "raw_fact_sha256": "5a15a547d86762aa093eb09c35d0782decdb427eabc993e16ed52f575283592d",
+    "source_ref": "opencode:ses_e50cc1c26ffeKCmAyMkiTNIVKE:tool:call_8e9d27d04e918e97",
+    "evidence_class": "tool-reported",
+    "temporal": "current state not independently verified"
+   },
+   "budget_disposition": "maxSelected=1; 1400-char budget not binding for single-fact selections"
+  },
+  {
+   "case_id": "S10",
+   "reranker_configured": false,
+   "reranker_note": "installed option has no rerankEndpoint (plugin.mjs:17,89) => ranker=null => deterministic lexical/authority ranking only; no reranker scores exist to record or invent",
+   "candidates_admitted": 12,
+   "candidate_signals": [
+    {
+     "fact_uuid": "0fd53409-2d2b-46b4-9e22-2512f48b6f39",
+     "fact": "The graphiti component is part of the gh_mcp project, as indicated by the test commit 'test(graphiti): reject stale fall",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 3,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "f18dddf9-5279-4d10-8663-2c5feef46867",
+     "fact": "The graph name graphiti_live comes from the Graphiti MCP server configuration.",
+     "eligible": false,
+     "priority": 0,
+     "overlap_count": 1,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "a9ff82e1-404d-4bf1-9133-92cda3f422b9",
+     "fact": "The git log for refs/pr/86 shows commit d879a67 with the message 'Stage source-backed production terminal failure adjudi",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 2,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "daea3a59-9119-42b1-b7df-f9b0e8dcc3ea",
+     "fact": "The graphiti_live graph contains 0 nodes, as observed by opencode.",
+     "eligible": false,
+     "priority": 0,
+     "overlap_count": 1,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "932b5ae4-663c-455b-b44d-8f0ea8ef8a4e",
+     "fact": "git was used to add a worktree at /tmp/opencode/issue81-52863ae for the opencode-operational-schema-guard repository, ch",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 3,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "34e120c2-80e1-444d-87ec-eef9b3402cea",
+     "fact": "The graphiti_live graph, which is empty with 0 nodes, is part of the gh_mcp project.",
+     "eligible": false,
+     "priority": 0,
+     "overlap_count": 1,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "f1e47f17-eaa5-4233-ae10-66a526323cfc",
+     "fact": "The tool rtk invoked the git command to fetch origin pull/86/head into refs/pr/86 and then list the last 10 commits for ",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 2,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "6950edd9-724e-4583-968b-c8f227d6a617",
+     "fact": "memory-core.mjs calls the Graphiti MCP at 127.0.0.1:8766 with group_ids: ['development-knowledge'].",
+     "eligible": false,
+     "priority": 0,
+     "overlap_count": 1,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "310b859b-8d2d-4dbe-a655-aa83240d6f8b",
+     "fact": "The local Graphiti MCP service at 127.0.0.1:8766 is implemented via run_graphiti.py and config.yaml.",
+     "eligible": false,
+     "priority": 0,
+     "overlap_count": 1,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "6b258002-1844-4ec4-a7c9-cae1321f7bdf",
+     "fact": "The graphiti MCP is a remote server at https://mcp.<host>.us/graphiti connected to a remote FalkorDB.",
+     "eligible": false,
+     "priority": 0,
+     "overlap_count": 1,
+     "choiceOnly": false,
+     "excerpt_redacted": true
+    },
+    {
+     "fact_uuid": "6940cadb-0c61-4196-9ff7-e1c54a4ceee9",
+     "fact": "The data physically lives in the development-knowledge graph (35 nodes) while graphiti_live has 0 nodes.",
+     "eligible": false,
+     "priority": 0,
+     "overlap_count": 1,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "24e12aff-49e0-417f-9262-dd33c5b394be",
+     "fact": "The Graphiti MCP server is implemented by the script /workspace/mcp_servers/graphiti/run_graphiti.py.",
+     "eligible": false,
+     "priority": 0,
+     "overlap_count": 1,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    }
+   ],
+   "final_selected": {
+    "fact": "The graphiti component is part of the gh_mcp project, as indicated by the test commit 'test(graphiti): reject stale fallback after unbound long prompt (#81)' in the opencode-operational-schema-guard repository.",
+    "excerpt_redacted": false,
+    "raw_fact_sha256": "a84e809d5e34e13b9dc263517607cb050c555d7ff3c325538cc9707ac63f6e3c",
+    "source_ref": "opencode:ses_e50efdb27ffep7alMZaj9wkl3x:tool:call_0485ce2600ec5dba",
+    "evidence_class": "tool-reported",
+    "temporal": "current state not independently verified"
+   },
+   "budget_disposition": "maxSelected=1; 1400-char budget not binding for single-fact selections"
+  },
+  {
+   "case_id": "S13",
+   "reranker_configured": false,
+   "reranker_note": "installed option has no rerankEndpoint (plugin.mjs:17,89) => ranker=null => deterministic lexical/authority ranking only; no reranker scores exist to record or invent",
+   "candidates_admitted": 11,
+   "candidate_signals": [
+    {
+     "fact_uuid": "f18dddf9-5279-4d10-8663-2c5feef46867",
+     "fact": "The graph name graphiti_live comes from the Graphiti MCP server configuration.",
+     "eligible": false,
+     "priority": 0,
+     "overlap_count": 1,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "310b859b-8d2d-4dbe-a655-aa83240d6f8b",
+     "fact": "The local Graphiti MCP service at 127.0.0.1:8766 is implemented via run_graphiti.py and config.yaml.",
+     "eligible": false,
+     "priority": 0,
+     "overlap_count": 1,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "24e12aff-49e0-417f-9262-dd33c5b394be",
+     "fact": "The Graphiti MCP server is implemented by the script /workspace/mcp_servers/graphiti/run_graphiti.py.",
+     "eligible": false,
+     "priority": 0,
+     "overlap_count": 1,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "6b258002-1844-4ec4-a7c9-cae1321f7bdf",
+     "fact": "The graphiti MCP is a remote server at https://mcp.<host>.us/graphiti connected to a remote FalkorDB.",
+     "eligible": false,
+     "priority": 0,
+     "overlap_count": 1,
+     "choiceOnly": false,
+     "excerpt_redacted": true
+    },
+    {
+     "fact_uuid": "6950edd9-724e-4583-968b-c8f227d6a617",
+     "fact": "memory-core.mjs calls the Graphiti MCP at 127.0.0.1:8766 with group_ids: ['development-knowledge'].",
+     "eligible": false,
+     "priority": 0,
+     "overlap_count": 1,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "34e120c2-80e1-444d-87ec-eef9b3402cea",
+     "fact": "The graphiti_live graph, which is empty with 0 nodes, is part of the gh_mcp project.",
+     "eligible": false,
+     "priority": 0,
+     "overlap_count": 1,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "f1c171a8-f836-4ec7-b909-b3448aa3839e",
+     "fact": "The Graphiti MCP server is an upstream component of the gh_mcp project, providing semantic search on port 8766.",
+     "eligible": false,
+     "priority": 0,
+     "overlap_count": 1,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "daea3a59-9119-42b1-b7df-f9b0e8dcc3ea",
+     "fact": "The graphiti_live graph contains 0 nodes, as observed by opencode.",
+     "eligible": false,
+     "priority": 0,
+     "overlap_count": 1,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "c7ef60c0-4cb4-4cef-9d3d-272dded95216",
+     "fact": "The database configuration value 'graphiti_live' maps directly to the FalkorDB graph name.",
+     "eligible": false,
+     "priority": 0,
+     "overlap_count": 1,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "de035959-3dc7-4c27-85dc-c43bbfcca1b5",
+     "fact": "The local Graphiti MCP service at 127.0.0.1:8766 is configured by config.yaml.",
+     "eligible": false,
+     "priority": 0,
+     "overlap_count": 1,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "7bc4e3ed-8ca6-4905-a07c-f90cb4ba1231",
+     "fact": "run_graphiti.py loads config/.env into os.environ at runtime.",
+     "eligible": false,
+     "priority": 0,
+     "overlap_count": 1,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    }
+   ],
+   "final_selected": null,
+   "budget_disposition": "maxSelected=1; 1400-char budget not binding for single-fact selections"
+  },
+  {
+   "case_id": "N02",
+   "reranker_configured": false,
+   "reranker_note": "installed option has no rerankEndpoint (plugin.mjs:17,89) => ranker=null => deterministic lexical/authority ranking only; no reranker scores exist to record or invent",
+   "candidates_admitted": 12,
+   "candidate_signals": [
+    {
+     "fact_uuid": "1afbcca0-d3d7-400e-b1a5-31146a9ac56c",
+     "fact": "The active production curation records are under curation-v1/development-knowledge/, while ghdev_gh_mcp is the historica",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 4,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "4d76d14f-9c93-4329-ab55-b04d948682db",
+     "fact": "The ghdev_gh_mcp graph, which is empty with 0 nodes, is part of the gh_mcp project.",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 2,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "3c079981-ee4c-48cc-aa95-2325856bb3e1",
+     "fact": "The gh_mcp project is associated with the 'development-knowledge' scope group, replacing the previous 'ghdev_gh_mcp' ide",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 4,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "28893e36-9bb0-42d0-9d9d-64c51e6edf21",
+     "fact": "The graphiti group for the gh_mcp project was changed from 'ghdev_gh_mcp' to 'development-knowledge', which is the only ",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 4,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "6058f037-bead-47f9-a0d1-eb9da39e1c07",
+     "fact": "As of 2026-11-06T02:21:02.894Z, the live FalkorDB state shows that the ghdev_gh_mcp graph is empty.",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 2,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "ec313e91-1229-4ff6-92eb-311e59e3aa96",
+     "fact": "The data physically lives in the development-knowledge graph (35 nodes) while ghdev_gh_mcp has 0 nodes.",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 3,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "571b15d7-f9fa-416d-bf68-4527331bfe78",
+     "fact": "The ghdev_gh_mcp graph contains 0 nodes, as observed by opencode.",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 2,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "2b408dbc-4376-4242-94b7-5d32575d7c67",
+     "fact": "The installed baseline for the gh_mcp project is now 556f262c, matching the merged source, with ownership and mode prese",
+     "eligible": false,
+     "priority": 0,
+     "overlap_count": 1,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "7e85f146-e846-4880-8d17-27967f7b80be",
+     "fact": "The ghdev baseline depends on its prompt hook to kick off memory.search and populate latest.",
+     "eligible": false,
+     "priority": 0,
+     "overlap_count": 1,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "c25f096a-3d8f-4474-93a4-2ff9fe08be59",
+     "fact": "The gh_mcp script calls the Graphiti MCP server at 127.0.0.1:8766 using get_episodes and search_memory_facts with group_",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 3,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "c6d4c379-bfce-4e4b-b224-45db7e9f195b",
+     "fact": "The FalkorDB layout uses per-group graphs, including a graph named 'ghdev_gh_mcp'.",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 2,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    },
+    {
+     "fact_uuid": "eee72de1-5898-40f2-8816-5ad4cadedb22",
+     "fact": "As of 2026-11-06, graphiti_live has 0 episodes (No episodes found), while development-knowledge has episodes that match ",
+     "eligible": true,
+     "priority": 0,
+     "overlap_count": 2,
+     "choiceOnly": false,
+     "excerpt_redacted": false
+    }
+   ],
+   "final_selected": {
+    "fact": "The active production curation records are under curation-v1/development-knowledge/, while ghdev_gh_mcp is the historical pre-cutover set.",
+    "excerpt_redacted": false,
+    "raw_fact_sha256": "8e0b17630b152bd1fa68447b6126dc6eeac54b01e5019b0794e92ff95545f3cf",
+    "source_ref": "opencode:ses_e508c6d53ffeWrJEJftz60lqXB:message:msg_1af753f0d001GPlDjAoAckQ3EK",
+    "evidence_class": "assistant-reported",
+    "temporal": "current state not independently verified"
+   },
+   "budget_disposition": "maxSelected=1; 1400-char budget not binding for single-fact selections"
+  }
+ ]
+}

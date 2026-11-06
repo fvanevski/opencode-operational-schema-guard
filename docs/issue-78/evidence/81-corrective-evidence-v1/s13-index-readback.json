@@ -1,0 +1,76 @@
+{
+ "schema": "issue81-s13-index-readback.v1",
+ "episode_uuid": "009974d2-f051-45fd-ac0c-f259dcfdd1a8",
+ "predicates": {
+  "INDEX_FILE_EXISTS": {
+   "result": "PASS",
+   "evidence": {
+    "path": "/home/filip/.local/state/ghdev-graphiti/curation-v1/development-knowledge/_episode-index/009974d2-f051-45fd-ac0c-f259dcfdd1a8.json",
+    "size_bytes": 135,
+    "inode": 40289879,
+    "mtime": "2026-11-05 20:45:45 -0800"
+   }
+  },
+  "INDEX_JSON_VALID": {
+   "result": "PASS",
+   "evidence": {
+    "parsed": true,
+    "remote_episode_uuid": "009974d2-f051-45fd-ac0c-f259dcfdd1a8",
+    "id": "78f3c529ca34a82203b069e5b4a4dd76dec2253a6876b8c5ead0bdf3e6024c7d",
+    "id_is_64_hex": true
+   }
+  },
+  "INDEX_RECORD_MATCHES": {
+   "result": "PASS",
+   "evidence": {
+    "record_path": "curation-v1/development-knowledge/78f3c529....json (6506 bytes)",
+    "state": "persisted",
+    "remote_episode_uuid": "009974d2-f051-45fd-ac0c-f259dcfdd1a8",
+    "group": "development-knowledge",
+    "project": "gh_mcp",
+    "workspace": "/workspace/mcp_servers/gh_mcp",
+    "binding_matches_production_resolver": true
+   }
+  },
+  "PERSISTED_RECORD_VALID": {
+   "result": "PASS",
+   "evidence": {
+    "facts_length": 1,
+    "fact_evidence_class": "assistant-reported (permitted)",
+    "source_refs_nonempty_within_bounds": true,
+    "source_ref_represented_in_events": true,
+    "event_evidence_class_match": true,
+    "event_source_strength": "native-id"
+   }
+  },
+  "SOURCE_BINDING_ADMISSIBLE": {
+   "result": "PASS",
+   "evidence": {
+    "resolver": "sourcedEpisodeResolver (docs/issue-78/v2-curator/sourced-recall.mjs:7-32) called read-only with production binding root=/home/filip/.local/state/ghdev-graphiti group=development-knowledge workspace=/workspace/mcp_servers/gh_mcp project=gh_mcp"
+   }
+  },
+  "RESOLVER_RETURNS_EXPECTED_EPISODE": {
+   "result": "PASS",
+   "evidence": {
+    "returned": [
+     {
+      "status": "persisted",
+      "group": "development-knowledge",
+      "remoteEpisodeUuid": "009974d2-f051-45fd-ac0c-f259dcfdd1a8",
+      "sourceRef": "opencode:ses_e50efdb27ffep7alMZaj9wkl3x:message:msg_1af1287e7001qq7UBQ8qBctKK1",
+      "evidenceClass": "assistant-reported"
+     }
+    ],
+    "matches_roster_expected_source_ref": true
+   }
+  }
+ },
+ "defective_comparison": {
+  "location": "helpers/build-recall-diagnostics.py (prior packet): line 43 builds the index set from os.listdir(_episode-index) -> FILENAMES with .json suffix; line 115 tests bare-UUID membership (ep in epindex) -> always False",
+  "effect": "S13 was classified as missing-source-index despite the index file existing and being valid"
+ },
+ "corrected_test": "test f\"{uuid}.json\" in filenames (equivalently: resolver read path _episode-index/<uuid>.json)",
+ "corrected_result": "PASS",
+ "MISSING_SOURCE_INDEX_RULED_OUT": "yes",
+ "caution": "index presence is NOT proof that Graphiti search returned the expected episode; the current read-only probe shows the expected episode is absent from the top-12 for the S13 prompt (retrieval miss), and the lexical floor rejects all admitted candidates (see nine-case-diagnostics.json)"
+}

@@ -1,0 +1,1664 @@
+{
+ "schema": "issue81-corrective-source-admission-traces.v1",
+ "mechanism": "memory-core.mjs:327-371: wanted = first-12 episodes per fact; byRemote = legacy journal (empty) + curated resolver extras (resolver may add, never overwrite legacy); per fact source = episodes.slice(0,12).map(byRemote.get).find(Boolean) (line 366)",
+ "cases": [
+  {
+   "case_id": "S01",
+   "legacy_journal": {
+    "dir": "/home/filip/.local/state/ghdev-graphiti/development-knowledge",
+    "rows": 0,
+    "note": "issue-75 legacy journal empty in production; all source resolution flows through the curated resolver"
+   },
+   "wanted_episode_count": 19,
+   "curated_resolver": {
+    "function": "sourcedEpisodeResolver (docs/issue-78/v2-curator/sourced-recall.mjs:7-32)",
+    "binding": {
+     "root": "/home/filip/.local/state/ghdev-graphiti",
+     "group": "development-knowledge",
+     "workspace": "/workspace/mcp_servers/gh_mcp",
+     "project": "gh_mcp"
+    },
+    "admitted": [
+     {
+      "remoteEpisodeUuid": "855c0459-7405-41df-91a3-aab8cfc8aff6",
+      "sourceRef": "opencode:ses_e516488e3ffeiuJpnSV1IM7L5X:message:msg_1ae9c6f0d001KlSYX9JNI0TSX7",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "83b258b7-1475-4a19-a981-3d4061d28d8e",
+      "sourceRef": "opencode:ses_e516b1fefffe8Nk7R5Mc9pErw0:message:msg_1ae958c12001ME3naQygSq2qLp",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "d5f2b156-5c62-48ae-8347-f79e61c0d5db",
+      "sourceRef": "opencode:ses_e515b83f4ffeL1oLcfJD7ByAuQ:message:msg_1aea4c64100145XPbd44qzjVdG",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "09ab3aa9-f4c2-4e4e-8ebe-424eddc95b25",
+      "sourceRef": "opencode:ses_e5159c9faffe2twK6Tt3kFJmjK:message:msg_1aea68cd5001eeZkcFB0lzXv2W",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "ccbda0f4-08f7-4df1-a852-2d9035982ec2",
+      "sourceRef": "opencode:ses_e5143cf43ffeGtp9J1Jh0EzHfY:message:msg_1aebcef900016FMIplSnRCqnQw",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "ee8f2b96-4fca-4e83-b384-03582880eacc",
+      "sourceRef": "opencode:ses_e5141ff20ffekIngDORTf5xOFP:message:msg_1aebea91b001E6SDpIVO9fzmol",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "3310d59c-070b-43e0-849b-f83180866818",
+      "sourceRef": "opencode:ses_e5138c574ffeAF68pRRA9wufe5:message:msg_1aec7f7800013p1mLzoUTbXCJ1",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "ea8cedd4-bece-498c-a903-710b20d7e6be",
+      "sourceRef": "opencode:ses_e514f306cffe3F3Hy1nkJgjujC:message:msg_1aeb1e49e0015ePfgiHHBBGtT8",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "1409c260-92e9-474f-96be-6da4216908f7",
+      "sourceRef": "opencode:ses_e5158f35cffeu6tZOnjp1XwQko:message:msg_1aea7648a001V2JzUtwYv5kkjY",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "d19c4f9e-7216-499a-8057-b638b88e2fa3",
+      "sourceRef": "opencode:ses_e513390dcffekimm001xBGtcI0:message:msg_1aecd887c001GaCs8HD5eGI0R9",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "df6a6838-335f-401c-97cf-15949b302c07",
+      "sourceRef": "opencode:ses_e514c5a18ffeOIgmlM4EPl0gEf:message:msg_1aeb4121c001G1sZ3kMYcrqaTj",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "950cc4e3-418c-4f3d-b7a6-40da2bdf2c9f",
+      "sourceRef": "opencode:ses_e516e7ab7ffehIYi0ezLjIffWR:message:msg_1ae921208001f2mrpvLmU9C72e",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "c48cd614-4f98-49f7-90d0-5b6a418368fc",
+      "sourceRef": "opencode:ses_e5276247fffewUAeyTeAea2tia:message:msg_1ad8c14d6001aDoSonKPyEUW9E",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "97defc44-679e-4d77-bb8a-03e28e4febc6",
+      "sourceRef": "opencode:ses_e51700ea7ffeDOetlL7k4vnOXb:message:msg_1ae8ff169001BIqeLdMdJkVWml",
+      "evidenceClass": "user-stated"
+     },
+     {
+      "remoteEpisodeUuid": "6969a684-8bb2-45c2-86a8-47a3f1b7b76b",
+      "sourceRef": "opencode:ses_e515c300affeVEDoPQJ9pbP7s7:message:msg_1aea3d002001miiP7cXnNEbhmW",
+      "evidenceClass": "user-stated"
+     },
+     {
+      "remoteEpisodeUuid": "49d891de-1298-4799-89ac-967f37036c85",
+      "sourceRef": "opencode:ses_e513f00aaffeQSVvSV3YJ3170Z:message:msg_1aec148ed001YQXpy2B88RxtjY",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "2cef0da2-900a-49f5-8c1d-172e3cb3f67d",
+      "sourceRef": "opencode:ses_e514b22a8ffe4r4a6oDsLaX74m:message:msg_1aeb660e1001yoLzhA43j9gSh1",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "65b91f0d-d4ec-431c-8483-ff4d250c9c02",
+      "sourceRef": "opencode:ses_e513c8554ffeI62peAkJD5vNCB:message:msg_1aec3d2c9001LAfTycDVTh9MAz",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "0c493c7b-025e-4562-b3b4-2d5cb1470c9b",
+      "sourceRef": "opencode:ses_e51508dcfffe9svEPYbBvkQzfn:message:msg_1aeb11d5b001srxSM0lf5llHMJ",
+      "evidenceClass": "assistant-reported"
+     }
+    ]
+   },
+   "per_fact_first_resolvable": [
+    {
+     "fact_uuid": "ad5eef95-7ed6-46fb-af36-c0632722c739",
+     "first_resolvable_episode": "855c0459-7405-41df-91a3-aab8cfc8aff6",
+     "selected_source_ref": "opencode:ses_e516488e3ffeiuJpnSV1IM7L5X:message:msg_1ae9c6f0d001KlSYX9JNI0TSX7",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "FalkorDB (127.0.0.1:6382) contains the g"
+    },
+    {
+     "fact_uuid": "4beafec6-da06-4458-85fa-6cefb1c9405b",
+     "first_resolvable_episode": "ea8cedd4-bece-498c-a903-710b20d7e6be",
+     "selected_source_ref": "opencode:ses_e514f306cffe3F3Hy1nkJgjujC:message:msg_1aeb1e49e0015ePfgiHHBBGtT8",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The graphiti MCP server is configured to"
+    },
+    {
+     "fact_uuid": "d14f3c13-c7b5-469b-8693-3b818d991d4d",
+     "first_resolvable_episode": "1409c260-92e9-474f-96be-6da4216908f7",
+     "selected_source_ref": "opencode:ses_e5158f35cffeu6tZOnjp1XwQko:message:msg_1aea7648a001V2JzUtwYv5kkjY",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The environment variable GRAPHITI_RECALL"
+    },
+    {
+     "fact_uuid": "a364f523-3b30-453c-80eb-01a2b438e3c2",
+     "first_resolvable_episode": "d19c4f9e-7216-499a-8057-b638b88e2fa3",
+     "selected_source_ref": "opencode:ses_e513390dcffekimm001xBGtcI0:message:msg_1aecd887c001GaCs8HD5eGI0R9",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "When group_id is 'development-knowledge'"
+    },
+    {
+     "fact_uuid": "6b258002-1844-4ec4-a7c9-cae1321f7bdf",
+     "first_resolvable_episode": "df6a6838-335f-401c-97cf-15949b302c07",
+     "selected_source_ref": "opencode:ses_e514c5a18ffeOIgmlM4EPl0gEf:message:msg_1aeb4121c001G1sZ3kMYcrqaTj",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The graphiti MCP is a remote server at h"
+    },
+    {
+     "fact_uuid": "fdea781a-97c8-4ade-912e-4cb9ae212850",
+     "first_resolvable_episode": "83b258b7-1475-4a19-a981-3d4061d28d8e",
+     "selected_source_ref": "opencode:ses_e516b1fefffe8Nk7R5Mc9pErw0:message:msg_1ae958c12001ME3naQygSq2qLp",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The MCP server's configuration uses the "
+    },
+    {
+     "fact_uuid": "1562d34a-15d8-4350-90cd-3926d55db79f",
+     "first_resolvable_episode": "950cc4e3-418c-4f3d-b7a6-40da2bdf2c9f",
+     "selected_source_ref": "opencode:ses_e516e7ab7ffehIYi0ezLjIffWR:message:msg_1ae921208001f2mrpvLmU9C72e",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The Graphiti driver derives the FalkorDB"
+    },
+    {
+     "fact_uuid": "c6d4c379-bfce-4e4b-b224-45db7e9f195b",
+     "first_resolvable_episode": "c48cd614-4f98-49f7-90d0-5b6a418368fc",
+     "selected_source_ref": "opencode:ses_e5276247fffewUAeyTeAea2tia:message:msg_1ad8c14d6001aDoSonKPyEUW9E",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The FalkorDB layout uses per-group graph"
+    },
+    {
+     "fact_uuid": "1bc40d82-fdd4-4b9c-b103-5de27617b47f",
+     "first_resolvable_episode": "49d891de-1298-4799-89ac-967f37036c85",
+     "selected_source_ref": "opencode:ses_e513f00aaffeQSVvSV3YJ3170Z:message:msg_1aec148ed001YQXpy2B88RxtjY",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "FalkorDB is on port 6382 (not 6379) and "
+    },
+    {
+     "fact_uuid": "e3c81b80-9ef2-4b89-aabf-eadd872c3abb",
+     "first_resolvable_episode": "2cef0da2-900a-49f5-8c1d-172e3cb3f67d",
+     "selected_source_ref": "opencode:ses_e514b22a8ffe4r4a6oDsLaX74m:message:msg_1aeb660e1001yoLzhA43j9gSh1",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The GRAPH.LIST command confirmed the exi"
+    },
+    {
+     "fact_uuid": "c7ef60c0-4cb4-4cef-9d3d-272dded95216",
+     "first_resolvable_episode": "0c493c7b-025e-4562-b3b4-2d5cb1470c9b",
+     "selected_source_ref": "opencode:ses_e51508dcfffe9svEPYbBvkQzfn:message:msg_1aeb11d5b001srxSM0lf5llHMJ",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The database configuration value 'graphi"
+    },
+    {
+     "fact_uuid": "e07fb561-4e2f-481e-94f4-420dffad41d5",
+     "first_resolvable_episode": "d5f2b156-5c62-48ae-8347-f79e61c0d5db",
+     "selected_source_ref": "opencode:ses_e515b83f4ffeL1oLcfJD7ByAuQ:message:msg_1aea4c64100145XPbd44qzjVdG",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The gh_mcp project configuration uses th"
+    }
+   ],
+   "facts_without_admitted_source": []
+  },
+  {
+   "case_id": "S03",
+   "legacy_journal": {
+    "dir": "/home/filip/.local/state/ghdev-graphiti/development-knowledge",
+    "rows": 0,
+    "note": "issue-75 legacy journal empty in production; all source resolution flows through the curated resolver"
+   },
+   "wanted_episode_count": 11,
+   "curated_resolver": {
+    "function": "sourcedEpisodeResolver (docs/issue-78/v2-curator/sourced-recall.mjs:7-32)",
+    "binding": {
+     "root": "/home/filip/.local/state/ghdev-graphiti",
+     "group": "development-knowledge",
+     "workspace": "/workspace/mcp_servers/gh_mcp",
+     "project": "gh_mcp"
+    },
+    "admitted": [
+     {
+      "remoteEpisodeUuid": "1d98ba67-7e6d-488a-aa10-93677f46ebb2",
+      "sourceRef": "opencode:ses_e5161e002ffeUFAxdC5lo1zi1m:message:msg_1ae9e50df001EA08ggFmboDRyf",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "e1244d4f-aee5-4bbe-a4f9-ac0f8516fd68",
+      "sourceRef": "opencode:ses_e514f306cffe3F3Hy1nkJgjujC:message:msg_1aeb281c9001k9aQzqmnBUQ1oE",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "df6a6838-335f-401c-97cf-15949b302c07",
+      "sourceRef": "opencode:ses_e514c5a18ffeOIgmlM4EPl0gEf:message:msg_1aeb4121c001G1sZ3kMYcrqaTj",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "a329f56c-0ce1-40d8-9bc0-afbccb6335de",
+      "sourceRef": "opencode:ses_e518d2926ffe4iAujvBdg4SxaG:message:msg_1ae77d6f0001Rf1C7bBR4JJ8rp",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "bb9e83c9-6683-4c2b-9fba-709fb2029b00",
+      "sourceRef": "opencode:ses_e5175247fffe9938IuEYmoQ5H0:message:msg_1ae8b33aa001yxoJ6VFWImHENR",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "560d782f-3750-4fb6-b4e8-75439bb1ef41",
+      "sourceRef": "opencode:ses_e5153da9effexLtJUGtbne2huA:message:msg_1aeaf0183001oDAyyUM2dBNfs0",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "ed80ea70-2682-4265-9639-fb4aafd9c4cd",
+      "sourceRef": "opencode:ses_e516102a1ffeO6WUmOXkfcuJJW:message:msg_1ae9f733200194B3eCQf2GPS7O",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "877a5de5-d3fe-4540-93f4-30d5b9182f8c",
+      "sourceRef": "opencode:ses_e5161e002ffeUFAxdC5lo1zi1m:message:msg_1ae9e73a20015ET1Y2L1znvlKE",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "d90a40b1-84cf-484d-8f40-4b448451a78f",
+      "sourceRef": "opencode:ses_e514cede9ffeIrh0Y65rypODRw:message:msg_1aeb36ee3001RQ6I3LtKfFtzOA",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "cb399069-8bbe-48b0-9283-2bf927a147de",
+      "sourceRef": "opencode:ses_e51880139ffez3nnqPCPRY56Y7:message:msg_1ae795d9f00137YtwvwAOkZvvH",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "2033506a-723e-4560-a690-9b90cb05e061",
+      "sourceRef": "opencode:ses_e51880139ffez3nnqPCPRY56Y7:message:msg_1ae78b0dd001VormxLYL4hVLAX",
+      "evidenceClass": "assistant-reported"
+     }
+    ]
+   },
+   "per_fact_first_resolvable": [
+    {
+     "fact_uuid": "6950edd9-724e-4583-968b-c8f227d6a617",
+     "first_resolvable_episode": "1d98ba67-7e6d-488a-aa10-93677f46ebb2",
+     "selected_source_ref": "opencode:ses_e5161e002ffeUFAxdC5lo1zi1m:message:msg_1ae9e50df001EA08ggFmboDRyf",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "memory-core.mjs calls the Graphiti MCP a"
+    },
+    {
+     "fact_uuid": "a98db709-4887-4d07-b755-8bff23760d2b",
+     "first_resolvable_episode": "e1244d4f-aee5-4bbe-a4f9-ac0f8516fd68",
+     "selected_source_ref": "opencode:ses_e514f306cffe3F3Hy1nkJgjujC:message:msg_1aeb281c9001k9aQzqmnBUQ1oE",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "mcp-test.mjs uses the group ID 'developm"
+    },
+    {
+     "fact_uuid": "8f1eff97-1f87-46b1-8861-8466b896afe0",
+     "first_resolvable_episode": "e1244d4f-aee5-4bbe-a4f9-ac0f8516fd68",
+     "selected_source_ref": "opencode:ses_e514f306cffe3F3Hy1nkJgjujC:message:msg_1aeb281c9001k9aQzqmnBUQ1oE",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "mcp-test.mjs calls the graphiti MCP serv"
+    },
+    {
+     "fact_uuid": "6b258002-1844-4ec4-a7c9-cae1321f7bdf",
+     "first_resolvable_episode": "df6a6838-335f-401c-97cf-15949b302c07",
+     "selected_source_ref": "opencode:ses_e514c5a18ffeOIgmlM4EPl0gEf:message:msg_1aeb4121c001G1sZ3kMYcrqaTj",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The graphiti MCP is a remote server at h"
+    },
+    {
+     "fact_uuid": "f1c171a8-f836-4ec7-b909-b3448aa3839e",
+     "first_resolvable_episode": "a329f56c-0ce1-40d8-9bc0-afbccb6335de",
+     "selected_source_ref": "opencode:ses_e518d2926ffe4iAujvBdg4SxaG:message:msg_1ae77d6f0001Rf1C7bBR4JJ8rp",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The Graphiti MCP server is an upstream c"
+    },
+    {
+     "fact_uuid": "c25f096a-3d8f-4474-93a4-2ff9fe08be59",
+     "first_resolvable_episode": "bb9e83c9-6683-4c2b-9fba-709fb2029b00",
+     "selected_source_ref": "opencode:ses_e5175247fffe9938IuEYmoQ5H0:message:msg_1ae8b33aa001yxoJ6VFWImHENR",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The gh_mcp script calls the Graphiti MCP"
+    },
+    {
+     "fact_uuid": "e09206d7-9a10-436a-afa7-92c5165b0893",
+     "first_resolvable_episode": "560d782f-3750-4fb6-b4e8-75439bb1ef41",
+     "selected_source_ref": "opencode:ses_e5153da9effexLtJUGtbne2huA:message:msg_1aeaf0183001oDAyyUM2dBNfs0",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The MCP server clones the driver per gro"
+    },
+    {
+     "fact_uuid": "24e12aff-49e0-417f-9262-dd33c5b394be",
+     "first_resolvable_episode": "ed80ea70-2682-4265-9639-fb4aafd9c4cd",
+     "selected_source_ref": "opencode:ses_e516102a1ffeO6WUmOXkfcuJJW:message:msg_1ae9f733200194B3eCQf2GPS7O",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The Graphiti MCP server is implemented b"
+    },
+    {
+     "fact_uuid": "513fa969-eeab-4750-ac46-0baac49b7af5",
+     "first_resolvable_episode": "877a5de5-d3fe-4540-93f4-30d5b9182f8c",
+     "selected_source_ref": "opencode:ses_e5161e002ffeUFAxdC5lo1zi1m:message:msg_1ae9e73a20015ET1Y2L1znvlKE",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The MCP server is bound to the graphiti_"
+    },
+    {
+     "fact_uuid": "a067058e-a7e4-407f-9719-c9a8186e5873",
+     "first_resolvable_episode": "e1244d4f-aee5-4bbe-a4f9-ac0f8516fd68",
+     "selected_source_ref": "opencode:ses_e514f306cffe3F3Hy1nkJgjujC:message:msg_1aeb281c9001k9aQzqmnBUQ1oE",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The graphiti MCP server is located at ht"
+    },
+    {
+     "fact_uuid": "f679c703-92b2-4bd6-9797-fcf6c1b8bcc7",
+     "first_resolvable_episode": "cb399069-8bbe-48b0-9283-2bf927a147de",
+     "selected_source_ref": "opencode:ses_e51880139ffez3nnqPCPRY56Y7:message:msg_1ae795d9f00137YtwvwAOkZvvH",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The MCP server implements per-group grap"
+    },
+    {
+     "fact_uuid": "310b859b-8d2d-4dbe-a655-aa83240d6f8b",
+     "first_resolvable_episode": "2033506a-723e-4560-a690-9b90cb05e061",
+     "selected_source_ref": "opencode:ses_e51880139ffez3nnqPCPRY56Y7:message:msg_1ae78b0dd001VormxLYL4hVLAX",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The local Graphiti MCP service at 127.0."
+    }
+   ],
+   "facts_without_admitted_source": []
+  },
+  {
+   "case_id": "S04",
+   "legacy_journal": {
+    "dir": "/home/filip/.local/state/ghdev-graphiti/development-knowledge",
+    "rows": 0,
+    "note": "issue-75 legacy journal empty in production; all source resolution flows through the curated resolver"
+   },
+   "wanted_episode_count": 13,
+   "curated_resolver": {
+    "function": "sourcedEpisodeResolver (docs/issue-78/v2-curator/sourced-recall.mjs:7-32)",
+    "binding": {
+     "root": "/home/filip/.local/state/ghdev-graphiti",
+     "group": "development-knowledge",
+     "workspace": "/workspace/mcp_servers/gh_mcp",
+     "project": "gh_mcp"
+    },
+    "admitted": [
+     {
+      "remoteEpisodeUuid": "07f247f9-f4d4-47f7-bf5f-6a748b60758b",
+      "sourceRef": "opencode:ses_e51631cbfffeIAww75wYB0QLvR:message:msg_1ae9d8d9e0011vCYAm7ru8Z44E",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "9491a0f3-c73f-43da-abbe-b0bda356a88e",
+      "sourceRef": "opencode:ses_e514b22a8ffe4r4a6oDsLaX74m:message:msg_1aeb665da001neAU6GMCOOULF5",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "cece7d0b-7f34-4bcc-b852-72a9df8f16ba",
+      "sourceRef": "opencode:ses_e513ad3fcffeXeo9yoMZ6lVA3G:message:msg_1aec6ab4e001KVtiKRc17nGKgU",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "877a5de5-d3fe-4540-93f4-30d5b9182f8c",
+      "sourceRef": "opencode:ses_e5161e002ffeUFAxdC5lo1zi1m:message:msg_1ae9e73a20015ET1Y2L1znvlKE",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "d90a40b1-84cf-484d-8f40-4b448451a78f",
+      "sourceRef": "opencode:ses_e514cede9ffeIrh0Y65rypODRw:message:msg_1aeb36ee3001RQ6I3LtKfFtzOA",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "5b10a081-ee7f-4723-9ae3-8618233f4dba",
+      "sourceRef": "opencode:ses_e5141ff20ffekIngDORTf5xOFP:message:msg_1aebeaf22001z0heGlQuBPHoly",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "d331a008-9840-4343-93f6-5d8db642e70c",
+      "sourceRef": "opencode:ses_e5140128dffeEWUc1CJha4gyLh:message:msg_1aec0412e001KW7j7d4TNnAqWq",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "83b258b7-1475-4a19-a981-3d4061d28d8e",
+      "sourceRef": "opencode:ses_e516b1fefffe8Nk7R5Mc9pErw0:message:msg_1ae958c12001ME3naQygSq2qLp",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "1d98ba67-7e6d-488a-aa10-93677f46ebb2",
+      "sourceRef": "opencode:ses_e5161e002ffeUFAxdC5lo1zi1m:message:msg_1ae9e50df001EA08ggFmboDRyf",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "e1244d4f-aee5-4bbe-a4f9-ac0f8516fd68",
+      "sourceRef": "opencode:ses_e514f306cffe3F3Hy1nkJgjujC:message:msg_1aeb281c9001k9aQzqmnBUQ1oE",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "d19c4f9e-7216-499a-8057-b638b88e2fa3",
+      "sourceRef": "opencode:ses_e513390dcffekimm001xBGtcI0:message:msg_1aecd887c001GaCs8HD5eGI0R9",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "c48cd614-4f98-49f7-90d0-5b6a418368fc",
+      "sourceRef": "opencode:ses_e5276247fffewUAeyTeAea2tia:message:msg_1ad8c14d6001aDoSonKPyEUW9E",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "ea8cedd4-bece-498c-a903-710b20d7e6be",
+      "sourceRef": "opencode:ses_e514f306cffe3F3Hy1nkJgjujC:message:msg_1aeb1e49e0015ePfgiHHBBGtT8",
+      "evidenceClass": "assistant-reported"
+     }
+    ]
+   },
+   "per_fact_first_resolvable": [
+    {
+     "fact_uuid": "6940cadb-0c61-4196-9ff7-e1c54a4ceee9",
+     "first_resolvable_episode": "07f247f9-f4d4-47f7-bf5f-6a748b60758b",
+     "selected_source_ref": "opencode:ses_e51631cbfffeIAww75wYB0QLvR:message:msg_1ae9d8d9e0011vCYAm7ru8Z44E",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The data physically lives in the develop"
+    },
+    {
+     "fact_uuid": "513fa969-eeab-4750-ac46-0baac49b7af5",
+     "first_resolvable_episode": "877a5de5-d3fe-4540-93f4-30d5b9182f8c",
+     "selected_source_ref": "opencode:ses_e5161e002ffeUFAxdC5lo1zi1m:message:msg_1ae9e73a20015ET1Y2L1znvlKE",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The MCP server is bound to the graphiti_"
+    },
+    {
+     "fact_uuid": "ec313e91-1229-4ff6-92eb-311e59e3aa96",
+     "first_resolvable_episode": "07f247f9-f4d4-47f7-bf5f-6a748b60758b",
+     "selected_source_ref": "opencode:ses_e51631cbfffeIAww75wYB0QLvR:message:msg_1ae9d8d9e0011vCYAm7ru8Z44E",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The data physically lives in the develop"
+    },
+    {
+     "fact_uuid": "34e120c2-80e1-444d-87ec-eef9b3402cea",
+     "first_resolvable_episode": "5b10a081-ee7f-4723-9ae3-8618233f4dba",
+     "selected_source_ref": "opencode:ses_e5141ff20ffekIngDORTf5xOFP:message:msg_1aebeaf22001z0heGlQuBPHoly",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The graphiti_live graph, which is empty "
+    },
+    {
+     "fact_uuid": "fdea781a-97c8-4ade-912e-4cb9ae212850",
+     "first_resolvable_episode": "83b258b7-1475-4a19-a981-3d4061d28d8e",
+     "selected_source_ref": "opencode:ses_e516b1fefffe8Nk7R5Mc9pErw0:message:msg_1ae958c12001ME3naQygSq2qLp",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The MCP server's configuration uses the "
+    },
+    {
+     "fact_uuid": "6950edd9-724e-4583-968b-c8f227d6a617",
+     "first_resolvable_episode": "1d98ba67-7e6d-488a-aa10-93677f46ebb2",
+     "selected_source_ref": "opencode:ses_e5161e002ffeUFAxdC5lo1zi1m:message:msg_1ae9e50df001EA08ggFmboDRyf",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "memory-core.mjs calls the Graphiti MCP a"
+    },
+    {
+     "fact_uuid": "f18dddf9-5279-4d10-8663-2c5feef46867",
+     "first_resolvable_episode": "1d98ba67-7e6d-488a-aa10-93677f46ebb2",
+     "selected_source_ref": "opencode:ses_e5161e002ffeUFAxdC5lo1zi1m:message:msg_1ae9e50df001EA08ggFmboDRyf",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The graph name graphiti_live comes from "
+    },
+    {
+     "fact_uuid": "a364f523-3b30-453c-80eb-01a2b438e3c2",
+     "first_resolvable_episode": "d19c4f9e-7216-499a-8057-b638b88e2fa3",
+     "selected_source_ref": "opencode:ses_e513390dcffekimm001xBGtcI0:message:msg_1aecd887c001GaCs8HD5eGI0R9",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "When group_id is 'development-knowledge'"
+    },
+    {
+     "fact_uuid": "d7054007-4c7d-4857-a0e2-ce688bfecb05",
+     "first_resolvable_episode": "5b10a081-ee7f-4723-9ae3-8618233f4dba",
+     "selected_source_ref": "opencode:ses_e5141ff20ffekIngDORTf5xOFP:message:msg_1aebeaf22001z0heGlQuBPHoly",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The development-knowledge graph, which c"
+    },
+    {
+     "fact_uuid": "8d1e7656-2a72-4bf8-bd0a-1a92d5e9759c",
+     "first_resolvable_episode": "c48cd614-4f98-49f7-90d0-5b6a418368fc",
+     "selected_source_ref": "opencode:ses_e5276247fffewUAeyTeAea2tia:message:msg_1ad8c14d6001aDoSonKPyEUW9E",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "A script queries the 'graphiti_live' gra"
+    },
+    {
+     "fact_uuid": "8f1eff97-1f87-46b1-8861-8466b896afe0",
+     "first_resolvable_episode": "e1244d4f-aee5-4bbe-a4f9-ac0f8516fd68",
+     "selected_source_ref": "opencode:ses_e514f306cffe3F3Hy1nkJgjujC:message:msg_1aeb281c9001k9aQzqmnBUQ1oE",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "mcp-test.mjs calls the graphiti MCP serv"
+    },
+    {
+     "fact_uuid": "4beafec6-da06-4458-85fa-6cefb1c9405b",
+     "first_resolvable_episode": "ea8cedd4-bece-498c-a903-710b20d7e6be",
+     "selected_source_ref": "opencode:ses_e514f306cffe3F3Hy1nkJgjujC:message:msg_1aeb1e49e0015ePfgiHHBBGtT8",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The graphiti MCP server is configured to"
+    }
+   ],
+   "facts_without_admitted_source": []
+  },
+  {
+   "case_id": "S05",
+   "legacy_journal": {
+    "dir": "/home/filip/.local/state/ghdev-graphiti/development-knowledge",
+    "rows": 0,
+    "note": "issue-75 legacy journal empty in production; all source resolution flows through the curated resolver"
+   },
+   "wanted_episode_count": 14,
+   "curated_resolver": {
+    "function": "sourcedEpisodeResolver (docs/issue-78/v2-curator/sourced-recall.mjs:7-32)",
+    "binding": {
+     "root": "/home/filip/.local/state/ghdev-graphiti",
+     "group": "development-knowledge",
+     "workspace": "/workspace/mcp_servers/gh_mcp",
+     "project": "gh_mcp"
+    },
+    "admitted": [
+     {
+      "remoteEpisodeUuid": "c48cd614-4f98-49f7-90d0-5b6a418368fc",
+      "sourceRef": "opencode:ses_e5276247fffewUAeyTeAea2tia:message:msg_1ad8c14d6001aDoSonKPyEUW9E",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "97defc44-679e-4d77-bb8a-03e28e4febc6",
+      "sourceRef": "opencode:ses_e51700ea7ffeDOetlL7k4vnOXb:message:msg_1ae8ff169001BIqeLdMdJkVWml",
+      "evidenceClass": "user-stated"
+     },
+     {
+      "remoteEpisodeUuid": "6969a684-8bb2-45c2-86a8-47a3f1b7b76b",
+      "sourceRef": "opencode:ses_e515c300affeVEDoPQJ9pbP7s7:message:msg_1aea3d002001miiP7cXnNEbhmW",
+      "evidenceClass": "user-stated"
+     },
+     {
+      "remoteEpisodeUuid": "15a2f72d-6aa9-481d-ae5a-9bf2b679c273",
+      "sourceRef": "opencode:ses_e51583ef5ffeAdG05Q9i4FbUao:message:msg_1aea8c6f5001A1bdxNmT9a176W",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "855c0459-7405-41df-91a3-aab8cfc8aff6",
+      "sourceRef": "opencode:ses_e516488e3ffeiuJpnSV1IM7L5X:message:msg_1ae9c6f0d001KlSYX9JNI0TSX7",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "ee8f2b96-4fca-4e83-b384-03582880eacc",
+      "sourceRef": "opencode:ses_e5141ff20ffekIngDORTf5xOFP:message:msg_1aebea91b001E6SDpIVO9fzmol",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "83b258b7-1475-4a19-a981-3d4061d28d8e",
+      "sourceRef": "opencode:ses_e516b1fefffe8Nk7R5Mc9pErw0:message:msg_1ae958c12001ME3naQygSq2qLp",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "d5f2b156-5c62-48ae-8347-f79e61c0d5db",
+      "sourceRef": "opencode:ses_e515b83f4ffeL1oLcfJD7ByAuQ:message:msg_1aea4c64100145XPbd44qzjVdG",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "09ab3aa9-f4c2-4e4e-8ebe-424eddc95b25",
+      "sourceRef": "opencode:ses_e5159c9faffe2twK6Tt3kFJmjK:message:msg_1aea68cd5001eeZkcFB0lzXv2W",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "ccbda0f4-08f7-4df1-a852-2d9035982ec2",
+      "sourceRef": "opencode:ses_e5143cf43ffeGtp9J1Jh0EzHfY:message:msg_1aebcef900016FMIplSnRCqnQw",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "3310d59c-070b-43e0-849b-f83180866818",
+      "sourceRef": "opencode:ses_e5138c574ffeAF68pRRA9wufe5:message:msg_1aec7f7800013p1mLzoUTbXCJ1",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "2cef0da2-900a-49f5-8c1d-172e3cb3f67d",
+      "sourceRef": "opencode:ses_e514b22a8ffe4r4a6oDsLaX74m:message:msg_1aeb660e1001yoLzhA43j9gSh1",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "65b91f0d-d4ec-431c-8483-ff4d250c9c02",
+      "sourceRef": "opencode:ses_e513c8554ffeI62peAkJD5vNCB:message:msg_1aec3d2c9001LAfTycDVTh9MAz",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "0c493c7b-025e-4562-b3b4-2d5cb1470c9b",
+      "sourceRef": "opencode:ses_e51508dcfffe9svEPYbBvkQzfn:message:msg_1aeb11d5b001srxSM0lf5llHMJ",
+      "evidenceClass": "assistant-reported"
+     }
+    ]
+   },
+   "per_fact_first_resolvable": [
+    {
+     "fact_uuid": "4640a08b-bf5d-437c-a447-7e9c87b96812",
+     "first_resolvable_episode": "c48cd614-4f98-49f7-90d0-5b6a418368fc",
+     "selected_source_ref": "opencode:ses_e5276247fffewUAeyTeAea2tia:message:msg_1ad8c14d6001aDoSonKPyEUW9E",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The FalkorDB layout includes an empty gr"
+    },
+    {
+     "fact_uuid": "b82fa813-081e-4711-827c-e3f59601ccf5",
+     "first_resolvable_episode": "c48cd614-4f98-49f7-90d0-5b6a418368fc",
+     "selected_source_ref": "opencode:ses_e5276247fffewUAeyTeAea2tia:message:msg_1ad8c14d6001aDoSonKPyEUW9E",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The FalkorDB layout uses per-group graph"
+    },
+    {
+     "fact_uuid": "ad5eef95-7ed6-46fb-af36-c0632722c739",
+     "first_resolvable_episode": "855c0459-7405-41df-91a3-aab8cfc8aff6",
+     "selected_source_ref": "opencode:ses_e516488e3ffeiuJpnSV1IM7L5X:message:msg_1ae9c6f0d001KlSYX9JNI0TSX7",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "FalkorDB (127.0.0.1:6382) contains the g"
+    },
+    {
+     "fact_uuid": "c6d4c379-bfce-4e4b-b224-45db7e9f195b",
+     "first_resolvable_episode": "c48cd614-4f98-49f7-90d0-5b6a418368fc",
+     "selected_source_ref": "opencode:ses_e5276247fffewUAeyTeAea2tia:message:msg_1ad8c14d6001aDoSonKPyEUW9E",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The FalkorDB layout uses per-group graph"
+    },
+    {
+     "fact_uuid": "e3c81b80-9ef2-4b89-aabf-eadd872c3abb",
+     "first_resolvable_episode": "2cef0da2-900a-49f5-8c1d-172e3cb3f67d",
+     "selected_source_ref": "opencode:ses_e514b22a8ffe4r4a6oDsLaX74m:message:msg_1aeb660e1001yoLzhA43j9gSh1",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The GRAPH.LIST command confirmed the exi"
+    },
+    {
+     "fact_uuid": "1f34eddf-4ec8-4bd9-9779-81f4a972d8a5",
+     "first_resolvable_episode": "3310d59c-070b-43e0-849b-f83180866818",
+     "selected_source_ref": "opencode:ses_e5138c574ffeAF68pRRA9wufe5:message:msg_1aec7f7800013p1mLzoUTbXCJ1",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "FalkorDB on port 6382 contains the graph"
+    },
+    {
+     "fact_uuid": "0586f0da-c82d-4e25-ba10-4cf018ddd990",
+     "first_resolvable_episode": "2cef0da2-900a-49f5-8c1d-172e3cb3f67d",
+     "selected_source_ref": "opencode:ses_e514b22a8ffe4r4a6oDsLaX74m:message:msg_1aeb660e1001yoLzhA43j9gSh1",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The GRAPH.LIST command confirmed the exi"
+    },
+    {
+     "fact_uuid": "fe4c81b9-aa63-4b17-9ade-aaa50601ba2f",
+     "first_resolvable_episode": "2cef0da2-900a-49f5-8c1d-172e3cb3f67d",
+     "selected_source_ref": "opencode:ses_e514b22a8ffe4r4a6oDsLaX74m:message:msg_1aeb660e1001yoLzhA43j9gSh1",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The GRAPH.LIST command confirmed the exi"
+    },
+    {
+     "fact_uuid": "6f3a7615-3e2e-463d-893e-648b3fe49254",
+     "first_resolvable_episode": "3310d59c-070b-43e0-849b-f83180866818",
+     "selected_source_ref": "opencode:ses_e5138c574ffeAF68pRRA9wufe5:message:msg_1aec7f7800013p1mLzoUTbXCJ1",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "FalkorDB on port 6382 contains the graph"
+    },
+    {
+     "fact_uuid": "c7ef60c0-4cb4-4cef-9d3d-272dded95216",
+     "first_resolvable_episode": "0c493c7b-025e-4562-b3b4-2d5cb1470c9b",
+     "selected_source_ref": "opencode:ses_e51508dcfffe9svEPYbBvkQzfn:message:msg_1aeb11d5b001srxSM0lf5llHMJ",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The database configuration value 'graphi"
+    },
+    {
+     "fact_uuid": "fdea781a-97c8-4ade-912e-4cb9ae212850",
+     "first_resolvable_episode": "83b258b7-1475-4a19-a981-3d4061d28d8e",
+     "selected_source_ref": "opencode:ses_e516b1fefffe8Nk7R5Mc9pErw0:message:msg_1ae958c12001ME3naQygSq2qLp",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The MCP server's configuration uses the "
+    },
+    {
+     "fact_uuid": "708447e6-8f47-4a4d-aaf6-d9674bd0e75d",
+     "first_resolvable_episode": "15a2f72d-6aa9-481d-ae5a-9bf2b679c273",
+     "selected_source_ref": "opencode:ses_e51583ef5ffeAdG05Q9i4FbUao:message:msg_1aea8c6f5001A1bdxNmT9a176W",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "As of 2026-11-06T02:21:02.894Z, the live"
+    }
+   ],
+   "facts_without_admitted_source": []
+  },
+  {
+   "case_id": "S06",
+   "legacy_journal": {
+    "dir": "/home/filip/.local/state/ghdev-graphiti/development-knowledge",
+    "rows": 0,
+    "note": "issue-75 legacy journal empty in production; all source resolution flows through the curated resolver"
+   },
+   "wanted_episode_count": 11,
+   "curated_resolver": {
+    "function": "sourcedEpisodeResolver (docs/issue-78/v2-curator/sourced-recall.mjs:7-32)",
+    "binding": {
+     "root": "/home/filip/.local/state/ghdev-graphiti",
+     "group": "development-knowledge",
+     "workspace": "/workspace/mcp_servers/gh_mcp",
+     "project": "gh_mcp"
+    },
+    "admitted": [
+     {
+      "remoteEpisodeUuid": "6e7956be-498c-47cf-af4d-07220ee8507e",
+      "sourceRef": "opencode:ses_e51cb9c19ffem7rxqiNNhlbbQ1:message:msg_1ae367654001nlYZtg6lC5m03l",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "94a939f6-a4fc-4692-a387-29338ed9d2c4",
+      "sourceRef": "opencode:ses_e5216f8ffffeoWWX3dJDu4rpL7:tool:call_2a73d67cddde989d",
+      "evidenceClass": "tool-reported"
+     },
+     {
+      "remoteEpisodeUuid": "1409c260-92e9-474f-96be-6da4216908f7",
+      "sourceRef": "opencode:ses_e5158f35cffeu6tZOnjp1XwQko:message:msg_1aea7648a001V2JzUtwYv5kkjY",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "1d98ba67-7e6d-488a-aa10-93677f46ebb2",
+      "sourceRef": "opencode:ses_e5161e002ffeUFAxdC5lo1zi1m:message:msg_1ae9e50df001EA08ggFmboDRyf",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "e1244d4f-aee5-4bbe-a4f9-ac0f8516fd68",
+      "sourceRef": "opencode:ses_e514f306cffe3F3Hy1nkJgjujC:message:msg_1aeb281c9001k9aQzqmnBUQ1oE",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "d19c4f9e-7216-499a-8057-b638b88e2fa3",
+      "sourceRef": "opencode:ses_e513390dcffekimm001xBGtcI0:message:msg_1aecd887c001GaCs8HD5eGI0R9",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "c059ab8f-0b24-4fc6-b0cd-730178acb247",
+      "sourceRef": "opencode:ses_e50efdb27ffep7alMZaj9wkl3x:tool:call_0485ce2600ec5dba",
+      "evidenceClass": "tool-reported"
+     },
+     {
+      "remoteEpisodeUuid": "950cc4e3-418c-4f3d-b7a6-40da2bdf2c9f",
+      "sourceRef": "opencode:ses_e516e7ab7ffehIYi0ezLjIffWR:message:msg_1ae921208001f2mrpvLmU9C72e",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "76d0d36e-ec85-475b-95a5-ae7d081b2d4a",
+      "sourceRef": "opencode:ses_e519d2176ffe9qUxv2kCwjz602:message:msg_1ae63a2850019Kiab8bwlL59SF",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "5b10a081-ee7f-4723-9ae3-8618233f4dba",
+      "sourceRef": "opencode:ses_e5141ff20ffekIngDORTf5xOFP:message:msg_1aebeaf22001z0heGlQuBPHoly",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "d331a008-9840-4343-93f6-5d8db642e70c",
+      "sourceRef": "opencode:ses_e5140128dffeEWUc1CJha4gyLh:message:msg_1aec0412e001KW7j7d4TNnAqWq",
+      "evidenceClass": "assistant-reported"
+     }
+    ]
+   },
+   "per_fact_first_resolvable": [
+    {
+     "fact_uuid": "28893e36-9bb0-42d0-9d9d-64c51e6edf21",
+     "first_resolvable_episode": "6e7956be-498c-47cf-af4d-07220ee8507e",
+     "selected_source_ref": "opencode:ses_e51cb9c19ffem7rxqiNNhlbbQ1:message:msg_1ae367654001nlYZtg6lC5m03l",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The graphiti group for the gh_mcp projec"
+    },
+    {
+     "fact_uuid": "a9ff82e1-404d-4bf1-9133-92cda3f422b9",
+     "first_resolvable_episode": "94a939f6-a4fc-4692-a387-29338ed9d2c4",
+     "selected_source_ref": "opencode:ses_e5216f8ffffeoWWX3dJDu4rpL7:tool:call_2a73d67cddde989d",
+     "evidence_class": "tool-reported",
+     "group_check": "pass",
+     "dedup_key": "The git log for refs/pr/86 shows commit "
+    },
+    {
+     "fact_uuid": "b6c03227-0af9-462a-b7be-cf5601f2c5d6",
+     "first_resolvable_episode": "1409c260-92e9-474f-96be-6da4216908f7",
+     "selected_source_ref": "opencode:ses_e5158f35cffeu6tZOnjp1XwQko:message:msg_1aea7648a001V2JzUtwYv5kkjY",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The environment variable GRAPHITI_RECALL"
+    },
+    {
+     "fact_uuid": "f18dddf9-5279-4d10-8663-2c5feef46867",
+     "first_resolvable_episode": "1d98ba67-7e6d-488a-aa10-93677f46ebb2",
+     "selected_source_ref": "opencode:ses_e5161e002ffeUFAxdC5lo1zi1m:message:msg_1ae9e50df001EA08ggFmboDRyf",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The graph name graphiti_live comes from "
+    },
+    {
+     "fact_uuid": "a364f523-3b30-453c-80eb-01a2b438e3c2",
+     "first_resolvable_episode": "d19c4f9e-7216-499a-8057-b638b88e2fa3",
+     "selected_source_ref": "opencode:ses_e513390dcffekimm001xBGtcI0:message:msg_1aecd887c001GaCs8HD5eGI0R9",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "When group_id is 'development-knowledge'"
+    },
+    {
+     "fact_uuid": "0fd53409-2d2b-46b4-9e22-2512f48b6f39",
+     "first_resolvable_episode": "c059ab8f-0b24-4fc6-b0cd-730178acb247",
+     "selected_source_ref": "opencode:ses_e50efdb27ffep7alMZaj9wkl3x:tool:call_0485ce2600ec5dba",
+     "evidence_class": "tool-reported",
+     "group_check": "pass",
+     "dedup_key": "The graphiti component is part of the gh"
+    },
+    {
+     "fact_uuid": "1562d34a-15d8-4350-90cd-3926d55db79f",
+     "first_resolvable_episode": "950cc4e3-418c-4f3d-b7a6-40da2bdf2c9f",
+     "selected_source_ref": "opencode:ses_e516e7ab7ffehIYi0ezLjIffWR:message:msg_1ae921208001f2mrpvLmU9C72e",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The Graphiti driver derives the FalkorDB"
+    },
+    {
+     "fact_uuid": "2f7d2c15-bd2a-45b3-85c7-7b9322e04014",
+     "first_resolvable_episode": "76d0d36e-ec85-475b-95a5-ae7d081b2d4a",
+     "selected_source_ref": "opencode:ses_e519d2176ffe9qUxv2kCwjz602:message:msg_1ae63a2850019Kiab8bwlL59SF",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The absence of Graphiti context injectio"
+    },
+    {
+     "fact_uuid": "34e120c2-80e1-444d-87ec-eef9b3402cea",
+     "first_resolvable_episode": "5b10a081-ee7f-4723-9ae3-8618233f4dba",
+     "selected_source_ref": "opencode:ses_e5141ff20ffekIngDORTf5xOFP:message:msg_1aebeaf22001z0heGlQuBPHoly",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The graphiti_live graph, which is empty "
+    },
+    {
+     "fact_uuid": "f1e47f17-eaa5-4233-ae10-66a526323cfc",
+     "first_resolvable_episode": "94a939f6-a4fc-4692-a387-29338ed9d2c4",
+     "selected_source_ref": "opencode:ses_e5216f8ffffeoWWX3dJDu4rpL7:tool:call_2a73d67cddde989d",
+     "evidence_class": "tool-reported",
+     "group_check": "pass",
+     "dedup_key": "The tool rtk invoked the git command to "
+    },
+    {
+     "fact_uuid": "3c079981-ee4c-48cc-aa95-2325856bb3e1",
+     "first_resolvable_episode": "6e7956be-498c-47cf-af4d-07220ee8507e",
+     "selected_source_ref": "opencode:ses_e51cb9c19ffem7rxqiNNhlbbQ1:message:msg_1ae367654001nlYZtg6lC5m03l",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The gh_mcp project is associated with th"
+    },
+    {
+     "fact_uuid": "6950edd9-724e-4583-968b-c8f227d6a617",
+     "first_resolvable_episode": "1d98ba67-7e6d-488a-aa10-93677f46ebb2",
+     "selected_source_ref": "opencode:ses_e5161e002ffeUFAxdC5lo1zi1m:message:msg_1ae9e50df001EA08ggFmboDRyf",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "memory-core.mjs calls the Graphiti MCP a"
+    }
+   ],
+   "facts_without_admitted_source": []
+  },
+  {
+   "case_id": "S07",
+   "legacy_journal": {
+    "dir": "/home/filip/.local/state/ghdev-graphiti/development-knowledge",
+    "rows": 0,
+    "note": "issue-75 legacy journal empty in production; all source resolution flows through the curated resolver"
+   },
+   "wanted_episode_count": 9,
+   "curated_resolver": {
+    "function": "sourcedEpisodeResolver (docs/issue-78/v2-curator/sourced-recall.mjs:7-32)",
+    "binding": {
+     "root": "/home/filip/.local/state/ghdev-graphiti",
+     "group": "development-knowledge",
+     "workspace": "/workspace/mcp_servers/gh_mcp",
+     "project": "gh_mcp"
+    },
+    "admitted": [
+     {
+      "remoteEpisodeUuid": "e14ae183-8b88-429e-be2d-7e8ee608b6aa",
+      "sourceRef": "opencode:ses_e5216f8ffffeoWWX3dJDu4rpL7:tool:call_3fe8d6b139a72107",
+      "evidenceClass": "tool-reported"
+     },
+     {
+      "remoteEpisodeUuid": "e147822f-d6ea-439a-967b-ad6eb78ae428",
+      "sourceRef": "opencode:ses_e50cc1c26ffeKCmAyMkiTNIVKE:tool:call_8e9d27d04e918e97",
+      "evidenceClass": "tool-reported"
+     },
+     {
+      "remoteEpisodeUuid": "ddb65fb8-1b9c-46a5-ade2-c7c153aced87",
+      "sourceRef": "opencode:ses_e50efdb27ffep7alMZaj9wkl3x:tool:call_d79ed31b8f90bd80",
+      "evidenceClass": "tool-reported"
+     },
+     {
+      "remoteEpisodeUuid": "072316ee-7d48-4856-be87-6c39a8052f21",
+      "sourceRef": "opencode:ses_e50cc1c26ffeKCmAyMkiTNIVKE:tool:call_068a1612ae5b0b1a",
+      "evidenceClass": "tool-reported"
+     },
+     {
+      "remoteEpisodeUuid": "48ab85d5-b0c7-4e40-a98c-4851a433be6f",
+      "sourceRef": "opencode:ses_e50cc1c26ffeKCmAyMkiTNIVKE:tool:call_e0b3b570a7d40755",
+      "evidenceClass": "tool-reported"
+     },
+     {
+      "remoteEpisodeUuid": "402b2c73-9ae9-42df-8bf3-6124292ff220",
+      "sourceRef": "opencode:ses_e529e87f6ffe70o8b0iVRkat83:tool:call_25a4c242c327390e",
+      "evidenceClass": "tool-reported"
+     },
+     {
+      "remoteEpisodeUuid": "90f8048e-1fb9-40fb-928a-9c0326e0d4e5",
+      "sourceRef": "opencode:ses_e529e87f6ffe70o8b0iVRkat83:message:msg_1ad677b39001fEWaII5bvS0d0n",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "33088c81-1857-47ba-85b8-0e336e0a54ac",
+      "sourceRef": "opencode:ses_e518d2926ffe4iAujvBdg4SxaG:message:msg_1aea02541001WqFYEGis61N1Vr",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "9520b138-580e-40d0-b58d-84fb63221580",
+      "sourceRef": "opencode:ses_e529e87f6ffe70o8b0iVRkat83:tool:call_65263de01e5c62c0",
+      "evidenceClass": "tool-reported"
+     }
+    ]
+   },
+   "per_fact_first_resolvable": [
+    {
+     "fact_uuid": "97d9e4ab-1f82-4cf7-943d-3e82a8b945ef",
+     "first_resolvable_episode": "e14ae183-8b88-429e-be2d-7e8ee608b6aa",
+     "selected_source_ref": "opencode:ses_e5216f8ffffeoWWX3dJDu4rpL7:tool:call_3fe8d6b139a72107",
+     "evidence_class": "tool-reported",
+     "group_check": "pass",
+     "dedup_key": "The ExecStart command for post-exit-drai"
+    },
+    {
+     "fact_uuid": "d974a695-b35f-4565-9a23-6c769f2be341",
+     "first_resolvable_episode": "e147822f-d6ea-439a-967b-ad6eb78ae428",
+     "selected_source_ref": "opencode:ses_e50cc1c26ffeKCmAyMkiTNIVKE:tool:call_8e9d27d04e918e97",
+     "evidence_class": "tool-reported",
+     "group_check": "pass",
+     "dedup_key": "The Production admitted post-exit candid"
+    },
+    {
+     "fact_uuid": "e827f6a2-d138-42a8-be20-808ef3366cc4",
+     "first_resolvable_episode": "ddb65fb8-1b9c-46a5-ade2-c7c153aced87",
+     "selected_source_ref": "opencode:ses_e50efdb27ffep7alMZaj9wkl3x:tool:call_d79ed31b8f90bd80",
+     "evidence_class": "tool-reported",
+     "group_check": "pass",
+     "dedup_key": "systemd manages ghdev-curator-prod.servi"
+    },
+    {
+     "fact_uuid": "6dfd751e-63af-4c23-b9ec-4128b30b178a",
+     "first_resolvable_episode": "072316ee-7d48-4856-be87-6c39a8052f21",
+     "selected_source_ref": "opencode:ses_e50cc1c26ffeKCmAyMkiTNIVKE:tool:call_068a1612ae5b0b1a",
+     "evidence_class": "tool-reported",
+     "group_check": "pass",
+     "dedup_key": "The native hook-shape and recall-associa"
+    },
+    {
+     "fact_uuid": "e9ff87a2-0650-4701-bed0-0cac7b35efc3",
+     "first_resolvable_episode": "48ab85d5-b0c7-4e40-a98c-4851a433be6f",
+     "selected_source_ref": "opencode:ses_e50cc1c26ffeKCmAyMkiTNIVKE:tool:call_e0b3b570a7d40755",
+     "evidence_class": "tool-reported",
+     "group_check": "pass",
+     "dedup_key": "The host <host> ran the ghdev-curator-pr"
+    },
+    {
+     "fact_uuid": "2f53a672-78c4-4ada-b328-abc64a0e4f87",
+     "first_resolvable_episode": "402b2c73-9ae9-42df-8bf3-6124292ff220",
+     "selected_source_ref": "opencode:ses_e529e87f6ffe70o8b0iVRkat83:tool:call_25a4c242c327390e",
+     "evidence_class": "tool-reported",
+     "group_check": "pass",
+     "dedup_key": "The ghdev-curator-prod.service ran on th"
+    },
+    {
+     "fact_uuid": "e9a396fd-80c4-4b78-a12a-39ccf7335327",
+     "first_resolvable_episode": "e147822f-d6ea-439a-967b-ad6eb78ae428",
+     "selected_source_ref": "opencode:ses_e50cc1c26ffeKCmAyMkiTNIVKE:tool:call_8e9d27d04e918e97",
+     "evidence_class": "tool-reported",
+     "group_check": "pass",
+     "dedup_key": "The host <host> runs the Production admi"
+    },
+    {
+     "fact_uuid": "fedd5812-87d4-455a-bf11-a08190f78de8",
+     "first_resolvable_episode": "48ab85d5-b0c7-4e40-a98c-4851a433be6f",
+     "selected_source_ref": "opencode:ses_e50cc1c26ffeKCmAyMkiTNIVKE:tool:call_e0b3b570a7d40755",
+     "evidence_class": "tool-reported",
+     "group_check": "pass",
+     "dedup_key": "On the host <host>, systemd managed the "
+    },
+    {
+     "fact_uuid": "706b72f5-f8bb-4d95-bc36-aa67f6180516",
+     "first_resolvable_episode": "90f8048e-1fb9-40fb-928a-9c0326e0d4e5",
+     "selected_source_ref": "opencode:ses_e529e87f6ffe70o8b0iVRkat83:message:msg_1ad677b39001fEWaII5bvS0d0n",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "FalkorDB's persisted AOF is in effects f"
+    },
+    {
+     "fact_uuid": "10631248-64a4-4bca-8581-0a4e3c6d1baf",
+     "first_resolvable_episode": "e147822f-d6ea-439a-967b-ad6eb78ae428",
+     "selected_source_ref": "opencode:ses_e50cc1c26ffeKCmAyMkiTNIVKE:tool:call_8e9d27d04e918e97",
+     "evidence_class": "tool-reported",
+     "group_check": "pass",
+     "dedup_key": "On Nov 05 20:52:56, systemd on host gari"
+    },
+    {
+     "fact_uuid": "d6b6e219-c3ec-42d1-8aef-71da375bb748",
+     "first_resolvable_episode": "33088c81-1857-47ba-85b8-0e336e0a54ac",
+     "selected_source_ref": "opencode:ses_e518d2926ffe4iAujvBdg4SxaG:message:msg_1aea02541001WqFYEGis61N1Vr",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The v2-harness 0/25 failures were caused"
+    },
+    {
+     "fact_uuid": "c941d0b0-2b38-4a43-a188-00920f03415f",
+     "first_resolvable_episode": "9520b138-580e-40d0-b58d-84fb63221580",
+     "selected_source_ref": "opencode:ses_e529e87f6ffe70o8b0iVRkat83:tool:call_65263de01e5c62c0",
+     "evidence_class": "tool-reported",
+     "group_check": "pass",
+     "dedup_key": "The ghdev-curator-prod.service, a produc"
+    }
+   ],
+   "facts_without_admitted_source": []
+  },
+  {
+   "case_id": "S10",
+   "legacy_journal": {
+    "dir": "/home/filip/.local/state/ghdev-graphiti/development-knowledge",
+    "rows": 0,
+    "note": "issue-75 legacy journal empty in production; all source resolution flows through the curated resolver"
+   },
+   "wanted_episode_count": 13,
+   "curated_resolver": {
+    "function": "sourcedEpisodeResolver (docs/issue-78/v2-curator/sourced-recall.mjs:7-32)",
+    "binding": {
+     "root": "/home/filip/.local/state/ghdev-graphiti",
+     "group": "development-knowledge",
+     "workspace": "/workspace/mcp_servers/gh_mcp",
+     "project": "gh_mcp"
+    },
+    "admitted": [
+     {
+      "remoteEpisodeUuid": "c059ab8f-0b24-4fc6-b0cd-730178acb247",
+      "sourceRef": "opencode:ses_e50efdb27ffep7alMZaj9wkl3x:tool:call_0485ce2600ec5dba",
+      "evidenceClass": "tool-reported"
+     },
+     {
+      "remoteEpisodeUuid": "1d98ba67-7e6d-488a-aa10-93677f46ebb2",
+      "sourceRef": "opencode:ses_e5161e002ffeUFAxdC5lo1zi1m:message:msg_1ae9e50df001EA08ggFmboDRyf",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "e1244d4f-aee5-4bbe-a4f9-ac0f8516fd68",
+      "sourceRef": "opencode:ses_e514f306cffe3F3Hy1nkJgjujC:message:msg_1aeb281c9001k9aQzqmnBUQ1oE",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "94a939f6-a4fc-4692-a387-29338ed9d2c4",
+      "sourceRef": "opencode:ses_e5216f8ffffeoWWX3dJDu4rpL7:tool:call_2a73d67cddde989d",
+      "evidenceClass": "tool-reported"
+     },
+     {
+      "remoteEpisodeUuid": "efcb8bb3-0276-4187-8559-592cf3e79e25",
+      "sourceRef": "opencode:ses_e5175247fffe9938IuEYmoQ5H0:message:msg_1ae8b89f5001elkOZt311s0eIr",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "5b10a081-ee7f-4723-9ae3-8618233f4dba",
+      "sourceRef": "opencode:ses_e5141ff20ffekIngDORTf5xOFP:message:msg_1aebeaf22001z0heGlQuBPHoly",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "d331a008-9840-4343-93f6-5d8db642e70c",
+      "sourceRef": "opencode:ses_e5140128dffeEWUc1CJha4gyLh:message:msg_1aec0412e001KW7j7d4TNnAqWq",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "2033506a-723e-4560-a690-9b90cb05e061",
+      "sourceRef": "opencode:ses_e51880139ffez3nnqPCPRY56Y7:message:msg_1ae78b0dd001VormxLYL4hVLAX",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "df6a6838-335f-401c-97cf-15949b302c07",
+      "sourceRef": "opencode:ses_e514c5a18ffeOIgmlM4EPl0gEf:message:msg_1aeb4121c001G1sZ3kMYcrqaTj",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "07f247f9-f4d4-47f7-bf5f-6a748b60758b",
+      "sourceRef": "opencode:ses_e51631cbfffeIAww75wYB0QLvR:message:msg_1ae9d8d9e0011vCYAm7ru8Z44E",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "9491a0f3-c73f-43da-abbe-b0bda356a88e",
+      "sourceRef": "opencode:ses_e514b22a8ffe4r4a6oDsLaX74m:message:msg_1aeb665da001neAU6GMCOOULF5",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "cece7d0b-7f34-4bcc-b852-72a9df8f16ba",
+      "sourceRef": "opencode:ses_e513ad3fcffeXeo9yoMZ6lVA3G:message:msg_1aec6ab4e001KVtiKRc17nGKgU",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "ed80ea70-2682-4265-9639-fb4aafd9c4cd",
+      "sourceRef": "opencode:ses_e516102a1ffeO6WUmOXkfcuJJW:message:msg_1ae9f733200194B3eCQf2GPS7O",
+      "evidenceClass": "assistant-reported"
+     }
+    ]
+   },
+   "per_fact_first_resolvable": [
+    {
+     "fact_uuid": "0fd53409-2d2b-46b4-9e22-2512f48b6f39",
+     "first_resolvable_episode": "c059ab8f-0b24-4fc6-b0cd-730178acb247",
+     "selected_source_ref": "opencode:ses_e50efdb27ffep7alMZaj9wkl3x:tool:call_0485ce2600ec5dba",
+     "evidence_class": "tool-reported",
+     "group_check": "pass",
+     "dedup_key": "The graphiti component is part of the gh"
+    },
+    {
+     "fact_uuid": "f18dddf9-5279-4d10-8663-2c5feef46867",
+     "first_resolvable_episode": "1d98ba67-7e6d-488a-aa10-93677f46ebb2",
+     "selected_source_ref": "opencode:ses_e5161e002ffeUFAxdC5lo1zi1m:message:msg_1ae9e50df001EA08ggFmboDRyf",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The graph name graphiti_live comes from "
+    },
+    {
+     "fact_uuid": "a9ff82e1-404d-4bf1-9133-92cda3f422b9",
+     "first_resolvable_episode": "94a939f6-a4fc-4692-a387-29338ed9d2c4",
+     "selected_source_ref": "opencode:ses_e5216f8ffffeoWWX3dJDu4rpL7:tool:call_2a73d67cddde989d",
+     "evidence_class": "tool-reported",
+     "group_check": "pass",
+     "dedup_key": "The git log for refs/pr/86 shows commit "
+    },
+    {
+     "fact_uuid": "daea3a59-9119-42b1-b7df-f9b0e8dcc3ea",
+     "first_resolvable_episode": "efcb8bb3-0276-4187-8559-592cf3e79e25",
+     "selected_source_ref": "opencode:ses_e5175247fffe9938IuEYmoQ5H0:message:msg_1ae8b89f5001elkOZt311s0eIr",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The graphiti_live graph contains 0 nodes"
+    },
+    {
+     "fact_uuid": "932b5ae4-663c-455b-b44d-8f0ea8ef8a4e",
+     "first_resolvable_episode": "c059ab8f-0b24-4fc6-b0cd-730178acb247",
+     "selected_source_ref": "opencode:ses_e50efdb27ffep7alMZaj9wkl3x:tool:call_0485ce2600ec5dba",
+     "evidence_class": "tool-reported",
+     "group_check": "pass",
+     "dedup_key": "git was used to add a worktree at /tmp/o"
+    },
+    {
+     "fact_uuid": "34e120c2-80e1-444d-87ec-eef9b3402cea",
+     "first_resolvable_episode": "5b10a081-ee7f-4723-9ae3-8618233f4dba",
+     "selected_source_ref": "opencode:ses_e5141ff20ffekIngDORTf5xOFP:message:msg_1aebeaf22001z0heGlQuBPHoly",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The graphiti_live graph, which is empty "
+    },
+    {
+     "fact_uuid": "f1e47f17-eaa5-4233-ae10-66a526323cfc",
+     "first_resolvable_episode": "94a939f6-a4fc-4692-a387-29338ed9d2c4",
+     "selected_source_ref": "opencode:ses_e5216f8ffffeoWWX3dJDu4rpL7:tool:call_2a73d67cddde989d",
+     "evidence_class": "tool-reported",
+     "group_check": "pass",
+     "dedup_key": "The tool rtk invoked the git command to "
+    },
+    {
+     "fact_uuid": "6950edd9-724e-4583-968b-c8f227d6a617",
+     "first_resolvable_episode": "1d98ba67-7e6d-488a-aa10-93677f46ebb2",
+     "selected_source_ref": "opencode:ses_e5161e002ffeUFAxdC5lo1zi1m:message:msg_1ae9e50df001EA08ggFmboDRyf",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "memory-core.mjs calls the Graphiti MCP a"
+    },
+    {
+     "fact_uuid": "310b859b-8d2d-4dbe-a655-aa83240d6f8b",
+     "first_resolvable_episode": "2033506a-723e-4560-a690-9b90cb05e061",
+     "selected_source_ref": "opencode:ses_e51880139ffez3nnqPCPRY56Y7:message:msg_1ae78b0dd001VormxLYL4hVLAX",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The local Graphiti MCP service at 127.0."
+    },
+    {
+     "fact_uuid": "6b258002-1844-4ec4-a7c9-cae1321f7bdf",
+     "first_resolvable_episode": "df6a6838-335f-401c-97cf-15949b302c07",
+     "selected_source_ref": "opencode:ses_e514c5a18ffeOIgmlM4EPl0gEf:message:msg_1aeb4121c001G1sZ3kMYcrqaTj",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The graphiti MCP is a remote server at h"
+    },
+    {
+     "fact_uuid": "6940cadb-0c61-4196-9ff7-e1c54a4ceee9",
+     "first_resolvable_episode": "07f247f9-f4d4-47f7-bf5f-6a748b60758b",
+     "selected_source_ref": "opencode:ses_e51631cbfffeIAww75wYB0QLvR:message:msg_1ae9d8d9e0011vCYAm7ru8Z44E",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The data physically lives in the develop"
+    },
+    {
+     "fact_uuid": "24e12aff-49e0-417f-9262-dd33c5b394be",
+     "first_resolvable_episode": "ed80ea70-2682-4265-9639-fb4aafd9c4cd",
+     "selected_source_ref": "opencode:ses_e516102a1ffeO6WUmOXkfcuJJW:message:msg_1ae9f733200194B3eCQf2GPS7O",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The Graphiti MCP server is implemented b"
+    }
+   ],
+   "facts_without_admitted_source": []
+  },
+  {
+   "case_id": "S13",
+   "legacy_journal": {
+    "dir": "/home/filip/.local/state/ghdev-graphiti/development-knowledge",
+    "rows": 0,
+    "note": "issue-75 legacy journal empty in production; all source resolution flows through the curated resolver"
+   },
+   "wanted_episode_count": 11,
+   "curated_resolver": {
+    "function": "sourcedEpisodeResolver (docs/issue-78/v2-curator/sourced-recall.mjs:7-32)",
+    "binding": {
+     "root": "/home/filip/.local/state/ghdev-graphiti",
+     "group": "development-knowledge",
+     "workspace": "/workspace/mcp_servers/gh_mcp",
+     "project": "gh_mcp"
+    },
+    "admitted": [
+     {
+      "remoteEpisodeUuid": "1d98ba67-7e6d-488a-aa10-93677f46ebb2",
+      "sourceRef": "opencode:ses_e5161e002ffeUFAxdC5lo1zi1m:message:msg_1ae9e50df001EA08ggFmboDRyf",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "e1244d4f-aee5-4bbe-a4f9-ac0f8516fd68",
+      "sourceRef": "opencode:ses_e514f306cffe3F3Hy1nkJgjujC:message:msg_1aeb281c9001k9aQzqmnBUQ1oE",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "2033506a-723e-4560-a690-9b90cb05e061",
+      "sourceRef": "opencode:ses_e51880139ffez3nnqPCPRY56Y7:message:msg_1ae78b0dd001VormxLYL4hVLAX",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "ed80ea70-2682-4265-9639-fb4aafd9c4cd",
+      "sourceRef": "opencode:ses_e516102a1ffeO6WUmOXkfcuJJW:message:msg_1ae9f733200194B3eCQf2GPS7O",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "df6a6838-335f-401c-97cf-15949b302c07",
+      "sourceRef": "opencode:ses_e514c5a18ffeOIgmlM4EPl0gEf:message:msg_1aeb4121c001G1sZ3kMYcrqaTj",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "5b10a081-ee7f-4723-9ae3-8618233f4dba",
+      "sourceRef": "opencode:ses_e5141ff20ffekIngDORTf5xOFP:message:msg_1aebeaf22001z0heGlQuBPHoly",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "d331a008-9840-4343-93f6-5d8db642e70c",
+      "sourceRef": "opencode:ses_e5140128dffeEWUc1CJha4gyLh:message:msg_1aec0412e001KW7j7d4TNnAqWq",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "a329f56c-0ce1-40d8-9bc0-afbccb6335de",
+      "sourceRef": "opencode:ses_e518d2926ffe4iAujvBdg4SxaG:message:msg_1ae77d6f0001Rf1C7bBR4JJ8rp",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "efcb8bb3-0276-4187-8559-592cf3e79e25",
+      "sourceRef": "opencode:ses_e5175247fffe9938IuEYmoQ5H0:message:msg_1ae8b89f5001elkOZt311s0eIr",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "0c493c7b-025e-4562-b3b4-2d5cb1470c9b",
+      "sourceRef": "opencode:ses_e51508dcfffe9svEPYbBvkQzfn:message:msg_1aeb11d5b001srxSM0lf5llHMJ",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "1343d893-6c6d-413b-8795-69ee6e35831a",
+      "sourceRef": "opencode:ses_e5153da9effexLtJUGtbne2huA:message:msg_1aeaeba84001br8HMsJ3RwNb9H",
+      "evidenceClass": "assistant-reported"
+     }
+    ]
+   },
+   "per_fact_first_resolvable": [
+    {
+     "fact_uuid": "f18dddf9-5279-4d10-8663-2c5feef46867",
+     "first_resolvable_episode": "1d98ba67-7e6d-488a-aa10-93677f46ebb2",
+     "selected_source_ref": "opencode:ses_e5161e002ffeUFAxdC5lo1zi1m:message:msg_1ae9e50df001EA08ggFmboDRyf",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The graph name graphiti_live comes from "
+    },
+    {
+     "fact_uuid": "310b859b-8d2d-4dbe-a655-aa83240d6f8b",
+     "first_resolvable_episode": "2033506a-723e-4560-a690-9b90cb05e061",
+     "selected_source_ref": "opencode:ses_e51880139ffez3nnqPCPRY56Y7:message:msg_1ae78b0dd001VormxLYL4hVLAX",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The local Graphiti MCP service at 127.0."
+    },
+    {
+     "fact_uuid": "24e12aff-49e0-417f-9262-dd33c5b394be",
+     "first_resolvable_episode": "ed80ea70-2682-4265-9639-fb4aafd9c4cd",
+     "selected_source_ref": "opencode:ses_e516102a1ffeO6WUmOXkfcuJJW:message:msg_1ae9f733200194B3eCQf2GPS7O",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The Graphiti MCP server is implemented b"
+    },
+    {
+     "fact_uuid": "6b258002-1844-4ec4-a7c9-cae1321f7bdf",
+     "first_resolvable_episode": "df6a6838-335f-401c-97cf-15949b302c07",
+     "selected_source_ref": "opencode:ses_e514c5a18ffeOIgmlM4EPl0gEf:message:msg_1aeb4121c001G1sZ3kMYcrqaTj",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The graphiti MCP is a remote server at h"
+    },
+    {
+     "fact_uuid": "6950edd9-724e-4583-968b-c8f227d6a617",
+     "first_resolvable_episode": "1d98ba67-7e6d-488a-aa10-93677f46ebb2",
+     "selected_source_ref": "opencode:ses_e5161e002ffeUFAxdC5lo1zi1m:message:msg_1ae9e50df001EA08ggFmboDRyf",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "memory-core.mjs calls the Graphiti MCP a"
+    },
+    {
+     "fact_uuid": "34e120c2-80e1-444d-87ec-eef9b3402cea",
+     "first_resolvable_episode": "5b10a081-ee7f-4723-9ae3-8618233f4dba",
+     "selected_source_ref": "opencode:ses_e5141ff20ffekIngDORTf5xOFP:message:msg_1aebeaf22001z0heGlQuBPHoly",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The graphiti_live graph, which is empty "
+    },
+    {
+     "fact_uuid": "f1c171a8-f836-4ec7-b909-b3448aa3839e",
+     "first_resolvable_episode": "a329f56c-0ce1-40d8-9bc0-afbccb6335de",
+     "selected_source_ref": "opencode:ses_e518d2926ffe4iAujvBdg4SxaG:message:msg_1ae77d6f0001Rf1C7bBR4JJ8rp",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The Graphiti MCP server is an upstream c"
+    },
+    {
+     "fact_uuid": "daea3a59-9119-42b1-b7df-f9b0e8dcc3ea",
+     "first_resolvable_episode": "efcb8bb3-0276-4187-8559-592cf3e79e25",
+     "selected_source_ref": "opencode:ses_e5175247fffe9938IuEYmoQ5H0:message:msg_1ae8b89f5001elkOZt311s0eIr",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The graphiti_live graph contains 0 nodes"
+    },
+    {
+     "fact_uuid": "c7ef60c0-4cb4-4cef-9d3d-272dded95216",
+     "first_resolvable_episode": "0c493c7b-025e-4562-b3b4-2d5cb1470c9b",
+     "selected_source_ref": "opencode:ses_e51508dcfffe9svEPYbBvkQzfn:message:msg_1aeb11d5b001srxSM0lf5llHMJ",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The database configuration value 'graphi"
+    },
+    {
+     "fact_uuid": "de035959-3dc7-4c27-85dc-c43bbfcca1b5",
+     "first_resolvable_episode": "2033506a-723e-4560-a690-9b90cb05e061",
+     "selected_source_ref": "opencode:ses_e51880139ffez3nnqPCPRY56Y7:message:msg_1ae78b0dd001VormxLYL4hVLAX",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The local Graphiti MCP service at 127.0."
+    },
+    {
+     "fact_uuid": "7bc4e3ed-8ca6-4905-a07c-f90cb4ba1231",
+     "first_resolvable_episode": "1343d893-6c6d-413b-8795-69ee6e35831a",
+     "selected_source_ref": "opencode:ses_e5153da9effexLtJUGtbne2huA:message:msg_1aeaeba84001br8HMsJ3RwNb9H",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "run_graphiti.py loads config/.env into o"
+    }
+   ],
+   "facts_without_admitted_source": []
+  },
+  {
+   "case_id": "N02",
+   "legacy_journal": {
+    "dir": "/home/filip/.local/state/ghdev-graphiti/development-knowledge",
+    "rows": 0,
+    "note": "issue-75 legacy journal empty in production; all source resolution flows through the curated resolver"
+   },
+   "wanted_episode_count": 18,
+   "curated_resolver": {
+    "function": "sourcedEpisodeResolver (docs/issue-78/v2-curator/sourced-recall.mjs:7-32)",
+    "binding": {
+     "root": "/home/filip/.local/state/ghdev-graphiti",
+     "group": "development-knowledge",
+     "workspace": "/workspace/mcp_servers/gh_mcp",
+     "project": "gh_mcp"
+    },
+    "admitted": [
+     {
+      "remoteEpisodeUuid": "e1d8e764-26fa-45ea-9483-8e64a71e3de7",
+      "sourceRef": "opencode:ses_e508c6d53ffeWrJEJftz60lqXB:message:msg_1af753f0d001GPlDjAoAckQ3EK",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "5b10a081-ee7f-4723-9ae3-8618233f4dba",
+      "sourceRef": "opencode:ses_e5141ff20ffekIngDORTf5xOFP:message:msg_1aebeaf22001z0heGlQuBPHoly",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "d331a008-9840-4343-93f6-5d8db642e70c",
+      "sourceRef": "opencode:ses_e5140128dffeEWUc1CJha4gyLh:message:msg_1aec0412e001KW7j7d4TNnAqWq",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "6e7956be-498c-47cf-af4d-07220ee8507e",
+      "sourceRef": "opencode:ses_e51cb9c19ffem7rxqiNNhlbbQ1:message:msg_1ae367654001nlYZtg6lC5m03l",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "15a2f72d-6aa9-481d-ae5a-9bf2b679c273",
+      "sourceRef": "opencode:ses_e51583ef5ffeAdG05Q9i4FbUao:message:msg_1aea8c6f5001A1bdxNmT9a176W",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "07f247f9-f4d4-47f7-bf5f-6a748b60758b",
+      "sourceRef": "opencode:ses_e51631cbfffeIAww75wYB0QLvR:message:msg_1ae9d8d9e0011vCYAm7ru8Z44E",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "9491a0f3-c73f-43da-abbe-b0bda356a88e",
+      "sourceRef": "opencode:ses_e514b22a8ffe4r4a6oDsLaX74m:message:msg_1aeb665da001neAU6GMCOOULF5",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "cece7d0b-7f34-4bcc-b852-72a9df8f16ba",
+      "sourceRef": "opencode:ses_e513ad3fcffeXeo9yoMZ6lVA3G:message:msg_1aec6ab4e001KVtiKRc17nGKgU",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "efcb8bb3-0276-4187-8559-592cf3e79e25",
+      "sourceRef": "opencode:ses_e5175247fffe9938IuEYmoQ5H0:message:msg_1ae8b89f5001elkOZt311s0eIr",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "af4619a9-fb95-43d5-aaae-c82a9a6957a4",
+      "sourceRef": "opencode:ses_e508c6d53ffeWrJEJftz60lqXB:message:msg_1af7594c4001LvnlhOUuy0PD4T",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "a64f0da4-6c6d-4b15-bd5b-b4d63aa016a7",
+      "sourceRef": "opencode:ses_e518d2926ffe4iAujvBdg4SxaG:message:msg_1ae89bf2f001uAVvY4t1UcggFH",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "bb9e83c9-6683-4c2b-9fba-709fb2029b00",
+      "sourceRef": "opencode:ses_e5175247fffe9938IuEYmoQ5H0:message:msg_1ae8b33aa001yxoJ6VFWImHENR",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "c48cd614-4f98-49f7-90d0-5b6a418368fc",
+      "sourceRef": "opencode:ses_e5276247fffewUAeyTeAea2tia:message:msg_1ad8c14d6001aDoSonKPyEUW9E",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "97defc44-679e-4d77-bb8a-03e28e4febc6",
+      "sourceRef": "opencode:ses_e51700ea7ffeDOetlL7k4vnOXb:message:msg_1ae8ff169001BIqeLdMdJkVWml",
+      "evidenceClass": "user-stated"
+     },
+     {
+      "remoteEpisodeUuid": "855c0459-7405-41df-91a3-aab8cfc8aff6",
+      "sourceRef": "opencode:ses_e516488e3ffeiuJpnSV1IM7L5X:message:msg_1ae9c6f0d001KlSYX9JNI0TSX7",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "6969a684-8bb2-45c2-86a8-47a3f1b7b76b",
+      "sourceRef": "opencode:ses_e515c300affeVEDoPQJ9pbP7s7:message:msg_1aea3d002001miiP7cXnNEbhmW",
+      "evidenceClass": "user-stated"
+     },
+     {
+      "remoteEpisodeUuid": "ee8f2b96-4fca-4e83-b384-03582880eacc",
+      "sourceRef": "opencode:ses_e5141ff20ffekIngDORTf5xOFP:message:msg_1aebea91b001E6SDpIVO9fzmol",
+      "evidenceClass": "assistant-reported"
+     },
+     {
+      "remoteEpisodeUuid": "c247a910-17cc-4851-b158-6f1081e8e339",
+      "sourceRef": "opencode:ses_e513de257ffeWqYb9bIYTYXbWi:message:msg_1aec2972e0014djSwff6aHpMrh",
+      "evidenceClass": "assistant-reported"
+     }
+    ]
+   },
+   "per_fact_first_resolvable": [
+    {
+     "fact_uuid": "1afbcca0-d3d7-400e-b1a5-31146a9ac56c",
+     "first_resolvable_episode": "e1d8e764-26fa-45ea-9483-8e64a71e3de7",
+     "selected_source_ref": "opencode:ses_e508c6d53ffeWrJEJftz60lqXB:message:msg_1af753f0d001GPlDjAoAckQ3EK",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The active production curation records a"
+    },
+    {
+     "fact_uuid": "4d76d14f-9c93-4329-ab55-b04d948682db",
+     "first_resolvable_episode": "5b10a081-ee7f-4723-9ae3-8618233f4dba",
+     "selected_source_ref": "opencode:ses_e5141ff20ffekIngDORTf5xOFP:message:msg_1aebeaf22001z0heGlQuBPHoly",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The ghdev_gh_mcp graph, which is empty w"
+    },
+    {
+     "fact_uuid": "3c079981-ee4c-48cc-aa95-2325856bb3e1",
+     "first_resolvable_episode": "6e7956be-498c-47cf-af4d-07220ee8507e",
+     "selected_source_ref": "opencode:ses_e51cb9c19ffem7rxqiNNhlbbQ1:message:msg_1ae367654001nlYZtg6lC5m03l",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The gh_mcp project is associated with th"
+    },
+    {
+     "fact_uuid": "28893e36-9bb0-42d0-9d9d-64c51e6edf21",
+     "first_resolvable_episode": "6e7956be-498c-47cf-af4d-07220ee8507e",
+     "selected_source_ref": "opencode:ses_e51cb9c19ffem7rxqiNNhlbbQ1:message:msg_1ae367654001nlYZtg6lC5m03l",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The graphiti group for the gh_mcp projec"
+    },
+    {
+     "fact_uuid": "6058f037-bead-47f9-a0d1-eb9da39e1c07",
+     "first_resolvable_episode": "15a2f72d-6aa9-481d-ae5a-9bf2b679c273",
+     "selected_source_ref": "opencode:ses_e51583ef5ffeAdG05Q9i4FbUao:message:msg_1aea8c6f5001A1bdxNmT9a176W",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "As of 2026-11-06T02:21:02.894Z, the live"
+    },
+    {
+     "fact_uuid": "ec313e91-1229-4ff6-92eb-311e59e3aa96",
+     "first_resolvable_episode": "07f247f9-f4d4-47f7-bf5f-6a748b60758b",
+     "selected_source_ref": "opencode:ses_e51631cbfffeIAww75wYB0QLvR:message:msg_1ae9d8d9e0011vCYAm7ru8Z44E",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The data physically lives in the develop"
+    },
+    {
+     "fact_uuid": "571b15d7-f9fa-416d-bf68-4527331bfe78",
+     "first_resolvable_episode": "efcb8bb3-0276-4187-8559-592cf3e79e25",
+     "selected_source_ref": "opencode:ses_e5175247fffe9938IuEYmoQ5H0:message:msg_1ae8b89f5001elkOZt311s0eIr",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The ghdev_gh_mcp graph contains 0 nodes,"
+    },
+    {
+     "fact_uuid": "2b408dbc-4376-4242-94b7-5d32575d7c67",
+     "first_resolvable_episode": "af4619a9-fb95-43d5-aaae-c82a9a6957a4",
+     "selected_source_ref": "opencode:ses_e508c6d53ffeWrJEJftz60lqXB:message:msg_1af7594c4001LvnlhOUuy0PD4T",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The installed baseline for the gh_mcp pr"
+    },
+    {
+     "fact_uuid": "7e85f146-e846-4880-8d17-27967f7b80be",
+     "first_resolvable_episode": "a64f0da4-6c6d-4b15-bd5b-b4d63aa016a7",
+     "selected_source_ref": "opencode:ses_e518d2926ffe4iAujvBdg4SxaG:message:msg_1ae89bf2f001uAVvY4t1UcggFH",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The ghdev baseline depends on its prompt"
+    },
+    {
+     "fact_uuid": "c25f096a-3d8f-4474-93a4-2ff9fe08be59",
+     "first_resolvable_episode": "bb9e83c9-6683-4c2b-9fba-709fb2029b00",
+     "selected_source_ref": "opencode:ses_e5175247fffe9938IuEYmoQ5H0:message:msg_1ae8b33aa001yxoJ6VFWImHENR",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The gh_mcp script calls the Graphiti MCP"
+    },
+    {
+     "fact_uuid": "c6d4c379-bfce-4e4b-b224-45db7e9f195b",
+     "first_resolvable_episode": "c48cd614-4f98-49f7-90d0-5b6a418368fc",
+     "selected_source_ref": "opencode:ses_e5276247fffewUAeyTeAea2tia:message:msg_1ad8c14d6001aDoSonKPyEUW9E",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "The FalkorDB layout uses per-group graph"
+    },
+    {
+     "fact_uuid": "eee72de1-5898-40f2-8816-5ad4cadedb22",
+     "first_resolvable_episode": "c247a910-17cc-4851-b158-6f1081e8e339",
+     "selected_source_ref": "opencode:ses_e513de257ffeWqYb9bIYTYXbWi:message:msg_1aec2972e0014djSwff6aHpMrh",
+     "evidence_class": "assistant-reported",
+     "group_check": "pass",
+     "dedup_key": "As of 2026-11-06, graphiti_live has 0 ep"
+    }
+   ],
+   "facts_without_admitted_source": []
+  }
+ ]
+}

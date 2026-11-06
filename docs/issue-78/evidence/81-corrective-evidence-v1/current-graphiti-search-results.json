@@ -1,0 +1,1839 @@
+{
+ "schema": "issue81-corrective-current-graphiti-search-results.v1",
+ "campaign": "ISSUE81_CORRECTIVE_EVIDENCE_V1",
+ "probe_type": "bounded read-only search_memory_facts (NOT a second OpenCode acceptance run; no new native sessions; no LLM answering)",
+ "raw_capture": {
+  "path": "/tmp/opencode/issue81-corrective-evidence/private/raw/graphiti-probes-raw.json",
+  "sha256": "962424daf516ec348b85accab6ba9e239afa420da907c1bf9497cbb46674de70"
+ },
+ "repetition_policy": "one search per frozen case; S13 permits up to two extra repetitions for transient responses - none needed (all nine succeeded first attempt)",
+ "cases": [
+  {
+   "case_id": "S01",
+   "frozen_prompt_sha256": "6f5564559ef7437f4d433077ebe3645a8ea895693d8c3b6d8a1e180eafdfeaa3",
+   "input_to_search_sha256": "6f5564559ef7437f4d433077ebe3645a8ea895693d8c3b6d8a1e180eafdfeaa3",
+   "observed_at": "2026-11-06T16:22:18.736Z",
+   "elapsed_ms": 283,
+   "service_identity": "Graphiti MCP (http://127.0.0.1:8766/mcp) connected to FalkorDB (get_status: ok)",
+   "group_ids": [
+    "development-knowledge"
+   ],
+   "max_facts": 12,
+   "graph_snapshot": {
+    "curation_record_count": 237,
+    "persisted_record_count": 140,
+    "episode_index_count": 140,
+    "episode_index_set_sha256": "75dc74af08152157c32b4e0fd7de4435a945070951100803b35f9a98692a1e56",
+    "observed": "2026-11-06T16:22:18Z..16:22:19Z (no growth vs prior 140/140)"
+   },
+   "returned_status": "success",
+   "error": null,
+   "facts_returned": 12,
+   "facts": [
+    {
+     "ordinal": 0,
+     "fact_uuid": "ad5eef95-7ed6-46fb-af36-c0632722c739",
+     "fact_edge_name": "CONTAINS_GRAPH",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "FalkorDB (127.0.0.1:6382) contains the graph 'graphiti_live'.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "f8b78e14473cf72af47530659e5df09058b2ce0c2168292950f6f72d32fe0994",
+     "episodes_original_order": [
+      "855c0459-7405-41df-91a3-aab8cfc8aff6",
+      "83b258b7-1475-4a19-a981-3d4061d28d8e",
+      "d5f2b156-5c62-48ae-8347-f79e61c0d5db",
+      "09ab3aa9-f4c2-4e4e-8ebe-424eddc95b25",
+      "ccbda0f4-08f7-4df1-a852-2d9035982ec2",
+      "ee8f2b96-4fca-4e83-b384-03582880eacc",
+      "3310d59c-070b-43e0-849b-f83180866818"
+     ],
+     "valid_at": "2026-11-06T02:07:48Z",
+     "invalid_at": null
+    },
+    {
+     "ordinal": 1,
+     "fact_uuid": "4beafec6-da06-4458-85fa-6cefb1c9405b",
+     "fact_edge_name": "USES_DATABASE",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The graphiti MCP server is configured to use the FalkorDB graph named 'graphiti_live' as its database.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "84a221724cee1aef53dfb759b3582272a4d0cd2881642471d5f251ea620faddb",
+     "episodes_original_order": [
+      "ea8cedd4-bece-498c-a903-710b20d7e6be"
+     ],
+     "valid_at": "2026-11-06T02:31:11.906000Z",
+     "invalid_at": "2026-11-06T02:33:28Z"
+    },
+    {
+     "ordinal": 2,
+     "fact_uuid": "d14f3c13-c7b5-469b-8693-3b818d991d4d",
+     "fact_edge_name": "HAS_VALUE",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The environment variable GRAPHITI_RECALL_FALKOR_PORT is set to 6382.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "b7415e3c5433a1b64668dc89b73bd1bf780111e569552934cda6054f261e2f5f",
+     "episodes_original_order": [
+      "1409c260-92e9-474f-96be-6da4216908f7"
+     ],
+     "valid_at": "2026-11-06T02:19:32.962000Z",
+     "invalid_at": null
+    },
+    {
+     "ordinal": 3,
+     "fact_uuid": "a364f523-3b30-453c-80eb-01a2b438e3c2",
+     "fact_edge_name": "DOES_NOT_ROUTE_TO_FOR_GROUP_ID_DEVELOPMENT_KNOWLEDGE",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "When group_id is 'development-knowledge', FalkorDB does not route queries to the graphiti_live graph.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "453bb24e4eed992ae6e0024251038b24f8bcfc0a144a2f10db35de3c3e7a581e",
+     "episodes_original_order": [
+      "d19c4f9e-7216-499a-8057-b638b88e2fa3"
+     ],
+     "valid_at": "2026-11-06T03:01:15Z",
+     "invalid_at": null
+    },
+    {
+     "ordinal": 4,
+     "fact_uuid": "6b258002-1844-4ec4-a7c9-cae1321f7bdf",
+     "fact_edge_name": "CONNECTS_TO",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The graphiti MCP is a remote server at https://mcp.<host>.us/graphiti connected to a remote FalkorDB.",
+     "excerpt_redacted": true,
+     "raw_fact_sha256": "d0beae7bc3c399add568aba86f23c940d7f13aae3f50620a9f9347d762beddcf",
+     "episodes_original_order": [
+      "df6a6838-335f-401c-97cf-15949b302c07"
+     ],
+     "valid_at": "2026-11-06T02:33:28Z",
+     "invalid_at": null
+    },
+    {
+     "ordinal": 5,
+     "fact_uuid": "fdea781a-97c8-4ade-912e-4cb9ae212850",
+     "fact_edge_name": "USES_DEFAULT_GRAPH",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The MCP server's configuration uses the graphiti_live FalkorDB graph by default.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "a53adc0dfc869e11b955d4fa00839f93cb31d744ad738f6565e04720cab3c11c",
+     "episodes_original_order": [
+      "83b258b7-1475-4a19-a981-3d4061d28d8e"
+     ],
+     "valid_at": "2026-11-06T02:00:03.277000Z",
+     "invalid_at": "2026-11-06T02:33:28Z"
+    },
+    {
+     "ordinal": 6,
+     "fact_uuid": "1562d34a-15d8-4350-90cd-3926d55db79f",
+     "fact_edge_name": "DERIVES_GRAPH_NAME_FROM_GROUP_ID_FOR",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The Graphiti driver derives the FalkorDB graph name from group_id.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "5fec4e21adb6aa9d87d6963f6f511422385f02d709505b9562bb9f0e10e3f0b1",
+     "episodes_original_order": [
+      "950cc4e3-418c-4f3d-b7a6-40da2bdf2c9f"
+     ],
+     "valid_at": "2026-11-06T01:56:14Z",
+     "invalid_at": null
+    },
+    {
+     "ordinal": 7,
+     "fact_uuid": "c6d4c379-bfce-4e4b-b224-45db7e9f195b",
+     "fact_edge_name": "HAS_GRAPH",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The FalkorDB layout uses per-group graphs, including a graph named 'ghdev_gh_mcp'.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "2be927c89dda8e787938522a8d0867cd89c2ba69962496d48b7f824262fa9af7",
+     "episodes_original_order": [
+      "c48cd614-4f98-49f7-90d0-5b6a418368fc",
+      "97defc44-679e-4d77-bb8a-03e28e4febc6",
+      "855c0459-7405-41df-91a3-aab8cfc8aff6",
+      "6969a684-8bb2-45c2-86a8-47a3f1b7b76b",
+      "ee8f2b96-4fca-4e83-b384-03582880eacc"
+     ],
+     "valid_at": "2026-11-05T21:10:04Z",
+     "invalid_at": "2026-11-06T00:16:10.001000Z"
+    },
+    {
+     "ordinal": 8,
+     "fact_uuid": "1bc40d82-fdd4-4b9c-b103-5de27617b47f",
+     "fact_edge_name": "USED_BY",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "FalkorDB is on port 6382 (not 6379) and is used by the gh_mcp project.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "ef34fd1d9c01cbfa374b449628840650259c42d86a9eb91bf63d0aa3a7d918b5",
+     "episodes_original_order": [
+      "49d891de-1298-4799-89ac-967f37036c85"
+     ],
+     "valid_at": "2026-11-06T02:47:45.883000Z",
+     "invalid_at": null
+    },
+    {
+     "ordinal": 9,
+     "fact_uuid": "e3c81b80-9ef2-4b89-aabf-eadd872c3abb",
+     "fact_edge_name": "CONFIRMS_EXISTENCE_OF",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The GRAPH.LIST command confirmed the existence of the FalkorDB graph named graphiti_live.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "5be10b958fc34b476dae31fac93309b4028d24ff956fde77c89da4a0daf1c48b",
+     "episodes_original_order": [
+      "2cef0da2-900a-49f5-8c1d-172e3cb3f67d",
+      "65b91f0d-d4ec-431c-8483-ff4d250c9c02"
+     ],
+     "valid_at": "2026-11-06T02:35:51.645000Z",
+     "invalid_at": null
+    },
+    {
+     "ordinal": 10,
+     "fact_uuid": "c7ef60c0-4cb4-4cef-9d3d-272dded95216",
+     "fact_edge_name": "MAPS_TO_GRAPH_NAME_IN",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The database configuration value 'graphiti_live' maps directly to the FalkorDB graph name.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "df73c0da046991a24c55a48020135a9754b0394b08c44952a665d36bbf343252",
+     "episodes_original_order": [
+      "0c493c7b-025e-4562-b3b4-2d5cb1470c9b"
+     ],
+     "valid_at": null,
+     "invalid_at": null
+    },
+    {
+     "ordinal": 11,
+     "fact_uuid": "e07fb561-4e2f-481e-94f4-420dffad41d5",
+     "fact_edge_name": "USES_GROUP_ID",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The gh_mcp project configuration uses the group_id 'graphiti_live' and the FalkorDB database 'graphiti_live'.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "cde4c71363176c176903f1aea6d48edcc15f7c26adff18fa6519ff742eeade87",
+     "episodes_original_order": [
+      "d5f2b156-5c62-48ae-8347-f79e61c0d5db"
+     ],
+     "valid_at": "2026-11-06T02:16:40.591000Z",
+     "invalid_at": "2026-11-06T02:33:28Z"
+    }
+   ],
+   "expected_episode_in_current_top12": true,
+   "historical_injected_source_refs": [
+    "opencode:ses_e513390dcffekimm001xBGtcI0:message:msg_1aecd887c001GaCs8HD5eGI0R9"
+   ],
+   "snapshot_comparison_note": "Current replay selects the same source as the historical frozen injection (DIRECTLY_OBSERVED_IN_CURRENT_REPLAY; historical ordering UNVERIFIED)."
+  },
+  {
+   "case_id": "S03",
+   "frozen_prompt_sha256": "f5713d4aaddf4bbf873e32fa34406cd3fccef4185751b794317ab51ae3a49004",
+   "input_to_search_sha256": "f5713d4aaddf4bbf873e32fa34406cd3fccef4185751b794317ab51ae3a49004",
+   "observed_at": "2026-11-06T16:22:19.020Z",
+   "elapsed_ms": 89,
+   "service_identity": "Graphiti MCP (http://127.0.0.1:8766/mcp) connected to FalkorDB (get_status: ok)",
+   "group_ids": [
+    "development-knowledge"
+   ],
+   "max_facts": 12,
+   "graph_snapshot": {
+    "curation_record_count": 237,
+    "persisted_record_count": 140,
+    "episode_index_count": 140,
+    "episode_index_set_sha256": "75dc74af08152157c32b4e0fd7de4435a945070951100803b35f9a98692a1e56",
+    "observed": "2026-11-06T16:22:18Z..16:22:19Z (no growth vs prior 140/140)"
+   },
+   "returned_status": "success",
+   "error": null,
+   "facts_returned": 12,
+   "facts": [
+    {
+     "ordinal": 0,
+     "fact_uuid": "6950edd9-724e-4583-968b-c8f227d6a617",
+     "fact_edge_name": "CALLS",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "memory-core.mjs calls the Graphiti MCP at 127.0.0.1:8766 with group_ids: ['development-knowledge'].",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "ff47762191a9d9bf447d02b98b40fc4d704837ef30b75e9853f0e6e0a007ef2b",
+     "episodes_original_order": [
+      "1d98ba67-7e6d-488a-aa10-93677f46ebb2"
+     ],
+     "valid_at": "2026-11-06T02:09:37Z",
+     "invalid_at": "2026-11-06T02:10:05Z"
+    },
+    {
+     "ordinal": 1,
+     "fact_uuid": "a98db709-4887-4d07-b755-8bff23760d2b",
+     "fact_edge_name": "USES_GROUP_ID",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "mcp-test.mjs uses the group ID 'development-knowledge' when calling the graphiti MCP server.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "f2a1dd5169604bccad4c1e16831331a658f59aa84aa69a138fb9428c4452e596",
+     "episodes_original_order": [
+      "e1244d4f-aee5-4bbe-a4f9-ac0f8516fd68"
+     ],
+     "valid_at": "2026-11-06T02:31:39Z",
+     "invalid_at": null
+    },
+    {
+     "ordinal": 2,
+     "fact_uuid": "8f1eff97-1f87-46b1-8861-8466b896afe0",
+     "fact_edge_name": "CALLS",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "mcp-test.mjs calls the graphiti MCP server at http://127.0.0.1:8766/mcp, which is configured for the graphiti_live graph, using group_ids ['development-knowledge'].",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "39c2306ad30734e5c0f2fb9d7245906c2b4e9793333aae2a9f563d834b3a074a",
+     "episodes_original_order": [
+      "e1244d4f-aee5-4bbe-a4f9-ac0f8516fd68"
+     ],
+     "valid_at": "2026-11-06T02:31:39Z",
+     "invalid_at": "2026-11-06T02:33:28Z"
+    },
+    {
+     "ordinal": 3,
+     "fact_uuid": "6b258002-1844-4ec4-a7c9-cae1321f7bdf",
+     "fact_edge_name": "CONNECTS_TO",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The graphiti MCP is a remote server at https://mcp.<host>.us/graphiti connected to a remote FalkorDB.",
+     "excerpt_redacted": true,
+     "raw_fact_sha256": "d0beae7bc3c399add568aba86f23c940d7f13aae3f50620a9f9347d762beddcf",
+     "episodes_original_order": [
+      "df6a6838-335f-401c-97cf-15949b302c07"
+     ],
+     "valid_at": "2026-11-06T02:33:28Z",
+     "invalid_at": null
+    },
+    {
+     "ordinal": 4,
+     "fact_uuid": "f1c171a8-f836-4ec7-b909-b3448aa3839e",
+     "fact_edge_name": "IS_COMPONENT_OF",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The Graphiti MCP server is an upstream component of the gh_mcp project, providing semantic search on port 8766.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "9ec116140178651dfe9edc60af7d845d21d604848d13df54569ef831890201dd",
+     "episodes_original_order": [
+      "a329f56c-0ce1-40d8-9bc0-afbccb6335de"
+     ],
+     "valid_at": "2026-11-06T01:27:41Z",
+     "invalid_at": "2026-11-06T02:10:05Z"
+    },
+    {
+     "ordinal": 5,
+     "fact_uuid": "c25f096a-3d8f-4474-93a4-2ff9fe08be59",
+     "fact_edge_name": "CALLS_SERVICE",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The gh_mcp script calls the Graphiti MCP server at 127.0.0.1:8766 using get_episodes and search_memory_facts with group_ids, without specifying any graph name.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "6d9f12faec96f906023823f7979e74f092dd965461982c6ceafe2536bc57a7f7",
+     "episodes_original_order": [
+      "bb9e83c9-6683-4c2b-9fba-709fb2029b00"
+     ],
+     "valid_at": "2026-11-06T01:48:42Z",
+     "invalid_at": "2026-11-06T02:10:05Z"
+    },
+    {
+     "ordinal": 6,
+     "fact_uuid": "e09206d7-9a10-436a-afa7-92c5165b0893",
+     "fact_edge_name": "USES_PER_GROUP_DATABASES_OF",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The MCP server clones the driver per group_id to use per-group FalkorDB graphs.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "8c32e89c8699b6a657e85db1ad6f3f82c58fd20a89796b46154ad237a84c586e",
+     "episodes_original_order": [
+      "560d782f-3750-4fb6-b4e8-75439bb1ef41"
+     ],
+     "valid_at": "2026-11-06T02:27:48Z",
+     "invalid_at": null
+    },
+    {
+     "ordinal": 7,
+     "fact_uuid": "24e12aff-49e0-417f-9262-dd33c5b394be",
+     "fact_edge_name": "IS_IMPLEMENTED_BY",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The Graphiti MCP server is implemented by the script /workspace/mcp_servers/graphiti/run_graphiti.py.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "9b9176937fbda12102798739febd854bd33a03b820da559e44d12fa30ea65d54",
+     "episodes_original_order": [
+      "ed80ea70-2682-4265-9639-fb4aafd9c4cd"
+     ],
+     "valid_at": "2026-11-06T02:10:49.113000Z",
+     "invalid_at": "2026-11-06T02:33:28Z"
+    },
+    {
+     "ordinal": 8,
+     "fact_uuid": "513fa969-eeab-4750-ac46-0baac49b7af5",
+     "fact_edge_name": "IS_BOUND_TO",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The MCP server is bound to the graphiti_live graph, which is empty, while the development-knowledge graph has 35 nodes.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "6063ce370c3fb25c42cd9b8bcceaec8acd8800b8d6e43db25545c4113a376700",
+     "episodes_original_order": [
+      "877a5de5-d3fe-4540-93f4-30d5b9182f8c",
+      "d90a40b1-84cf-484d-8f40-4b448451a78f"
+     ],
+     "valid_at": "2026-11-06T02:09:45.990000Z",
+     "invalid_at": "2026-11-06T02:28:51.857000Z"
+    },
+    {
+     "ordinal": 9,
+     "fact_uuid": "a067058e-a7e4-407f-9719-c9a8186e5873",
+     "fact_edge_name": "IS_LOCATED_AT",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The graphiti MCP server is located at http://127.0.0.1:8766/mcp.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "a81c0dcf6c8317008c305df686770788c0f0b454598ff6a79778275eae757cda",
+     "episodes_original_order": [
+      "e1244d4f-aee5-4bbe-a4f9-ac0f8516fd68"
+     ],
+     "valid_at": "2026-11-06T02:31:39Z",
+     "invalid_at": "2026-11-06T02:33:28Z"
+    },
+    {
+     "ordinal": 10,
+     "fact_uuid": "f679c703-92b2-4bd6-9797-fcf6c1b8bcc7",
+     "fact_edge_name": "IMPLEMENTED_VIA",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The MCP server implements per-group graph routing via the _driver_for_group function (lines 191\u2013203), where the driver is cloned with the database set to group_id.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "e7549f68dfa685ce8c26c0e630e9ffb9c21be4004224d587272e0e0a8bef80b5",
+     "episodes_original_order": [
+      "cb399069-8bbe-48b0-9283-2bf927a147de"
+     ],
+     "valid_at": "2026-11-06T01:29:27.566000Z",
+     "invalid_at": null
+    },
+    {
+     "ordinal": 11,
+     "fact_uuid": "310b859b-8d2d-4dbe-a655-aa83240d6f8b",
+     "fact_edge_name": "IMPLEMENTED_BY",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The local Graphiti MCP service at 127.0.0.1:8766 is implemented via run_graphiti.py and config.yaml.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "80e2bad3a26692a55ea5befa569ef9f2e4bd1da078cf8950e7a8f64946f25ec8",
+     "episodes_original_order": [
+      "2033506a-723e-4560-a690-9b90cb05e061"
+     ],
+     "valid_at": "2026-11-06T01:28:31Z",
+     "invalid_at": "2026-11-06T02:10:05Z"
+    }
+   ],
+   "expected_episode_in_current_top12": false,
+   "historical_injected_source_refs": [
+    "opencode:ses_e514f306cffe3F3Hy1nkJgjujC:message:msg_1aeb281c9001k9aQzqmnBUQ1oE"
+   ],
+   "snapshot_comparison_note": "Current replay selects the same source as the historical frozen injection (DIRECTLY_OBSERVED_IN_CURRENT_REPLAY; historical ordering UNVERIFIED)."
+  },
+  {
+   "case_id": "S04",
+   "frozen_prompt_sha256": "edef5ef179d32d41536dbf37c0c950517bfefb26485d1b3171eebff44d207c3e",
+   "input_to_search_sha256": "edef5ef179d32d41536dbf37c0c950517bfefb26485d1b3171eebff44d207c3e",
+   "observed_at": "2026-11-06T16:22:19.109Z",
+   "elapsed_ms": 88,
+   "service_identity": "Graphiti MCP (http://127.0.0.1:8766/mcp) connected to FalkorDB (get_status: ok)",
+   "group_ids": [
+    "development-knowledge"
+   ],
+   "max_facts": 12,
+   "graph_snapshot": {
+    "curation_record_count": 237,
+    "persisted_record_count": 140,
+    "episode_index_count": 140,
+    "episode_index_set_sha256": "75dc74af08152157c32b4e0fd7de4435a945070951100803b35f9a98692a1e56",
+    "observed": "2026-11-06T16:22:18Z..16:22:19Z (no growth vs prior 140/140)"
+   },
+   "returned_status": "success",
+   "error": null,
+   "facts_returned": 12,
+   "facts": [
+    {
+     "ordinal": 0,
+     "fact_uuid": "6940cadb-0c61-4196-9ff7-e1c54a4ceee9",
+     "fact_edge_name": "CONTAINS_DATA_WHILE_OTHER_IS_EMPTY",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The data physically lives in the development-knowledge graph (35 nodes) while graphiti_live has 0 nodes.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "b65caa5e0b6ee4781f2e96ef8e4525209bf8356ec68f442abcdf00516f397496",
+     "episodes_original_order": [
+      "07f247f9-f4d4-47f7-bf5f-6a748b60758b",
+      "9491a0f3-c73f-43da-abbe-b0bda356a88e",
+      "cece7d0b-7f34-4bcc-b852-72a9df8f16ba"
+     ],
+     "valid_at": "2026-11-06T02:08:48.216000Z",
+     "invalid_at": "2026-11-06T02:28:51.857000Z"
+    },
+    {
+     "ordinal": 1,
+     "fact_uuid": "513fa969-eeab-4750-ac46-0baac49b7af5",
+     "fact_edge_name": "IS_BOUND_TO",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The MCP server is bound to the graphiti_live graph, which is empty, while the development-knowledge graph has 35 nodes.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "6063ce370c3fb25c42cd9b8bcceaec8acd8800b8d6e43db25545c4113a376700",
+     "episodes_original_order": [
+      "877a5de5-d3fe-4540-93f4-30d5b9182f8c",
+      "d90a40b1-84cf-484d-8f40-4b448451a78f"
+     ],
+     "valid_at": "2026-11-06T02:09:45.990000Z",
+     "invalid_at": "2026-11-06T02:28:51.857000Z"
+    },
+    {
+     "ordinal": 2,
+     "fact_uuid": "ec313e91-1229-4ff6-92eb-311e59e3aa96",
+     "fact_edge_name": "CONTAINS_DATA_WHILE_OTHER_IS_EMPTY",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The data physically lives in the development-knowledge graph (35 nodes) while ghdev_gh_mcp has 0 nodes.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "e72c6f6f169a1462a2d13b2e84a058f56f810df4184378b3da6546b536fc52e9",
+     "episodes_original_order": [
+      "07f247f9-f4d4-47f7-bf5f-6a748b60758b",
+      "9491a0f3-c73f-43da-abbe-b0bda356a88e",
+      "cece7d0b-7f34-4bcc-b852-72a9df8f16ba"
+     ],
+     "valid_at": "2026-11-06T02:08:48.216000Z",
+     "invalid_at": "2026-11-06T02:28:51.857000Z"
+    },
+    {
+     "ordinal": 3,
+     "fact_uuid": "34e120c2-80e1-444d-87ec-eef9b3402cea",
+     "fact_edge_name": "IS_PART_OF",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The graphiti_live graph, which is empty with 0 nodes, is part of the gh_mcp project.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "360878da619876ec9342c55242d1e64d627a18ce34bd082b2bcc221f3e996d8b",
+     "episodes_original_order": [
+      "5b10a081-ee7f-4723-9ae3-8618233f4dba",
+      "d331a008-9840-4343-93f6-5d8db642e70c"
+     ],
+     "valid_at": "2026-11-06T02:45:03Z",
+     "invalid_at": null
+    },
+    {
+     "ordinal": 4,
+     "fact_uuid": "fdea781a-97c8-4ade-912e-4cb9ae212850",
+     "fact_edge_name": "USES_DEFAULT_GRAPH",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The MCP server's configuration uses the graphiti_live FalkorDB graph by default.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "a53adc0dfc869e11b955d4fa00839f93cb31d744ad738f6565e04720cab3c11c",
+     "episodes_original_order": [
+      "83b258b7-1475-4a19-a981-3d4061d28d8e"
+     ],
+     "valid_at": "2026-11-06T02:00:03.277000Z",
+     "invalid_at": "2026-11-06T02:33:28Z"
+    },
+    {
+     "ordinal": 5,
+     "fact_uuid": "6950edd9-724e-4583-968b-c8f227d6a617",
+     "fact_edge_name": "CALLS",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "memory-core.mjs calls the Graphiti MCP at 127.0.0.1:8766 with group_ids: ['development-knowledge'].",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "ff47762191a9d9bf447d02b98b40fc4d704837ef30b75e9853f0e6e0a007ef2b",
+     "episodes_original_order": [
+      "1d98ba67-7e6d-488a-aa10-93677f46ebb2"
+     ],
+     "valid_at": "2026-11-06T02:09:37Z",
+     "invalid_at": "2026-11-06T02:10:05Z"
+    },
+    {
+     "ordinal": 6,
+     "fact_uuid": "f18dddf9-5279-4d10-8663-2c5feef46867",
+     "fact_edge_name": "DERIVED_FROM",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The graph name graphiti_live comes from the Graphiti MCP server configuration.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "ea6033379e089367a4d802a8e794e8c917b72ef11810a15e6233b02d9d5c52cc",
+     "episodes_original_order": [
+      "1d98ba67-7e6d-488a-aa10-93677f46ebb2",
+      "e1244d4f-aee5-4bbe-a4f9-ac0f8516fd68"
+     ],
+     "valid_at": "2026-11-06T02:09:37Z",
+     "invalid_at": null
+    },
+    {
+     "ordinal": 7,
+     "fact_uuid": "a364f523-3b30-453c-80eb-01a2b438e3c2",
+     "fact_edge_name": "DOES_NOT_ROUTE_TO_FOR_GROUP_ID_DEVELOPMENT_KNOWLEDGE",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "When group_id is 'development-knowledge', FalkorDB does not route queries to the graphiti_live graph.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "453bb24e4eed992ae6e0024251038b24f8bcfc0a144a2f10db35de3c3e7a581e",
+     "episodes_original_order": [
+      "d19c4f9e-7216-499a-8057-b638b88e2fa3"
+     ],
+     "valid_at": "2026-11-06T03:01:15Z",
+     "invalid_at": null
+    },
+    {
+     "ordinal": 8,
+     "fact_uuid": "d7054007-4c7d-4857-a0e2-ce688bfecb05",
+     "fact_edge_name": "IS_PART_OF",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The development-knowledge graph, which contains 35 nodes, is part of the gh_mcp project.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "6bbe1e611fcd2f2050f0ffda1be5d575c93418672b8d21dfae7a91a57da0f847",
+     "episodes_original_order": [
+      "5b10a081-ee7f-4723-9ae3-8618233f4dba",
+      "d331a008-9840-4343-93f6-5d8db642e70c"
+     ],
+     "valid_at": "2026-11-06T02:45:03Z",
+     "invalid_at": null
+    },
+    {
+     "ordinal": 9,
+     "fact_uuid": "8d1e7656-2a72-4bf8-bd0a-1a92d5e9759c",
+     "fact_edge_name": "FILTERS_BY_GROUP_ID",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "A script queries the 'graphiti_live' graph filtered by group_id='development-knowledge'.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "a7d45a06a761c5244965d648d5e2f5e1329d91f0922de9249ad3966f46c78721",
+     "episodes_original_order": [
+      "c48cd614-4f98-49f7-90d0-5b6a418368fc"
+     ],
+     "valid_at": "2026-11-05T21:10:04Z",
+     "invalid_at": "2026-11-06T03:00:55.201000Z"
+    },
+    {
+     "ordinal": 10,
+     "fact_uuid": "8f1eff97-1f87-46b1-8861-8466b896afe0",
+     "fact_edge_name": "CALLS",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "mcp-test.mjs calls the graphiti MCP server at http://127.0.0.1:8766/mcp, which is configured for the graphiti_live graph, using group_ids ['development-knowledge'].",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "39c2306ad30734e5c0f2fb9d7245906c2b4e9793333aae2a9f563d834b3a074a",
+     "episodes_original_order": [
+      "e1244d4f-aee5-4bbe-a4f9-ac0f8516fd68"
+     ],
+     "valid_at": "2026-11-06T02:31:39Z",
+     "invalid_at": "2026-11-06T02:33:28Z"
+    },
+    {
+     "ordinal": 11,
+     "fact_uuid": "4beafec6-da06-4458-85fa-6cefb1c9405b",
+     "fact_edge_name": "USES_DATABASE",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The graphiti MCP server is configured to use the FalkorDB graph named 'graphiti_live' as its database.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "84a221724cee1aef53dfb759b3582272a4d0cd2881642471d5f251ea620faddb",
+     "episodes_original_order": [
+      "ea8cedd4-bece-498c-a903-710b20d7e6be"
+     ],
+     "valid_at": "2026-11-06T02:31:11.906000Z",
+     "invalid_at": "2026-11-06T02:33:28Z"
+    }
+   ],
+   "expected_episode_in_current_top12": true,
+   "historical_injected_source_refs": [
+    "opencode:ses_e51631cbfffeIAww75wYB0QLvR:message:msg_1ae9d8d9e0011vCYAm7ru8Z44E"
+   ],
+   "snapshot_comparison_note": "Current replay selects the same source as the historical frozen injection (DIRECTLY_OBSERVED_IN_CURRENT_REPLAY; historical ordering UNVERIFIED)."
+  },
+  {
+   "case_id": "S05",
+   "frozen_prompt_sha256": "cb8c0b4c3628dfbf25298abae39f83f470093e0d7f7e3a4a631799c9b257a1e4",
+   "input_to_search_sha256": "cb8c0b4c3628dfbf25298abae39f83f470093e0d7f7e3a4a631799c9b257a1e4",
+   "observed_at": "2026-11-06T16:22:19.197Z",
+   "elapsed_ms": 90,
+   "service_identity": "Graphiti MCP (http://127.0.0.1:8766/mcp) connected to FalkorDB (get_status: ok)",
+   "group_ids": [
+    "development-knowledge"
+   ],
+   "max_facts": 12,
+   "graph_snapshot": {
+    "curation_record_count": 237,
+    "persisted_record_count": 140,
+    "episode_index_count": 140,
+    "episode_index_set_sha256": "75dc74af08152157c32b4e0fd7de4435a945070951100803b35f9a98692a1e56",
+    "observed": "2026-11-06T16:22:18Z..16:22:19Z (no growth vs prior 140/140)"
+   },
+   "returned_status": "success",
+   "error": null,
+   "facts_returned": 12,
+   "facts": [
+    {
+     "ordinal": 0,
+     "fact_uuid": "4640a08b-bf5d-437c-a447-7e9c87b96812",
+     "fact_edge_name": "HAS_GRAPH",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The FalkorDB layout includes an empty graph named 'graphiti_live' with 0 nodes.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "e46096e69d2ebb1b84209900c35029ea5f6b13e81ea42f291cd0401ddcdafb6e",
+     "episodes_original_order": [
+      "c48cd614-4f98-49f7-90d0-5b6a418368fc",
+      "97defc44-679e-4d77-bb8a-03e28e4febc6",
+      "6969a684-8bb2-45c2-86a8-47a3f1b7b76b",
+      "15a2f72d-6aa9-481d-ae5a-9bf2b679c273"
+     ],
+     "valid_at": "2026-11-05T21:10:04Z",
+     "invalid_at": "2026-11-06T01:49:07Z"
+    },
+    {
+     "ordinal": 1,
+     "fact_uuid": "b82fa813-081e-4711-827c-e3f59601ccf5",
+     "fact_edge_name": "HAS_GRAPH",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The FalkorDB layout uses per-group graphs, including a graph named 'development-knowledge'.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "6f62cd9a46fe911e4d272bda128fbf741c23d187e34cad0e32f7713bebb180f5",
+     "episodes_original_order": [
+      "c48cd614-4f98-49f7-90d0-5b6a418368fc",
+      "97defc44-679e-4d77-bb8a-03e28e4febc6",
+      "855c0459-7405-41df-91a3-aab8cfc8aff6",
+      "6969a684-8bb2-45c2-86a8-47a3f1b7b76b",
+      "ee8f2b96-4fca-4e83-b384-03582880eacc"
+     ],
+     "valid_at": "2026-11-05T21:10:04Z",
+     "invalid_at": null
+    },
+    {
+     "ordinal": 2,
+     "fact_uuid": "ad5eef95-7ed6-46fb-af36-c0632722c739",
+     "fact_edge_name": "CONTAINS_GRAPH",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "FalkorDB (127.0.0.1:6382) contains the graph 'graphiti_live'.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "f8b78e14473cf72af47530659e5df09058b2ce0c2168292950f6f72d32fe0994",
+     "episodes_original_order": [
+      "855c0459-7405-41df-91a3-aab8cfc8aff6",
+      "83b258b7-1475-4a19-a981-3d4061d28d8e",
+      "d5f2b156-5c62-48ae-8347-f79e61c0d5db",
+      "09ab3aa9-f4c2-4e4e-8ebe-424eddc95b25",
+      "ccbda0f4-08f7-4df1-a852-2d9035982ec2",
+      "ee8f2b96-4fca-4e83-b384-03582880eacc",
+      "3310d59c-070b-43e0-849b-f83180866818"
+     ],
+     "valid_at": "2026-11-06T02:07:48Z",
+     "invalid_at": null
+    },
+    {
+     "ordinal": 3,
+     "fact_uuid": "c6d4c379-bfce-4e4b-b224-45db7e9f195b",
+     "fact_edge_name": "HAS_GRAPH",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The FalkorDB layout uses per-group graphs, including a graph named 'ghdev_gh_mcp'.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "2be927c89dda8e787938522a8d0867cd89c2ba69962496d48b7f824262fa9af7",
+     "episodes_original_order": [
+      "c48cd614-4f98-49f7-90d0-5b6a418368fc",
+      "97defc44-679e-4d77-bb8a-03e28e4febc6",
+      "855c0459-7405-41df-91a3-aab8cfc8aff6",
+      "6969a684-8bb2-45c2-86a8-47a3f1b7b76b",
+      "ee8f2b96-4fca-4e83-b384-03582880eacc"
+     ],
+     "valid_at": "2026-11-05T21:10:04Z",
+     "invalid_at": "2026-11-06T00:16:10.001000Z"
+    },
+    {
+     "ordinal": 4,
+     "fact_uuid": "e3c81b80-9ef2-4b89-aabf-eadd872c3abb",
+     "fact_edge_name": "CONFIRMS_EXISTENCE_OF",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The GRAPH.LIST command confirmed the existence of the FalkorDB graph named graphiti_live.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "5be10b958fc34b476dae31fac93309b4028d24ff956fde77c89da4a0daf1c48b",
+     "episodes_original_order": [
+      "2cef0da2-900a-49f5-8c1d-172e3cb3f67d",
+      "65b91f0d-d4ec-431c-8483-ff4d250c9c02"
+     ],
+     "valid_at": "2026-11-06T02:35:51.645000Z",
+     "invalid_at": null
+    },
+    {
+     "ordinal": 5,
+     "fact_uuid": "1f34eddf-4ec8-4bd9-9779-81f4a972d8a5",
+     "fact_edge_name": "CONTAINS_GRAPH",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "FalkorDB on port 6382 contains the graph named development-knowledge, as confirmed by GRAPH.LIST showing exactly three graphs.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "5452b606c08abfc9f79f5041623cae5d1107c5fe7c74ac2e18efdd92f7cd1e75",
+     "episodes_original_order": [
+      "3310d59c-070b-43e0-849b-f83180866818"
+     ],
+     "valid_at": "2026-11-06T02:56:05Z",
+     "invalid_at": null
+    },
+    {
+     "ordinal": 6,
+     "fact_uuid": "0586f0da-c82d-4e25-ba10-4cf018ddd990",
+     "fact_edge_name": "CONFIRMS_EXISTENCE_OF",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The GRAPH.LIST command confirmed the existence of the FalkorDB graph named development-knowledge.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "5548ad26219bfd5acea711300bb92745a798df28b520d9637bb0af59cbaae738",
+     "episodes_original_order": [
+      "2cef0da2-900a-49f5-8c1d-172e3cb3f67d",
+      "65b91f0d-d4ec-431c-8483-ff4d250c9c02"
+     ],
+     "valid_at": "2026-11-06T02:35:51.645000Z",
+     "invalid_at": null
+    },
+    {
+     "ordinal": 7,
+     "fact_uuid": "fe4c81b9-aa63-4b17-9ade-aaa50601ba2f",
+     "fact_edge_name": "CONFIRMS_EXISTENCE_OF",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The GRAPH.LIST command confirmed the existence of the FalkorDB graph named ghdev_gh_mcp.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "636f7701ec4cd1bb0e6c4074204ec4066a095c29e1e85cad9d09062a8abc8568",
+     "episodes_original_order": [
+      "2cef0da2-900a-49f5-8c1d-172e3cb3f67d",
+      "65b91f0d-d4ec-431c-8483-ff4d250c9c02"
+     ],
+     "valid_at": "2026-11-06T02:35:51.645000Z",
+     "invalid_at": null
+    },
+    {
+     "ordinal": 8,
+     "fact_uuid": "6f3a7615-3e2e-463d-893e-648b3fe49254",
+     "fact_edge_name": "CONTAINS_GRAPH",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "FalkorDB on port 6382 contains the graph named ghdev_gh_mcp, as confirmed by GRAPH.LIST showing exactly three graphs.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "f81ca44d23a016eca1b30957dd505ab83746f8ffab3adb9d7190a2d9793e0d41",
+     "episodes_original_order": [
+      "3310d59c-070b-43e0-849b-f83180866818"
+     ],
+     "valid_at": "2026-11-06T02:56:05Z",
+     "invalid_at": null
+    },
+    {
+     "ordinal": 9,
+     "fact_uuid": "c7ef60c0-4cb4-4cef-9d3d-272dded95216",
+     "fact_edge_name": "MAPS_TO_GRAPH_NAME_IN",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The database configuration value 'graphiti_live' maps directly to the FalkorDB graph name.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "df73c0da046991a24c55a48020135a9754b0394b08c44952a665d36bbf343252",
+     "episodes_original_order": [
+      "0c493c7b-025e-4562-b3b4-2d5cb1470c9b"
+     ],
+     "valid_at": null,
+     "invalid_at": null
+    },
+    {
+     "ordinal": 10,
+     "fact_uuid": "fdea781a-97c8-4ade-912e-4cb9ae212850",
+     "fact_edge_name": "USES_DEFAULT_GRAPH",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The MCP server's configuration uses the graphiti_live FalkorDB graph by default.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "a53adc0dfc869e11b955d4fa00839f93cb31d744ad738f6565e04720cab3c11c",
+     "episodes_original_order": [
+      "83b258b7-1475-4a19-a981-3d4061d28d8e"
+     ],
+     "valid_at": "2026-11-06T02:00:03.277000Z",
+     "invalid_at": "2026-11-06T02:33:28Z"
+    },
+    {
+     "ordinal": 11,
+     "fact_uuid": "708447e6-8f47-4a4d-aaf6-d9674bd0e75d",
+     "fact_edge_name": "CONTAINS",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "As of 2026-11-06T02:21:02.894Z, the live FalkorDB state shows that the development-knowledge graph contains 35 nodes.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "f6d450b7a8a57248d887c21fd24bae47904871ab7ae522857f4fea2819abc3c0",
+     "episodes_original_order": [
+      "15a2f72d-6aa9-481d-ae5a-9bf2b679c273"
+     ],
+     "valid_at": "2026-11-06T02:21:02.894000Z",
+     "invalid_at": "2026-11-06T02:28:51.857000Z"
+    }
+   ],
+   "expected_episode_in_current_top12": false,
+   "historical_injected_source_refs": [
+    "opencode:ses_e5276247fffewUAeyTeAea2tia:message:msg_1ad8c14d6001aDoSonKPyEUW9E"
+   ],
+   "snapshot_comparison_note": "Current replay selects the same source as the historical frozen injection (DIRECTLY_OBSERVED_IN_CURRENT_REPLAY; historical ordering UNVERIFIED)."
+  },
+  {
+   "case_id": "S06",
+   "frozen_prompt_sha256": "7e14fc4edade633393e9edc1b7a5040d98128b02aa760568c00bb9cd979c0f62",
+   "input_to_search_sha256": "7e14fc4edade633393e9edc1b7a5040d98128b02aa760568c00bb9cd979c0f62",
+   "observed_at": "2026-11-06T16:22:19.287Z",
+   "elapsed_ms": 87,
+   "service_identity": "Graphiti MCP (http://127.0.0.1:8766/mcp) connected to FalkorDB (get_status: ok)",
+   "group_ids": [
+    "development-knowledge"
+   ],
+   "max_facts": 12,
+   "graph_snapshot": {
+    "curation_record_count": 237,
+    "persisted_record_count": 140,
+    "episode_index_count": 140,
+    "episode_index_set_sha256": "75dc74af08152157c32b4e0fd7de4435a945070951100803b35f9a98692a1e56",
+    "observed": "2026-11-06T16:22:18Z..16:22:19Z (no growth vs prior 140/140)"
+   },
+   "returned_status": "success",
+   "error": null,
+   "facts_returned": 12,
+   "facts": [
+    {
+     "ordinal": 0,
+     "fact_uuid": "28893e36-9bb0-42d0-9d9d-64c51e6edf21",
+     "fact_edge_name": "HAS_ATTRIBUTE",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The graphiti group for the gh_mcp project was changed from 'ghdev_gh_mcp' to 'development-knowledge', which is the only semantic difference from the cutover backup, and production routing must not be reverted.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "5cf3e919381b8862a4f17a422a6d96b02a570fec3904fd93ba69576d9930706c",
+     "episodes_original_order": [
+      "6e7956be-498c-47cf-af4d-07220ee8507e"
+     ],
+     "valid_at": "2026-11-06T00:16:10.001000Z",
+     "invalid_at": "2026-11-06T02:16:40.591000Z"
+    },
+    {
+     "ordinal": 1,
+     "fact_uuid": "a9ff82e1-404d-4bf1-9133-92cda3f422b9",
+     "fact_edge_name": "REFERENCES_IN_COMMIT_MESSAGE",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The git log for refs/pr/86 shows commit d879a67 with the message 'Stage source-backed production terminal failure adjudication and descriptive Graphiti cutover (#81)', indicating a relationship between the git repository state and the Graphiti component.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "6a49cc56247a5aec8b2347306f925d82cab9e48d9e7bd8e79aaede7daa5f763f",
+     "episodes_original_order": [
+      "94a939f6-a4fc-4692-a387-29338ed9d2c4"
+     ],
+     "valid_at": "2026-11-05T22:52:12.411000Z",
+     "invalid_at": null
+    },
+    {
+     "ordinal": 2,
+     "fact_uuid": "b6c03227-0af9-462a-b7be-cf5601f2c5d6",
+     "fact_edge_name": "HAS_VALUE",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The environment variable GRAPHITI_RECALL_GROUP is set to development-knowledge.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "72e431aad088e86824d16a25925cacb3b544acb824a5f59c41430c0ad25bc6b9",
+     "episodes_original_order": [
+      "1409c260-92e9-474f-96be-6da4216908f7"
+     ],
+     "valid_at": "2026-11-06T02:19:32.962000Z",
+     "invalid_at": null
+    },
+    {
+     "ordinal": 3,
+     "fact_uuid": "f18dddf9-5279-4d10-8663-2c5feef46867",
+     "fact_edge_name": "DERIVED_FROM",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The graph name graphiti_live comes from the Graphiti MCP server configuration.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "ea6033379e089367a4d802a8e794e8c917b72ef11810a15e6233b02d9d5c52cc",
+     "episodes_original_order": [
+      "1d98ba67-7e6d-488a-aa10-93677f46ebb2",
+      "e1244d4f-aee5-4bbe-a4f9-ac0f8516fd68"
+     ],
+     "valid_at": "2026-11-06T02:09:37Z",
+     "invalid_at": null
+    },
+    {
+     "ordinal": 4,
+     "fact_uuid": "a364f523-3b30-453c-80eb-01a2b438e3c2",
+     "fact_edge_name": "DOES_NOT_ROUTE_TO_FOR_GROUP_ID_DEVELOPMENT_KNOWLEDGE",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "When group_id is 'development-knowledge', FalkorDB does not route queries to the graphiti_live graph.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "453bb24e4eed992ae6e0024251038b24f8bcfc0a144a2f10db35de3c3e7a581e",
+     "episodes_original_order": [
+      "d19c4f9e-7216-499a-8057-b638b88e2fa3"
+     ],
+     "valid_at": "2026-11-06T03:01:15Z",
+     "invalid_at": null
+    },
+    {
+     "ordinal": 5,
+     "fact_uuid": "0fd53409-2d2b-46b4-9e22-2512f48b6f39",
+     "fact_edge_name": "IS_PART_OF_PROJECT",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The graphiti component is part of the gh_mcp project, as indicated by the test commit 'test(graphiti): reject stale fallback after unbound long prompt (#81)' in the opencode-operational-schema-guard repository.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "a84e809d5e34e13b9dc263517607cb050c555d7ff3c325538cc9707ac63f6e3c",
+     "episodes_original_order": [
+      "c059ab8f-0b24-4fc6-b0cd-730178acb247"
+     ],
+     "valid_at": "2026-11-06T04:14:07Z",
+     "invalid_at": null
+    },
+    {
+     "ordinal": 6,
+     "fact_uuid": "1562d34a-15d8-4350-90cd-3926d55db79f",
+     "fact_edge_name": "DERIVES_GRAPH_NAME_FROM_GROUP_ID_FOR",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The Graphiti driver derives the FalkorDB graph name from group_id.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "5fec4e21adb6aa9d87d6963f6f511422385f02d709505b9562bb9f0e10e3f0b1",
+     "episodes_original_order": [
+      "950cc4e3-418c-4f3d-b7a6-40da2bdf2c9f"
+     ],
+     "valid_at": "2026-11-06T01:56:14Z",
+     "invalid_at": null
+    },
+    {
+     "ordinal": 7,
+     "fact_uuid": "2f7d2c15-bd2a-45b3-85c7-7b9322e04014",
+     "fact_edge_name": "HAS_LIMITATION",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The absence of Graphiti context injection in Q2's session, while Q1 and Q3 each had 6 injection markers, aligns with the relevance filter's known limitation.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "a9d48b74a915108046dde230422cad0acaf963159886e7adab8038368975920b",
+     "episodes_original_order": [
+      "76d0d36e-ec85-475b-95a5-ae7d081b2d4a"
+     ],
+     "valid_at": "2026-11-06T01:05:32.900000Z",
+     "invalid_at": null
+    },
+    {
+     "ordinal": 8,
+     "fact_uuid": "34e120c2-80e1-444d-87ec-eef9b3402cea",
+     "fact_edge_name": "IS_PART_OF",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The graphiti_live graph, which is empty with 0 nodes, is part of the gh_mcp project.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "360878da619876ec9342c55242d1e64d627a18ce34bd082b2bcc221f3e996d8b",
+     "episodes_original_order": [
+      "5b10a081-ee7f-4723-9ae3-8618233f4dba",
+      "d331a008-9840-4343-93f6-5d8db642e70c"
+     ],
+     "valid_at": "2026-11-06T02:45:03Z",
+     "invalid_at": null
+    },
+    {
+     "ordinal": 9,
+     "fact_uuid": "f1e47f17-eaa5-4233-ae10-66a526323cfc",
+     "fact_edge_name": "INVOKES",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The tool rtk invoked the git command to fetch origin pull/86/head into refs/pr/86 and then list the last 10 commits for that ref, which revealed commit d879a67 titled 'Stage source-backed production terminal failure adjudication and descriptive Graphiti cutover (#81)'.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "61e0f6103f625346b46b18efaf0e4f0bd098a68613deae8d53c7910ae826bb73",
+     "episodes_original_order": [
+      "94a939f6-a4fc-4692-a387-29338ed9d2c4"
+     ],
+     "valid_at": "2026-11-05T22:52:12.411000Z",
+     "invalid_at": null
+    },
+    {
+     "ordinal": 10,
+     "fact_uuid": "3c079981-ee4c-48cc-aa95-2325856bb3e1",
+     "fact_edge_name": "ASSOCIATED_WITH",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The gh_mcp project is associated with the 'development-knowledge' scope group, replacing the previous 'ghdev_gh_mcp' identifier in the graphiti configuration.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "0ebf366bfd1ecd0319b420b43bb875a6fb6817b016c4453cb2ce7af33b29dc88",
+     "episodes_original_order": [
+      "6e7956be-498c-47cf-af4d-07220ee8507e"
+     ],
+     "valid_at": "2026-11-06T00:16:10.001000Z",
+     "invalid_at": "2026-11-06T02:16:40.591000Z"
+    },
+    {
+     "ordinal": 11,
+     "fact_uuid": "6950edd9-724e-4583-968b-c8f227d6a617",
+     "fact_edge_name": "CALLS",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "memory-core.mjs calls the Graphiti MCP at 127.0.0.1:8766 with group_ids: ['development-knowledge'].",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "ff47762191a9d9bf447d02b98b40fc4d704837ef30b75e9853f0e6e0a007ef2b",
+     "episodes_original_order": [
+      "1d98ba67-7e6d-488a-aa10-93677f46ebb2"
+     ],
+     "valid_at": "2026-11-06T02:09:37Z",
+     "invalid_at": "2026-11-06T02:10:05Z"
+    }
+   ],
+   "expected_episode_in_current_top12": true,
+   "historical_injected_source_refs": [
+    "opencode:ses_e5216f8ffffeoWWX3dJDu4rpL7:tool:call_2a73d67cddde989d"
+   ],
+   "snapshot_comparison_note": "Current replay selects the same source as the historical frozen injection (DIRECTLY_OBSERVED_IN_CURRENT_REPLAY; historical ordering UNVERIFIED)."
+  },
+  {
+   "case_id": "S07",
+   "frozen_prompt_sha256": "59a5d42a7c98aa45942deee6053882acb6d457a9832fa81665d92d9349065b40",
+   "input_to_search_sha256": "59a5d42a7c98aa45942deee6053882acb6d457a9832fa81665d92d9349065b40",
+   "observed_at": "2026-11-06T16:22:19.374Z",
+   "elapsed_ms": 84,
+   "service_identity": "Graphiti MCP (http://127.0.0.1:8766/mcp) connected to FalkorDB (get_status: ok)",
+   "group_ids": [
+    "development-knowledge"
+   ],
+   "max_facts": 12,
+   "graph_snapshot": {
+    "curation_record_count": 237,
+    "persisted_record_count": 140,
+    "episode_index_count": 140,
+    "episode_index_set_sha256": "75dc74af08152157c32b4e0fd7de4435a945070951100803b35f9a98692a1e56",
+    "observed": "2026-11-06T16:22:18Z..16:22:19Z (no growth vs prior 140/140)"
+   },
+   "returned_status": "success",
+   "error": null,
+   "facts_returned": 12,
+   "facts": [
+    {
+     "ordinal": 0,
+     "fact_uuid": "97d9e4ab-1f82-4cf7-943d-3e82a8b945ef",
+     "fact_edge_name": "USES_GATE_SOURCE",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The ExecStart command for post-exit-drain.py uses openviking_commit_gate.py as its --gate-source argument.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "67980ac378042f4779a60d138cd7664627b0f55b94da97d5c0acf3689da2d776",
+     "episodes_original_order": [
+      "e14ae183-8b88-429e-be2d-7e8ee608b6aa"
+     ],
+     "valid_at": "2026-11-05T22:51:44Z",
+     "invalid_at": null
+    },
+    {
+     "ordinal": 1,
+     "fact_uuid": "d974a695-b35f-4565-9a23-6c769f2be341",
+     "fact_edge_name": "USES_CANONICAL_GATE",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The Production admitted post-exit candidate curator service uses the canonical EX gate.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "5a15a547d86762aa093eb09c35d0782decdb427eabc993e16ed52f575283592d",
+     "episodes_original_order": [
+      "e147822f-d6ea-439a-967b-ad6eb78ae428"
+     ],
+     "valid_at": "2026-11-05T20:52:56Z",
+     "invalid_at": null
+    },
+    {
+     "ordinal": 2,
+     "fact_uuid": "e827f6a2-d138-42a8-be20-808ef3366cc4",
+     "fact_edge_name": "MANAGES",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "systemd manages ghdev-curator-prod.service, which exited with status 2/INVALIDARGUMENT and failed with result 'exit-code' on Nov 05 at 20:15:53.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "dd6ae9c236744b52edb070c4385eb83698c6e54b1a6d43b594dbe89afb411538",
+     "episodes_original_order": [
+      "ddb65fb8-1b9c-46a5-ade2-c7c153aced87"
+     ],
+     "valid_at": "2026-11-05T20:15:53Z",
+     "invalid_at": null
+    },
+    {
+     "ordinal": 3,
+     "fact_uuid": "6dfd751e-63af-4c23-b9ec-4128b30b178a",
+     "fact_edge_name": "IS_PART_OF",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The native hook-shape and recall-association probe is part of the PRE_EXIT_ACTIONS for the gh_mcp project.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "884f91bd8ef47f4325b2b2f5f4d39605adb3f5de4057fca9865be5cc97e77af1",
+     "episodes_original_order": [
+      "072316ee-7d48-4856-be87-6c39a8052f21"
+     ],
+     "valid_at": "2026-11-06T04:53:19Z",
+     "invalid_at": null
+    },
+    {
+     "ordinal": 4,
+     "fact_uuid": "e9ff87a2-0650-4701-bed0-0cac7b35efc3",
+     "fact_edge_name": "HOSTS_SERVICE",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The host <host> ran the ghdev-curator-prod.service, which exited with status 2/INVALIDARGUMENT on Nov 05 at 20:43:26.",
+     "excerpt_redacted": true,
+     "raw_fact_sha256": "2bf1dc5971d9a27fcadf86f2bf269f897c8ba92a3cadc7fa1bd376af67588890",
+     "episodes_original_order": [
+      "48ab85d5-b0c7-4e40-a98c-4851a433be6f"
+     ],
+     "valid_at": "2026-11-05T20:43:26Z",
+     "invalid_at": null
+    },
+    {
+     "ordinal": 5,
+     "fact_uuid": "2f53a672-78c4-4ada-b328-abc64a0e4f87",
+     "fact_edge_name": "RUNS_ON",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The ghdev-curator-prod.service ran on the host <host> and its main process exited with code=exited, status=2/INVALIDARGUMENT, failing with result 'exit-code' at Nov 05 12:40:38.",
+     "excerpt_redacted": true,
+     "raw_fact_sha256": "2042264b9065af50ea0fb08b2a5a2d1efeed53c2a36e10ead638acdac39f373c",
+     "episodes_original_order": [
+      "402b2c73-9ae9-42df-8bf3-6124292ff220"
+     ],
+     "valid_at": "2026-11-05T12:40:38Z",
+     "invalid_at": "2026-11-05T20:15:53Z"
+    },
+    {
+     "ordinal": 6,
+     "fact_uuid": "e9a396fd-80c4-4b78-a12a-39ccf7335327",
+     "fact_edge_name": "HOSTS_SERVICE",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The host <host> runs the Production admitted post-exit candidate curator service via systemd.",
+     "excerpt_redacted": true,
+     "raw_fact_sha256": "be037f8b8495d0133389b41cb16ff1b87c6880a0b2da22f068683aaee169c811",
+     "episodes_original_order": [
+      "e147822f-d6ea-439a-967b-ad6eb78ae428"
+     ],
+     "valid_at": "2026-11-05T20:52:56Z",
+     "invalid_at": null
+    },
+    {
+     "ordinal": 7,
+     "fact_uuid": "fedd5812-87d4-455a-bf11-a08190f78de8",
+     "fact_edge_name": "MANAGES_SERVICE",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "On the host <host>, systemd managed the ghdev-curator-prod.service, which exited with status 2/INVALIDARGUMENT on Nov 05 at 20:43:26.",
+     "excerpt_redacted": true,
+     "raw_fact_sha256": "8716ed77e9faea947059e74b01f33fc9ff84fcf48d45cc9e0a2b6f7dc7b8faf7",
+     "episodes_original_order": [
+      "48ab85d5-b0c7-4e40-a98c-4851a433be6f"
+     ],
+     "valid_at": "2026-11-05T20:43:26Z",
+     "invalid_at": null
+    },
+    {
+     "ordinal": 8,
+     "fact_uuid": "706b72f5-f8bb-4d95-bc36-aa67f6180516",
+     "fact_edge_name": "HAS_PERSISTED_FORMAT",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "FalkorDB's persisted AOF is in effects format v2, while the running build can only load v3, causing a crash loop.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "b7f7f651b9760c033b575afef7dcf3d95e3a52fbc1a6fb6a33e3c94bc5a5d7e1",
+     "episodes_original_order": [
+      "90f8048e-1fb9-40fb-928a-9c0326e0d4e5"
+     ],
+     "valid_at": "2026-11-05T20:33:23Z",
+     "invalid_at": null
+    },
+    {
+     "ordinal": 9,
+     "fact_uuid": "10631248-64a4-4bca-8581-0a4e3c6d1baf",
+     "fact_edge_name": "STARTS_SERVICE_FOR",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "On Nov 05 20:52:56, systemd on host <host> started the Production admitted post-exit candidate curator service, which is associated with the development-knowledge group and the EX gate.",
+     "excerpt_redacted": true,
+     "raw_fact_sha256": "80a8a555015ad923111ace1470ba65ad7647e48dd45f974019a7023d2de7f228",
+     "episodes_original_order": [
+      "e147822f-d6ea-439a-967b-ad6eb78ae428"
+     ],
+     "valid_at": "2026-11-05T20:52:56Z",
+     "invalid_at": null
+    },
+    {
+     "ordinal": 10,
+     "fact_uuid": "d6b6e219-c3ec-42d1-8aef-71da375bb748",
+     "fact_edge_name": "CAUSED_FAILURE_BY",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The v2-harness 0/25 failures were caused by stale-process contamination from orphan standalone opencode processes.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "da87056e274d6620f3ca987ff9bab71208230d5b3d5eb96aa51724a0e509a043",
+     "episodes_original_order": [
+      "33088c81-1857-47ba-85b8-0e336e0a54ac"
+     ],
+     "valid_at": "2026-11-06T02:11:40.249000Z",
+     "invalid_at": null
+    },
+    {
+     "ordinal": 11,
+     "fact_uuid": "c941d0b0-2b38-4a43-a188-00920f03415f",
+     "fact_edge_name": "BELONGS_TO_GROUP",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The ghdev-curator-prod.service, a production admitted post-exit candidate curator with canonical EX gate, belongs to the development-knowledge group.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "d95987e5bd6a126fbe348df624334b4d7d360b49c3a3d6f635dd4c65de93d952",
+     "episodes_original_order": [
+      "9520b138-580e-40d0-b58d-84fb63221580",
+      "e147822f-d6ea-439a-967b-ad6eb78ae428"
+     ],
+     "valid_at": "2026-11-05T20:42:44Z",
+     "invalid_at": null
+    }
+   ],
+   "expected_episode_in_current_top12": false,
+   "historical_injected_source_refs": [
+    "opencode:ses_e50cc1c26ffeKCmAyMkiTNIVKE:tool:call_8e9d27d04e918e97"
+   ],
+   "snapshot_comparison_note": "Current replay selects the same source as the historical frozen injection (DIRECTLY_OBSERVED_IN_CURRENT_REPLAY; historical ordering UNVERIFIED)."
+  },
+  {
+   "case_id": "S10",
+   "frozen_prompt_sha256": "8be465fd892a80b41554dfb8d02f56b9063546ef93aeaa3ee1db1aca1a8db526",
+   "input_to_search_sha256": "8be465fd892a80b41554dfb8d02f56b9063546ef93aeaa3ee1db1aca1a8db526",
+   "observed_at": "2026-11-06T16:22:19.459Z",
+   "elapsed_ms": 87,
+   "service_identity": "Graphiti MCP (http://127.0.0.1:8766/mcp) connected to FalkorDB (get_status: ok)",
+   "group_ids": [
+    "development-knowledge"
+   ],
+   "max_facts": 12,
+   "graph_snapshot": {
+    "curation_record_count": 237,
+    "persisted_record_count": 140,
+    "episode_index_count": 140,
+    "episode_index_set_sha256": "75dc74af08152157c32b4e0fd7de4435a945070951100803b35f9a98692a1e56",
+    "observed": "2026-11-06T16:22:18Z..16:22:19Z (no growth vs prior 140/140)"
+   },
+   "returned_status": "success",
+   "error": null,
+   "facts_returned": 12,
+   "facts": [
+    {
+     "ordinal": 0,
+     "fact_uuid": "0fd53409-2d2b-46b4-9e22-2512f48b6f39",
+     "fact_edge_name": "IS_PART_OF_PROJECT",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The graphiti component is part of the gh_mcp project, as indicated by the test commit 'test(graphiti): reject stale fallback after unbound long prompt (#81)' in the opencode-operational-schema-guard repository.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "a84e809d5e34e13b9dc263517607cb050c555d7ff3c325538cc9707ac63f6e3c",
+     "episodes_original_order": [
+      "c059ab8f-0b24-4fc6-b0cd-730178acb247"
+     ],
+     "valid_at": "2026-11-06T04:14:07Z",
+     "invalid_at": null
+    },
+    {
+     "ordinal": 1,
+     "fact_uuid": "f18dddf9-5279-4d10-8663-2c5feef46867",
+     "fact_edge_name": "DERIVED_FROM",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The graph name graphiti_live comes from the Graphiti MCP server configuration.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "ea6033379e089367a4d802a8e794e8c917b72ef11810a15e6233b02d9d5c52cc",
+     "episodes_original_order": [
+      "1d98ba67-7e6d-488a-aa10-93677f46ebb2",
+      "e1244d4f-aee5-4bbe-a4f9-ac0f8516fd68"
+     ],
+     "valid_at": "2026-11-06T02:09:37Z",
+     "invalid_at": null
+    },
+    {
+     "ordinal": 2,
+     "fact_uuid": "a9ff82e1-404d-4bf1-9133-92cda3f422b9",
+     "fact_edge_name": "REFERENCES_IN_COMMIT_MESSAGE",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The git log for refs/pr/86 shows commit d879a67 with the message 'Stage source-backed production terminal failure adjudication and descriptive Graphiti cutover (#81)', indicating a relationship between the git repository state and the Graphiti component.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "6a49cc56247a5aec8b2347306f925d82cab9e48d9e7bd8e79aaede7daa5f763f",
+     "episodes_original_order": [
+      "94a939f6-a4fc-4692-a387-29338ed9d2c4"
+     ],
+     "valid_at": "2026-11-05T22:52:12.411000Z",
+     "invalid_at": null
+    },
+    {
+     "ordinal": 3,
+     "fact_uuid": "daea3a59-9119-42b1-b7df-f9b0e8dcc3ea",
+     "fact_edge_name": "HAS_ATTRIBUTE",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The graphiti_live graph contains 0 nodes, as observed by opencode.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "71d5630cd345b1dfeeffea787d4f164a103edd80f74584e786a25ce6153fd633",
+     "episodes_original_order": [
+      "efcb8bb3-0276-4187-8559-592cf3e79e25"
+     ],
+     "valid_at": "2026-11-06T01:49:07Z",
+     "invalid_at": null
+    },
+    {
+     "ordinal": 4,
+     "fact_uuid": "932b5ae4-663c-455b-b44d-8f0ea8ef8a4e",
+     "fact_edge_name": "MANAGES_VERSION_CONTROL_FOR",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "git was used to add a worktree at /tmp/opencode/issue81-52863ae for the opencode-operational-schema-guard repository, checking out commit 52863aed0498521b181f44bbb454ce314d60fa8c with the message 'test(graphiti): reject stale fallback after unbound long prompt (#81)'.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "e2a5d6f752d699a76aed1eca03d32e066633158271b9ef61c0b37c95e3ec9c45",
+     "episodes_original_order": [
+      "c059ab8f-0b24-4fc6-b0cd-730178acb247"
+     ],
+     "valid_at": "2026-11-06T04:14:07Z",
+     "invalid_at": null
+    },
+    {
+     "ordinal": 5,
+     "fact_uuid": "34e120c2-80e1-444d-87ec-eef9b3402cea",
+     "fact_edge_name": "IS_PART_OF",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The graphiti_live graph, which is empty with 0 nodes, is part of the gh_mcp project.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "360878da619876ec9342c55242d1e64d627a18ce34bd082b2bcc221f3e996d8b",
+     "episodes_original_order": [
+      "5b10a081-ee7f-4723-9ae3-8618233f4dba",
+      "d331a008-9840-4343-93f6-5d8db642e70c"
+     ],
+     "valid_at": "2026-11-06T02:45:03Z",
+     "invalid_at": null
+    },
+    {
+     "ordinal": 6,
+     "fact_uuid": "f1e47f17-eaa5-4233-ae10-66a526323cfc",
+     "fact_edge_name": "INVOKES",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The tool rtk invoked the git command to fetch origin pull/86/head into refs/pr/86 and then list the last 10 commits for that ref, which revealed commit d879a67 titled 'Stage source-backed production terminal failure adjudication and descriptive Graphiti cutover (#81)'.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "61e0f6103f625346b46b18efaf0e4f0bd098a68613deae8d53c7910ae826bb73",
+     "episodes_original_order": [
+      "94a939f6-a4fc-4692-a387-29338ed9d2c4"
+     ],
+     "valid_at": "2026-11-05T22:52:12.411000Z",
+     "invalid_at": null
+    },
+    {
+     "ordinal": 7,
+     "fact_uuid": "6950edd9-724e-4583-968b-c8f227d6a617",
+     "fact_edge_name": "CALLS",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "memory-core.mjs calls the Graphiti MCP at 127.0.0.1:8766 with group_ids: ['development-knowledge'].",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "ff47762191a9d9bf447d02b98b40fc4d704837ef30b75e9853f0e6e0a007ef2b",
+     "episodes_original_order": [
+      "1d98ba67-7e6d-488a-aa10-93677f46ebb2"
+     ],
+     "valid_at": "2026-11-06T02:09:37Z",
+     "invalid_at": "2026-11-06T02:10:05Z"
+    },
+    {
+     "ordinal": 8,
+     "fact_uuid": "310b859b-8d2d-4dbe-a655-aa83240d6f8b",
+     "fact_edge_name": "IMPLEMENTED_BY",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The local Graphiti MCP service at 127.0.0.1:8766 is implemented via run_graphiti.py and config.yaml.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "80e2bad3a26692a55ea5befa569ef9f2e4bd1da078cf8950e7a8f64946f25ec8",
+     "episodes_original_order": [
+      "2033506a-723e-4560-a690-9b90cb05e061"
+     ],
+     "valid_at": "2026-11-06T01:28:31Z",
+     "invalid_at": "2026-11-06T02:10:05Z"
+    },
+    {
+     "ordinal": 9,
+     "fact_uuid": "6b258002-1844-4ec4-a7c9-cae1321f7bdf",
+     "fact_edge_name": "CONNECTS_TO",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The graphiti MCP is a remote server at https://mcp.<host>.us/graphiti connected to a remote FalkorDB.",
+     "excerpt_redacted": true,
+     "raw_fact_sha256": "d0beae7bc3c399add568aba86f23c940d7f13aae3f50620a9f9347d762beddcf",
+     "episodes_original_order": [
+      "df6a6838-335f-401c-97cf-15949b302c07"
+     ],
+     "valid_at": "2026-11-06T02:33:28Z",
+     "invalid_at": null
+    },
+    {
+     "ordinal": 10,
+     "fact_uuid": "6940cadb-0c61-4196-9ff7-e1c54a4ceee9",
+     "fact_edge_name": "CONTAINS_DATA_WHILE_OTHER_IS_EMPTY",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The data physically lives in the development-knowledge graph (35 nodes) while graphiti_live has 0 nodes.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "b65caa5e0b6ee4781f2e96ef8e4525209bf8356ec68f442abcdf00516f397496",
+     "episodes_original_order": [
+      "07f247f9-f4d4-47f7-bf5f-6a748b60758b",
+      "9491a0f3-c73f-43da-abbe-b0bda356a88e",
+      "cece7d0b-7f34-4bcc-b852-72a9df8f16ba"
+     ],
+     "valid_at": "2026-11-06T02:08:48.216000Z",
+     "invalid_at": "2026-11-06T02:28:51.857000Z"
+    },
+    {
+     "ordinal": 11,
+     "fact_uuid": "24e12aff-49e0-417f-9262-dd33c5b394be",
+     "fact_edge_name": "IS_IMPLEMENTED_BY",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The Graphiti MCP server is implemented by the script /workspace/mcp_servers/graphiti/run_graphiti.py.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "9b9176937fbda12102798739febd854bd33a03b820da559e44d12fa30ea65d54",
+     "episodes_original_order": [
+      "ed80ea70-2682-4265-9639-fb4aafd9c4cd"
+     ],
+     "valid_at": "2026-11-06T02:10:49.113000Z",
+     "invalid_at": "2026-11-06T02:33:28Z"
+    }
+   ],
+   "expected_episode_in_current_top12": false,
+   "historical_injected_source_refs": [
+    "opencode:ses_e50efdb27ffep7alMZaj9wkl3x:tool:call_0485ce2600ec5dba"
+   ],
+   "snapshot_comparison_note": "Current replay selects the same source as the historical frozen injection (DIRECTLY_OBSERVED_IN_CURRENT_REPLAY; historical ordering UNVERIFIED)."
+  },
+  {
+   "case_id": "S13",
+   "frozen_prompt_sha256": "ccf9aacf8df56220c9d83dd6e79b003c5569fc95073bfe549a1aef9e04830be8",
+   "input_to_search_sha256": "ccf9aacf8df56220c9d83dd6e79b003c5569fc95073bfe549a1aef9e04830be8",
+   "observed_at": "2026-11-06T16:22:19.546Z",
+   "elapsed_ms": 85,
+   "service_identity": "Graphiti MCP (http://127.0.0.1:8766/mcp) connected to FalkorDB (get_status: ok)",
+   "group_ids": [
+    "development-knowledge"
+   ],
+   "max_facts": 12,
+   "graph_snapshot": {
+    "curation_record_count": 237,
+    "persisted_record_count": 140,
+    "episode_index_count": 140,
+    "episode_index_set_sha256": "75dc74af08152157c32b4e0fd7de4435a945070951100803b35f9a98692a1e56",
+    "observed": "2026-11-06T16:22:18Z..16:22:19Z (no growth vs prior 140/140)"
+   },
+   "returned_status": "success",
+   "error": null,
+   "facts_returned": 12,
+   "facts": [
+    {
+     "ordinal": 0,
+     "fact_uuid": "f18dddf9-5279-4d10-8663-2c5feef46867",
+     "fact_edge_name": "DERIVED_FROM",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The graph name graphiti_live comes from the Graphiti MCP server configuration.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "ea6033379e089367a4d802a8e794e8c917b72ef11810a15e6233b02d9d5c52cc",
+     "episodes_original_order": [
+      "1d98ba67-7e6d-488a-aa10-93677f46ebb2",
+      "e1244d4f-aee5-4bbe-a4f9-ac0f8516fd68"
+     ],
+     "valid_at": "2026-11-06T02:09:37Z",
+     "invalid_at": null
+    },
+    {
+     "ordinal": 1,
+     "fact_uuid": "310b859b-8d2d-4dbe-a655-aa83240d6f8b",
+     "fact_edge_name": "IMPLEMENTED_BY",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The local Graphiti MCP service at 127.0.0.1:8766 is implemented via run_graphiti.py and config.yaml.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "80e2bad3a26692a55ea5befa569ef9f2e4bd1da078cf8950e7a8f64946f25ec8",
+     "episodes_original_order": [
+      "2033506a-723e-4560-a690-9b90cb05e061"
+     ],
+     "valid_at": "2026-11-06T01:28:31Z",
+     "invalid_at": "2026-11-06T02:10:05Z"
+    },
+    {
+     "ordinal": 2,
+     "fact_uuid": "24e12aff-49e0-417f-9262-dd33c5b394be",
+     "fact_edge_name": "IS_IMPLEMENTED_BY",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The Graphiti MCP server is implemented by the script /workspace/mcp_servers/graphiti/run_graphiti.py.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "9b9176937fbda12102798739febd854bd33a03b820da559e44d12fa30ea65d54",
+     "episodes_original_order": [
+      "ed80ea70-2682-4265-9639-fb4aafd9c4cd"
+     ],
+     "valid_at": "2026-11-06T02:10:49.113000Z",
+     "invalid_at": "2026-11-06T02:33:28Z"
+    },
+    {
+     "ordinal": 3,
+     "fact_uuid": "6b258002-1844-4ec4-a7c9-cae1321f7bdf",
+     "fact_edge_name": "CONNECTS_TO",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The graphiti MCP is a remote server at https://mcp.<host>.us/graphiti connected to a remote FalkorDB.",
+     "excerpt_redacted": true,
+     "raw_fact_sha256": "d0beae7bc3c399add568aba86f23c940d7f13aae3f50620a9f9347d762beddcf",
+     "episodes_original_order": [
+      "df6a6838-335f-401c-97cf-15949b302c07"
+     ],
+     "valid_at": "2026-11-06T02:33:28Z",
+     "invalid_at": null
+    },
+    {
+     "ordinal": 4,
+     "fact_uuid": "6950edd9-724e-4583-968b-c8f227d6a617",
+     "fact_edge_name": "CALLS",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "memory-core.mjs calls the Graphiti MCP at 127.0.0.1:8766 with group_ids: ['development-knowledge'].",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "ff47762191a9d9bf447d02b98b40fc4d704837ef30b75e9853f0e6e0a007ef2b",
+     "episodes_original_order": [
+      "1d98ba67-7e6d-488a-aa10-93677f46ebb2"
+     ],
+     "valid_at": "2026-11-06T02:09:37Z",
+     "invalid_at": "2026-11-06T02:10:05Z"
+    },
+    {
+     "ordinal": 5,
+     "fact_uuid": "34e120c2-80e1-444d-87ec-eef9b3402cea",
+     "fact_edge_name": "IS_PART_OF",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The graphiti_live graph, which is empty with 0 nodes, is part of the gh_mcp project.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "360878da619876ec9342c55242d1e64d627a18ce34bd082b2bcc221f3e996d8b",
+     "episodes_original_order": [
+      "5b10a081-ee7f-4723-9ae3-8618233f4dba",
+      "d331a008-9840-4343-93f6-5d8db642e70c"
+     ],
+     "valid_at": "2026-11-06T02:45:03Z",
+     "invalid_at": null
+    },
+    {
+     "ordinal": 6,
+     "fact_uuid": "f1c171a8-f836-4ec7-b909-b3448aa3839e",
+     "fact_edge_name": "IS_COMPONENT_OF",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The Graphiti MCP server is an upstream component of the gh_mcp project, providing semantic search on port 8766.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "9ec116140178651dfe9edc60af7d845d21d604848d13df54569ef831890201dd",
+     "episodes_original_order": [
+      "a329f56c-0ce1-40d8-9bc0-afbccb6335de"
+     ],
+     "valid_at": "2026-11-06T01:27:41Z",
+     "invalid_at": "2026-11-06T02:10:05Z"
+    },
+    {
+     "ordinal": 7,
+     "fact_uuid": "daea3a59-9119-42b1-b7df-f9b0e8dcc3ea",
+     "fact_edge_name": "HAS_ATTRIBUTE",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The graphiti_live graph contains 0 nodes, as observed by opencode.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "71d5630cd345b1dfeeffea787d4f164a103edd80f74584e786a25ce6153fd633",
+     "episodes_original_order": [
+      "efcb8bb3-0276-4187-8559-592cf3e79e25"
+     ],
+     "valid_at": "2026-11-06T01:49:07Z",
+     "invalid_at": null
+    },
+    {
+     "ordinal": 8,
+     "fact_uuid": "c7ef60c0-4cb4-4cef-9d3d-272dded95216",
+     "fact_edge_name": "MAPS_TO_GRAPH_NAME_IN",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The database configuration value 'graphiti_live' maps directly to the FalkorDB graph name.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "df73c0da046991a24c55a48020135a9754b0394b08c44952a665d36bbf343252",
+     "episodes_original_order": [
+      "0c493c7b-025e-4562-b3b4-2d5cb1470c9b"
+     ],
+     "valid_at": null,
+     "invalid_at": null
+    },
+    {
+     "ordinal": 9,
+     "fact_uuid": "de035959-3dc7-4c27-85dc-c43bbfcca1b5",
+     "fact_edge_name": "CONFIGURED_BY",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The local Graphiti MCP service at 127.0.0.1:8766 is configured by config.yaml.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "2d1af4a62853a02a3a29d7f5752a0abd7abe04c6a2196ec4a5725bb13dbda8f6",
+     "episodes_original_order": [
+      "2033506a-723e-4560-a690-9b90cb05e061"
+     ],
+     "valid_at": "2026-11-06T01:28:31Z",
+     "invalid_at": "2026-11-06T02:10:05Z"
+    },
+    {
+     "ordinal": 10,
+     "fact_uuid": "7bc4e3ed-8ca6-4905-a07c-f90cb4ba1231",
+     "fact_edge_name": "LOADS_FILE",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "run_graphiti.py loads config/.env into os.environ at runtime.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "c5f83730564646601b525a2d1b8c9471a7f3c35d3914991a389bc23b5cf18eef",
+     "episodes_original_order": [
+      "1343d893-6c6d-413b-8795-69ee6e35831a"
+     ],
+     "valid_at": "2026-11-06T02:27:30.501000Z",
+     "invalid_at": null
+    },
+    {
+     "ordinal": 11,
+     "fact_uuid": "f573fafa-628a-4bb7-b4cc-4d918737d9f4",
+     "fact_edge_name": "WRITES_TO",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "run_graphiti.py loads config/.env into os.environ at runtime.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "c5f83730564646601b525a2d1b8c9471a7f3c35d3914991a389bc23b5cf18eef",
+     "episodes_original_order": [
+      "1343d893-6c6d-413b-8795-69ee6e35831a"
+     ],
+     "valid_at": "2026-11-06T02:27:30.501000Z",
+     "invalid_at": null
+    }
+   ],
+   "expected_episode_in_current_top12": false,
+   "historical_injected_source_refs": [],
+   "snapshot_comparison_note": "Current replay reproduces the historical no-injection (MISS): the expected episode 009974d2 is absent from the current top-12 and all 11 admitted candidates fail the lexical floor, so nothing is injected. This is a current-replay result; the unrecorded historical Graphiti top-12 ordering remains UNVERIFIED, and the 300ms Promise.race censored path (plugin.mjs:169-171) remains a candidate historical explanation."
+  },
+  {
+   "case_id": "N02",
+   "frozen_prompt_sha256": "821947953003583d6be52b40d39e13312165d8534aae88643f0a74e7a58a1d99",
+   "input_to_search_sha256": "821947953003583d6be52b40d39e13312165d8534aae88643f0a74e7a58a1d99",
+   "observed_at": "2026-11-06T16:22:19.631Z",
+   "elapsed_ms": 84,
+   "service_identity": "Graphiti MCP (http://127.0.0.1:8766/mcp) connected to FalkorDB (get_status: ok)",
+   "group_ids": [
+    "development-knowledge"
+   ],
+   "max_facts": 12,
+   "graph_snapshot": {
+    "curation_record_count": 237,
+    "persisted_record_count": 140,
+    "episode_index_count": 140,
+    "episode_index_set_sha256": "75dc74af08152157c32b4e0fd7de4435a945070951100803b35f9a98692a1e56",
+    "observed": "2026-11-06T16:22:18Z..16:22:19Z (no growth vs prior 140/140)"
+   },
+   "returned_status": "success",
+   "error": null,
+   "facts_returned": 12,
+   "facts": [
+    {
+     "ordinal": 0,
+     "fact_uuid": "1afbcca0-d3d7-400e-b1a5-31146a9ac56c",
+     "fact_edge_name": "REPLACES",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The active production curation records are under curation-v1/development-knowledge/, while ghdev_gh_mcp is the historical pre-cutover set.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "8e0b17630b152bd1fa68447b6126dc6eeac54b01e5019b0794e92ff95545f3cf",
+     "episodes_original_order": [
+      "e1d8e764-26fa-45ea-9483-8e64a71e3de7"
+     ],
+     "valid_at": "2026-11-06T06:04:23Z",
+     "invalid_at": null
+    },
+    {
+     "ordinal": 1,
+     "fact_uuid": "4d76d14f-9c93-4329-ab55-b04d948682db",
+     "fact_edge_name": "IS_PART_OF",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The ghdev_gh_mcp graph, which is empty with 0 nodes, is part of the gh_mcp project.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "1b14f97520eb6b3850f27ffbbe9b0f8f8bf03cc06e25aee4fe6b10d1da594380",
+     "episodes_original_order": [
+      "5b10a081-ee7f-4723-9ae3-8618233f4dba",
+      "d331a008-9840-4343-93f6-5d8db642e70c"
+     ],
+     "valid_at": "2026-11-06T02:45:03Z",
+     "invalid_at": null
+    },
+    {
+     "ordinal": 2,
+     "fact_uuid": "3c079981-ee4c-48cc-aa95-2325856bb3e1",
+     "fact_edge_name": "ASSOCIATED_WITH",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The gh_mcp project is associated with the 'development-knowledge' scope group, replacing the previous 'ghdev_gh_mcp' identifier in the graphiti configuration.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "0ebf366bfd1ecd0319b420b43bb875a6fb6817b016c4453cb2ce7af33b29dc88",
+     "episodes_original_order": [
+      "6e7956be-498c-47cf-af4d-07220ee8507e"
+     ],
+     "valid_at": "2026-11-06T00:16:10.001000Z",
+     "invalid_at": "2026-11-06T02:16:40.591000Z"
+    },
+    {
+     "ordinal": 3,
+     "fact_uuid": "28893e36-9bb0-42d0-9d9d-64c51e6edf21",
+     "fact_edge_name": "HAS_ATTRIBUTE",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The graphiti group for the gh_mcp project was changed from 'ghdev_gh_mcp' to 'development-knowledge', which is the only semantic difference from the cutover backup, and production routing must not be reverted.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "5cf3e919381b8862a4f17a422a6d96b02a570fec3904fd93ba69576d9930706c",
+     "episodes_original_order": [
+      "6e7956be-498c-47cf-af4d-07220ee8507e"
+     ],
+     "valid_at": "2026-11-06T00:16:10.001000Z",
+     "invalid_at": "2026-11-06T02:16:40.591000Z"
+    },
+    {
+     "ordinal": 4,
+     "fact_uuid": "6058f037-bead-47f9-a0d1-eb9da39e1c07",
+     "fact_edge_name": "CONTAINS",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "As of 2026-11-06T02:21:02.894Z, the live FalkorDB state shows that the ghdev_gh_mcp graph is empty.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "a40bff9df4a8987bae8f6b8399798e00f84a91cbb797dc80c1c24a815a4c70ea",
+     "episodes_original_order": [
+      "15a2f72d-6aa9-481d-ae5a-9bf2b679c273"
+     ],
+     "valid_at": "2026-11-06T02:21:02.894000Z",
+     "invalid_at": null
+    },
+    {
+     "ordinal": 5,
+     "fact_uuid": "ec313e91-1229-4ff6-92eb-311e59e3aa96",
+     "fact_edge_name": "CONTAINS_DATA_WHILE_OTHER_IS_EMPTY",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The data physically lives in the development-knowledge graph (35 nodes) while ghdev_gh_mcp has 0 nodes.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "e72c6f6f169a1462a2d13b2e84a058f56f810df4184378b3da6546b536fc52e9",
+     "episodes_original_order": [
+      "07f247f9-f4d4-47f7-bf5f-6a748b60758b",
+      "9491a0f3-c73f-43da-abbe-b0bda356a88e",
+      "cece7d0b-7f34-4bcc-b852-72a9df8f16ba"
+     ],
+     "valid_at": "2026-11-06T02:08:48.216000Z",
+     "invalid_at": "2026-11-06T02:28:51.857000Z"
+    },
+    {
+     "ordinal": 6,
+     "fact_uuid": "571b15d7-f9fa-416d-bf68-4527331bfe78",
+     "fact_edge_name": "HAS_ATTRIBUTE",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The ghdev_gh_mcp graph contains 0 nodes, as observed by opencode.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "9cf81ca4bfeb51c2d9640abfd1d7dfee1a948219774b6022173e023f9ed3f9f0",
+     "episodes_original_order": [
+      "efcb8bb3-0276-4187-8559-592cf3e79e25"
+     ],
+     "valid_at": "2026-11-06T01:49:07Z",
+     "invalid_at": null
+    },
+    {
+     "ordinal": 7,
+     "fact_uuid": "2b408dbc-4376-4242-94b7-5d32575d7c67",
+     "fact_edge_name": "IS_INSTALLED_BASELINE_FOR",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The installed baseline for the gh_mcp project is now 556f262c, matching the merged source, with ownership and mode preserved.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "8ff9119841342c859cd085bd305db951fee323ef9117a9023a84138d0017e307",
+     "episodes_original_order": [
+      "af4619a9-fb95-43d5-aaae-c82a9a6957a4"
+     ],
+     "valid_at": "2026-11-06T06:04:58Z",
+     "invalid_at": null
+    },
+    {
+     "ordinal": 8,
+     "fact_uuid": "7e85f146-e846-4880-8d17-27967f7b80be",
+     "fact_edge_name": "TRIGGERS_VIA_PROMPT_HOOK",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The ghdev baseline depends on its prompt hook to kick off memory.search and populate latest.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "67f7b28179a73f561698726e8e9d31bc4ae29a6a69b70c65889bec2d567ae74e",
+     "episodes_original_order": [
+      "a64f0da4-6c6d-4b15-bd5b-b4d63aa016a7"
+     ],
+     "valid_at": "2026-11-06T01:47:16Z",
+     "invalid_at": null
+    },
+    {
+     "ordinal": 9,
+     "fact_uuid": "c25f096a-3d8f-4474-93a4-2ff9fe08be59",
+     "fact_edge_name": "CALLS_SERVICE",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The gh_mcp script calls the Graphiti MCP server at 127.0.0.1:8766 using get_episodes and search_memory_facts with group_ids, without specifying any graph name.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "6d9f12faec96f906023823f7979e74f092dd965461982c6ceafe2536bc57a7f7",
+     "episodes_original_order": [
+      "bb9e83c9-6683-4c2b-9fba-709fb2029b00"
+     ],
+     "valid_at": "2026-11-06T01:48:42Z",
+     "invalid_at": "2026-11-06T02:10:05Z"
+    },
+    {
+     "ordinal": 10,
+     "fact_uuid": "c6d4c379-bfce-4e4b-b224-45db7e9f195b",
+     "fact_edge_name": "HAS_GRAPH",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "The FalkorDB layout uses per-group graphs, including a graph named 'ghdev_gh_mcp'.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "2be927c89dda8e787938522a8d0867cd89c2ba69962496d48b7f824262fa9af7",
+     "episodes_original_order": [
+      "c48cd614-4f98-49f7-90d0-5b6a418368fc",
+      "97defc44-679e-4d77-bb8a-03e28e4febc6",
+      "855c0459-7405-41df-91a3-aab8cfc8aff6",
+      "6969a684-8bb2-45c2-86a8-47a3f1b7b76b",
+      "ee8f2b96-4fca-4e83-b384-03582880eacc"
+     ],
+     "valid_at": "2026-11-05T21:10:04Z",
+     "invalid_at": "2026-11-06T00:16:10.001000Z"
+    },
+    {
+     "ordinal": 11,
+     "fact_uuid": "eee72de1-5898-40f2-8816-5ad4cadedb22",
+     "fact_edge_name": "HAS_DIFFERENT_EPISODE_COUNT_FROM",
+     "group_id": "development-knowledge",
+     "sanitized_fact_excerpt": "As of 2026-11-06, graphiti_live has 0 episodes (No episodes found), while development-knowledge has episodes that match getep.json.",
+     "excerpt_redacted": false,
+     "raw_fact_sha256": "c11c14d388515f361195e15714b805a89dc3bf144cda99122da542b1c00c6cb7",
+     "episodes_original_order": [
+      "c247a910-17cc-4851-b158-6f1081e8e339"
+     ],
+     "valid_at": "2026-11-06T02:49:18.135000Z",
+     "invalid_at": null
+    }
+   ],
+   "expected_episode_in_current_top12": null,
+   "historical_injected_source_refs": [
+    "opencode:ses_e508c6d53ffeWrJEJftz60lqXB:message:msg_1af753f0d001GPlDjAoAckQ3EK"
+   ],
+   "snapshot_comparison_note": "Current replay selects the same source as the historical frozen injection (DIRECTLY_OBSERVED_IN_CURRENT_REPLAY; historical ordering UNVERIFIED)."
+  }
+ ]
+}
