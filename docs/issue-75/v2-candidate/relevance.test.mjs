@@ -295,3 +295,34 @@ test('diagnostic labels linked source-context gating without changing production
   assert.deepEqual(await relevanceFilter(q,[item]),[item]);
   assert.equal(JSON.stringify(d).includes('workspace graph'),false);
 });
+
+
+test('commit-effect questions prefer source-described changes over incidental worktree commands',async()=>{
+  const query='What did commit abcdef12 change in the Graphiti test suite?';
+  const setup={fact:'Commit abcdef12 ran Graphiti test suite worktree setup.'};
+  const change={fact:'Commit abcdef12 fixed Graphiti test suite coverage.'};
+  assert.equal(relevanceSignals(query,setup.fact).eligible,true);
+  assert.equal(relevanceSignals(query,change.fact).eligible,true);
+  assert.equal(answerTypeSupport(query,setup.fact),0);
+  assert.equal(answerTypeSupport(query,change.fact),1);
+  assert.deepEqual(await relevanceFilter(query,[setup,change]),[change]);
+  assert.deepEqual(await relevanceFilter(query,[change,setup]),[change]);
+  assert.deepEqual(shortlistQualifiedCandidates(query,[setup,change]),[change,setup]);
+});
+test('commit-effect preference cannot waive wrong entity, Issue or numeric scope',async()=>{
+  const query='What did commit abcdef12 change in MongoDB tests for Issue #81?';
+  const wrongEntity={fact:'Commit abcdef12 fixed PostgreSQL tests for Issue 81.'};
+  const wrongIssue={fact:'Commit abcdef12 fixed MongoDB tests for Issue 80.'};
+  const good={fact:'Commit abcdef12 fixed MongoDB tests for Issue 81.'};
+  assert.deepEqual(await relevanceFilter(query,[wrongEntity,wrongIssue,good]),[good]);
+  assert.deepEqual(shortlistQualifiedCandidates(query,[wrongEntity,wrongIssue,good]),[good]);
+});
+test('commit-effect preference does not mistake worktree commands with incidental change words for commit effects',async()=>{
+  const query='What did commit abcdef12 change in the Graphiti test suite?';
+  const setup={fact:'Git worktree add abcdef12 for Graphiti test suite; changed checkout directory.'};
+  assert.equal(answerTypeSupport(query,setup.fact),0);
+  assert.deepEqual(await relevanceFilter(query,[setup]),[setup],
+    'allowed source remains eligible, only answer-type ranking changes');
+  assert.equal(answerTypeSupport('Which commit abcdef12 should I checkout?', 
+    'Commit abcdef12 fixed Graphiti tests.'),0,'unrelated commit questions get no effect bonus');
+});

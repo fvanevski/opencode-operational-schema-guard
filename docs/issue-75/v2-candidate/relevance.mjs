@@ -192,6 +192,16 @@ export function answerTypeSupport(query,fact) {
     return /\bport\b|\b\d{4,5}\b/i.test(f) ? 1:0;
   if(/^\s*why\b/i.test(q))
     return /\b(?:because|due to|via|per-group|clone[sd]?|routes?|maps?|so that|rather than|instead of|configured to)\b/i.test(f) ? 1:0;
+  // When asked what a source-control change *did*, prefer a description
+  // of the modification to an operational record that merely mentions the
+  // commit. This is a response-type signal only: it cannot admit a fact that
+  // fails the existing source, identity or topical gates.
+  const effectQuery=/\b(?:what|which|how)\b.{0,160}\b(?:commit|revision|patch|changeset)\b.{0,160}\b(?:chang(?:e|ed|es)|modif(?:y|ied)|fix(?:es|ed)?|updat(?:e|ed)|add(?:ed)?|remov(?:e|ed))\b|\b(?:what|which|how)\b.{0,160}\b(?:chang(?:e|ed|es)|modif(?:y|ied)|fix(?:es|ed)?|updat(?:e|ed))\b.{0,160}\b(?:commit|revision|patch|changeset)\b/i;
+  if(effectQuery.test(q)) {
+    const isProcedure=/\b(?:git\s+(?:worktree|checkout|rev-parse|switch|fetch|clone)|worktree\s+(?:setup|creation|checkout)|checking\s+out\s+(?:a\s+)?(?:commit|revision))\b/i.test(f);
+    const describesChange=/\b(?:fix(?:es|ed)?|chang(?:e|ed|es)|modif(?:y|ied)|updat(?:e|ed)|add(?:ed)?|remov(?:e|ed)|refactor(?:s|ed)?|correct(?:s|ed)?|introduc(?:e|ed|es)|replac(?:e|ed|es)|commit[- ]subject|commit message)\b/i.test(f);
+    return describesChange && !isProcedure ? 1 : 0;
+  }
   return 0;
 }
 function linkedSourceSignals(query,item,hasRerankScore) {

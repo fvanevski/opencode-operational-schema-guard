@@ -30,5 +30,5 @@ test('same-metric candidates expose input-order ambiguity without making a sourc
 test('private and malformed sources are not printable diagnostic evidence',async()=>{
   await assert.rejects(auditCase({case_id:'S05',question:'Which archive service runs?',
     expected:make('The token is api_key=abc.'),
-    observed:make('The archive service runs.','opencode:s1:tool:m1')}),/Invalid|Unsafe/);
+    observed:make('The archive service runs.','opencode:s1:tool:m1')}),/Missing\/invalid source-bound expected candidate/);
 });
