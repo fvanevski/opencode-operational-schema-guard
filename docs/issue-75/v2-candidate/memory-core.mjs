@@ -415,7 +415,8 @@ export class Memory {
       candidates.push({ fact: assertion, source: source.sourceRef, evidenceClass: source.evidenceClass,
         temporal, validAt: fact.valid_at ?? null, invalidAt: fact.invalid_at ?? null });
     }
-    const { relevanceFilter, shortlistQualifiedCandidates } = await import('./relevance.mjs');
+    const { relevanceFilter, shortlistQualifiedCandidates, rankQualifiedForMerge } =
+      await import('./relevance.mjs');
     // Build the legacy sourced candidates FIRST. Remote episode proof is
     // optional enrichment, not a prerequisite for already-sourced facts.
     // Protect the hook's 300ms window from the optional 1200ms MCP timeout.
@@ -448,10 +449,13 @@ export class Memory {
     // never follow an arbitrary raw search/index slice. This keeps Graphiti
     // facts 13-24 usable and prevents irrelevant index records from filling
     // the shared model-facing candidate budget.
-    // The optional independent reranker can admit well-scoped paraphrased
-    // choices without literal overlap. Preserve its original complete
-    // 24-fact Graphiti input instead of hard-fencing it before scoring.
-    const fromGraphiti=this.ranker?candidates.slice(0,maxFacts):
+    // Score ALL 24 Graphiti facts once before joining with curated facts.
+    // This protects a semantically relevant result at remote index 19 even
+    // when 12 source-index facts also qualify for the shared 24-slot bound.
+    // Cached score/background reuse avoids a second reranker HTTP call.
+    const graphitiRanked=this.ranker
+      ? await rankQualifiedForMerge(text,candidates,this.ranker) : null;
+    const fromGraphiti=graphitiRanked?graphitiRanked.ranked:
       shortlistQualifiedCandidates(text,candidates);
     const fromCurator=shortlistQualifiedCandidates(text,indexedCandidates);
     const combined=[],seen=new Set();
@@ -468,7 +472,12 @@ export class Memory {
       if(i<fromGraphiti.length)add(fromGraphiti[i]);
       if(i<fromCurator.length)add(fromCurator[i]);
     }
-    const ranked = await relevanceFilter(text, combined, this.ranker);
+    const ranked = graphitiRanked
+      ? await relevanceFilter(text, combined, null, {
+          cachedScores:graphitiRanked.scoreByItem,
+          cachedBackground:graphitiRanked.background,
+        })
+      : await relevanceFilter(text,combined);
     const result = [];
     let budget = maxChars;
     for (const entry of ranked) {
