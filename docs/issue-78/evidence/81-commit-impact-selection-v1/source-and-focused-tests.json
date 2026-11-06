@@ -1,0 +1,91 @@
+{
+  "schema": "issue81-commit-impact-selection-v1.source-and-tests",
+  "campaign": "ISSUE81_COMMIT_IMPACT_SELECTION_V1",
+  "source": {
+    "repo": "fvanevski/opencode-operational-schema-guard",
+    "branch": "issue/81-source-recall-correction",
+    "head": "0a4879fe626106b0d0bbc57079e82cee140b56c1",
+    "tree": "64ca28cb25b805f8ed407d687d31e727501d2ce0",
+    "handoff_blob": "93ffb6a6818697ae5dbffec14e4b1897c2fe423d",
+    "handoff_path": "docs/issue-78/v2-benchmark/ISSUE81_FINAL_SOURCE_SELECTION_HANDOFF.md",
+    "main_base": "9a27b73de882c0af6fec4d86de81945338611479",
+    "main_base_is_remote_main": true,
+    "main_base_is_ancestor_of_head": true,
+    "pre_correction_head": "57d25648bb73f86de84009e3f4ead98897d29370",
+    "pr": {
+      "number": 89,
+      "state": "OPEN",
+      "is_draft": true,
+      "head_ref": "0a4879fe626106b0d0bbc57079e82cee140b56c1",
+      "base_ref": "9a27b73de882c0af6fec4d86de81945338611479"
+    },
+    "diff_scope": "19 files, +1513/-21, docs/ only (no protected control-plane changes)"
+  },
+  "staged_change_summary": {
+    "answer_type_support": "ranking-only answer-type signal (port/why/commit-effect); cannot admit a fact that fails the existing gates; used in relevanceFilter and shortlistQualifiedCandidates sort keys",
+    "linked_source_signals": "sourceContext (<=500 chars) disambiguates exact lexical ties only; cannot satisfy a missing exact Issue/numeric identity in the assertion",
+    "shortlist_qualified_candidates": "query-dependent 24-candidate bound applied after all mandatory fences",
+    "max_automatic_candidates": 24,
+    "episode_anchor_bound": 288,
+    "provenance_never_emitted": "sourceContext/remoteEpisodeUuid/workspace/project/group stripped from Memory.search output entries (verified in replay: all selected entries omit them)",
+    "s06_historical_precedence": "enforced (relevance-priority-regression suite in focused run; S06 replay PASS with temporal historical/superseded)",
+    "group_episode_authority": "no expansion: exact group checks on search/get_episodes/curated paths; get_episodes group-scoped and untruncated readback required for index admission"
+  },
+  "syntax_checks": {
+    "command": "node --check over 8 changed/new production .mjs + 5 changed/new test .mjs",
+    "result": "ALL_PASS"
+  },
+  "focused_suite": {
+    "command": "node --test over 9 handoff-named files",
+    "files": [
+      "docs/issue-78/v2-curator/curated-recall-candidates.test.mjs",
+      "docs/issue-75/v2-candidate/relevance.test.mjs",
+      "docs/issue-75/v2-candidate/relevance-priority-regression.test.mjs",
+      "docs/issue-75/v2-candidate/relevance-observation-replay.test.mjs",
+      "docs/issue-75/v2-candidate/memory-core.test.mjs",
+      "docs/issue-75/v2-candidate/plugin-behavior.test.mjs",
+      "docs/issue-78/v2-curator/production-cutover.test.mjs",
+      "docs/issue-78/v2-benchmark/issue81-retrieval-feasibility.test.mjs",
+      "docs/issue-78/v2-benchmark/issue81-admission-audit.test.mjs"
+    ],
+    "tests": 67,
+    "pass": 67,
+    "fail": 0,
+    "producer_exit": 0,
+    "added_provenance_suites": {
+      "files": [
+        "docs/issue-78/v2-curator/curator.test.mjs",
+        "docs/issue-78/v2-candidate/candidate.test.mjs"
+      ],
+      "tests": 48,
+      "pass": 48,
+      "fail": 0,
+      "producer_exit": 0,
+      "reason": "directly relevant existing source-bound provenance suites"
+    }
+  },
+  "independent_assertions": {
+    "file": "scratch independent-assertions.mjs (not committed)",
+    "checks": [
+      "commit-effect query ranks change-describing fact over worktree setup, both input orders (relevanceFilter + shortlist)",
+      "non-effect queries get no answer-type bonus; port/why paths unaffected",
+      "wrong named product / wrong Issue / numeric identity / secret marker (safeText) / wrong group all rejected",
+      "source-ref symmetry: identical facts with different opencode: refs rank by content/index only (no S10 source-ref shortcut; no opencode: literal in relevance.mjs)"
+    ],
+    "result": "10/10 PASS (after fixture correction: gh- PAT marker is ghp_/gho_/ghu_/ghs_/ghr_ + 18 alphanumeric)"
+  },
+  "trusted_receipts": {
+    "ci_node_contract": {
+      "run": "42302766986",
+      "head": "0a4879fe626106b0d0bbc57079e82cee140b56c1",
+      "conclusion": "success"
+    },
+    "ghdev_exact_head_verify": {
+      "run": "42302838693",
+      "receipt": "cb260091a322",
+      "head": "9a27b73de882c0af6fec4d86de81945338611479 (trusted main controller epoch, NOT candidate head)",
+      "conclusion": "success"
+    },
+    "repository_final_v1_at_candidate_head": "not yet dispatched; Central may dispatch separately per handoff A5; broad profile not repeated locally"
+  }
+}

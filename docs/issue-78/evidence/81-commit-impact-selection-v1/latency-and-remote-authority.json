@@ -1,0 +1,79 @@
+{
+  "schema": "issue81-commit-impact-selection-v1.latency-and-remote-authority",
+  "latency": {
+    "population": "20 cases (16 positive + 4 negative), serial exposed Memory.search replay",
+    "methodology": "process-level performance.now() around Memory.search and per-remote-call; NOT native 300ms hook instrumentation; native hook starts/ends not directly observed in this diagnostic run",
+    "hook_p95": "UNVERIFIED",
+    "e2e_memory_search_ms": {
+      "n": 20,
+      "min": 0,
+      "p50": 188,
+      "p95": 299,
+      "max": 597
+    },
+    "graphiti_d24_search_ms": {
+      "n": 18,
+      "min": 151,
+      "p50": 155,
+      "p95": 514,
+      "max": 514
+    },
+    "remote_membership_ms": {
+      "n": 18,
+      "min": 22,
+      "p50": 23,
+      "p95": 52,
+      "max": 52
+    },
+    "curated_index_ms": {
+      "n": 20,
+      "min": 0,
+      "p50": 38,
+      "p95": 88,
+      "max": 94
+    },
+    "e2e_positive_only": {
+      "n": 16,
+      "min": 180,
+      "p50": 189,
+      "p95": 597,
+      "max": 597
+    },
+    "censored": "no censored cases; all 20 completed without timeout"
+  },
+  "notes": [
+    "e2e min=0 ms for N03/N04 is prompt-side fence rejection (no remote call), the expected fast path",
+    "S01 carries the cold-search tail: graphiti d24 search 514 ms in a 151-161 ms normal band; e2e max 597 ms",
+    "a >300 ms process-level tail is a candidate risk per contract; deadline NOT increased; native 300 ms hook instrumentation not directly observed in this diagnostic run, hence HOOK_P95=UNVERIFIED"
+  ],
+  "remote_authority": {
+    "get_episodes": {
+      "episodes": 227,
+      "truncated": false,
+      "bad_group": 0,
+      "bad_uuid": 0,
+      "verdict": "REMOTE_PROOF_VALID"
+    },
+    "local_index": {
+      "scanned_records": 378,
+      "scan_bound": 500,
+      "has_more": false,
+      "persisted_records": 227,
+      "unique_index_uuids": 227
+    },
+    "overlap": {
+      "local_uuids_present_remotely": 227,
+      "local_uuids_missing_remotely": 0,
+      "remote_growth_beyond_index": 0,
+      "note": "natural index growth recorded: none since prior packet (227 == 227)"
+    },
+    "roster_positive_uuids_live": "16/16"
+  },
+  "human_precision": {
+    "worksheet": "issue81-durable-grounded-precision-worksheet.v1, 126 rows, population 126 facts",
+    "adjudication_status": "PENDING_OPERATOR_ADJUDICATION",
+    "all_human_verdicts_null": true,
+    "as_of_snapshot_sha256": "c8d5053c16ac7a07447c71d0bb5e7c4ce665940cdba3263119bdb25d6524ef37",
+    "verdict": "HUMAN_PRECISION=UNVERIFIED (no new worksheet or agent-authored adjudication initiated)"
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "schema": "ghdev-command-shape-friction.v1",
+  "campaign": "ISSUE81_COMMIT_IMPACT_SELECTION_V1",
+  "friction_encountered": "yes",
+  "commands_match_handoff": "yes",
+  "match_note": "All handoff-required agent-phase commands (remote fetch/authenticate, detached worktree at exact head, 9-file focused suite, get_episodes readback, one serial exposed Memory.search replay, single evidence publication) ran with the handoff workdirs and command shapes. Variations were only the handoff-permitted addition of two directly relevant existing source-bound provenance suites and transparent harness behavior (branch-occupied worktree reuse, rtk-compressed diff display re-read via sed).",
+  "events": [
+    {
+      "id": "F1",
+      "classification": "interface_discovery",
+      "attribution": "agent-authored fixture",
+      "event": "A4 independent assertion initially used a 'gh_pat_' token as the secret-marker example; the staged PRIVATE fence matches gh[pousr]_ + 18 alnum (ghp_/gho_/ghu_/ghs_/ghr_), so the fixture string did not match. Production fence behavior was correct; the fixture was corrected to a ghp_ PAT and the assertion passed.",
+      "outcome": "corrected, re-run 10/10 PASS; no production change"
+    },
+    {
+      "id": "F2",
+      "classification": "guard_annotation",
+      "attribution": "harness",
+      "event": "git worktree add for issue/81-recall-acceptance at /tmp/opencode/issue81-final-ev failed: the branch was already checked out by the older worktree /tmp/opencode/issue81-recovery-v1/evidence (clean, at ancestor 53df326).",
+      "outcome": "reused the existing worktree and fast-forwarded it with merge --ff-only to the exact expected evidence head d531b14; no branch movement beyond the expected head, no force/rebase"
+    },
+    {
+      "id": "F3",
+      "classification": "guard_annotation",
+      "attribution": "harness",
+      "event": "git diff output was rtk-compressed with truncated sections ('... (N additions truncated)'); the full content was re-read with a bounded sed slice to verify the truncated portions.",
+      "outcome": "complete diff content verified; no acceptance-bearing command changed"
+    }
+  ],
+  "notes": [
+    "No producer exit was masked by a pipe: every acceptance-bearing run captured its own producer exit before display (focused suite exit 0, provenance suite exit 0, replay exit 0).",
+    "No guard-rejected admission command occurred in this session (no literal guard-admission shape was required by the handoff)."
+  ]
+}

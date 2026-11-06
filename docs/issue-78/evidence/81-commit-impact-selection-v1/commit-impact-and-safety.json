@@ -1,0 +1,66 @@
+{
+  "schema": "issue81-commit-impact-selection-v1.commit-impact-and-safety",
+  "s10": {
+    "case_id": "S10",
+    "category": "direct",
+    "question_sha256": "8be465fd892a80b41554dfb8d02f56b9063546ef93aeaa3ee1db1aca1a8db526",
+    "expected": {
+      "episode_uuid": "0de3cdc8-07ff-46a5-a0bc-ed7f9bc5e47b",
+      "source_ref": "opencode:ses_e50efdb27ffep7alMZaj9wkl3x:tool:call_1e0445fde85fa221",
+      "answer_type": 0,
+      "note": "commit subject line; \"reject\" is not in the generic change-verb list, so the answer-type bonus does not apply"
+    },
+    "selected": {
+      "episode_uuid": "c059ab8f",
+      "source_ref": "opencode:ses_e50efdb27ffep7alMZaj9wkl3x:tool:call_0485ce2600ec5dba",
+      "answer_type": 1,
+      "note": "incidental worktree-setup command mentioning the same commit; full fact is a git -C <path> worktree add / rev-parse / status sequence whose output echoes the commit subject"
+    },
+    "predicate_failure": {
+      "is_procedure_fence": {},
+      "missed_form": "git -C <path> worktree add ... is not caught because the fence requires \"git worktree\" adjacency; the -C <path> flag intervenes",
+      "describes_change_trigger": "the word \"add\" in \"worktree add\" matches the change-verb list",
+      "consequence": "incidental worktree fact scores answerType=1 vs expected commit-subject fact answerType=0; equal priority, so the answer-type tie-break selects the incidental fact"
+    },
+    "effect_query_triggered": true,
+    "worktree_like_candidates_observed": 1,
+    "input_order_note": "expected fact is present only via the curated index route (absent from the live d24 graphiti facts); shortlist pairwise order behavior for this pair is covered by staged tests (relevance.test.mjs commit-effect tests) and the A4 independent assertions",
+    "classification": "PREDICATE_MISS (generic, not benchmark-specific): git -C <path> worktree forms evade the procedural fence; no local production rewrite per contract"
+  },
+  "s03_s05_s13": {
+    "gate": "NAMED_IDENTITY",
+    "status": "UNCHANGED_CORRECTLY_GUARDED",
+    "detail": "expected facts fail the named-entity fence on the assertion AND with the sourceContext excerpt (linkedUsed=false; fact+excerpt eligible=false) for all three; selected sources are other fence-passing facts; not promoted by the relaxed alias/acronym paths",
+    "cases": [
+      "S03",
+      "S05",
+      "S13"
+    ]
+  },
+  "s06": {
+    "status": "PASS",
+    "temporal": "historical/superseded",
+    "exact_source_match": true,
+    "note": "historical precedence protected"
+  },
+  "n02": {
+    "status": "FROZEN_INJECTED_KNOWN",
+    "injected_fact_uuid": "1afbcca0-d3d7-400e-b1a5-31146a9ac56c",
+    "injected_source_ref": "opencode:ses_e508c6d53ffeWrJEJftz60lqXB:message:msg_1af753f0d001GPlDjAoAckQ3EK",
+    "evidence_class": "assistant-reported",
+    "note": "identical to the previously adjudicated frozen negative (ISSUE81_RELEVANCE_PRIORITY_IMPLEMENTATION_V1 original and candidate selections; admission causal trace: \"N02 remains frozen FAIL_INJECTED and no cross-group leakage is inferred from a fact discussing a former group\"); fact is stored in development-knowledge and is about the superseded ghdev_gh_mcp group; NOT a new wrong-group/private/authority-upgrade injection"
+  },
+  "n01_n03_n04": {
+    "n01": "PASS_NO_INJECTION (unrelated)",
+    "n03": "PASS_NO_INJECTION (secret marker sk-... in prompt rejected by safeText before any remote call; 0 remote calls)",
+    "n04": "PASS_NO_INJECTION (prompt below 10-char floor; 0 remote calls)"
+  },
+  "safety_checks": {
+    "single_fact_output": "every selected entry carries exactly one fact; output keys fact|source|evidenceClass|temporal(+validAt/invalidAt)",
+    "source_context_omission": "verified on all 12 selected entries: sourceContext and remoteEpisodeUuid absent",
+    "group_purity": "all candidates group-scoped to development-knowledge (remote search group filter + get_episodes group-pure readback)",
+    "remote_authority": "227/227 curated index UUIDs confirmed live in untruncated group-pure get_episodes readback; 16/16 roster positive UUIDs present",
+    "false_verified_claims": "none; temporal labels honest (historical/superseded vs current state not independently verified)",
+    "secret_markers": "safeText PRIVATE fence verified (api_key= / ghp_ PAT forms rejected)"
+  }
+}

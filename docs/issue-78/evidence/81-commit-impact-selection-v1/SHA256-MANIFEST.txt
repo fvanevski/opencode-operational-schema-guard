@@ -1,0 +1,11 @@
+# SHA256 manifest — ISSUE81_COMMIT_IMPACT_SELECTION_V1 evidence packet
+# source head: 0a4879fe626106b0d0bbc57079e82cee140b56c1
+# evidence branch: issue/81-recall-acceptance (pre-publication head d531b1487b954e645ce53f54f62fcee6c2df861d)
+
+a51d68e3f851020272eb2cf8e48c6849f561cbcde56cb2c6373bf5858e9a895f  README.md
+2085abf3845d590d0c729dd5eb8a49bf8e7a37c4b6d38bb24d58b9c885bac591  source-and-focused-tests.json
+2d98e96969db5969c8de016e3cfae9e8c637731e973b13dbb4d5c08a76d48419  replay-matrix.json
+203e08aa63786b81a5823e386548c2c87f8b1abcd43e176766296773fa0b1b42  commit-impact-and-safety.json
+8fe6998064f6b3ae47bfb5c573377fb0f8fe34efc418aa58e0944c3577a503d3  latency-and-remote-authority.json
+b00ebd3e5abb4de0b2fc002d01d5d669f04646f65986aec2cb7fda176ab4d75b  central-disposition.md
+fb989bec5effbbd7dee2fc2a3e422b19bcff1216be2b51bb295d26d958642919  command-shape-friction.json
