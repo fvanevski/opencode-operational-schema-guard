@@ -389,7 +389,7 @@ export class Memory {
       candidates.push({ fact: assertion, source: source.sourceRef, evidenceClass: source.evidenceClass,
         temporal, validAt: fact.valid_at ?? null, invalidAt: fact.invalid_at ?? null });
     }
-    const { relevanceFilter, relevanceSignals, answerTypeSupport } = await import('./relevance.mjs');
+    const { relevanceFilter, shortlistQualifiedCandidates } = await import('./relevance.mjs');
     // Positive current remote episode membership and exact scoped curation
     // records are BOTH required. Missing/invalid remote readback abstains.
     const remoteEpisodes = Array.isArray(remoteData?.episodes) &&
@@ -403,18 +403,26 @@ export class Memory {
       typeof r.source==='string'&&r.source.startsWith('opencode:')&&
       safeText(r.fact,480)===r.fact &&
       (typeof r.sourceContext!=='string'||safeText(r.sourceContext,500)===r.sourceContext));
-    // Generic bounded lexical shortlist. Keep up to 12 source-index candidates
-    // alongside up to 12 Graphiti edges, preserving the hard 24 selector cap.
-    const lexRank=x=>{
-      const s=relevanceSignals(text,x.fact+' '+(x.sourceContext||''));
-      const lexical=s.overlap;
-      return answerTypeSupport(text,x.fact)*100+lexical.count*10+lexical.score;
+    // Mandatory relevance and source-linked admission precede the shortlist,
+    // never follow an arbitrary raw search/index slice. This keeps Graphiti
+    // facts 13-24 usable and prevents irrelevant index records from filling
+    // the shared model-facing candidate budget.
+    const fromGraphiti=shortlistQualifiedCandidates(text,candidates);
+    const fromCurator=shortlistQualifiedCandidates(text,indexedCandidates);
+    const combined=[],seen=new Set();
+    const add=(item)=>{
+      if(!item||combined.length>=maxFacts)return;
+      const id=item.source+'\0'+item.fact;
+      if(seen.has(id))return;
+      seen.add(id);combined.push(item);
     };
-    indexedCandidates.sort((a,b)=>lexRank(b)-lexRank(a)||
-      a.fact.localeCompare(b.fact));
-    const combined=[...candidates.slice(0,12),
-      ...indexedCandidates.slice(0,12)].filter((r,i,all)=>
-        all.findIndex(other=>other.source===r.source&&other.fact===r.fact)===i);
+    // Alternate between independently sourced remote-search and fresh-remote
+    // confirmed index observations. One side may use the remaining slots if
+    // the other yields fewer qualifying candidates.
+    for(let i=0;i<maxFacts&&combined.length<maxFacts;i++){
+      if(i<fromGraphiti.length)add(fromGraphiti[i]);
+      if(i<fromCurator.length)add(fromCurator[i]);
+    }
     const ranked = await relevanceFilter(text, combined, this.ranker);
     const result = [];
     let budget = maxChars;

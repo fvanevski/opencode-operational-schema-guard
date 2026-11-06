@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { admitFact, lexicalSupport, relevanceSignals, relevanceFilter, localReranker } from './relevance.mjs';
+import { admitFact, lexicalSupport, relevanceSignals, relevanceFilter, localReranker , shortlistQualifiedCandidates } from './relevance.mjs';
 test('lexical floor rejects unrelated facts but admits direct multi-term evidence', async () => {
   assert.equal(admitFact('Which library is used for backlog dependency visualization?',
     'React Flow chosen for backlog dependency visualization'), true);
@@ -230,4 +230,28 @@ test('24-candidate selector admits a sourced relevant fact beyond the original t
   });
   assert.equal((await rerank(query, items.slice(0, 24))).get(18), 0.9);
   await assert.rejects(rerank(query, items), /candidate bound exceeded/);
+});
+
+
+test('qualified shortlist ranks eligibility before a 24-record bound and excludes unsafe aliases', async () => {
+  const query='Which PostgreSQL archive retention pipeline stores verified manifests?';
+  const entries=Array.from({length:32},(_,i)=>({fact:'An unrelated cloud weather observation '+i+'.'}));
+  const correct={fact:'The PostgreSQL archive retention pipeline stores verified manifests.'};
+  entries[27]=correct;
+  const shortlist=shortlistQualifiedCandidates(query,entries);
+  assert.deepEqual(shortlist,[correct]);
+  assert.deepEqual(await relevanceFilter(query,shortlist),[correct]);
+  assert.deepEqual(shortlistQualifiedCandidates('Which MongoDB archive retention pipeline stores verified manifests?',entries),[],
+    'unrelated named product is not admitted into the eligible shortlist');
+});
+test('qualified shortlist resolves equal direct overlap using original source-context evidence only as a tie', () => {
+  const query='What did commit 52863ae change in the Graphiti test suite?';
+  const distractor={fact:'Commit 52863ae refers to the Graphiti test suite and its tests.',
+    sourceContext:'The Graphiti test suite exists.'};
+  const relevant={fact:'Commit 52863ae refers to the Graphiti test suite and its tests.',
+    sourceContext:'The change in commit 52863ae fixes failure behavior in the Graphiti test suite.'};
+  const ranked=shortlistQualifiedCandidates(query,[distractor,relevant]);
+  assert.equal(ranked[0],relevant);
+  assert.equal(ranked.length,2);
+  assert.equal(relevanceSignals(query,'Issue #80 discusses the test suite.').eligible,false);
 });

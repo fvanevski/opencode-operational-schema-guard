@@ -220,3 +220,30 @@ test('native sourced recall may use facts 13-24 but not an out-of-bound remote r
     'opencode:ses-bounded:message:msg-'+ids[18].slice(-12));
   assert.equal(result[0].evidenceClass,'tool-reported');
 }));
+
+
+test('source-correct fact at Graphiti result position 19 survives the 24-candidate bound when index route is also enabled', () => sandbox(async dir => {
+  const ids=Array.from({length:25},(_,i)=>
+    '70000000-0000-4000-8000-'+String(i).padStart(12,'0'));
+  const facts=ids.map((id,i)=>({fact:i===18
+    ?'The Parquet archive retention pipeline stores verified manifests.'
+    :'An unrelated weather observation '+i+' in an unrelated region.',
+    group_id:'alpha',episodes:[id]}));
+  const allowed=ids[18],seen=[];
+  const graphiti={call:async(name,args)=>{
+    seen.push(name);
+    if(name==='search_memory_facts')return {facts};
+    if(name==='get_episodes')return {episodes:ids.slice(0,24).map(uuid=>({uuid,group_id:'alpha'}))};
+    throw Error('unexpected call');
+  }};
+  const extraSourceResolver=async idsArg=>idsArg.map(id=>({status:'persisted',
+    group:'alpha',remoteEpisodeUuid:id,
+    sourceRef:'opencode:ses-test:message:msg-'+id.slice(-12),
+    evidenceClass:'tool-reported'}));
+  const mem=new Memory({journal:new Journal(dir,'alpha'),graphiti,group:'alpha',
+    extraSourceResolver,curatedCandidateRetriever:async()=>[]});
+  const result=await mem.search('Which Parquet archive retention pipeline stores verified manifests?');
+  assert.equal(result.length,1);
+  assert.equal(result[0].source,'opencode:ses-test:message:msg-'+allowed.slice(-12));
+  assert.deepEqual(seen,['search_memory_facts','get_episodes']);
+}));

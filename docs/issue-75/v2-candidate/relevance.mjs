@@ -211,6 +211,38 @@ function linkedSourceSignals(query,item,hasRerankScore) {
     ?{...contextual,overlap:direct.overlap,sourceContextQualified:true}
     :direct;
 }
+/**
+ * Exact-source candidate shortlist for an already authorized retrieval set.
+ * This is a query-dependent bound, never an authority upgrade. Evaluate the
+ * same mandatory Issue, numeric, named-entity and topical fences before
+ * imposing the 24-candidate model-facing bound. Source/group/remote checks
+ * belong to the caller, before entries arrive here.
+ */
+export function shortlistQualifiedCandidates(query, candidates, { limit = 24 } = {}) {
+  if (!Array.isArray(candidates) || !Number.isInteger(limit) ||
+      limit < 1 || limit > MAX_AUTOMATIC_CANDIDATES) return [];
+  const qualified = [];
+  for (let index = 0; index < candidates.length; index++) {
+    const item = candidates[index];
+    if (!item || typeof item.fact !== 'string') continue;
+    const signals = linkedSourceSignals(query, item, false);
+    if (!signals.eligible || signals.choiceOnly) continue;
+    // Source excerpts only disambiguate an exact lexical tie. They never
+    // overrule missing numeric/Issue identities or create an injected fact.
+    const context = typeof item.sourceContext === 'string' ? item.sourceContext : '';
+    const linked = context ? lexicalSupport(query, context) : {count:0,score:0};
+    qualified.push({ item, index, priority: signals.priority,
+      answerType:answerTypeSupport(query,item.fact), overlap:signals.overlap,
+      sourceContextOverlap:linked });
+  }
+  qualified.sort((a,b) =>
+    b.priority-a.priority || b.answerType-a.answerType ||
+    b.overlap.count-a.overlap.count || b.overlap.score-a.overlap.score ||
+    b.sourceContextOverlap.count-a.sourceContextOverlap.count ||
+    b.sourceContextOverlap.score-a.sourceContextOverlap.score ||
+    a.index-b.index);
+  return qualified.slice(0,limit).map(x=>x.item);
+}
 export async function relevanceFilter(query, candidates, ranker = null, { maxSelected = 1 } = {}) {
   if (!Array.isArray(candidates) || !candidates.length || !Number.isInteger(maxSelected) ||
       maxSelected < 1 || maxSelected > 4) return [];
