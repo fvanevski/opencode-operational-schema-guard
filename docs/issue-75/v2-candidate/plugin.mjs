@@ -95,6 +95,19 @@ export default {
     const pending = new Map();
     const recallPrompts = new Map();
     const legacyFallbackBlocked = new Set();
+    // Repeated native message IDs supersede earlier prompt content, including
+    // when the replacement is rejected by parsing/privacy/length fences.
+    // Preserve recall/capture belonging to other native message identities.
+    const supersedeNativePrompt = (sessionID, nativeID) => {
+      if (!nativeID) return;
+      const entries = recallPrompts.get(sessionID);
+      if (entries) {
+        const retained = entries.filter(entry => entry.nativeID !== nativeID);
+        if (retained.length) recallPrompts.set(sessionID, retained);
+        else recallPrompts.delete(sessionID);
+      }
+      if (pending.get(sessionID)?.nativeID === nativeID) pending.delete(sessionID);
+    };
     let stopped = false;
     // Only stage candidates in live hooks. A post-harness exclusive runner
     // owns Graphiti submissions and must hold the lease until terminal readback.
@@ -102,6 +115,8 @@ export default {
     try {
       await register(() => ctx.session.hook('prompt', event => {
         if (!event?.sessionID) return;
+        const nativeID = nativePromptID(event);
+        supersedeNativePrompt(event.sessionID, nativeID);
         const text = promptText(event.prompt?.text);
         if (!text) {
           legacyFallbackBlocked.add(event.sessionID);
@@ -110,7 +125,8 @@ export default {
         // Only remember after the admitted prompt reaches a model context build.
         if (settings.capture) {
           const candidate = selectUserDecision(text);
-          if (candidate) pending.set(event.sessionID, { candidate, time: new Date().toISOString() });
+          if (candidate) pending.set(event.sessionID, { candidate, nativeID,
+            time: new Date().toISOString() });
         }
         // The entire normalized query is subject to the original privacy,
         // control-character and 500-character fence. Rejected auxiliary
@@ -121,7 +137,7 @@ export default {
           return;
         }
         const entries = recallPrompts.get(event.sessionID) || [];
-        entries.push({ nativeID: nativePromptID(event), text: bounded,
+        entries.push({ nativeID, text: bounded,
           request: memory.search(bounded).catch(() => []) });
         if (entries.length > MAX_RECALL_PROMPTS_PER_SESSION) entries.shift();
         recallPrompts.delete(event.sessionID);

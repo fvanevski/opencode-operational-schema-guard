@@ -259,3 +259,79 @@ test('rejected long prompt without native message history fails closed instead o
         'no native message identity: invalid later prompt forbids stale fallback');
     },[{fact,group_id:'development-knowledge',episodes:[episode]}]);
 });
+
+test('rejected replacement native ID tombstones only its own recall, including private edits', async () => {
+  const query = 'What was our agreed evidence requirement before closing Issue #75?';
+  const decision = 'We decided that Issue 75 closes only after a fresh OpenCode session demonstrates source-attributed Graphiti persistence and recall.';
+  const fact = 'Issue 75 closes only after a fresh OpenCode session demonstrates source-attributed Graphiti persistence and recall.';
+  const episode = '44444444-5555-4666-a777-888888888888';
+  await withPlugin({ enabled: true, capture: false, group: 'development-knowledge' },
+    async ({ hooks, dir, mcp }) => {
+      const journal = new Journal(dir, 'development-knowledge');
+      const row = makeCandidate('development-knowledge', selectUserDecision(decision),
+        { sessionID: 's-edit', time: '2026-11-05T00:00:00Z' });
+      assert.ok(row);
+      assert.equal(await journal.stage(row), true);
+      assert.equal(await journal.update(row.uuid, 'pending', 'persisted',
+        { remoteEpisodeUuid: episode }), true);
+      const userMessage = (id, text) => [{ role: 'user', id,
+        parts: [{ type: 'text', text }] }];
+      const blocks = system => system.filter(p => p.text?.startsWith('[GHDEV_GRAPHITI_CONTEXT]'));
+      // A distinct same-session user prompt must survive another native ID's edit.
+      await hooks.session.prompt({ sessionID: 's-edit', messageID: 'msg-other',
+        prompt: { text: query } });
+      for (const rejected of [
+        '<private>Do not use or recall this message.</private>',
+        'ok',
+        'Long replacement ' + 'unrelated '.repeat(65),
+        '"malformed-transport-string',
+      ]) {
+        await hooks.session.prompt({ sessionID: 's-edit', messageID: 'msg-edited',
+          prompt: { text: query } });
+        const accepted = [];
+        await hooks.session.context({ sessionID: 's-edit',
+          messages: userMessage('msg-edited', query), system: accepted });
+        assert.equal(blocks(accepted).length, 1, 'accepted native message can recall');
+        await hooks.session.prompt({ sessionID: 's-edit', messageID: 'msg-edited',
+          prompt: { text: rejected } });
+        const replacement = [{ type: 'text',
+          text: '[GHDEV_GRAPHITI_CONTEXT]\nobsolete\n[/GHDEV_GRAPHITI_CONTEXT]' }];
+        await hooks.session.context({ sessionID: 's-edit',
+          messages: userMessage('msg-edited', rejected), system: replacement });
+        assert.equal(blocks(replacement).length, 0,
+          'rejected same-ID replacement must neither reuse nor retain stale recall');
+        const other = [];
+        await hooks.session.context({ sessionID: 's-edit',
+          messages: userMessage('msg-other', query), system: other });
+        assert.equal(blocks(other).length, 1,
+          'a rejected edit must not invalidate a different native message');
+      }
+      assert.equal(mcp.searchQueries.length, 5,
+        'only accepted searches run: one other and four edited prompts');
+      assert.equal(mcp.calls.includes('tools/call:add_memory'), false);
+    }, [{ fact, group_id: 'development-knowledge', episodes: [episode] }]);
+});
+
+test('rejected same-ID private edit clears pending capture but preserves other IDs', async () => {
+  const decision = 'We decided to retain native source-attributed Graphiti recall only for accepted user content.';
+  await withPlugin({ enabled: true, capture: true, group: 'development-knowledge' },
+    async ({ hooks, dir, mcp }) => {
+      await hooks.session.prompt({ sessionID: 's-capture-edit', messageID: 'msg-edited',
+        prompt: { text: decision } });
+      await hooks.session.prompt({ sessionID: 's-capture-edit', messageID: 'msg-edited',
+        prompt: { text: '<private>Rejected replacement</private>' } });
+      await hooks.session.context({ sessionID: 's-capture-edit',
+        messages: [{ role: 'user', id: 'msg-edited' }], system: [] });
+      assert.equal((await new Journal(dir, 'development-knowledge').list()).length, 0,
+        'superseded private content must not stage an earlier pending decision');
+      await hooks.session.prompt({ sessionID: 's-capture-edit', messageID: 'msg-other',
+        prompt: { text: decision } });
+      await hooks.session.prompt({ sessionID: 's-capture-edit', messageID: 'msg-aux',
+        prompt: { text: 'ok' } });
+      await hooks.session.context({ sessionID: 's-capture-edit',
+        messages: [{ role: 'user', id: 'msg-other' }], system: [] });
+      assert.equal((await new Journal(dir, 'development-knowledge').list()).length, 1,
+        'rejection of another native ID must not discard a legitimate pending capture');
+      assert.equal(mcp.calls.includes('tools/call:add_memory'), false);
+    });
+});
