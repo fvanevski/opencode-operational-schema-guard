@@ -76,6 +76,10 @@ export function validRecoveryBinding(group,unit){
   /^ghdev-curator80-[a-z0-9-]{1,40}$/.test(unit||'');
 }
 export function describeFixtureGroup(group){
+ if(group==='development-knowledge')
+  return {group_id:group,kind:'production',label:'Development Knowledge'};
+ if(group==='ghdev_gh_mcp')
+  return {group_id:group,kind:'legacy_production',label:'Retired development-era production group'};
  const named=parseFixtureGroup(group);
  if(named){
   const words=x=>x.split('-').map(t=>t[0].toUpperCase()+t.slice(1)).join(' ');

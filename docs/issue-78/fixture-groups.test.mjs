@@ -55,3 +55,15 @@ test('new recovery service units must match groups, legacy bindings stay accepte
  assert.equal(validRecoveryBinding('cur80_qual01','ghdev-curator-recovery-r01'),false);
  assert.equal(validRecoveryBinding('ghdev_gh_mcp','ghdev-curator-recovery-r01'),false);
 });
+
+test('the descriptive production graph is distinct from all fixtures and legacy data',()=>{
+ const live=describeFixtureGroup('development-knowledge');
+ assert.deepEqual(live,{group_id:'development-knowledge',kind:'production',
+  label:'Development Knowledge'});
+ const old=describeFixtureGroup('ghdev_gh_mcp');
+ assert.equal(old.kind,'legacy_production');
+ assert.equal(parseFixtureGroup(live.group_id),null);
+ assert.equal(isFixtureGroup(live.group_id,'recovery'),false);
+ assert.equal(permittedQualificationGroup('ghdev_gh_mcp',
+  'development-knowledge','development'),false);
+});
