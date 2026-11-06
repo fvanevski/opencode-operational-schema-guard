@@ -1,0 +1,91 @@
+{
+ "schema": "issue81-exact-head-source-tests.v1",
+ "campaign": "ISSUE81_GIT_PROCEDURE_SELECTION_V1",
+ "repo": "fvanevski/opencode-operational-schema-guard",
+ "issue": 81,
+ "pr": 89,
+ "implementation_branch": "issue/81-source-recall-correction",
+ "exact_head_sha": "5d6b285eec078ebf320e13578c1f650fe5fca5b6",
+ "exact_head_tree": "e7973c3de81e9dac74bc0f146fb2e93f2fb365e2",
+ "exact_head_parent": "a6d3f081f5c89a3119f32236a5e566291727a8ba",
+ "controller_base_sha": "9a27b73de882c0af6fec4d86de81945338611479",
+ "pre_fix_head": "0a4879fe626106b0d0bbc57079e82cee140b56c1",
+ "remote_authentication": {
+  "pr_state": "OPEN",
+  "pr_draft": true,
+  "pr_head_oid": "5d6b285eec078ebf320e13578c1f650fe5fca5b6",
+  "pr_base_oid": "9a27b73de882c0af6fec4d86de81945338611479",
+  "remote_main_head": "9a27b73de882c0af6fec4d86de81945338611479",
+  "main_equals_controller_base": true,
+  "kickoff_sha_matches_pr_head": true,
+  "note": "PR head unchanged from kickoff; no STALE condition. Work performed in detached primary checkout + isolated /tmp worktrees; operator checkout and untracked files untouched."
+ },
+ "diff_summary_base_to_head": {
+  "files_changed": 20,
+  "insertions": 1675,
+  "deletions": 21,
+  "all_paths_under_docs": true,
+  "protected_control_plane_edits": 0,
+  "production_files": [
+   "docs/issue-75/v2-candidate/memory-core.mjs",
+   "docs/issue-75/v2-candidate/memory-core.test.mjs",
+   "docs/issue-75/v2-candidate/plugin.mjs",
+   "docs/issue-75/v2-candidate/relevance.mjs",
+   "docs/issue-75/v2-candidate/relevance.test.mjs",
+   "docs/issue-78/v2-candidate/plugin.mjs",
+   "docs/issue-78/v2-curator/curated-recall-candidates.mjs",
+   "docs/issue-78/v2-curator/curated-recall-candidates.test.mjs",
+   "docs/issue-78/v2-curator/sourced-recall.mjs",
+   "docs/issue-78/v2-benchmark/issue81-admission-audit.mjs",
+   "docs/issue-78/v2-benchmark/issue81-admission-audit.test.mjs",
+   "docs/issue-78/v2-benchmark/issue81-retrieval-feasibility.mjs",
+   "docs/issue-78/v2-benchmark/issue81-retrieval-feasibility.test.mjs"
+  ]
+ },
+ "invariant_checks": {
+  "thirty_ms_promise_race": "unchanged (issue-75/v2-candidate/plugin.mjs lines 171-172; diff does not touch it)",
+  "single_fact_output": "unchanged (relevanceFilter maxSelected default 1)",
+  "safeText": "unchanged (no diff)",
+  "final_candidate_bound_24": "MAX_AUTOMATIC_CANDIDATES=24 now the shared Graphiti-search and selector bound (was 12); Memory.search maxFacts=24; remote extras bound maxFacts*12=288 anchors",
+  "relevance_signals_eligibility": "named-term fence now satisfies via content match, *DB identifier-component abbreviation, or 2-4 char acronym with >=2 shared opaque identifiers + overlap>=0.30; Issue/numeric fences unchanged and applied before any bonus",
+  "graphiti_remote_positive_membership": "indexed candidates admitted only when their episode UUID is in the live get_episodes readback (remoteEpisodes.has); missing/invalid remote readback abstains",
+  "curated_native_id_scope": "curated-recall-candidates.mjs takes the contextual excerpt only from events with source_strength=native-id and matching evidence_class/source_refs",
+  "serialized_mcp_calls": "Graphiti search and get_episodes awaited serially by construction (single shared client)",
+  "answerTypeSupport_ranking_only": "returns 1/0 only; used as a sort key after all admission fences; cannot admit a fact failing source/identity/topical gates"
+ },
+ "node_check_all_changed_mjs": {
+  "files_checked": 13,
+  "all_pass": true,
+  "exit": 0
+ },
+ "focused_suite": {
+  "command": "node --test docs/issue-78/v2-curator/curated-recall-candidates.test.mjs docs/issue-75/v2-candidate/relevance.test.mjs docs/issue-75/v2-candidate/relevance-priority-regression.test.mjs docs/issue-75/v2-candidate/relevance-observation-replay.test.mjs docs/issue-75/v2-candidate/memory-core.test.mjs docs/issue-75/v2-candidate/plugin-behavior.test.mjs docs/issue-78/v2-curator/production-cutover.test.mjs docs/issue-78/v2-benchmark/issue81-retrieval-feasibility.test.mjs docs/issue-78/v2-benchmark/issue81-admission-audit.test.mjs",
+  "tests": 71,
+  "pass": 71,
+  "fail": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "producer_exit": 0,
+  "duration_ms_approx": 475
+ },
+ "generic_a4_assertions": {
+  "description": "order-independence + no-hardcoded-source-ref + fence regressions, run against the staged 5d6b285 modules",
+  "checks": 10,
+  "pass": 10,
+  "exit": 0,
+  "assertions": [
+   "A4.1a effect-vs-setup both orders (relevanceFilter)",
+   "A4.1b effect-vs-setup both orders (shortlist)",
+   "A4.2a non-effect query no bonus",
+   "A4.2b port/why paths unaffected",
+   "A4.3a wrong named product not admitted",
+   "A4.3b wrong Issue identity not admitted",
+   "A4.3c numeric identity not admitted",
+   "A4.3d secret-bearing fact rejected by safeText",
+   "A4.3e wrong-group fact excluded by Memory.search",
+   "A4.4 source-ref symmetry (no hardcoded S10 ref shortcut)"
+  ]
+ },
+ "trusted_repository_final_receipt": "no complete trusted exact-head repository-final-v1 receipt staged for 5d6b285; permissive reuse condition not triggered; docs-focused suite executed locally (not covered by root CI)",
+ "staged_bytes_verified": "all staged .mjs bytes sha256-identical to git show 5d6b285:<path> (memory-core.mjs, relevance.mjs, curated-recall-candidates.mjs, sourced-recall.mjs)"
+}

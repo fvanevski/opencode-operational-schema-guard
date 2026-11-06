@@ -1,0 +1,33 @@
+{
+ "schema": "ghdev-command-shape-friction.v1",
+ "campaign": "ISSUE81_GIT_PROCEDURE_SELECTION_V1",
+ "commands_match_handoff": "yes",
+ "note": "handoff prescribed the literal focused node --test suite (executed verbatim, producer exit 0) and the replay/remote/precision steps (executed); no other literal command classes were prescribed. All guard corrections were deterministic and applied without changing bound identities.",
+ "events": [
+  {
+   "id": "F1",
+   "type": "pre_execution_rejection",
+   "effect": "agent-authored compound (rm -rf of not-yet-existing scratch dirs + git archive in one shell line) rejected by the shell guard; split into mkdir + git archive; no identity/lifecycle change",
+   "outcome": "resolved_first_retry"
+  },
+  {
+   "id": "F2",
+   "type": "interface_discovery",
+   "effect": "zsh treated a bare \"===\" echo separator as a glob (== not found); replaced with labeled separators",
+   "outcome": "resolved"
+  },
+  {
+   "id": "F3",
+   "type": "interface_discovery",
+   "effect": "Code Mode execute runtime does not support dynamic import(); remote-UUID confirmation moved to a roster-file read + separate execute call",
+   "outcome": "resolved"
+  },
+  {
+   "id": "F4",
+   "type": "masked_producer_failure_check",
+   "effect": "no producer exit masked: focused suite, replay, and A4 assertions each captured producer exit independently (0/0/0); display filters applied only after capture",
+   "outcome": "clean"
+  }
+ ],
+ "masked_producer_exits": null
+}

@@ -1,0 +1,40 @@
+{
+ "schema": "issue81-s10-procedural-vs-subject.v1",
+ "case_id": "S10",
+ "expected_source_ref": "opencode:ses_e50efdb27ffep7alMZaj9wkl3x:tool:call_1e0445fde85fa221",
+ "selected_source_ref": "opencode:ses_e50efdb27ffep7alMZaj9wkl3x:tool:call_1e0445fde85fa221",
+ "exact_source_match": true,
+ "effect_query_triggered": true,
+ "expected_subject_recognized": true,
+ "expected_fact_answer_type": 1,
+ "expected_fact_sha256": "9f431c07c31e39393cc9669aeb540816dfdac6e3e34bc17afa27ac13bd2b33d0",
+ "selected_fact_sha256": "9f431c07c31e39393cc9669aeb540816dfdac6e3e34bc17afa27ac13bd2b33d0",
+ "selected_answer_type": 1,
+ "selected_is_procedural": false,
+ "procedural_candidate_count": 6,
+ "procedural_candidate_answer_types": [
+  0,
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "selected_priority": 0,
+ "expected_priority": 0,
+ "selected_overlap": {
+  "count": 3,
+  "score": 0.5
+ },
+ "expected_overlap": {
+  "count": 3,
+  "score": 0.5
+ },
+ "selected_fact_sha256_equals_expected": true,
+ "interpretation": {
+  "expected_source": "genuine abbreviated-SHA-prefixed conventional commit subject (verb \"reject\" outside the old change-verb lexicon); now recognized by SHA-prefixed conventional-subject syntax -> answerType 1",
+  "incidental_selected_in_control": "git -C worktree-setup command transcript whose output incidentally echoed the commit subject; recognized as procedural (git -C + worktree/rev-parse/status operations checked before change verbs) -> answerType 0",
+  "order_independence": "verified by generic A4 assertions on the staged modules (both input orders, relevanceFilter and shortlistQualifiedCandidates); no known call ID/source ref hardcoded in ranking (source-ref symmetry assertion PASS)"
+ },
+ "sanitization": "raw fact text and command lines retained only in the private 0600 replay-raw.json; this file reports predicates, counts, overlaps and sha256 only"
+}

@@ -1,0 +1,66 @@
+{
+ "schema": "issue81-remote-proof-and-latency.v1",
+ "campaign": "ISSUE81_GIT_PROCEDURE_SELECTION_V1",
+ "endpoint": "http://127.0.0.1:8766/mcp",
+ "live_get_episodes_readback": {
+  "tool": "read-only Graphiti MCP get_episodes (group_ids=[development-knowledge], max_episodes=1000)",
+  "episode_count": 227,
+  "truncated": false,
+  "group_pure": true,
+  "distinct_groups": [
+   "development-knowledge"
+  ],
+  "invalid_uuids": 0,
+  "expected_episode_uuids_present": "16/16",
+  "expected_episode_uuids_missing": [],
+  "note": "local persisted receipt alone insufficient; this live remote readback positively confirms all 16 expected episode UUIDs. Corpus size 227 treated as drift in the diagnostic population, not a reason to change expected refs."
+ },
+ "curator_root": {
+  "path": "/home/filip/.local/state/ghdev-graphiti",
+  "curation_records_files": 378,
+  "persisted_scoped_single_fact_records": 227,
+  "expected_episodes_with_native_id_anchors": "16/16"
+ },
+ "deployed_config": {
+  "plugin_bytes_match": "main base 9a27b73 (issue-75 plugin sha256 556f262c..., issue-78 plugin sha256 e54884ba...); unmerged PR candidate bytes NOT deployed",
+  "group": "development-knowledge",
+  "workspace": "/workspace/mcp_servers/gh_mcp",
+  "project": "gh_mcp",
+  "state_dir": "/home/filip/.local/state/ghdev-graphiti",
+  "endpoint": "http://127.0.0.1:8766/mcp"
+ },
+ "timing": {
+  "graphiti_d24_search_ms": {
+   "n": 18,
+   "p50": 147.0,
+   "p95": 185.7,
+   "max": 320,
+   "min": 138
+  },
+  "remote_membership_ms": {
+   "n": 18,
+   "p50": 21.0,
+   "p95": 30.3,
+   "max": 32,
+   "min": 20
+  },
+  "curated_index_ms": {
+   "n": 20,
+   "p50": 32.0,
+   "p95": 38.0,
+   "max": 75,
+   "min": 0
+  },
+  "e2e_memory_search_ms": {
+   "n": 20,
+   "p50": 178.5,
+   "p95": 205.5,
+   "max": 366,
+   "min": 0
+  },
+  "sample_population": "20 replay cases (16 positive + 4 negative); d24/get_episodes measured on the 18 cases that reach remote calls (N03/N04 rejected prompt-side)",
+  "first_call_transient": "S01 e2e=366ms / d24=320ms first-call transient; all 17 subsequent d24 calls 138-162ms; no persistent latency regression",
+  "hook_p95": "UNVERIFIED (native hook boundaries not instrumented in this offline replay; 300ms hook allowance unchanged in source)",
+  "note": "d24 max 320ms is the single first-call transient only; p50 d24=147ms well inside the 300ms native hook allowance which governs context building, not the offline d24 diagnostic itself"
+ }
+}

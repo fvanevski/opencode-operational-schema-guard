@@ -1,0 +1,70 @@
+{
+ "schema": "issue81-safety-and-precision.v1",
+ "campaign": "ISSUE81_GIT_PROCEDURE_SELECTION_V1",
+ "frozen_inputs_verified": {
+  "semantic_recall_roster": {
+   "path_class": "private 0600",
+   "sha256": "47e141bdc81f1f2cdc2e98c7697162dbbf3250a5eb209a56361b358bc2441652",
+   "status": "MATCH"
+  },
+  "operator_review_packet_126": {
+   "sha256": "c110acd3bcc9fa6e62f347c285bd61fd542e2a826634fa1134bac78a1f204e52",
+   "status": "MATCH",
+   "items": 126,
+   "human_verdict_subfields_all_null": true,
+   "adjudication_status": "AWAITING_OPERATOR_ADJUDICATION"
+  },
+  "phase_b_durable_precision_worksheet": {
+   "sha256": "9f9152cc1a5c0defc616dcced2869d30aa21738f78d698a5b8b2777659b7b56c",
+   "status": "MATCH"
+  },
+  "phase_b_durable_precision_asof_snapshot": {
+   "sha256": "c8d5053c16ac7a07447c71d0bb5e7c4ce665940cdba32633119bdb25d6524ef37",
+   "status": "MATCH"
+  },
+  "control_12of16_packet": {
+   "published_at_evidence_commit": "93ed977d5000f0caf02be1d01aa63ab4b1112635",
+   "path": "docs/issue-78/evidence/81-qualified-shortlist-v1/candidate-shortlist-replay.json",
+   "status": "READ"
+  }
+ },
+ "human_precision": {
+  "target": ">=0.90 (operator-ratified, 126-item packet)",
+  "status": "UNVERIFIED",
+  "note": "all human verdict fields remain null until real operator adjudication; this campaign neither fills nor waives them"
+ },
+ "privacy_checks": {
+  "secret_pattern_scan_scope": "all selected/injected source refs, S10 private full fact texts (expected, selected, 6 procedural candidates)",
+  "patterns": [
+   "sk-*",
+   "ghp_*",
+   "api_key=",
+   "bearer token",
+   "BEGIN RSA/OPENSSH"
+  ],
+  "violations": [],
+  "result": "NO_PRIVATE_LEAK"
+ },
+ "group_checks": {
+  "live_get_episodes_group_pure": true,
+  "selected_facts_group": "all selections from development-knowledge remote-confirmed episodes",
+  "wrong_group_leak": null
+ },
+ "n02_assessment": "FAIL_INJECTED preserved as the frozen same-group content-policy miss; injected source ref identical to 12/16 control; never stated as cross-group leakage",
+ "named_fences_preserved": [
+  "S03",
+  "S05",
+  "S13"
+ ],
+ "hard_blockers": [],
+ "authority_invariants": {
+  "no_implementation_branch_write": true,
+  "no_frozen_score_rewrites": true,
+  "no_service_plugin_config_changes": true,
+  "no_graphiti_curator_queue_mutations": true,
+  "no_openviking_ex_gate_bypass": true,
+  "no_new_model_server_or_gate_lease": true,
+  "unmerged_candidate_not_deployed": true,
+  "single_evidence_commit": "authorized at publish step"
+ }
+}
