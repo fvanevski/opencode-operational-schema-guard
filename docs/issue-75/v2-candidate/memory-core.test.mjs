@@ -2,6 +2,7 @@ import test from 'node:test';
 import { spawnSync } from 'node:child_process';
 import assert from 'node:assert/strict';
 import { mkdtemp, rm } from 'node:fs/promises';
+import { performance } from 'node:perf_hooks';
 import os from 'node:os';
 import path from 'node:path';
 import { safeText, selectUserDecision, selectCompletedTest, deterministicUUID,
@@ -245,7 +246,8 @@ test('source-correct fact at Graphiti result position 19 survives the 24-candida
   const result=await mem.search('Which Parquet archive retention pipeline stores verified manifests?');
   assert.equal(result.length,1);
   assert.equal(result[0].source,'opencode:ses-test:message:msg-'+allowed.slice(-12));
-  assert.deepEqual(seen,['search_memory_facts','get_episodes']);
+  assert.deepEqual(seen,['search_memory_facts'],
+    'an empty positive curation inventory must not trigger optional remote proof');
 }));
 
 
@@ -324,3 +326,106 @@ test('failed shared Graphiti MCP call releases the queue without retry or unsafe
   assert.deepEqual(started,['search_memory_facts','get_episodes','search_memory_facts']);
   assert.equal(maxActive,1);
 });
+
+
+test('early curated retriever rejection is safely handled during a slower Graphiti search',()=> sandbox(async dir=>{
+  const graphiti={call:async name=>{
+    assert.equal(name,'search_memory_facts');
+    await new Promise(resolve=>setTimeout(resolve,65));
+    return {facts:[]};
+  }};
+  const mem=new Memory({journal:new Journal(dir,'alpha'),graphiti,group:'alpha',
+    curatedCandidateRetriever:()=>Promise.reject(Error('corrupt local curation JSON'))});
+  assert.deepEqual(await mem.search('Which archive retention service was configured?'),[]);
+  // Node's default strict unhandled-rejection policy would fail this test
+  // before search settles if the local rejection were handled only afterward.
+}));
+test('slow optional proof cannot delay an otherwise sourced legacy result',()=> sandbox(async dir=>{
+  const id='70000000-0000-4000-8000-000000000101',names=[];
+  const query='Which Parquet archive retention pipeline stores verified manifests?';
+  const graphiti={call:async name=>{
+    names.push(name);
+    if(name==='search_memory_facts')return {facts:[{
+      group_id:'alpha',episodes:[id],
+      fact:'The Parquet archive retention pipeline stores verified manifests.'
+    }]};
+    if(name==='get_episodes'){
+      await new Promise(resolve=>setTimeout(resolve,410));
+      throw Error('optional proof transport timeout');
+    }
+    throw Error('unexpected Graphiti call');
+  }};
+  const extraSourceResolver=async ids=>ids.map(remoteEpisodeUuid=>({
+    status:'persisted',group:'alpha',remoteEpisodeUuid,
+    sourceRef:'opencode:ses-legacy:message:msg-101',evidenceClass:'tool-reported'}));
+  const indexRows=[{fact:'The Parquet archive retention pipeline stores verified manifests.',
+    group:'alpha',remoteEpisodeUuid:id,
+    source:'opencode:ses-index:message:msg-102',evidenceClass:'tool-reported'}];
+  const mem=new Memory({journal:new Journal(dir,'alpha'),graphiti,group:'alpha',
+    extraSourceResolver,curatedCandidateRetriever:async()=>indexRows});
+  const start=performance.now();
+  const result=await mem.search(query);
+  const elapsed=performance.now()-start;
+  assert.equal(result.length,1);
+  assert.equal(result[0].source,'opencode:ses-legacy:message:msg-101');
+  assert.ok(elapsed<270,'legacy result must not wait for 410ms optional remote proof: '+elapsed);
+  assert.deepEqual(names,['search_memory_facts','get_episodes']);
+}));
+test('optional remote proof is skipped when curated source inventory has no qualifying facts',()=>sandbox(async dir=>{
+  const ids=['70000000-0000-4000-8000-000000000101'],called=[];
+  const graphiti={call:async name=>{
+    called.push(name);
+    if(name==='search_memory_facts')return {facts:[{group_id:'alpha',episodes:ids,
+      fact:'The Parquet archive retention pipeline stores verified manifests.'}]};
+    throw Error('get_episodes must not be called with no qualifying index');
+  }};
+  const resolver=async idsArg=>idsArg.map(remoteEpisodeUuid=>({status:'persisted',
+    group:'alpha',remoteEpisodeUuid,sourceRef:'opencode:ses-skip:message:msg-101',
+    evidenceClass:'tool-reported'}));
+  const mem=new Memory({journal:new Journal(dir,'alpha'),graphiti,group:'alpha',
+    extraSourceResolver:resolver,curatedCandidateRetriever:async()=>[]});
+  const items=await mem.search('Which Parquet archive retention pipeline stores verified manifests?');
+  assert.equal(items.length,1);
+  assert.deepEqual(called,['search_memory_facts']);
+}));
+test('reranker scores all 24 Graphiti facts before merging 12 indexed facts, only once',()=>sandbox(async dir=>{
+  const ids=Array.from({length:24},(_,i)=>
+    '70000000-0000-4000-8000-'+String(200+i).padStart(12,'0'));
+  const indexedIDs=Array.from({length:12},(_,i)=>
+    '70000000-0000-4000-8000-'+String(400+i).padStart(12,'0'));
+  const target=ids[18],seen=[];
+  const graphiti={call:async name=>{
+    seen.push(name);
+    if(name==='search_memory_facts')return {facts:ids.map((id,i)=>({
+      fact:i===18?'React Flow chosen for backlog dependency visualization':
+        'An unrelated weather observation '+i,
+      group_id:'alpha',episodes:[id]
+    }))};
+    if(name==='get_episodes')return {episodes:indexedIDs.map(uuid=>({uuid,group_id:'alpha'}))};
+    throw Error('unexpected tool');
+  }};
+  const resolver=async idsArg=>idsArg.map(remoteEpisodeUuid=>({status:'persisted',
+    group:'alpha',remoteEpisodeUuid,
+    sourceRef:'opencode:ses-graph:message:msg-'+remoteEpisodeUuid.slice(-12),
+    evidenceClass:'tool-reported'}));
+  const indexRows=indexedIDs.map((id,i)=>({
+    group:'alpha',remoteEpisodeUuid:id,
+    fact:'The interactive issue map uses a workspace graph to render dependency items '+i,
+    source:'opencode:ses-index:message:msg-'+id.slice(-12),
+    evidenceClass:'tool-reported',sourceContext:'An interactive issue map is shown on the workspace.'
+  }));
+  let rankerCalls=0;
+  const ranker=async(_q,items)=>{
+    rankerCalls++;
+    assert.equal(items.length,24,'remote fact 19 must reach the reranker');
+    assert.equal(items[18].fact,'React Flow chosen for backlog dependency visualization');
+    return new Map(items.map((_,i)=>[i,i===18?.94:.03]));
+  };
+  const mem=new Memory({journal:new Journal(dir,'alpha'),graphiti,group:'alpha',
+    extraSourceResolver:resolver,curatedCandidateRetriever:async()=>indexRows,ranker});
+  const found=await mem.search('What did we settle on for interactive issue map?');
+  assert.equal(rankerCalls,1,'do not issue a second expensive reranker call');
+  assert.equal(found.length,1);
+  assert.equal(found[0].source,'opencode:ses-graph:message:msg-'+target.slice(-12));
+  assert.deepEqual(seen,['search_memory_facts','get_episodes']);
+}));
