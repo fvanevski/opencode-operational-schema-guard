@@ -160,3 +160,78 @@ test('disabled plugin registers no hooks and performs no work', async () => {
     assert.equal(hooks.tool['execute.after'], undefined, 'no tool hook when disabled');
   });
 });
+
+
+test('long auxiliary prompt cannot replace source-bound fresh native user recall', async () => {
+  const query = 'What was our agreed evidence requirement before closing Issue #75?';
+  const decision = 'We decided that Issue 75 closes only after a fresh OpenCode session demonstrates source-attributed Graphiti persistence and recall.';
+  const fact = 'Issue 75 closes only after a fresh OpenCode session demonstrates source-attributed Graphiti persistence and recall.';
+  const episode = '11111111-2222-4333-a444-555555555555';
+  await withPlugin({ enabled:true, capture:false, group:'development-knowledge' },
+    async ({ hooks, dir, mcp }) => {
+      const row = makeCandidate('development-knowledge', selectUserDecision(decision),
+        { sessionID:'s-aux', time:'2026-11-05T00:00:00Z' });
+      assert.ok(row);
+      const journal = new Journal(dir, 'development-knowledge');
+      assert.equal(await journal.stage(row), true);
+      assert.equal(await journal.update(row.uuid, 'pending', 'persisted',
+        { remoteEpisodeUuid:episode }), true);
+      await hooks.session.prompt({sessionID:'s-aux', messageID:'msg-real',
+        prompt:{text:query}});
+      await hooks.session.prompt({sessionID:'s-aux',
+        prompt:{text:'Auxiliary title request '+ 'irrelevant '.repeat(70)}});
+      const system = [{type:'text', text:'[preexisting OpenViking context]'}];
+      const messages = [{role:'user', id:'msg-real', parts:[{type:'text',text:query}]}];
+      await hooks.session.context({sessionID:'s-aux',messages,system});
+      const memory = system.filter(p => p.text?.startsWith('[GHDEV_GRAPHITI_CONTEXT]'));
+      assert.equal(memory.length,1);
+      assert.match(memory[0].text,/source-attributed Graphiti persistence/);
+      assert.match(memory[0].text,/source=opencode:s-aux:/);
+      assert.ok(system.some(p => p.text.includes('OpenViking')));
+      assert.deepEqual(mcp.searchQueries,[query],
+        'overlong auxiliary text never starts a search or replaces user association');
+      assert.equal(mcp.calls.includes('tools/call:add_memory'),false);
+      await hooks.session.context({sessionID:'s-aux',messages,system});
+      assert.equal(system.filter(p=>p.text?.startsWith('[GHDEV_GRAPHITI_CONTEXT]')).length,1,
+        'repeated context builds remove prior Graphiti block before injecting');
+    }, [{fact,group_id:'development-knowledge',episodes:[episode]}]);
+});
+
+test('interleaved short auxiliary prompts match the current native user, not session latest', async () => {
+  const query='What was our agreed evidence requirement before closing Issue #75?';
+  const fact='Issue 75 closes only after a fresh OpenCode session demonstrates source-attributed Graphiti persistence and recall.';
+  const decision='We decided that Issue 75 closes only after a fresh OpenCode session demonstrates source-attributed Graphiti persistence and recall.';
+  const episode='22222222-3333-4444-a555-666666666666';
+  await withPlugin({enabled:true,capture:false,group:'development-knowledge'},
+    async ({hooks,dir,mcp})=>{
+      const journal=new Journal(dir,'development-knowledge');
+      const row=makeCandidate('development-knowledge',selectUserDecision(decision),
+        {sessionID:'s-short',time:'2026-11-05T00:00:00Z'});
+      assert.ok(row);
+      assert.equal(await journal.stage(row),true);
+      assert.equal(await journal.update(row.uuid,'pending','persisted',
+        {remoteEpisodeUuid:episode}),true);
+      await hooks.session.prompt({sessionID:'s-short',messageID:'msg-user',
+        prompt:{text:query}});
+      await hooks.session.prompt({sessionID:'s-short',messageID:'msg-title',
+        prompt:{text:'What title should describe this unrelated Tokyo weather report?'}});
+      const messages=[{role:'user',id:'msg-user',parts:[{type:'text',text:query}]}];
+      const system=[];
+      await hooks.session.context({sessionID:'s-short',messages,system});
+      assert.equal(system.filter(p=>p.text?.startsWith('[GHDEV_GRAPHITI_CONTEXT]')).length,1,
+        'native user ID selects the correct prewarmed search, even after auxiliary search');
+      assert.ok(mcp.searchQueries.includes(query));
+      assert.ok(mcp.searchQueries.some(q=>q.includes('Tokyo weather')));
+      const unknown=[{role:'user',id:'msg-unrelated',
+        parts:[{type:'text',text:'What was a different user discussing?'}]}];
+      const unrelatedSystem=[];
+      await hooks.session.context({sessionID:'s-short',messages:unknown,system:unrelatedSystem});
+      assert.equal(unrelatedSystem.some(p=>p.text?.startsWith('[GHDEV_GRAPHITI_CONTEXT]')),false,
+        'no arbitrary reuse for an unbound user message');
+      const ambiguousSystem=[];
+      await hooks.session.context({sessionID:'s-short',system:ambiguousSystem});
+      assert.equal(ambiguousSystem.some(p=>p.text?.startsWith('[GHDEV_GRAPHITI_CONTEXT]')),false,
+        'legacy no-message path fails closed when two same-session prompts exist');
+      assert.equal(mcp.calls.includes('tools/call:add_memory'),false);
+    },[{fact,group_id:'development-knowledge',episodes:[episode]}]);
+});
