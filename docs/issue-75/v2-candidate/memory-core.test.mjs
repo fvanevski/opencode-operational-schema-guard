@@ -435,3 +435,27 @@ test('reranker scores all 24 Graphiti facts before merging 12 indexed facts, onl
   assert.equal(found[0].source,'opencode:ses-graph:message:msg-'+target.slice(-12));
   assert.deepEqual(seen,['search_memory_facts','get_episodes']);
 }));
+
+
+test('a slow initial Graphiti search does not discard fast positive indexed proof',()=>sandbox(async dir=>{
+  const id='70000000-0000-4000-8000-000000000101',calls=[];
+  const graphiti={call:async name=>{
+    calls.push(name);
+    if(name==='search_memory_facts'){
+      await new Promise(resolve=>setTimeout(resolve,285));
+      return {facts:[]};
+    }
+    if(name==='get_episodes')return {episodes:[{uuid:id,group_id:'alpha'}]};
+    throw Error('unexpected Graphiti method');
+  }};
+  const idx=[{fact:'The Parquet archive retention pipeline stores verified manifests.',
+    group:'alpha',remoteEpisodeUuid:id,
+    source:'opencode:ses-index:message:msg-101',evidenceClass:'tool-reported'}];
+  const memory=new Memory({journal:new Journal(dir,'alpha'),graphiti,group:'alpha',
+    curatedCandidateRetriever:async()=>idx});
+  const found=await memory.search('Which Parquet archive retention pipeline stores verified manifests?');
+  assert.equal(found.length,1,
+    'a cold search over 245ms may still permit a fast read-only episode proof');
+  assert.equal(found[0].source,idx[0].source);
+  assert.deepEqual(calls,['search_memory_facts','get_episodes']);
+}));

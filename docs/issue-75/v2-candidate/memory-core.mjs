@@ -12,7 +12,6 @@ import { performance } from 'node:perf_hooks';
 // An optional curated-index read must never hold up already-sourced Graphiti
 // results for a full MCP transport timeout. This budget is *not* the native
 // hook's independent 300 ms deadline; it only bounds optional enrichment.
-const INDEX_ENRICHMENT_SOFT_DEADLINE_MS = 245;
 const INDEX_ENRICHMENT_MAX_WAIT_MS = 70;
 async function optionalWithin(promise, ms, fallback) {
   if (!(ms > 0)) return fallback;
@@ -353,7 +352,6 @@ export class Memory {
     // calls MUST be serialized. Concurrent tool calls have caused real
     // service/session failures on this host (S16 diagnostic).
     // An indexed observation still needs positive remote UUID/group proof.
-    const searchStarted = performance.now();
     // Attach the rejection handler NOW, not after awaiting Graphiti. An
     // index read can fail before the first remote call settles, and deferred
     // catch would cause an unhandled rejection in strict Node processes.
@@ -420,8 +418,12 @@ export class Memory {
     // Build the legacy sourced candidates FIRST. Remote episode proof is
     // optional enrichment, not a prerequisite for already-sourced facts.
     // Protect the hook's 300ms window from the optional 1200ms MCP timeout.
-    const remaining = () => Math.max(0, Math.min(INDEX_ENRICHMENT_MAX_WAIT_MS,
-      INDEX_ENRICHMENT_SOFT_DEADLINE_MS - (performance.now() - searchStarted)));
+    // Start the optional deadline after the legacy sourced path is ready.
+    // A cold Graphiti query can exceed 245ms; that is not a reason to
+    // discard a fast positive indexed proof in a prefetched request.
+    const enrichmentStarted=performance.now();
+    const remaining=()=>Math.max(0,INDEX_ENRICHMENT_MAX_WAIT_MS -
+      (performance.now()-enrichmentStarted));
     const indexData=await optionalWithin(indexedWork,remaining(),[]);
     const scopedRows=indexData.filter(r=>
       r?.group===this.group&&validId(r.remoteEpisodeUuid)&&
