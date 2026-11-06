@@ -6,6 +6,23 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
+import { performance } from 'node:perf_hooks';
+
+
+// An optional curated-index read must never hold up already-sourced Graphiti
+// results for a full MCP transport timeout. This budget is *not* the native
+// hook's independent 300 ms deadline; it only bounds optional enrichment.
+const INDEX_ENRICHMENT_SOFT_DEADLINE_MS = 245;
+const INDEX_ENRICHMENT_MAX_WAIT_MS = 70;
+async function optionalWithin(promise, ms, fallback) {
+  if (!(ms > 0)) return fallback;
+  let timer;
+  try {
+    return await Promise.race([promise, new Promise(resolve => {
+      timer = setTimeout(() => resolve(fallback), ms);
+    })]);
+  } finally { clearTimeout(timer); }
+}
 
 const PRIVATE = /<private\b|<\/private>|BEGIN (?:RSA |OPENSSH )?PRIVATE KEY|(?:api[_-]?key|access[_-]?token|password|secret)\s*[:=]|authorization\s*:\s*bearer|gh[pousr]_[A-Za-z0-9]{18,}|sk-[A-Za-z0-9_-]{16,}/i;
 const DECISION = /\b(?:i (?:prefer|want|choose|decided|will use)|we (?:prefer|choose|decided|will use)|(?:let's|lets) (?:use|keep|switch to)|(?:for this (?:project|repo|workflow)|going forward)[,: ]+|(?:remember|note) (?:that|this)|(?:the (?:decision|architecture|default|requirement) is))\b/i;
@@ -336,19 +353,19 @@ export class Memory {
     // calls MUST be serialized. Concurrent tool calls have caused real
     // service/session failures on this host (S16 diagnostic).
     // An indexed observation still needs positive remote UUID/group proof.
+    const searchStarted = performance.now();
+    // Attach the rejection handler NOW, not after awaiting Graphiti. An
+    // index read can fail before the first remote call settles, and deferred
+    // catch would cause an unhandled rejection in strict Node processes.
     const indexedWork = this.curatedCandidateRetriever
-      ? Promise.resolve().then(()=>this.curatedCandidateRetriever()) : Promise.resolve([]);
-    let facts=null,remoteData=null;
+      ? Promise.resolve().then(() => this.curatedCandidateRetriever())
+          .then(rows => Array.isArray(rows) && rows.length <= 500 ? rows : [],
+            () => [])
+      : Promise.resolve([]);
+    let facts=null;
     try { facts=await this.graphiti.call('search_memory_facts', {
       query: text,group_ids:[this.group],max_facts:maxFacts,
-    }); } catch { /* Search outage cannot authorize fallback without proof. */ }
-    if(this.curatedCandidateRetriever) {
-      try { remoteData=await this.graphiti.call('get_episodes',{
-        group_ids:[this.group],max_episodes:1000,
-      }); } catch { /* Missing remote readback means no index admission. */ }
-    }
-    let indexData=[];
-    try { indexData=await indexedWork; } catch { /* Index failure cannot upgrade authority. */ }
+    }); } catch { /* Search outage cannot authorize new source assertions. */ }
     const received=Array.isArray(facts?.facts)?facts.facts.slice(0,maxFacts):[];
     // Only keep rows relevant to returned Graphiti episode anchors.
     // The journal scan is paged, so historical records >500 still resolve.
@@ -399,19 +416,34 @@ export class Memory {
         temporal, validAt: fact.valid_at ?? null, invalidAt: fact.invalid_at ?? null });
     }
     const { relevanceFilter, shortlistQualifiedCandidates } = await import('./relevance.mjs');
-    // Positive current remote episode membership and exact scoped curation
-    // records are BOTH required. Missing/invalid remote readback abstains.
-    const remoteEpisodes = Array.isArray(remoteData?.episodes) &&
-      remoteData.episodes.length < 1000 &&
-      remoteData.episodes.every(e=>e?.group_id===this.group&&validId(e.uuid))
-      ?new Set(remoteData.episodes.map(e=>e.uuid)):new Set();
-    const indexedRows=Array.isArray(indexData)&&indexData.length<=500?indexData:[];
-    const indexedCandidates=indexedRows.filter(r=>
-      r?.group===this.group&&remoteEpisodes.has(r.remoteEpisodeUuid)&&
+    // Build the legacy sourced candidates FIRST. Remote episode proof is
+    // optional enrichment, not a prerequisite for already-sourced facts.
+    // Protect the hook's 300ms window from the optional 1200ms MCP timeout.
+    const remaining = () => Math.max(0, Math.min(INDEX_ENRICHMENT_MAX_WAIT_MS,
+      INDEX_ENRICHMENT_SOFT_DEADLINE_MS - (performance.now() - searchStarted)));
+    const indexData=await optionalWithin(indexedWork,remaining(),[]);
+    const scopedRows=indexData.filter(r=>
+      r?.group===this.group&&validId(r.remoteEpisodeUuid)&&
       ['user-stated','tool-reported','assistant-reported'].includes(r.evidenceClass)&&
       typeof r.source==='string'&&r.source.startsWith('opencode:')&&
       safeText(r.fact,480)===r.fact &&
       (typeof r.sourceContext!=='string'||safeText(r.sourceContext,500)===r.sourceContext));
+    // No relevant indexed observations means no episode-list request.
+    // The pre-proof shortlist is a filter only, NEVER an authority upgrade.
+    const possibleIndex=shortlistQualifiedCandidates(text,scopedRows);
+    let remoteData=null;
+    if(possibleIndex.length && remaining()>0) {
+      const proof=this.graphiti.call('get_episodes',{
+        group_ids:[this.group],max_episodes:1000,
+      }).then(data=>data,()=>null); // immediate rejection handler
+      remoteData=await optionalWithin(proof,remaining(),null);
+    }
+    const remoteEpisodes = Array.isArray(remoteData?.episodes) &&
+      remoteData.episodes.length < 1000 &&
+      remoteData.episodes.every(e=>e?.group_id===this.group&&validId(e.uuid))
+      ?new Set(remoteData.episodes.map(e=>e.uuid)):new Set();
+    const indexedCandidates=possibleIndex.filter(r=>
+      remoteEpisodes.has(r.remoteEpisodeUuid));
     // Mandatory relevance and source-linked admission precede the shortlist,
     // never follow an arbitrary raw search/index slice. This keeps Graphiti
     // facts 13-24 usable and prevents irrelevant index records from filling
