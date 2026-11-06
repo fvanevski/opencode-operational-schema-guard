@@ -1,0 +1,99 @@
+{
+ "schema": "issue81-relevance-priority-validation-results.v1",
+ "campaign": "ISSUE81_RELEVANCE_PRIORITY_IMPLEMENTATION_V1",
+ "generated_at": "2026-11-06T17:10:00Z",
+ "repo": "fvanevski/opencode-operational-schema-guard",
+ "branch": "issue/81-relevance-priority",
+ "source_base": "b39e1ff7d950075273fc2dab7206c5f8a17add70",
+ "central_stage_sha": "ead09437f1207f31a183745a0f06da087ac0de83",
+ "remote_authentication": {
+  "origin": "https://github.com/fvanevski/opencode-operational-schema-guard.git",
+  "remote_branch_ref": "origin/issue/81-relevance-priority",
+  "remote_branch_head": "ead09437f1207f31a183745a0f06da087ac0de83",
+  "staged_commit_parent": "b39e1ff7d950075273fc2dab7206c5f8a17add70",
+  "staged_diff_files": [
+   "docs/issue-75/v2-candidate/relevance.mjs (1 line: HISTORICAL_STATEMENT bare-then removal)",
+   "docs/issue-75/v2-candidate/relevance-priority-regression.test.mjs (new, 37 lines)",
+   "docs/issue-78/evidence/81-relevance-priority-implementation-v1/LOCAL_AGENT_CONTRACT.md (new, 58 lines)"
+  ],
+  "staged_diff_matches_allowed_envelope": true
+ },
+ "environment": {
+  "node": "v26.13.0",
+  "package_json_scripts": { "test": "node scripts/test-plugin.mjs", "check": "node --check (38 plugin files)" },
+  "worktrees": {
+   "candidate": "/tmp/opencode/issue81-impl-ead09437 (detached @ ead09437)",
+   "red_base": "/tmp/opencode/issue81-red-base-b39e1ff (detached @ b39e1ff + staged regression test only)"
+  },
+  "primary_checkout": "preserved untouched (detached @ 3271a97, one pre-existing untracked session file)"
+ },
+ "source_digests": {
+  "relevance_mjs_candidate": {
+   "git_blob": "35747ac8474d78d05d18a00b3badefd0f9ee8c04",
+   "sha256": "9767486ef71fa6cf88497a1af801540dc401550a0a472c98cef64f9b4b380100"
+  },
+  "relevance_mjs_base": {
+   "sha256": "8db952332db85831ef947f3ac6cef6b96921af314d55e8d14dae70ab5f62da06"
+  },
+  "relevance_priority_regression_test": {
+   "git_blob": "82372049b7f83f64d41409e3e98fda1789104d61",
+   "sha256": "398b74d52cd7d30c580410a60b42903e024a8f16f00db3337d5f62b5528a945c"
+  },
+  "local_agent_contract": {
+   "git_blob": "502e8cbd9d4546b700a8ee94d1eaad9ec1b82add"
+  },
+  "memory_core_mjs_blob_base_and_candidate": "d35ae68aba0a77a5c2e3e6ca997643e87874b4eb",
+  "sourced_recall_mjs_blob_base_and_candidate": "2762a98725125ee8f91f6d148df77415065408db"
+ },
+ "red_baseline": {
+  "setup": "disposable worktree @ b39e1ff with ONLY the staged regression test copied in (pre-fix relevance.mjs, sha256 8db95233...)",
+  "command": "node --test docs/issue-75/v2-candidate/relevance-priority-regression.test.mjs",
+  "exit": 1,
+  "tests": 3, "pass": 1, "fail": 2, "cancelled": 0, "skipped": 0,
+  "failures": [
+   {
+    "test": "procedural then cannot outrank the more relevant old-to-new cutover",
+    "assertion": "distractor.priority == 0 (S06 procedural-then assertion)",
+    "actual": 1, "expected": 0,
+    "detail": "HISTORICAL_STATEMENT bare 'then' grants the procedural distractor priority 1 (pre-fix regex)"
+   },
+   {
+    "test": "standalone then does not trigger historical priority in unrelated prose",
+    "assertion": "relevanceSignals(query, procedural).priority == 0",
+    "actual": 1, "expected": 0
+   }
+  ],
+  "passing_in_baseline": ["explicit replacement and previous-state markers retain historical priority"]
+ },
+ "green_candidate": {
+  "at_head": "ead09437f1207f31a183745a0f06da087ac0de83",
+  "checks": [
+   { "command": "node --check docs/issue-75/v2-candidate/relevance.mjs", "exit": 0 },
+   { "command": "node --check docs/issue-75/v2-candidate/relevance-priority-regression.test.mjs", "exit": 0 },
+   {
+    "command": "node --test docs/issue-75/v2-candidate/relevance-priority-regression.test.mjs docs/issue-75/v2-candidate/relevance.test.mjs docs/issue-75/v2-candidate/relevance-observation-replay.test.mjs",
+    "exit": 0, "tests": 17, "pass": 17, "fail": 0,
+    "note": "includes all 3 new regression tests + 12 recorded in-sample replay cases (in-sample only, not an independent holdout)"
+   },
+   {
+    "command": "node --test docs/issue-75/v2-candidate/memory-core.test.mjs docs/issue-75/v2-candidate/plugin-behavior.test.mjs docs/issue-78/v2-candidate/association.test.mjs docs/issue-78/v2-candidate/candidate.test.mjs docs/issue-78/v2-candidate/long-prompt.test.mjs",
+    "exit": 0, "tests": 44, "pass": 44, "fail": 0
+   },
+   { "command": "npm run check", "exit": 0, "note": "38 plugin .mjs files syntax-clean" },
+   { "command": "npm test", "exit": 0, "tests": 506, "pass": 506, "fail": 0, "result_marker": "OPERATIONAL_PLUGIN_TEST_RESULT: PASS" }
+  ],
+  "true_exit_statuses_recorded": true
+ },
+ "bounded_replay": {
+  "details": "see candidate-replay.json",
+  "s06_required_positive": "PASS (candidate selects cutover proposition 28893e36 over procedural git-then distractor f1e47f17; base selected the distractor)",
+  "s13_abstention": "PASS (0 selected, 11 admitted rejected by lexical floor, equivalent pinned snapshot)",
+  "n02_grouping": "PASS (selection unchanged: 1afbcca0, development-knowledge fact ABOUT legacy ghdev_gh_mcp group)",
+  "n01_n03_n04_negative_guards": "PASS (live read-only probes 2026-11-06T16:55:40Z, 12 facts each; candidate filter selects 0 for all three; base identical; prior frozen captures: 0 injections each)",
+  "other_cases_unchanged": "S01 S03 S04 S05 S07 S10 (selection identical base vs candidate)",
+  "graph_drift": "none observed (development-knowledge 140 episodes, matching prior invariant)",
+  "in_sample_note": "replay uses the pinned 9-case snapshot; in-sample, not an independent holdout"
+ },
+ "host_changes": "none (no production plugin install, no Graphiti writes, no service/config change; read-only resolver + read-only MCP search only)",
+ "frozen_acceptance_preserved": "8/16 FAIL (threshold 13/16); N02 FAIL_INJECTED; human precision UNVERIFIED - unchanged by this campaign"
+}

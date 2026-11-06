@@ -1,0 +1,5 @@
+68db580b6e3aff5dc79f7b0db49fc59713622dea9d96a4c815353ce05593737f  ./candidate-replay.json
+cf22d1f8314763bc94da408a68b30e81729e993c1b1c3b4c00c87320f63e4563  ./command-shape-friction.json
+17ad33cab655ee8d002ef893dafc3c79431c1e74aaececdd0706d4664cf07042  ./handback.md
+b2fd3491b45fbe541d5673c263e487350438337c65adf23f5727501f7d7992b4  ./LOCAL_AGENT_CONTRACT.md
+dc14179f54fb3c750c48b3e85b7f42edee901d53575b793dcbb61b3049059b20  ./validation-results.json
