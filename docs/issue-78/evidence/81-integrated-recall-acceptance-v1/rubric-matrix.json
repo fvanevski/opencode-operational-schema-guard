@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "packet": "81-integrated-recall-acceptance-v1",
+  "source_stage_commit": "52863aed0498521b181f44bbb454ce314d60fa8c",
+  "source_stage_base_commit": "ef1d62de1942061bb4441fc3606996a6faa7d327",
+  "frozen_targets_reference": "docs/issue-78/v2-benchmark/targets.proposed.json (central proposal, operator-ratified; no thresholds modified)",
+  "rubric": [
+    {
+      "metric": "cpu_validation",
+      "target": "all 7 contract commands exit 0 (node --check x2, node --test x3, npm run check, npm test)",
+      "observed": "all 7 exit 0; node suites 31/31 + 24/24 + 24/24; root suite 506/506 OPERATIONAL_PLUGIN_TEST_RESULT: PASS",
+      "evidence_class": "cpu-only",
+      "verdict": "PASS"
+    },
+    {
+      "metric": "native_hook_shape_compatibility",
+      "target": "staged matching contract holds against genuine stock-V2 fields: prompt hook native ID, context messages with native user ID, outbound system context",
+      "observed": "stock-V2 2.2.5 prompt hook exposes event.messageID (msg_<id>) equal to context message id; context event exposes messages[] with role+id; [GHDEV_GRAPHITI_CONTEXT] block bound to the correct real user request; long (750 char) and short (2 char) auxiliary prompts do not steal the binding; no contract contradiction found",
+      "evidence_class": "disposable-host native probe (branch bytes, isolated config, recall-only)",
+      "verdict": "PASS (no contradiction; no redacted-shape return to Central required)"
+    },
+    {
+      "metric": "semantic_recall",
+      "target": ">= 0.80 in genuinely new installed native sessions",
+      "observed": "source-correct injection demonstrated on the disposable probe (block fact is source-bound and correct); installed-post-merge fresh-client population not yet run (branch bytes must not be activated in shared production pre-merge)",
+      "evidence_class": "disposable-host (probe) + pending fresh-process",
+      "verdict": "UNVERIFIED_UNTIL_FRESH_CLIENT (pre-merge boundary)"
+    },
+    {
+      "metric": "useful_candidate_coverage",
+      "target": ">= 0.85 (ratified, when applicable)",
+      "observed": "Stage H independent holdout (81-independent-holdout-v1): heldout_candidate_recall = 1.00 >= 0.85 on the frozen private corpus (sha256 524de3ff36877442c6dc4e75edf5da9f317ba1c2e25e267b117233514e425863, 24 cases, 14 valuable / 10 non-valuable, labels operator-attested pre-result)",
+      "evidence_class": "historic frozen-holdout (inherited)",
+      "verdict": "PASS (inherited from Stage H; corpus not relabeled/re-run)"
+    },
+    {
+      "metric": "durable_grounded_precision",
+      "target": ">= 0.90",
+      "observed": "Stage H: UNVERIFIED (0 receipt-bound model facts in the sealed holdout group; single bounded re-drain authorized). Live development-knowledge group: 116 persisted curation records with 1:1 terminal Graphiti episode receipts (116/116, no duplication) — a positive receipt population now exists; precision scoring of that population is a model-backed post-exit step",
+      "evidence_class": "live Graphiti (read-only) + pending post-exit",
+      "verdict": "UNVERIFIED (post-exit model scoring pending)"
+    },
+    {
+      "metric": "zero_secret_leakage",
+      "target": "zero observed secret exposure",
+      "observed": "secret-bearing prompt (invented fake token) rejected by the safeText privacy fence: no search, no block; token absent from all [GHDEV_GRAPHITI_CONTEXT] blocks (0/246 instrumented builds)",
+      "evidence_class": "disposable-host native probe (negative control)",
+      "verdict": "PASS (observed)"
+    },
+    {
+      "metric": "zero_wrong_group",
+      "target": "zero observed wrong-group citation",
+      "observed": "legacy-group topic query (ghdev_gh_mcp, graph now 0 nodes) produced no injection; recall is group-filtered to development-knowledge (group_ids filter + curated resolver group/workspace/project binding)",
+      "evidence_class": "disposable-host native probe (negative control)",
+      "verdict": "PASS (observed)"
+    },
+    {
+      "metric": "zero_false_verified",
+      "target": "zero upgraded 'verified' claims",
+      "observed": "injected fact carries evidence class 'assistant-reported' and temporal marker 'historical/superseded'/'current state not independently verified'; no 'verified' upgrade in block",
+      "evidence_class": "disposable-host native probe + live Graphiti",
+      "verdict": "PASS (observed)"
+    },
+    {
+      "metric": "graph_duplication",
+      "target": "observed (no blind replay duplicates)",
+      "observed": "development-knowledge: 116 remote episodes (get_episodes, name curated-v1:<record-id>) vs 116 persisted curation records = 1:1, no duplicates; 223 FalkorDB nodes",
+      "evidence_class": "live Graphiti (read-only)",
+      "verdict": "PASS (no duplication observed)"
+    },
+    {
+      "metric": "context_latency_p95",
+      "target": "<= 300 ms",
+      "observed": "p50=0.03 ms, p95=256.92 ms over 19 genuine native context builds (network included, cold-process worst case; no cross-process prewarm)",
+      "evidence_class": "disposable-host native probe",
+      "verdict": "PASS (observed; fresh-client re-measure required for installed-post-merge gate)"
+    },
+    {
+      "metric": "post_exit_admission_and_terminal_receipts",
+      "target": "post_exit_p95_seconds_max 900; candidate -> review -> terminal Graphiti receipt + source index",
+      "observed": "ghdev-curator-prod unit healthy, fail-closed on agent-held EX lease (FAIL_CLOSED: shared agent/gate lease held) while Build active; 61 'new' candidate events pending review; historical Stage H admission window 30 s <= 900 s; existing terminal receipts 116/116. Model-backed drain of the 61 pending candidates is EX-gated and excluded while the interactive harness holds the lease",
+      "evidence_class": "live host (systemd/gate) + pending post-exit",
+      "verdict": "READY_FOR_POST_EXIT_OPERATOR_RUN"
+    }
+  ],
+  "evidence_class_legend": {
+    "cpu-only": "deterministic repository validation, no services",
+    "disposable-host": "isolated OpenCode config/process; branch plugin bytes; read-only production graph; no production activation",
+    "live-graphiti": "read-only inspection of installed services/state (Graphiti MCP 8766, FalkorDB 6382, gate 1933, systemd units)",
+    "truly-fresh-process": "genuinely new client/session after merged-main deployment (not yet performed)"
+  }
+}
