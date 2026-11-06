@@ -203,6 +203,10 @@ export class GraphitiMcp {
     this.sessionID = null;
     this.initPromise = null;
     this.seq = 0;
+    // Prompt hooks prefetch without awaiting. Serialize remote MCP operations
+    // across all searches sharing this client, not merely inside one search.
+    // Failed operations must release the queue so subsequent recall can recover.
+    this.callTail = Promise.resolve();
   }
   async rpc(method, params = {}) {
     const id = ++this.seq;
@@ -229,8 +233,13 @@ export class GraphitiMcp {
     finally { this.initPromise = null; }
   }
   async call(name, args) {
-    await this.ensure();
-    return unwrapResult(await this.rpc('tools/call', { name, arguments: args }));
+    const invoke = async () => {
+      await this.ensure();
+      return unwrapResult(await this.rpc('tools/call', { name, arguments: args }));
+    };
+    const next = this.callTail.then(invoke);
+    this.callTail = next.then(() => undefined, () => undefined);
+    return next;
   }
 }
 export class Memory {

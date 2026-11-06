@@ -272,3 +272,55 @@ test('independent reranker retains bounded semantic-choice admission when no ind
   assert.equal(found.length,1);
   assert.equal(found[0].fact,'React Flow chosen for backlog dependency visualization');
 }));
+
+
+test('shared Graphiti MCP client serializes overlapping native searches, not only calls within each search',async()=>{
+  const client=new GraphitiMcp('http://127.0.0.1:8766/mcp');
+  client.ensure=async()=>{};
+  let active=0,maxActive=0,seen=[];
+  client.rpc=async (method,params)=>{
+    assert.equal(method,'tools/call');
+    active++;
+    maxActive=Math.max(maxActive,active);
+    seen.push(params.name);
+    try{
+      await new Promise(resolve=>setTimeout(resolve,4));
+      return {structuredContent:{result:params.name==='search_memory_facts'
+        ?{facts:[]}:{episodes:[]}}};
+    }finally{active--;}
+  };
+  const mem=new Memory({journal:{pages:async function*(){}},graphiti:client,
+    group:'alpha',curatedCandidateRetriever:async()=>[]});
+  const [a,b]=await Promise.all([
+    mem.search('Which archive retention pipeline is active?'),
+    mem.search('Which Graphiti storage pipeline was configured?')
+  ]);
+  assert.deepEqual(a,[]);
+  assert.deepEqual(b,[]);
+  assert.equal(maxActive,1,'overlapping native prompt searches must not overlap MCP calls');
+  assert.deepEqual(seen,['search_memory_facts','search_memory_facts','get_episodes','get_episodes'],
+    'all remote requests must be serialized in FIFO call order');
+});
+test('failed shared Graphiti MCP call releases the queue without retry or unsafe fallback',async()=>{
+  const client=new GraphitiMcp('http://127.0.0.1:8766/mcp');
+  client.ensure=async()=>{};
+  let active=0,maxActive=0,started=[];
+  client.rpc=async (_method,params)=>{
+    active++;
+    maxActive=Math.max(active,maxActive);
+    started.push(params.name);
+    try {
+      await new Promise(resolve=>setTimeout(resolve,2));
+      if(params.name==='get_episodes')throw Error('remote transport outage');
+      return {structuredContent:{result:{facts:[]}}};
+    }finally {active--;}
+  };
+  const outcomes=await Promise.allSettled([
+    client.call('search_memory_facts',{query:'one',group_ids:['alpha'],max_facts:24}),
+    client.call('get_episodes',{group_ids:['alpha'],max_episodes:1000}),
+    client.call('search_memory_facts',{query:'two',group_ids:['alpha'],max_facts:24}),
+  ]);
+  assert.deepEqual(outcomes.map(x=>x.status),['fulfilled','rejected','fulfilled']);
+  assert.deepEqual(started,['search_memory_facts','get_episodes','search_memory_facts']);
+  assert.equal(maxActive,1);
+});
