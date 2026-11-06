@@ -326,3 +326,52 @@ test('commit-effect preference does not mistake worktree commands with incidenta
   assert.equal(answerTypeSupport('Which commit abcdef12 should I checkout?', 
     'Commit abcdef12 fixed Graphiti tests.'),0,'unrelated commit questions get no effect bonus');
 });
+
+
+test('commit subject impact beats git -C worktree setup even if output echoes the subject',async()=>{
+  const q='What did commit a1b2c3d change in the Graphiti test suite?';
+  const subject={fact:'a1b2c3d test(graphiti): reject stale Graphiti test suite results'};
+  const worktree={fact:'git -C /workspace/graphiti worktree add /tmp/candidate a1b2c3d; git -C /workspace/graphiti rev-parse HEAD; status: a1b2c3d test(graphiti): reject stale Graphiti test suite results'};
+  assert.equal(relevanceSignals(q,subject.fact).eligible,true);
+  assert.equal(relevanceSignals(q,worktree.fact).eligible,true);
+  assert.equal(answerTypeSupport(q,subject.fact),1);
+  assert.equal(answerTypeSupport(q,worktree.fact),0);
+  for(const pair of [[subject,worktree],[worktree,subject]]){
+    assert.deepEqual(await relevanceFilter(q,pair),[subject]);
+    assert.equal(shortlistQualifiedCandidates(q,pair)[0],subject);
+  }
+});
+test('git -C option and quoted-path procedure variants never gain commit-effect bonus',()=>{
+  const q='What did commit a1b2c3d change in the Graphiti test suite?';
+  const procedures=[
+    'git -C "/work/dir with spaces" worktree add /tmp/new a1b2c3d; a1b2c3d test(graphiti): reject obsolete test suite failures',
+    "git -C '/work/dir with spaces' checkout a1b2c3d; a1b2c3d test(graphiti): reject obsolete test suite failures",
+    'git -C /work/graphiti rev-parse a1b2c3d; a1b2c3d test(graphiti): reject obsolete test suite failures',
+    'git -C /work/graphiti status; commit a1b2c3d changed Graphiti test suite state',
+    'worktree add /tmp/new a1b2c3d; commit a1b2c3d changed Graphiti test suite state',
+  ];
+  for(const fact of procedures)
+    assert.equal(answerTypeSupport(q,fact),0,fact);
+});
+test('generic conventional commit-subject formats score without a fixed change-verb dictionary',()=>{
+  const q='What did commit a1b2c3d change in the Graphiti test suite?';
+  const subjects=[
+    'a1b2c3d test(graphiti): reject stale Graphiti test suite cases',
+    'a1b2c3d fix: guard Graphiti test suite state',
+    'a1b2c3d refactor(graphiti)!: prevent Graphiti test suite stale selection',
+    'Commit a1b2c3d modified Graphiti test suite coverage',
+  ];
+  for(const fact of subjects)
+    assert.equal(answerTypeSupport(q,fact),1,fact);
+  assert.equal(answerTypeSupport('Should I checkout commit a1b2c3d?',
+    'a1b2c3d test(graphiti): reject stale Graphiti test suite cases'),0);
+});
+test('commit subject preference does not waive named product, issue, numeric or unrelated-topic fences',async()=>{
+  const q='What did commit a1b2c3d change for Graphiti in Issue #81?';
+  const good={fact:'a1b2c3d test(graphiti): reject stale Graphiti Issue 81 cases'};
+  const wrongName={fact:'a1b2c3d test(mongodb): reject stale MongoDB Issue 81 cases'};
+  const wrongIssue={fact:'a1b2c3d test(graphiti): reject stale Graphiti Issue 80 cases'};
+  const unrelated={fact:'a1b2c3d chore(website): reject stale webapp Issue 81 links'};
+  assert.deepEqual(await relevanceFilter(q,[wrongName,wrongIssue,unrelated,good]),[good]);
+  assert.deepEqual(shortlistQualifiedCandidates(q,[wrongName,wrongIssue,unrelated,good]),[good]);
+});

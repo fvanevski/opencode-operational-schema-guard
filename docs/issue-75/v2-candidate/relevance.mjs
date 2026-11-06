@@ -198,8 +198,20 @@ export function answerTypeSupport(query,fact) {
   // fails the existing source, identity or topical gates.
   const effectQuery=/\b(?:what|which|how)\b.{0,160}\b(?:commit|revision|patch|changeset)\b.{0,160}\b(?:chang(?:e|ed|es)|modif(?:y|ied)|fix(?:es|ed)?|updat(?:e|ed)|add(?:ed)?|remov(?:e|ed))\b|\b(?:what|which|how)\b.{0,160}\b(?:chang(?:e|ed|es)|modif(?:y|ied)|fix(?:es|ed)?|updat(?:e|ed))\b.{0,160}\b(?:commit|revision|patch|changeset)\b/i;
   if(effectQuery.test(q)) {
-    const isProcedure=/\b(?:git\s+(?:worktree|checkout|rev-parse|switch|fetch|clone)|worktree\s+(?:setup|creation|checkout)|checking\s+out\s+(?:a\s+)?(?:commit|revision))\b/i.test(f);
-    const describesChange=/\b(?:fix(?:es|ed)?|chang(?:e|ed|es)|modif(?:y|ied)|updat(?:e|ed)|add(?:ed)?|remov(?:e|ed)|refactor(?:s|ed)?|correct(?:s|ed)?|introduc(?:e|ed|es)|replac(?:e|ed|es)|commit[- ]subject|commit message)\b/i.test(f);
+    // A Git command may contain global -C directory options. Its output can
+    // echo an accurate subject, but the command record is not itself evidence
+    // describing what that commit changed. Check this *before* change verbs
+    // such as "add" or quoted subject lines.
+    const gitOperation=/\bgit\s+(?:-C\s+(?:"[^"\r\n]+"|'[^'\r\n]+'|\S+)\s+)*(?:worktree|checkout|rev-parse|switch|fetch|clone|status)\b/i;
+    const isProcedure=gitOperation.test(f) ||
+      /\bworktree\s+(?:add|setup|creation|checkout|remove|prune|list|move|repair)\b/i.test(f) ||
+      /\bchecking\s+out\s+(?:a\s+)?(?:commit|revision)\b/i.test(f);
+    // Conventional short-SHA-prefixed subjects describe the commit itself,
+    // including subjects whose imperative verb is outside the ordinary
+    // change-verb lexicon ("reject", "guard", "prevent", etc.).
+    const commitSubject=/\b[0-9a-f]{7,40}\s+(?:feat|fix|test|docs|refactor|perf|ci|build|chore|revert|style)(?:\([^) \r\n]{1,80}\))?!?:\s+\S/i;
+    const describesChange=commitSubject.test(f) ||
+      /\b(?:fix(?:es|ed)?|chang(?:e|ed|es)|modif(?:y|ied)|updat(?:e|ed)|add(?:ed)?|remov(?:e|ed)|refactor(?:s|ed)?|correct(?:s|ed)?|introduc(?:e|ed|es)|replac(?:e|ed|es)|commit[- ]subject|commit message)\b/i.test(f);
     return describesChange && !isProcedure ? 1 : 0;
   }
   return 0;
