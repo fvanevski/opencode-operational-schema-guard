@@ -234,10 +234,12 @@ export class GraphitiMcp {
   }
 }
 export class Memory {
-  constructor({ journal, graphiti, group, ranker = null, extraSourceResolver = null }) {
+  constructor({ journal, graphiti, group, ranker = null, extraSourceResolver = null,
+    curatedCandidateRetriever = null }) {
     this.journal = journal; this.graphiti = graphiti; this.group = group;
     this.ranker = ranker; this.processing = null;
     this.extraSourceResolver = extraSourceResolver;
+    this.curatedCandidateRetriever = curatedCandidateRetriever;
   }
   async stage(selected, source) {
     const candidate = makeCandidate(this.group, selected, source);
@@ -321,11 +323,19 @@ export class Memory {
     // Facts are the injectible result. Native node search runs separately in
     // benchmarking/on-demand inspection; do not spend an extra embedding query
     // on every automatic context build if it cannot add sourced facts.
-    const facts = await this.graphiti.call('search_memory_facts', {
+    // All three paths are read-only. The curated path is NOT eligible unless
+    // the remote Graphiti episode with exact UUID and group is seen now.
+    const primary = this.graphiti.call('search_memory_facts', {
       query: text, group_ids: [this.group], max_facts: maxFacts,
     });
-    if (!Array.isArray(facts.facts)) return [];
-    const received = facts.facts.slice(0, maxFacts);
+    const indexed = this.curatedCandidateRetriever
+      ? Promise.resolve().then(()=>this.curatedCandidateRetriever()) : Promise.resolve([]);
+    const remote = this.curatedCandidateRetriever
+      ? this.graphiti.call('get_episodes',{group_ids:[this.group],max_episodes:1000})
+      : Promise.resolve(null);
+    const settled = await Promise.allSettled([primary,indexed,remote]);
+    const facts = settled[0].status==='fulfilled'?settled[0].value:null;
+    const received = Array.isArray(facts?.facts)?facts.facts.slice(0,maxFacts):[];
     // Only keep rows relevant to returned Graphiti episode anchors.
     // The journal scan is paged, so historical records >500 still resolve.
     const wanted = new Set(received.flatMap(f =>
@@ -374,14 +384,44 @@ export class Memory {
       candidates.push({ fact: assertion, source: source.sourceRef, evidenceClass: source.evidenceClass,
         temporal, validAt: fact.valid_at ?? null, invalidAt: fact.invalid_at ?? null });
     }
-    const { relevanceFilter } = await import('./relevance.mjs');
-    const ranked = await relevanceFilter(text, candidates, this.ranker);
+    const { relevanceFilter, relevanceSignals, answerTypeSupport } = await import('./relevance.mjs');
+    // Positive current remote episode membership and exact scoped curation
+    // records are BOTH required. Missing/invalid remote readback abstains.
+    const remoteData = settled[2].status==='fulfilled'?settled[2].value:null;
+    const remoteEpisodes = Array.isArray(remoteData?.episodes) &&
+      remoteData.episodes.length < 1000 &&
+      remoteData.episodes.every(e=>e?.group_id===this.group&&validId(e.uuid))
+      ?new Set(remoteData.episodes.map(e=>e.uuid)):new Set();
+    const indexedRows=settled[1].status==='fulfilled'&&Array.isArray(settled[1].value) &&
+      settled[1].value.length<=500?settled[1].value:[];
+    const indexedCandidates=indexedRows.filter(r=>
+      r?.group===this.group&&remoteEpisodes.has(r.remoteEpisodeUuid)&&
+      ['user-stated','tool-reported','assistant-reported'].includes(r.evidenceClass)&&
+      typeof r.source==='string'&&r.source.startsWith('opencode:')&&
+      safeText(r.fact,480)===r.fact &&
+      (typeof r.sourceContext!=='string'||safeText(r.sourceContext,500)===r.sourceContext));
+    // Generic bounded lexical shortlist. Keep up to 12 source-index candidates
+    // alongside up to 12 Graphiti edges, preserving the hard 24 selector cap.
+    const lexRank=x=>{
+      const s=relevanceSignals(text,x.fact+' '+(x.sourceContext||''));
+      const lexical=s.overlap;
+      return answerTypeSupport(text,x.fact)*100+lexical.count*10+lexical.score;
+    };
+    indexedCandidates.sort((a,b)=>lexRank(b)-lexRank(a)||
+      a.fact.localeCompare(b.fact));
+    const combined=[...candidates.slice(0,12),
+      ...indexedCandidates.slice(0,12)].filter((r,i,all)=>
+        all.findIndex(other=>other.source===r.source&&other.fact===r.fact)===i);
+    const ranked = await relevanceFilter(text, combined, this.ranker);
     const result = [];
     let budget = maxChars;
     for (const entry of ranked) {
-      const cost = JSON.stringify(entry).length;
+      // The source excerpt is only for admission and must never enter the
+      // outgoing model context or influence the JSON size budget.
+      const {sourceContext,remoteEpisodeUuid,workspace,project,group,...bounded}=entry;
+      const cost = JSON.stringify(bounded).length;
       if (cost > budget) continue;
-      result.push(entry); budget -= cost;
+      result.push(bounded); budget -= cost;
       if (result.length >= limit) break;
     }
     return result;

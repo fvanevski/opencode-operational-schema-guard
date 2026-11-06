@@ -183,6 +183,34 @@ export function relevanceSignals(query, fact, { hasRerankScore = false } = {}) {
     priority: historical || directDecision ? 1 : 0, overlap };
 }
 function safeFact(value) { return typeof value === 'string' ? value.trim() : ''; }
+// A response-type distinction, not a named benchmark/episode preference.
+// Do not prefer a fact about routing when the question asks for a port, or
+// a bare state/count over a mechanism when the question asks "why".
+export function answerTypeSupport(query,fact) {
+  const q=String(query),f=String(fact);
+  if(/\b(?:which|what)\s+(?:\w+\s+){0,2}port\b|\bon which .*port\b|\bport\s+(?:does|is)\b/i.test(q))
+    return /\bport\b|\b\d{4,5}\b/i.test(f) ? 1:0;
+  if(/^\s*why\b/i.test(q))
+    return /\b(?:because|due to|via|per-group|clone[sd]?|routes?|maps?|so that|rather than|instead of|configured to)\b/i.test(f) ? 1:0;
+  return 0;
+}
+function linkedSourceSignals(query,item,hasRerankScore) {
+  const direct=relevanceSignals(query,item.fact,{hasRerankScore});
+  if(direct.eligible||typeof item.sourceContext!=='string')return direct;
+  // Do not allow a companion excerpt to satisfy a missing exact Issue or
+  // numeric identity in the assertion itself.
+  const requestedIssues=issueReferences(query),factIssues=issueReferences(item.fact);
+  const nums=String(query).match(/\b\d{2,}\b/g)||[];
+  if([...requestedIssues].some(id=>!factIssues.has(id))||
+    nums.some(n=>!new Set(item.fact.match(/\b\d{2,}\b/g)||[]).has(n))||
+    lexicalSupport(query,item.fact).count<2)return direct;
+  const linked=safeFact(item.sourceContext);
+  if(!linked||linked.length>500)return direct;
+  const contextual=relevanceSignals(query,item.fact+' '+linked,{hasRerankScore});
+  return contextual.eligible
+    ?{...contextual,overlap:direct.overlap,sourceContextQualified:true}
+    :direct;
+}
 export async function relevanceFilter(query, candidates, ranker = null, { maxSelected = 1 } = {}) {
   if (!Array.isArray(candidates) || !candidates.length || !Number.isInteger(maxSelected) ||
       maxSelected < 1 || maxSelected > 4) return [];
@@ -207,15 +235,16 @@ export async function relevanceFilter(query, candidates, ranker = null, { maxSel
     const score = scores?.get(i);
     const validScore = typeof score === 'number' && Number.isFinite(score) &&
       score >= 0 && score <= 1;
-    const signals = relevanceSignals(query, item.fact,
-      { hasRerankScore: validScore });
+    const signals = linkedSourceSignals(query, item, validScore);
     if (!signals.eligible) continue;
     if (signals.choiceOnly && (background === null || !validScore || score <= 2 * background))
       continue;
     admitted.push({ item, index: i, priority: signals.priority,
+      answerType: answerTypeSupport(query,item.fact),
       rankScore: validScore ? score : null, lexical: signals.overlap });
   }
   admitted.sort((a, b) => b.priority - a.priority ||
+    b.answerType - a.answerType ||
     (a.rankScore !== null && b.rankScore !== null ? b.rankScore - a.rankScore : 0) ||
     b.lexical.count - a.lexical.count || b.lexical.score - a.lexical.score ||
     a.index - b.index);

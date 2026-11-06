@@ -89,8 +89,10 @@ export default {
     const ranker = settings.rerankEndpoint ? localReranker(settings.rerankEndpoint) : null;
     const extraSourceResolver = typeof ctx.options?.sourcedEpisodeResolver === 'function'
       ? ctx.options.sourcedEpisodeResolver : null;
+    const curatedCandidateRetriever = typeof ctx.options?.curatedCandidateRetriever === 'function'
+      ? ctx.options.curatedCandidateRetriever : null;
     const memory = new Memory({ journal: store, graphiti, group: settings.group,
-      ranker, extraSourceResolver });
+      ranker, extraSourceResolver, curatedCandidateRetriever });
     const registrations = [];
     const pending = new Map();
     const recallPrompts = new Map();
