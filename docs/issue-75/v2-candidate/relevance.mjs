@@ -243,6 +243,60 @@ export function shortlistQualifiedCandidates(query, candidates, { limit = 24 } =
     a.index-b.index);
   return qualified.slice(0,limit).map(x=>x.item);
 }
+/**
+ * Diagnostic only: explain actual automatic-recall admission gates.
+ * Mirrors relevanceSignals/linkedSourceSignals, does not modify selection.
+ * Output contains only booleans/counts/reason codes, no private source text.
+ */
+export function explainRelevanceAdmission(query,item,{hasRerankScore=false}={}) {
+  if(typeof query!=='string'||!item||typeof item.fact!=='string')
+    return {admitted:false,reason:'INVALID_INPUT'};
+  const direct=relevanceSignals(query,item.fact,{hasRerankScore});
+  const linked=typeof item.sourceContext==='string'&&item.sourceContext.length>0
+    ?safeFact(item.sourceContext):'';
+  const analysis=(text)=>{
+    const overlap=lexicalSupport(query,text);
+    const names=namedQueryTerms(query);
+    const namedMatch=satisfiesNamedTerms(query,text,names,overlap);
+    const requestedIssues=issueReferences(query),factIssues=issueReferences(text);
+    const issueMatch=[...requestedIssues].every(id=>factIssues.has(id));
+    const qNumbers=new Set(query.match(/\b\d{2,}\b/g)||[]);
+    const fNumbers=new Set(text.match(/\b\d{2,}\b/g)||[]);
+    const numericMatch=[...qNumbers].every(n=>fNumbers.has(n));
+    const independentTopic=!requestedIssues.size||
+      lexicalSupport(stripIssueReferences(query),stripIssueReferences(text)).count>=1;
+    const historical=HISTORICAL_INTENT.test(query)&&HISTORICAL_STATEMENT.test(text);
+    const directDecision=DECISION_INTENT.test(query)&&DIRECT_DECISION.test(text)&&
+      !HISTORICAL_STATEMENT.test(text);
+    const topical=overlap.count>=2&&independentTopic;
+    const qualifiedHistory=historical&&overlap.count>=1&&independentTopic;
+    const choice=directDecision&&hasRerankScore&&
+      words(query).filter(term=>!INTENT_TERMS.has(term)).length>=2&&independentTopic;
+    const failures=[];
+    if(!text)failures.push('EMPTY_ASSERTION');
+    if(!namedMatch)failures.push('NAMED_IDENTITY');
+    if(!issueMatch)failures.push('ISSUE_IDENTITY');
+    if(!numericMatch)failures.push('NUMERIC_IDENTITY');
+    if(!independentTopic)failures.push('INDEPENDENT_TOPIC');
+    if(!topical&&!qualifiedHistory&&!choice)failures.push('NO_SUPPORTED_ADMISSION_PATH');
+    return {overlap,requestedNamedCount:names.length,namedMatch,
+      issueMatch,numericMatch,independentTopic,topical,qualifiedHistory,
+      choice,eligible:relevanceSignals(query,text,{hasRerankScore}).eligible,
+      failures};
+  };
+  const contextual=linked?analysis(item.fact+' '+linked):null;
+  const effective=linkedSourceSignals(query,item,hasRerankScore);
+  const fact=analysis(item.fact);
+  const directOverlap=lexicalSupport(query,item.fact);
+  const linkedFallbackBlocked=Boolean(linked)&&!direct.eligible&&(
+    [...issueReferences(query)].some(id=>!issueReferences(item.fact).has(id))||
+    (query.match(/\b\d{2,}\b/g)||[]).some(n=>
+      !(item.fact.match(/\b\d{2,}\b/g)||[]).includes(n))||
+    directOverlap.count<2);
+  return {admitted:effective.eligible,linkedUsed:Boolean(effective.sourceContextQualified),
+    direct:fact,linked:contextual,linkedFallbackBlocked,
+    scoreFloor034Applied:false,sourceContextRequiredNativeSourceAuthority:true};
+}
 export async function relevanceFilter(query, candidates, ranker = null, { maxSelected = 1 } = {}) {
   if (!Array.isArray(candidates) || !candidates.length || !Number.isInteger(maxSelected) ||
       maxSelected < 1 || maxSelected > 4) return [];
