@@ -1,0 +1,58 @@
+{
+ "schema": "issue81-command-shape-friction.v1",
+ "campaign": "ISSUE81_BOUNDED_RECALL_CORRECTION_V1",
+ "encountered": true,
+ "commands_match_handoff": true,
+ "note": "All acceptance-bearing commands matched the handoff shape: read-only Graphiti search_memory_facts paired depth probes (group development-knowledge, max_facts 12/24), the offline source-bound replay via agent-authored scripts with producer exit statuses preserved, the trace_id-scoped observer recompute reading the raw litellm trace from the frozen offset marker, and the single non-force evidence commit/push via native git in the bound worktree. The events below are agent-authored probe/exploration shape issues; all recovered with no state change and no acceptance-bearing command was altered. Friction events in this continuation session are listed after the inherited ones.",
+ "events": [
+  {
+   "scenario": "inherited: multi-part status probe with unquoted === delimiter",
+   "requested_shape": "... && echo === && python3 -c '...'",
+   "effective_shape": "zsh treated bare === as =-expansion: 'zsh:1: == not found', exit 1; first part printed successfully",
+   "rewrite_provenance": "agent-authored probe shape (zsh =-expansion of bare ===)",
+   "event_kind": "interface_discovery",
+   "execution_effect": "partial output only; no state change; re-run as standalone commands",
+   "correction_or_annotation": "re-ran each part separately; used echo '---' / labelled sections",
+   "replacement_shape": "... ; echo '--- label'; ...",
+   "contract_conflict": "no",
+   "durable_gap_candidate": "no"
+  },
+  {
+   "scenario": "inherited: exploratory full-filesystem locate of the operator review packet / ratification receipt",
+   "requested_shape": "find /home/filip -name '...'",
+   "effective_shape": "timed out at 90s before the known campaign roots were used",
+   "rewrite_provenance": "agent-authored exploration (unbounded find from /home/filip)",
+   "event_kind": "interface_discovery",
+   "execution_effect": "one timed-out probe; no state change; packet and receipt then located under the known campaign roots",
+   "correction_or_annotation": "subsequent locates scoped to /tmp/opencode/issue81-* and /home/filip/.local/state/ghdev-graphiti-issue81",
+   "replacement_shape": "find /tmp/opencode/issue81-fresh-native-acceptance -name '...'",
+   "contract_conflict": "no",
+   "durable_gap_candidate": "no"
+  },
+  {
+   "scenario": "offset-marker path mismatch on resume",
+   "requested_shape": "read /tmp/opencode/issue81-qual/litellm-trace-offset.json (as recorded in the prior handoff summary)",
+   "effective_shape": "file was MISSING at that path; the offset marker actually lives at /tmp/opencode/issue81-fresh-native-acceptance/fresh-native-v1/litellm-trace-offset.json",
+   "rewrite_provenance": "agent state (the prior summary recorded the marker next to the trace file, but it was persisted under the campaign root)",
+   "event_kind": "interface_discovery",
+   "execution_effect": "one missing-file probe; no state change; the marker was located under the campaign root and its campaign_start_offset_bytes=644259321 used for the recompute",
+   "correction_or_annotation": "use the campaign-root marker path for the observer recompute",
+   "replacement_shape": "read /tmp/opencode/issue81-fresh-native-acceptance/fresh-native-v1/litellm-trace-offset.json",
+   "contract_conflict": "no",
+   "durable_gap_candidate": "no"
+  },
+  {
+   "scenario": "inline Python f-string inside zsh single-quoted python3 -c",
+   "requested_shape": "python3 -c '... print(f\"{c[\\\"case_id\\\"]}\") ...'",
+   "effective_shape": "nested double-quotes inside the single-quoted -c body were mangled by the shell layer; SyntaxError: unexpected character after line continuation character",
+   "rewrite_provenance": "agent-authored probe shape (quote nesting across the shell/Python boundary)",
+   "event_kind": "interface_discovery",
+   "execution_effect": "a few inline probes exited 1; no state change; the same logic was re-run from script files written to /tmp/opencode/",
+   "correction_or_annotation": "write the probe to a .py file and run it; avoids the quote-nesting layer entirely",
+   "replacement_shape": "python3 /tmp/opencode/issue81-<probe>.py",
+   "contract_conflict": "no",
+   "durable_gap_candidate": "no"
+  }
+ ],
+ "rtk_note": "No acceptance-bearing command's shape or producer exit was altered by harness wrapping. No guard rejections occurred during this campaign; the publication commit/push runs only after the local data/erratum/latency/precision generations are complete and the remote pre-write head is proven equal to the expected evidence head."
+}

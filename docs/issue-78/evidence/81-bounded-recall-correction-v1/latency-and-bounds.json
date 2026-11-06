@@ -1,0 +1,75 @@
+{
+ "schema": "issue81-latency-and-bounds.v1",
+ "campaign": "ISSUE81_BOUNDED_RECALL_CORRECTION_V1",
+ "method": "Live read-only Graphiti search_memory_facts paired depth probes (group development-knowledge, current snapshot 2026-11-06) at max_facts=12 and max_facts=24, plus the offline diagnostic replay. Percentiles use linear interpolation (numpy default / R-7).",
+ "percentile_method": "linear-interpolation (R-7)",
+ "latency_ms": {
+  "depth_12": {
+   "n": 7,
+   "population_ms": [
+    80,
+    82,
+    82,
+    84,
+    86,
+    88,
+    91
+   ],
+   "p50_ms": 84.0,
+   "p95_ms": 90.1,
+   "min_ms": 80,
+   "max_ms": 91
+  },
+  "depth_24": {
+   "n": 20,
+   "population_ms": [
+    139,
+    140,
+    141,
+    142,
+    143,
+    144,
+    145,
+    149,
+    149,
+    149,
+    149,
+    150,
+    151,
+    151,
+    151,
+    153,
+    153,
+    155,
+    156,
+    160
+   ],
+   "p50_ms": 149.0,
+   "p95_ms": 156.2,
+   "min_ms": 139,
+   "max_ms": 160
+  }
+ },
+ "interpretation": {
+  "depth_24_vs_12": "Raising max_facts from 12 to 24 raises p50 84ms -> 149ms and p95 90.1ms -> 156.2ms (approx 1.77x / 1.73x). Depth 24 recovers S01/S04 expected facts (admission-layer misses) but does NOT recover the S03/S05/S07/S10/S13 expected episodes (retrieval misses) -> the cap is not the binding constraint for those five.",
+  "hook_p50": "UNVERIFIED",
+  "hook_p95": "UNVERIFIED",
+  "hook_note": "No context-hook end-to-end instrumentation was available this campaign. A prior 256.92ms figure came from a separate disposable probe and is NOT this hook; not reused as hook latency.",
+  "source_resolution_latency_ms": "UNVERIFIED",
+  "source_resolution_note": "The offline diagnostic replay recorded selection/source status but did not capture per-case source-resolution wall time; no timing field is present in issue81-offline-replay.json."
+ },
+ "code_bounds": {
+  "memory_core_max_facts": 24,
+  "relevance_max_automatic_candidates": 24,
+  "relevance_rerank_bound": 24,
+  "relevance_max_selected_default": 1,
+  "relevance_max_selected_range": [
+   1,
+   4
+  ],
+  "sourced_recall_max_episode_anchors": 288,
+  "sourced_recall_anchor_formula": "24 * 12",
+  "group_checks": "unchanged",
+  "source": "docs/issue-75/v2-candidate/memory-core.mjs (maxFacts=24), docs/issue-75/v2-candidate/relevance.mjs (MAX_AUTOMATIC_CANDIDATES=24, maxSelected=1 default), docs/issue-78/v2-curator/sourced-recall.mjs (MAX_AUTOMATIC_EPISODE_ANCHORS=24*12=288)"
+ }
+}

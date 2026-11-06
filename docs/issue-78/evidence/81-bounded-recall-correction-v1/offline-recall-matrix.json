@@ -1,0 +1,451 @@
+{
+ "schema": "issue81-offline-recall-matrix.v1",
+ "campaign": "ISSUE81_BOUNDED_RECALL_CORRECTION_V1",
+ "method": "offline diagnostic replay: staged relevanceFilter (ranker=null, maxSelected=1) over live read-only depth-24 Graphiti candidate sets (current snapshot 2026-11-06); source resolution via staged sourcedEpisodeResolver against read-only state root; scoring = diagnostic exposed regression, NOT native acceptance",
+ "generated_at": "2026-11-06T19:35:15.854Z",
+ "one_selected_fact_contract": "preserved (ranker=null, maxSelected=1)",
+ "scoring": "diagnostic exposed-regression, NOT native acceptance",
+ "score": {
+  "positives_total": 16,
+  "pass_source_correct": 9,
+  "by_status": {
+   "WRONG_SOURCE": 6,
+   "PASS_SOURCE_CORRECT": 9,
+   "ABSENT_FROM_CANDIDATES": 1
+  },
+  "negatives": [
+   {
+    "case_id": "N01",
+    "status": "PRESENT_BUT_REJECTED"
+   },
+   {
+    "case_id": "N02",
+    "status": "INJECTED"
+   },
+   {
+    "case_id": "N03",
+    "status": "PRESENT_BUT_REJECTED"
+   },
+   {
+    "case_id": "N04",
+    "status": "PRESENT_BUT_REJECTED"
+   }
+  ]
+ },
+ "pass_source_correct_cases": [
+  "S02",
+  "S06",
+  "S08",
+  "S09",
+  "S11",
+  "S12",
+  "S14",
+  "S15",
+  "S16"
+ ],
+ "wrong_source_cases": [
+  "S01",
+  "S03",
+  "S04",
+  "S05",
+  "S07",
+  "S10"
+ ],
+ "absent_from_candidates_cases": [
+  "S13"
+ ],
+ "cases": [
+  {
+   "case_id": "S01",
+   "is_negative": false,
+   "candidate_count": 24,
+   "expected_episode_in_candidates": true,
+   "selection": {
+    "uuid": "a364f523-3b30-453c-80eb-01a2b438e3c2",
+    "pos": 3,
+    "fact": "When group_id is 'development-knowledge', FalkorDB does not route queries to the graphiti_live graph."
+   },
+   "source_resolution": [
+    {
+     "episode": "d19c4f9e-7216-499a-8057-b638b88e2fa3",
+     "sourceRef": "opencode:ses_e513390dcffekimm001xBGtcI0:message:msg_1aecd887c001GaCs8HD5eGI0R9",
+     "evidenceClass": "assistant-reported"
+    }
+   ],
+   "source_correct": false,
+   "status": "WRONG_SOURCE"
+  },
+  {
+   "case_id": "S02",
+   "is_negative": false,
+   "candidate_count": 24,
+   "expected_episode_in_candidates": true,
+   "selection": {
+    "uuid": "1bc40d82-fdd4-4b9c-b103-5de27617b47f",
+    "pos": 0,
+    "fact": "FalkorDB is on port 6382 (not 6379) and is used by the gh_mcp project."
+   },
+   "source_resolution": [
+    {
+     "episode": "49d891de-1298-4799-89ac-967f37036c85",
+     "sourceRef": "opencode:ses_e513f00aaffeQSVvSV3YJ3170Z:message:msg_1aec148ed001YQXpy2B88RxtjY",
+     "evidenceClass": "assistant-reported"
+    }
+   ],
+   "source_correct": true,
+   "status": "PASS_SOURCE_CORRECT"
+  },
+  {
+   "case_id": "S03",
+   "is_negative": false,
+   "candidate_count": 24,
+   "expected_episode_in_candidates": false,
+   "selection": {
+    "uuid": "a98db709-4887-4d07-b755-8bff23760d2b",
+    "pos": 1,
+    "fact": "mcp-test.mjs uses the group ID 'development-knowledge' when calling the graphiti MCP server."
+   },
+   "source_resolution": [
+    {
+     "episode": "e1244d4f-aee5-4bbe-a4f9-ac0f8516fd68",
+     "sourceRef": "opencode:ses_e514f306cffe3F3Hy1nkJgjujC:message:msg_1aeb281c9001k9aQzqmnBUQ1oE",
+     "evidenceClass": "assistant-reported"
+    },
+    {
+     "episode": "bb70468b-41cb-4fbc-b629-d7ef4366625d",
+     "sourceRef": "opencode:ses_e4ead700cffe1qYMaxzWECeCpA:tool:call_6f93d3e17633e86e",
+     "evidenceClass": "tool-reported"
+    }
+   ],
+   "source_correct": false,
+   "status": "WRONG_SOURCE"
+  },
+  {
+   "case_id": "S04",
+   "is_negative": false,
+   "candidate_count": 24,
+   "expected_episode_in_candidates": true,
+   "selection": {
+    "uuid": "6940cadb-0c61-4196-9ff7-e1c54a4ceee9",
+    "pos": 0,
+    "fact": "The data physically lives in the development-knowledge graph (35 nodes) while graphiti_live has 0 nodes."
+   },
+   "source_resolution": [
+    {
+     "episode": "07f247f9-f4d4-47f7-bf5f-6a748b60758b",
+     "sourceRef": "opencode:ses_e51631cbfffeIAww75wYB0QLvR:message:msg_1ae9d8d9e0011vCYAm7ru8Z44E",
+     "evidenceClass": "assistant-reported"
+    },
+    {
+     "episode": "9491a0f3-c73f-43da-abbe-b0bda356a88e",
+     "sourceRef": "opencode:ses_e514b22a8ffe4r4a6oDsLaX74m:message:msg_1aeb665da001neAU6GMCOOULF5",
+     "evidenceClass": "assistant-reported"
+    },
+    {
+     "episode": "cece7d0b-7f34-4bcc-b852-72a9df8f16ba",
+     "sourceRef": "opencode:ses_e513ad3fcffeXeo9yoMZ6lVA3G:message:msg_1aec6ab4e001KVtiKRc17nGKgU",
+     "evidenceClass": "assistant-reported"
+    }
+   ],
+   "source_correct": false,
+   "status": "WRONG_SOURCE"
+  },
+  {
+   "case_id": "S05",
+   "is_negative": false,
+   "candidate_count": 24,
+   "expected_episode_in_candidates": false,
+   "selection": {
+    "uuid": "4640a08b-bf5d-437c-a447-7e9c87b96812",
+    "pos": 0,
+    "fact": "The FalkorDB layout includes an empty graph named 'graphiti_live' with 0 nodes."
+   },
+   "source_resolution": [
+    {
+     "episode": "c48cd614-4f98-49f7-90d0-5b6a418368fc",
+     "sourceRef": "opencode:ses_e5276247fffewUAeyTeAea2tia:message:msg_1ad8c14d6001aDoSonKPyEUW9E",
+     "evidenceClass": "assistant-reported"
+    },
+    {
+     "episode": "97defc44-679e-4d77-bb8a-03e28e4febc6",
+     "sourceRef": "opencode:ses_e51700ea7ffeDOetlL7k4vnOXb:message:msg_1ae8ff169001BIqeLdMdJkVWml",
+     "evidenceClass": "user-stated"
+    },
+    {
+     "episode": "6969a684-8bb2-45c2-86a8-47a3f1b7b76b",
+     "sourceRef": "opencode:ses_e515c300affeVEDoPQJ9pbP7s7:message:msg_1aea3d002001miiP7cXnNEbhmW",
+     "evidenceClass": "user-stated"
+    },
+    {
+     "episode": "15a2f72d-6aa9-481d-ae5a-9bf2b679c273",
+     "sourceRef": "opencode:ses_e51583ef5ffeAdG05Q9i4FbUao:message:msg_1aea8c6f5001A1bdxNmT9a176W",
+     "evidenceClass": "assistant-reported"
+    }
+   ],
+   "source_correct": false,
+   "status": "WRONG_SOURCE"
+  },
+  {
+   "case_id": "S06",
+   "is_negative": false,
+   "candidate_count": 24,
+   "expected_episode_in_candidates": true,
+   "selection": {
+    "uuid": "28893e36-9bb0-42d0-9d9d-64c51e6edf21",
+    "pos": 0,
+    "fact": "The graphiti group for the gh_mcp project was changed from 'ghdev_gh_mcp' to 'development-knowledge', which is the only semantic difference "
+   },
+   "source_resolution": [
+    {
+     "episode": "6e7956be-498c-47cf-af4d-07220ee8507e",
+     "sourceRef": "opencode:ses_e51cb9c19ffem7rxqiNNhlbbQ1:message:msg_1ae367654001nlYZtg6lC5m03l",
+     "evidenceClass": "assistant-reported"
+    }
+   ],
+   "source_correct": true,
+   "status": "PASS_SOURCE_CORRECT"
+  },
+  {
+   "case_id": "S07",
+   "is_negative": false,
+   "candidate_count": 24,
+   "expected_episode_in_candidates": false,
+   "selection": {
+    "uuid": "d974a695-b35f-4565-9a23-6c769f2be341",
+    "pos": 1,
+    "fact": "The Production admitted post-exit candidate curator service uses the canonical EX gate."
+   },
+   "source_resolution": [
+    {
+     "episode": "e147822f-d6ea-439a-967b-ad6eb78ae428",
+     "sourceRef": "opencode:ses_e50cc1c26ffeKCmAyMkiTNIVKE:tool:call_8e9d27d04e918e97",
+     "evidenceClass": "tool-reported"
+    }
+   ],
+   "source_correct": false,
+   "status": "WRONG_SOURCE"
+  },
+  {
+   "case_id": "S08",
+   "is_negative": false,
+   "candidate_count": 24,
+   "expected_episode_in_candidates": true,
+   "selection": {
+    "uuid": "706b72f5-f8bb-4d95-bc36-aa67f6180516",
+    "pos": 0,
+    "fact": "FalkorDB's persisted AOF is in effects format v2, while the running build can only load v3, causing a crash loop."
+   },
+   "source_resolution": [
+    {
+     "episode": "90f8048e-1fb9-40fb-928a-9c0326e0d4e5",
+     "sourceRef": "opencode:ses_e529e87f6ffe70o8b0iVRkat83:message:msg_1ad677b39001fEWaII5bvS0d0n",
+     "evidenceClass": "assistant-reported"
+    }
+   ],
+   "source_correct": true,
+   "status": "PASS_SOURCE_CORRECT"
+  },
+  {
+   "case_id": "S09",
+   "is_negative": false,
+   "candidate_count": 24,
+   "expected_episode_in_candidates": true,
+   "selection": {
+    "uuid": "69336436-9ec8-4e79-8c2f-ca7fcac3972c",
+    "pos": 0,
+    "fact": "The CPU regression test suite for the gh_mcp project passed all 18 tests with exit code 0."
+   },
+   "source_resolution": [
+    {
+     "episode": "067e0206-f628-42cb-b9a1-65e6783db4f6",
+     "sourceRef": "opencode:ses_e51cb9c19ffem7rxqiNNhlbbQ1:message:msg_1ae357b5f001zi64jgXG7LK6Ca",
+     "evidenceClass": "assistant-reported"
+    }
+   ],
+   "source_correct": true,
+   "status": "PASS_SOURCE_CORRECT"
+  },
+  {
+   "case_id": "S10",
+   "is_negative": false,
+   "candidate_count": 24,
+   "expected_episode_in_candidates": false,
+   "selection": {
+    "uuid": "0fd53409-2d2b-46b4-9e22-2512f48b6f39",
+    "pos": 0,
+    "fact": "The graphiti component is part of the gh_mcp project, as indicated by the test commit 'test(graphiti): reject stale fallback after unbound l"
+   },
+   "source_resolution": [
+    {
+     "episode": "c059ab8f-0b24-4fc6-b0cd-730178acb247",
+     "sourceRef": "opencode:ses_e50efdb27ffep7alMZaj9wkl3x:tool:call_0485ce2600ec5dba",
+     "evidenceClass": "tool-reported"
+    },
+    {
+     "episode": "88a49ad0-3378-4c14-bbad-726472a030f5",
+     "sourceRef": "opencode:ses_e4ead700cffe1qYMaxzWECeCpA:tool:call_338a8c5d8989ba4a",
+     "evidenceClass": "tool-reported"
+    }
+   ],
+   "source_correct": false,
+   "status": "WRONG_SOURCE"
+  },
+  {
+   "case_id": "S11",
+   "is_negative": false,
+   "candidate_count": 24,
+   "expected_episode_in_candidates": true,
+   "selection": {
+    "uuid": "7bc4e3ed-8ca6-4905-a07c-f90cb4ba1231",
+    "pos": 0,
+    "fact": "run_graphiti.py loads config/.env into os.environ at runtime."
+   },
+   "source_resolution": [
+    {
+     "episode": "1343d893-6c6d-413b-8795-69ee6e35831a",
+     "sourceRef": "opencode:ses_e5153da9effexLtJUGtbne2huA:message:msg_1aeaeba84001br8HMsJ3RwNb9H",
+     "evidenceClass": "assistant-reported"
+    }
+   ],
+   "source_correct": true,
+   "status": "PASS_SOURCE_CORRECT"
+  },
+  {
+   "case_id": "S12",
+   "is_negative": false,
+   "candidate_count": 24,
+   "expected_episode_in_candidates": true,
+   "selection": {
+    "uuid": "d6b6e219-c3ec-42d1-8aef-71da375bb748",
+    "pos": 0,
+    "fact": "The v2-harness 0/25 failures were caused by stale-process contamination from orphan standalone opencode processes."
+   },
+   "source_resolution": [
+    {
+     "episode": "33088c81-1857-47ba-85b8-0e336e0a54ac",
+     "sourceRef": "opencode:ses_e518d2926ffe4iAujvBdg4SxaG:message:msg_1aea02541001WqFYEGis61N1Vr",
+     "evidenceClass": "assistant-reported"
+    }
+   ],
+   "source_correct": true,
+   "status": "PASS_SOURCE_CORRECT"
+  },
+  {
+   "case_id": "S13",
+   "is_negative": false,
+   "candidate_count": 24,
+   "expected_episode_in_candidates": false,
+   "selection": null,
+   "status": "ABSENT_FROM_CANDIDATES"
+  },
+  {
+   "case_id": "S14",
+   "is_negative": false,
+   "candidate_count": 24,
+   "expected_episode_in_candidates": true,
+   "selection": {
+    "uuid": "20dab26d-9d58-44c3-8080-d08a29542b1b",
+    "pos": 1,
+    "fact": "The gh_mcp project's required positive evidence is an authenticated source-grounded fact appearing in the actual assembled request of a genu"
+   },
+   "source_resolution": [
+    {
+     "episode": "13ef46fa-d8a7-4414-a73a-821d4e9495dd",
+     "sourceRef": "opencode:ses_e518d2926ffe4iAujvBdg4SxaG:message:msg_1ae72d6dc00148hViRhCkatbe6:span:9846",
+     "evidenceClass": "user-stated"
+    }
+   ],
+   "source_correct": true,
+   "status": "PASS_SOURCE_CORRECT"
+  },
+  {
+   "case_id": "S15",
+   "is_negative": false,
+   "candidate_count": 24,
+   "expected_episode_in_candidates": true,
+   "selection": {
+    "uuid": "c2e3fff5-9385-4853-a74c-6bdc49bf40e4",
+    "pos": 0,
+    "fact": "The success_callback belongs under litellm_settings."
+   },
+   "source_resolution": [
+    {
+     "episode": "bbdd92f2-ea6b-4c35-ac36-7f7a81a59b2e",
+     "sourceRef": "opencode:ses_e518d2926ffe4iAujvBdg4SxaG:message:msg_1ae8280fc001I6XqE8vOZyDAdn",
+     "evidenceClass": "assistant-reported"
+    }
+   ],
+   "source_correct": true,
+   "status": "PASS_SOURCE_CORRECT"
+  },
+  {
+   "case_id": "S16",
+   "is_negative": false,
+   "candidate_count": 24,
+   "expected_episode_in_candidates": true,
+   "selection": {
+    "uuid": "6a58c7c8-6197-4ef9-b62b-88cf93f8fa5a",
+    "pos": 0,
+    "fact": "The v2smoke4 failures are caused by concurrent graphiti MCP calls, where the curator's restart-loop drain and the smoke session's search ser"
+   },
+   "source_resolution": [
+    {
+     "episode": "a8770371-c715-417b-b2e7-cdc9cba06fdd",
+     "sourceRef": "opencode:ses_e518d2926ffe4iAujvBdg4SxaG:message:msg_1aeabaa00001iH7nwDEfUsJj3Y",
+     "evidenceClass": "assistant-reported"
+    }
+   ],
+   "source_correct": true,
+   "status": "PASS_SOURCE_CORRECT"
+  },
+  {
+   "case_id": "N01",
+   "is_negative": true,
+   "candidate_count": 24,
+   "expected_episode_in_candidates": null,
+   "selection": null,
+   "status": "PRESENT_BUT_REJECTED"
+  },
+  {
+   "case_id": "N02",
+   "is_negative": true,
+   "candidate_count": 24,
+   "expected_episode_in_candidates": null,
+   "selection": {
+    "uuid": "1afbcca0-d3d7-400e-b1a5-31146a9ac56c",
+    "pos": 1,
+    "fact": "The active production curation records are under curation-v1/development-knowledge/, while ghdev_gh_mcp is the historical pre-cutover set."
+   },
+   "source_resolution": [
+    {
+     "episode": "e1d8e764-26fa-45ea-9483-8e64a71e3de7",
+     "sourceRef": "opencode:ses_e508c6d53ffeWrJEJftz60lqXB:message:msg_1af753f0d001GPlDjAoAckQ3EK",
+     "evidenceClass": "assistant-reported"
+    }
+   ],
+   "status": "INJECTED"
+  },
+  {
+   "case_id": "N03",
+   "is_negative": true,
+   "candidate_count": 24,
+   "expected_episode_in_candidates": null,
+   "selection": null,
+   "status": "PRESENT_BUT_REJECTED"
+  },
+  {
+   "case_id": "N04",
+   "is_negative": true,
+   "candidate_count": 24,
+   "expected_episode_in_candidates": null,
+   "selection": null,
+   "status": "PRESENT_BUT_REJECTED"
+  }
+ ],
+ "frozen_native_equivalence": "Offline 9/16 equals the frozen native 9/16 (same 9 cases: S02,S06,S08,S09,S11,S12,S14,S15,S16). Diagnostic only; NOT a native acceptance re-run.",
+ "blocking_defect_check": {
+  "wrong_group_leak": "none observed; N02 is the frozen historical FAIL_INJECTED (INJECTED) retained as a policy false positive",
+  "private_marker_leak": "none observed (N03 PRESENT_BUT_REJECTED)",
+  "false_admission": "none observed (N01/N03/N04 PRESENT_BUT_REJECTED)"
+ }
+}

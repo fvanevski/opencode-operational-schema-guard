@@ -1,0 +1,13 @@
+# SHA-256 manifest — docs/issue-78/evidence/81-bounded-recall-correction-v1/
+# campaign: ISSUE81_BOUNDED_RECALL_CORRECTION_V1
+# generated: 2026-11-06T19:40:38Z (UTC)
+
+03fd6b349b2dca0f16bd1b0c2f30f4f9b9cbf0ed50b928eb637774cf9013a8ce  command-shape-friction.json
+1e8af9c4af58c93cfed0584bb05981b8d449b8c044abc6f07428db82f8cd57b0  latency-and-bounds.json
+86d21e06be771901d4f91d431622a6d2e50a309a874526e2650d88f68d7354cb  observer-n04-erratum.json
+80538ebf88420eba54b89a91f786c7ad31910f8cd7ba02a88d458e1d45a09c99  offline-recall-matrix.json
+d8eba2063bdf541fbaa4323626cdff7a68c94913e335342b4cd9f2f1de7c3458  precision-status.json
+a0b91482fcb8a54e779929f4fd491402361d562b5db604d886564f3cbde473a0  README.md
+e577c089013d27a11cdce2b3869678eb8fccb0753400ec33ed3e060465b61659  retrieval-depth-comparison.json
+a14490fb3a0229e13aa5995dab8480d693cb815e640b91f75679674f6dbe7f7b  review-readiness.md
+8ca3671ebf0ea3d8964aff9555b3b6a9591ebd18952e83a50826f0049786f21a  source-and-test-validation.json

@@ -1,0 +1,55 @@
+{
+ "schema": "issue81-source-and-test-validation.v1",
+ "campaign": "ISSUE81_BOUNDED_RECALL_CORRECTION_V1",
+ "source_repository": "opencode-operational-schema-guard",
+ "base_main": "9a27b73de882c0af6fec4d86de81945338611479",
+ "impl_branch": "issue/81-source-recall-correction",
+ "impl_head": "8f6e688f5a82ef405c6d1f76e63410d5be0c48fb",
+ "evidence_branch": "issue/81-recall-acceptance",
+ "evidence_head": "431ca1f699f84dea4edef89030d5678c49a18dff",
+ "remote_refs_verified": {
+  "origin/issue/81-source-recall-correction": "8f6e688f5a82ef405c6d1f76e63410d5be0c48fb",
+  "origin/issue/81-recall-acceptance": "431ca1f699f84dea4edef89030d5678c49a18dff"
+ },
+ "implementation_diff": {
+  "vs_base_main": "9a27b73de882c0af6fec4d86de81945338611479",
+  "files": [
+   "docs/issue-75/v2-candidate/memory-core.mjs",
+   "docs/issue-75/v2-candidate/memory-core.test.mjs",
+   "docs/issue-75/v2-candidate/relevance.mjs",
+   "docs/issue-75/v2-candidate/relevance.test.mjs",
+   "docs/issue-78/v2-benchmark/ISSUE81_RECALL_CORRECTION_STAGE.md",
+   "docs/issue-78/v2-curator/sourced-recall.mjs"
+  ],
+  "diff_stat": "6 files changed, 219 insertions(+), 8 deletions(-)",
+  "IMPLEMENTATION_DIFF_MATCH": "PASS"
+ },
+ "syntax_check": {
+  "tool": "node --check",
+  "files": [
+   "docs/issue-75/v2-candidate/memory-core.mjs",
+   "docs/issue-75/v2-candidate/relevance.mjs",
+   "docs/issue-78/v2-curator/sourced-recall.mjs"
+  ],
+  "result": "PASS (3/3 exit 0)"
+ },
+ "focused_tests": {
+  "suite": "relevance.test.mjs + memory-core.test.mjs (Issue #81 recall-correction focused tests)",
+  "result": "45 pass / 0 fail",
+  "exit": 0,
+  "log_host": "/tmp/opencode/issue81-focused-tests.log"
+ },
+ "resolver_implicated_tests": {
+  "suite": "curator / graph-evidence / terminal-recovery resolver-implicated tests",
+  "result": "44 pass / 0 fail",
+  "exit": 0,
+  "log_host": "/tmp/opencode/issue81-resolver-tests.log"
+ },
+ "trusted_verify": {
+  "run": "42278847322",
+  "result": "PASS",
+  "note": "Inherited from the prior handoff under trusted-actions authority; NOT re-run in this campaign (no duplicate trusted verify run)."
+ },
+ "source_repository_edit": "forbidden (evidence-only qualification; the impl branch is the central-owned staged source)",
+ "verdict": "SOURCE_AND_TEST_VALIDATION=PASS"
+}

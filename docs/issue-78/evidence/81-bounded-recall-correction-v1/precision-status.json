@@ -1,0 +1,34 @@
+{
+ "schema": "issue81-precision-status.v1",
+ "campaign": "ISSUE81_BOUNDED_RECALL_CORRECTION_V1",
+ "HUMAN_PRECISION": "UNVERIFIED",
+ "reason": "All 126 operator-review verdicts are outstanding (human_verdict subfields null); adjudication status is AWAITING_OPERATOR_ADJUDICATION. No human precision verdict has been recorded this campaign.",
+ "population": 126,
+ "outstanding_verdicts": 126,
+ "verdicts_complete": false,
+ "adjudication_status": "AWAITING_OPERATOR_ADJUDICATION",
+ "evidence_class_counts": {
+  "assistant-reported": 103,
+  "tool-reported": 18,
+  "user-stated": 5
+ },
+ "operator_review_worksheet": {
+  "path": "/tmp/opencode/issue81-fresh-native-acceptance/fresh-native-v1/precision/operator-review-packet-126-consolidated.json",
+  "sha256": "a7d38d607fcd518af8f242a1fe56d6b34dc6fc4b17500c065e97aa12b43cb83f",
+  "expected_sha256": "a7d38d607fcd518af8f242a1fe56d6b34dc6fc4b17500c065e97aa12b43cb83f",
+  "sha256_matches": true,
+  "note": "Host-private artifact under /tmp; NOT published into the sanitized evidence packet (keeps operator review state out of the remote)."
+ },
+ "target_ratification": {
+  "status": "OPERATOR_RATIFIED",
+  "receipt_path": "/home/filip/.local/state/ghdev-graphiti-issue81/holdout81-64d32eb7/private/target-ratification.json",
+  "receipt_sha256": "3e9581114047ac7416f6014a0dd6a57304dc5e5784efe39b176ced61fbb8626a",
+  "expected_receipt_sha256": "3e9581114047ac7416f6014a0dd6a57304dc5e5784efe39b176ced61fbb8626a",
+  "receipt_sha256_matches": true,
+  "proposal_sha256": "17ffb60515f5f96f2d546fd3abf951d0bc008325e38d83145ec4f75a8c76f049",
+  "ratified_by": "filip",
+  "ratified_at": "2026-11-04T21:37:19Z",
+  "note": "Target ratification is OPERATOR_RATIFIED and reused unchanged; thresholds fixed (durable_grounded_precision_min=0.9). Ratification is a precondition gate, not a human precision verdict."
+ },
+ "sanitization": "This packet records status + file hashes only; it embeds no per-item operator verdict values and does not copy the host-private worksheet or ratification receipt into the remote packet."
+}

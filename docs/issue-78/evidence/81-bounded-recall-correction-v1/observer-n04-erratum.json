@@ -1,0 +1,339 @@
+{
+ "schema": "issue81-n04-observer-erratum.v1",
+ "campaign": "ISSUE81_BOUNDED_RECALL_CORRECTION_V1",
+ "supersedes": "fresh-native-v1/corrected/N04.json (observer analyze-case-corrected.v1, unscoped question-text match)",
+ "defect": {
+  "case_id": "N04",
+  "root_cause": "The v1 corrected observer attributed model requests to a case by question-text match (q in first_user_message). N04's frozen question is the 2-byte string 'hi', so it matched 427 litellm requests spread across MANY out-of-session native sessions in the campaign slice, yielding 188 block-bearing requests and 17 distinct source refs that do NOT belong to N04's own session.",
+  "v1_unscoped_requests_total_in_slice": 427,
+  "v1_unscoped_block_bearing_requests": 188,
+  "v1_unscoped_distinct_fact_count": 17,
+  "fix": "Attribute requests by  trace_id == native_session  (the opencode session id recorded per case in fresh-native-results.json). The campaign slice still starts at the frozen offset marker."
+ },
+ "raw_trace_identity": {
+  "trace_file": "/tmp/opencode/issue81-qual/litellm-trace.jsonl",
+  "trace_sha256": "63be80b936324a457d9beabd319b209e97318e5fe6a48e020854262b2a189060",
+  "trace_size_bytes_at_recompute": 844807885,
+  "campaign_start_offset_bytes": 644259321,
+  "records_read_in_slice": 416,
+  "note": "The litellm trace is a continuing qual artifact (litellm-collector PID 92003 keeps appending non-campaign records). The campaign slice is frozen by the offset marker campaign_start_offset_bytes=644259321 and all 20 native sessions are immutable within it; the sha256 above is the point-in-time file identity at recompute time."
+ },
+ "attribution_rule": "trace_id == native_session",
+ "n04_reconciliation": {
+  "native_session": "ses_e4dea883effe7cCGVWGfs40hGb",
+  "native_requests": 2,
+  "block_bearing_requests": 0,
+  "complete_block_pairs_total": 0,
+  "distinct_fact_count": 0,
+  "distinct_source_refs": [],
+  "verdict": "PASS_NO_INJECTION",
+  "expected": "2 native requests, 0 GHDEV blocks, PASS_NO_INJECTION (matches frozen fresh-native-results.json N04: model_requests_in_window=2, ghdev_block_present=False, verdict=PASS_NO_INJECTION)",
+  "reconciled": true
+ },
+ "s12_duplicate_check": {
+  "native_session": "ses_e4deff439ffewNtCMFttehz0oW",
+  "native_requests": 6,
+  "max_complete_pairs_in_one_request": 1,
+  "duplicate_block_in_request_corrected": false,
+  "note": "S12's original duplicate_block_in_request=true was an observer false positive (a quoted [GHDEV_GRAPHITI_CONTEXT] marker inside an OpenViking memory fact). Confirmed: at most one complete block pair per request; no within-request duplicate."
+ },
+ "all_cases_recomputed": [
+  {
+   "case_id": "S01",
+   "native_session": "ses_e4dfe92dbffejvImwAVwpQu1L4",
+   "native_requests": 20,
+   "frozen_model_requests_in_window": 20,
+   "reconciled_with_frozen": true,
+   "block_bearing_requests": 19,
+   "complete_block_pairs_total": 19,
+   "max_complete_pairs_in_one_request": 1,
+   "duplicate_block_in_request_corrected": false,
+   "distinct_fact_count": 1,
+   "distinct_source_refs": [
+    "opencode:ses_e513390dcffekimm001xBGtcI0:message:msg_1aecd887c001GaCs8HD5eGI0R9"
+   ]
+  },
+  {
+   "case_id": "S02",
+   "native_session": "ses_e4dfc7c33ffeRlUTx2slWH3sSo",
+   "native_requests": 6,
+   "frozen_model_requests_in_window": 6,
+   "reconciled_with_frozen": true,
+   "block_bearing_requests": 5,
+   "complete_block_pairs_total": 5,
+   "max_complete_pairs_in_one_request": 1,
+   "duplicate_block_in_request_corrected": false,
+   "distinct_fact_count": 1,
+   "distinct_source_refs": [
+    "opencode:ses_e513f00aaffeQSVvSV3YJ3170Z:message:msg_1aec148ed001YQXpy2B88RxtjY"
+   ]
+  },
+  {
+   "case_id": "S03",
+   "native_session": "ses_e4dfb81f3ffe57rsmJVVDq2ctH",
+   "native_requests": 8,
+   "frozen_model_requests_in_window": 8,
+   "reconciled_with_frozen": true,
+   "block_bearing_requests": 7,
+   "complete_block_pairs_total": 7,
+   "max_complete_pairs_in_one_request": 1,
+   "duplicate_block_in_request_corrected": false,
+   "distinct_fact_count": 1,
+   "distinct_source_refs": [
+    "opencode:ses_e514f306cffe3F3Hy1nkJgjujC:message:msg_1aeb281c9001k9aQzqmnBUQ1oE"
+   ]
+  },
+  {
+   "case_id": "S04",
+   "native_session": "ses_e4df9520dffejIU5LIPS0k16rZ",
+   "native_requests": 17,
+   "frozen_model_requests_in_window": 17,
+   "reconciled_with_frozen": true,
+   "block_bearing_requests": 16,
+   "complete_block_pairs_total": 16,
+   "max_complete_pairs_in_one_request": 1,
+   "duplicate_block_in_request_corrected": false,
+   "distinct_fact_count": 1,
+   "distinct_source_refs": [
+    "opencode:ses_e51631cbfffeIAww75wYB0QLvR:message:msg_1ae9d8d9e0011vCYAm7ru8Z44E"
+   ]
+  },
+  {
+   "case_id": "S05",
+   "native_session": "ses_e4df77391ffeUTHrUoanPEkSo0",
+   "native_requests": 7,
+   "frozen_model_requests_in_window": 7,
+   "reconciled_with_frozen": true,
+   "block_bearing_requests": 6,
+   "complete_block_pairs_total": 6,
+   "max_complete_pairs_in_one_request": 1,
+   "duplicate_block_in_request_corrected": false,
+   "distinct_fact_count": 1,
+   "distinct_source_refs": [
+    "opencode:ses_e5276247fffewUAeyTeAea2tia:message:msg_1ad8c14d6001aDoSonKPyEUW9E"
+   ]
+  },
+  {
+   "case_id": "S06",
+   "native_session": "ses_e4df6b5e2ffeTYu6Pah3ZXuXZQ",
+   "native_requests": 5,
+   "frozen_model_requests_in_window": 5,
+   "reconciled_with_frozen": true,
+   "block_bearing_requests": 4,
+   "complete_block_pairs_total": 4,
+   "max_complete_pairs_in_one_request": 1,
+   "duplicate_block_in_request_corrected": false,
+   "distinct_fact_count": 1,
+   "distinct_source_refs": [
+    "opencode:ses_e51cb9c19ffem7rxqiNNhlbbQ1:message:msg_1ae367654001nlYZtg6lC5m03l"
+   ]
+  },
+  {
+   "case_id": "S07",
+   "native_session": "ses_e4df62ca9ffeTJnF2hBchdq7mZ",
+   "native_requests": 24,
+   "frozen_model_requests_in_window": 24,
+   "reconciled_with_frozen": true,
+   "block_bearing_requests": 23,
+   "complete_block_pairs_total": 23,
+   "max_complete_pairs_in_one_request": 1,
+   "duplicate_block_in_request_corrected": false,
+   "distinct_fact_count": 1,
+   "distinct_source_refs": [
+    "opencode:ses_e50cc1c26ffeKCmAyMkiTNIVKE:tool:call_8e9d27d04e918e97"
+   ]
+  },
+  {
+   "case_id": "S08",
+   "native_session": "ses_e4df3ceccffeMUmVpFdOSH7BOu",
+   "native_requests": 22,
+   "frozen_model_requests_in_window": 22,
+   "reconciled_with_frozen": true,
+   "block_bearing_requests": 21,
+   "complete_block_pairs_total": 21,
+   "max_complete_pairs_in_one_request": 1,
+   "duplicate_block_in_request_corrected": false,
+   "distinct_fact_count": 1,
+   "distinct_source_refs": [
+    "opencode:ses_e529e87f6ffe70o8b0iVRkat83:message:msg_1ad677b39001fEWaII5bvS0d0n"
+   ]
+  },
+  {
+   "case_id": "S09",
+   "native_session": "ses_e4df2c8d4ffe4gDUe2CPPFMaGo",
+   "native_requests": 19,
+   "frozen_model_requests_in_window": 19,
+   "reconciled_with_frozen": true,
+   "block_bearing_requests": 18,
+   "complete_block_pairs_total": 18,
+   "max_complete_pairs_in_one_request": 1,
+   "duplicate_block_in_request_corrected": false,
+   "distinct_fact_count": 1,
+   "distinct_source_refs": [
+    "opencode:ses_e51cb9c19ffem7rxqiNNhlbbQ1:message:msg_1ae357b5f001zi64jgXG7LK6Ca"
+   ]
+  },
+  {
+   "case_id": "S10",
+   "native_session": "ses_e4df2038dffe018F2ApG53wNrI",
+   "native_requests": 14,
+   "frozen_model_requests_in_window": 14,
+   "reconciled_with_frozen": true,
+   "block_bearing_requests": 13,
+   "complete_block_pairs_total": 13,
+   "max_complete_pairs_in_one_request": 1,
+   "duplicate_block_in_request_corrected": false,
+   "distinct_fact_count": 1,
+   "distinct_source_refs": [
+    "opencode:ses_e50efdb27ffep7alMZaj9wkl3x:tool:call_0485ce2600ec5dba"
+   ]
+  },
+  {
+   "case_id": "S11",
+   "native_session": "ses_e4df14bb3ffetUo0XD9F0t2s3Y",
+   "native_requests": 8,
+   "frozen_model_requests_in_window": 8,
+   "reconciled_with_frozen": true,
+   "block_bearing_requests": 7,
+   "complete_block_pairs_total": 7,
+   "max_complete_pairs_in_one_request": 1,
+   "duplicate_block_in_request_corrected": false,
+   "distinct_fact_count": 1,
+   "distinct_source_refs": [
+    "opencode:ses_e5153da9effexLtJUGtbne2huA:message:msg_1aeaeba84001br8HMsJ3RwNb9H"
+   ]
+  },
+  {
+   "case_id": "S12",
+   "native_session": "ses_e4deff439ffewNtCMFttehz0oW",
+   "native_requests": 6,
+   "frozen_model_requests_in_window": 6,
+   "reconciled_with_frozen": true,
+   "block_bearing_requests": 5,
+   "complete_block_pairs_total": 5,
+   "max_complete_pairs_in_one_request": 1,
+   "duplicate_block_in_request_corrected": false,
+   "distinct_fact_count": 1,
+   "distinct_source_refs": [
+    "opencode:ses_e518d2926ffe4iAujvBdg4SxaG:message:msg_1aea02541001WqFYEGis61N1Vr"
+   ]
+  },
+  {
+   "case_id": "S13",
+   "native_session": "ses_e4def5fb7ffecGWYGwf3aBaTZw",
+   "native_requests": 19,
+   "frozen_model_requests_in_window": 19,
+   "reconciled_with_frozen": true,
+   "block_bearing_requests": 18,
+   "complete_block_pairs_total": 18,
+   "max_complete_pairs_in_one_request": 1,
+   "duplicate_block_in_request_corrected": false,
+   "distinct_fact_count": 1,
+   "distinct_source_refs": [
+    "opencode:ses_e4e1ec14bffeB8M0b0Sn2XxErw:message:msg_1b1e1aaee001r673t8FEqDVzHY"
+   ]
+  },
+  {
+   "case_id": "S14",
+   "native_session": "ses_e4dee78f4ffePuP7ykc2KHnsve",
+   "native_requests": 2,
+   "frozen_model_requests_in_window": 2,
+   "reconciled_with_frozen": true,
+   "block_bearing_requests": 1,
+   "complete_block_pairs_total": 1,
+   "max_complete_pairs_in_one_request": 1,
+   "duplicate_block_in_request_corrected": false,
+   "distinct_fact_count": 1,
+   "distinct_source_refs": [
+    "opencode:ses_e518d2926ffe4iAujvBdg4SxaG:message:msg_1ae72d6dc00148hViRhCkatbe6:span:9846"
+   ]
+  },
+  {
+   "case_id": "S15",
+   "native_session": "ses_e4dee4c21ffe16vVwS2naNKdEj",
+   "native_requests": 7,
+   "frozen_model_requests_in_window": 7,
+   "reconciled_with_frozen": true,
+   "block_bearing_requests": 6,
+   "complete_block_pairs_total": 6,
+   "max_complete_pairs_in_one_request": 1,
+   "duplicate_block_in_request_corrected": false,
+   "distinct_fact_count": 1,
+   "distinct_source_refs": [
+    "opencode:ses_e518d2926ffe4iAujvBdg4SxaG:message:msg_1ae8280fc001I6XqE8vOZyDAdn"
+   ]
+  },
+  {
+   "case_id": "S16",
+   "native_session": "ses_e4dedf35effeJ1TpWN8wRqwO5g",
+   "native_requests": 15,
+   "frozen_model_requests_in_window": 15,
+   "reconciled_with_frozen": true,
+   "block_bearing_requests": 14,
+   "complete_block_pairs_total": 14,
+   "max_complete_pairs_in_one_request": 1,
+   "duplicate_block_in_request_corrected": false,
+   "distinct_fact_count": 1,
+   "distinct_source_refs": [
+    "opencode:ses_e518d2926ffe4iAujvBdg4SxaG:message:msg_1aeabaa00001iH7nwDEfUsJj3Y"
+   ]
+  },
+  {
+   "case_id": "N01",
+   "native_session": "ses_e4ded47d5ffeT0SIqMxaXgP1pH",
+   "native_requests": 3,
+   "frozen_model_requests_in_window": 3,
+   "reconciled_with_frozen": true,
+   "block_bearing_requests": 0,
+   "complete_block_pairs_total": 0,
+   "max_complete_pairs_in_one_request": 0,
+   "duplicate_block_in_request_corrected": false,
+   "distinct_fact_count": 0,
+   "distinct_source_refs": []
+  },
+  {
+   "case_id": "N02",
+   "native_session": "ses_e4ded1e31ffeBe1agWuBIT2aru",
+   "native_requests": 6,
+   "frozen_model_requests_in_window": 6,
+   "reconciled_with_frozen": true,
+   "block_bearing_requests": 5,
+   "complete_block_pairs_total": 5,
+   "max_complete_pairs_in_one_request": 1,
+   "duplicate_block_in_request_corrected": false,
+   "distinct_fact_count": 1,
+   "distinct_source_refs": [
+    "opencode:ses_e508c6d53ffeWrJEJftz60lqXB:message:msg_1af753f0d001GPlDjAoAckQ3EK"
+   ]
+  },
+  {
+   "case_id": "N03",
+   "native_session": "ses_e4decae09ffe6KviO62AUw17XX",
+   "native_requests": 39,
+   "frozen_model_requests_in_window": 39,
+   "reconciled_with_frozen": true,
+   "block_bearing_requests": 0,
+   "complete_block_pairs_total": 0,
+   "max_complete_pairs_in_one_request": 0,
+   "duplicate_block_in_request_corrected": false,
+   "distinct_fact_count": 0,
+   "distinct_source_refs": []
+  },
+  {
+   "case_id": "N04",
+   "native_session": "ses_e4dea883effe7cCGVWGfs40hGb",
+   "native_requests": 2,
+   "frozen_model_requests_in_window": 2,
+   "reconciled_with_frozen": true,
+   "block_bearing_requests": 0,
+   "complete_block_pairs_total": 0,
+   "max_complete_pairs_in_one_request": 0,
+   "duplicate_block_in_request_corrected": false,
+   "distinct_fact_count": 0,
+   "distinct_source_refs": []
+  }
+ ],
+ "all_20_reconciled_with_frozen_request_counts": true,
+ "score_impact": "No rescoring. The source-correct verdict axis is unchanged: corrected distinct_source_refs equal the matrix injected_source_refs for all 16 positives; N02 remains FAIL_INJECTED (1 injected wrong-group ref). The 9/16 PASS_SOURCE_CORRECT score and 8/16 Phase-A baseline are preserved.",
+ "original_score_preserved": "9/16 PASS_SOURCE_CORRECT (S02,S06,S08,S09,S11,S12,S14,S15,S16); threshold 13/16; result FAIL (unchanged)"
+}

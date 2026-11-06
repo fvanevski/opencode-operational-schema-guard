@@ -1,0 +1,155 @@
+{
+ "schema": "issue81-retrieval-depth-comparison.v1",
+ "campaign": "ISSUE81_BOUNDED_RECALL_CORRECTION_V1",
+ "method": "Live read-only Graphiti search_memory_facts (group development-knowledge) paired depth probes at max_facts=12 and max_facts=24, current snapshot 2026-11-06. Expected-episode presence is determined by episode membership of the returned candidate facts.",
+ "group": "development-knowledge",
+ "snapshot": "2026-11-06",
+ "expected_episode_recovery": {
+  "S01": {
+   "episode_uuid": "1409c260-92e9-474f-96be-6da4216908f7",
+   "in_d12": true,
+   "in_d24": true,
+   "classification": "PRESENT_AT_BOTH"
+  },
+  "S02": {
+   "episode_uuid": "49d891de-1298-4799-89ac-967f37036c85",
+   "in_d12": false,
+   "in_d24": true,
+   "classification": "RECOVERED_BY_DEPTH24"
+  },
+  "S03": {
+   "episode_uuid": "082fe673-8cf9-4da1-bc43-aaa9e04f68d8",
+   "in_d12": false,
+   "in_d24": false,
+   "classification": "ABSENT_AT_BOTH"
+  },
+  "S04": {
+   "episode_uuid": "c48cd614-4f98-49f7-90d0-5b6a418368fc",
+   "in_d12": true,
+   "in_d24": true,
+   "classification": "PRESENT_AT_BOTH"
+  },
+  "S05": {
+   "episode_uuid": "1a20d974-b5a7-4367-8da5-8c9d7dbb06c5",
+   "in_d12": false,
+   "in_d24": false,
+   "classification": "ABSENT_AT_BOTH"
+  },
+  "S06": {
+   "episode_uuid": "6e7956be-498c-47cf-af4d-07220ee8507e",
+   "in_d12": false,
+   "in_d24": true,
+   "classification": "RECOVERED_BY_DEPTH24"
+  },
+  "S07": {
+   "episode_uuid": "7dcfa76f-8fa5-436a-bdd5-ad340a62f27d",
+   "in_d12": false,
+   "in_d24": false,
+   "classification": "ABSENT_AT_BOTH"
+  },
+  "S08": {
+   "episode_uuid": "90f8048e-1fb9-40fb-928a-9c0326e0d4e5",
+   "in_d12": false,
+   "in_d24": true,
+   "classification": "RECOVERED_BY_DEPTH24"
+  },
+  "S09": {
+   "episode_uuid": "067e0206-f628-42cb-b9a1-65e6783db4f6",
+   "in_d12": false,
+   "in_d24": true,
+   "classification": "RECOVERED_BY_DEPTH24"
+  },
+  "S10": {
+   "episode_uuid": "0de3cdc8-07ff-46a5-a0bc-ed7f9bc5e47b",
+   "in_d12": false,
+   "in_d24": false,
+   "classification": "ABSENT_AT_BOTH"
+  },
+  "S11": {
+   "episode_uuid": "1343d893-6c6d-413b-8795-69ee6e35831a",
+   "in_d12": false,
+   "in_d24": true,
+   "classification": "RECOVERED_BY_DEPTH24"
+  },
+  "S12": {
+   "episode_uuid": "33088c81-1857-47ba-85b8-0e336e0a54ac",
+   "in_d12": false,
+   "in_d24": true,
+   "classification": "RECOVERED_BY_DEPTH24"
+  },
+  "S13": {
+   "episode_uuid": "009974d2-f051-45fd-ac0c-f259dcfdd1a8",
+   "in_d12": false,
+   "in_d24": false,
+   "classification": "ABSENT_AT_BOTH"
+  },
+  "S14": {
+   "episode_uuid": "13ef46fa-d8a7-4414-a73a-821d4e9495dd",
+   "in_d12": false,
+   "in_d24": true,
+   "classification": "RECOVERED_BY_DEPTH24"
+  },
+  "S15": {
+   "episode_uuid": "bbdd92f2-ea6b-4c35-ac36-7f7a81a59b2e",
+   "in_d12": false,
+   "in_d24": true,
+   "classification": "RECOVERED_BY_DEPTH24"
+  },
+  "S16": {
+   "episode_uuid": "a8770371-c715-417b-b2e7-cdc9cba06fdd",
+   "in_d12": false,
+   "in_d24": true,
+   "classification": "RECOVERED_BY_DEPTH24"
+  }
+ },
+ "summary": {
+  "expected_present_d12": 2,
+  "expected_present_d12_cases": [
+   "S01",
+   "S04"
+  ],
+  "expected_present_d24": 11,
+  "expected_present_d24_cases": [
+   "S01",
+   "S02",
+   "S04",
+   "S06",
+   "S08",
+   "S09",
+   "S11",
+   "S12",
+   "S14",
+   "S15",
+   "S16"
+  ],
+  "recovered_by_depth24": 9,
+  "retrieval_misses_absent_at_both_depths": [
+   "S03",
+   "S05",
+   "S07",
+   "S10",
+   "S13"
+  ],
+  "admission_misses_present_at_d24": [
+   "S01",
+   "S04"
+  ]
+ },
+ "admission_probe": {
+  "ranker": "null (lexical/authority only, matches installed option)",
+  "S01": "expected d14f3c13 is eligible via the new DB-alias rule but loses the tie-break to competing a364f523 (overlap 0.44 vs 0.33); S01 selected a364f523 (WRONG_SOURCE).",
+  "S04": "expected 8d1e7656 is eligible (overlap 0.31) but the proposition-equivalent sibling 6940cadb wins (overlap 0.46); S04 selected 6940cadb (WRONG_SOURCE).",
+  "negative_identity_guards": {
+   "issue_fence": true,
+   "product_fence_mongodb": true,
+   "prose_not_structured_alias": true
+  }
+ },
+ "conclusion": "Depth 24 recovers 9 additional expected episodes (11/16 present at d24 vs 2/16 at d12) but does NOT recover the 5 retrieval misses S03/S05/S07/S10/S13, whose expected episodes are absent at BOTH depths. The candidate cap (24) is not the binding constraint for those five. S01/S04 are selector/admission misses (expected fact present at d24; a competing/sibling fact is selected). CENTRAL_SOURCE_CHANGE_REQUIRED=yes.",
+ "source_probe_files": [
+  "/tmp/opencode/issue81-depth-probes.json",
+  "/tmp/opencode/issue81-depth-probes-s01-s04.json",
+  "/tmp/opencode/issue81-depth-probes-remaining.json",
+  "/tmp/opencode/issue81-admission-probe.json"
+ ]
+}
