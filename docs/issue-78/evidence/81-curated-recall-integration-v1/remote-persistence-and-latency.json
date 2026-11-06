@@ -1,0 +1,56 @@
+{
+  "schema": "issue81-remote-persistence-latency.v1",
+  "campaign": "ISSUE81_CURATED_RECALL_INTEGRATION_V1",
+  "graphiti_endpoint": "http://127.0.0.1:8766/mcp",
+  "group": "development-knowledge",
+  "get_episodes_proof": {
+    "args": {
+      "group_ids": [
+        "development-knowledge"
+      ],
+      "max_episodes": 1000
+    },
+    "returned_count": 214,
+    "unique_uuids": 214,
+    "group_ids_observed": [
+      "development-knowledge"
+    ],
+    "episodes_outside_group": 0,
+    "invalid_uuid_count": 0,
+    "error_field": null,
+    "truncated_at_max": false,
+    "five_expected_uuids_present": true,
+    "verdict": "POSITIVE_REMOTE_PROOF: every persisted index UUID (214/214) is confirmed present in the live read-only episode list, including all five previously-missing S03/S05/S07/S10/S13 expected UUIDs. Architecture is NOT blocked."
+  },
+  "host_index_recheck_b6": {
+    "store_total_records": 358,
+    "records_by_state": {
+      "deferred": 140,
+      "persisted": 214,
+      "skipped": 4
+    },
+    "production_scope_records": 358,
+    "production_scope_persisted": 214,
+    "unique_persisted_remote_uuids": 214,
+    "persisted_facts_total": 214,
+    "persisted_events_native_id": 1597,
+    "curation_dir_mode": "700",
+    "curator_env_mode": "600",
+    "previous_snapshot": "274 records / 165 sourced persisted UUIDs",
+    "change_report": "Current snapshot GROWN to 358 records / 214 persisted unique UUIDs (214/214 remote-confirmed). Reported, not ignored: no immutable input was altered; the frozen roster (sha256 47e141bd...) is unchanged and all 16 expected UUIDs remain remote-present."
+  },
+  "latency_b8": {
+    "methodology": "Serial Graphiti MCP calls (search_memory_facts then get_episodes, never concurrent); local disk-index reads may overlap remote IO and were measured separately. First-request vs warm captured per operation. n=1 per measurement (single deterministic campaign pass); p50=p95=the single sample.",
+    "get_episodes_first_ms": 60,
+    "get_episodes_warm_ms": 32,
+    "d24_search_first_ms": 143,
+    "d24_search_warm_ms": 138,
+    "d24_facts_count": 24,
+    "curated_resolve_ms": 50,
+    "curated_candidates": 214,
+    "combined_stage_ms": 37,
+    "first_run_classification": "All measurements taken on live endpoint within minutes of campaign start; get_episodes first (60ms) vs warm (32ms) shows modest first-session overhead. All stages well under the unchanged 300 ms allowance.",
+    "hook_p95": "UNVERIFIED",
+    "allowance_300ms": "unchanged in staged source (Promise.race allowance); raising it was not in scope"
+  }
+}

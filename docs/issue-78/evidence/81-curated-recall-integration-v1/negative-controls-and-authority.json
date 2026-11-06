@@ -1,0 +1,68 @@
+{
+  "schema": "issue81-negative-controls-authority.v1",
+  "campaign": "ISSUE81_CURATED_RECALL_INTEGRATION_V1",
+  "fail_closed_controls_b9": {
+    "method": "Staged Memory.search exercised with in-memory fixtures over the exact admission paths (curatedCandidateRetriever + extraSourceResolver + live-style remote episode list)",
+    "results": {
+      "positive_readback": true,
+      "wrong_group_zero": true,
+      "missing_remote_uuid_zero": true,
+      "malformed_remote_zero": true,
+      "bad_uuid_in_list_zero": true,
+      "truncated_listing_zero": true,
+      "private_assertion_zero": true,
+      "private_fence_direct": true,
+      "missing_source_zero": true,
+      "weak_source_zero": true,
+      "remote_outage_zero": true,
+      "serial_order": true
+    },
+    "all_pass": true,
+    "fixture_note": "One agent-authored fixture token (gh_p_ prefix + underscore) did not match the source privacy fence and was corrected to a ghp_ + 20-alphanumeric token; the fence itself was verified directly (api-key and sk- token shapes both return empty safeText)."
+  },
+  "serial_mcp_verification": {
+    "observed_call_order": [
+      "search_memory_facts",
+      "get_episodes"
+    ],
+    "concurrent_graphiti_calls": 0,
+    "note": "Memory.search awaits search_memory_facts, then get_episodes (only when a curated retriever is present); only the local disk-index read overlaps remote IO. Consistent with the S16 concurrent-call instability diagnosis."
+  },
+  "negative_case_outcomes": [
+    {
+      "case_id": "N01",
+      "new_exposed_status": "PASS_NO_INJECTION",
+      "expected_outcome": "no_injection",
+      "note": null,
+      "selected_source": null
+    },
+    {
+      "case_id": "N02",
+      "new_exposed_status": "FAIL_INJECTED",
+      "expected_outcome": "no_injection_or_non_development_knowledge",
+      "note": "frozen FAIL_INJECTED preserved (same-group content-policy miss)",
+      "selected_source": "opencode:ses_e508c6d53ffeWrJEJftz60lqXB:message:msg_1af753f0d001GPlDjAoAckQ3EK"
+    },
+    {
+      "case_id": "N03",
+      "new_exposed_status": "PASS_NO_INJECTION",
+      "expected_outcome": "no_injection",
+      "note": null,
+      "selected_source": null
+    },
+    {
+      "case_id": "N04",
+      "new_exposed_status": "PASS_NO_INJECTION",
+      "expected_outcome": "no_injection",
+      "note": null,
+      "selected_source": null
+    }
+  ],
+  "authority_verdicts": [
+    "A positively persisted curated source index is a supplemental candidate inventory: every admitted candidate required same-request remote episode readback (214/214 confirmed), exact group fence, persisted scope-bound curation status, native-id source strength and one-fact records.",
+    "Stale local receipts alone never authorize admission: remote-outage and missing-remote-UUID controls both yield zero eligible index facts (no fallback to stored local confidence).",
+    "Truncated/partial remote listings (exactly 1000 episodes) are treated as NO positive proof, not as proven absence; the control aborts index admission (abstention).",
+    "Source-context excerpts never enter emitted results or formatContext (A.3 projection, exit 0).",
+    "N02 remains the frozen FAIL_INJECTED same-group content-policy miss; no new wrong-group, secret or false-verified admission was observed in any negative case."
+  ]
+}

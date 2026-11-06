@@ -1,0 +1,85 @@
+{
+  "schema": "issue81-exact-head-source-tests.v1",
+  "campaign": "ISSUE81_CURATED_RECALL_INTEGRATION_V1",
+  "repo": "fvanevski/opencode-operational-schema-guard",
+  "issue": 81,
+  "pr": 89,
+  "implementation_branch": "issue/81-source-recall-correction",
+  "exact_head_sha": "bcab0311b8c7c0486ebe931b0a024a88cd47adc7",
+  "exact_head_tree": "2ad8055d1a00d77dc80641fec6aefd1461a3e3a8",
+  "controller_base_sha": "9a27b73de882c0af6fec4d86de81945338611479",
+  "remote_authentication": {
+    "pr_state": "OPEN",
+    "pr_is_draft": true,
+    "pr_head_oid": "bcab0311b8c7c0486ebe931b0a024a88cd47adc7",
+    "pr_base_oid": "9a27b73de882c0af6fec4d86de81945338611479",
+    "remote_main_head": "9a27b73de882c0af6fec4d86de81945338611479",
+    "main_equals_controller_base": true,
+    "base_is_ancestor_of_head": true
+  },
+  "source_diff_scope": {
+    "file_count": 14,
+    "paths": [
+      "docs/issue-75/v2-candidate/memory-core.mjs",
+      "docs/issue-75/v2-candidate/memory-core.test.mjs",
+      "docs/issue-75/v2-candidate/plugin.mjs",
+      "docs/issue-75/v2-candidate/relevance.mjs",
+      "docs/issue-75/v2-candidate/relevance.test.mjs",
+      "docs/issue-78/v2-benchmark/ISSUE81_CURATED_RECALL_INTEGRATION_HANDOFF.md",
+      "docs/issue-78/v2-benchmark/ISSUE81_RECALL_CORRECTION_STAGE.md",
+      "docs/issue-78/v2-benchmark/ISSUE81_RETRIEVAL_RECOVERY_HANDOFF.md",
+      "docs/issue-78/v2-benchmark/issue81-retrieval-feasibility.mjs",
+      "docs/issue-78/v2-benchmark/issue81-retrieval-feasibility.test.mjs",
+      "docs/issue-78/v2-candidate/plugin.mjs",
+      "docs/issue-78/v2-curator/curated-recall-candidates.mjs",
+      "docs/issue-78/v2-curator/curated-recall-candidates.test.mjs",
+      "docs/issue-78/v2-curator/sourced-recall.mjs"
+    ],
+    "protected_control_plane_edits": 0,
+    "note": "All 14 paths are within existing Issue #75/78 module/tests/handoff surfaces."
+  },
+  "syntax_checks": {
+    "command": "node --check <each changed/new .mjs module>",
+    "modules_checked": 7,
+    "modules_passed": 7,
+    "modules_failed": 0
+  },
+  "focused_suite": {
+    "command": "node --test docs/issue-78/v2-curator/curated-recall-candidates.test.mjs docs/issue-75/v2-candidate/relevance.test.mjs docs/issue-75/v2-candidate/relevance-priority-regression.test.mjs docs/issue-75/v2-candidate/relevance-observation-replay.test.mjs docs/issue-75/v2-candidate/memory-core.test.mjs docs/issue-75/v2-candidate/plugin-behavior.test.mjs docs/issue-78/v2-curator/production-cutover.test.mjs",
+    "node_version": "v26.13.0",
+    "tests": 52,
+    "pass": 51,
+    "fail": 1,
+    "cancelled": 0,
+    "skipped": 0,
+    "process_exit": 1,
+    "failing_test": {
+      "file": "docs/issue-75/v2-candidate/memory-core.test.mjs",
+      "name": "native sourced recall may use facts 13-24 but not an out-of-bound remote result",
+      "assertion": "result.length expected 1, got 0 (line 218)",
+      "classification": "SUBSTANTIVE_SOURCE_SELECTION_DEFECT",
+      "analysis": "Memory.search builds combined=[...candidates.slice(0,12), ...indexedCandidates.slice(0,12)]: the Graphiti fact path is truncated to the first 12 received facts before ranking, so a relevant fact at received positions 13-24 (the test places it at position 19) can never be selected. The staged test (co-committed at the exact head) encodes the intent that facts 13-24 are usable. Per contract, production code/test changes require a Central-staged new exact head; not repaired locally."
+    }
+  },
+  "trusted_actions_receipts_at_exact_head": {
+    "local_host_verify": {
+      "status": "pass",
+      "annotation": "Exact-head repository Verify PASS; receipt c24b79d588f5",
+      "actions_run": "42289157509"
+    },
+    "node_contract": {
+      "status": "pass",
+      "actions_run": "42289025179",
+      "duration": "34s"
+    },
+    "coverage_note": "Trusted repository-final-v1 covers the main plugin suite (npm run check + npm test). The focused docs/issue-75/78 benchmark suites are NOT in that covered set, so the local focused-suite failure above is not duplicated by the trusted receipt."
+  },
+  "context_fence_check_a3": {
+    "method": "disposable projection against staged Memory.search: curated rows carrying sourceContext + remote episode readback; assert emitted entries and formatContext contain no sourceContext/remoteEpisodeUuid/workspace/project/group keys and no excerpt text",
+    "exit": 0,
+    "emitted_count": 1,
+    "format_context_contains_excerpt": false,
+    "evidence_class_upgrade": "none (evidenceClass copied verbatim from recorded rows)",
+    "alternate_group_read": "none (journal, resolver, remote list and index rows all fenced to the exact group)"
+  }
+}

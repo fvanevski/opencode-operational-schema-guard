@@ -1,0 +1,26 @@
+{
+  "schema": "issue81-command-shape-friction.v1",
+  "campaign": "ISSUE81_CURATED_RECALL_INTEGRATION_V1",
+  "commands_match_handoff": true,
+  "match_note": "The contract-literal focused node --test suite ran with the exact file list and shape; the only deviation was the addition of an authorized scratch log redirect to a pre-created campaign directory (producer exit preserved separately).",
+  "events": [
+    {
+      "type": "interface_discovery",
+      "where": "Phase A.2 first focused-suite run",
+      "detail": "Log redirect target /tmp/opencode/issue81-v1/ did not exist (zsh: no such file or directory); shell exit 1 was a display/redirect failure, not a test result. Corrected by creating the campaign directory, re-ran the identical suite, and preserved the producer exit (1) from the re-run, which is the acceptance-bearing result (51/52).",
+      "effect": "pre_execution_rejection (harmless; corrected before any claim)",
+      "outcome": "corrected_and_preserved"
+    },
+    {
+      "type": "agent_fixture_correction",
+      "where": "Phase B.9 negative controls (disposable harness)",
+      "detail": "First private-credential fixture token used gh_p_ + underscore and did not match the staged privacy fence, so the control reported a false leak. Corrected the fixture token to ghp_ + 20 alphanumerics and re-verified the fence directly. No production source changed.",
+      "effect": "agent-authored fixture repair (authorized: narrow private runner/harness repair)",
+      "outcome": "corrected_and_reverified"
+    }
+  ],
+  "guard_rejections": 0,
+  "rtk_usage": "none",
+  "harness_rewrites": 0,
+  "masked_producer_failures": 0
+}
