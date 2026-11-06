@@ -47,7 +47,7 @@ function nativeUserText(message) {
 }
 // Associate native context with an actual user message, not whichever
 // auxiliary/title prompt happened to fire last for this session.
-function requestForContext(entries, event) {
+function requestForContext(entries, event, legacyFallbackBlocked = false) {
   if (!entries?.length) return null;
   const messages = event.messages;
   if (Array.isArray(messages) && messages.length) {
@@ -69,7 +69,7 @@ function requestForContext(entries, event) {
   }
   // Legacy hook surfaces expose no native messages. Never select an
   // arbitrary winner after multiple same-session prompts.
-  return entries.length === 1 ? entries[0] : null;
+  return !legacyFallbackBlocked && entries.length === 1 ? entries[0] : null;
 }
 
 function removeOwn(parts) {
@@ -94,6 +94,7 @@ export default {
     const registrations = [];
     const pending = new Map();
     const recallPrompts = new Map();
+    const legacyFallbackBlocked = new Set();
     let stopped = false;
     // Only stage candidates in live hooks. A post-harness exclusive runner
     // owns Graphiti submissions and must hold the lease until terminal readback.
@@ -102,7 +103,10 @@ export default {
       await register(() => ctx.session.hook('prompt', event => {
         if (!event?.sessionID) return;
         const text = promptText(event.prompt?.text);
-        if (!text) return;
+        if (!text) {
+          legacyFallbackBlocked.add(event.sessionID);
+          return;
+        }
         // Only remember after the admitted prompt reaches a model context build.
         if (settings.capture) {
           const candidate = selectUserDecision(text);
@@ -112,7 +116,10 @@ export default {
         // control-character and 500-character fence. Rejected auxiliary
         // prompts must not evict a valid, source-bound user search.
         const bounded = safeText(text, 500);
-        if (!bounded || bounded.length < 10) return;
+        if (!bounded || bounded.length < 10) {
+          legacyFallbackBlocked.add(event.sessionID);
+          return;
+        }
         const entries = recallPrompts.get(event.sessionID) || [];
         entries.push({ nativeID: nativePromptID(event), text: bounded,
           request: memory.search(bounded).catch(() => []) });
@@ -139,7 +146,8 @@ export default {
             await memory.stage(queued.candidate, { sessionID: event.sessionID, time: queued.time });
           } catch { /* Nonessential memory cannot block agent operation. */ }
         }
-        const selected = requestForContext(recallPrompts.get(event.sessionID), event);
+        const selected = requestForContext(recallPrompts.get(event.sessionID), event,
+          legacyFallbackBlocked.has(event.sessionID));
         if (!selected) return;
         // Never wait for Graphiti beyond this context allowance.
         const items = await Promise.race([
@@ -149,7 +157,10 @@ export default {
         if (body) event.system.push({ type: 'text', text: OPEN + '\n' + body + '\n' + CLOSE });
       }));
       await register(() => ctx.session.hook('compaction', event => {
-        if (event?.sessionID) recallPrompts.delete(event.sessionID);
+        if (event?.sessionID) {
+          recallPrompts.delete(event.sessionID);
+          legacyFallbackBlocked.delete(event.sessionID);
+        }
         // Broad compaction content stays with OpenViking, not Graphiti.
       }));
     } catch (error) {
@@ -159,7 +170,7 @@ export default {
     // No startup ingestion or reconciliation while the interactive model is active.
     return async () => {
       stopped = true;
-      pending.clear(); recallPrompts.clear();
+      pending.clear(); recallPrompts.clear(); legacyFallbackBlocked.clear();
       await Promise.allSettled(registrations.map(r => r.dispose()));
     };
   },

@@ -235,3 +235,27 @@ test('interleaved short auxiliary prompts match the current native user, not ses
       assert.equal(mcp.calls.includes('tools/call:add_memory'),false);
     },[{fact,group_id:'development-knowledge',episodes:[episode]}]);
 });
+
+test('rejected long prompt without native message history fails closed instead of reusing stale context', async () => {
+  const query='What was our agreed evidence requirement before closing Issue #75?';
+  const fact='Issue 75 closes only after a fresh OpenCode session demonstrates source-attributed Graphiti persistence and recall.';
+  const decision='We decided that Issue 75 closes only after a fresh OpenCode session demonstrates source-attributed Graphiti persistence and recall.';
+  const episode='33333333-4444-4555-a666-777777777777';
+  await withPlugin({enabled:true,capture:false,group:'development-knowledge'},
+    async ({hooks,dir})=>{
+      const journal=new Journal(dir,'development-knowledge');
+      const row=makeCandidate('development-knowledge',selectUserDecision(decision),
+        {sessionID:'s-no-native',time:'2026-11-05T00:00:00Z'});
+      assert.ok(row);
+      assert.equal(await journal.stage(row),true);
+      assert.equal(await journal.update(row.uuid,'pending','persisted',
+        {remoteEpisodeUuid:episode}),true);
+      await hooks.session.prompt({sessionID:'s-no-native',prompt:{text:query}});
+      await hooks.session.prompt({sessionID:'s-no-native',
+        prompt:{text:'Another independent prompt '+ 'long content '.repeat(55)}});
+      const system=[];
+      await hooks.session.context({sessionID:'s-no-native',system});
+      assert.equal(system.some(p=>p.text?.startsWith('[GHDEV_GRAPHITI_CONTEXT]')),false,
+        'no native message identity: invalid later prompt forbids stale fallback');
+    },[{fact,group_id:'development-knowledge',episodes:[episode]}]);
+});
