@@ -323,19 +323,24 @@ export class Memory {
     // Facts are the injectible result. Native node search runs separately in
     // benchmarking/on-demand inspection; do not spend an extra embedding query
     // on every automatic context build if it cannot add sourced facts.
-    // All three paths are read-only. The curated path is NOT eligible unless
-    // the remote Graphiti episode with exact UUID and group is seen now.
-    const primary = this.graphiti.call('search_memory_facts', {
-      query: text, group_ids: [this.group], max_facts: maxFacts,
-    });
-    const indexed = this.curatedCandidateRetriever
+    // Local source-index IO may overlap a remote call, but Graphiti MCP
+    // calls MUST be serialized. Concurrent tool calls have caused real
+    // service/session failures on this host (S16 diagnostic).
+    // An indexed observation still needs positive remote UUID/group proof.
+    const indexedWork = this.curatedCandidateRetriever
       ? Promise.resolve().then(()=>this.curatedCandidateRetriever()) : Promise.resolve([]);
-    const remote = this.curatedCandidateRetriever
-      ? this.graphiti.call('get_episodes',{group_ids:[this.group],max_episodes:1000})
-      : Promise.resolve(null);
-    const settled = await Promise.allSettled([primary,indexed,remote]);
-    const facts = settled[0].status==='fulfilled'?settled[0].value:null;
-    const received = Array.isArray(facts?.facts)?facts.facts.slice(0,maxFacts):[];
+    let facts=null,remoteData=null;
+    try { facts=await this.graphiti.call('search_memory_facts', {
+      query: text,group_ids:[this.group],max_facts:maxFacts,
+    }); } catch { /* Search outage cannot authorize fallback without proof. */ }
+    if(this.curatedCandidateRetriever) {
+      try { remoteData=await this.graphiti.call('get_episodes',{
+        group_ids:[this.group],max_episodes:1000,
+      }); } catch { /* Missing remote readback means no index admission. */ }
+    }
+    let indexData=[];
+    try { indexData=await indexedWork; } catch { /* Index failure cannot upgrade authority. */ }
+    const received=Array.isArray(facts?.facts)?facts.facts.slice(0,maxFacts):[];
     // Only keep rows relevant to returned Graphiti episode anchors.
     // The journal scan is paged, so historical records >500 still resolve.
     const wanted = new Set(received.flatMap(f =>
@@ -387,13 +392,11 @@ export class Memory {
     const { relevanceFilter, relevanceSignals, answerTypeSupport } = await import('./relevance.mjs');
     // Positive current remote episode membership and exact scoped curation
     // records are BOTH required. Missing/invalid remote readback abstains.
-    const remoteData = settled[2].status==='fulfilled'?settled[2].value:null;
     const remoteEpisodes = Array.isArray(remoteData?.episodes) &&
       remoteData.episodes.length < 1000 &&
       remoteData.episodes.every(e=>e?.group_id===this.group&&validId(e.uuid))
       ?new Set(remoteData.episodes.map(e=>e.uuid)):new Set();
-    const indexedRows=settled[1].status==='fulfilled'&&Array.isArray(settled[1].value) &&
-      settled[1].value.length<=500?settled[1].value:[];
+    const indexedRows=Array.isArray(indexData)&&indexData.length<=500?indexData:[];
     const indexedCandidates=indexedRows.filter(r=>
       r?.group===this.group&&remoteEpisodes.has(r.remoteEpisodeUuid)&&
       ['user-stated','tool-reported','assistant-reported'].includes(r.evidenceClass)&&

@@ -115,3 +115,22 @@ test('private and short prompt admission fences remain unchanged even with a cur
   assert.deepEqual(await mem.search('Use api_key=secret for the archive'),[]);
   assert.deepEqual(calls,[]);
 }));
+
+
+test('Graphiti MCP search and remote-proof reads never overlap',()=>fixture(async f=>{
+  const rows=await curatedRecallCandidates(f.root,group,workspace,project);
+  let active=0,maxActive=0;
+  const graphiti={call:async name=>{
+    active++;maxActive=Math.max(maxActive,active);
+    try{
+      await new Promise(resolve=>setTimeout(resolve,3));
+      return name==='search_memory_facts'?{facts:[]}:
+        name==='get_episodes'?{episodes:[{uuid,group_id:group}]}:{};
+    }finally{active--;}
+  }};
+  const mem=new Memory({journal:new Journal(f.root,group),graphiti,group,
+    curatedCandidateRetriever:()=>rows});
+  const result=await mem.search('Which durable archive retention service uses PostgreSQL storage?');
+  assert.equal(result.length,1);
+  assert.equal(maxActive,1,'remote Graphiti MCP operations must be serialized');
+}));
