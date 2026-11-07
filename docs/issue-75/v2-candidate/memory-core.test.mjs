@@ -491,3 +491,109 @@ test('live-verified curated diagnostic question echo cannot displace a genuine t
   assert.equal(Object.hasOwn(selected[0],'sourceContext'),false);
   assert.deepEqual(calls,['search_memory_facts','get_episodes']);
 }));
+
+
+test('expired optional episode proof is dropped at shared FIFO dequeue before later prompt search',()=>sandbox(async dir=>{
+  const client=new GraphitiMcp('http://127.0.0.1:8766/mcp');
+  client.ensure=async()=>{};
+  const seen=[];
+  let factCount=0,maxActive=0,active=0;
+  client.rpc=async (method,params)=>{
+    assert.equal(method,'tools/call');
+    const name=params.name;
+    active++;maxActive=Math.max(maxActive,active);
+    try {
+      if(name==='search_memory_facts') {
+        factCount++;
+        seen.push('facts-'+factCount);
+        await new Promise(resolve=>setTimeout(resolve,
+          factCount===1?5:factCount===2?155:2));
+        return {structuredContent:{result:{facts:[]}}};
+      }
+      seen.push('optional-proof-started');
+      return {structuredContent:{result:{episodes:[]}}};
+    } finally {active--;}
+  };
+  const row={group:'alpha',evidenceClass:'tool-reported',
+    remoteEpisodeUuid:'70000000-0000-4000-8000-000000000301',
+    source:'opencode:ses-proof:message:m1',
+    fact:'The Graphiti storage archive retention pipeline was configured active.'};
+  const mem=new Memory({journal:new Journal(dir,'alpha'),graphiti:client,
+    group:'alpha',curatedCandidateRetriever:async()=>[row]});
+  const first=mem.search('Which archive retention pipeline is active?');
+  const second=mem.search('Which meteorological weather system was predicted?');
+  await first; // 70ms optional caller race expires while second remote is running
+  const thirdStart=performance.now();
+  const third=mem.search('Which rainfall and weather observation was recorded?');
+  const [b,c]=await Promise.all([second,third]);
+  assert.deepEqual(b,[]);
+  assert.deepEqual(c,[]);
+  assert.deepEqual(seen,['facts-1','facts-2','facts-3'],
+    'expired proof must not start after the 155ms second search completes');
+  assert.equal(maxActive,1,'the Graphiti shared client remains strictly serial');
+  assert.ok(performance.now()-thirdStart<330,
+    'stale optional proof must not add a 410ms delay to subsequent prompts');
+}));
+test('running optional proof aborts actual Graphiti fetch and frees FIFO for a new prompt',()=>sandbox(async dir=>{
+  let active=0,maxActive=0,proofAbortCount=0;
+  let releaseProofStart;
+  const proofStarted=new Promise(resolve=>{releaseProofStart=resolve;});
+  const called=[];
+  function response(id,result,withSession=false) {
+    return {ok:true,status:200,headers:{get(name) {
+      return withSession&&name==='mcp-session-id'?'mock-session':null;
+    }},text:async()=>JSON.stringify({jsonrpc:'2.0',id,result})};
+  }
+  const fetchImpl=async(_url,opts)=>{
+    const request=JSON.parse(opts.body);
+    if(request.method==='initialize')
+      return response(request.id,{capabilities:{}},true);
+    assert.equal(request.method,'tools/call');
+    const name=request.params.name;
+    called.push(name);
+    active++;maxActive=Math.max(active,maxActive);
+    if(name==='search_memory_facts') {
+      active--;
+      return response(request.id,{structuredContent:{result:{facts:[]}}});
+    }
+    assert.equal(name,'get_episodes');
+    releaseProofStart();
+    return await new Promise((resolve,reject)=>{
+      let done=false;
+      const finish=(error)=>{
+        if(done)return;
+        done=true;clearTimeout(timer);active--;
+        opts.signal.removeEventListener('abort',abort);
+        if(error)reject(error);
+        else resolve(response(request.id,{structuredContent:{result:{
+          episodes:[{uuid:'70000000-0000-4000-8000-000000000302',group_id:'alpha'}]
+        }}}));
+      };
+      const abort=()=>{proofAbortCount++;finish(opts.signal.reason||Error('aborted'));};
+      const timer=setTimeout(()=>finish(null),410);
+      opts.signal.addEventListener('abort',abort,{once:true});
+      if(opts.signal.aborted)abort();
+    });
+  };
+  const client=new GraphitiMcp('http://127.0.0.1:8766/mcp',{fetchImpl,timeoutMs:1200});
+  const row={group:'alpha',evidenceClass:'tool-reported',
+    remoteEpisodeUuid:'70000000-0000-4000-8000-000000000302',
+    source:'opencode:ses-proof:message:m2',
+    fact:'The Graphiti storage archive retention pipeline was configured active.'};
+  const mem=new Memory({journal:new Journal(dir,'alpha'),graphiti:client,
+    group:'alpha',curatedCandidateRetriever:async()=>[row]});
+  const first=mem.search('Which archive retention pipeline is active?');
+  await proofStarted;
+  const t=performance.now();
+  const second=mem.search('Which rainfall and weather observation was recorded?');
+  const [one,two]=await Promise.all([first,second]);
+  assert.deepEqual(one,[],'aborted remote proof may never authorize indexed source');
+  assert.deepEqual(two,[]);
+  assert.equal(proofAbortCount,1,'in-flight optional transport must be aborted');
+  assert.equal(maxActive,1,'real fetch abort must settle before next RPC starts');
+  assert.deepEqual(called,[
+    'search_memory_facts','get_episodes','search_memory_facts'
+  ]);
+  assert.ok(performance.now()-t<300,
+    'subsequent prompt must not wait for the abandoned 410ms proof');
+}));
