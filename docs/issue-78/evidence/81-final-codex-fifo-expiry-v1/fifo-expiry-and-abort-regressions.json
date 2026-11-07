@@ -1,0 +1,85 @@
+{
+  "campaign": "ISSUE81_FINAL_CODEX_FIFO_EXPIRY_V1",
+  "codex_finding": {
+    "id": "discussion_r4499679347",
+    "severity": "P2",
+    "title": "Expire optional proof calls inside the shared FIFO queue",
+    "substance": "When prompt searches overlap, the 70ms race stops awaiting enrichment but neither removes the queued get_episodes call nor cancels a running proof; abandoned optional work can block subsequent search_memory_facts calls past the native 300ms hook deadline. Fresh evidence on the reviewed head: a second search taking 150ms let the first search's expired proof start at 154ms; its 410ms response delayed a third search's fact request until 565ms.",
+    "disposition": "FIXED at exact head 27b8d713e05ef592ea867c400a1d949fd02bd7a1 and regression-protected by two new tests using the shared GraphitiMcp client (not an independent graphiti.call stub)"
+  },
+  "committed_regressions": [
+    {
+      "test": "expired optional episode proof is dropped at shared FIFO dequeue before later prompt search",
+      "file": "docs/issue-75/v2-candidate/memory-core.test.mjs",
+      "mechanism": "real GraphitiMcp FIFO (callTail) with mocked transport; first prompt's 70ms proof expires while a ~155ms second fact search runs; third prompt queued",
+      "invariants": "expired proof never starts (zero get_episodes starts), third fact query starts promptly, maxActive=1, exactly-once calls, FIFO order",
+      "suite_result": "pass (TAP: ✔, 84/84 suite)"
+    },
+    {
+      "test": "running optional proof aborts actual Graphiti fetch and frees FIFO for a new prompt",
+      "file": "docs/issue-75/v2-candidate/memory-core.test.mjs",
+      "mechanism": "real fetchImpl observes the actual AbortSignal from GraphitiMcp.rpc(); a ~410ms get_episodes proof is aborted at its ~70ms deadline",
+      "invariants": "proofAbortCount=1 (exactly one abort, no retry), no index admission from the canceled proof, maxActive=1 (FIFO settles only after the abort), call order [search_memory_facts, get_episodes, search_memory_facts], subsequent prompt does not wait the full 410ms",
+      "suite_result": "pass (TAP: ✔, 84/84 suite)"
+    }
+  ],
+  "independent_exercise": {
+    "method": "standalone scenarios against the REAL GraphitiMcp/Memory modules from the exact-head source (shared callTail FIFO; real rpc/fetchImpl paths; only the transport mocked where the named regression requires observing the signal)",
+    "scenarios": {
+      "queued_expiry": {
+        "setup": "Codex's exact overlap: fact #1 fast, fact #2 ~155ms, first prompt's 70ms proof queued behind them, third prompt created after the first resolves",
+        "results_observed": {
+          "get_episode_starts": 0,
+          "call_order": ["facts-1", "facts-2", "facts-3"],
+          "max_active": 1,
+          "fact2_to_fact3_gap_ms_range": "156-174 across 3 runs (155ms search + dequeue; no phantom 410ms proof window; pre-fix signature was ~555ms gap)",
+          "third_prompt_created_ms_range": "79-86 across 3 runs"
+        },
+        "verdict": "PASS: expired proof dropped at dequeue, zero get_episodes network calls, FIFO strictly serial, exactly-once"
+      },
+      "active_abort": {
+        "setup": "real fetchImpl with a 410ms get_episodes transport observing opts.signal; second prompt started once the proof fetch begins",
+        "results_observed": {
+          "proof_abort_count": 1,
+          "natural_completion": false,
+          "abort_after_fetch_start_ms_range": "62-94 across stable runs (design ~70ms; host-load timer slack tolerated, always far below the 410ms natural completion)",
+          "call_order": ["search_memory_facts", "get_episodes", "search_memory_facts"],
+          "max_active": 1,
+          "second_prompt_ms_range": "48-105 across stable runs (never the full 410ms)",
+          "index_admission_from_canceled_proof": false
+        },
+        "verdict": "PASS: real fetch aborted exactly once by the deadline signal; FIFO released only after the abort; no source authorization from the abandoned proof"
+      },
+      "initialize_signal": {
+        "setup": "fresh client whose first operation is a 70ms-deadline proof; initialize transport is slow (410ms) and observes the signal",
+        "results_observed": {
+          "initialize_aborted_by_proof_signal": 1,
+          "fifo_freed_ms_range": "73-111 across runs (aborted initialize, not 410ms)",
+          "subsequent_two_arg_call": "re-initializes and succeeds (stateless recovery intact)"
+        },
+        "verdict": "PASS: the real fetch signal reaches initialize() as well as tools/call; no FIFO release while a transport is active"
+      },
+      "two_arg_semantics": {
+        "setup": "stateful session (3 transport calls: initialize + 2 tools/call); every call carries the timeout AbortSignal; a scaled 200ms-timeout client with a 500ms transport is cut by the original transport timeout",
+        "results_observed": {
+          "calls": 3,
+          "all_calls_carry_timeout_signal": true,
+          "transport_timeout_cutoff_ms_range": "202-379 across runs (200ms scaled client; the 1200ms default path is the same code)"
+        },
+        "verdict": "PASS: non-optional two-argument callers keep the original transport-timeout semantics"
+      }
+    },
+    "stability": "3 consecutive full runs PASS (bounded retry available; all structural assertions passed on first attempt in every run)"
+  },
+  "reconfirmed_unchanged_semantics": {
+    "original_codex_p1": "early curated retriever rejection handled during a slower Graphiti search (unhandled-rejection safe) — suite pass",
+    "original_codex_p2_slow_proof": "slow optional proof cannot delay an otherwise sourced legacy result; proof skipped when no qualifying shortlist; slow initial search does not discard fast positive proof — suite pass",
+    "original_codex_p2_reranker": "reranker scores all 24 Graphiti facts before merging 12 indexed facts, exactly once; position-19 fact survives the 24-candidate bound — suite pass",
+    "anti_echo": "live-verified curated diagnostic question-echo cannot displace a genuine tool-sourced commit subject; tool-origin echoes excluded from both selector stages and from background/reranker admission — suite pass",
+    "named_issue_numeric_privacy": "Issue/numeric/remote/fail-closed privacy gates and secret fences — suite pass (relevance + admission-audit + plugin-behavior tests)",
+    "error_release": "failed shared Graphiti MCP call releases the queue without retry or unsafe fallback — suite pass",
+    "fifo_serialization": "shared Graphiti MCP client serializes overlapping native searches; search and remote-proof reads never overlap — suite pass",
+    "two_arg_rpc": "original 1200ms transport timeout retained for non-optional calls (independent scenario)",
+    "no_cross_session_workaround": "no parallel MCP transport path introduced; strictly one in-flight transport per shared client"
+  }
+}

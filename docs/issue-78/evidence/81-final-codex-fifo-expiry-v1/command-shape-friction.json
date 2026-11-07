@@ -1,0 +1,60 @@
+{
+  "campaign": "ISSUE81_FINAL_CODEX_FIFO_EXPIRY_V1",
+  "schema": "ghdev-10-command-shape-friction.v1",
+  "commands_match_handoff": true,
+  "note": "All handoff-literal commands (node --check x2, the 9-file node --test focused suite, fetch/checkout, evidence-branch CAS readback) were executed in the requested shape with producer exits preserved. The events below are agent-authored auxiliary commands and private-scratch mechanics, none of which altered a handoff command, its workdir, its routing class, or a task-bound identity.",
+  "events": [
+    {
+      "id": "F1",
+      "class": "interface_discovery",
+      "command": "gh pr view 89 --repo fvanevski/opencode-operational-schema-guard --json state,isDraft,headRefName,baseRefName,headOid,mergeable",
+      "effect": "gh schema validation: 'Unknown JSON field: headOid'",
+      "attribution": "agent command (field-name guess)",
+      "correction": "re-ran with headRefOid/baseRefOid (verified field list); PR state OPEN/DRAFT + exact head/base obtained",
+      "outcome": "recovered",
+      "material": false
+    },
+    {
+      "id": "F2",
+      "class": "interface_discovery",
+      "command": "gh api repos/fvanevski/opencode-operational-schema-guard/pulls/89/comments/4499679347",
+      "effect": "HTTP 404 (that ID form is not served by the single-comment endpoint)",
+      "attribution": "agent command",
+      "correction": "fetched the comment from the paginated list with select(.id==4499679347); full P2 body authenticated",
+      "outcome": "recovered",
+      "material": false
+    },
+    {
+      "id": "F3",
+      "class": "guard_annotation",
+      "command": "node /tmp/opencode/issue81-fifo/regression-independent.mjs (initial runs)",
+      "effect": "agent-authored private scenario harness: TDZ ReferenceError, Node-26 AbortSignal.timeout().timeout === undefined, and host-load timer coalescing tripped tight timing bounds (406ms/1100ms slips)",
+      "attribution": "agent private-scratch mechanics (permitted autonomous host correction; not a handoff command)",
+      "correction": "fixed harness declaration order, replaced property probes with behavioral transport-timeout checks, converted timing-sensitive assertions to load-robust structural invariants with bounded retry; 3 consecutive stable PASS",
+      "outcome": "recovered",
+      "material": false
+    },
+    {
+      "id": "F4",
+      "class": "guard_annotation",
+      "command": "node /tmp/opencode/issue81-fifo/replay-16x4-fifo.mjs (first run)",
+      "effect": "TDZ ReferenceError (fetch-level logger referenced currentCase before its let declaration)",
+      "attribution": "agent private-scratch mechanics",
+      "correction": "declaration moved above the precheck; re-run exit 0",
+      "outcome": "recovered",
+      "material": false
+    },
+    {
+      "id": "F5",
+      "class": "harness_rewrite",
+      "command": "git diff (RTK-transparent display) of the test file",
+      "effect": "RTK compact display truncated 6 tail lines with '... (6 additions truncated)'",
+      "attribution": "transparent harness display behavior",
+      "correction": "exact tail lines recovered by reading the file itself (no evidence substitution)",
+      "outcome": "recovered",
+      "material": false
+    }
+  ],
+  "friction_encountered": "yes",
+  "summary": "5 minor events (2 interface discovery on gh CLI field/endpoint shape, 2 private-harness TDZ/timer mechanics, 1 transparent RTK display truncation); all recovered without altering handoff commands, task-bound identities, or gate semantics."
+}

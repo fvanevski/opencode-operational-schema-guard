@@ -1,0 +1,76 @@
+{
+  "campaign": "ISSUE81_FINAL_CODEX_FIFO_EXPIRY_V1",
+  "repo": "fvanevski/opencode-operational-schema-guard",
+  "issue": 81,
+  "pr": {
+    "number": 89,
+    "state": "OPEN",
+    "draft": true,
+    "head_ref": "issue/81-source-recall-correction",
+    "head_oid": "27b8d713e05ef592ea867c400a1d949fd02bd7a1",
+    "base_ref": "main",
+    "base_oid": "9a27b73de882c0af6fec4d86de81945338611479"
+  },
+  "exact_source": {
+    "sha": "27b8d713e05ef592ea867c400a1d949fd02bd7a1",
+    "tree": "0b25c82a5488cc14bf0b1bd3f2614aefb8ebb4d6",
+    "codex_reviewed_head": "eb20f06680e3558b67a54b2b288122efe2359eba",
+    "blobs": {
+      "docs/issue-75/v2-candidate/memory-core.mjs": "fcd2a586f44a84b2c79ad5eeed483c2482bfc2dd",
+      "docs/issue-75/v2-candidate/memory-core.test.mjs": "b635a2a7fbec45746b3d85874abfaefac293099e",
+      "docs/issue-78/v2-benchmark/ISSUE81_FINAL_CODEX_FIFO_EXPIRY_HANDOFF.md": "50085ede62a935a57a871140ca64802cf5d87ae7"
+    },
+    "handoff_blob_immutable": true
+  },
+  "diff_scope_codex_reviewed_head_to_kickoff": {
+    "range": "eb20f06680e3558b67a54b2b288122efe2359eba..27b8d713e05ef592ea867c400a1d949fd02bd7a1",
+    "commits": [
+      "d196b4d fix(graphiti): expire optional episode proofs within shared MCP FIFO",
+      "ee81f89 test(graphiti): prove queued proof expiry and abort of live shared-client transport",
+      "27b8d71 docs(graphiti): stage final Codex FIFO expiry source/host validation handoff"
+    ],
+    "files": [
+      "docs/issue-75/v2-candidate/memory-core.mjs (+35/-10)",
+      "docs/issue-75/v2-candidate/memory-core.test.mjs (+106/-0)",
+      "docs/issue-78/v2-benchmark/ISSUE81_FINAL_CODEX_FIFO_EXPIRY_HANDOFF.md (+90/-0)"
+    ],
+    "protected_control_plane_changes": 0
+  },
+  "source_correction_summary": {
+    "call_deadline": "GraphitiMcp.call(name,args,{deadlineMs}) accepts an OPTIONAL absolute performance.now() deadline; two-argument callers unchanged",
+    "dequeue_expiry": "queued call checks expiration BEFORE ensure()/tools/call; stale optional proofs never start after another prompt's slow search",
+    "in_flight_abort": "AbortSignal carries the remaining budget through ensure() and rpc(); combined with the original per-request 1200ms transport timeout via AbortSignal.any; an expired proof aborts the actual fetch",
+    "fifo": "FIFO advances only after the transport settles/aborts; strictly one in-flight transport; late responses after deadline return null and can never authorize an indexed fact",
+    "memory_search": "Memory.search passes the SAME combined 70ms optional-index/proof budget as deadlineMs while retaining the caller-side fallback race; no upgrade of missing/wrong-group/unverified proof; legacy sourced results never delayed beyond the optional budget",
+    "unchanged_scope": [
+      "call(name,args) for non-optional requests with the 1200ms transport timeout",
+      "shared-client FIFO serialization",
+      "70ms optional enrichment budget (INDEX_ENRICHMENT_MAX_WAIT_MS=70)",
+      "300ms native hook allowance",
+      "exact group/workspace/project/remote UUID and source binding",
+      "source-group/UUID/native-ID proof, sourceContext omission, named/Issue/numeric/privacy gates, one-fact limit, 24 candidates, optional reranker, temporal preference"
+    ]
+  },
+  "syntax_checks": [
+    { "command": "node --check docs/issue-75/v2-candidate/memory-core.mjs", "exit": 0 },
+    { "command": "node --check docs/issue-75/v2-candidate/memory-core.test.mjs", "exit": 0 }
+  ],
+  "focused_suite": {
+    "command": "node --test docs/issue-75/v2-candidate/memory-core.test.mjs docs/issue-75/v2-candidate/relevance.test.mjs docs/issue-75/v2-candidate/relevance-priority-regression.test.mjs docs/issue-75/v2-candidate/relevance-observation-replay.test.mjs docs/issue-75/v2-candidate/plugin-behavior.test.mjs docs/issue-78/v2-curator/curated-recall-candidates.test.mjs docs/issue-78/v2-curator/production-cutover.test.mjs docs/issue-78/v2-benchmark/issue81-retrieval-feasibility.test.mjs docs/issue-78/v2-benchmark/issue81-admission-audit.test.mjs",
+    "node_version": "v26.13.0",
+    "raw_exit": 0,
+    "tap": { "tests": 84, "pass": 84, "fail": 0, "cancelled": 0, "skipped": 0, "todo": 0, "duration_ms": 1010.75 },
+    "new_regression_tests": [
+      "expired optional episode proof is dropped at shared FIFO dequeue before later prompt search",
+      "running optional proof aborts actual Graphiti fetch and frees FIFO for a new prompt"
+    ],
+    "note": "84 = 82 tests at codex-reviewed head eb20f066 + 2 new FIFO-expiry regressions; all original Codex P1/P2/P2, anti-echo, named/Issue/numeric/privacy, error-release, FIFO-serialization and two-argument RPC tests present and passing"
+  },
+  "historical_scores": {
+    "note": "all HISTORICAL, not new-head native acceptance",
+    "frozen_original": "8/16",
+    "post_s06_native": "9/16",
+    "preceding_head_exposed": "13/16 at source head a78ebb69926e9e4bc2e7d9c036d65501c911294e on 256 episodes",
+    "codex_reviewed_head_focused": "82/82 at eb20f06680e3558b67a54b2b288122efe2359eba"
+  }
+}

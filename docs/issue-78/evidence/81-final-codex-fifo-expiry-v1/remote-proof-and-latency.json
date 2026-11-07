@@ -1,0 +1,68 @@
+{
+  "campaign": "ISSUE81_FINAL_CODEX_FIFO_EXPIRY_V1",
+  "effective_host_config": {
+    "config": "/home/filip/.config/opencode/opencode.json",
+    "graphiti_mcp_server": { "type": "remote", "url": "https://mcp.garion.us/graphiti", "oauth": false, "disabled": false },
+    "ranker_keys_present": "none",
+    "ranker": null,
+    "note": "no rerank endpoint/ranker key in the effective config; the replay ran ranker=null to match the effective host setting. The loopback http://127.0.0.1:8766/mcp is the established host Graphiti transport endpoint used by GraphitiMcp."
+  },
+  "fresh_readonly_readback": {
+    "method": "single serial read-only get_episodes (max_episodes=1000) on loopback Graphiti before the replay; no Graphiti write, no curator drain, no queue modification",
+    "get_episodes_ms": 154,
+    "episode_count": 256,
+    "group_pure": true,
+    "truncated": false,
+    "prior_snapshot_count": 256,
+    "drift": 0,
+    "curated_index_rows": 256,
+    "curated_remote_uuid_overlap": 256,
+    "corpus_state": "unchanged from the prior 256-episode snapshot; no growth since the preceding-head qualification",
+    "smoke": "host transport confirmed by the initialize probe (HTTP 200) and this serial read-only get_status-class readback; not an intentional raw concurrency assault on production"
+  },
+  "replay_method": {
+    "source_head": "27b8d713e05ef592ea867c400a1d949fd02bd7a1",
+    "roster": "frozen 16-positive/4-negative private roster, SHA256 47e141bdc81f1f2cdc2e98c7697162dbbf3250a5eb209a56361b358bc2441652 (re-authenticated at run time)",
+    "mode": "ONE complete exposed serial Memory.search replay S01-S16 + N01-N04 with live READ-ONLY Graphiti and the native-source-verified curated candidate resolver; CPU/service-backed offline regression of the modified proof scheduling, NOT stock-V2 fresh-process native acceptance",
+    "remote_calls": "serial by construction (single shared client); proof scheduling is the only modified behavior under test"
+  },
+  "strict_score": {
+    "required": ">=13/16 exact-source",
+    "score": "13/16",
+    "met": true,
+    "positive_failures": ["S03 (named-identity guard)", "S05 (named-identity guard)", "S13 (named-identity guard)"],
+    "negatives": "N01 PASS_NO_INJECTION; N02 FAIL_INJECTION (frozen historical FAIL_INJECTED); N03 PASS_NO_INJECTION; N04 PASS_NO_INJECTION",
+    "zero_new_private_wrong_group_unconfirmed_false_verified": true,
+    "s06": "PASS with historical/superseded source (ratigated class)",
+    "s10": "PASS with genuine commit subject (selected_matches_exact_commit_subject=true)"
+  },
+  "proof_scheduling_outcomes": {
+    "completed": 17,
+    "not_issued": 3,
+    "expired_skipped": 0,
+    "canceled_in_flight": 0,
+    "canceled_or_skipped_percent": "0/20 (0%)",
+    "note": "corpus is healthy: every issued proof completed within the 70ms budget (proof p50=26ms), so no live cancellations occurred in this replay; expiry/abort behavior is proven by the synthetic FIFO controls (fifo-expiry-and-abort-regressions.json) where multiple prompts queue with maxActive=1 and exactly-once calls",
+    "multiple_prompts_can_queue": "yes (synthetic control: 3 prompts queued, FIFO strictly serial, maxActive=1)"
+  },
+  "latency": {
+    "quantile_method": "linear interpolation (R-7/numpy default) on ms, rounded to int",
+    "graphiti_d24_search": { "n": 18, "p50": 158, "p95": 208, "max": 426 },
+    "optional_proof": { "n": 17, "p50": 26, "p95": 30, "max": 31 },
+    "source_index": { "n": 20, "p50": 39, "p95": 46, "max": 54 },
+    "full_memory_search": { "n": 20, "p50": 195, "p95": 228, "max": 485 },
+    "grace_70ms": { "index_read_timeouts": 0, "proof_timeouts": 4, "cases_total": 20, "method": "proxy from raw component timings vs the 70ms combined window" },
+    "hook_p95": "UNVERIFIED (no authorized native hook-boundary instrumentation in this run; the 300ms native allowance remains binding; offline totals are not substituted for hook p95)"
+  },
+  "human_precision": {
+    "status": "UNVERIFIED",
+    "operator_packet": "126-item durable grounded-precision worksheet (schema issue81-durable-grounded-precision-worksheet.v1) re-authenticated read-only",
+    "rows": 126,
+    "population": { "snapshot_records": 126, "fact_denominator": 126 },
+    "threshold": 0.9,
+    "adjudication_status": "PENDING_OPERATOR_ADJUDICATION",
+    "as_of_snapshot_sha256": "c8d5053c16ac7a07447c71d0bb5e7c4ce665940cdba3263119bdb25d6524ef37",
+    "as_of_snapshot_sha256_recomputed_match": true,
+    "ai_adjudication": "none (operator-owned; no worksheet write)"
+  }
+}
