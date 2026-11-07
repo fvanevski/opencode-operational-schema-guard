@@ -47,6 +47,22 @@ Also run repository-defined static/root checks, except equivalent exact-head
 trusted Actions that Central can reuse. Return actual producer exit/counts and
 complete failures, not compressed test-only summaries.
 
+## Central-authored read-only replay entrypoint
+
+The file issue81-semantic-replay.mjs runs both existing strict and candidate
+semantic policies against the same configured group and sourced private
+curation/index, printing SHA-256 fingerprints and bounded elapsed time only.
+Do not publish private facts. This is a fresh read-only Graphiti snapshot,
+NOT proof of the original native search result or hook p95. Source/state
+preflight must verify the group and index already exist.
+
+Exact example (replace only the separately authenticated query):
+
+node docs/issue-78/v2-benchmark/issue81-semantic-replay.mjs --endpoint http://127.0.0.1:8766/mcp --group development-knowledge --state-dir /home/filip/.local/state/ghdev-graphiti --workspace /workspace/mcp_servers/gh_mcp --project gh_mcp --query '<one exact previously authenticated query>'
+
+Run one query at a time; a known fallback null/error is evidence, not
+permission to modify Graphiti or start another service.
+
 ## Bounded host qualification
 
 Read-only private shadow replay comparing strict versus semantic policy against
