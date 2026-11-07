@@ -1,0 +1,20 @@
+{
+  "schema": "issue81-semantic-recall-host-runtime-compatibility.v1",
+  "node_version": "v26.13.0",
+  "npm_version": "12.2.2",
+  "repository_dependencies": "package.json declares no runtime dependencies; npm run check and npm test are self-contained node scripts; satisfied by host Node 26",
+  "graphiti_mcp_endpoint": {
+    "url": "http://127.0.0.1:8766/mcp",
+    "state": "live at preflight and during replay (HTTP 200 on initialize; session-scoped streamable HTTP)",
+    "read_interface_confirmed": "search_memory_facts with group_ids (max_facts=24) and get_episodes with group_ids (max_episodes=1000), matching the replay entrypoint and memory-core call signatures"
+  },
+  "group_state_preflight": {
+    "group": "development-knowledge",
+    "journal_dir": "/home/filip/.local/state/ghdev-graphiti/development-knowledge (exists; 0 journal files at preflight)",
+    "curation_index_dir": "/home/filip/.local/state/ghdev-graphiti/curation-v1/development-knowledge (exists; 490 curated records at preflight)",
+    "preflight_rule": "replay entrypoint stats both directories before any Graphiti call; it provisions nothing new"
+  },
+  "installed_opencode_plugin": "previously accepted merged implementation (base-state issue-78 v2 candidate blob eb975a77...), not this candidate; see source-identity.json",
+  "service_mutations": "none: no OpenCode service restart, no Graphiti write, no curation drain, no model-backed extraction in this campaign",
+  "live_native_acceptance": "NOT_ATTEMPTED (candidate not deployed; native-client acceptance requires future review/merge/install/fresh-process)"
+}

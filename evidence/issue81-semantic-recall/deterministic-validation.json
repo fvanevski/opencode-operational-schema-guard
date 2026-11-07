@@ -1,0 +1,54 @@
+{
+  "schema": "issue81-semantic-recall-deterministic-validation.v1",
+  "workdir": "/workspace/opencode-operational-schema-guard-issue81-semantic",
+  "head_during_runs": "74972845dcf885e8676d5845853bc590e742f137",
+  "syntax_checks": {
+    "command": "node --check <file> (per file, producer exit preserved per file)",
+    "files": [
+      "docs/issue-75/v2-candidate/semantic-recall.mjs",
+      "docs/issue-75/v2-candidate/semantic-recall.test.mjs",
+      "docs/issue-75/v2-candidate/semantic-memory-integration.test.mjs",
+      "docs/issue-75/v2-candidate/memory-core.mjs",
+      "docs/issue-75/v2-candidate/plugin.mjs",
+      "docs/issue-78/v2-candidate/plugin.mjs",
+      "docs/issue-78/v2-benchmark/issue81-semantic-replay.mjs"
+    ],
+    "exits": [0, 0, 0, 0, 0, 0, 0],
+    "result": "PASS"
+  },
+  "focused_tests": {
+    "command": "node --test docs/issue-75/v2-candidate/semantic-recall.test.mjs docs/issue-75/v2-candidate/semantic-memory-integration.test.mjs docs/issue-75/v2-candidate/memory-core.test.mjs docs/issue-75/v2-candidate/relevance.test.mjs docs/issue-75/v2-candidate/relevance-priority-regression.test.mjs docs/issue-75/v2-candidate/relevance-observation-replay.test.mjs docs/issue-75/v2-candidate/plugin-behavior.test.mjs docs/issue-78/v2-curator/curated-recall-candidates.test.mjs docs/issue-78/v2-curator/production-cutover.test.mjs",
+    "producer_exit": 0,
+    "tests": 94,
+    "suites": 0,
+    "pass": 94,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "todo": 0,
+    "duration_ms": 1039.268135,
+    "result": "PASS",
+    "log": "retained host-only at /tmp/opencode/issue81-evidence/focused-tests.log (not published)"
+  },
+  "root_check": {
+    "command": "npm run check",
+    "producer_exit": 0,
+    "result": "PASS"
+  },
+  "root_tests": {
+    "command": "npm test",
+    "producer_exit": 0,
+    "tests": 524,
+    "suites": 0,
+    "pass": 524,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "todo": 0,
+    "duration_ms": 21337.332833,
+    "summary_line": "OPERATIONAL_PLUGIN_TEST_RESULT: PASS",
+    "result": "PASS"
+  },
+  "trusted_actions_receipt": "no independently equivalent trusted Actions receipt supplied for this exact candidate; required deterministic checks executed directly at the exact head (REPOSITORY_VERIFY_AUTHORITY=local-verify-unless-equivalent-trusted-actions)",
+  "weakened_or_excluded_tests": "none; no frozen fixture modified"
+}
