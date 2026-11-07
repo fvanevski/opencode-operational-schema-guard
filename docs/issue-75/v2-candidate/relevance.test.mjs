@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { admitFact, lexicalSupport, relevanceSignals, relevanceFilter, localReranker, shortlistQualifiedCandidates, explainRelevanceAdmission, answerTypeSupport } from './relevance.mjs';
+import { admitFact, lexicalSupport, relevanceSignals, relevanceFilter, localReranker, shortlistQualifiedCandidates, explainRelevanceAdmission, answerTypeSupport, toolQuestionEcho } from './relevance.mjs';
 test('lexical floor rejects unrelated facts but admits direct multi-term evidence', async () => {
   assert.equal(admitFact('Which library is used for backlog dependency visualization?',
     'React Flow chosen for backlog dependency visualization'), true);
@@ -374,4 +374,33 @@ test('commit subject preference does not waive named product, issue, numeric or 
   const unrelated={fact:'a1b2c3d chore(website): reject stale webapp Issue 81 links'};
   assert.deepEqual(await relevanceFilter(q,[wrongName,wrongIssue,unrelated,good]),[good]);
   assert.deepEqual(shortlistQualifiedCandidates(q,[wrongName,wrongIssue,unrelated,good]),[good]);
+});
+
+
+test('tool-origin diagnostic question echo is excluded from both automatic selector stages',async()=>{
+  const query='What did commit a1b2c3d change in the Graphiti test suite?';
+  const correct={fact:'a1b2c3d test(graphiti): reject stale test results',
+    source:'opencode:ses-real:tool:call-real',evidenceClass:'tool-reported'};
+  const contaminant={
+    fact:'Diagnostic check: '+query+' expected: a1b2c3d test(graphiti): reject stale test results',
+    source:'opencode:ses-probe:tool:call-probe',evidenceClass:'tool-reported'};
+  assert.equal(toolQuestionEcho(query,contaminant),true);
+  assert.equal(toolQuestionEcho(query,correct),false);
+  assert.deepEqual(shortlistQualifiedCandidates(query,[contaminant,correct]),[correct]);
+  assert.deepEqual(await relevanceFilter(query,[contaminant,correct]),[correct]);
+  assert.deepEqual(await relevanceFilter(query,[correct,contaminant]),[correct]);
+  const ranker=async (_q,items)=>new Map(items.map((_,i)=>[i,i===1?.01:1]));
+  assert.deepEqual(await relevanceFilter(query,[contaminant,correct],ranker),[correct],
+    'high semantic score cannot override a tool question-echo rejection');
+});
+test('tool question-echo rule is provenance-bound, non-ID-specific and conservative',async()=>{
+  const query='Which archive retention pipeline stores verified Parquet manifests?';
+  const fact='When asked "'+query+'", the diagnostic script printed the expected answer.';
+  const tool={fact,source:'opencode:session-unrelated:tool:call-987',evidenceClass:'tool-reported'};
+  assert.equal(toolQuestionEcho(query,tool),true);
+  assert.equal(toolQuestionEcho(query,{...tool,source:'opencode:session-unrelated:message:msg-987'}),false);
+  assert.equal(toolQuestionEcho(query,{...tool,fact:'The archive retention pipeline stores verified Parquet manifests.'}),false);
+  assert.equal(toolQuestionEcho('hi',tool),false,'short prompts are handled by native prompt admission');
+  assert.deepEqual(shortlistQualifiedCandidates(query,[tool]),[]);
+  assert.deepEqual(await relevanceFilter(query,[tool]),[]);
 });

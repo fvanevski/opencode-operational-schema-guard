@@ -240,13 +240,36 @@ function linkedSourceSignals(query,item,hasRerankScore) {
  * imposing the 24-candidate model-facing bound. Source/group/remote checks
  * belong to the caller, before entries arrive here.
  */
+/**
+ * A tool-produced assertion that repeats the full current question is
+ * not independent retrieval evidence for answering that same question.
+ * In particular, diagnostic/evaluation tool output may echo both a prompt
+ * and its expected answer and otherwise win lexical ranking. This is a
+ * query-dependent admission guard, NOT a source-ID or benchmark exception.
+ *
+ * Only reject source-anchored TOOL observations containing a sufficiently
+ * long literal question echo. Legitimate tool observations that answer a
+ * query without restating it are unaffected. Persisted review records are
+ * not deleted or reclassified by this read-only automatic-recall safeguard.
+ */
+export function toolQuestionEcho(query, item) {
+  if (!item || typeof item.fact !== 'string' || typeof item.source !== 'string' ||
+      !/^opencode:[^:\s,]+:tool:[^:\s,]+/.test(item.source))
+    return false;
+  const norm = value => String(value).toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+  const asked = norm(query);
+  if (asked.length < 24 || asked.split(' ').length < 5) return false;
+  const observed = norm(item.fact);
+  return (' ' + observed + ' ').includes(' ' + asked + ' ');
+}
 export function shortlistQualifiedCandidates(query, candidates, { limit = 24 } = {}) {
   if (!Array.isArray(candidates) || !Number.isInteger(limit) ||
       limit < 1 || limit > MAX_AUTOMATIC_CANDIDATES) return [];
   const qualified = [];
   for (let index = 0; index < candidates.length; index++) {
     const item = candidates[index];
-    if (!item || typeof item.fact !== 'string') continue;
+    if (!item || typeof item.fact !== 'string' || toolQuestionEcho(query,item)) continue;
     const signals = linkedSourceSignals(query, item, false);
     if (!signals.eligible || signals.choiceOnly) continue;
     // Source excerpts only disambiguate an exact lexical tie. They never
@@ -355,6 +378,7 @@ async function rankedCandidates(query, candidates, ranker = null, cachedScores =
   const admitted = [];
   for (let i = 0; i < bounded.length; i++) {
     const item = bounded[i], score = scoreByItem.get(item);
+    if (toolQuestionEcho(query,item)) continue;
     const validScore = scoreByItem.has(item);
     const signals = linkedSourceSignals(query, item, validScore);
     if (!signals.eligible) continue;
