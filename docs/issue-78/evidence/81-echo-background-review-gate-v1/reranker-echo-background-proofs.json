@@ -1,0 +1,82 @@
+{
+  "schema": "issue81-echo-background-reranker-proofs.v1",
+  "campaign": "ISSUE81_ECHO_BACKGROUND_REVIEW_GATE_V1",
+  "module": {
+    "path": "docs/issue-75/v2-candidate/relevance.mjs",
+    "exact_head": "eb20f06680e3558b67a54b2b288122efe2359eba",
+    "blob": "46749f1d8fbe37ac97b79ffba711e115897a07d6",
+    "execution_context": "actual production module imported from a clean detached worktree at the exact head"
+  },
+  "method": "deterministic in-memory mock ranker (index-keyed score Map mirroring localReranker's response contract); no live service, no HTTP, no LLM; scenario script retained on host under <scratch>",
+  "fixture_provenance": "synthetic, authored by the evidence agent for this scenario; not host or private source data",
+  "query": "What did we settle on for interactive issue map?",
+  "fixtures": {
+    "paraphrase": {
+      "fact": "The team chose the board view to track defects",
+      "source_class": "opencode:<session>:user",
+      "ranker_score": 0.9,
+      "expected_signals": "choiceOnly under relevanceSignals (direct decision, hasRerankScore, no literal topical overlap)"
+    },
+    "echo": {
+      "fact": "What did we settle on for interactive issue map? Settled: board view.",
+      "source_class": "opencode:<session>:tool:<tool>",
+      "ranker_score": 1.0,
+      "expected_signals": "toolQuestionEcho=true (full normalized query repeated by a tool-provenance record)"
+    },
+    "distractor": {
+      "fact": "The build pipeline caches dependencies between runs",
+      "source_class": "opencode:<session>:user",
+      "ranker_score": 0.1
+    },
+    "strong_non_echo_distractor": {
+      "fact": "The deploy script now pins the worker image digest",
+      "source_class": "opencode:<session>:user",
+      "ranker_score": 0.95
+    }
+  },
+  "scenarios": [
+    {
+      "id": "S1",
+      "name": "with echo, fresh ranker",
+      "candidates": ["echo", "paraphrase", "distractor"],
+      "scores": { "echo": 1.0, "paraphrase": 0.9, "distractor": 0.1 },
+      "assertions": [
+        { "check": "semantic-choice background remains 0.10 with the 1.00 echo present", "observed_background": 0.1, "result": "PASS" },
+        { "check": "paraphrase admitted; echo absent from ranked output", "observed_ranked": ["paraphrase"], "result": "PASS" },
+        { "check": "final one-fact relevanceFilter selection is the paraphrase", "observed_selection": ["paraphrase"], "result": "PASS" }
+      ]
+    },
+    {
+      "id": "S2",
+      "name": "without echo, fresh ranker",
+      "candidates": ["paraphrase", "distractor"],
+      "scores": { "paraphrase": 0.9, "distractor": 0.1 },
+      "assertions": [
+        { "check": "background remains 0.10 without the echo", "observed_background": 0.1, "result": "PASS" },
+        { "check": "paraphrase admitted; background identical to S1 (echo had no influence)", "observed_ranked": ["paraphrase"], "result": "PASS" }
+      ]
+    },
+    {
+      "id": "S3",
+      "name": "cached path via rankQualifiedForMerge",
+      "candidates": ["echo", "paraphrase", "distractor"],
+      "assertions": [
+        { "check": "cached final relevanceFilter (ranker=null, cachedScores + cachedBackground from rankQualifiedForMerge) selects the paraphrase", "observed_selection": ["paraphrase"], "observed_cached_background": 0.1, "result": "PASS" },
+        { "check": "exactly one initial ranker call total; no second HTTP request", "observed_ranker_calls": 1, "result": "PASS" }
+      ]
+    },
+    {
+      "id": "S4",
+      "name": "original background safety preserved",
+      "candidates": ["paraphrase", "strong_non_echo_distractor"],
+      "scores": { "paraphrase": 0.9, "strong_non_echo_distractor": 0.95 },
+      "assertions": [
+        { "check": "non-echo 0.95 distractor is not automatically ignored: it raises the background to 0.95", "observed_background": 0.95, "result": "PASS" },
+        { "check": "choiceOnly paraphrase (0.90) is vetoed by the non-echo background (0.90 <= 2*0.95)", "observed_ranked": [], "result": "PASS" }
+      ]
+    }
+  ],
+  "wrong_group_secret_issue_numeric_name_source_type": "enforced by existing suite tests (82/82), not re-proven by this scenario",
+  "scenario_result": "PASS (9/9 checks), scenario producer exit 0",
+  "conclusion": "an excluded tool-question echo cannot influence the semantic-choice background comparator, on the direct path or via cachedScores/cachedBackground; a legitimate source-qualified paraphrase is admitted with background 0.10 and the echo never appears in ranked output"
+}

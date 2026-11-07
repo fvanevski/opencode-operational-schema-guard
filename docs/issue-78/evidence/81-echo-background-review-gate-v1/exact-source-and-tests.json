@@ -1,0 +1,124 @@
+{
+  "schema": "issue81-echo-background-exact-source-and-tests.v1",
+  "campaign": "ISSUE81_ECHO_BACKGROUND_REVIEW_GATE_V1",
+  "primary_agent": "evidence",
+  "evidence_class": "REVIEW_EVIDENCE_ONLY_NOT_SEMANTIC_APPROVAL",
+  "pr": {
+    "number": 89,
+    "state": "OPEN",
+    "is_draft": true,
+    "head_ref": "issue/81-source-recall-correction",
+    "head_sha": "eb20f06680e3558b67a54b2b288122efe2359eba",
+    "head_tree": "1adc569b943e56b35f5b4536e032b1f28870cd61",
+    "head_parent": "e750d9922ad2b83ff26f3deac4b081ebd5e64587",
+    "base_ref": "main",
+    "base_sha": "9a27b73de882c0af6fec4d86de81945338611479",
+    "verified_via": "GitHub API (gh pr view) before any local object/worktree proof"
+  },
+  "pre_correction_head": "a78ebb69926e9e4bc2e7d9c036d65501c911294e",
+  "scope_diff": {
+    "range": "a78ebb69926e9e4bc2e7d9c036d65501c911294e..eb20f06680e3558b67a54b2b288122efe2359eba",
+    "files": [
+      {
+        "status": "M",
+        "path": "docs/issue-75/v2-candidate/relevance.mjs",
+        "pre_blob": "8478c0432c4d5a07662efaabbb70a38e0dd87e0f",
+        "head_blob": "46749f1d8fbe37ac97b79ffba711e115897a07d6"
+      },
+      {
+        "status": "M",
+        "path": "docs/issue-75/v2-candidate/relevance.test.mjs",
+        "pre_blob": "62380424d470844c99bc972cfdf2fcce39e2f020",
+        "head_blob": "516fc18499ecdacea588028bf00f048f97cacfd0"
+      },
+      {
+        "status": "A",
+        "path": "docs/issue-78/v2-benchmark/ISSUE81_ECHO_BACKGROUND_REVIEW_GATE_HANDOFF.md",
+        "head_blob": "d4942a4478f6a678e42be1cee909446656ba118b"
+      }
+    ],
+    "only_correction_plus_contract": true,
+    "memory_search_graphitimcp_plugin_files_unchanged": true
+  },
+  "echo_gate_source_inspection": {
+    "file": "docs/issue-75/v2-candidate/relevance.mjs @ eb20f06680e3558b67a54b2b288122efe2359eba",
+    "gate_a_shortlist_qualified_candidates": "line 272: toolQuestionEcho(query,item) skip inside the shortlist loop",
+    "gate_b_final_admission": "line 385: toolQuestionEcho(query,item) skip inside the rankedCandidates admitted-candidates loop",
+    "gate_c_semantic_choice_background": "lines 371-381: otherScores excludes toolQuestionEcho items (line 376); background = cachedBackground ?? max(otherScores)",
+    "cached_path": "rankQualifiedForMerge (lines 408-410) returns scoreByItem and background computed by the same corrected comparator; relevanceFilter (lines 411-417) consumes them as cachedScores/cachedBackground with ranker=null, so no second ranker call; both direct and cached paths reuse the corrected comparator"
+  },
+  "syntax_checks": [
+    { "command": "node --check docs/issue-75/v2-candidate/relevance.mjs", "producer_exit": 0 },
+    { "command": "node --check docs/issue-75/v2-candidate/relevance.test.mjs", "producer_exit": 0 }
+  ],
+  "focused_suite": {
+    "command_shape": "node --test <nine contract files> (contract item 6, run verbatim in the exact-head detached worktree)",
+    "files": [
+      "docs/issue-75/v2-candidate/memory-core.test.mjs",
+      "docs/issue-75/v2-candidate/relevance.test.mjs",
+      "docs/issue-75/v2-candidate/relevance-priority-regression.test.mjs",
+      "docs/issue-75/v2-candidate/relevance-observation-replay.test.mjs",
+      "docs/issue-75/v2-candidate/plugin-behavior.test.mjs",
+      "docs/issue-78/v2-curator/curated-recall-candidates.test.mjs",
+      "docs/issue-78/v2-curator/production-cutover.test.mjs",
+      "docs/issue-78/v2-benchmark/issue81-retrieval-feasibility.test.mjs",
+      "docs/issue-78/v2-benchmark/issue81-admission-audit.test.mjs"
+    ],
+    "tests": 82,
+    "pass": 82,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "todo": 0,
+    "producer_exit": 0,
+    "duration_ms": 875.67301,
+    "note": "82 = 81 baseline source-focused tests + 1 new echo-background regression; full log retained on host under <scratch> (0600); no filter masking of producer exit"
+  },
+  "regression_guards": {
+    "shared_client_fifo": "shared Graphiti MCP client serializes overlapping native searches, not only calls within each search",
+    "codex_p1_curated_reject": "curated lookup fails closed when remote get_episodes throws",
+    "codex_p2_slow_proof_300ms": "slow optional proof cannot delay an otherwise sourced legacy result",
+    "codex_p2_displacement_12of24": "reranker scores all 24 Graphiti facts before merging 12 indexed facts, only once",
+    "echo_regressions": [
+      "tool-origin diagnostic question echo is excluded from both automatic selector stages",
+      "tool question-echo rule is provenance-bound, non-ID-specific and conservative",
+      "excluded tool-question echoes cannot poison semantic-choice background or cached reranker admission",
+      "live-verified curated diagnostic question echo cannot displace a genuine tool-sourced commit subject"
+    ],
+    "status": "all present and passing in the 82-test run"
+  },
+  "host_effective_config": {
+    "plugin": "ghdev-graphiti-memory",
+    "effective_options": {
+      "enabled": true,
+      "capture": true,
+      "group": "development-knowledge",
+      "workspace": "/workspace/mcp_servers/gh_mcp",
+      "project": "gh_mcp",
+      "endpoint": "http://127.0.0.1:8766/mcp",
+      "stateDir": "<host-home>/.local/state/ghdev-graphiti"
+    },
+    "rerank_endpoint": null,
+    "effective_ranker": "null",
+    "scope_drift": false,
+    "deployed_plugin_bytes": "stale snapshot (sha256 9767486ef71fa6cf88497a1af801540dc401550a0a472c98cef64f9b4b380100 for docs/issue-75/v2-candidate/relevance.mjs; matches neither the pre-correction nor the exact-head blob); read-only provenance, not mutated by this campaign"
+  },
+  "ci_receipt": {
+    "trusted_repository_final_actions_receipt": "ABSENT",
+    "detail": "GitHub Actions API reports no runs at exact head eb20f06680e3558b67a54b2b288122efe2359eba (HTTP 404); per contract item 9 no trusted receipt was provided by Central and no root npm check/test duplication was performed locally"
+  },
+  "historic_13_16": {
+    "packet": "docs/issue-78/evidence/81-git-procedure-selection-v1/16-case-replay.json @ b39631e70d2e5fedb3d6f2d441b4cfc3f71c4e7d",
+    "roster_sha256": "47e141bdc81f1f2cdc2e98c7697162dbbf3250a5eb209a56361b358bc2441652",
+    "roster_path_class": "private (0600); inputs read-only, never altered",
+    "score": { "exact_source_pass": 13, "positive_denominator": 16, "meets_threshold": true },
+    "ranker": null,
+    "evidence_class": "CURRENT_EXPOSED_OFFLINE_DIAGNOSTIC_NOT_NATIVE_ACCEPTANCE",
+    "negatives": "N02 FAIL_INJECTED frozen and preserved; N01/N03/N04 PASS_NO_INJECTION",
+    "attribution": "prior-head corroboration only; no new ranker-null replay claimed by this campaign"
+  },
+  "native_human_gates": {
+    "HOOK_P95": "UNVERIFIED (300 ms native context allowance remains binding)",
+    "HUMAN_PRECISION": "UNVERIFIED (126-item operator worksheet, all verdict fields null)"
+  }
+}

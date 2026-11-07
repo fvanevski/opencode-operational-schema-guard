@@ -1,0 +1,37 @@
+{
+  "schema": "ghdev10-command-shape-friction.v1",
+  "campaign": "ISSUE81_ECHO_BACKGROUND_REVIEW_GATE_V1",
+  "friction_encountered": "yes",
+  "commands_match_handoff": "yes",
+  "match_note": "All handoff-required literal commands (node --check pair on the two changed files; node --test with the nine contract files) were executed verbatim in the exact-head detached worktree with the handoff workdir; gh/git read-backs and scratch-file routing are transparent agent-authored operations that do not alter the required command shapes",
+  "events": [
+    {
+      "id": 1,
+      "class": "guard_annotation",
+      "effect": "pre_execution_annotation",
+      "attribution": "harness",
+      "detail": "rtk proxy truncated the `git show <sha>:<handoff>` display at ~line 80 of 92 with a 'see remaining' pointer; piping the same command through `tail -n +81` redisplayed the truncation note instead of the remainder; corrected by writing the full output to a scratch file first. Display-only read; acceptance evidence unaffected."
+    },
+    {
+      "id": 2,
+      "class": "interface_discovery",
+      "effect": "shell_shape_error",
+      "attribution": "agent_command",
+      "detail": "`echo ===` under zsh fails with `== not found` (zsh glob) in two exploratory compound commands; producer commands preceding them succeeded; no acceptance impact."
+    },
+    {
+      "id": 3,
+      "class": "interface_discovery",
+      "effect": "log_format_misguess",
+      "attribution": "agent_command",
+      "detail": "The focused-suite log uses the spec reporter (`✔` lines), not TAP `ok N` lines; an initial `grep -E '^ok'` count returned 0; corrected to count `✔` lines (82) while the producer exit was preserved separately from display."
+    },
+    {
+      "id": 4,
+      "class": "absent_evidence",
+      "effect": "none",
+      "attribution": "remote_state",
+      "detail": "GitHub Actions API returned 404 for runs at exact head eb20f06680e3558b67a54b2b288122efe2359eba: no trusted repository-final Actions receipt exists; recorded ABSENT per contract item 9 with no local root npm duplication."
+    }
+  ]
+}
