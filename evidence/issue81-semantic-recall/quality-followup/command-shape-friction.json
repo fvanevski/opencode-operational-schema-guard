@@ -1,0 +1,52 @@
+{
+ "schema": "ghdev-10-command-shape-friction.v1",
+ "campaign": "ISSUE81_PR90_SOURCE_EXACT_QUALITY",
+ "encountered": "yes",
+ "events": [
+  {
+   "scenario": "Query GitHub Actions runs for the PR branch",
+   "requested_shape": "gh api repos/fvanevski/opencode-operational-schema-guard/actions/runs?branch=issue/81-semantic-recall&per_page=5 --jq ...",
+   "effective_shape": "Rejected before execution: zsh glob expansion of the unquoted URL (no matches found)",
+   "rewrite_provenance": "shell_or_alias",
+   "event_kind": "interface_discovery",
+   "execution_effect": "not_executed",
+   "correction_or_annotation": "Quoted the URL; gh api then returned the exact-head run 42418164660 (success).",
+   "replacement_shape": "gh api \"repos/fvanevski/opencode-operational-schema-guard/actions/runs?branch=issue/81-semantic-recall&per_page=5\" --jq ...",
+   "recipe_reference": "none",
+   "resource_reference": "gh api (GitHub Actions REST)",
+   "contract_conflict": "no",
+   "durable_gap_candidate": "no"
+  },
+  {
+   "scenario": "Create campaign root and write manifest builder",
+   "requested_shape": "set -e; ROOT=...; if [ -e $ROOT ]; ...; mkdir -m 700 -p $ROOT; chmod 600 /dev/null; cat > $ROOT/make-manifest.mjs <<'EOF' ...",
+   "effective_shape": "Script aborted at the stray `chmod 600 /dev/null` (Operation not permitted) before the heredoc write; root dir created, script missing",
+   "rewrite_provenance": "none",
+   "event_kind": "execution_failure",
+   "execution_effect": "executed_failed",
+   "correction_or_annotation": "Removed the stray chmod line and wrote the builder with the native write tool; re-ran successfully.",
+   "replacement_shape": "write tool for the builder script; node make-manifest.mjs",
+   "recipe_reference": "none",
+   "resource_reference": "campaign root /tmp/opencode/issue81-quality-followup-20261107",
+   "contract_conflict": "no",
+   "durable_gap_candidate": "no"
+  },
+  {
+   "scenario": "Display separators in compound shell commands",
+   "requested_shape": "... ; echo === ; ...",
+   "effective_shape": "zsh printed `zsh:1: == not found` (== is a zsh expansion); separator only, no evidence impact",
+   "rewrite_provenance": "shell_or_alias",
+   "event_kind": "guard_annotation",
+   "execution_effect": "executed_succeeded",
+   "correction_or_annotation": "Cosmetic; evidence-producing commands in those compounds were unaffected and their exits were captured separately.",
+   "replacement_shape": "none",
+   "recipe_reference": "none",
+   "resource_reference": "none",
+   "contract_conflict": "no",
+   "durable_gap_candidate": "no"
+  }
+ ],
+ "omitted_sensitive_values": "no",
+ "COMMANDS_MATCH_HANDOFF": "yes",
+ "note": "All contract-literal commands (node --check x5, node --test x5, replay entrypoint with the six contracted flags, scorer --manifest/--batch) were executed in the requested shape; the events above are pre-execution shell-shape frictions only, with no guard rejections and no harness rewrites."
+}

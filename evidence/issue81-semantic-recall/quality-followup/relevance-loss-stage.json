@@ -1,0 +1,66 @@
+{
+ "schema": "issue81-quality-followup-relevance-loss-stage.v1",
+ "method": "Stage attribution from read-only live-state inspection (curated review store, episode index, native search_memory_facts 24, get_episodes membership, resolver readback) plus the unmodified Central scorer. No raw facts or prompts.",
+ "live_state": {
+  "review_store_records": 498,
+  "persisted_records": 299,
+  "eligible_unique_episodes": 299,
+  "curated_index_inventory_cap": 288,
+  "curated_index_rows_this_run": 0,
+  "cap_note": "curatedRecallCandidates returns an empty inventory whenever eligible unique episodes exceed 288; 299>288 disabled the index for ALL 20 queries of this campaign."
+ },
+ "indexed_only_loss": {
+  "stage": "INDEX_INVENTORY_CAP_EXCEEDED",
+  "cases": [
+   "S03",
+   "S05",
+   "S07",
+   "S10",
+   "S13"
+  ],
+  "attribution": "Expected episode absent from the native 24 and its curated index row ineligible because the whole inventory was disabled by the 288-episode cap. Not lexical preselection, not proof timeout, not dedup/budget: the inventory gate precedes all of them. Live source refs for these episodes are byte-identical to the frozen expectations (no source drift).",
+  "source_drift_in_cases": false
+ },
+ "final_ranking_loss": {
+  "stage": "FINAL_SELECTION_RANKING",
+  "cases": [
+   "S04"
+  ],
+  "attribution": "Expected episode present in the native 24 (rank 10) and source-resolvable with the exact frozen ref; the presented set selected higher-ranked / near-duplicate facts in both strict (single-fact selector) and semantic (relative score threshold + near-duplicate dedup) modes."
+ },
+ "unanchored_multi_event": {
+  "cases": [
+   "S05",
+   "S13"
+  ],
+  "attribution": "Expected multi-event facts lost at INDEX_INVENTORY_CAP_EXCEEDED (index-only). Presented complementary facts were source-linked and anchored (query-lexeme overlap 1-4); no zero-lexeme unanchored fact was omitted by the one-fact cap because none reached the presented pool. Strict one-fact cap presented one complementary anchored fact; semantic presented up to 4 with near-duplicates of a single source.",
+  "cap_loosened": false
+ },
+ "negative_controls": {
+  "N01": {
+   "code": "SEMANTIC_SAME_GROUP_CONTENT_COST",
+   "strict_presented": 0,
+   "semantic_presented": 1,
+   "note": "Unrelated weather query; one same-group fact injected in semantic mode only. Same group (development-knowledge), not a cross-group leak."
+  },
+  "N02": {
+   "code": "SAME_GROUP_CONTENT_POLICY_NEGATIVE",
+   "strict_presented": 1,
+   "semantic_presented": 3,
+   "note": "Legacy-group question answered by active-group facts; known same-group content-policy negative, preserved as such; group fencing held (no foreign group_id)."
+  },
+  "N03": {
+   "code": "PRIVACY_FENCE_HELD",
+   "strict_presented": 0,
+   "semantic_presented": 0,
+   "note": "sk- marker vetoed by safeText privacy fence before any remote call."
+  },
+  "N04": {
+   "code": "LENGTH_FENCE_HELD",
+   "strict_presented": 0,
+   "semantic_presented": 0,
+   "note": "Below 10-char floor."
+  }
+ },
+ "historical_control": "Prior exposed 13/16 source-exact result (predecessor head 5d6b285) preserved as historical control; this campaign measured 10/16 in both modes under current live state (index inventory disabled). No relabeling of misses."
+}
