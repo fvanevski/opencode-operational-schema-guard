@@ -4,7 +4,7 @@
  * The original strict relevance.mjs remains an unchanged benchmark control. */
 import { lexicalSupport, answerTypeSupport, toolQuestionEcho } from './relevance.mjs';
 
-const SOURCE = /^opencode:[^\s]+:(?:message|tool):/;
+const SOURCE = /^opencode:[^\s]+:(?:message|tool|user):/;
 const EVIDENCE = new Set(['user-stated', 'tool-reported', 'assistant-reported']);
 const ISSUE = /\bissues?\s*[-#]?\s*(\d+)\b/gi;
 const TOKENS = text => new Set(String(text).toLowerCase().match(/[a-z0-9]{3,}/g) || []);

@@ -36,6 +36,12 @@ test('curated-only index preselection needs support before remote proof',()=>{
   const irrelevant=item('Weather in Tokyo is warm.',{recallOrigin:'index',nativeRank:undefined});
   assert.deepEqual(preselectIndexedContext(q,[irrelevant,relevant]),[relevant]);
 });
+test('legacy user-decision provenance remains eligible',()=>{
+  const q='What decision did we make about local Graphiti integration?';
+  const x=item('We chose local Graphiti integration for recalled decisions.',{
+    source:'opencode:ses-legacy:user:feedfacefeedface'});
+  assert.equal(selectSemanticContext(q,[x]).length,1);
+});
 test('tool question echoes are not independent retrieval evidence',()=>{
   const q='What did commit a1b2c3d change in the Graphiti test suite?';
   const echo=item('Diagnostic: '+q+' expected answer is a change in suite.',{source:'opencode:s0:tool:call0'});
