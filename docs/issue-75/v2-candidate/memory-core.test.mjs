@@ -459,3 +459,35 @@ test('a slow initial Graphiti search does not discard fast positive indexed proo
   assert.equal(found[0].source,idx[0].source);
   assert.deepEqual(calls,['search_memory_facts','get_episodes']);
 }));
+
+
+test('live-verified curated diagnostic question echo cannot displace a genuine tool-sourced commit subject',()=>sandbox(async dir=>{
+  const q='What did commit a1b2c3d change in the Graphiti test suite?';
+  const realId='70000000-0000-4000-8000-000000000301';
+  const probeId='70000000-0000-4000-8000-000000000302';
+  const expected={
+    fact:'a1b2c3d test(graphiti): reject stale test results',
+    source:'opencode:ses-real:tool:call-real',evidenceClass:'tool-reported',
+    group:'alpha',remoteEpisodeUuid:realId
+  };
+  const echo={
+    fact:'Diagnostic check: '+q+' expected: a1b2c3d test(graphiti): reject stale test results',
+    source:'opencode:ses-probe:tool:call-probe',evidenceClass:'tool-reported',
+    group:'alpha',remoteEpisodeUuid:probeId
+  };
+  const calls=[],graphiti={call:async(name)=>{
+    calls.push(name);
+    if(name==='search_memory_facts')return {facts:[]};
+    if(name==='get_episodes')return {episodes:[realId,probeId]
+      .map(uuid=>({uuid,group_id:'alpha'}))};
+    throw Error('unexpected graphiti op');
+  }};
+  const memory=new Memory({journal:new Journal(dir,'alpha'),graphiti,
+    group:'alpha',curatedCandidateRetriever:async()=>[echo,expected]});
+  const selected=await memory.search(q);
+  assert.equal(selected.length,1);
+  assert.equal(selected[0].source,expected.source);
+  assert.equal(Object.hasOwn(selected[0],'remoteEpisodeUuid'),false);
+  assert.equal(Object.hasOwn(selected[0],'sourceContext'),false);
+  assert.deepEqual(calls,['search_memory_facts','get_episodes']);
+}));
