@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { admitFact, lexicalSupport, relevanceSignals, relevanceFilter, localReranker, shortlistQualifiedCandidates, explainRelevanceAdmission, answerTypeSupport, toolQuestionEcho } from './relevance.mjs';
+import { admitFact, lexicalSupport, relevanceSignals, relevanceFilter, localReranker, shortlistQualifiedCandidates, explainRelevanceAdmission, answerTypeSupport, toolQuestionEcho, rankQualifiedForMerge } from './relevance.mjs';
 test('lexical floor rejects unrelated facts but admits direct multi-term evidence', async () => {
   assert.equal(admitFact('Which library is used for backlog dependency visualization?',
     'React Flow chosen for backlog dependency visualization'), true);
@@ -403,4 +403,36 @@ test('tool question-echo rule is provenance-bound, non-ID-specific and conservat
   assert.equal(toolQuestionEcho('hi',tool),false,'short prompts are handled by native prompt admission');
   assert.deepEqual(shortlistQualifiedCandidates(query,[tool]),[]);
   assert.deepEqual(await relevanceFilter(query,[tool]),[]);
+});
+
+
+test('excluded tool-question echoes cannot poison semantic-choice background or cached reranker admission',async()=>{
+  const query='What did we settle on for interactive issue map?';
+  const chosen={fact:'React Flow chosen for backlog dependency visualization',
+    source:'opencode:ses-sourced:message:msg1'};
+  const background={fact:'The weather forecast expects showers tomorrow.',
+    source:'opencode:ses-weather:tool:call1'};
+  const probeEcho={fact:'Diagnostic output: '+query+' expected: an interactive map library.',
+    source:'opencode:ses-probe:tool:call2'};
+  assert.equal(toolQuestionEcho(query,probeEcho),true);
+  assert.equal(relevanceSignals(query,chosen.fact,{hasRerankScore:true}).choiceOnly,true);
+  let calls=0;
+  const scores=new Map([[chosen,.90],[background,.10],[probeEcho,1]]);
+  const ranker=async (_q,items)=>{
+    calls++;
+    return new Map(items.map((item,i)=>[i,scores.get(item)]));
+  };
+  const control=await rankQualifiedForMerge(query,[chosen,background],ranker);
+  assert.deepEqual(control.ranked,[chosen]);
+  assert.equal(control.background,.10);
+  const contaminated=await rankQualifiedForMerge(query,[chosen,background,probeEcho],ranker);
+  assert.deepEqual(contaminated.ranked,[chosen]);
+  assert.equal(contaminated.background,.10,
+    'rejected echo score must not enter semantic background comparison');
+  const reused=await relevanceFilter(query,[probeEcho,chosen,background],null,{
+    cachedScores:contaminated.scoreByItem,
+    cachedBackground:contaminated.background
+  });
+  assert.deepEqual(reused,[chosen]);
+  assert.equal(calls,2,'reuse cached scores instead of reranking final candidates');
 });

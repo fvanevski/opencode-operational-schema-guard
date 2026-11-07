@@ -370,7 +370,11 @@ async function rankedCandidates(query, candidates, ranker = null, cachedScores =
   }
   const otherScores = bounded.map((item, i) => {
     const score = scoreByItem.get(item);
-    return !DIRECT_DECISION.test(item.fact) && !HISTORICAL_STATEMENT.test(item.fact) &&
+    // Disqualified tool-question echoes are not valid comparison evidence.
+    // Exclude them from the semantic-choice background as well as admission;
+    // otherwise a high-scored rejected echo can veto a legitimate paraphrase.
+    return !toolQuestionEcho(query,item) &&
+      !DIRECT_DECISION.test(item.fact) && !HISTORICAL_STATEMENT.test(item.fact) &&
       typeof score === 'number' ? score : null;
   }).filter(score => score !== null);
   const background = cachedBackground !== null ? cachedBackground :
