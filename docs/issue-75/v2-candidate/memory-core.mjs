@@ -6,6 +6,22 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
+import { performance } from 'node:perf_hooks';
+
+
+// An optional curated-index read must never hold up already-sourced Graphiti
+// results for a full MCP transport timeout. This budget is *not* the native
+// hook's independent 300 ms deadline; it only bounds optional enrichment.
+const INDEX_ENRICHMENT_MAX_WAIT_MS = 70;
+async function optionalWithin(promise, ms, fallback) {
+  if (!(ms > 0)) return fallback;
+  let timer;
+  try {
+    return await Promise.race([promise, new Promise(resolve => {
+      timer = setTimeout(() => resolve(fallback), ms);
+    })]);
+  } finally { clearTimeout(timer); }
+}
 
 const PRIVATE = /<private\b|<\/private>|BEGIN (?:RSA |OPENSSH )?PRIVATE KEY|(?:api[_-]?key|access[_-]?token|password|secret)\s*[:=]|authorization\s*:\s*bearer|gh[pousr]_[A-Za-z0-9]{18,}|sk-[A-Za-z0-9_-]{16,}/i;
 const DECISION = /\b(?:i (?:prefer|want|choose|decided|will use)|we (?:prefer|choose|decided|will use)|(?:let's|lets) (?:use|keep|switch to)|(?:for this (?:project|repo|workflow)|going forward)[,: ]+|(?:remember|note) (?:that|this)|(?:the (?:decision|architecture|default|requirement) is))\b/i;
@@ -203,10 +219,19 @@ export class GraphitiMcp {
     this.sessionID = null;
     this.initPromise = null;
     this.seq = 0;
+    // Prompt hooks prefetch without awaiting. Serialize remote MCP operations
+    // across all searches sharing this client, not merely inside one search.
+    // Failed operations must release the queue so subsequent recall can recover.
+    this.callTail = Promise.resolve();
   }
-  async rpc(method, params = {}) {
+  async rpc(method, params = {}, { signal = null } = {}) {
     const id = ++this.seq;
-    const res = await this.fetchImpl(this.url, { method: 'POST', signal: AbortSignal.timeout(this.timeoutMs),
+    // A proof's short deadline must abort the actual transport, not merely
+    // let its caller stop awaiting while the shared MCP FIFO remains blocked.
+    // Nonoptional calls retain the original transport timeout.
+    const timeout = AbortSignal.timeout(this.timeoutMs);
+    const requestSignal = signal ? AbortSignal.any([timeout, signal]) : timeout;
+    const res = await this.fetchImpl(this.url, { method: 'POST', signal: requestSignal,
       headers: { 'Content-Type': 'application/json', Accept: 'application/json, text/event-stream',
         'MCP-Protocol-Version': '2025-06-18',
         ...(this.sessionID ? { 'mcp-session-id': this.sessionID } : {}) },
@@ -219,25 +244,48 @@ export class GraphitiMcp {
     if (data.id !== id) throw new Error('Graphiti MCP response ID mismatch');
     return data.result;
   }
-  async ensure() {
+  async ensure(signal = null) {
     if (this.sessionID) return;
     if (!this.initPromise) {
       this.initPromise = this.rpc('initialize', { protocolVersion: '2025-06-18',
-        capabilities: {}, clientInfo: { name: 'ghdev-graphiti-memory', version: '0.1.0' } });
+        capabilities: {}, clientInfo: { name: 'ghdev-graphiti-memory', version: '0.1.0' } },
+        { signal });
     }
     try { await this.initPromise; }
     finally { this.initPromise = null; }
   }
-  async call(name, args) {
-    await this.ensure();
-    return unwrapResult(await this.rpc('tools/call', { name, arguments: args }));
+  async call(name, args, { deadlineMs = null } = {}) {
+    const invoke = async () => {
+      // Optional proof can expire behind another prompt's slow fact search.
+      // Drop it BEFORE initialization or tools/call; never let abandoned
+      // work run later simply because its caller's Promise.race has settled.
+      if (deadlineMs !== null && (!Number.isFinite(deadlineMs) ||
+          performance.now() >= deadlineMs)) return null;
+      const signal = deadlineMs === null ? null : AbortSignal.timeout(
+        Math.max(1, Math.ceil(deadlineMs - performance.now())));
+      await this.ensure(signal);
+      if (signal?.aborted || (deadlineMs !== null &&
+          performance.now() >= deadlineMs)) return null;
+      const result = await this.rpc('tools/call', { name, arguments: args }, { signal });
+      // A late response can never become positive source authority.
+      if (signal?.aborted || (deadlineMs !== null &&
+          performance.now() >= deadlineMs)) return null;
+      return unwrapResult(result);
+    };
+    const next = this.callTail.then(invoke);
+    // Keep strictly one in-flight transport. Abort-capable fetch rejects on
+    // its deadline; only then is the FIFO released for the next native prompt.
+    this.callTail = next.then(() => undefined, () => undefined);
+    return next;
   }
 }
 export class Memory {
-  constructor({ journal, graphiti, group, ranker = null, extraSourceResolver = null }) {
+  constructor({ journal, graphiti, group, ranker = null, extraSourceResolver = null,
+    curatedCandidateRetriever = null }) {
     this.journal = journal; this.graphiti = graphiti; this.group = group;
     this.ranker = ranker; this.processing = null;
     this.extraSourceResolver = extraSourceResolver;
+    this.curatedCandidateRetriever = curatedCandidateRetriever;
   }
   async stage(selected, source) {
     const candidate = makeCandidate(this.group, selected, source);
@@ -313,18 +361,34 @@ export class Memory {
     return persisted;
   }
   async search(query, { limit = 4, maxChars = 1400 } = {}) {
+    // Bounded candidate expansion only. Fact admission and maxSelected=1,
+    // exact source/group fencing, and the native 300 ms allowance do not change.
+    const maxFacts = 24;
     const text = safeText(query, 500);
     if (!text || text.length < 10) return [];
     // Facts are the injectible result. Native node search runs separately in
     // benchmarking/on-demand inspection; do not spend an extra embedding query
     // on every automatic context build if it cannot add sourced facts.
-    const facts = await this.graphiti.call('search_memory_facts', {
-      query: text, group_ids: [this.group], max_facts: 12,
-    });
-    if (!Array.isArray(facts.facts)) return [];
+    // Local source-index IO may overlap a remote call, but Graphiti MCP
+    // calls MUST be serialized. Concurrent tool calls have caused real
+    // service/session failures on this host (S16 diagnostic).
+    // An indexed observation still needs positive remote UUID/group proof.
+    // Attach the rejection handler NOW, not after awaiting Graphiti. An
+    // index read can fail before the first remote call settles, and deferred
+    // catch would cause an unhandled rejection in strict Node processes.
+    const indexedWork = this.curatedCandidateRetriever
+      ? Promise.resolve().then(() => this.curatedCandidateRetriever())
+          .then(rows => Array.isArray(rows) && rows.length <= 500 ? rows : [],
+            () => [])
+      : Promise.resolve([]);
+    let facts=null;
+    try { facts=await this.graphiti.call('search_memory_facts', {
+      query: text,group_ids:[this.group],max_facts:maxFacts,
+    }); } catch { /* Search outage cannot authorize new source assertions. */ }
+    const received=Array.isArray(facts?.facts)?facts.facts.slice(0,maxFacts):[];
     // Only keep rows relevant to returned Graphiti episode anchors.
     // The journal scan is paged, so historical records >500 still resolve.
-    const wanted = new Set(facts.facts.flatMap(f =>
+    const wanted = new Set(received.flatMap(f =>
       (Array.isArray(f?.episodes) ? f.episodes.slice(0, 12) : []))
       .filter(id => validId(id)));
     const byRemote = new Map();
@@ -346,7 +410,7 @@ export class Memory {
       let extras = [];
       try { extras = await this.extraSourceResolver([...wanted]); }
       catch { extras = []; }
-      if (!Array.isArray(extras) || extras.length > 120) extras = [];
+      if (!Array.isArray(extras) || extras.length > maxFacts * 12) extras = [];
       for (const entry of extras) {
         if (entry?.status !== 'persisted' || entry.group !== this.group ||
           !wanted.has(entry.remoteEpisodeUuid) || byRemote.has(entry.remoteEpisodeUuid) ||
@@ -358,7 +422,7 @@ export class Memory {
     }
     const candidates = [];
     const unique = new Set();
-    for (const fact of facts.facts) {
+    for (const fact of received) {
       if (fact.group_id && fact.group_id !== this.group) continue;
       const assertion = safeText(fact.fact, 480);
       if (!assertion || unique.has(assertion.toLowerCase())) continue;
@@ -370,14 +434,86 @@ export class Memory {
       candidates.push({ fact: assertion, source: source.sourceRef, evidenceClass: source.evidenceClass,
         temporal, validAt: fact.valid_at ?? null, invalidAt: fact.invalid_at ?? null });
     }
-    const { relevanceFilter } = await import('./relevance.mjs');
-    const ranked = await relevanceFilter(text, candidates, this.ranker);
+    const { relevanceFilter, shortlistQualifiedCandidates, rankQualifiedForMerge } =
+      await import('./relevance.mjs');
+    // Build the legacy sourced candidates FIRST. Remote episode proof is
+    // optional enrichment, not a prerequisite for already-sourced facts.
+    // Protect the hook's 300ms window from the optional 1200ms MCP timeout.
+    // Start the optional deadline after the legacy sourced path is ready.
+    // A cold Graphiti query can exceed 245ms; that is not a reason to
+    // discard a fast positive indexed proof in a prefetched request.
+    const enrichmentStarted=performance.now();
+    const remaining=()=>Math.max(0,INDEX_ENRICHMENT_MAX_WAIT_MS -
+      (performance.now()-enrichmentStarted));
+    const indexData=await optionalWithin(indexedWork,remaining(),[]);
+    const scopedRows=indexData.filter(r=>
+      r?.group===this.group&&validId(r.remoteEpisodeUuid)&&
+      ['user-stated','tool-reported','assistant-reported'].includes(r.evidenceClass)&&
+      typeof r.source==='string'&&r.source.startsWith('opencode:')&&
+      safeText(r.fact,480)===r.fact &&
+      (typeof r.sourceContext!=='string'||safeText(r.sourceContext,500)===r.sourceContext));
+    // No relevant indexed observations means no episode-list request.
+    // The pre-proof shortlist is a filter only, NEVER an authority upgrade.
+    const possibleIndex=shortlistQualifiedCandidates(text,scopedRows);
+    let remoteData=null;
+    const proofBudget = possibleIndex.length ? remaining() : 0;
+    if (proofBudget > 0) {
+      // Absolute dequeue-time expiry + in-flight fetch cancellation are both
+      // required. A caller-only 70ms race cannot free a blocked shared FIFO.
+      const deadlineMs = performance.now() + proofBudget;
+      const proof=this.graphiti.call('get_episodes',{
+        group_ids:[this.group],max_episodes:1000,
+      }, { deadlineMs }).then(data=>data,()=>null); // immediate rejection handler
+      remoteData=await optionalWithin(proof,proofBudget,null);
+    }
+    const remoteEpisodes = Array.isArray(remoteData?.episodes) &&
+      remoteData.episodes.length < 1000 &&
+      remoteData.episodes.every(e=>e?.group_id===this.group&&validId(e.uuid))
+      ?new Set(remoteData.episodes.map(e=>e.uuid)):new Set();
+    const indexedCandidates=possibleIndex.filter(r=>
+      remoteEpisodes.has(r.remoteEpisodeUuid));
+    // Mandatory relevance and source-linked admission precede the shortlist,
+    // never follow an arbitrary raw search/index slice. This keeps Graphiti
+    // facts 13-24 usable and prevents irrelevant index records from filling
+    // the shared model-facing candidate budget.
+    // Score ALL 24 Graphiti facts once before joining with curated facts.
+    // This protects a semantically relevant result at remote index 19 even
+    // when 12 source-index facts also qualify for the shared 24-slot bound.
+    // Cached score/background reuse avoids a second reranker HTTP call.
+    const graphitiRanked=this.ranker
+      ? await rankQualifiedForMerge(text,candidates,this.ranker) : null;
+    const fromGraphiti=graphitiRanked?graphitiRanked.ranked:
+      shortlistQualifiedCandidates(text,candidates);
+    const fromCurator=shortlistQualifiedCandidates(text,indexedCandidates);
+    const combined=[],seen=new Set();
+    const add=(item)=>{
+      if(!item||combined.length>=maxFacts)return;
+      const id=item.source+'\0'+item.fact;
+      if(seen.has(id))return;
+      seen.add(id);combined.push(item);
+    };
+    // Alternate between independently sourced remote-search and fresh-remote
+    // confirmed index observations. One side may use the remaining slots if
+    // the other yields fewer qualifying candidates.
+    for(let i=0;i<maxFacts&&combined.length<maxFacts;i++){
+      if(i<fromGraphiti.length)add(fromGraphiti[i]);
+      if(i<fromCurator.length)add(fromCurator[i]);
+    }
+    const ranked = graphitiRanked
+      ? await relevanceFilter(text, combined, null, {
+          cachedScores:graphitiRanked.scoreByItem,
+          cachedBackground:graphitiRanked.background,
+        })
+      : await relevanceFilter(text,combined);
     const result = [];
     let budget = maxChars;
     for (const entry of ranked) {
-      const cost = JSON.stringify(entry).length;
+      // The source excerpt is only for admission and must never enter the
+      // outgoing model context or influence the JSON size budget.
+      const {sourceContext,remoteEpisodeUuid,workspace,project,group,...bounded}=entry;
+      const cost = JSON.stringify(bounded).length;
       if (cost > budget) continue;
-      result.push(entry); budget -= cost;
+      result.push(bounded); budget -= cost;
       if (result.length >= limit) break;
     }
     return result;

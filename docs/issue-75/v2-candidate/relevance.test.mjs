@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { admitFact, lexicalSupport, relevanceSignals, relevanceFilter, localReranker } from './relevance.mjs';
+import { admitFact, lexicalSupport, relevanceSignals, relevanceFilter, localReranker, shortlistQualifiedCandidates, explainRelevanceAdmission, answerTypeSupport, toolQuestionEcho, rankQualifiedForMerge } from './relevance.mjs';
 test('lexical floor rejects unrelated facts but admits direct multi-term evidence', async () => {
   assert.equal(admitFact('Which library is used for backlog dependency visualization?',
     'React Flow chosen for backlog dependency visualization'), true);
@@ -168,4 +168,271 @@ test('fresh native recall: true named entities remain hard qualifiers after punc
     'a sentence-initial proper name must still be matched');
   assert.equal(relevanceSignals(query, named.fact).eligible, true);
   assert.deepEqual(await relevanceFilter(query, [unrelated,named]), [named]);
+});
+
+
+test('structured DB-name alias retains source topical and identity gates', async () => {
+  const query = 'Which Graphiti group does the production recall service use, and on which FalkorDB port does it run?';
+  const supported = {fact:'The environment variable GRAPHITI_RECALL_FALKOR_PORT is set to 6382.'};
+  const distractor = {fact:'The unrelated Redis service runs on port 6382 in a different storage cluster.'};
+  assert.equal(relevanceSignals(query, supported.fact).eligible, true,
+    'FalkorDB may be named FALKOR inside a structured config identifier');
+  assert.equal(relevanceSignals(query, distractor.fact).eligible, false);
+  assert.deepEqual(await relevanceFilter(query, [distractor, supported]), [supported]);
+  assert.equal(relevanceSignals('Which MongoDB port runs the Graphiti service?', supported.fact).eligible,
+    false, 'an unrelated named product must not be admitted through a suffix alias');
+  assert.equal(relevanceSignals('Which Graphiti FalkorDB port is configured?',
+    'The ordinary Falkor team uses a separate Graphiti service port.').eligible, false,
+    'ordinary prose containing the shortened name is not a structured alias');
+});
+
+test('contextual acronyms require two opaque query identifiers and topical support', async () => {
+  const query = 'Why does the production data physically live in the development-knowledge graph even though the MCP config points at graphiti_live?';
+  const anchored = {fact:"A script queries the 'graphiti_live' graph filtered by group_id='development-knowledge'."};
+  const underqualified = {fact:"The MCP service uses a general per-project configuration."};
+  assert.equal(relevanceSignals(query, anchored.fact).eligible, true,
+    'two exact identifiers can support a contextual initialism absent from the fact');
+  assert.equal(relevanceSignals(query, underqualified.fact).eligible, false,
+    'MCP alone does not establish the asked graph identity');
+  assert.equal(relevanceSignals('Does MCP route through graphiti_live and development-knowledge?',
+    'The HTTP service routes through graphiti_live only.').eligible, false,
+    'an absent acronym cannot be waived with only one shared identifier');
+  assert.equal(relevanceSignals('Why is the MCP service configured for Issue #81 with graphiti_live and development-knowledge?',
+    'Issue 80 scripts query graphiti_live and development-knowledge with the expected group.').eligible,
+    false, 'exact Issue #81 identity remains mandatory');
+  assert.equal(relevanceSignals('How does Graphiti MCP isolate groups?',
+    'The MCP server separates each group through a dedicated driver.').eligible, false,
+    'a different named product is not waived by one acronym');
+});
+
+test('24-candidate selector admits a sourced relevant fact beyond the original top twelve', async () => {
+  const items = Array.from({length:26}, (_,i) => ({
+    fact:'Unrelated weather observation ' + i + ' outside the archive pipeline.',
+  }));
+  const supported = {fact:'The Parquet archive retention pipeline stores verified manifests.'};
+  items[18] = supported;
+  items[24] = {fact:'The Parquet archive retention pipeline stores verified manifests.'};
+  const query = 'Which Parquet archive retention pipeline stores verified manifests?';
+  assert.deepEqual(await relevanceFilter(query, items), [supported],
+    'the supported candidate at index 18 must survive the widened bounded selection');
+  let receivedCount = 0;
+  const scorer = async (_query, candidates) => {
+    receivedCount = candidates.length;
+    return new Map([[18, 0.9]]);
+  };
+  assert.deepEqual(await relevanceFilter(query, items, scorer), [supported]);
+  assert.equal(receivedCount, 24, 'optional reranker uses the same bounded candidate set');
+  const rerank = localReranker('http://127.0.0.1:8004/v1/rerank',{
+    fetchImpl: async (_url, options) => {
+      assert.equal(JSON.parse(options.body).documents.length, 24);
+      return {ok:true,json:async()=>({results:[{index:18,relevance_score:0.9}]})};
+    }
+  });
+  assert.equal((await rerank(query, items.slice(0, 24))).get(18), 0.9);
+  await assert.rejects(rerank(query, items), /candidate bound exceeded/);
+});
+
+
+test('qualified shortlist ranks eligibility before a 24-record bound and excludes unsafe aliases', async () => {
+  const query='Which PostgreSQL archive retention pipeline stores verified manifests?';
+  const entries=Array.from({length:32},(_,i)=>({fact:'An unrelated cloud weather observation '+i+'.'}));
+  const correct={fact:'The PostgreSQL archive retention pipeline stores verified manifests.'};
+  entries[27]=correct;
+  const shortlist=shortlistQualifiedCandidates(query,entries);
+  assert.deepEqual(shortlist,[correct]);
+  assert.deepEqual(await relevanceFilter(query,shortlist),[correct]);
+  assert.deepEqual(shortlistQualifiedCandidates('Which MongoDB archive retention pipeline stores verified manifests?',entries),[],
+    'unrelated named product is not admitted into the eligible shortlist');
+});
+test('qualified shortlist resolves equal direct overlap using original source-context evidence only as a tie', () => {
+  const query='What did commit 52863ae change in the Graphiti test suite?';
+  const distractor={fact:'Commit 52863ae refers to the Graphiti test suite and its tests.',
+    sourceContext:'The Graphiti test suite exists.'};
+  const relevant={fact:'Commit 52863ae refers to the Graphiti test suite and its tests.',
+    sourceContext:'The change in commit 52863ae fixes failure behavior in the Graphiti test suite.'};
+  const ranked=shortlistQualifiedCandidates(query,[distractor,relevant]);
+  assert.equal(ranked[0],relevant);
+  assert.equal(ranked.length,2);
+  assert.equal(relevanceSignals(query,'Issue #80 discusses the test suite.').eligible,false);
+});
+
+
+test('diagnostic proves 0.34 admitFact floor is not an automatic-recall selector gate', async () => {
+  const query='Which alpha beta gamma delta epsilon zeta?';
+  const fact='The alpha beta observation.';
+  const signal=relevanceSignals(query,fact);
+  assert.equal(signal.overlap.count,2);
+  assert.ok(signal.overlap.score<0.34);
+  assert.equal(admitFact(query,fact),false,'on-demand public helper still applies 0.34');
+  assert.equal(signal.eligible,true,'automatic recall permits independently topical two-term support');
+  assert.equal(explainRelevanceAdmission(query,{fact}).admitted,true);
+  assert.equal(explainRelevanceAdmission(query,{fact}).scoreFloor034Applied,false);
+});
+test('diagnostic exposes named/issue/numeric failure without emitting source content', () => {
+  const named=explainRelevanceAdmission('Which MongoDB archive storage is configured?',{
+    fact:'The PostgreSQL archive storage is configured.'});
+  assert.equal(named.admitted,false);
+  assert.ok(named.direct.failures.includes('NAMED_IDENTITY'));
+  const issue=explainRelevanceAdmission('Which change in Issue #81 affects Graphiti tests?',{
+    fact:'Issue 80 changed Graphiti tests.'});
+  assert.ok(issue.direct.failures.includes('ISSUE_IDENTITY'));
+  const num=explainRelevanceAdmission('What changed in pipeline 6382?',{
+    fact:'Pipeline 6383 changed the service.'});
+  assert.ok(num.direct.failures.includes('NUMERIC_IDENTITY'));
+  assert.equal(JSON.stringify(named).includes('PostgreSQL'),false);
+  assert.equal(JSON.stringify(named).includes('MongoDB'),false);
+});
+test('diagnostic labels linked source-context gating without changing production recall', async () => {
+  const q='How does the Graphiti MCP service isolate each group driver?';
+  const item={fact:'Each group driver clones an isolated workspace graph.',
+    sourceContext:'The Graphiti MCP service uses the group driver in this implementation.'};
+  assert.equal(relevanceSignals(q,item.fact).eligible,false);
+  const d=explainRelevanceAdmission(q,item);
+  assert.equal(d.admitted,true);
+  assert.equal(d.linkedUsed,true);
+  assert.equal(d.direct.namedMatch,false);
+  assert.equal(d.linked.namedMatch,true);
+  assert.deepEqual(await relevanceFilter(q,[item]),[item]);
+  assert.equal(JSON.stringify(d).includes('workspace graph'),false);
+});
+
+
+test('commit-effect questions prefer source-described changes over incidental worktree commands',async()=>{
+  const query='What did commit abcdef12 change in the Graphiti test suite?';
+  const setup={fact:'Commit abcdef12 ran Graphiti test suite worktree setup.'};
+  const change={fact:'Commit abcdef12 fixed Graphiti test suite coverage.'};
+  assert.equal(relevanceSignals(query,setup.fact).eligible,true);
+  assert.equal(relevanceSignals(query,change.fact).eligible,true);
+  assert.equal(answerTypeSupport(query,setup.fact),0);
+  assert.equal(answerTypeSupport(query,change.fact),1);
+  assert.deepEqual(await relevanceFilter(query,[setup,change]),[change]);
+  assert.deepEqual(await relevanceFilter(query,[change,setup]),[change]);
+  assert.deepEqual(shortlistQualifiedCandidates(query,[setup,change]),[change,setup]);
+});
+test('commit-effect preference cannot waive wrong entity, Issue or numeric scope',async()=>{
+  const query='What did commit abcdef12 change in MongoDB tests for Issue #81?';
+  const wrongEntity={fact:'Commit abcdef12 fixed PostgreSQL tests for Issue 81.'};
+  const wrongIssue={fact:'Commit abcdef12 fixed MongoDB tests for Issue 80.'};
+  const good={fact:'Commit abcdef12 fixed MongoDB tests for Issue 81.'};
+  assert.deepEqual(await relevanceFilter(query,[wrongEntity,wrongIssue,good]),[good]);
+  assert.deepEqual(shortlistQualifiedCandidates(query,[wrongEntity,wrongIssue,good]),[good]);
+});
+test('commit-effect preference does not mistake worktree commands with incidental change words for commit effects',async()=>{
+  const query='What did commit abcdef12 change in the Graphiti test suite?';
+  const setup={fact:'Git worktree add abcdef12 for Graphiti test suite; changed checkout directory.'};
+  assert.equal(answerTypeSupport(query,setup.fact),0);
+  assert.deepEqual(await relevanceFilter(query,[setup]),[setup],
+    'allowed source remains eligible, only answer-type ranking changes');
+  assert.equal(answerTypeSupport('Which commit abcdef12 should I checkout?', 
+    'Commit abcdef12 fixed Graphiti tests.'),0,'unrelated commit questions get no effect bonus');
+});
+
+
+test('commit subject impact beats git -C worktree setup even if output echoes the subject',async()=>{
+  const q='What did commit a1b2c3d change in the Graphiti test suite?';
+  const subject={fact:'a1b2c3d test(graphiti): reject stale Graphiti test suite results'};
+  const worktree={fact:'git -C /workspace/graphiti worktree add /tmp/candidate a1b2c3d; git -C /workspace/graphiti rev-parse HEAD; status: a1b2c3d test(graphiti): reject stale Graphiti test suite results'};
+  assert.equal(relevanceSignals(q,subject.fact).eligible,true);
+  assert.equal(relevanceSignals(q,worktree.fact).eligible,true);
+  assert.equal(answerTypeSupport(q,subject.fact),1);
+  assert.equal(answerTypeSupport(q,worktree.fact),0);
+  for(const pair of [[subject,worktree],[worktree,subject]]){
+    assert.deepEqual(await relevanceFilter(q,pair),[subject]);
+    assert.equal(shortlistQualifiedCandidates(q,pair)[0],subject);
+  }
+});
+test('git -C option and quoted-path procedure variants never gain commit-effect bonus',()=>{
+  const q='What did commit a1b2c3d change in the Graphiti test suite?';
+  const procedures=[
+    'git -C "/work/dir with spaces" worktree add /tmp/new a1b2c3d; a1b2c3d test(graphiti): reject obsolete test suite failures',
+    "git -C '/work/dir with spaces' checkout a1b2c3d; a1b2c3d test(graphiti): reject obsolete test suite failures",
+    'git -C /work/graphiti rev-parse a1b2c3d; a1b2c3d test(graphiti): reject obsolete test suite failures',
+    'git -C /work/graphiti status; commit a1b2c3d changed Graphiti test suite state',
+    'worktree add /tmp/new a1b2c3d; commit a1b2c3d changed Graphiti test suite state',
+  ];
+  for(const fact of procedures)
+    assert.equal(answerTypeSupport(q,fact),0,fact);
+});
+test('generic conventional commit-subject formats score without a fixed change-verb dictionary',()=>{
+  const q='What did commit a1b2c3d change in the Graphiti test suite?';
+  const subjects=[
+    'a1b2c3d test(graphiti): reject stale Graphiti test suite cases',
+    'a1b2c3d fix: guard Graphiti test suite state',
+    'a1b2c3d refactor(graphiti)!: prevent Graphiti test suite stale selection',
+    'Commit a1b2c3d modified Graphiti test suite coverage',
+  ];
+  for(const fact of subjects)
+    assert.equal(answerTypeSupport(q,fact),1,fact);
+  assert.equal(answerTypeSupport('Should I checkout commit a1b2c3d?',
+    'a1b2c3d test(graphiti): reject stale Graphiti test suite cases'),0);
+});
+test('commit subject preference does not waive named product, issue, numeric or unrelated-topic fences',async()=>{
+  const q='What did commit a1b2c3d change for Graphiti in Issue #81?';
+  const good={fact:'a1b2c3d test(graphiti): reject stale Graphiti Issue 81 cases'};
+  const wrongName={fact:'a1b2c3d test(mongodb): reject stale MongoDB Issue 81 cases'};
+  const wrongIssue={fact:'a1b2c3d test(graphiti): reject stale Graphiti Issue 80 cases'};
+  const unrelated={fact:'a1b2c3d chore(website): reject stale webapp Issue 81 links'};
+  assert.deepEqual(await relevanceFilter(q,[wrongName,wrongIssue,unrelated,good]),[good]);
+  assert.deepEqual(shortlistQualifiedCandidates(q,[wrongName,wrongIssue,unrelated,good]),[good]);
+});
+
+
+test('tool-origin diagnostic question echo is excluded from both automatic selector stages',async()=>{
+  const query='What did commit a1b2c3d change in the Graphiti test suite?';
+  const correct={fact:'a1b2c3d test(graphiti): reject stale test results',
+    source:'opencode:ses-real:tool:call-real',evidenceClass:'tool-reported'};
+  const contaminant={
+    fact:'Diagnostic check: '+query+' expected: a1b2c3d test(graphiti): reject stale test results',
+    source:'opencode:ses-probe:tool:call-probe',evidenceClass:'tool-reported'};
+  assert.equal(toolQuestionEcho(query,contaminant),true);
+  assert.equal(toolQuestionEcho(query,correct),false);
+  assert.deepEqual(shortlistQualifiedCandidates(query,[contaminant,correct]),[correct]);
+  assert.deepEqual(await relevanceFilter(query,[contaminant,correct]),[correct]);
+  assert.deepEqual(await relevanceFilter(query,[correct,contaminant]),[correct]);
+  const ranker=async (_q,items)=>new Map(items.map((_,i)=>[i,i===1?.01:1]));
+  assert.deepEqual(await relevanceFilter(query,[contaminant,correct],ranker),[correct],
+    'high semantic score cannot override a tool question-echo rejection');
+});
+test('tool question-echo rule is provenance-bound, non-ID-specific and conservative',async()=>{
+  const query='Which archive retention pipeline stores verified Parquet manifests?';
+  const fact='When asked "'+query+'", the diagnostic script printed the expected answer.';
+  const tool={fact,source:'opencode:session-unrelated:tool:call-987',evidenceClass:'tool-reported'};
+  assert.equal(toolQuestionEcho(query,tool),true);
+  assert.equal(toolQuestionEcho(query,{...tool,source:'opencode:session-unrelated:message:msg-987'}),false);
+  assert.equal(toolQuestionEcho(query,{...tool,fact:'The archive retention pipeline stores verified Parquet manifests.'}),false);
+  assert.equal(toolQuestionEcho('hi',tool),false,'short prompts are handled by native prompt admission');
+  assert.deepEqual(shortlistQualifiedCandidates(query,[tool]),[]);
+  assert.deepEqual(await relevanceFilter(query,[tool]),[]);
+});
+
+
+test('excluded tool-question echoes cannot poison semantic-choice background or cached reranker admission',async()=>{
+  const query='What did we settle on for interactive issue map?';
+  const chosen={fact:'React Flow chosen for backlog dependency visualization',
+    source:'opencode:ses-sourced:message:msg1'};
+  const background={fact:'The weather forecast expects showers tomorrow.',
+    source:'opencode:ses-weather:tool:call1'};
+  const probeEcho={fact:'Diagnostic output: '+query+' expected: an interactive map library.',
+    source:'opencode:ses-probe:tool:call2'};
+  assert.equal(toolQuestionEcho(query,probeEcho),true);
+  assert.equal(relevanceSignals(query,chosen.fact,{hasRerankScore:true}).choiceOnly,true);
+  let calls=0;
+  const scores=new Map([[chosen,.90],[background,.10],[probeEcho,1]]);
+  const ranker=async (_q,items)=>{
+    calls++;
+    return new Map(items.map((item,i)=>[i,scores.get(item)]));
+  };
+  const control=await rankQualifiedForMerge(query,[chosen,background],ranker);
+  assert.deepEqual(control.ranked,[chosen]);
+  assert.equal(control.background,.10);
+  const contaminated=await rankQualifiedForMerge(query,[chosen,background,probeEcho],ranker);
+  assert.deepEqual(contaminated.ranked,[chosen]);
+  assert.equal(contaminated.background,.10,
+    'rejected echo score must not enter semantic background comparison');
+  const reused=await relevanceFilter(query,[probeEcho,chosen,background],null,{
+    cachedScores:contaminated.scoreByItem,
+    cachedBackground:contaminated.background
+  });
+  assert.deepEqual(reused,[chosen]);
+  assert.equal(calls,2,'reuse cached scores instead of reranking final candidates');
 });

@@ -5,6 +5,7 @@ import baseline from '../../issue-75/v2-candidate/plugin.mjs';
 import { fromPromptCandidates, fromTool, fromFinishedTurn } from './events.mjs';
 import { CandidateQueue } from './queue.mjs';
 import { sourcedEpisodeResolver } from '../v2-curator/sourced-recall.mjs';
+import { curatedRecallCandidates } from '../v2-curator/curated-recall-candidates.mjs';
 
 export { fromFinishedTurn }; // For a separately authenticated completed-turn adapter.
 export default {
@@ -19,11 +20,15 @@ export default {
       path.join(os.homedir(), '.local', 'state'), 'ghdev-graphiti');
     const resolver = path.isAbsolute(workspace) && project
       ? ids => sourcedEpisodeResolver(root,options.group,workspace,project,ids) : null;
+    const candidateRetriever = path.isAbsolute(workspace) && project &&
+      options.curatedRecall !== false
+      ? () => curatedRecallCandidates(root,options.group,workspace,project) : null;
     // Preserve the accepted Issue #75 native context/recall adapter. In
     // addition to its legacy journal, admit only confirmed curated episode
     // mappings from the same exact group/workspace, without LLM in hooks.
     const baselineCleanup = await baseline.setup({ ...ctx,
-      options: { ...options, capture: false, sourcedEpisodeResolver: resolver } });
+      options: { ...options, capture: false, sourcedEpisodeResolver: resolver,
+        curatedCandidateRetriever: candidateRetriever } });
     if (options.capture !== true) return baselineCleanup;
     if (!path.isAbsolute(workspace) || !project) {
       if (baselineCleanup) await baselineCleanup();
