@@ -36,6 +36,12 @@ test('curated-only index preselection needs support before remote proof',()=>{
   const irrelevant=item('Weather in Tokyo is warm.',{recallOrigin:'index',nativeRank:undefined});
   assert.deepEqual(preselectIndexedContext(q,[irrelevant,relevant]),[relevant]);
 });
+test('optional uncalibrated reranker can reorder without becoming admission authority',()=>{
+  const q='What storage mechanism did we select?';
+  const a=item('The storage choice was local files.',{nativeRank:0,rerankScore:0.05});
+  const b=item('The storage choice was a durable graph.',{nativeRank:1,rerankScore:0.98});
+  assert.equal(selectSemanticContext(q,[a,b])[0].fact,b.fact);
+});
 test('legacy user-decision provenance remains eligible',()=>{
   const q='What decision did we make about local Graphiti integration?';
   const x=item('We chose local Graphiti integration for recalled decisions.',{

@@ -480,7 +480,14 @@ export class Memory {
     if (semanticPolicy) {
       // Native semantic rank does not replace source/group proof. Indexed-only
       // facts have passed the separate fresh remote-episode membership check.
-      const native=candidates.map((item,i)=>({...item,recallOrigin:'graphiti',nativeRank:i}));
+      let rerankScores=null;
+      if (this.ranker) {
+        try { const scores=await this.ranker(text,candidates);
+          if (scores instanceof Map) rerankScores=scores; }
+        catch { /* Optional ranking failures never discard verified native recall. */ }
+      }
+      const native=candidates.map((item,i)=>({...item,recallOrigin:'graphiti',nativeRank:i,
+        rerankScore:rerankScores?.get(i)}));
       const indexed=indexedCandidates.map(item=>({...item,recallOrigin:'index'}));
       return semanticPolicy.selectSemanticContext(text,[...native,...indexed],{
         maxSelected:Math.min(5,Math.max(1,limit)),maxChars});

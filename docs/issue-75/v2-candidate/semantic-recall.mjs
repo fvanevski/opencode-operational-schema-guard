@@ -25,7 +25,10 @@ function rankSignal(query, item) {
   // Indexed-only candidates have no semantic rank, so must earn ranking support
   // from their assertion or authenticated source excerpt before remote proof.
   const prior = native ? 2 / (1 + item.nativeRank * 0.42) : 0;
-  const score = prior + Math.min(overlap.count, 5) * 0.48 +
+  // Optional local reranker scores are uncalibrated ranking signals only.
+  const rerank=typeof item.rerankScore==='number' && Number.isFinite(item.rerankScore)
+    && item.rerankScore>=0 && item.rerankScore<=1 ? item.rerankScore*1.25 : 0;
+  const score = prior + rerank + Math.min(overlap.count, 5) * 0.48 +
     overlap.score * 0.75 + Math.min(contextual.count, 3) * 0.12 +
     answerTypeSupport(query, item.fact) * 0.5 + identitySignal(query, item.fact);
   return { score, overlap:overlap.count, native };
