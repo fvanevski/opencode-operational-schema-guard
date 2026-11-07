@@ -27,7 +27,9 @@ export default {
     // addition to its legacy journal, admit only confirmed curated episode
     // mappings from the same exact group/workspace, without LLM in hooks.
     const baselineCleanup = await baseline.setup({ ...ctx,
-      options: { ...options, capture: false, sourcedEpisodeResolver: resolver,
+      options: { ...options, capture: false,
+        recallPolicy: options.recallPolicy === 'strict' ? 'strict' : 'semantic',
+        sourcedEpisodeResolver: resolver,
         curatedCandidateRetriever: candidateRetriever } });
     if (options.capture !== true) return baselineCleanup;
     if (!path.isAbsolute(workspace) || !project) {

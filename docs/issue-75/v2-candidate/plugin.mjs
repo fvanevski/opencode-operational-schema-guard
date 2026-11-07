@@ -10,6 +10,7 @@ function config(ctx) {
   return {
     enabled: x.enabled === true,
     capture: x.capture === true,
+    recallPolicy: x.recallPolicy === 'semantic' ? 'semantic' : 'strict',
     group: typeof x.group === 'string' ? x.group : '',
     endpoint: typeof x.endpoint === 'string' ? x.endpoint : 'http://127.0.0.1:8766/mcp',
     // Disabled by default until the independent reranker service and latency
@@ -92,7 +93,8 @@ export default {
     const curatedCandidateRetriever = typeof ctx.options?.curatedCandidateRetriever === 'function'
       ? ctx.options.curatedCandidateRetriever : null;
     const memory = new Memory({ journal: store, graphiti, group: settings.group,
-      ranker, extraSourceResolver, curatedCandidateRetriever });
+      ranker, extraSourceResolver, curatedCandidateRetriever,
+      recallPolicy: settings.recallPolicy });
     const registrations = [];
     const pending = new Map();
     const recallPrompts = new Map();
