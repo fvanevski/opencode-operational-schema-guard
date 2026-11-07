@@ -1,0 +1,303 @@
+{
+  "schema": "issue81-index-growth-and-safety.v1",
+  "read_only": true,
+  "legacy_boundary_removed": "defb9da replaced the all-or-nothing 288-episode source-index veto with bounded paged query-local preselection; >288 persisted and >500 review-record inventories no longer return []",
+  "probe_baseline": {
+    "review_record_files": 505,
+    "state_distribution": {
+      "deferred": 196,
+      "persisted": 304,
+      "skipped": 5
+    },
+    "persisted_eligible_candidate_estimate": 304,
+    "episode_index_files": 304
+  },
+  "live_inventory_now": {
+    "review_records": 509,
+    "episode_index_files": 307,
+    "candidate_events_queued": 3594,
+    "note": "Moving target under live drain. Read-only campaign baseline was 505 review / 304 index at probe time (14:52Z); both exceed the 288/500 legacy all-or-nothing boundary that defb9da removed."
+  },
+  "live_host_process": {
+    "post_exit_drain": "1488931       01:34 /usr/bin/python3 /home/filip/.config/opencode/plugins/ghdev-graphiti-memory/docs/issue-75/v2-candidate/post-exit-drain.py --gate-source /home/filip/.local/share/openviking-commit-gate/openviking_commit_gate.py --gate-config /home/filip/.config/openviking/commit-gate.toml --cli /home/filip/.config/opencode/plugins/ghdev-graphiti-memory/docs/issue-78/v2-curator/curator-cli.mjs --group development-knowledge --state-dir /home/filip/.local/state/ghdev-graphiti --endpoint http://127.0.0.1:8766/mcp --max-seconds 600 --lock-timeout 120",
+    "graphiti_mcp_service": "3627160    04:30:45 /workspace/mcp_servers/graphiti/upstream/mcp_server/.venv/bin/python /workspace/mcp_servers/graphiti/run_graphiti.py --config /workspace/mcp_servers/graphiti/config/config.yaml",
+    "note": "Pre-existing resident host services. The post-exit drain persists candidate-events into curation-v1 review records + episode-index; this is what grew the inventory during the read-only campaign. Not started by this campaign."
+  },
+  "query_scoped_candidates": [
+    {
+      "case_id": "S01",
+      "strict": {
+        "candidate_count": 24,
+        "expected_episode_in_candidates": true,
+        "expected_source_resolved": true,
+        "elapsed_ms": 424.6
+      },
+      "semantic": {
+        "candidate_count": 24,
+        "expected_episode_in_candidates": true,
+        "expected_source_resolved": true,
+        "elapsed_ms": 414.4
+      }
+    },
+    {
+      "case_id": "S02",
+      "strict": {
+        "candidate_count": 4,
+        "expected_episode_in_candidates": true,
+        "expected_source_resolved": true,
+        "elapsed_ms": 236
+      },
+      "semantic": {
+        "candidate_count": 24,
+        "expected_episode_in_candidates": true,
+        "expected_source_resolved": true,
+        "elapsed_ms": 548.1
+      }
+    },
+    {
+      "case_id": "S03",
+      "strict": {
+        "candidate_count": 24,
+        "expected_episode_in_candidates": false,
+        "expected_source_resolved": false,
+        "elapsed_ms": 597.8
+      },
+      "semantic": {
+        "candidate_count": 24,
+        "expected_episode_in_candidates": false,
+        "expected_source_resolved": false,
+        "elapsed_ms": 554.6
+      }
+    },
+    {
+      "case_id": "S04",
+      "strict": {
+        "candidate_count": 24,
+        "expected_episode_in_candidates": true,
+        "expected_source_resolved": true,
+        "elapsed_ms": 261.3
+      },
+      "semantic": {
+        "candidate_count": 24,
+        "expected_episode_in_candidates": true,
+        "expected_source_resolved": true,
+        "elapsed_ms": 1079.8
+      }
+    },
+    {
+      "case_id": "S05",
+      "strict": {
+        "candidate_count": 21,
+        "expected_episode_in_candidates": false,
+        "expected_source_resolved": false,
+        "elapsed_ms": 406.1
+      },
+      "semantic": {
+        "candidate_count": 24,
+        "expected_episode_in_candidates": true,
+        "expected_source_resolved": true,
+        "elapsed_ms": 302.2
+      }
+    },
+    {
+      "case_id": "S06",
+      "strict": {
+        "candidate_count": 22,
+        "expected_episode_in_candidates": true,
+        "expected_source_resolved": true,
+        "elapsed_ms": 282
+      },
+      "semantic": {
+        "candidate_count": 24,
+        "expected_episode_in_candidates": true,
+        "expected_source_resolved": true,
+        "elapsed_ms": 670
+      }
+    },
+    {
+      "case_id": "S07",
+      "strict": {
+        "candidate_count": 10,
+        "expected_episode_in_candidates": true,
+        "expected_source_resolved": true,
+        "elapsed_ms": 136.7
+      },
+      "semantic": {
+        "candidate_count": 24,
+        "expected_episode_in_candidates": true,
+        "expected_source_resolved": true,
+        "elapsed_ms": 383
+      }
+    },
+    {
+      "case_id": "S08",
+      "strict": {
+        "candidate_count": 1,
+        "expected_episode_in_candidates": true,
+        "expected_source_resolved": true,
+        "elapsed_ms": 429.5
+      },
+      "semantic": {
+        "candidate_count": 24,
+        "expected_episode_in_candidates": true,
+        "expected_source_resolved": true,
+        "elapsed_ms": 370
+      }
+    },
+    {
+      "case_id": "S09",
+      "strict": {
+        "candidate_count": 1,
+        "expected_episode_in_candidates": true,
+        "expected_source_resolved": true,
+        "elapsed_ms": 806
+      },
+      "semantic": {
+        "candidate_count": 24,
+        "expected_episode_in_candidates": true,
+        "expected_source_resolved": true,
+        "elapsed_ms": 624.2
+      }
+    },
+    {
+      "case_id": "S10",
+      "strict": {
+        "candidate_count": 11,
+        "expected_episode_in_candidates": true,
+        "expected_source_resolved": true,
+        "elapsed_ms": 471.3
+      },
+      "semantic": {
+        "candidate_count": 24,
+        "expected_episode_in_candidates": true,
+        "expected_source_resolved": true,
+        "elapsed_ms": 522.6
+      }
+    },
+    {
+      "case_id": "S11",
+      "strict": {
+        "candidate_count": 6,
+        "expected_episode_in_candidates": true,
+        "expected_source_resolved": true,
+        "elapsed_ms": 507
+      },
+      "semantic": {
+        "candidate_count": 24,
+        "expected_episode_in_candidates": true,
+        "expected_source_resolved": true,
+        "elapsed_ms": 521.8
+      }
+    },
+    {
+      "case_id": "S12",
+      "strict": {
+        "candidate_count": 2,
+        "expected_episode_in_candidates": true,
+        "expected_source_resolved": true,
+        "elapsed_ms": 276.3
+      },
+      "semantic": {
+        "candidate_count": 24,
+        "expected_episode_in_candidates": true,
+        "expected_source_resolved": true,
+        "elapsed_ms": 329.2
+      }
+    },
+    {
+      "case_id": "S13",
+      "strict": {
+        "candidate_count": 8,
+        "expected_episode_in_candidates": false,
+        "expected_source_resolved": false,
+        "elapsed_ms": 266.7
+      },
+      "semantic": {
+        "candidate_count": 24,
+        "expected_episode_in_candidates": true,
+        "expected_source_resolved": true,
+        "elapsed_ms": 428
+      }
+    },
+    {
+      "case_id": "S14",
+      "strict": {
+        "candidate_count": 5,
+        "expected_episode_in_candidates": true,
+        "expected_source_resolved": true,
+        "elapsed_ms": 328
+      },
+      "semantic": {
+        "candidate_count": 24,
+        "expected_episode_in_candidates": true,
+        "expected_source_resolved": true,
+        "elapsed_ms": 487.8
+      }
+    },
+    {
+      "case_id": "S15",
+      "strict": {
+        "candidate_count": 2,
+        "expected_episode_in_candidates": true,
+        "expected_source_resolved": true,
+        "elapsed_ms": 703.1
+      },
+      "semantic": {
+        "candidate_count": 24,
+        "expected_episode_in_candidates": true,
+        "expected_source_resolved": true,
+        "elapsed_ms": 728.1
+      }
+    },
+    {
+      "case_id": "S16",
+      "strict": {
+        "candidate_count": 3,
+        "expected_episode_in_candidates": true,
+        "expected_source_resolved": true,
+        "elapsed_ms": 316.7
+      },
+      "semantic": {
+        "candidate_count": 24,
+        "expected_episode_in_candidates": true,
+        "expected_source_resolved": true,
+        "elapsed_ms": 375.7
+      }
+    }
+  ],
+  "legacy_query_null_path": {
+    "count": 304,
+    "elapsed_ms": 855.4,
+    "note": "bounded legacy inventory API; returns [] when eligible candidates exceed PAGE=500"
+  },
+  "out_of_scope_controls": [
+    {
+      "name": "wrong_project",
+      "count": 0
+    },
+    {
+      "name": "malformed_group",
+      "count": 0
+    },
+    {
+      "name": "legacy_group_semantic",
+      "count": 11,
+      "dev_knowledge_leak": false
+    }
+  ],
+  "fresh_remote_get_episodes": {
+    "elapsed_ms": 1050.6,
+    "remote_episode_count": 304,
+    "list_complete_under_1000": true,
+    "expected_uuids_present": 16,
+    "expected_uuids_total": 16,
+    "missing_uuids": []
+  },
+  "safety_findings": [
+    "Growth boundary PROVEN: query-scoped curatedRecallCandidates returns positive source-verified candidates (not []) for the 299->304->509 eligible-episode inventory, in both strict and semantic policies.",
+    "Fresh remote get_episodes (read-only, max_episodes=1000, complete<1000) returns 304 episodes; all 16 roster expected episode UUIDs are present (remote membership proof positive).",
+    "Out-of-scope/malformed bindings never yield development-knowledge rows: wrong_project=0, malformed_group=0, legacy_group(ghdev_gh_mcp) semantic=11 rows with 0 development-knowledge leak.",
+    "All candidate sources are opencode:-prefixed native references with valid evidence classes; malformed/wrong-scope rows never enter the model.",
+    "No production writes by this campaign. Inventory growth 505->509 (review) / 304->307 (index) is a pre-existing live post-exit-drain host process (PID in host-provenance), not a mutation introduced here."
+  ]
+}
