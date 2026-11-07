@@ -378,7 +378,7 @@ export class Memory {
     // index read can fail before the first remote call settles, and deferred
     // catch would cause an unhandled rejection in strict Node processes.
     const indexedWork = this.curatedCandidateRetriever
-      ? Promise.resolve().then(() => this.curatedCandidateRetriever())
+      ? Promise.resolve().then(() => this.curatedCandidateRetriever(text,this.recallPolicy))
           .then(rows => Array.isArray(rows) && rows.length <= 500 ? rows : [],
             () => [])
       : Promise.resolve([]);

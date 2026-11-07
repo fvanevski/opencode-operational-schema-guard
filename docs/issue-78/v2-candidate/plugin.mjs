@@ -22,7 +22,7 @@ export default {
       ? ids => sourcedEpisodeResolver(root,options.group,workspace,project,ids) : null;
     const candidateRetriever = path.isAbsolute(workspace) && project &&
       options.curatedRecall !== false
-      ? () => curatedRecallCandidates(root,options.group,workspace,project) : null;
+      ? (query,policy) => curatedRecallCandidates(root,options.group,workspace,project,query,policy) : null;
     // Preserve the accepted Issue #75 native context/recall adapter. In
     // addition to its legacy journal, admit only confirmed curated episode
     // mappings from the same exact group/workspace, without LLM in hooks.

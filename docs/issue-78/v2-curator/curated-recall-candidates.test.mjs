@@ -134,3 +134,59 @@ test('Graphiti MCP search and remote-proof reads never overlap',()=>fixture(asyn
   assert.equal(result.length,1);
   assert.equal(maxActive,1,'remote Graphiti MCP operations must be serialized');
 }));
+
+const growthId=n=>n.toString(16).padStart(64,'0');
+const growthUUID=n=>'aaaaaaaa-aaaa-4aaa-8aaa-'+n.toString(16).padStart(12,'0');
+const growthQuery='Which PostgreSQL database stores durable archive state?';
+async function growthFixture({persisted,deferred,targetIndex},check) {
+  const root=await mkdtemp(path.join(os.tmpdir(),'gh81-growth-'));
+  try {
+    const dir=path.join(root,'curation-v1',group);
+    await mkdir(path.join(dir,'_episode-index'),{recursive:true});
+    for(let start=1;start<=persisted+deferred;start+=48) {
+      const pending=[];
+      for(let n=start;n<=Math.min(start+47,persisted+deferred);n++) {
+        const id=growthId(n),remote_episode_uuid=growthUUID(n),active=n<=persisted;
+        const fact=n===targetIndex?'PostgreSQL database stores durable archive state.':
+          'Unrelated compilation inventory item '+n+' completed.';
+        const review={id,group,project,workspace,state:active?'persisted':'deferred',
+          remote_episode_uuid:active?remote_episode_uuid:null,
+          facts:active?[{assertion:fact,source_refs:[source],
+            evidence_class:'tool-reported',temporal_status:'observed'}]:[],
+          events:active?[{source_strength:'native-id',source_refs:[source],
+            evidence_class:'tool-reported',excerpt:fact}]:[]};
+        pending.push(writeFile(path.join(dir,id+'.json'),JSON.stringify(review)));
+        if(active)pending.push(writeFile(path.join(dir,'_episode-index',
+          remote_episode_uuid+'.json'),JSON.stringify({id,remote_episode_uuid})));
+      }
+      await Promise.all(pending);
+    }
+    await check({root,targetUUID:growthUUID(targetIndex)});
+  }finally{await rm(root,{recursive:true,force:true});}
+}
+test('299 persisted sources survive the former 288-inventory blackout',()=>growthFixture(
+  {persisted:299,deferred:199,targetIndex:299},async({root,targetUUID})=>{
+    for(const policy of ['strict','semantic']) {
+      const found=await curatedRecallCandidates(root,group,workspace,project,growthQuery,policy);
+      assert.equal(found.length,1);assert.equal(found[0].remoteEpisodeUuid,targetUUID);
+      assert.equal(found[0].source,source);assert.equal(found[0].group,group);
+    }
+    const legacy=await curatedRecallCandidates(root,group,workspace,project);
+    assert.equal(legacy.length,299,'resolver must batch, not truncate at 288');
+  }));
+test('query-local search includes persisted fact after the first 500 reviews',()=>growthFixture(
+  {persisted:513,deferred:0,targetIndex:513},async({root,targetUUID})=>{
+    for(const policy of ['strict','semantic']) {
+      const found=await curatedRecallCandidates(root,group,workspace,project,growthQuery,policy);
+      assert.equal(found.length,1);
+      assert.equal(found[0].remoteEpisodeUuid,targetUUID);
+      assert.ok(found.length<=24);
+    }
+  }));
+test('growing inventory does not bypass workspace, project or privacy fences',()=>growthFixture(
+  {persisted:1,deferred:0,targetIndex:1},async({root})=>{
+    assert.deepEqual(await curatedRecallCandidates(root,group,'/workspace/other',project,growthQuery,'semantic'),[]);
+    assert.deepEqual(await curatedRecallCandidates(root,group,workspace,'other',growthQuery,'strict'),[]);
+    assert.deepEqual(await curatedRecallCandidates(root,group,workspace,project,
+      'Use api_key=secret for production','semantic'),[]);
+  }));
