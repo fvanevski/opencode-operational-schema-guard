@@ -224,9 +224,14 @@ export class GraphitiMcp {
     // Failed operations must release the queue so subsequent recall can recover.
     this.callTail = Promise.resolve();
   }
-  async rpc(method, params = {}) {
+  async rpc(method, params = {}, { signal = null } = {}) {
     const id = ++this.seq;
-    const res = await this.fetchImpl(this.url, { method: 'POST', signal: AbortSignal.timeout(this.timeoutMs),
+    // A proof's short deadline must abort the actual transport, not merely
+    // let its caller stop awaiting while the shared MCP FIFO remains blocked.
+    // Nonoptional calls retain the original transport timeout.
+    const timeout = AbortSignal.timeout(this.timeoutMs);
+    const requestSignal = signal ? AbortSignal.any([timeout, signal]) : timeout;
+    const res = await this.fetchImpl(this.url, { method: 'POST', signal: requestSignal,
       headers: { 'Content-Type': 'application/json', Accept: 'application/json, text/event-stream',
         'MCP-Protocol-Version': '2025-06-18',
         ...(this.sessionID ? { 'mcp-session-id': this.sessionID } : {}) },
@@ -239,21 +244,37 @@ export class GraphitiMcp {
     if (data.id !== id) throw new Error('Graphiti MCP response ID mismatch');
     return data.result;
   }
-  async ensure() {
+  async ensure(signal = null) {
     if (this.sessionID) return;
     if (!this.initPromise) {
       this.initPromise = this.rpc('initialize', { protocolVersion: '2025-06-18',
-        capabilities: {}, clientInfo: { name: 'ghdev-graphiti-memory', version: '0.1.0' } });
+        capabilities: {}, clientInfo: { name: 'ghdev-graphiti-memory', version: '0.1.0' } },
+        { signal });
     }
     try { await this.initPromise; }
     finally { this.initPromise = null; }
   }
-  async call(name, args) {
+  async call(name, args, { deadlineMs = null } = {}) {
     const invoke = async () => {
-      await this.ensure();
-      return unwrapResult(await this.rpc('tools/call', { name, arguments: args }));
+      // Optional proof can expire behind another prompt's slow fact search.
+      // Drop it BEFORE initialization or tools/call; never let abandoned
+      // work run later simply because its caller's Promise.race has settled.
+      if (deadlineMs !== null && (!Number.isFinite(deadlineMs) ||
+          performance.now() >= deadlineMs)) return null;
+      const signal = deadlineMs === null ? null : AbortSignal.timeout(
+        Math.max(1, Math.ceil(deadlineMs - performance.now())));
+      await this.ensure(signal);
+      if (signal?.aborted || (deadlineMs !== null &&
+          performance.now() >= deadlineMs)) return null;
+      const result = await this.rpc('tools/call', { name, arguments: args }, { signal });
+      // A late response can never become positive source authority.
+      if (signal?.aborted || (deadlineMs !== null &&
+          performance.now() >= deadlineMs)) return null;
+      return unwrapResult(result);
     };
     const next = this.callTail.then(invoke);
+    // Keep strictly one in-flight transport. Abort-capable fetch rejects on
+    // its deadline; only then is the FIFO released for the next native prompt.
     this.callTail = next.then(() => undefined, () => undefined);
     return next;
   }
@@ -435,11 +456,15 @@ export class Memory {
     // The pre-proof shortlist is a filter only, NEVER an authority upgrade.
     const possibleIndex=shortlistQualifiedCandidates(text,scopedRows);
     let remoteData=null;
-    if(possibleIndex.length && remaining()>0) {
+    const proofBudget = possibleIndex.length ? remaining() : 0;
+    if (proofBudget > 0) {
+      // Absolute dequeue-time expiry + in-flight fetch cancellation are both
+      // required. A caller-only 70ms race cannot free a blocked shared FIFO.
+      const deadlineMs = performance.now() + proofBudget;
       const proof=this.graphiti.call('get_episodes',{
         group_ids:[this.group],max_episodes:1000,
-      }).then(data=>data,()=>null); // immediate rejection handler
-      remoteData=await optionalWithin(proof,remaining(),null);
+      }, { deadlineMs }).then(data=>data,()=>null); // immediate rejection handler
+      remoteData=await optionalWithin(proof,proofBudget,null);
     }
     const remoteEpisodes = Array.isArray(remoteData?.episodes) &&
       remoteData.episodes.length < 1000 &&
