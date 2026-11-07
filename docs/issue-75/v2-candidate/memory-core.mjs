@@ -489,8 +489,14 @@ export class Memory {
       const native=candidates.map((item,i)=>({...item,recallOrigin:'graphiti',nativeRank:i,
         rerankScore:rerankScores?.get(i)}));
       const indexed=indexedCandidates.map(item=>({...item,recallOrigin:'index'}));
+      // In the default non-reranked path, keep one independent strict-control
+      // selection if the same verified candidate pool contains it. This does
+      // not constrain admission of other semantic-ranked observations.
+      const baselineAnchor=!this.ranker
+        ? await semanticPolicy.strictControlAnchor(text,candidates,indexedCandidates)
+        : null;
       return semanticPolicy.selectSemanticContext(text,[...native,...indexed],{
-        maxSelected:Math.min(5,Math.max(1,limit)),maxChars});
+        maxSelected:Math.min(5,Math.max(1,limit)),maxChars,baselineAnchor});
     }
     // Mandatory relevance and source-linked admission precede the shortlist,
     // never follow an arbitrary raw search/index slice. This keeps Graphiti

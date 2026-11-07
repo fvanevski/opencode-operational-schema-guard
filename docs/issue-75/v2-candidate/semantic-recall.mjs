@@ -2,7 +2,8 @@
  * source, group, remote episode and privacy validation. Native Graphiti rank
  * is retrieval evidence, not a calibrated probability or authority label.
  * The original strict relevance.mjs remains an unchanged benchmark control. */
-import { lexicalSupport, answerTypeSupport, toolQuestionEcho } from './relevance.mjs';
+import { lexicalSupport, answerTypeSupport, toolQuestionEcho,
+  shortlistQualifiedCandidates, relevanceFilter } from './relevance.mjs';
 
 const SOURCE = /^opencode:[^\s]+:(?:message|tool|user):/;
 const EVIDENCE = new Set(['user-stated', 'tool-reported', 'assistant-reported']);
@@ -38,6 +39,31 @@ function valid(item, query) {
     typeof item.source === 'string' && SOURCE.test(item.source) &&
     EVIDENCE.has(item.evidenceClass) && !toolQuestionEcho(query, item);
 }
+/** Preserve the accepted one-fact control only when it independently
+ * qualifies from the SAME positively sourced Graphiti/index candidates.
+ * The control is an inclusion floor, never a semantic admission veto, and
+ * does not perform additional remote, model or source-index work.
+ * This mirrors the no-reranker strict Memory.search 24-slot merge ordering.
+ */
+export async function strictControlAnchor(query, graphiti, indexed) {
+  if(typeof query!=='string'||!Array.isArray(graphiti)||!Array.isArray(indexed)||
+     graphiti.length>24||indexed.length>24)return null;
+  const remote=shortlistQualifiedCandidates(query,graphiti);
+  const local=shortlistQualifiedCandidates(query,indexed);
+  const combined=[],seen=new Set();
+  const add=item=>{
+    if(!item||combined.length>=24||!valid(item,query))return;
+    const key=item.source+'\0'+item.fact;
+    if(seen.has(key))return;
+    seen.add(key);combined.push(item);
+  };
+  for(let i=0;i<24&&combined.length<24;i++){
+    if(i<remote.length)add(remote[i]);
+    if(i<local.length)add(local[i]);
+  }
+  return (await relevanceFilter(query,combined))[0]||null;
+}
+
 /** Query-local shortlist for source-index records which lack native semantic
  * rank. This is NOT source authorization: caller still proves remote UUID
  * membership before adding any selected indexed fact to the model context. */
@@ -55,7 +81,7 @@ export function preselectIndexedContext(query, rows, {limit=24}={}) {
 /** Diversify confirmed candidates and enforce the model-facing character
  * budget. Exact identifiers are ranking/disambiguation signals, not vetoes.
  * No sourceContext, group ID, episode ID or internal score leaks to the model. */
-export function selectSemanticContext(query, items, {maxSelected=5,maxChars=1400}={}) {
+export function selectSemanticContext(query, items, {maxSelected=5,maxChars=1400,baselineAnchor=null}={}) {
   if (typeof query!=='string' || !Array.isArray(items) ||
       !Number.isInteger(maxSelected) || maxSelected<1 || maxSelected>5 ||
       !Number.isInteger(maxChars) || maxChars<100 || maxChars>8000) return [];
@@ -69,7 +95,15 @@ export function selectSemanticContext(query, items, {maxSelected=5,maxChars=1400
   if (!ranked.length) return [];
   const anchored=ranked.some(x=>x.signal.overlap>0);
   const cap=anchored?maxSelected:Math.min(maxSelected,1);
-  const best=ranked[0].signal.score;
+  // A source-qualified strict-control fact must not disappear solely because
+  // native semantic rank or unrelated lexical overlap filled the display.
+  // Do not import an anchor that is absent from this exact verified pool.
+  const anchorIndex=baselineAnchor?ranked.findIndex(x=>
+    x.item.fact===baselineAnchor.fact &&
+    x.item.source===baselineAnchor.source &&
+    x.item.evidenceClass===baselineAnchor.evidenceClass):-1;
+  const best=Math.max(...ranked.map(x=>x.signal.score));
+  if(anchorIndex>0)ranked.unshift(...ranked.splice(anchorIndex,1));
   const selected=[], fingerprints=[], seen=new Set();
   let budget=maxChars;
   for (const {item,signal} of ranked) {

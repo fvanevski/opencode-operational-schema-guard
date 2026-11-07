@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {preselectIndexedContext,selectSemanticContext} from './semantic-recall.mjs';
+import {preselectIndexedContext,selectSemanticContext,strictControlAnchor} from './semantic-recall.mjs';
 const source='opencode:ses-example:message:msg-example';
 const item=(fact,extra={})=>({fact,source,evidenceClass:'tool-reported',temporal:'current state not independently verified',
   recallOrigin:'graphiti',nativeRank:0,...extra});
@@ -76,4 +76,30 @@ test('serialized context respects existing char budget',()=>{
   const result=selectSemanticContext(q,x,{maxSelected:5,maxChars:350});
   assert.ok(result.length>0 && result.length<5);
   assert.ok(result.reduce((n,x)=>n+JSON.stringify(x).length,0)<=350);
+});
+
+test('semantic presentation retains a strictly relevant sourced control without vetoing other facts',async()=>{
+  const q='Why was the archive database migration delayed during recovery?';
+  const remote=Array.from({length:6},(_,i)=>item(
+    'The archive database migration logged subsystem '+['workers','plugins','queues','cache','network','ports'][i]+
+    ' during the operational window.',{nativeRank:i,source:'opencode:s0:message:m'+i}));
+  const index=item('Archive database migration was delayed because recovery required schema repairs.',{
+    source:'opencode:s0:message:index',recallOrigin:'index',nativeRank:undefined});
+  const anchor=await strictControlAnchor(q,remote,[index]);
+  assert.equal(anchor?.source,index.source,'the accepted strict-control fact must independently qualify');
+  const chosen=selectSemanticContext(q,[...remote,index],{baselineAnchor:anchor});
+  assert.equal(chosen[0]?.source,index.source,'control fact must survive rank pressure');
+  assert.ok(chosen.length>1,'the control is an inclusion floor, not an exclusive filter');
+  assert.ok(chosen.every(x=>!Object.hasOwn(x,'sourceContext')&&!Object.hasOwn(x,'nativeRank')));
+});
+test('baseline hint cannot inject untrusted or out-of-pool assertions',()=>{
+  const q='How was archive storage recovered?';
+  const trusted=item('Archive storage recovery used a repaired database.');
+  const hinted=item('Archive storage recovery required unknown changes.',{
+    source:'opencode:other:message:other'});
+  const wrong={...hinted,source:'forged:record'};
+  const picked=selectSemanticContext(q,[trusted],{baselineAnchor:hinted});
+  assert.equal(picked.length,1);
+  assert.equal(picked[0].fact,trusted.fact);
+  assert.deepEqual(selectSemanticContext(q,[],{baselineAnchor:wrong}),[]);
 });

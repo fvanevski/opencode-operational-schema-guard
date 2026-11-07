@@ -47,3 +47,31 @@ test('curated-only candidate needs positive exact-group get_episodes proof',asyn
     assert.equal(calls.some(x=>x.name==='add_memory'),false);
   }
 });
+
+test('Memory.search semantic policy preserves a strictly qualified index fact after fresh group proof',async()=>{
+  const q='Why was the archive database migration delayed during recovery?';
+  const origin='opencode:s0:message:index';
+  const indexUUID='bbbbbbbb-2222-4222-8222-222222222222';
+  const reasons=['workers','plugins','queues','cache','network','ports'];
+  const facts=reasons.map((term,i)=>({fact:'The archive database migration logged subsystem '+
+    term+' during the operational window.',group_id:group,
+    episodes:[uuid]}));
+  const local=[{fact:'Archive database migration was delayed because recovery required schema repairs.',
+    source:origin,group,remoteEpisodeUuid:indexUUID,evidenceClass:'tool-reported',
+    temporal:'current state not independently verified'}];
+  const graphiti={call:async(name)=>{
+    if(name==='search_memory_facts')return {facts};
+    if(name==='get_episodes')return {episodes:[{uuid:indexUUID,group_id:group}]};
+    throw Error('Unexpected remote operation '+name);
+  }};
+  const args={journal:{pages:async function*(){}},graphiti,group,
+    extraSourceResolver:async ids=>ids.map(remoteEpisodeUuid=>({status:'persisted',
+      group,remoteEpisodeUuid,sourceRef:'opencode:s0:message:native',
+      evidenceClass:'tool-reported'})),
+    curatedCandidateRetriever:async()=>local};
+  const strict=await new Memory({...args,recallPolicy:'strict'}).search(q);
+  assert.equal(strict[0]?.source,origin,'independent strict control selects the causal fact');
+  const semantic=await new Memory({...args,recallPolicy:'semantic'}).search(q);
+  assert.equal(semantic[0]?.source,origin);
+  assert.ok(semantic.length>1,'additional sourced context remains available');
+});
