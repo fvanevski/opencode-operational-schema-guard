@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "campaign": "ISSUE81_QUERY_ECHO_DRIFT_V1",
+  "encountered": true,
+  "events": [
+    {
+      "id": 1,
+      "classification": "shell_shape",
+      "attribution": "agent command",
+      "event": "zsh equals-expansion: unquoted 'echo ===BLOBS===' in a compound git-ls-tree command produced 'zsh:1: ==BLOBS=== not found' and aborted the compound (exit 1) before the blob listing ran",
+      "outcome": "recovered by re-running the git ls-tree command standalone; blob hashes captured; no producer data impact",
+      "masked_producer_failure": false
+    },
+    {
+      "id": 2,
+      "classification": "interface_discovery",
+      "attribution": "agent command",
+      "event": "inherited fence pattern 'truncat' (from the prior Codex-remediation campaign) matched zero test names in the current tree; current test names contain no 'truncat' substring",
+      "outcome": "resolved by enumerating current test names and running explicit fence patterns (named/issue/numeric, out-of-bound remote, wrong-group, secret, private, 501+ rows); the complete 81/81 focused suite covers the current fence set",
+      "masked_producer_failure": false
+    },
+    {
+      "id": 3,
+      "classification": "display_discovery",
+      "attribution": "agent command",
+      "event": "first TAP summary grep used '# tests' classic-TAP prefixes; node --test emits section summaries with the Unicode info prefix, so the grep matched nothing (producer exit was captured separately and was 0)",
+      "outcome": "recovered by tailing the TAP file directly; TAP totals (81/81) read from actual output; no masked producer failure",
+      "masked_producer_failure": false
+    }
+  ],
+  "guard_rejections": 0,
+  "producer_exits_masked": 0,
+  "commands_match_handoff": true,
+  "match_notes": "The handoff's prescribed focused-suite command shape (node --test over the 9 listed files) was executed with the exact file set and order in the isolated detached worktree; remote fetch preceded worktree creation; no rtk prefix was added to literal commands; standalone producer exit capture was used for the focused suite and the replay (no tee/grep/RTK masking)."
+}

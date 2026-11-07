@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "campaign": "ISSUE81_QUERY_ECHO_DRIFT_V1",
+  "predicate": {
+    "name": "toolQuestionEcho",
+    "location": "docs/issue-75/v2-candidate/relevance.mjs (exported)",
+    "design_properties_verified": [
+      "source-type-based: applies ONLY to opencode:<session>:tool:<tool> native source anchors (regex ^opencode:[^:\\s,]+:tool:[^:\\s,]+)",
+      "query-content-based: normalized full current question must appear inside the normalized fact (lowercase, non-letter/digit runs collapsed to single spaces, trimmed)",
+      "query length guard: normalized question requires >= 24 characters AND >= 5 words, so short prompts are never treated as full echoes",
+      "exclusion-only: the predicate can reject a candidate, it cannot admit a previously ineligible fact",
+      "no hardcoded case name, source ref, target UUID, commit SHA or benchmark expected answer in the predicate"
+    ],
+    "application_points": [
+      "shortlistQualifiedCandidates (pre-merge shortlist stage)",
+      "rankedCandidates shared admission loop (final relevanceFilter selector AND rankQualifiedForMerge reranker path, cached or live)"
+    ],
+    "invariants_preserved": "no context-excerpt reveal; source/group/safeText fences, 24-candidate bound, one-fact output, serial MCP, bounded optional remote membership proof, temporal scope and 300ms native allowance all unchanged"
+  },
+  "s10_contaminant_inspection": {
+    "mode": "READ-ONLY",
+    "suspect_remote_episode_uuid": "625b58db-d872-4582-9c25-f2d0b5a5b874",
+    "suspect_sanitized_fields": {
+      "origin": "curated source index (curation-v1)",
+      "event_kind": "curated curation record",
+      "evidence_class": "tool-reported",
+      "native_tool_vs_message": "tool",
+      "source_ref": "opencode:ses_e4d0f0410ffe30XXNAA9WFWqDx:tool:call_8f6609da8c549d83",
+      "source_index_match": true,
+      "group": "development-knowledge",
+      "single_fact_persisted": true,
+      "fact_contains_full_s10_question_under_production_normalization": true,
+      "predicate_toolQuestionEcho": true
+    },
+    "expected_commit_subject_record": {
+      "remote_episode_uuid": "0de3cdc8-07ff-46a5-a0bc-ed7f9bc5e47b",
+      "source_ref": "opencode:ses_e50efdb27ffep7alMZaj9wkl3x:tool:call_1e0445fde85fa221",
+      "evidence_class": "tool-reported",
+      "single_fact_persisted": true,
+      "fact_contains_full_s10_question_under_production_normalization": false,
+      "predicate_toolQuestionEcho": false
+    },
+    "verdict": "CONFIRMED_TOOL_ORIGIN_FULL_QUESTION_ECHO (no EVIDENCE_CONFLICT): the suspect record is a tool-origin persisted record whose fact embeds the full frozen S10 question; the independently sourced expected commit-subject record is a genuine non-echo tool observation. Raw private text and original records remain on host only."
+  },
+  "adversarial_proofs": {
+    "echo_excluded_at_both_stages_and_not_reinstated_by_reranker": {
+      "test": "tool-origin diagnostic question echo is excluded from both automatic selector stages",
+      "result": "PASS (1/1, raw exit 0); includes ranker variant where the contaminant receives the top semantic score and is still excluded"
+    },
+    "genuine_tool_reported_subject_remains_eligible": {
+      "test": "tool-origin diagnostic question echo is excluded from both automatic selector stages",
+      "result": "PASS: the genuine tool-sourced commit subject is selected in both input orderings"
+    },
+    "candidate_input_order_does_not_reverse": {
+      "test": "tool-origin diagnostic question echo is excluded from both automatic selector stages",
+      "result": "PASS: [contaminant, correct] and [correct, contaminant] both select the genuine source"
+    },
+    "mere_topical_similarity_is_not_a_full_echo": {
+      "test": "tool question-echo rule is provenance-bound, non-ID-specific and conservative",
+      "result": "PASS: a fact topically about the same pipeline without the full normalized question is NOT an echo and remains eligible"
+    },
+    "short_query_not_a_full_echo": {
+      "test": "tool question-echo rule is provenance-bound, non-ID-specific and conservative",
+      "result": "PASS: 'hi'-length prompt yields predicate false (handled by native prompt admission)"
+    },
+    "message_user_observations_not_indiscriminately_rejected": {
+      "test": "tool question-echo rule is provenance-bound, non-ID-specific and conservative",
+      "result": "PASS: the same fact text under an opencode:session:message: anchor yields predicate false"
+    },
+    "staged_end_to_end_fake_transport": {
+      "test": "live-verified curated diagnostic question echo cannot displace a genuine tool-sourced commit subject",
+      "scenario": "Memory.search over a fake transport with two remotely verified curated TOOL records (one legitimate commit subject, one exact question echo) and remote get_episodes proof for both",
+      "assertions": "exactly one output fact from the legitimate source; no sourceContext/remoteEpisodeUuid in output; read-only Graphiti operation sequence [search_memory_facts, get_episodes]",
+      "result": "PASS (1/1, raw exit 0)"
+    },
+    "prior_regressions_still_pass": {
+      "codex_p1_early_rejection": "PASS (1/1, exit 0)",
+      "codex_p2_slow_optional_proof": "PASS (1/1, exit 0)",
+      "codex_p2_no_rpc_empty_inventory": "PASS (1/1, exit 0)",
+      "codex_p2_reranker_24_plus_12_once": "PASS (1/1, exit 0)",
+      "slow_search_fast_proof_recovery": "PASS (1/1, exit 0)",
+      "shared_client_fifo": "PASS (1/1, exit 0)",
+      "failed_call_releases_queue": "PASS (1/1, exit 0)",
+      "fail_closed_get_episodes": "PASS (1/1, exit 0)",
+      "position_19_survives_24_bound": "PASS (1/1, exit 0)",
+      "semantic_choice_admission": "PASS (1/1, exit 0)",
+      "named_issue_numeric_topic_fences": "PASS (1/1, exit 0)",
+      "out_of_bound_remote_result": "PASS (1/1, exit 0)",
+      "wrong_group_rejection": "PASS (1/1, exit 0)",
+      "secret_and_private_fences": "PASS (2/2, exit 0)",
+      "journal_501_plus_rows": "PASS (1/1, exit 0)"
+    }
+  }
+}

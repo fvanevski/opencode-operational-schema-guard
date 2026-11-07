@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "campaign": "ISSUE81_QUERY_ECHO_DRIFT_V1",
+  "repository": "fvanevski/opencode-operational-schema-guard",
+  "implementation_branch": "issue/81-source-recall-correction",
+  "exact_source": {
+    "head": "a78ebb69926e9e4bc2e7d9c036d65501c911294e",
+    "tree": "6f212db7bce72f8f92e7429edc65d33e41433e6f",
+    "remote_ref_authenticated": "origin/issue/81-source-recall-correction == a78ebb69926e9e4bc2e7d9c036d65501c911294e (fetched before worktree creation)",
+    "remote_main": "9a27b73de882c0af6fec4d86de81945338611479 (matches MAIN_BASE)",
+    "pre_fix_head": "d0cb07562bfdd37021de653bcbe948e993e31883",
+    "pr_89": { "state": "OPEN", "is_draft": true, "head_oid": "a78ebb69926e9e4bc2e7d9c036d65501c911294e", "base": "main" }
+  },
+  "diff_scope_pre_fix_to_head": {
+    "from": "d0cb07562bfdd37021de653bcbe948e993e31883",
+    "to": "a78ebb69926e9e4bc2e7d9c036d65501c911294e",
+    "files": [
+      "docs/issue-75/v2-candidate/relevance.mjs",
+      "docs/issue-75/v2-candidate/relevance.test.mjs",
+      "docs/issue-75/v2-candidate/memory-core.test.mjs",
+      "docs/issue-78/v2-benchmark/ISSUE81_QUERY_ECHO_DRIFT_HANDOFF.md"
+    ],
+    "stat": "4 files changed, 172 insertions(+), 2 deletions(-)",
+    "protected_control_plane_edits": 0,
+    "blobs_at_head": {
+      "docs/issue-75/v2-candidate/relevance.mjs": "8478c0432c4d5a07662efaabbb70a38e0dd87e0f",
+      "docs/issue-75/v2-candidate/relevance.test.mjs": "62380424d470844c99bc972cfdf2fcce39e2f020",
+      "docs/issue-75/v2-candidate/memory-core.test.mjs": "fd377018df132e95f7a0ee2535eabf2a6c6ff3b5",
+      "docs/issue-78/v2-benchmark/ISSUE81_QUERY_ECHO_DRIFT_HANDOFF.md": "b268d49fc6e00f57423b9f6cc5fd6a02ab9531a1",
+      "docs/issue-75/v2-candidate/memory-core.mjs": "61612951b5ecdcf3bcd93cbc800267aa8636e493 (unchanged in this diff)"
+    },
+    "commits": [
+      "29eb3aa fix(graphiti): prevent tool-origin question echoes from displacing sourced commit subjects",
+      "e4d2e82 test(graphiti): prove question-echo exclusion in real Memory.search with live-verified tool records",
+      "a78ebb6 docs(graphiti): stage full source-echo corpus drift qualification handoff (#81)"
+    ]
+  },
+  "syntax_checks": {
+    "node_version": "v26.13.0",
+    "files": [
+      "docs/issue-75/v2-candidate/relevance.mjs",
+      "docs/issue-75/v2-candidate/relevance.test.mjs",
+      "docs/issue-75/v2-candidate/memory-core.test.mjs"
+    ],
+    "node_check": "ALL PASS (SYNTAX_OK)"
+  },
+  "focused_suite": {
+    "command": "node --test docs/issue-75/v2-candidate/memory-core.test.mjs docs/issue-75/v2-candidate/relevance.test.mjs docs/issue-75/v2-candidate/relevance-priority-regression.test.mjs docs/issue-75/v2-candidate/relevance-observation-replay.test.mjs docs/issue-75/v2-candidate/plugin-behavior.test.mjs docs/issue-78/v2-curator/curated-recall-candidates.test.mjs docs/issue-78/v2-curator/production-cutover.test.mjs docs/issue-78/v2-benchmark/issue81-retrieval-feasibility.test.mjs docs/issue-78/v2-benchmark/issue81-admission-audit.test.mjs",
+    "tests": 81,
+    "pass": 81,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "todo": 0,
+    "duration_ms": 844.330241,
+    "raw_producer_exit": 0,
+    "exit_capture": "standalone invocation, output to file, producer exit captured immediately (no tee/grep/RTK masking)",
+    "delta_vs_pre_fix_suite": "81 = 78 (pre-fix) + 3 new question-echo tests (2 in relevance.test.mjs, 1 in memory-core.test.mjs)"
+  },
+  "notes": "Source-specific tests reside under docs/ and are not part of repository-root npm test; the full directly implicated suite was run explicitly. No failing assertion was altered to go green. Central obtains trusted Actions Verify at the exact SHA separately."
+}
