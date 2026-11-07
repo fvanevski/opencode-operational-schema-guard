@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "campaign": "ISSUE81_CODEX_REVIEW_REMEDIATION_V1",
+  "repository": "fvanevski/opencode-operational-schema-guard",
+  "implementation_branch": "issue/81-source-recall-correction",
+  "exact_source": {
+    "head": "d0cb07562bfdd37021de653bcbe948e993e31883",
+    "tree": "eac99ee9bbf06ff0f0f535b243560a0d5138fe89",
+    "remote_ref_authenticated": "origin/issue/81-source-recall-correction == d0cb07562bfdd37021de653bcbe948e993e31883 (fetched before worktree creation)",
+    "remote_main": "9a27b73de882c0af6fec4d86de81945338611479 (matches MAIN_BASE)",
+    "pr_89": { "state": "OPEN", "is_draft": true, "head_oid": "d0cb07562bfdd37021de653bcbe948e993e31883", "base": "main" }
+  },
+  "diff_scope_reviewed_defect_head": {
+    "from": "7a82f0099bd5c281a12d2377326e0671aa8d5b33",
+    "to": "d0cb07562bfdd37021de653bcbe948e993e31883",
+    "files": [
+      "docs/issue-75/v2-candidate/memory-core.mjs",
+      "docs/issue-75/v2-candidate/memory-core.test.mjs",
+      "docs/issue-75/v2-candidate/relevance.mjs",
+      "docs/issue-78/v2-benchmark/ISSUE81_CODEX_REVIEW_REMEDIATION_HANDOFF.md"
+    ],
+    "stat": "4 files changed, 350 insertions(+), 41 deletions(-)",
+    "protected_control_plane_edits": 0,
+    "blobs": {
+      "docs/issue-75/v2-candidate/memory-core.mjs": "61612951b5ecdcf3bcd93cbc800267aa8636e493",
+      "docs/issue-75/v2-candidate/memory-core.test.mjs": "4824dbcd9efb36f9f4eccdde2be68a27e0d6c212",
+      "docs/issue-75/v2-candidate/relevance.mjs": "facdd687d4bdc9287f6590e73395904d24d84471",
+      "docs/issue-78/v2-benchmark/ISSUE81_CODEX_REVIEW_REMEDIATION_HANDOFF.md": "ec7d149ca30e061eb385bed75d9eabf39e477062"
+    }
+  },
+  "syntax_checks": {
+    "node_version": "v26.13.0",
+    "files": [
+      "docs/issue-75/v2-candidate/memory-core.mjs",
+      "docs/issue-75/v2-candidate/relevance.mjs",
+      "docs/issue-75/v2-candidate/memory-core.test.mjs"
+    ],
+    "node_check": "ALL PASS (SYNTAX_OK)"
+  },
+  "focused_suite": {
+    "command": "node --test docs/issue-75/v2-candidate/memory-core.test.mjs docs/issue-75/v2-candidate/relevance.test.mjs docs/issue-75/v2-candidate/relevance-priority-regression.test.mjs docs/issue-75/v2-candidate/relevance-observation-replay.test.mjs docs/issue-75/v2-candidate/plugin-behavior.test.mjs docs/issue-78/v2-curator/curated-recall-candidates.test.mjs docs/issue-78/v2-curator/production-cutover.test.mjs docs/issue-78/v2-benchmark/issue81-retrieval-feasibility.test.mjs docs/issue-78/v2-benchmark/issue81-admission-audit.test.mjs",
+    "tests": 78,
+    "pass": 78,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "todo": 0,
+    "duration_ms": 862.502711,
+    "raw_producer_exit": 0,
+    "exit_capture": "standalone invocation, output to file, producer exit captured immediately (no tee/grep/RTK masking)"
+  },
+  "notes": "Source-specific tests reside under docs/ and are not part of repository-root npm test; the full directly implicated suite was run explicitly. No failing assertion was altered to go green."
+}

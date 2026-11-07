@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "campaign": "ISSUE81_CODEX_REVIEW_REMEDIATION_V1",
+  "encountered": true,
+  "events": [
+    {
+      "id": 1,
+      "classification": "shell_shape",
+      "attribution": "agent command",
+      "event": "zsh glob 'no matches found' for /tmp/opencode/issue81-codex/proof-*.tap in the adversarial-proof loop: the glob expanded before the first iteration created any .tap file, aborting the summary pipeline (test invocations themselves exited 0)",
+      "outcome": "recovered by rewriting the loop with indexed file names and per-file summary reads; all 7 proof patterns then reported 1/1 PASS exit 0",
+      "masked_producer_failure": false
+    },
+    {
+      "id": 2,
+      "classification": "shell_shape",
+      "attribution": "agent command",
+      "event": "zsh '=word' expansion: 'echo ===' inside a compound command produced 'zsh:1: == not found' (twice); cosmetic separator, no producer affected",
+      "outcome": "recovered by removing the === separators; no data impact",
+      "masked_producer_failure": false
+    },
+    {
+      "id": 3,
+      "classification": "harness_annotation",
+      "attribution": "harness",
+      "event": "display of the memory-core.test.mjs diff was truncated by the harness ('... (27 additions truncated)'); transparent truncation, not a guard rejection",
+      "outcome": "full content recovered by tail reads and direct file read; no data impact",
+      "masked_producer_failure": false
+    }
+  ],
+  "guard_rejections": 0,
+  "producer_exits_masked": 0,
+  "commands_match_handoff": true,
+  "match_notes": "The handoff's prescribed focused-suite command shape (node --test over the 9 listed files) was executed with the exact file set and order; remote fetch preceded worktree creation; no rtk prefix was added to literal commands; standalone producer exit capture was used for the focused suite and the replay (no tee/grep/RTK masking)."
+}

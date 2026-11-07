@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "campaign": "ISSUE81_CODEX_REVIEW_REMEDIATION_V1",
+  "codex_review": {
+    "source": "chatgpt-codex-connector[bot] PR #89 review at REVIEWED_DEFECT_HEAD 7a82f0099bd5c281a12d2377326e0671aa8d5b33",
+    "comment_ids": [4498775396, 4498775401, 4498775406],
+    "all_three_adjudicated": "blocking"
+  },
+  "findings": [
+    {
+      "id": "P1",
+      "comment_id": 4498775396,
+      "title": "Handle index retrieval rejection before awaiting remote calls",
+      "defect": "curated retriever rejecting while the Graphiti search is pending left indexedWork without a rejection handler until both remote operations finished; a corrupt review/index JSON or filesystem read failure caused an unhandled rejection terminating the strict-Node host process",
+      "source_correction": "docs/issue-75/v2-candidate/memory-core.mjs: indexedWork attaches fulfillment AND rejection handlers at creation (.then(rows => ..., () => [])), degrading to [] on any failure; the deferred await cannot observe an unhandled rejection",
+      "regression_proof": {
+        "test": "early curated retriever rejection is safely handled during a slower Graphiti search",
+        "file": "docs/issue-75/v2-candidate/memory-core.test.mjs",
+        "scenario": "retriever rejects while a 65 ms mocked Graphiti search is pending; strict unhandled-rejection policy would fail the process before search settles if the handler were deferred",
+        "result": "PASS (1/1, raw exit 0)"
+      },
+      "disposition": "FIXED_AND_REGRESSED"
+    },
+    {
+      "id": "P2-slow-proof",
+      "comment_id": 4498775401,
+      "title": "Keep optional remote proof from blocking legacy recall",
+      "defect": "every successful fact search waited for get_episodes (1200 ms transport timeout) before resolving even already-sourced legacy facts, including with an empty local inventory; a slow optional read can exceed the native 300 ms hook allowance and suppress legacy recall",
+      "source_correction": "docs/issue-75/v2-candidate/memory-core.mjs: legacy sourced candidates materialize first; optional enrichment bounded to a COMBINED 70 ms window (INDEX_ENRICHMENT_MAX_WAIT_MS) starting after the legacy path is ready via optionalWithin(); get_episodes fires only when a pre-proof shortlist has qualifying index candidates AND budget remains; its rejection handler is attached immediately; a slow initial Graphiti query does not ban a fast positive indexed proof",
+      "regression_proof": {
+        "tests": [
+          { "test": "slow optional proof cannot delay an otherwise sourced legacy result", "scenario": "sourced legacy fact + 410 ms optional proof rejection: same source result returns in <270 ms and no unproven index record injects", "result": "PASS (1/1, raw exit 0)" },
+          { "test": "optional remote proof is skipped when curated source inventory has no qualifying facts", "scenario": "empty curated inventory: NO get_episodes RPC at all; valid legacy result preserved (call log asserts [search_memory_facts] only)", "result": "PASS (1/1, raw exit 0)" },
+          { "test": "a slow initial Graphiti search does not discard fast positive indexed proof", "scenario": "285 ms cold search (>245 ms) followed by fast positive episode proof: index fact still recovers; optional budget measured after legacy source resolution", "result": "PASS (1/1, raw exit 0)" },
+          { "test": "source-correct fact at Graphiti result position 19 survives the 24-candidate bound when index route is also enabled", "scenario": "updated to assert get_episodes is NOT called when the positive curation inventory is empty", "result": "PASS (1/1, raw exit 0)" }
+        ],
+        "file": "docs/issue-75/v2-candidate/memory-core.test.mjs"
+      },
+      "disposition": "FIXED_AND_REGRESSED"
+    },
+    {
+      "id": "P2-reranker-truncation",
+      "comment_id": 4498775406,
+      "title": "Qualify reranked candidates before truncating the merged list",
+      "defect": "with a reranker configured, the alternating merge discarded unsorted Graphiti positions 13-24 whenever >=12 curated candidates qualified, before relevance scoring; a semantically correct fact at remote position 19 disappeared from ranker input and was replaced by a weaker indexed observation",
+      "source_correction": "docs/issue-75/v2-candidate/relevance.mjs + memory-core.mjs: new rankQualifiedForMerge() scores ALL 24 Graphiti candidates ONCE before the 24-slot shared merge; per-candidate scores (scoreByItem) and comparison background are bound to candidate objects and reused by the final one-fact selector via cachedScores/cachedBackground — no second reranker HTTP call; without a reranker the existing bounded lexical path is unchanged",
+      "regression_proof": {
+        "tests": [
+          { "test": "reranker scores all 24 Graphiti facts before merging 12 indexed facts, only once", "scenario": "24 Graphiti facts (correct fact at index 19) + 12 qualified curated rows: ranker input length asserted 24, correct fact selected, ranker call counter asserted == 1", "result": "PASS (1/1, raw exit 0)" },
+          { "test": "independent reranker retains bounded semantic-choice admission when no index is installed", "scenario": "reranker semantic-choice admission path preserved without an index", "result": "PASS (1/1, raw exit 0)" }
+        ],
+        "file": "docs/issue-75/v2-candidate/memory-core.test.mjs"
+      },
+      "disposition": "FIXED_AND_REGRESSED"
+    }
+  ],
+  "invariant_proofs": {
+    "malformed_wrong_group_truncated_episode_list": [
+      { "pattern": "fails closed", "tests": 2, "pass": 2, "exit": 0 },
+      { "pattern": "wrong", "tests": 3, "pass": 3, "exit": 0 },
+      { "pattern": "truncat", "tests": 2, "pass": 2, "exit": 0 }
+    ],
+    "secret_and_named_issue_numeric_fences": [
+      { "pattern": "secret", "tests": 2, "pass": 2, "exit": 0 },
+      { "pattern": "private", "tests": 2, "pass": 2, "exit": 0 }
+    ],
+    "shared_client_fifo_and_error_release": [
+      { "test": "shared Graphiti MCP client serializes overlapping native searches, not only calls within each search", "result": "PASS (1/1, raw exit 0); updated to carry a qualifying index row so the episode-proof call path is exercised under serialization" },
+      { "test": "failed shared Graphiti MCP call releases the queue without retry or unsafe fallback", "result": "PASS (1/1, raw exit 0)" }
+    ],
+    "absent_unchecked_source_authority": "no new candidate path injects without positive remote UUID/group proof; scoped index rows require group match, valid remoteEpisodeUuid, permitted evidence class, opencode: source prefix and safeText idempotence before shortlisting, and remote-episode-set membership before injection"
+  },
+  "ranker_enabled_fake_transport": {
+    "verdict": "PASS",
+    "script": "deterministic fake transport (private, /tmp/opencode/issue81-codex/ranker-fake-transport.mjs)",
+    "assertions": {
+      "ranker_input_length": 24,
+      "ranker_calls": 1,
+      "position_19_semantic_choice_selected": true,
+      "source_identity_preserved": "opencode:ses-graph:message:msg-000000000218",
+      "curated_competitors": 14,
+      "exact_group_scoping": "alpha",
+      "fresh_proof_call_order": ["search_memory_facts", "get_episodes"],
+      "score_cache_reused": true,
+      "no_private_fields_exposed": true
+    },
+    "live_reranker_required": false,
+    "effective_host_ranker": "null (rerankEndpoint unset in /home/filip/.config/opencode/opencode.json plugin options; no scope drift)"
+  }
+}

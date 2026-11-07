@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "campaign": "ISSUE81_CODEX_REVIEW_REMEDIATION_V1",
+  "effective_config_authentication": {
+    "source": "/home/filip/.config/opencode/opencode.json plugin options for file:///home/filip/.config/opencode/plugins/ghdev-graphiti-memory",
+    "group": "development-knowledge",
+    "workspace": "/workspace/mcp_servers/gh_mcp",
+    "project": "gh_mcp",
+    "endpoint": "http://127.0.0.1:8766/mcp",
+    "state_dir": "/home/filip/.local/state/ghdev-graphiti",
+    "enabled": true,
+    "capture": true,
+    "rerank_endpoint": "UNSET",
+    "effective_ranker": "null",
+    "ranker_matches_replay": true,
+    "note": "no rerankEndpoint configured on the effective host, so the ranker=null replay matches the effective host setting; no live reranker/LLM benchmark required and none observed enabled (no scope drift)"
+  },
+  "remote_authority": {
+    "precheck_call": "fresh, read-only, serial get_episodes (group_ids=[development-knowledge], max_episodes=1000) executed immediately before the replay",
+    "get_episodes_ms": 69,
+    "episode_count": 256,
+    "group_pure": true,
+    "truncated": false,
+    "prior_snapshot_count": 227,
+    "drift": 29,
+    "drift_note": "corpus grew 227 -> 256 episodes since the 13/16 snapshot (5d6b285); stored receipt alone not relied upon — fresh read-only readback performed; the +29 cohort includes an S10 diagnostic-probe artifact curated row that drives the S10 measured regression",
+    "curation_index_rows": 256,
+    "curation_index_group": "development-knowledge (all rows single-group)",
+    "proof_policy": "complete, group-pure, untruncated positive remote episode membership required before any curated candidate is injectible; unavailable/truncated/wrong-group proof authorizes no indexed injection"
+  },
+  "latency": {
+    "quantile_method": "linear interpolation (R-7/numpy default) on ms, rounded to int",
+    "graphiti_d24_search": { "n": 18, "p50_ms": 155, "p95_ms": 163, "max_ms": 165 },
+    "remote_proof": { "n": 17, "p50_ms": 26, "p95_ms": 30, "max_ms": 37 },
+    "curated_index_read": { "n": 20, "p50_ms": 37, "p95_ms": 59, "max_ms": 61 },
+    "e2e_memory_search": { "n": 20, "p50_ms": 192, "p95_ms": 209, "max_ms": 210 },
+    "grace_70ms": {
+      "index_read_timeouts": 0,
+      "proof_timeouts": 5,
+      "cases_total": 20,
+      "method": "proxy from raw component timings vs the combined 70 ms window (index read gets ~70 ms; proof gets the remainder)"
+    },
+    "note": "Source/pre-fetch timings are NOT native hook start/end p95. The n values reflect that N03/N04 are rejected prompt-side (no remote search call) and proof fires only when a qualifying index candidate exists."
+  },
+  "hook_p95": {
+    "value": "UNVERIFIED",
+    "reason": "instrumenting the actual native hook requires a production plugin install; the effective host supports it only via the installed plugin, which this campaign does not mutate. The 300 ms native allowance remains binding.",
+    "binding_allowance_ms": 300,
+    "offline_e2e_p95_ms": 209
+  },
+  "human_precision": {
+    "status": "UNVERIFIED",
+    "operator_packet": "126-item durable grounded-precision worksheet (schema issue81-durable-grounded-precision-worksheet.v1) revalidated read-only",
+    "population": { "snapshot_records": 126, "fact_denominator": 126 },
+    "threshold": 0.9,
+    "adjudication_status": "PENDING_OPERATOR_ADJUDICATION",
+    "as_of_snapshot_sha256": "c8d5053c16ac7a07447c71d0bb5e7c4ce665940cdba3263119bdb25d6524ef37",
+    "snapshot_sha256_recomputed": "c8d5053c16ac7a07447c71d0bb5e7c4ce665940cdba3263119bdb25d6524ef37",
+    "snapshot_hash_match": true,
+    "ai_adjudication": "none (operator-owned; no worksheet write)"
+  }
+}
