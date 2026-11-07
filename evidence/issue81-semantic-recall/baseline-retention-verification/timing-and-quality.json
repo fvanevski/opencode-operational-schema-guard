@@ -1,0 +1,33 @@
+{
+  "schema": "issue81-baseline-retention-timing.v1",
+  "shadow_memory_search_latency": {
+    "strict": {
+      "n": 20,
+      "p50_ms": 266.066,
+      "p95_ms": 287.108,
+      "max_ms": 287.977
+    },
+    "semantic": {
+      "n": 20,
+      "p50_ms": 216.453,
+      "p95_ms": 242.536,
+      "max_ms": 887.137,
+      "max_outlier": "S12 887.137ms (cold curated-index scan); all other semantic runs <= 242.536ms"
+    },
+    "note": "context_wait_ms=NOT_MEASURED in shadow replays; native hook p95 remains UNVERIFIED"
+  },
+  "index_timings": {
+    "curated_index_scan": "included in semantic elapsed_ms_shadow; focused-test index-growth probes 118.04ms / 134.09ms (299-source blackout and 500-review queries)",
+    "censoring_check": "no 288-inventory blackout; 311 persisted episodes serve all 16 expected sources"
+  },
+  "context_budgets": {
+    "max_chars_default": 1400,
+    "max_selected_default": 5,
+    "char_budget_test": "PASS (focused test: serialized context respects existing char budget)",
+    "dedup": "source\\0fact key deduplication in 24-slot merge; duplicate_context_insertion target 0 (prior native evidence: no duplicate block in a single request)"
+  },
+  "native_gates": {
+    "native_context_hook_p95": "UNVERIFIED (NOT_MEASURED in shadow replays; authorized merged-main fresh-process stage is the acceptance authority)",
+    "assembled_model_request_acceptance": "UNVERIFIED (NOT_OBSERVED; shadow replay is fingerprint-only, not native acceptance)"
+  }
+}

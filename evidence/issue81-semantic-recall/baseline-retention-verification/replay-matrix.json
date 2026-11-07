@@ -1,0 +1,870 @@
+{
+  "schema": "issue81-baseline-retention-replay-matrix.v1",
+  "evidence_class": "FINGERPRINT_ONLY_SHADOW_REPLAY_NOT_NATIVE_ACCEPTANCE",
+  "frozen_roster_sha256": "47e141bdc81f1f2cdc2e98c7697162dbbf3250a5eb209a56361b358bc2441652",
+  "group": "development-knowledge",
+  "workspace": "/workspace/mcp_servers/gh_mcp",
+  "project": "gh_mcp",
+  "case_count": 20,
+  "positive_count": 16,
+  "negative_count": 4,
+  "paired_comparison": {
+    "strict": {
+      "positive_source_exact_count": 12,
+      "positive_count": 16,
+      "positive_source_exact_rate": 0.75,
+      "positive_expected_at_first_count": 12,
+      "negative_nonempty_count": 1,
+      "negative_count": 4,
+      "negative_presented_observation_count": 1,
+      "total_presented_observation_count": 17,
+      "shadow_latency_n": 20,
+      "shadow_latency_p50_ms": 266.066,
+      "shadow_latency_p95_ms": 287.108,
+      "shadow_latency_max_ms": 287.977
+    },
+    "semantic": {
+      "positive_source_exact_count": 13,
+      "positive_count": 16,
+      "positive_source_exact_rate": 0.8125,
+      "positive_expected_at_first_count": 12,
+      "negative_nonempty_count": 2,
+      "negative_count": 4,
+      "negative_presented_observation_count": 7,
+      "total_presented_observation_count": 64,
+      "shadow_latency_n": 20,
+      "shadow_latency_p50_ms": 216.453,
+      "shadow_latency_p95_ms": 242.536,
+      "shadow_latency_max_ms": 887.137
+    }
+  },
+  "regressed_strict_source_cases": [],
+  "rows": [
+    {
+      "case_id": "S01",
+      "role": "positive",
+      "tags": [
+        "direct"
+      ],
+      "query_sha256": "6f5564559ef7437f4d433077ebe3645a8ea895693d8c3b6d8a1e180eafdfeaa3",
+      "expected_source_sha256": "7a5079b5cec0914e6a7e451191be78785895e4e11fc4e8946e29d35bd816ed3a",
+      "modes": {
+        "strict": {
+          "presented_count": 1,
+          "expected_source_in_context": true,
+          "expected_source_rank": 1,
+          "elapsed_ms_shadow": 262.007,
+          "distinct_source_count": 1,
+          "evidence_classes": [
+            "assistant-reported"
+          ],
+          "temporal_classes": [
+            "current state not independently verified"
+          ]
+        },
+        "semantic": {
+          "presented_count": 4,
+          "expected_source_in_context": true,
+          "expected_source_rank": 1,
+          "elapsed_ms_shadow": 215.016,
+          "distinct_source_count": 3,
+          "evidence_classes": [
+            "assistant-reported",
+            "assistant-reported",
+            "assistant-reported",
+            "assistant-reported"
+          ],
+          "temporal_classes": [
+            "current state not independently verified",
+            "current state not independently verified",
+            "current state not independently verified",
+            "current state not independently verified"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "S02",
+      "role": "positive",
+      "tags": [
+        "direct"
+      ],
+      "query_sha256": "b2ec8202e74eb6563022ecd7606e964dd793808ba12f082c47463d7dfec685b9",
+      "expected_source_sha256": "4225860cde83bbe35180db0a66adb31ad81bd0162a92e00aac53468e33253c7f",
+      "modes": {
+        "strict": {
+          "presented_count": 1,
+          "expected_source_in_context": true,
+          "expected_source_rank": 1,
+          "elapsed_ms_shadow": 254.556,
+          "distinct_source_count": 1,
+          "evidence_classes": [
+            "assistant-reported"
+          ],
+          "temporal_classes": [
+            "current state not independently verified"
+          ]
+        },
+        "semantic": {
+          "presented_count": 4,
+          "expected_source_in_context": true,
+          "expected_source_rank": 1,
+          "elapsed_ms_shadow": 215.244,
+          "distinct_source_count": 4,
+          "evidence_classes": [
+            "assistant-reported",
+            "assistant-reported",
+            "assistant-reported",
+            "assistant-reported"
+          ],
+          "temporal_classes": [
+            "current state not independently verified",
+            "current state not independently verified",
+            "current state not independently verified",
+            "current state not independently verified"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "S03",
+      "role": "positive",
+      "tags": [
+        "paraphrased"
+      ],
+      "query_sha256": "f5713d4aaddf4bbf873e32fa34406cd3fccef4185751b794317ab51ae3a49004",
+      "expected_source_sha256": "74e232f5c5239bd9e606f7e214ff5d4bc1111511c125d5299fc7bb91bd0af591",
+      "modes": {
+        "strict": {
+          "presented_count": 1,
+          "expected_source_in_context": false,
+          "expected_source_rank": null,
+          "elapsed_ms_shadow": 266.066,
+          "distinct_source_count": 1,
+          "evidence_classes": [
+            "assistant-reported"
+          ],
+          "temporal_classes": [
+            "current state not independently verified"
+          ]
+        },
+        "semantic": {
+          "presented_count": 4,
+          "expected_source_in_context": false,
+          "expected_source_rank": null,
+          "elapsed_ms_shadow": 211.014,
+          "distinct_source_count": 4,
+          "evidence_classes": [
+            "assistant-reported",
+            "assistant-reported",
+            "tool-reported",
+            "assistant-reported"
+          ],
+          "temporal_classes": [
+            "current state not independently verified",
+            "historical/superseded",
+            "current state not independently verified",
+            "current state not independently verified"
+          ]
+        }
+      },
+      "miss_stage_semantic": "RAW_POOL_ABSENT_DEPTH24 (expected source not in 24-slot remote search pool; search-recall gap)"
+    },
+    {
+      "case_id": "S04",
+      "role": "positive",
+      "tags": [
+        "implicit_relationship"
+      ],
+      "query_sha256": "edef5ef179d32d41536dbf37c0c950517bfefb26485d1b3171eebff44d207c3e",
+      "expected_source_sha256": "85397a269c2d3dde6e1b9b69602774d03f17684d8fb1925b72dc57831f08dc68",
+      "modes": {
+        "strict": {
+          "presented_count": 1,
+          "expected_source_in_context": true,
+          "expected_source_rank": 1,
+          "elapsed_ms_shadow": 266.177,
+          "distinct_source_count": 1,
+          "evidence_classes": [
+            "assistant-reported"
+          ],
+          "temporal_classes": [
+            "current state not independently verified"
+          ]
+        },
+        "semantic": {
+          "presented_count": 3,
+          "expected_source_in_context": true,
+          "expected_source_rank": 1,
+          "elapsed_ms_shadow": 214.085,
+          "distinct_source_count": 3,
+          "evidence_classes": [
+            "assistant-reported",
+            "assistant-reported",
+            "assistant-reported"
+          ],
+          "temporal_classes": [
+            "current state not independently verified",
+            "historical/superseded",
+            "historical/superseded"
+          ]
+        }
+      },
+      "regression_status": "RESOLVED"
+    },
+    {
+      "case_id": "S05",
+      "role": "positive",
+      "tags": [
+        "multi_event"
+      ],
+      "query_sha256": "cb8c0b4c3628dfbf25298abae39f83f470093e0d7f7e3a4a631799c9b257a1e4",
+      "expected_source_sha256": "46ebbc682f9cf65b8ac9e0c89cff9943c117a0d5d4e7f91c5b211c75044ac5bc",
+      "modes": {
+        "strict": {
+          "presented_count": 1,
+          "expected_source_in_context": false,
+          "expected_source_rank": null,
+          "elapsed_ms_shadow": 268.126,
+          "distinct_source_count": 1,
+          "evidence_classes": [
+            "assistant-reported"
+          ],
+          "temporal_classes": [
+            "historical/superseded"
+          ]
+        },
+        "semantic": {
+          "presented_count": 4,
+          "expected_source_in_context": false,
+          "expected_source_rank": null,
+          "elapsed_ms_shadow": 230.429,
+          "distinct_source_count": 2,
+          "evidence_classes": [
+            "assistant-reported",
+            "assistant-reported",
+            "assistant-reported",
+            "assistant-reported"
+          ],
+          "temporal_classes": [
+            "historical/superseded",
+            "current state not independently verified",
+            "current state not independently verified",
+            "current state not independently verified"
+          ]
+        }
+      },
+      "miss_stage_semantic": "RAW_POOL_ABSENT_DEPTH24 (expected source not in 24-slot remote search pool; multi-event named-entity gap)"
+    },
+    {
+      "case_id": "S06",
+      "role": "positive",
+      "tags": [
+        "historical_superseded"
+      ],
+      "query_sha256": "7e14fc4edade633393e9edc1b7a5040d98128b02aa760568c00bb9cd979c0f62",
+      "expected_source_sha256": "cf0a9e8e9f26407a855dfae1b35dc1ede38ea3c83e120e01f8a9c1d3f1004301",
+      "modes": {
+        "strict": {
+          "presented_count": 1,
+          "expected_source_in_context": true,
+          "expected_source_rank": 1,
+          "elapsed_ms_shadow": 287.108,
+          "distinct_source_count": 1,
+          "evidence_classes": [
+            "assistant-reported"
+          ],
+          "temporal_classes": [
+            "historical/superseded"
+          ]
+        },
+        "semantic": {
+          "presented_count": 3,
+          "expected_source_in_context": true,
+          "expected_source_rank": 1,
+          "elapsed_ms_shadow": 223.436,
+          "distinct_source_count": 2,
+          "evidence_classes": [
+            "assistant-reported",
+            "tool-reported",
+            "assistant-reported"
+          ],
+          "temporal_classes": [
+            "historical/superseded",
+            "current state not independently verified",
+            "current state not independently verified"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "S07",
+      "role": "positive",
+      "tags": [
+        "direct"
+      ],
+      "query_sha256": "59a5d42a7c98aa45942deee6053882acb6d457a9832fa81665d92d9349065b40",
+      "expected_source_sha256": "8e26bd92276141605a5dc3f9d205710f2f07e211c695a061344a603472c26379",
+      "modes": {
+        "strict": {
+          "presented_count": 1,
+          "expected_source_in_context": true,
+          "expected_source_rank": 1,
+          "elapsed_ms_shadow": 267.887,
+          "distinct_source_count": 1,
+          "evidence_classes": [
+            "user-stated"
+          ],
+          "temporal_classes": [
+            "current state not independently verified"
+          ]
+        },
+        "semantic": {
+          "presented_count": 4,
+          "expected_source_in_context": true,
+          "expected_source_rank": 1,
+          "elapsed_ms_shadow": 213.171,
+          "distinct_source_count": 4,
+          "evidence_classes": [
+            "user-stated",
+            "assistant-reported",
+            "tool-reported",
+            "assistant-reported"
+          ],
+          "temporal_classes": [
+            "current state not independently verified",
+            "current state not independently verified",
+            "current state not independently verified",
+            "current state not independently verified"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "S08",
+      "role": "positive",
+      "tags": [
+        "paraphrased"
+      ],
+      "query_sha256": "792c293ef02a7b46077421fdf28657fe099be58d124040aed2a8e4bbe0e25f3a",
+      "expected_source_sha256": "4ccddc4eb3a7138daebb1a359bd4fcd4d72e061f737f803727d2a4aa089819b2",
+      "modes": {
+        "strict": {
+          "presented_count": 1,
+          "expected_source_in_context": true,
+          "expected_source_rank": 1,
+          "elapsed_ms_shadow": 256.14,
+          "distinct_source_count": 1,
+          "evidence_classes": [
+            "assistant-reported"
+          ],
+          "temporal_classes": [
+            "current state not independently verified"
+          ]
+        },
+        "semantic": {
+          "presented_count": 4,
+          "expected_source_in_context": true,
+          "expected_source_rank": 1,
+          "elapsed_ms_shadow": 210.176,
+          "distinct_source_count": 4,
+          "evidence_classes": [
+            "assistant-reported",
+            "assistant-reported",
+            "assistant-reported",
+            "assistant-reported"
+          ],
+          "temporal_classes": [
+            "current state not independently verified",
+            "current state not independently verified",
+            "current state not independently verified",
+            "current state not independently verified"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "S09",
+      "role": "positive",
+      "tags": [
+        "direct"
+      ],
+      "query_sha256": "2cbbdda9b9ef996c74552d85861ab48336c356ef31317b3b5529f98522a0a28b",
+      "expected_source_sha256": "c23ab7927ddbd8416e620da0a3a3f48691d2e4f3c871749c7ba22c7379b66540",
+      "modes": {
+        "strict": {
+          "presented_count": 1,
+          "expected_source_in_context": true,
+          "expected_source_rank": 1,
+          "elapsed_ms_shadow": 256.353,
+          "distinct_source_count": 1,
+          "evidence_classes": [
+            "assistant-reported"
+          ],
+          "temporal_classes": [
+            "historical/superseded"
+          ]
+        },
+        "semantic": {
+          "presented_count": 4,
+          "expected_source_in_context": true,
+          "expected_source_rank": 1,
+          "elapsed_ms_shadow": 212.505,
+          "distinct_source_count": 3,
+          "evidence_classes": [
+            "assistant-reported",
+            "tool-reported",
+            "tool-reported",
+            "assistant-reported"
+          ],
+          "temporal_classes": [
+            "historical/superseded",
+            "current state not independently verified",
+            "current state not independently verified",
+            "current state not independently verified"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "S10",
+      "role": "positive",
+      "tags": [
+        "direct"
+      ],
+      "query_sha256": "8be465fd892a80b41554dfb8d02f56b9063546ef93aeaa3ee1db1aca1a8db526",
+      "expected_source_sha256": "67c8d757f569f20a570f79ebac94f5c3fd75956ed451954f53e5aae8722ca4a9",
+      "modes": {
+        "strict": {
+          "presented_count": 1,
+          "expected_source_in_context": false,
+          "expected_source_rank": null,
+          "elapsed_ms_shadow": 268.654,
+          "distinct_source_count": 1,
+          "evidence_classes": [
+            "tool-reported"
+          ],
+          "temporal_classes": [
+            "current state not independently verified"
+          ]
+        },
+        "semantic": {
+          "presented_count": 3,
+          "expected_source_in_context": true,
+          "expected_source_rank": 3,
+          "elapsed_ms_shadow": 221.624,
+          "distinct_source_count": 3,
+          "evidence_classes": [
+            "tool-reported",
+            "tool-reported",
+            "tool-reported"
+          ],
+          "temporal_classes": [
+            "current state not independently verified",
+            "current state not independently verified",
+            "current state not independently verified"
+          ]
+        }
+      },
+      "improvement_status": "RETAINED_SEMANTIC_ONLY"
+    },
+    {
+      "case_id": "S11",
+      "role": "positive",
+      "tags": [
+        "paraphrased"
+      ],
+      "query_sha256": "fb1770543b803ccbf1facc9ccfbda831a8a23439ef98004c11a186fcbe07b0fb",
+      "expected_source_sha256": "8420626f7f1d540f08a56290258e0ab08a202fc9065b4bb4eda5f6bb2119cb72",
+      "modes": {
+        "strict": {
+          "presented_count": 1,
+          "expected_source_in_context": true,
+          "expected_source_rank": 1,
+          "elapsed_ms_shadow": 282.663,
+          "distinct_source_count": 1,
+          "evidence_classes": [
+            "assistant-reported"
+          ],
+          "temporal_classes": [
+            "current state not independently verified"
+          ]
+        },
+        "semantic": {
+          "presented_count": 4,
+          "expected_source_in_context": true,
+          "expected_source_rank": 1,
+          "elapsed_ms_shadow": 218.538,
+          "distinct_source_count": 4,
+          "evidence_classes": [
+            "assistant-reported",
+            "assistant-reported",
+            "assistant-reported",
+            "assistant-reported"
+          ],
+          "temporal_classes": [
+            "current state not independently verified",
+            "historical/superseded",
+            "current state not independently verified",
+            "current state not independently verified"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "S12",
+      "role": "positive",
+      "tags": [
+        "implicit_relationship"
+      ],
+      "query_sha256": "f55b1d90f480c69750ca1dff4417b118d2e1ec61d5c72919e6c3d99d9a9037ab",
+      "expected_source_sha256": "499c1ac264029943062f9979875be01be355fe8b0d63facb9fb20644222d4d64",
+      "modes": {
+        "strict": {
+          "presented_count": 1,
+          "expected_source_in_context": true,
+          "expected_source_rank": 1,
+          "elapsed_ms_shadow": 287.977,
+          "distinct_source_count": 1,
+          "evidence_classes": [
+            "assistant-reported"
+          ],
+          "temporal_classes": [
+            "current state not independently verified"
+          ]
+        },
+        "semantic": {
+          "presented_count": 3,
+          "expected_source_in_context": true,
+          "expected_source_rank": 1,
+          "elapsed_ms_shadow": 887.137,
+          "distinct_source_count": 2,
+          "evidence_classes": [
+            "assistant-reported",
+            "assistant-reported",
+            "assistant-reported"
+          ],
+          "temporal_classes": [
+            "current state not independently verified",
+            "current state not independently verified",
+            "current state not independently verified"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "S13",
+      "role": "positive",
+      "tags": [
+        "multi_event"
+      ],
+      "query_sha256": "ccf9aacf8df56220c9d83dd6e79b003c5569fc95073bfe549a1aef9e04830be8",
+      "expected_source_sha256": "4c7ab17718a64eecbf15a845e1c5ba3b2ef5a071ae35e66149b3addd8536232e",
+      "modes": {
+        "strict": {
+          "presented_count": 1,
+          "expected_source_in_context": false,
+          "expected_source_rank": null,
+          "elapsed_ms_shadow": 258.079,
+          "distinct_source_count": 1,
+          "evidence_classes": [
+            "assistant-reported"
+          ],
+          "temporal_classes": [
+            "current state not independently verified"
+          ]
+        },
+        "semantic": {
+          "presented_count": 4,
+          "expected_source_in_context": false,
+          "expected_source_rank": null,
+          "elapsed_ms_shadow": 230.396,
+          "distinct_source_count": 4,
+          "evidence_classes": [
+            "assistant-reported",
+            "assistant-reported",
+            "assistant-reported",
+            "assistant-reported"
+          ],
+          "temporal_classes": [
+            "current state not independently verified",
+            "current state not independently verified",
+            "current state not independently verified",
+            "current state not independently verified"
+          ]
+        }
+      },
+      "miss_stage_semantic": "RAW_POOL_ABSENT_DEPTH24 (expected source not in 24-slot remote search pool; multi-event named-entity gap)"
+    },
+    {
+      "case_id": "S14",
+      "role": "positive",
+      "tags": [
+        "direct"
+      ],
+      "query_sha256": "f802235227139b18af49b636c8f045f40e53ca8ea911af9269dea80148693d4f",
+      "expected_source_sha256": "9c3ff5445694c1f8c1c9da0c337d8b55be862c1d8aa253b5a5262452f35b3c1b",
+      "modes": {
+        "strict": {
+          "presented_count": 1,
+          "expected_source_in_context": true,
+          "expected_source_rank": 1,
+          "elapsed_ms_shadow": 269.929,
+          "distinct_source_count": 1,
+          "evidence_classes": [
+            "user-stated"
+          ],
+          "temporal_classes": [
+            "current state not independently verified"
+          ]
+        },
+        "semantic": {
+          "presented_count": 3,
+          "expected_source_in_context": true,
+          "expected_source_rank": 1,
+          "elapsed_ms_shadow": 227.456,
+          "distinct_source_count": 2,
+          "evidence_classes": [
+            "user-stated",
+            "assistant-reported",
+            "assistant-reported"
+          ],
+          "temporal_classes": [
+            "current state not independently verified",
+            "current state not independently verified",
+            "current state not independently verified"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "S15",
+      "role": "positive",
+      "tags": [
+        "implicit_relationship"
+      ],
+      "query_sha256": "267e1e230e7399d75b4b86decadfbfd06e2fdff3871a6e8b02e833668c68787d",
+      "expected_source_sha256": "6b7229844ca6425bb177e9059285f500112d3f6f2de79b05908513b22a8e0a02",
+      "modes": {
+        "strict": {
+          "presented_count": 1,
+          "expected_source_in_context": true,
+          "expected_source_rank": 1,
+          "elapsed_ms_shadow": 279.508,
+          "distinct_source_count": 1,
+          "evidence_classes": [
+            "assistant-reported"
+          ],
+          "temporal_classes": [
+            "current state not independently verified"
+          ]
+        },
+        "semantic": {
+          "presented_count": 3,
+          "expected_source_in_context": true,
+          "expected_source_rank": 1,
+          "elapsed_ms_shadow": 242.536,
+          "distinct_source_count": 1,
+          "evidence_classes": [
+            "assistant-reported",
+            "assistant-reported",
+            "assistant-reported"
+          ],
+          "temporal_classes": [
+            "current state not independently verified",
+            "current state not independently verified",
+            "current state not independently verified"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "S16",
+      "role": "positive",
+      "tags": [
+        "paraphrased"
+      ],
+      "query_sha256": "9ac4aba351597830f7464db3fdd70369b4fb43401e0881013fb3de93ee6e4d74",
+      "expected_source_sha256": "70bc38e3e5a9acfa8a4d9d9fc263b0f1ffa0bdbfea2434b1f98ed484cc7f8499",
+      "modes": {
+        "strict": {
+          "presented_count": 1,
+          "expected_source_in_context": true,
+          "expected_source_rank": 1,
+          "elapsed_ms_shadow": 265.264,
+          "distinct_source_count": 1,
+          "evidence_classes": [
+            "assistant-reported"
+          ],
+          "temporal_classes": [
+            "current state not independently verified"
+          ]
+        },
+        "semantic": {
+          "presented_count": 3,
+          "expected_source_in_context": true,
+          "expected_source_rank": 1,
+          "elapsed_ms_shadow": 232.461,
+          "distinct_source_count": 3,
+          "evidence_classes": [
+            "assistant-reported",
+            "assistant-reported",
+            "assistant-reported"
+          ],
+          "temporal_classes": [
+            "current state not independently verified",
+            "current state not independently verified",
+            "current state not independently verified"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "N01",
+      "role": "negative",
+      "tags": [
+        "unrelated"
+      ],
+      "query_sha256": "18aadf2fc202e1430ef72a7813d0a37c8e9593d03073fe18f2f034dbd9280a1a",
+      "expected_source_sha256": null,
+      "modes": {
+        "strict": {
+          "presented_count": 0,
+          "expected_source_in_context": null,
+          "expected_source_rank": null,
+          "elapsed_ms_shadow": 214.169,
+          "distinct_source_count": 0,
+          "evidence_classes": [],
+          "temporal_classes": []
+        },
+        "semantic": {
+          "presented_count": 4,
+          "expected_source_in_context": null,
+          "expected_source_rank": null,
+          "elapsed_ms_shadow": 217.648,
+          "distinct_source_count": 4,
+          "evidence_classes": [
+            "tool-reported",
+            "assistant-reported",
+            "assistant-reported",
+            "assistant-reported"
+          ],
+          "temporal_classes": [
+            "current state not independently verified",
+            "current state not independently verified",
+            "historical/superseded",
+            "current state not independently verified"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "N02",
+      "role": "negative",
+      "tags": [
+        "wrong_group"
+      ],
+      "query_sha256": "821947953003583d6be52b40d39e13312165d8534aae88643f0a74e7a58a1d99",
+      "expected_source_sha256": null,
+      "modes": {
+        "strict": {
+          "presented_count": 1,
+          "expected_source_in_context": null,
+          "expected_source_rank": null,
+          "elapsed_ms_shadow": 274.012,
+          "distinct_source_count": 1,
+          "evidence_classes": [
+            "assistant-reported"
+          ],
+          "temporal_classes": [
+            "current state not independently verified"
+          ]
+        },
+        "semantic": {
+          "presented_count": 3,
+          "expected_source_in_context": null,
+          "expected_source_rank": null,
+          "elapsed_ms_shadow": 216.453,
+          "distinct_source_count": 3,
+          "evidence_classes": [
+            "assistant-reported",
+            "assistant-reported",
+            "assistant-reported"
+          ],
+          "temporal_classes": [
+            "current state not independently verified",
+            "current state not independently verified",
+            "current state not independently verified"
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "N03",
+      "role": "negative",
+      "tags": [
+        "private_marker"
+      ],
+      "query_sha256": "c7711227971fd41e039ff0c972f95b4abd50eaa236511673bf7d16c0196271ac",
+      "expected_source_sha256": null,
+      "modes": {
+        "strict": {
+          "presented_count": 0,
+          "expected_source_in_context": null,
+          "expected_source_rank": null,
+          "elapsed_ms_shadow": 1.61,
+          "distinct_source_count": 0,
+          "evidence_classes": [],
+          "temporal_classes": []
+        },
+        "semantic": {
+          "presented_count": 0,
+          "expected_source_in_context": null,
+          "expected_source_rank": null,
+          "elapsed_ms_shadow": 0.044,
+          "distinct_source_count": 0,
+          "evidence_classes": [],
+          "temporal_classes": []
+        }
+      }
+    },
+    {
+      "case_id": "N04",
+      "role": "negative",
+      "tags": [
+        "too_brief"
+      ],
+      "query_sha256": "8f434346648f6b96df89dda901c5176b10a6d83961dd3c1ac88b59b2dc327aa4",
+      "expected_source_sha256": null,
+      "modes": {
+        "strict": {
+          "presented_count": 0,
+          "expected_source_in_context": null,
+          "expected_source_rank": null,
+          "elapsed_ms_shadow": 0.565,
+          "distinct_source_count": 0,
+          "evidence_classes": [],
+          "temporal_classes": []
+        },
+        "semantic": {
+          "presented_count": 0,
+          "expected_source_in_context": null,
+          "expected_source_rank": null,
+          "elapsed_ms_shadow": 0.034,
+          "distinct_source_count": 0,
+          "evidence_classes": [],
+          "temporal_classes": []
+        }
+      }
+    }
+  ],
+  "restrictions": {
+    "human_precision": "UNVERIFIED_NOT_MEASURED",
+    "fact_usefulness": "UNVERIFIED_NOT_MEASURED",
+    "source_membership": "PROVEN_ONLY_BY_UPSTREAM_REPLAY_NOT_BY_THIS_SCORER",
+    "negative_privacy_or_group_authority": "REQUIRES_SEPARATE_SOURCE_PROOF",
+    "native_context_hook_p95": "NOT_MEASURED",
+    "native_assembled_model_request": "NOT_OBSERVED",
+    "answer_utility": "NOT_MEASURED"
+  }
+}

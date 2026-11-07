@@ -1,0 +1,79 @@
+{
+  "schema": "issue81-baseline-retention-exact-source.v1",
+  "campaign": "ISSUE81_PR90_BASELINE_RETENTION_VERIFICATION",
+  "repo": "fvanevski/opencode-operational-schema-guard",
+  "issue": 81,
+  "pr": 90,
+  "branch": "issue/81-semantic-recall",
+  "source_head": "6504f7ae7be9ed9256182d818d17ff7d4c6c5c73",
+  "source_tree": "d223202c8ef42438a76bf7fda4781a1f16f63c19",
+  "main_control": "6e5695da91974447c718e99757bc8a84d9de3e9d",
+  "authentication": {
+    "remote_branch_head_ls_remote": "6504f7ae7be9ed9256182d818d17ff7d4c6c5c73",
+    "remote_main_head_ls_remote": "6e5695da91974447c718e99757bc8a84d9de3e9d",
+    "pr90_state": "OPEN",
+    "pr90_is_draft": true,
+    "pr90_head_ref": "issue/81-semantic-recall",
+    "pr90_head_oid": "6504f7ae7be9ed9256182d818d17ff7d4c6c5c73",
+    "pr90_base_ref": "main",
+    "main_control_ancestor_of_source_head": true,
+    "worktree": "detached HEAD at source_head, tree matches source_tree, 0 modified paths",
+    "branch_commits_above_main_control": 11
+  },
+  "fix_commit": {
+    "sha": "6504f7ae7be9ed9256182d818d17ff7d4c6c5c73",
+    "subject": "fix(graphiti): retain sourced strict-control fact in semantic context (#81)",
+    "files": [
+      "docs/issue-75/v2-candidate/memory-core.mjs",
+      "docs/issue-75/v2-candidate/semantic-memory-integration.test.mjs",
+      "docs/issue-75/v2-candidate/semantic-recall.mjs",
+      "docs/issue-75/v2-candidate/semantic-recall.test.mjs"
+    ],
+    "insertions": 99,
+    "deletions": 5
+  },
+  "syntax_checks": {
+    "command": "node --check per changed module/test (7 files)",
+    "files_checked": 7,
+    "files_passed": 7,
+    "files": [
+      "docs/issue-75/v2-candidate/memory-core.mjs",
+      "docs/issue-75/v2-candidate/plugin.mjs",
+      "docs/issue-75/v2-candidate/semantic-recall.mjs",
+      "docs/issue-75/v2-candidate/semantic-recall.test.mjs",
+      "docs/issue-75/v2-candidate/semantic-memory-integration.test.mjs",
+      "docs/issue-78/v2-curator/curated-recall-candidates.mjs",
+      "docs/issue-78/v2-curator/curated-recall-candidates.test.mjs"
+    ]
+  },
+  "focused_tests": {
+    "command": "node --test <6 contract files>",
+    "test_files": [
+      "docs/issue-75/v2-candidate/semantic-recall.test.mjs",
+      "docs/issue-75/v2-candidate/semantic-memory-integration.test.mjs",
+      "docs/issue-75/v2-candidate/memory-core.test.mjs",
+      "docs/issue-75/v2-candidate/plugin-behavior.test.mjs",
+      "docs/issue-78/v2-curator/curated-recall-candidates.test.mjs",
+      "docs/issue-78/v2-curator/production-cutover.test.mjs"
+    ],
+    "producer_exit": 0,
+    "tests": 65,
+    "pass": 65,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "note": "3 new tests added by the fix (baseline 62/62 at 6eae66a); root suite not re-run (exact-head CI receipt reused)."
+  },
+  "exact_head_ci_reuse": {
+    "run_id": 42424396991,
+    "workflow": "CI",
+    "head_sha": "6504f7ae7be9ed9256182d818d17ff7d4c6c5c73",
+    "conclusion": "success",
+    "created_at": "2026-11-07T23:15:18Z"
+  },
+  "frozen_roster": {
+    "path": "/tmp/opencode/issue81-merged-promotion/evidence/phase-b/semantic-recall-roster.json",
+    "sha256": "47e141bdc81f1f2cdc2e98c7697162dbbf3250a5eb209a56361b358bc2441652",
+    "authenticated": true
+  }
+}

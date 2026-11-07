@@ -1,0 +1,25 @@
+{
+  "schema": "issue81-baseline-retention-precision.v1",
+  "operator_worksheet": {
+    "path": "/tmp/opencode/issue81-merged-promotion/evidence/phase-b/durable-precision-worksheet.json",
+    "rows": 126,
+    "fact_denominator": 126,
+    "threshold": 0.9,
+    "adjudication_status": "PENDING_OPERATOR_ADJUDICATION",
+    "as_of_snapshot_sha256": "c8d5053c16ac7a07447c71d0bb5e7c4ce665940cdba3263119bdb25d6524ef37",
+    "snapshot_sha256_actual": "c8d5053c16ac7a07447c71d0bb5e7c4ce665940cdba3263119bdb25d6524ef37",
+    "snapshot_digest_bound": true,
+    "operator_verdicts": "0/126",
+    "status": "PENDING_OPERATOR_REVIEW",
+    "note": "No new operator judgments supplied this campaign; verdicts are not inferred from retrieval scores. Human durable precision remains UNVERIFIED at threshold 0.9 (requires >=114/126)."
+  },
+  "prior_cli_portal_evidence_reuse": {
+    "reused": [
+      "fresh-native acceptance negative controls (native sessions, pre-fix merged-main source; /tmp/opencode/issue81-fresh-native-acceptance/negative-controls.json)",
+      "precision adjudication status packet (AWAITING_OPERATOR_ADJUDICATION, 0/126 human_reviewed; /tmp/opencode/issue81-fresh-native-acceptance/precision-adjudication-status.json)",
+      "published index-growth and quality-followup evidence packets (evidence/issue81-semantic-recall/)"
+    ],
+    "new_campaigns_run": 0,
+    "note": "No new portal, curator, model-server, GPU-inference, or production-mutation campaign required or run."
+  }
+}

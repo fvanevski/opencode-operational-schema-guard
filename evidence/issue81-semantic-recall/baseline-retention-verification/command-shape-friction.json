@@ -1,0 +1,79 @@
+{
+  "schema": "ghdev-10-command-shape-friction.v1",
+  "encountered": "yes",
+  "commands_match_handoff": "yes",
+  "note": "All handoff-required operations (7 node --check syntax checks, the single 6-file focused node --test invocation, the 20 one-shot issue81-semantic-replay.mjs invocations, and the unchanged score-semantic-replay.mjs scorecard) were submitted and executed in the handoff-mandated form with clean producer exits (all exit 0). The events below are agent-authored scratch/routine fixes and exploratory probes, not handoff-literal commands; none touched the required gates.",
+  "events": [
+    {
+      "scenario": "openviking_read_return_shape",
+      "requested_shape": "tools.openviking.read({ uris: [...] }) via execute",
+      "effective_shape": "first call returned undefined result (return-shape not yet known); second call returned the file text",
+      "rewrite_provenance": "none",
+      "event_kind": "interface_discovery",
+      "execution_effect": "partial_success",
+      "correction_or_annotation": "OpenViking MCP read return-shape discovery; exploratory context loading, not a handoff gate",
+      "replacement_shape": "same call; result inspected directly",
+      "recipe_reference": "none",
+      "resource_reference": "none",
+      "contract_conflict": "no",
+      "durable_gap_candidate": "no"
+    },
+    {
+      "scenario": "prior_packet_path_guess",
+      "requested_shape": "ls docs/issue-78/evidence/index-growth-verification/",
+      "effective_shape": "exit 2 (no such directory); packet lives at repo-root evidence/issue81-semantic-recall/index-growth-verification/",
+      "rewrite_provenance": "agent",
+      "event_kind": "interface_discovery",
+      "execution_effect": "executed_failed",
+      "correction_or_annotation": "path located via git show --name-only of the index-growth commit; corrected before use",
+      "replacement_shape": "git show --name-only --format= dc2221e",
+      "recipe_reference": "none",
+      "resource_reference": "none",
+      "contract_conflict": "no",
+      "durable_gap_candidate": "no"
+    },
+    {
+      "scenario": "curation_census_parse_shape",
+      "requested_shape": "parse curation-v1/*.json as {records:[...]}",
+      "effective_shape": "files are per-candidate documents (state/remote_episode_uuid/facts); first census reported 0 records",
+      "rewrite_provenance": "agent",
+      "event_kind": "interface_discovery",
+      "execution_effect": "executed_failed",
+      "correction_or_annotation": "self-authored census parser corrected to the per-document schema on the second pass (513 docs / 311 persisted)",
+      "replacement_shape": "per-document state + remote_episode_uuid census",
+      "recipe_reference": "none",
+      "resource_reference": "none",
+      "contract_conflict": "no",
+      "durable_gap_candidate": "no"
+    },
+    {
+      "scenario": "packet_builder_await_shape",
+      "requested_shape": "arrow helper using top-level await (non-async arrow)",
+      "effective_shape": "SyntaxError at module compile (await in non-async arrow); corrected before the successful packet build",
+      "rewrite_provenance": "agent",
+      "event_kind": "execution_failure",
+      "execution_effect": "corrected_pre_execution",
+      "correction_or_annotation": "bounded diagnostic scratch adapter (permitted by contract); single pre-execution correction, builder then ran exit 0",
+      "replacement_shape": "const J = async p => ...",
+      "recipe_reference": "none",
+      "resource_reference": "none",
+      "contract_conflict": "no",
+      "durable_gap_candidate": "no"
+    },
+    {
+      "scenario": "stage_probe_anchor_signature",
+      "requested_shape": "strictControlAnchor(text, graphitiClient, [])",
+      "effective_shape": "signature takes candidate arrays, not the MCP client; corrected before the successful probe run",
+      "rewrite_provenance": "agent",
+      "event_kind": "execution_failure",
+      "execution_effect": "corrected_pre_execution",
+      "correction_or_annotation": "bounded diagnostic scratch adapter (permitted by contract); single pre-execution correction, probe then ran exit 0",
+      "replacement_shape": "strictControlAnchor(text, sourcedPool, [])",
+      "recipe_reference": "none",
+      "resource_reference": "none",
+      "contract_conflict": "no",
+      "durable_gap_candidate": "no"
+    }
+  ],
+  "omitted_sensitive_values": "yes"
+}
