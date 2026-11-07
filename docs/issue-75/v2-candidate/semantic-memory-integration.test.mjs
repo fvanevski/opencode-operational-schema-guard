@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {Memory} from './memory-core.mjs';
-const group='development-knowledge',uuid='90f8048e-1fb9-40fb-928a-9c0326e0d4e5';
+const group='development-knowledge',uuid='aaaaaaaa-1111-4111-8111-111111111111';
 const source='opencode:ses-example:message:msg-example';
 const query='What storage or persistence problem did we encounter with FalkorDB during the memory-system cutover?';
 const fact='FalkorDB AOF crash loop caused effects format v2/v3 incompatibility.';
