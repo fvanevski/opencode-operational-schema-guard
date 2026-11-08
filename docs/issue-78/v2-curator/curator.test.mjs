@@ -37,7 +37,7 @@ const proposal=(event,decision='EMIT')=>({decision,reason:'Source-backed reusabl
   facts:decision==='EMIT'?[fact(event)]:[]});
 // Model-generated assertions must be exact source excerpts; operator edits can
 // use paraphrases under their distinct revision-checked approval contract.
-const modelProposal=(event=U)=>({decision:'EMIT',reason:'Exact source-backed decision',
+const modelProposal=(event=U)=>({decision:'EMIT',utility_class:'durable_decision',reason:'Exact source-backed decision',
   facts:[{assertion:event.excerpt,kind:'decision',
     source_refs:[event.source_refs[0]],temporal_status:'observed'}]});
 const temp=fn=> (async()=>{const root=await mkdtemp(path.join(os.tmpdir(),'curator80-'));
@@ -74,7 +74,7 @@ test('strict structured validator accepts grounded class and rejects all authori
  assert.equal(validateDecision(proposal(weak),{...c,events:[weak]}).ok,false);
 });
 test('model field binding uses original authenticated source data, not guessed metadata',()=>{
- const c=cluster(),f=fact(U),minimal={decision:'EMIT',reason:'Grounded decision',
+ const c=cluster(),f=fact(U),minimal={decision:'EMIT',utility_class:'durable_decision',reason:'Grounded decision',
    facts:[{assertion:U.excerpt,kind:'decision',source_refs:f.source_refs,temporal_status:'observed'}]};
  const result=validateModelDecision(JSON.stringify(minimal),c);
  assert.equal(result.ok,true);
@@ -116,6 +116,39 @@ test('model curation rejects paraphrases and fabricated extensions despite lexic
    source_refs:[U.source_refs[0],T.source_refs[0]]}]};
  assert.equal(validateModelDecision(combined,c).ok,false);
 });
+test('utility policy is an additional model-only persistence gate',()=>{ 
+  const c=cluster(),valid=modelProposal(U);
+  assert.equal(validateModelDecision(valid,c).ok,true);
+  const missing=validateModelDecision({...valid,utility_class:undefined},c);
+  assert.equal(missing.ok,false);assert.equal(missing.reason,'utility_class_required');
+  for(const utility_class of ['transient_result','repetition','superseded_stale',
+    'uncertain_unattributed']){
+    const outcome=validateModelDecision({...valid,utility_class},c);
+    assert.equal(outcome.ok,false);assert.equal(outcome.decision,'DEFER');
+    assert.equal(outcome.reason,'utility_class_not_durable');
+    assert.equal(outcome.facts.length,0);
+  }
+  assert.equal(validateModelDecision({...valid,utility_class:'verified'},c).reason,
+    'invalid_utility_class');
+  for(const utility_class of ['durable_decision','root_cause_fix',
+    'stable_architecture','reusable_procedure','useful_negative']){
+    const outcome=validateModelDecision({...valid,utility_class},c);
+    assert.equal(outcome.ok,true,utility_class);
+    assert.equal(outcome.utility_class,utility_class);
+  }
+  const skip=validateModelDecision({decision:'SKIP',utility_class:'repetition',
+    reason:'Repeated transient green check',facts:[]},c);
+  assert.equal(skip.ok,true);assert.equal(skip.decision,'SKIP');
+  const defer=validateModelDecision({decision:'DEFER',utility_class:'uncertain_unattributed',
+    reason:'Assistant speculation without independent proof',facts:[]},c);
+  assert.equal(defer.ok,true);
+  // Operator-reviewed facts and pre-existing approvals are not reclassified.
+  assert.equal(validateDecision({decision:'EMIT',reason:'Operator source review',
+    facts:[fact(U)]},c).ok,true);
+  assert.match(modelPrompt(c)[0].content,/durable_decision/);
+  assert.match(modelPrompt(c)[0].content,/Transient green test counts/);
+});
+
 test('field-level model schema diagnostic survives durable deferred review without source text',()=>temp(async root=>{
  const c=cluster();
  const f=fact(U,{kind:'unsupported_tool_kind'});
@@ -487,6 +520,7 @@ test('one admitted model cluster emits exactly one source-linked Graphiti episod
   assert.equal(result.length_limited_responses,1);
   assert.equal(writes,1);
   assert.equal((await store.get(id)).state,'persisted');
+  assert.equal((await store.get(id)).utility_class,'durable_decision');
   assert.equal((await store.get(id)).remote_episode_uuid,uuid);
  }finally{delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;}
 }));
@@ -576,7 +610,7 @@ test('re-evaluated approval converges deferred source queue without re-staging e
   }};
   const result=await runAdmitted({root,group:scope.group,queue:q,store,graphiti,
     curate:async()=>({content:JSON.stringify({
-      decision:'EMIT',reason:'User-backed decision',
+      decision:'EMIT',utility_class:'durable_decision',reason:'User-backed decision',
       facts:[{assertion:U.excerpt,kind:'decision',
         source_refs:[U.source_refs[0]],temporal_status:'observed'}]}),duration_ms:30}),
     maxSeconds:20});
