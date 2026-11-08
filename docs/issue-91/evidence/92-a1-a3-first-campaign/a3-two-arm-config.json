@@ -1,0 +1,57 @@
+{
+ "schema_version": 1,
+ "kind": "issue92-two-arm-post-exit-config-v1",
+ "campaign": "92-a1-a3-first-campaign",
+ "note": "Two-arm model-backed qualification prepared for POST-EXIT operator execution under the existing EX/shared-lease + quiet-grace gate. No interactive OpenCode hook triggers curateCluster/add_memory/model-probe/inference-drain. Each arm runs the existing post-exit drain wrapper with its own genuine EX admission (sequential, bounded, non-replay).",
+ "graphiti_endpoint": "http://127.0.0.1:8766/mcp",
+ "model": {
+  "alias": "chat-fast",
+  "endpoint": "http://127.0.0.1:8002/v1/chat/completions",
+  "api_key_ref": "local",
+  "temperature": 0,
+  "response_format": "json_object",
+  "reasoning_effort": null,
+  "max_tokens": 1600
+ },
+ "gate": {
+  "gate_source": "/home/filip/.local/share/openviking-commit-gate/openviking_commit_gate.py",
+  "gate_config": "/home/filip/.config/openviking/commit-gate.toml",
+  "ex_wrapper": "/home/filip/.config/opencode/plugins/ghdev-graphiti-memory/docs/issue-75/v2-candidate/post-exit-drain.py",
+  "lock_file": "$XDG_RUNTIME_DIR/openviking-agent.lock",
+  "quiet_grace_seconds": 30.0
+ },
+ "arms": [
+  { "arm": "base-dev", "split": "development", "code": "baseline-main",
+    "worktree_cli": "/tmp/opencode/issue92-a1-a3/baseline/docs/issue-78/v2-curator/curator-cli.mjs",
+    "group": "graphiti-curator-utility-development-r01",
+    "state_dir": "/tmp/opencode/issue92-a1-a3/state/base-dev",
+    "corpus": "issue81 cronparse (24 cases, 14 valuable)",
+    "seeded_events": 24 },
+  { "arm": "cand-dev", "split": "development", "code": "candidate-utility",
+    "worktree_cli": "/tmp/opencode/issue92-a1-a3/candidate/docs/issue-78/v2-curator/curator-cli.mjs",
+    "group": "graphiti-curator-utility-development-r02",
+    "state_dir": "/tmp/opencode/issue92-a1-a3/state/cand-dev",
+    "corpus": "issue81 cronparse (24 cases, 14 valuable)",
+    "seeded_events": 24 },
+  { "arm": "base-holdout", "split": "holdout", "code": "baseline-main",
+    "worktree_cli": "/tmp/opencode/issue92-a1-a3/baseline/docs/issue-78/v2-curator/curator-cli.mjs",
+    "group": "graphiti-curator-utility-holdout-r03",
+    "state_dir": "/tmp/opencode/issue92-a1-a3/state/base-holdout",
+    "corpus": "issue92 gh_mcp new independent holdout (20 cases, 10 valuable)",
+    "seeded_events": 20 },
+  { "arm": "cand-holdout", "split": "holdout", "code": "candidate-utility",
+    "worktree_cli": "/tmp/opencode/issue92-a1-a3/candidate/docs/issue-78/v2-curator/curator-cli.mjs",
+    "group": "graphiti-curator-utility-holdout-r04",
+    "state_dir": "/tmp/opencode/issue92-a1-a3/state/cand-holdout",
+    "corpus": "issue92 gh_mcp new independent holdout (20 cases, 10 valuable)",
+    "seeded_events": 20 }
+ ],
+ "invariants": [
+  "Separate disposable state roots per arm; no shared queue/review state.",
+  "Valid named fixture groups (parseFixtureGroup-verified); no relabel of existing remote groups/episodes.",
+  "Exact project/workspace/source identity retained within each arm (group-specific event_id; source handle identical across arms).",
+  "No writes to active production development-knowledge group; no overwrite/replay of historical episodes.",
+  "Existing EX/shared lease, scheduler idle/quiet grace, post-exit unit/wrapper; no new standing daemon; no lease-gate bypass.",
+  "A queued ACK is not a persisted Graphiti fact; terminal readback (episode UUID + group + source-index) is required for persisted credit."
+ ]
+}

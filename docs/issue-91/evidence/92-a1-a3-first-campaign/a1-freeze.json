@@ -1,0 +1,70 @@
+{
+ "schema_version": 1,
+ "kind": "issue92-prospective-freeze-v1",
+ "campaign": "92-a1-a3-first-campaign",
+ "frozen_at": "2026-11-08T20:26:11Z",
+ "freeze_before_output": true,
+ "note": "Frozen BEFORE any candidate model output was revealed to adjudicators. Development material is the exposed #81 corpus (reused as development only); the holdout is a new, genuinely independent gh_mcp development family, materially distinct from the #81 webvtt/cronparse families. Holdout labels are prospective pre-output operator judgments pending ratification; no adaptive enlargement after unblinding.",
+ "source_provenance": {
+  "base_sha": "c8eb5260f2b10832346234b1b5d0cf28302ffba8",
+  "candidate_sha": "270848aa108df22b9d12738cc6f4903ec45da9c1",
+  "branch": "work/91-memory-utility-r1",
+  "remote_authenticated": "origin/work/91-memory-utility-r1 == 270848aa108df22b9d12738cc6f4903ec45da9c1; origin/main == c8eb5260f2b10832346234b1b5d0cf28302ffba8"
+ },
+ "splits": {
+  "development": {
+   "origin": "exposed #81 material, reused as development only (never relabeled)",
+   "references": {
+    "issue81_dev_corpus_57case_sha256": "22ae11e64a7a9c443d6f13a79c363115a28b43a27620e5383449bfe32d9fb5b4",
+    "issue81_cron_holdout_corpus_file_sha256": "524de3ff36877442c6dc4e75edf5da9f317ba1c2e25e267b117233514e425863",
+    "issue81_webvtt_holdout_corpus_file_sha256": "2bd1ecd19952debb0a44d561218a39852f61835018adc4dd47d03b0dda06e2fc",
+    "issue81_targets_file_sha256": "17ffb60515f5f96f2d546fd3abf951d0bc008325e38d83145ec4f75a8c76f049",
+    "issue81_cron_capture_control": "broad_capture tp=14 fn=0 recall=1.0 (re-run in this campaign, candidate worktree)"
+   },
+   "families": ["cronparse", "webvtt"],
+   "case_counts": { "cron": 24, "webvtt": 20, "dev_corpus_sealed": 57 }
+  },
+  "holdout": {
+   "origin": "new independent gh_mcp development family (genuinely distinct from #81)",
+   "corpus_file": "issue92-holdout-corpus.json",
+   "corpus_sha256": "b81d446201545142d69691fc20c87312986f648ba2cc1691e0de0c4f26657d54",
+   "scope": { "group": "development-knowledge", "project": "gh_mcp", "workspace": "/workspace/mcp_servers/gh_mcp" },
+   "case_count": 20,
+   "valuable_count": 10,
+   "nonvaluable_count": 10,
+   "families": ["gh_mcp"],
+   "label_status": "provisional (prospective pre-output, operator ratification pending)",
+   "case_ids": ["i92-h-01-07b0fead","i92-h-02-097f2e01","i92-h-03-02a7ee6a","i92-h-04-0036a406","i92-h-05-0555a1bf","i92-h-06-04bf403f","i92-h-07-162d46e5","i92-h-08-1aa7cc97","i92-h-09-16427024","i92-h-10-1a03d6aa","i92-h-11-010d1d20","i92-h-12-06ed4b44","i92-h-13-072b981f","i92-h-14-000a7511","i92-h-15-001e4066","i92-h-16-0037aaa9","i92-h-17-005f64e8","i92-h-18-009261b9","i92-h-19-035a457b","i92-h-20-00557cc8"]
+  }
+ },
+ "combined_task_families": ["cronparse", "webvtt", "gh_mcp"],
+ "combined_family_count": 3,
+ "model_policy": {
+  "alias": "chat-fast",
+  "endpoint": "http://127.0.0.1:8002/v1/chat/completions",
+  "api_key_ref": "local (no secret in packet)",
+  "temperature": 0,
+  "response_format": "json_object",
+  "reasoning_effort": null,
+  "max_tokens": 1600,
+  "profile": "chat-fast non-thinking (per modelPolicy: chat-fast owns non-thinking; no reasoning override)"
+ },
+ "pre_result_thresholds": {
+  "min_independent_cases": 20,
+  "min_task_families": 3,
+  "min_prospective_useful_cases": 10,
+  "min_receipt_backed_grounded_candidate_facts": 8,
+  "usefulness_among_grounded_persisted_min": 0.75,
+  "high_value_retention_min": 0.85,
+  "source_grounded_precision_min": 0.9,
+  "zero_secret_leakage": true,
+  "zero_wrong_group": true,
+  "zero_fabricated_source": true,
+  "note": "Descriptive operational floor (8 persisted facts is NOT statistical population precision); Wilson 95% intervals reported. INSUFFICIENT_SAMPLE when the frozen minimum is unattained; a zero denominator is never relabeled PASS."
+ },
+ "operator_ratification": {
+  "status": "pending",
+  "note": "Thresholds are the #92 plan pre-result targets. Operator ratification is recorded before first result; chronology: freeze (2026-11-08T20:26:11Z) precedes any candidate model output.",
+  "limits": "gh_mcp holdout native_event is reconstructed from stored adapted candidate events (source_locator_sha256 binds original handle+event_id); 10/20 valuable is a prospective descriptive floor, not a power claim."
+ }
+}

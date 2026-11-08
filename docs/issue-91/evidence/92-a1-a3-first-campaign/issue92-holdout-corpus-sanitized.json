@@ -1,0 +1,358 @@
+{
+ "schema_version": 1,
+ "kind": "issue92-holdout-corpus-sanitized",
+ "split": "holdout",
+ "label_status": "provisional",
+ "scope": {
+  "group": "development-knowledge",
+  "project": "gh_mcp",
+  "workspace": "/workspace/mcp_servers/gh_mcp"
+ },
+ "family": "gh_mcp",
+ "capture_note": "New independent gh_mcp development family, genuinely distinct from the #81 webvtt/cronparse holdout families. native_event reconstructed from stored adapted candidate events; source_locator_sha256 binds the original source handle + event ID. Labels are prospective (pre-output) and pending operator ratification before any model scoring.",
+ "full_corpus_sha256": "b81d446201545142d69691fc20c87312986f648ba2cc1691e0de0c4f26657d54",
+ "private_ref": "/home/filip/.local/state/ghdev-graphiti-issue92/private/issue92-holdout-corpus.json",
+ "omission_reason": "raw native_event excerpt text and tool output retained in private access-restricted host storage; packet carries case IDs, categories, source-locator digests and labels only",
+ "cases": [
+  {
+   "id": "i92-h-01-07b0fead",
+   "category": "implicit",
+   "source_type": "prompt",
+   "source_locator_sha256": "c31dfe60997339bd19b3f54afcedaa37aff21704406b4df16e4b73e75a2eb7e7",
+   "native_event_text_sha256": "792c293ef02a7b46077421fdf28657fe099be58d124040aed2a8e4bbe0e25f3a",
+   "label": {
+    "valuable": true,
+    "prospective": true,
+    "ratification": "operator-pending"
+   },
+   "family": "gh_mcp",
+   "split": "holdout",
+   "evidence_class": "user-stated",
+   "observed_at": "2026-11-06T06:40:22.673Z",
+   "event_id_sha256_prefix": "07b0fead7828"
+  },
+  {
+   "id": "i92-h-02-097f2e01",
+   "category": "direct",
+   "source_type": "prompt",
+   "source_locator_sha256": "bf885f8336813124f0d3d51f212c77fc0f746a1d5081d7b432532834d9ddc6fd",
+   "native_event_text_sha256": "7e14fc4edade633393e9edc1b7a5040d98128b02aa760568c00bb9cd979c0f62",
+   "label": {
+    "valuable": true,
+    "prospective": true,
+    "ratification": "operator-pending"
+   },
+   "family": "gh_mcp",
+   "split": "holdout",
+   "evidence_class": "user-stated",
+   "observed_at": "2026-11-06T18:05:16.397Z",
+   "event_id_sha256_prefix": "097f2e01b01e"
+  },
+  {
+   "id": "i92-h-03-02a7ee6a",
+   "category": "tool",
+   "source_type": "tool",
+   "source_locator_sha256": "4bc2684992d25a55f29fbe77126f6a950d39416450f8348c2a20cbf1d032e220",
+   "native_event_text_sha256": "e64b417a1229f5f010ee10403934356ad1a1a928cac9f5889e39092a321bc48e",
+   "label": {
+    "valuable": true,
+    "prospective": true,
+    "ratification": "operator-pending"
+   },
+   "family": "gh_mcp",
+   "split": "holdout",
+   "evidence_class": "tool-reported",
+   "observed_at": "2026-11-05T20:35:21.127Z",
+   "event_id_sha256_prefix": "02a7ee6a46dd"
+  },
+  {
+   "id": "i92-h-04-0036a406",
+   "category": "direct",
+   "source_type": "assistant",
+   "source_locator_sha256": "722e87ee3f7fe1c466d701e95c03b5271412259c177b78649c1e21da1c0a43d8",
+   "native_event_text_sha256": "4ad3afe24dbd595e27a0c68f0785a0f0e8a6ee8002bebfbe64b60e378272499b",
+   "label": {
+    "valuable": true,
+    "prospective": true,
+    "ratification": "operator-pending"
+   },
+   "family": "gh_mcp",
+   "split": "holdout",
+   "evidence_class": "assistant-reported",
+   "observed_at": "2026-11-06T01:29:11.842Z",
+   "event_id_sha256_prefix": "0036a4061605"
+  },
+  {
+   "id": "i92-h-05-0555a1bf",
+   "category": "tool",
+   "source_type": "tool",
+   "source_locator_sha256": "f9cc3c3c2380ad6e19f42745ec4dea40e594d1ebb3988bbc257cb2ed41a0044b",
+   "native_event_text_sha256": "0e30d52d4f702e95639c97078cb3b1045e43e5ce352c84fbd490ab9f9991ce45",
+   "label": {
+    "valuable": true,
+    "prospective": true,
+    "ratification": "operator-pending"
+   },
+   "family": "gh_mcp",
+   "split": "holdout",
+   "evidence_class": "tool-reported",
+   "observed_at": "2026-11-06T04:32:00.763Z",
+   "event_id_sha256_prefix": "0555a1bf84d0"
+  },
+  {
+   "id": "i92-h-06-04bf403f",
+   "category": "tool",
+   "source_type": "tool",
+   "source_locator_sha256": "b077bee916023ee984b50e30fcf90b8362af7b6613099abbe21f971021e42794",
+   "native_event_text_sha256": "5cbc41b87419a3a165f48db984795731fd01a9f2d217491e43a5b58a3200929f",
+   "label": {
+    "valuable": true,
+    "prospective": true,
+    "ratification": "operator-pending"
+   },
+   "family": "gh_mcp",
+   "split": "holdout",
+   "evidence_class": "tool-reported",
+   "observed_at": "2026-11-07T01:23:27.479Z",
+   "event_id_sha256_prefix": "04bf403f97fb"
+  },
+  {
+   "id": "i92-h-07-162d46e5",
+   "category": "direct",
+   "source_type": "prompt",
+   "source_locator_sha256": "94f1469e7064f0236863c8850077d26f14fb58814dc4d729c7965612ef267d2a",
+   "native_event_text_sha256": "8be465fd892a80b41554dfb8d02f56b9063546ef93aeaa3ee1db1aca1a8db526",
+   "label": {
+    "valuable": true,
+    "prospective": true,
+    "ratification": "operator-pending"
+   },
+   "family": "gh_mcp",
+   "split": "holdout",
+   "evidence_class": "user-stated",
+   "observed_at": "2026-11-06T06:45:13.567Z",
+   "event_id_sha256_prefix": "162d46e5ae82"
+  },
+  {
+   "id": "i92-h-08-1aa7cc97",
+   "category": "direct",
+   "source_type": "prompt",
+   "source_locator_sha256": "b7e4e93e56e4688362018b33b489eb3f0e179881405b06225a213ecbbe882cdf",
+   "native_event_text_sha256": "3b1cdf282596b14697e4e4f23e08fb5f739a48811d0aba5d2106cf1212fc0c0d",
+   "label": {
+    "valuable": true,
+    "prospective": true,
+    "ratification": "operator-pending"
+   },
+   "family": "gh_mcp",
+   "split": "holdout",
+   "evidence_class": "user-stated",
+   "observed_at": "2026-11-07T20:31:57.796Z",
+   "event_id_sha256_prefix": "1aa7cc976a6a"
+  },
+  {
+   "id": "i92-h-09-16427024",
+   "category": "direct",
+   "source_type": "prompt",
+   "source_locator_sha256": "b12c9c2eb5b270269d9d23f388cebff0f8f1d5e83dba6f58568e3e539fe61aca",
+   "native_event_text_sha256": "d8d3f374f9760d487c1b4421f1975012eb820780ea638b3bfa1f6a5500bbfb20",
+   "label": {
+    "valuable": true,
+    "prospective": true,
+    "ratification": "operator-pending"
+   },
+   "family": "gh_mcp",
+   "split": "holdout",
+   "evidence_class": "user-stated",
+   "observed_at": "2026-11-06T02:52:24.287Z",
+   "event_id_sha256_prefix": "16427024374c"
+  },
+  {
+   "id": "i92-h-10-1a03d6aa",
+   "category": "direct",
+   "source_type": "prompt",
+   "source_locator_sha256": "e072acfabde8a7ab63b0d1797c781ba1c8c28fe2e71a58f57e01fcafd96a0459",
+   "native_event_text_sha256": "5b47798e015e61329531009b783ae7681d3b1b1608d856137f439f7937f776f9",
+   "label": {
+    "valuable": true,
+    "prospective": true,
+    "ratification": "operator-pending"
+   },
+   "family": "gh_mcp",
+   "split": "holdout",
+   "evidence_class": "user-stated",
+   "observed_at": "2026-11-08T03:01:51.703Z",
+   "event_id_sha256_prefix": "1a03d6aa8981"
+  },
+  {
+   "id": "i92-h-11-010d1d20",
+   "category": "chatter",
+   "source_type": "prompt",
+   "source_locator_sha256": "166c0151a6b5afc62ecf5dcd9da4d8e62270a33db0096adc45e8ac34b26685b1",
+   "native_event_text_sha256": "c17cebd32597bcd27e9e310b1f4df40578066fa07e0f99a3f0e84bb68bbd254b",
+   "label": {
+    "valuable": false,
+    "prospective": true,
+    "ratification": "operator-pending"
+   },
+   "family": "gh_mcp",
+   "split": "holdout",
+   "evidence_class": "user-stated",
+   "observed_at": "2026-11-08T01:36:49.064Z",
+   "event_id_sha256_prefix": "010d1d207cbe"
+  },
+  {
+   "id": "i92-h-12-06ed4b44",
+   "category": "chatter",
+   "source_type": "prompt",
+   "source_locator_sha256": "8b221bf346be1f93098f7dcf8b72aaa4bc46e785e74fdae3a51cb5188f569520",
+   "native_event_text_sha256": "9b1d2de3a1630c137c944189ef6c38cdc14c44a93fa22669e5b150afae72475b",
+   "label": {
+    "valuable": false,
+    "prospective": true,
+    "ratification": "operator-pending"
+   },
+   "family": "gh_mcp",
+   "split": "holdout",
+   "evidence_class": "user-stated",
+   "observed_at": "2026-11-06T20:58:03.153Z",
+   "event_id_sha256_prefix": "06ed4b445cce"
+  },
+  {
+   "id": "i92-h-13-072b981f",
+   "category": "chatter",
+   "source_type": "prompt",
+   "source_locator_sha256": "c45a3ab3a33f52084614dbd5633bad1aad93133136d1b733329974e7eecfa5ca",
+   "native_event_text_sha256": "128c93beac95637dc0cb8e7b1b2d0fee41d2b28111ef2c33463eb9123adcf9ef",
+   "label": {
+    "valuable": false,
+    "prospective": true,
+    "ratification": "operator-pending"
+   },
+   "family": "gh_mcp",
+   "split": "holdout",
+   "evidence_class": "user-stated",
+   "observed_at": "2026-11-07T20:22:52.146Z",
+   "event_id_sha256_prefix": "072b981facdd"
+  },
+  {
+   "id": "i92-h-14-000a7511",
+   "category": "chatter",
+   "source_type": "assistant",
+   "source_locator_sha256": "b3b0d7d4c3ad5a0173ff1a56bc1d389b2ec9a0afbb7035d33984a7771e8b7537",
+   "native_event_text_sha256": "0898a3d1b34421b4735f2f1700d669ac9b7d578e5a1799df1651e49c4476d9cf",
+   "label": {
+    "valuable": false,
+    "prospective": true,
+    "ratification": "operator-pending"
+   },
+   "family": "gh_mcp",
+   "split": "holdout",
+   "evidence_class": "assistant-reported",
+   "observed_at": "2026-11-06T18:19:48.385Z",
+   "event_id_sha256_prefix": "000a7511ad12"
+  },
+  {
+   "id": "i92-h-15-001e4066",
+   "category": "chatter",
+   "source_type": "assistant",
+   "source_locator_sha256": "436745f4d58a3921911ca8dd88e127b190a1bf591288443caf41492a67ecdef6",
+   "native_event_text_sha256": "da6f4abb0f1ee34deaa1a7692091743a79cfc1b746a676f9bcff97da2c5c178b",
+   "label": {
+    "valuable": false,
+    "prospective": true,
+    "ratification": "operator-pending"
+   },
+   "family": "gh_mcp",
+   "split": "holdout",
+   "evidence_class": "assistant-reported",
+   "observed_at": "2026-11-06T02:33:13.352Z",
+   "event_id_sha256_prefix": "001e4066148c"
+  },
+  {
+   "id": "i92-h-16-0037aaa9",
+   "category": "chatter",
+   "source_type": "assistant",
+   "source_locator_sha256": "a1c912e1f38d99073bc61fd88082dccd4eb614db8b21c3aa3ca4630307d4e730",
+   "native_event_text_sha256": "aa7fed75e8dcdc4b40dac80ba05bc7b9ab7c6b41b7e3a0b8a921f96f025e45fa",
+   "label": {
+    "valuable": false,
+    "prospective": true,
+    "ratification": "operator-pending"
+   },
+   "family": "gh_mcp",
+   "split": "holdout",
+   "evidence_class": "assistant-reported",
+   "observed_at": "2026-11-06T21:54:48.096Z",
+   "event_id_sha256_prefix": "0037aaa9244a"
+  },
+  {
+   "id": "i92-h-17-005f64e8",
+   "category": "chatter",
+   "source_type": "assistant",
+   "source_locator_sha256": "2a847a3bc2d41a703ab307def822bd3807d309b8d8034eee149f4a4879e7e60a",
+   "native_event_text_sha256": "74f7f274eff9cec71b513c55d14d3661a48a1621659f9a53fc1a890e07c62450",
+   "label": {
+    "valuable": false,
+    "prospective": true,
+    "ratification": "operator-pending"
+   },
+   "family": "gh_mcp",
+   "split": "holdout",
+   "evidence_class": "assistant-reported",
+   "observed_at": "2026-11-06T17:23:44.955Z",
+   "event_id_sha256_prefix": "005f64e87f7d"
+  },
+  {
+   "id": "i92-h-18-009261b9",
+   "category": "chatter",
+   "source_type": "assistant",
+   "source_locator_sha256": "cc44e6dd1c096a5c28235d789c476d3087def88f0afa99cc566c8c45daee76e8",
+   "native_event_text_sha256": "0d27ae324ea656a774da015f6b34657e2b4cbf561cfbca28c917c67e58f10369",
+   "label": {
+    "valuable": false,
+    "prospective": true,
+    "ratification": "operator-pending"
+   },
+   "family": "gh_mcp",
+   "split": "holdout",
+   "evidence_class": "assistant-reported",
+   "observed_at": "2026-11-08T01:38:45.281Z",
+   "event_id_sha256_prefix": "009261b94323"
+  },
+  {
+   "id": "i92-h-19-035a457b",
+   "category": "chatter",
+   "source_type": "tool",
+   "source_locator_sha256": "66c1ef29708fa83beae730621e8188130ca86d89c8608e01cdb9c102761d0461",
+   "native_event_text_sha256": "51f34899f73ee412cb95fd5369849a231eabb956947f7e8d91104b2cea82d5e1",
+   "label": {
+    "valuable": false,
+    "prospective": true,
+    "ratification": "operator-pending"
+   },
+   "family": "gh_mcp",
+   "split": "holdout",
+   "evidence_class": "tool-reported",
+   "observed_at": "2026-11-07T02:01:40.319Z",
+   "event_id_sha256_prefix": "035a457bc343"
+  },
+  {
+   "id": "i92-h-20-00557cc8",
+   "category": "chatter",
+   "source_type": "tool",
+   "source_locator_sha256": "4110eb7ca0178dc25c4ee9307be44ca8598fb343739b2f3eeacd43790b8cd3ff",
+   "native_event_text_sha256": "ef5ac22a8a61e209cedc108499e4cd17b50fe1ea905b72175568d3130a3de184",
+   "label": {
+    "valuable": false,
+    "prospective": true,
+    "ratification": "operator-pending"
+   },
+   "family": "gh_mcp",
+   "split": "holdout",
+   "evidence_class": "tool-reported",
+   "observed_at": "2026-11-06T21:01:15.148Z",
+   "event_id_sha256_prefix": "00557cc89e42"
+  }
+ ]
+}
