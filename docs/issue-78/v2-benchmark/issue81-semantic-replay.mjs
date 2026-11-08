@@ -5,7 +5,7 @@ import path from 'node:path';
 import { performance } from 'node:perf_hooks';
 import { GraphitiMcp, Journal, Memory } from '../../issue-75/v2-candidate/memory-core.mjs';
 import { sourcedEpisodeResolver } from '../v2-curator/sourced-recall.mjs';
-import { curatedRecallCandidates } from '../v2-curator/curated-recall-candidates.mjs';
+import { curatedRecallRetriever } from '../v2-curator/curated-recall-candidates.mjs';
 
 function args(argv) {
   const out = {};
@@ -42,7 +42,7 @@ async function main() {
     const memory=new Memory({
       journal:new Journal(root,group),graphiti,group,recallPolicy:mode,
       extraSourceResolver:ids=>sourcedEpisodeResolver(root,group,workspace,project,ids),
-      curatedCandidateRetriever:()=>curatedRecallCandidates(root,group,workspace,project)
+      curatedCandidateRetriever:curatedRecallRetriever(root,group,workspace,project)
     });
     const start=performance.now();
     const facts=await memory.search(query);

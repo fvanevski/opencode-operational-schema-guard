@@ -4,7 +4,8 @@ import {mkdtemp,mkdir,rm,writeFile} from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
 import {Journal,Memory} from '../../issue-75/v2-candidate/memory-core.mjs';
-import {curatedRecallCandidates} from './curated-recall-candidates.mjs';
+import {curatedRecallCandidates,curatedRecallRetriever} from './curated-recall-candidates.mjs';
+import {ReviewStore} from './core.mjs';
 import {relevanceFilter,relevanceSignals,answerTypeSupport} from '../../issue-75/v2-candidate/relevance.mjs';
 
 const group='qual-test', project='sample-app',workspace='/workspace/sample-app';
@@ -189,4 +190,24 @@ test('growing inventory does not bypass workspace, project or privacy fences',()
     assert.deepEqual(await curatedRecallCandidates(root,group,workspace,'other',growthQuery,'strict'),[]);
     assert.deepEqual(await curatedRecallCandidates(root,group,workspace,project,
       'Use api_key=secret for production','semantic'),[]);
+  }));
+
+test('query-scoped production/replay retriever reads each inventory record only once',()=>growthFixture(
+  {persisted:513,deferred:0,targetIndex:513},async({root,targetUUID})=>{
+    const retriever=curatedRecallRetriever(root,group,workspace,project);
+    const original=ReviewStore.prototype.get;
+    let reads=0;
+    ReviewStore.prototype.get=async function(...args) {
+      reads++; return original.apply(this,args);
+    };
+    try {
+      const found=await retriever(growthQuery,'semantic');
+      assert.equal(found.length,1);
+      assert.equal(found[0].remoteEpisodeUuid,targetUUID);
+      assert.ok(reads<=514,'513 inventory reads plus at most one source-index proof, not repeated full scans: '+reads);
+      assert.ok(reads>=513,'scan must not silently drop reviews');
+    }finally{ReviewStore.prototype.get=original;}
+    // Omitting the query still invokes the deliberately bounded legacy API.
+    // Production and replay MUST pass the real query/policy instead.
+    assert.deepEqual(await retriever(),[]);
   }));

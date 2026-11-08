@@ -5,7 +5,7 @@ import baseline from '../../issue-75/v2-candidate/plugin.mjs';
 import { fromPromptCandidates, fromTool, fromFinishedTurn } from './events.mjs';
 import { CandidateQueue } from './queue.mjs';
 import { sourcedEpisodeResolver } from '../v2-curator/sourced-recall.mjs';
-import { curatedRecallCandidates } from '../v2-curator/curated-recall-candidates.mjs';
+import { curatedRecallRetriever } from '../v2-curator/curated-recall-candidates.mjs';
 
 export { fromFinishedTurn }; // For a separately authenticated completed-turn adapter.
 export default {
@@ -22,7 +22,7 @@ export default {
       ? ids => sourcedEpisodeResolver(root,options.group,workspace,project,ids) : null;
     const candidateRetriever = path.isAbsolute(workspace) && project &&
       options.curatedRecall !== false
-      ? (query,policy) => curatedRecallCandidates(root,options.group,workspace,project,query,policy) : null;
+      ? curatedRecallRetriever(root,options.group,workspace,project) : null;
     // Preserve the accepted Issue #75 native context/recall adapter. In
     // addition to its legacy journal, admit only confirmed curated episode
     // mappings from the same exact group/workspace, without LLM in hooks.

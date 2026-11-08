@@ -1,5 +1,6 @@
 /** Query-scoped source-index discovery; fresh remote Graphiti membership is still required. */
 import path from 'node:path';
+import { promises as fs } from 'node:fs';
 import { ReviewStore } from './core.mjs';
 import { sourcedEpisodeResolver } from './sourced-recall.mjs';
 import { safeText } from '../../issue-75/v2-candidate/memory-core.mjs';
@@ -10,22 +11,25 @@ const UUID=/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i;
 const SOURCE=/^opencode:[^\s]+:(?:message|tool|user):/;
 const CLASSES=new Set(['user-stated','tool-reported','assistant-reported']);
 const PAGE=500, MAX_REVIEW_SCAN=4096, SHORTLIST=24, RESOLVER_BATCH=288;
+const READ_BATCH=32, REVIEW_FILE=/^[a-f0-9]{64}\.json$/;
 
 async function readBoundedInventory(store) {
+  // ReviewStore.list() fully reads and parses the entire directory BEFORE
+  // slicing a page. Repeating it multiplies interactive IO by page count.
+  // Snapshot names once, then read each review at most once via the existing
+  // identity/state-validating ReviewStore.get() method.
+  let names;
+  try { names=(await fs.readdir(store.dir)).filter(n=>REVIEW_FILE.test(n)).sort(); }
+  catch(e){if(e?.code==='ENOENT')return [];throw e;}
+  // Fail closed rather than silently omitting an unexamined section.
+  if(names.length>MAX_REVIEW_SCAN)return [];
   const records=[];
-  for(let offset=0;offset<MAX_REVIEW_SCAN;) {
-    const limit=Math.min(PAGE,MAX_REVIEW_SCAN-offset);
-    const page=await store.list({limit,offset});
-    if(!Array.isArray(page.items)||page.items.length>limit||
-       !Number.isInteger(page.total)||page.total<0)return [];
-    records.push(...page.items);
-    if(!page.has_more)return records;
-    // No silent truncation or infinite loop on an invalid page response.
-    if(page.items.length!==limit)return [];
-    offset+=page.items.length;
+  for(let offset=0;offset<names.length;offset+=READ_BATCH) {
+    const batch=await Promise.all(names.slice(offset,offset+READ_BATCH)
+      .map(name=>store.get(name.slice(0,-5))));
+    records.push(...batch.filter(Boolean));
   }
-  // Bounded interactive inventory: never mistake a partial scan for complete.
-  return [];
+  return records;
 }
 
 function provisional(r,group,workspace,project) {
@@ -90,4 +94,9 @@ export async function curatedRecallCandidates(root,group,workspace,project,
     // Never trust provisional source identity over the exact persisted index.
     return [{...r,source:s.sourceRef}];
   });
+}
+
+/** Shared query/policy adapter for both live stock-V2 and frozen shadow replay. */
+export function curatedRecallRetriever(root,group,workspace,project) {
+  return (query,policy)=>curatedRecallCandidates(root,group,workspace,project,query,policy);
 }

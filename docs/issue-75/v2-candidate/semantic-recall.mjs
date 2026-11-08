@@ -69,14 +69,27 @@ export async function strictControlAnchor(query, graphiti, indexed) {
  * membership before adding any selected indexed fact to the model context. */
 export function preselectIndexedContext(query, rows, {limit=24}={}) {
   if (!Array.isArray(rows) || !Number.isInteger(limit) || limit<1 || limit>24) return [];
-  return rows.map((item,index) => ({item,index}))
-    .filter(x => valid(x.item,query))
-    .map(x => ({...x, signal:rankSignal(query,x.item)}))
-    .filter(x => x.signal.overlap>0 ||
+  const qualified=rows.map((item,index)=>({item,index}))
+    .filter(x=>valid(x.item,query));
+  // Reserve the independently strict-qualified best index observation BEFORE
+  // the curator's first 24-slot cut. Memory.search repeats this preselection;
+  // reserving it here too preserves that same control through both cuts.
+  // It still requires the unchanged source-index and fresh remote UUID proof.
+  const strict=shortlistQualifiedCandidates(query,qualified.map(x=>x.item),{limit:1});
+  const semantic=qualified.map(x=>({...x,signal:rankSignal(query,x.item)}))
+    .filter(x=>x.signal.overlap>0 ||
       (typeof x.item.sourceContext==='string' &&
        lexicalSupport(query,x.item.sourceContext).count>0))
     .sort((a,b)=>b.signal.score-a.signal.score || a.index-b.index)
-    .slice(0,limit).map(x=>x.item);
+    .map(x=>x.item);
+  const selected=[],seen=new Set();
+  for(const item of [...strict,...semantic]){
+    const key=item.source+'\0'+item.fact;
+    if(seen.has(key))continue;
+    seen.add(key);selected.push(item);
+    if(selected.length>=limit)break;
+  }
+  return selected;
 }
 /** Diversify confirmed candidates and enforce the model-facing character
  * budget. Exact identifiers are ranking/disambiguation signals, not vetoes.

@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {preselectIndexedContext,selectSemanticContext,strictControlAnchor} from './semantic-recall.mjs';
+import {shortlistQualifiedCandidates} from './relevance.mjs';
 const source='opencode:ses-example:message:msg-example';
 const item=(fact,extra={})=>({fact,source,evidenceClass:'tool-reported',temporal:'current state not independently verified',
   recallOrigin:'graphiti',nativeRank:0,...extra});
@@ -102,4 +103,29 @@ test('baseline hint cannot inject untrusted or out-of-pool assertions',()=>{
   assert.equal(picked.length,1);
   assert.equal(picked[0].fact,trusted.fact);
   assert.deepEqual(selectSemanticContext(q,[],{baselineAnchor:wrong}),[]);
+});
+
+test('strict historical source survives both semantic 24-slot index cuts',async()=>{
+  const q='What database did we originally use for archive storage recovery?';
+  const historical=item('We previously used database snapshots.',{
+    source:'opencode:ses-historical:message:msg-old',
+    recallOrigin:'index',nativeRank:undefined});
+  const distractors=Array.from({length:30},(_,i)=>item(
+    'Archive storage recovery database validation job '+i+' completed.',{
+      source:'opencode:ses-example:message:msg-'+i,
+      recallOrigin:'index',nativeRank:undefined}));
+  const all=[...distractors,historical];
+  const strict=shortlistQualifiedCandidates(q,all,{limit:1});
+  assert.equal(strict[0]?.source,historical.source,
+    'independent strict control must prefer the historical observation');
+  const first=preselectIndexedContext(q,all);
+  assert.equal(first.length,24);
+  assert.equal(first[0]?.source,historical.source);
+  const second=preselectIndexedContext(q,first);
+  assert.ok(second.some(x=>x.source===historical.source),
+    'second pre-proof cut must not drop the reserved control');
+  const anchor=await strictControlAnchor(q,[],second);
+  assert.equal(anchor?.source,historical.source);
+  const selected=selectSemanticContext(q,second,{baselineAnchor:anchor});
+  assert.equal(selected[0]?.source,historical.source);
 });
