@@ -81,8 +81,9 @@ export default {
           }
         });
       };
-      const proxyCtx = Object.create(ctx);
-      proxyCtx.session = proxySession;
+      // The Stage-2 plugin forwards context using {...ctx}; host-owned
+      // properties must be own properties here, not inherited via prototype.
+      const proxyCtx = { ...ctx, session: proxySession };
       innerCleanup = await plugin.setup(proxyCtx);
       if (registrations < 1) throw Error('Graphiti context callback was not registered');
       record({ kind: 'setup', registered_context_callbacks: registrations });

@@ -16,6 +16,8 @@ const fixture = callback => async () => {
     "export default {",
     " id: 'local.ghdev-graphiti-memory-candidate-v1',",
     " async setup(ctx) {",
+    " const spread={...ctx};",
+    " if (typeof spread.tool?.hook !== 'function' || spread.options?.__gh81_probe !== true || typeof spread.logger?.warn !== 'function') throw Error('Stage-2 context spread lost host-owned fields');",
     " await ctx.session.hook('prompt', () => {});",
     " await ctx.session.hook('context', async event => {",
     " await new Promise(resolve => setTimeout(resolve, 2));",
@@ -40,7 +42,7 @@ const fixture = callback => async () => {
 };
 test('measures delegated native callback without logging prompt or source text',fixture(async({report})=>{
   const observer=(await import(observerFile.href)).default,handlers=[];
-  const cleanup=await observer.setup({session:{hook:async(kind,handler)=>{
+  const cleanup=await observer.setup({tool:{hook(){}},options:{__gh81_probe:true},logger:{warn(){}},session:{hook:async(kind,handler)=>{
     handlers.push({kind,handler});return {dispose(){}};
   }}});
   assert.equal(handlers.filter(x=>x.kind==='context').length,2);
@@ -59,7 +61,7 @@ test('measures delegated native callback without logging prompt or source text',
 }));
 test('propagates callback failures and refuses to overwrite existing trace',fixture(async({report})=>{
   const observer=(await import(observerFile.href)).default,handlers=[];
-  const ctx={session:{hook:(kind,handler)=>{handlers.push({kind,handler});return {dispose(){}};}}};
+  const ctx={tool:{hook(){}},options:{__gh81_probe:true},logger:{warn(){}},session:{hook:(kind,handler)=>{handlers.push({kind,handler});return {dispose(){}};}}};
   const cleanup=await observer.setup(ctx);
   await assert.rejects(handlers.find(x=>x.kind==='context').handler({system:[],throwError:true}),/known test failure/);
   await cleanup();
