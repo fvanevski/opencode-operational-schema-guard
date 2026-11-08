@@ -77,10 +77,23 @@ export async function curatedRecallCandidates(root,group,workspace,project,
   // bounded interface; NEVER discard the entire index because its history
   // grew beyond 288 source IDs or 500 review records.
   if(query===null&&candidates.length>PAGE)return [];
-  const possible=query===null?candidates:
-    recallPolicy==='semantic'
-      ?preselectIndexedContext(query,candidates,{limit:SHORTLIST})
-      :shortlistQualifiedCandidates(query,candidates,{limit:SHORTLIST});
+  // In semantic mode a single reserved strict winner may fail the source
+  // index or fresh remote-membership check. Preserve independently ranked
+  // strict fallbacks alongside semantic hits until AFTER that proof. Both
+  // lanes remain bounded to 24; the combined pre-proof pool is <=48, and
+  // neither lane grants source authority or expands model-facing context.
+  let possible;
+  if(query===null)possible=candidates;
+  else if(recallPolicy==='semantic') {
+    const strict=shortlistQualifiedCandidates(query,candidates,{limit:SHORTLIST});
+    const semantic=preselectIndexedContext(query,candidates,{limit:SHORTLIST});
+    const seen=new Set();
+    possible=[];
+    for(const row of [...strict,...semantic]) {
+      if(seen.has(row.remoteEpisodeUuid))continue;
+      seen.add(row.remoteEpisodeUuid);possible.push(row);
+    }
+  } else possible=shortlistQualifiedCandidates(query,candidates,{limit:SHORTLIST});
   if(!possible.length)return [];
   const ids=[...new Set(possible.map(r=>r.remoteEpisodeUuid))];
   const verified=[];

@@ -475,8 +475,15 @@ export class Memory {
       remoteData.episodes.length < 1000 &&
       remoteData.episodes.every(e=>e?.group_id===this.group&&validId(e.uuid))
       ?new Set(remoteData.episodes.map(e=>e.uuid)):new Set();
-    const indexedCandidates=possibleIndex.filter(r=>
-      remoteEpisodes.has(r.remoteEpisodeUuid));
+    // The curator's semantic retriever supplies two bounded 24-slot lanes:
+    // strict fallbacks and semantic-ranked observations. A reserved strict
+    // candidate can still fail fresh remote membership. Re-rank the surviving
+    // *proven* pool, rather than filtering a pre-proof 24-slot cut that may
+    // have discarded the next strict-qualified source.
+    const remoteProven=scopedRows.filter(r=>remoteEpisodes.has(r.remoteEpisodeUuid));
+    const indexedCandidates=semanticPolicy
+      ? semanticPolicy.preselectIndexedContext(text,remoteProven)
+      : possibleIndex.filter(r=>remoteEpisodes.has(r.remoteEpisodeUuid));
     if (semanticPolicy) {
       // Native semantic rank does not replace source/group proof. Indexed-only
       // facts have passed the separate fresh remote-episode membership check.

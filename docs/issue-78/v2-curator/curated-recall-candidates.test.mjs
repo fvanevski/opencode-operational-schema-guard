@@ -211,3 +211,64 @@ test('query-scoped production/replay retriever reads each inventory record only 
     // Production and replay MUST pass the real query/policy instead.
     assert.deepEqual(await retriever(),[]);
   }));
+
+test('missing reserved episode cannot suppress the next proven strict winner',async()=>{
+  const q='What database did we originally use for archive storage recovery?';
+  for(const proofFailure of ['remote-episode','local-index']) {
+    const root=await mkdtemp(path.join(os.tmpdir(),'gh81-fallback-'));
+    try {
+      const dir=path.join(root,'curation-v1',group);
+      await mkdir(path.join(dir,'_episode-index'),{recursive:true});
+      const claims=[
+        'We previously used database snapshots.',
+        'We previously used database backups.',
+        ...Array.from({length:24},(_,i)=>
+          'Archive storage recovery database validation job '+i+' completed.')
+      ];
+      const uuids=claims.map((_,i)=>growthUUID(i+1));
+      for(let i=0;i<claims.length;i++) {
+        const id=growthId(i+1),remote_episode_uuid=uuids[i],assertion=claims[i];
+        const review={id,group,workspace,project,state:'persisted',
+          remote_episode_uuid,
+          facts:[{assertion,source_refs:[source],evidence_class:'tool-reported',
+            temporal_status:'observed'}],
+          events:[{source_strength:'native-id',source_refs:[source],
+            evidence_class:'tool-reported',excerpt:assertion}]};
+        await writeFile(path.join(dir,id+'.json'),JSON.stringify(review));
+        if(i!==0||proofFailure!=='local-index') {
+          await writeFile(path.join(dir,'_episode-index',remote_episode_uuid+'.json'),
+            JSON.stringify({id,remote_episode_uuid}));
+        }
+      }
+      const retriever=curatedRecallRetriever(root,group,workspace,project);
+      const indexRows=await retriever(q,'semantic');
+      assert.ok(indexRows.length<=48,'two bounded 24-slot pre-proof lanes');
+      assert.ok(indexRows.some(x=>x.fact===claims[1]),
+        'strict runner-up must survive the first semantic cut');
+      const calls=[];
+      const graphiti={call:async(name,args)=>{
+        calls.push({name,args});
+        if(name==='search_memory_facts')return {facts:[]};
+        if(name==='get_episodes')return {episodes:uuids
+          .filter((_,i)=>i!==0||proofFailure!=='remote-episode')
+          .map(uuid=>({uuid,group_id:group}))};
+        throw Error('unexpected Graphiti operation '+name);
+      }};
+      const build=policy=>new Memory({
+        journal:new Journal(root,group),graphiti,group,recallPolicy:policy,
+        curatedCandidateRetriever:retriever
+      });
+      const strict=await build('strict').search(q);
+      const semantic=await build('semantic').search(q);
+      assert.equal(strict[0]?.fact,claims[1],
+        'strict control selects the next source with valid proof');
+      assert.equal(semantic[0]?.fact,claims[1],
+        'semantic must preserve that proven strict fallback');
+      assert.ok(semantic.length<=5);
+      assert.ok(!semantic.some(x=>x.fact===claims[0]),
+        'the unproven reserved claim must never enter context');
+      assert.equal(calls.filter(x=>x.name==='get_episodes').length,2);
+      assert.ok(calls.every(x=>x.name!=='add_memory'));
+    }finally{await rm(root,{recursive:true,force:true});}
+  }
+});
