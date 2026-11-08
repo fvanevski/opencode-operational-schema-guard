@@ -1,0 +1,44 @@
+{
+  "schema": "issue81-central-ai-operator-precision-public-receipt.v1",
+  "issue": 81,
+  "pr": 90,
+  "adjudication": "AI_SOURCE_GROUNDED_PRECISION_PASS_WITH_DISCLOSED_LIMITATIONS",
+  "reviewer_type": "AI",
+  "reviewer": "Central ChatGPT / GPT-6",
+  "authority": "Human-only operator requirement explicitly waived by user; designated Central AI operator",
+  "human_signature_created": false,
+  "evidence": {
+    "frozen_population": 126,
+    "source_archive_sha256": "002334dc87e8eea7b32859ccca1cd3e8fa541eec01ed9eb0bfdfd352d55787d7",
+    "adjudication_ledger_sha256": "18ea94100c98f5ad1e0a1dfa561a52f1839c14220476c243ae08b4844abe4a20",
+    "worksheet_sha256_reported_by_host": "9f9152cc1a5c0defc616dcced2869d30aa21738f78d698a5b8b2777659b7b56c",
+    "snapshot_sha256_reported_by_host": "c8d5053c16ac7a07447c71d0bb5e7c4ce665940cdba3263119bdb25d6524ef37",
+    "worksheet_and_snapshot_raw_bytes_available_for_central_rehash": false,
+    "archived_remote_membership": 126,
+    "remote_full_response_rehash_possible": false
+  },
+  "measured": {
+    "source_grounded_authority_scope_pass": 123,
+    "denominator": 126,
+    "conservative_bounded_excerpt_support": 119,
+    "minimum_accepted": 114,
+    "target_precision": 0.9,
+    "source_grounded_precision": 0.9761904761904762,
+    "conservative_precision": 0.9444444444444444,
+    "evidence_caveats": {
+      "native_excerpt_truncated": 4,
+      "synthetic_tool_command_shape_discrepancies": 3
+    },
+    "editorial_potential_utility": 33,
+    "editorial_low_utility": 93
+  },
+  "governing_interpretation": "Grounded=faithful recorded-source attribution and appropriate evidence class at observation time. Not independent objective truth, currency, or model-context usefulness.",
+  "not_accepted_as_proof": [
+    "native fresh-client context-hook p95",
+    "assembled model-request GHDEV_GRAPHITI_CONTEXT",
+    "OpenViking coexistence on exact merged deployment pair",
+    "all assistant-reported claims independently true/current",
+    "current host installation equals PR candidate"
+  ],
+  "publication": "Sanitized counts/cryptographic identities only. Private native messages, facts, worksheets, source refs and item-level verdicts are not stored in the public repository."
+}
