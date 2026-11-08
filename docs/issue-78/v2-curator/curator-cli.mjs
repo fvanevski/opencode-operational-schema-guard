@@ -38,8 +38,8 @@ if(command==='validate-config'){
   }else if(command==='list'){
     const rows=await store.list({limit:100});
     console.log(JSON.stringify({group,fixture:describeFixtureGroup(group),total:rows.total,
-      items:rows.items.map(({id,state,decision,reason,revision,remote_episode_uuid,source_event_ids,failure_evidence})=>
-        ({id,state,decision,reason,revision,remote_episode_uuid,source_event_ids,
+      items:rows.items.map(({id,state,decision,utility_class,reason,revision,remote_episode_uuid,source_event_ids,failure_evidence})=>
+        ({id,state,decision,utility_class:utility_class??null,reason,revision,remote_episode_uuid,source_event_ids,
           failure_code:failure_evidence?.error_code||null,
           failure_identity_binding:failure_evidence?.identity_binding||null}))},null,2));
   }else if(command==='reconcile-only'){

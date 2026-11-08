@@ -521,6 +521,10 @@ test('one admitted model cluster emits exactly one source-linked Graphiti episod
   assert.equal(writes,1);
   assert.equal((await store.get(id)).state,'persisted');
   assert.equal((await store.get(id)).utility_class,'durable_decision');
+  const listed=spawnSync(process.execPath,[new URL('./curator-cli.mjs',import.meta.url).pathname,
+    'list','--group',scope.group,'--state-dir',root],{encoding:'utf8'});
+  assert.equal(listed.status,0,listed.stderr);
+  assert.equal(JSON.parse(listed.stdout).items[0].utility_class,'durable_decision');
   assert.equal((await store.get(id)).remote_episode_uuid,uuid);
  }finally{delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;}
 }));
