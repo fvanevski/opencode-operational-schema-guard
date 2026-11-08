@@ -1,0 +1,51 @@
+{
+  "schema": "ghdev-10-command-shape-friction.v1",
+  "encountered": "yes",
+  "commands_match_handoff": "yes",
+  "note": "All handoff-required commands (7 syntax checks, the 9-file focused node --test set, npm run check, npm test, and the 6 replay entrypoint invocations per the controlling instructions' exact example shape) were submitted and executed in the handoff-mandated form with clean producer exits. The events below are agent-authored exploratory probes, not handoff-literal commands; none touched the required gates.",
+  "events": [
+    {
+      "scenario": "frozen_roster_query_discovery",
+      "requested_shape": "grep -rn FalkorDB docs/issue-78/v2-benchmark/*.md docs/issue-75/v2-benchmark/*.md (two-directory zsh glob)",
+      "effective_shape": "same submitted command; zsh glob expansion failed because docs/issue-75/v2-benchmark does not exist",
+      "rewrite_provenance": "shell_or_alias",
+      "event_kind": "interface_discovery",
+      "execution_effect": "executed_failed",
+      "correction_or_annotation": "zsh 'no matches found' is a shell-shape error (missing directory), not missing upstream data; re-scoped grep to the existing docs tree",
+      "replacement_shape": "grep -rn FalkorDB docs/ (single existing root)",
+      "recipe_reference": "none",
+      "resource_reference": "none",
+      "contract_conflict": "no",
+      "durable_gap_candidate": "no"
+    },
+    {
+      "scenario": "curation_record_shape_probe",
+      "requested_shape": "node -e one-liner reading curation-v1/development-knowledge/<file> via string concatenation dir+files[0]",
+      "effective_shape": "same submitted command; ENOENT from missing path separator",
+      "rewrite_provenance": "none",
+      "event_kind": "execution_failure",
+      "execution_effect": "executed_failed",
+      "correction_or_annotation": "agent-authored probe bug (path concatenation); first listing call in the same probe succeeded because it only used readdir",
+      "replacement_shape": "same probe with path.join(dir, files[0])",
+      "recipe_reference": "none",
+      "resource_reference": "none",
+      "contract_conflict": "no",
+      "durable_gap_candidate": "no"
+    },
+    {
+      "scenario": "openviking_case_memory_read",
+      "requested_shape": "tools.openviking.read({ uri: 'viking://...' })",
+      "effective_shape": "rejected: uris: Missing key (tool expects plural uris)",
+      "rewrite_provenance": "none",
+      "event_kind": "interface_discovery",
+      "execution_effect": "not_executed",
+      "correction_or_annotation": "argument-name discovery on the OpenViking MCP surface",
+      "replacement_shape": "tools.openviking.read({ uris: ['viking://...'] })",
+      "recipe_reference": "none",
+      "resource_reference": "none",
+      "contract_conflict": "no",
+      "durable_gap_candidate": "no"
+    }
+  ],
+  "omitted_sensitive_values": "no"
+}

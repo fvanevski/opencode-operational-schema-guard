@@ -1,0 +1,51 @@
+{
+  "schema": "ghdev-10-command-shape-friction.v1",
+  "encountered": "yes",
+  "commands_match_handoff": "yes",
+  "note": "All handoff-required operations (4 node --check syntax checks, the single 6-file focused node --test invocation, the 20 one-shot issue81-semantic-replay.mjs invocations, and the unchanged score-semantic-replay.mjs scorecard) were submitted and executed in the handoff-mandated form with clean producer exits. The events below are agent-authored scratch/routine fixes and exploratory probes, not handoff-literal commands; none touched the required gates.",
+  "events": [
+    {
+      "scenario": "scratch_log_directory_missing",
+      "requested_shape": "node --test <6 files> > /tmp/opencode/issue81-index-growth/focused-tests.log 2>&1",
+      "effective_shape": "same command; zsh \"no such file or directory\" because /tmp/opencode/issue81-index-growth did not exist",
+      "rewrite_provenance": "shell_or_alias",
+      "event_kind": "execution_failure",
+      "execution_effect": "executed_failed",
+      "correction_or_annotation": "agent-authored scratch path not pre-created; a plain redirect to a missing directory is a shell-shape error, not a producer failure",
+      "replacement_shape": "mkdir -p /tmp/opencode/issue81-index-growth && node --test <6 files> > focused-tests.log 2>&1",
+      "recipe_reference": "none",
+      "resource_reference": "none",
+      "contract_conflict": "no",
+      "durable_gap_candidate": "no"
+    },
+    {
+      "scenario": "openviking_case_memory_read",
+      "requested_shape": "tools.openviking.read({ uri: \"viking://...\" })",
+      "effective_shape": "rejected: uris: Missing key (the OpenViking read tool expects the plural uris array)",
+      "rewrite_provenance": "none",
+      "event_kind": "interface_discovery",
+      "execution_effect": "not_executed",
+      "correction_or_annotation": "argument-name discovery on the OpenViking MCP surface; corrected to tools.openviking.read({ uris: [...] })",
+      "replacement_shape": "tools.openviking.read({ uris: [\"viking://...\"] })",
+      "recipe_reference": "none",
+      "resource_reference": "none",
+      "contract_conflict": "no",
+      "durable_gap_candidate": "no"
+    },
+    {
+      "scenario": "roster_checksum_discovery",
+      "requested_shape": "locate the frozen roster by SHA256 47e141bd... across /workspace and /tmp",
+      "effective_shape": "bounded find+sha256sum scan; a full /workspace sweep timed out at 180s, but the /tmp/opencode/issue81-merged-promotion match was found before the timeout",
+      "rewrite_provenance": "none",
+      "event_kind": "interface_discovery",
+      "execution_effect": "partial_success",
+      "correction_or_annotation": "roster located and re-authenticated at /tmp/opencode/issue81-merged-promotion/evidence/phase-b/semantic-recall-roster.json; the timed-out sweep is exploratory, not a handoff gate",
+      "replacement_shape": "direct sha256sum of the located roster (verified == 47e141bd...)",
+      "recipe_reference": "none",
+      "resource_reference": "none",
+      "contract_conflict": "no",
+      "durable_gap_candidate": "no"
+    }
+  ],
+  "omitted_sensitive_values": "yes"
+}

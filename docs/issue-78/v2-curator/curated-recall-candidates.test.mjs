@@ -4,7 +4,8 @@ import {mkdtemp,mkdir,rm,writeFile} from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
 import {Journal,Memory} from '../../issue-75/v2-candidate/memory-core.mjs';
-import {curatedRecallCandidates} from './curated-recall-candidates.mjs';
+import {curatedRecallCandidates,curatedRecallRetriever} from './curated-recall-candidates.mjs';
+import {ReviewStore} from './core.mjs';
 import {relevanceFilter,relevanceSignals,answerTypeSupport} from '../../issue-75/v2-candidate/relevance.mjs';
 
 const group='qual-test', project='sample-app',workspace='/workspace/sample-app';
@@ -134,3 +135,140 @@ test('Graphiti MCP search and remote-proof reads never overlap',()=>fixture(asyn
   assert.equal(result.length,1);
   assert.equal(maxActive,1,'remote Graphiti MCP operations must be serialized');
 }));
+
+const growthId=n=>n.toString(16).padStart(64,'0');
+const growthUUID=n=>'aaaaaaaa-aaaa-4aaa-8aaa-'+n.toString(16).padStart(12,'0');
+const growthQuery='Which PostgreSQL database stores durable archive state?';
+async function growthFixture({persisted,deferred,targetIndex},check) {
+  const root=await mkdtemp(path.join(os.tmpdir(),'gh81-growth-'));
+  try {
+    const dir=path.join(root,'curation-v1',group);
+    await mkdir(path.join(dir,'_episode-index'),{recursive:true});
+    for(let start=1;start<=persisted+deferred;start+=48) {
+      const pending=[];
+      for(let n=start;n<=Math.min(start+47,persisted+deferred);n++) {
+        const id=growthId(n),remote_episode_uuid=growthUUID(n),active=n<=persisted;
+        const fact=n===targetIndex?'PostgreSQL database stores durable archive state.':
+          'Unrelated compilation inventory item '+n+' completed.';
+        const review={id,group,project,workspace,state:active?'persisted':'deferred',
+          remote_episode_uuid:active?remote_episode_uuid:null,
+          facts:active?[{assertion:fact,source_refs:[source],
+            evidence_class:'tool-reported',temporal_status:'observed'}]:[],
+          events:active?[{source_strength:'native-id',source_refs:[source],
+            evidence_class:'tool-reported',excerpt:fact}]:[]};
+        pending.push(writeFile(path.join(dir,id+'.json'),JSON.stringify(review)));
+        if(active)pending.push(writeFile(path.join(dir,'_episode-index',
+          remote_episode_uuid+'.json'),JSON.stringify({id,remote_episode_uuid})));
+      }
+      await Promise.all(pending);
+    }
+    await check({root,targetUUID:growthUUID(targetIndex)});
+  }finally{await rm(root,{recursive:true,force:true});}
+}
+test('299 persisted sources survive the former 288-inventory blackout',()=>growthFixture(
+  {persisted:299,deferred:199,targetIndex:299},async({root,targetUUID})=>{
+    for(const policy of ['strict','semantic']) {
+      const found=await curatedRecallCandidates(root,group,workspace,project,growthQuery,policy);
+      assert.equal(found.length,1);assert.equal(found[0].remoteEpisodeUuid,targetUUID);
+      assert.equal(found[0].source,source);assert.equal(found[0].group,group);
+    }
+    const legacy=await curatedRecallCandidates(root,group,workspace,project);
+    assert.equal(legacy.length,299,'resolver must batch, not truncate at 288');
+  }));
+test('query-local search includes persisted fact after the first 500 reviews',()=>growthFixture(
+  {persisted:513,deferred:0,targetIndex:513},async({root,targetUUID})=>{
+    for(const policy of ['strict','semantic']) {
+      const found=await curatedRecallCandidates(root,group,workspace,project,growthQuery,policy);
+      assert.equal(found.length,1);
+      assert.equal(found[0].remoteEpisodeUuid,targetUUID);
+      assert.ok(found.length<=24);
+    }
+  }));
+test('growing inventory does not bypass workspace, project or privacy fences',()=>growthFixture(
+  {persisted:1,deferred:0,targetIndex:1},async({root})=>{
+    assert.deepEqual(await curatedRecallCandidates(root,group,'/workspace/other',project,growthQuery,'semantic'),[]);
+    assert.deepEqual(await curatedRecallCandidates(root,group,workspace,'other',growthQuery,'strict'),[]);
+    assert.deepEqual(await curatedRecallCandidates(root,group,workspace,project,
+      'Use api_key=secret for production','semantic'),[]);
+  }));
+
+test('query-scoped production/replay retriever reads each inventory record only once',()=>growthFixture(
+  {persisted:513,deferred:0,targetIndex:513},async({root,targetUUID})=>{
+    const retriever=curatedRecallRetriever(root,group,workspace,project);
+    const original=ReviewStore.prototype.get;
+    let reads=0;
+    ReviewStore.prototype.get=async function(...args) {
+      reads++; return original.apply(this,args);
+    };
+    try {
+      const found=await retriever(growthQuery,'semantic');
+      assert.equal(found.length,1);
+      assert.equal(found[0].remoteEpisodeUuid,targetUUID);
+      assert.ok(reads<=514,'513 inventory reads plus at most one source-index proof, not repeated full scans: '+reads);
+      assert.ok(reads>=513,'scan must not silently drop reviews');
+    }finally{ReviewStore.prototype.get=original;}
+    // Omitting the query still invokes the deliberately bounded legacy API.
+    // Production and replay MUST pass the real query/policy instead.
+    assert.deepEqual(await retriever(),[]);
+  }));
+
+test('missing reserved episode cannot suppress the next proven strict winner',async()=>{
+  const q='What database did we originally use for archive storage recovery?';
+  for(const proofFailure of ['remote-episode','local-index']) {
+    const root=await mkdtemp(path.join(os.tmpdir(),'gh81-fallback-'));
+    try {
+      const dir=path.join(root,'curation-v1',group);
+      await mkdir(path.join(dir,'_episode-index'),{recursive:true});
+      const claims=[
+        'We previously used database snapshots.',
+        'We previously used database backups.',
+        ...Array.from({length:24},(_,i)=>
+          'Archive storage recovery database validation job '+i+' completed.')
+      ];
+      const uuids=claims.map((_,i)=>growthUUID(i+1));
+      for(let i=0;i<claims.length;i++) {
+        const id=growthId(i+1),remote_episode_uuid=uuids[i],assertion=claims[i];
+        const review={id,group,workspace,project,state:'persisted',
+          remote_episode_uuid,
+          facts:[{assertion,source_refs:[source],evidence_class:'tool-reported',
+            temporal_status:'observed'}],
+          events:[{source_strength:'native-id',source_refs:[source],
+            evidence_class:'tool-reported',excerpt:assertion}]};
+        await writeFile(path.join(dir,id+'.json'),JSON.stringify(review));
+        if(i!==0||proofFailure!=='local-index') {
+          await writeFile(path.join(dir,'_episode-index',remote_episode_uuid+'.json'),
+            JSON.stringify({id,remote_episode_uuid}));
+        }
+      }
+      const retriever=curatedRecallRetriever(root,group,workspace,project);
+      const indexRows=await retriever(q,'semantic');
+      assert.ok(indexRows.length<=48,'two bounded 24-slot pre-proof lanes');
+      assert.ok(indexRows.some(x=>x.fact===claims[1]),
+        'strict runner-up must survive the first semantic cut');
+      const calls=[];
+      const graphiti={call:async(name,args)=>{
+        calls.push({name,args});
+        if(name==='search_memory_facts')return {facts:[]};
+        if(name==='get_episodes')return {episodes:uuids
+          .filter((_,i)=>i!==0||proofFailure!=='remote-episode')
+          .map(uuid=>({uuid,group_id:group}))};
+        throw Error('unexpected Graphiti operation '+name);
+      }};
+      const build=policy=>new Memory({
+        journal:new Journal(root,group),graphiti,group,recallPolicy:policy,
+        curatedCandidateRetriever:retriever
+      });
+      const strict=await build('strict').search(q);
+      const semantic=await build('semantic').search(q);
+      assert.equal(strict[0]?.fact,claims[1],
+        'strict control selects the next source with valid proof');
+      assert.equal(semantic[0]?.fact,claims[1],
+        'semantic must preserve that proven strict fallback');
+      assert.ok(semantic.length<=5);
+      assert.ok(!semantic.some(x=>x.fact===claims[0]),
+        'the unproven reserved claim must never enter context');
+      assert.equal(calls.filter(x=>x.name==='get_episodes').length,2);
+      assert.ok(calls.every(x=>x.name!=='add_memory'));
+    }finally{await rm(root,{recursive:true,force:true});}
+  }
+});

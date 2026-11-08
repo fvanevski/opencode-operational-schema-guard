@@ -1,0 +1,81 @@
+{
+ "schema": "issue81-quality-followup-precision-and-operations.v1",
+ "human_precision": {
+  "status": "PENDING_OPERATOR_REVIEW",
+  "population": 126,
+  "null_human_verdict_items": 126,
+  "adjudication_status": "AWAITING_OPERATOR_ADJUDICATION",
+  "verdicts_complete": false,
+  "threshold_durable_grounded_precision_min": 0.9,
+  "original_packet": {
+   "artifact": "operator-review-packet-126-consolidated.json (host-private, 0600)",
+   "sha256": "a7d38d607fcd518af8f242a1fe56d6b34dc6fc4b17500c065e97aa12b43cb83f",
+   "sha256_verified": true
+  },
+  "prepared_batch_packet": {
+   "artifact": "precision-operator-batch-packet.json + .md (host-private, 0600, navigable, one explicit completeness tally)",
+   "sha256": "1f9839e186004f26a920598de30203f7b4a4a78a1d2a523ec6ea69c6ef438cbc",
+   "tally": "0/126 adjudicated; single operator approve/correct/decline pass outstanding"
+  },
+  "target_ratification": {
+   "status": "OPERATOR_RATIFIED",
+   "evidence_class": "operator receipt (host-private)",
+   "receipt_sha256": "3e9581114047ac7416f6014a0dd6a57304dc5e5784efe39b176ced61fbb8626a",
+   "note": "Threshold gate ratified by the operator; a precondition, not a human precision verdict. No agent-signed verdicts."
+  },
+  "note": "Target >=0.90 NOT accepted absent operator-signed evidence. Smaller-packet completeness does not imply 126/126."
+ },
+ "curator_cli_smoke": {
+  "entrypoint": "docs/issue-78/v2-curator/curator-cli.mjs",
+  "commands": [
+   "status",
+   "list"
+  ],
+  "group": "development-knowledge",
+  "exit": 0,
+  "review_counts": {
+   "deferred": 194,
+   "persisted": 299,
+   "skipped": 5,
+   "total": 498
+  },
+  "queue": {
+   "total": 3540,
+   "counts_new": 41,
+   "reserved": 0,
+   "approved": 2675,
+   "deferred": 803,
+   "skipped": 21,
+   "full": false
+  },
+  "fixture_label": "production",
+  "note": "Read-only; no drain, reconcile-only, or model invocation issued."
+ },
+ "portal_smoke": {
+  "live_endpoint": "none currently configured/running",
+  "routes": [
+   "GET /api/clusters",
+   "GET /api/status",
+   "graph-preview"
+  ],
+  "exercised_live": false,
+  "prior_nonproduction_acceptance": {
+   "reference": "81-qualification-first-v1 portal/CLI focused acceptance (cur81 disposable binding, loopback 18821/18822, 401/403/200 checks, discard revision CAS 200/409, listener stopped)",
+   "applicability": "Accepted on a disposable non-production root; source files (portal-server.mjs, graph-preview.mjs, curator-cli.mjs) unchanged since that acceptance (last change predates this PR base). Production-binding portal routes NOT re-exercised; no temporary service was started for this read-only smoke."
+  },
+  "mutation_specific_operations": {
+   "correction_forget_reexercised": false,
+   "note": "Previously accepted non-production discard/correction receipts remain applicable to their disposable roots only; no destructive correction/forget was issued on the production binding in this campaign."
+  }
+ },
+ "live_install": {
+  "status": "unchanged",
+  "installed_plugin_mjs_blob": "eb975a77b331cced7fa42de78067c363ccc096f0",
+  "equals_base_state_blob": true,
+  "candidate_semantic_recall_installed": false,
+  "config_mtime": "2026-11-05 (predates campaign)",
+  "units": "ghdev-curator-prod (resident post-exit EX-gated drain, unchanged), disposable holdout/qual units inactive"
+ },
+ "graphiti_mutations": "none (read-only MCP: initialize, search_memory_facts, get_episodes)",
+ "ex_gate_mutations": "none (no EX gate change; resident post-exit drain untouched)"
+}

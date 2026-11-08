@@ -1,0 +1,71 @@
+{
+  "schema": "issue81-index-growth-exact-source-and-tests.v1",
+  "source_commit": "6eae66a3f19c0af15c212e51faee4243cc656c55",
+  "source_tree": "599718095216528034261359069ad70869fcd02f",
+  "base_commit": "6e5695da91974447c718e99757bc8a84d9de3e9d",
+  "index_fix_source_commit": "defb9da668cae03dcdbaa9255b7ed5cfdf296fd2",
+  "branch": "issue/81-semantic-recall",
+  "pr": 90,
+  "remote_ref_at_preflight": "6eae66a3f19c0af15c212e51faee4243cc656c55",
+  "remote_main_at_preflight": "6e5695da91974447c718e99757bc8a84d9de3e9d",
+  "fix_is_ancestor_of_head": true,
+  "working_tree": "detached HEAD at 6eae66a, clean (only the committed kickoff handoff doc), identical to origin/issue/81-semantic-recall",
+  "exact_head_ci": {
+    "run_id": 42421882693,
+    "head_sha": "6eae66a3f19c0af15c212e51faee4243cc656c55",
+    "workflow": "CI",
+    "job": "node-contract",
+    "conclusion": "success",
+    "steps": [
+      "npm run check=success",
+      "npm test=success"
+    ],
+    "note": "Complete and successful at exact head; reused per contract (no unnecessary local rerun of the root 524-test profile)."
+  },
+  "syntax_checks": [
+    "docs/issue-78/v2-curator/curated-recall-candidates.mjs OK",
+    "docs/issue-78/v2-candidate/plugin.mjs OK",
+    "docs/issue-75/v2-candidate/memory-core.mjs OK",
+    "docs/issue-78/v2-curator/curated-recall-candidates.test.mjs OK"
+  ],
+  "focused_tests": {
+    "producer": "node --test <6 contract-named files>",
+    "exit": 0,
+    "tests": 62,
+    "pass": 62,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "files": [
+      "docs/issue-78/v2-curator/curated-recall-candidates.test.mjs",
+      "docs/issue-75/v2-candidate/semantic-recall.test.mjs",
+      "docs/issue-75/v2-candidate/semantic-memory-integration.test.mjs",
+      "docs/issue-75/v2-candidate/memory-core.test.mjs",
+      "docs/issue-75/v2-candidate/plugin-behavior.test.mjs",
+      "docs/issue-78/v2-curator/production-cutover.test.mjs"
+    ],
+    "note": "Single complete node --test invocation; the root Actions 524-test profile is separate and was not treated as focused coverage."
+  },
+  "frozen_roster": {
+    "schema": "issue81-semantic-recall-roster.v1",
+    "sha256": "47e141bdc81f1f2cdc2e98c7697162dbbf3250a5eb209a56361b358bc2441652",
+    "location": "host-private /tmp/opencode/issue81-merged-promotion/evidence/phase-b/semantic-recall-roster.json (0600)",
+    "positives": 16,
+    "negatives": 4,
+    "note": "Re-authenticated by SHA256 at replay time; positive cases are pre-registered source-anchored and unaltered after observing outcomes."
+  },
+  "operator_batch": {
+    "worksheet_schema": "issue81-durable-grounded-precision-worksheet.v1",
+    "worksheet_sha256": "9f9152cc1a5c0defc616dcced2869d30aa21738f78d698a5b8b2777659b7b56c",
+    "as_of_snapshot_sha256": "c8d5053c16ac7a07447c71d0bb5e7c4ce665940cdba3263119bdb25d6524ef37",
+    "snapshot_sha256": "c8d5053c16ac7a07447c71d0bb5e7c4ce665940cdba3263119bdb25d6524ef37",
+    "snapshot_sha_binding_matches": true,
+    "rows": 126,
+    "fact_denominator": 126,
+    "navigable_rows": 126,
+    "human_verdicts": 0,
+    "adjudication_status": "PENDING_OPERATOR_ADJUDICATION",
+    "threshold": 0.9,
+    "location": "host-private durable-precision-worksheet.json (0600); complete navigable batch supplied to the operator for manual adjudication"
+  }
+}

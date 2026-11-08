@@ -1,0 +1,48 @@
+{
+  "schema": "issue81-semantic-recall-source-identity.v1",
+  "campaign": "ISSUE81_SEMANTIC_RECALL_INTEGRATION",
+  "repo": "fvanevski/opencode-operational-schema-guard",
+  "branch": "issue/81-semantic-recall",
+  "source_commit": "74972845dcf885e8676d5845853bc590e742f137",
+  "source_tree": "3ec1ed417cfc54fcd5373236b0163752bfb322f1",
+  "base_commit": "6e5695da91974447c718e99757bc8a84d9de3e9d",
+  "remote_ref_at_preflight": "74972845dcf885e8676d5845853bc590e742f137",
+  "working_tree": "clean at preflight (git status --porcelain empty)",
+  "head_state": "detached HEAD at candidate tip, identical to origin/issue/81-semantic-recall",
+  "changed_files_vs_base": {
+    "count": 8,
+    "blobs_at_head": {
+      "docs/issue-75/v2-candidate/memory-core.mjs": "739b822474254b49242d789d4120f048f9233a4e",
+      "docs/issue-75/v2-candidate/plugin.mjs": "c62fc0262b23998ae95a9e5184059b2d3c2b581b",
+      "docs/issue-75/v2-candidate/semantic-memory-integration.test.mjs": "589862ecb16986131212f5f134a1b9dd06c54e64",
+      "docs/issue-75/v2-candidate/semantic-recall.mjs": "7330535518a9f303356b42517df7894ca2b9c51f",
+      "docs/issue-75/v2-candidate/semantic-recall.test.mjs": "194b297c48660d1e4a3f78fb50a3e9f2c740128c",
+      "docs/issue-78/v2-benchmark/ISSUE81_SEMANTIC_RECALL_STAGE.md": "289774eed5b4424b9ff221360643bc691cefbb23",
+      "docs/issue-78/v2-benchmark/issue81-semantic-replay.mjs": "6e460edbc0b4a2947cdde2106af07402a67a8a67",
+      "docs/issue-78/v2-candidate/plugin.mjs": "e4afe99da45a577fbc78fca51ca142b0ab0e4993"
+    },
+    "statuses": {
+      "docs/issue-75/v2-candidate/memory-core.mjs": "M",
+      "docs/issue-75/v2-candidate/plugin.mjs": "M",
+      "docs/issue-75/v2-candidate/semantic-memory-integration.test.mjs": "A",
+      "docs/issue-75/v2-candidate/semantic-recall.mjs": "A",
+      "docs/issue-75/v2-candidate/semantic-recall.test.mjs": "A",
+      "docs/issue-78/v2-benchmark/ISSUE81_SEMANTIC_RECALL_STAGE.md": "A",
+      "docs/issue-78/v2-benchmark/issue81-semantic-replay.mjs": "A",
+      "docs/issue-78/v2-candidate/plugin.mjs": "M"
+    }
+  },
+  "strict_relevance_control": {
+    "path": "docs/issue-75/v2-candidate/relevance.mjs",
+    "blob_at_base": "46749f1d8fbe37ac97b79ffba711e115897a07d6",
+    "blob_at_head": "46749f1d8fbe37ac97b79ffba711e115897a07d6",
+    "unchanged": true
+  },
+  "installed_live_plugin": {
+    "path": "/home/filip/.config/opencode/plugins/ghdev-graphiti-memory/docs/issue-78/v2-candidate/plugin.mjs",
+    "git_blob_identity": "eb975a77b331cced7fa42de78067c363ccc096f0",
+    "equals_base_blob": true,
+    "equals_candidate_head_blob": false,
+    "conclusion": "installed live plugin is the previously accepted merged implementation (base-state issue-78 v2 candidate), NOT this candidate; candidate semantic-recall.mjs is not present in the installed tree"
+  }
+}

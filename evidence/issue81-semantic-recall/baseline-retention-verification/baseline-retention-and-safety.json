@@ -1,0 +1,79 @@
+{
+  "schema": "issue81-baseline-retention-safety.v1",
+  "s04_strict_to_semantic_regression": {
+    "baseline_6eae66a": {
+      "regressed_cases": [
+        "S04"
+      ],
+      "semantic_source_exact": "12/16"
+    },
+    "current_6504f7a": {
+      "regressed_cases": [],
+      "semantic_source_exact": "13/16"
+    },
+    "status": "RESOLVED"
+  },
+  "s03_shortlist_miss": {
+    "status": "PERSISTS",
+    "stage": "RAW_POOL_ABSENT_DEPTH24",
+    "detail": "expected source absent from 24-slot remote pool in both policies"
+  },
+  "s05_s13_multi_event_coverage": {
+    "status": "PERSISTS",
+    "stage": "RAW_POOL_ABSENT_DEPTH24",
+    "detail": "multi-event named-entity sources absent from 24-slot remote pool in both policies"
+  },
+  "s10_retained_improvement": {
+    "status": "RETAINED",
+    "detail": "semantic-only source-exact at rank 3 (strict absent); curated query-local index path with fresh remote UUID proof"
+  },
+  "strict_policy_unchanged": {
+    "status": "NO_DEGRADATION",
+    "detail": "strict 12/16 source-exact and 12 at-first identical to baseline 6eae66a; miss set {S03,S05,S10,S13} unchanged"
+  },
+  "censoring": {
+    "legacy_288_inventory_blackout": "ABSENT",
+    "detail": "all 16 roster expected episode UUIDs present in the 311 persisted curation-episode UUIDs (513 candidate docs: 311 persisted / 197 deferred / 5 skipped; 367 durable facts)"
+  },
+  "negative_controls": {
+    "N01_unrelated": {
+      "strict_obs": 0,
+      "semantic_obs": 4,
+      "reading": "irrelevant same-group context cost (unchanged from baseline 4)"
+    },
+    "N02_wrong_group": {
+      "strict_obs": 1,
+      "semantic_obs": 3,
+      "reading": "same-group observation cost; cross-group leak requires separate source proof (frozen label preserved)"
+    },
+    "N03_private_marker": {
+      "strict_obs": 0,
+      "semantic_obs": 0,
+      "reading": "PASS secret-marker privacy fence"
+    },
+    "N04_too_brief": {
+      "strict_obs": 0,
+      "semantic_obs": 0,
+      "reading": "PASS sub-10-char floor"
+    }
+  },
+  "source_integrity": {
+    "scope_binding_ok": true,
+    "fingerprint_shape_ok": true,
+    "count_cap_5_respected": true,
+    "evidence_class_universe": [
+      "tool-reported",
+      "assistant-reported",
+      "user-stated"
+    ],
+    "temporal_universe": [
+      "current state not independently verified",
+      "historical/superseded"
+    ],
+    "source_diversity_note": "per-case distinct-source counts 1-4; pipeline dedups on source\\0fact; no duplicate context insertion (prior native evidence duplicate_block_in_request=false)"
+  },
+  "host_mutation": {
+    "campaign_graphiti_writes": 0,
+    "preexisting_process": "post-exit-drain.py (pid 1575475) updated 15 curation docs 22:39-23:00Z, before the replay window; pre-existing host worker, not campaign-induced"
+  }
+}

@@ -1,0 +1,247 @@
+{
+  "schema": "issue81-semantic-recall-shadow-comparison.v1",
+  "evidence_class": "shadow-replay-not-native-hook",
+  "notes": [
+    "Fresh read-only Graphiti snapshot via existing MCP service (search_memory_facts with group_ids=[development-knowledge] max_facts=24; get_episodes group-scoped). NOT a native session and NOT native hook p95 evidence.",
+    "context_wait_ms is NOT_MEASURED; NATIVE_HOOK_P95=UNVERIFIED.",
+    "Fingerprints are SHA-256 of fact assertion text and source reference only; raw private facts, UUID-to-person mappings, transcripts and credentials are NOT published.",
+    "Roster identity: frozen 16+4 semantic-recall roster SHA256 47e141bdc81f1f2cdc2e98c7697162dbbf3250a5eb209a56361b358bc2441652 (host-private, re-authenticated at replay time).",
+    "N03 fast elapsed times are the pre-Graphiti privacy fence (safeText PRIVATE regex on sk- key) short-circuiting before any remote call, in BOTH modes; verified by direct safeText probe.",
+    "All invocations exit 0; read-only; no Graphiti, curation, journal, service or OpenCode mutation."
+  ],
+  "replay_entrypoint": "docs/issue-78/v2-benchmark/issue81-semantic-replay.mjs",
+  "binding": {
+    "endpoint": "http://127.0.0.1:8766/mcp",
+    "group": "development-knowledge",
+    "state_dir": "/home/filip/.local/state/ghdev-graphiti",
+    "workspace": "/workspace/mcp_servers/gh_mcp",
+    "project": "gh_mcp"
+  },
+  "cases": [
+    {
+      "case_id": "S08",
+      "role": "falkordb-persistence-target",
+      "query_sha256": "792c293ef02a7b46077421fdf28657fe099be58d124040aed2a8e4bbe0e25f3a",
+      "search_depth": 24,
+      "strict": {
+        "elapsed_ms_shadow": 230.122,
+        "count": 1,
+        "source_fingerprints": [
+          {
+            "fact_sha256": "b7f7f651b9760c033b575afef7dcf3d95e3a52fbc1a6fb6a33e3c94bc5a5d7e1",
+            "source_sha256": "4ccddc4eb3a7138daebb1a359bd4fcd4d72e061f737f803727d2a4aa089819b2",
+            "evidence_class": "assistant-reported",
+            "temporal": "current state not independently verified"
+          }
+        ]
+      },
+      "semantic": {
+        "elapsed_ms_shadow": 162.911,
+        "count": 4,
+        "source_fingerprints": [
+          {
+            "fact_sha256": "b7f7f651b9760c033b575afef7dcf3d95e3a52fbc1a6fb6a33e3c94bc5a5d7e1",
+            "source_sha256": "4ccddc4eb3a7138daebb1a359bd4fcd4d72e061f737f803727d2a4aa089819b2",
+            "evidence_class": "assistant-reported",
+            "temporal": "current state not independently verified"
+          },
+          {
+            "fact_sha256": "ef34fd1d9c01cbfa374b449628840650259c42d86a9eb91bf63d0aa3a7d918b5",
+            "source_sha256": "4225860cde83bbe35180db0a66adb31ad81bd0162a92e00aac53468e33253c7f",
+            "evidence_class": "assistant-reported",
+            "temporal": "current state not independently verified"
+          },
+          {
+            "fact_sha256": "f8b78e14473cf72af47530659e5df09058b2ce0c2168292950f6f72d32fe0994",
+            "source_sha256": "7ce39a3bd268da1eee8a7e3e30fef0dfd9bfcfed9f967ae3fb9d69c3f65ccbb9",
+            "evidence_class": "assistant-reported",
+            "temporal": "current state not independently verified"
+          },
+          {
+            "fact_sha256": "0a04cd892a7efe7b51877bbc8294c38d1a52b15a55dc653abc944f1de17af8c3",
+            "source_sha256": "f698cee3c7ed5977eac42908aa77b7bf2f9b99ae3cdf8b79606b6d66aa75e05c",
+            "evidence_class": "assistant-reported",
+            "temporal": "current state not independently verified"
+          }
+        ]
+      },
+      "top_fact_identical_in_both_modes": true
+    },
+    {
+      "case_id": "S07",
+      "role": "curator-service-historical",
+      "query_sha256": "59a5d42a7c98aa45942deee6053882acb6d457a9832fa81665d92d9349065b40",
+      "search_depth": 24,
+      "strict": {
+        "elapsed_ms_shadow": 190.405,
+        "count": 1,
+        "source_fingerprints": [
+          {
+            "fact_sha256": "5a15a547d86762aa093eb09c35d0782decdb427eabc993e16ed52f575283592d",
+            "source_sha256": "8c2aeb9b7231b50c08df854c1856a81b875161db71d3748ca72b6023e41b1602",
+            "evidence_class": "tool-reported",
+            "temporal": "current state not independently verified"
+          }
+        ]
+      },
+      "semantic": {
+        "elapsed_ms_shadow": 155.139,
+        "count": 4,
+        "source_fingerprints": [
+          {
+            "fact_sha256": "5a15a547d86762aa093eb09c35d0782decdb427eabc993e16ed52f575283592d",
+            "source_sha256": "8c2aeb9b7231b50c08df854c1856a81b875161db71d3748ca72b6023e41b1602",
+            "evidence_class": "tool-reported",
+            "temporal": "current state not independently verified"
+          },
+          {
+            "fact_sha256": "67980ac378042f4779a60d138cd7664627b0f55b94da97d5c0acf3689da2d776",
+            "source_sha256": "ecd6ccee90a39ee3e3981cef54845365506efe53bf5d5bb9496236629328d154",
+            "evidence_class": "tool-reported",
+            "temporal": "current state not independently verified"
+          },
+          {
+            "fact_sha256": "be037f8b8495d0133389b41cb16ff1b87c6880a0b2da22f068683aaee169c811",
+            "source_sha256": "8c2aeb9b7231b50c08df854c1856a81b875161db71d3748ca72b6023e41b1602",
+            "evidence_class": "tool-reported",
+            "temporal": "current state not independently verified"
+          },
+          {
+            "fact_sha256": "dd6ae9c236744b52edb070c4385eb83698c6e54b1a6d43b594dbe89afb411538",
+            "source_sha256": "d61e7977f71286d75682e93b025eaa5dd3dd8b70af50651535868442d82011db",
+            "evidence_class": "tool-reported",
+            "temporal": "current state not independently verified"
+          }
+        ]
+      },
+      "top_fact_identical_in_both_modes": true
+    },
+    {
+      "case_id": "N01",
+      "role": "unrelated-negative-control",
+      "query_sha256": "18aadf2fc202e1430ef72a7813d0a37c8e9593d03073fe18f2f034dbd9280a1a",
+      "search_depth": 24,
+      "strict": {
+        "elapsed_ms_shadow": 187.695,
+        "count": 0,
+        "source_fingerprints": []
+      },
+      "semantic": {
+        "elapsed_ms_shadow": 148.301,
+        "count": 1,
+        "source_fingerprints": [
+          {
+            "fact_sha256": "cc1fcc9e9f675ad954385065c3ed50b973e09df1bae630488250a01a12240d22",
+            "source_sha256": "384de5294b680b5f222a69c6428a8d7700d0121984320e5648fc4e6024ad780d",
+            "evidence_class": "tool-reported",
+            "temporal": "current state not independently verified"
+          }
+        ]
+      },
+      "top_fact_identical_in_both_modes": false
+    },
+    {
+      "case_id": "S06",
+      "role": "historical-superseded-representative",
+      "query_sha256": "7e14fc4edade633393e9edc1b7a5040d98128b02aa760568c00bb9cd979c0f62",
+      "search_depth": 24,
+      "strict": {
+        "elapsed_ms_shadow": 189.058,
+        "count": 1,
+        "source_fingerprints": [
+          {
+            "fact_sha256": "5cf3e919381b8862a4f17a422a6d96b02a570fec3904fd93ba69576d9930706c",
+            "source_sha256": "cf0a9e8e9f26407a855dfae1b35dc1ede38ea3c83e120e01f8a9c1d3f1004301",
+            "evidence_class": "assistant-reported",
+            "temporal": "historical/superseded"
+          }
+        ]
+      },
+      "semantic": {
+        "elapsed_ms_shadow": 154.64,
+        "count": 3,
+        "source_fingerprints": [
+          {
+            "fact_sha256": "5cf3e919381b8862a4f17a422a6d96b02a570fec3904fd93ba69576d9930706c",
+            "source_sha256": "cf0a9e8e9f26407a855dfae1b35dc1ede38ea3c83e120e01f8a9c1d3f1004301",
+            "evidence_class": "assistant-reported",
+            "temporal": "historical/superseded"
+          },
+          {
+            "fact_sha256": "6a49cc56247a5aec8b2347306f925d82cab9e48d9e7bd8e79aaede7daa5f763f",
+            "source_sha256": "eb348338755a0770664a2bef51d377318f4da85f8fac804039e7074209ec6b96",
+            "evidence_class": "tool-reported",
+            "temporal": "current state not independently verified"
+          },
+          {
+            "fact_sha256": "3a198c59dccf56efe5234892accd7359c80c1354e7d9b9e2f4abca297bad13a1",
+            "source_sha256": "8ad8958ea9b31e3bfd6340e1a0f21fcb4a2611fa0a978d22ce8d54f7966a2f8e",
+            "evidence_class": "assistant-reported",
+            "temporal": "current state not independently verified"
+          }
+        ]
+      },
+      "top_fact_identical_in_both_modes": true
+    },
+    {
+      "case_id": "N02",
+      "role": "legacy-group-wronggroup-control",
+      "query_sha256": "821947953003583d6be52b40d39e13312165d8534aae88643f0a74e7a58a1d99",
+      "search_depth": 24,
+      "strict": {
+        "elapsed_ms_shadow": 197.223,
+        "count": 1,
+        "source_fingerprints": [
+          {
+            "fact_sha256": "1142369024702102692c20000fba1a576cd3624df9d0360c400016247cfdb9ed",
+            "source_sha256": "0c7742a9c460d3829a946af0dbbd537ef5f15933164e10163e2d0b9ef19f04a9",
+            "evidence_class": "assistant-reported",
+            "temporal": "current state not independently verified"
+          }
+        ]
+      },
+      "semantic": {
+        "elapsed_ms_shadow": 158.242,
+        "count": 3,
+        "source_fingerprints": [
+          {
+            "fact_sha256": "1142369024702102692c20000fba1a576cd3624df9d0360c400016247cfdb9ed",
+            "source_sha256": "0c7742a9c460d3829a946af0dbbd537ef5f15933164e10163e2d0b9ef19f04a9",
+            "evidence_class": "assistant-reported",
+            "temporal": "current state not independently verified"
+          },
+          {
+            "fact_sha256": "8e0b17630b152bd1fa68447b6126dc6eeac54b01e5019b0794e92ff95545f3cf",
+            "source_sha256": "d7e9feca77e1621b87859d6523dba1381a1bd718b557026c97afae5793b1e491",
+            "evidence_class": "assistant-reported",
+            "temporal": "historical/superseded"
+          },
+          {
+            "fact_sha256": "d0940077fa71b170bc242d5ce6b2e180d01b4ee49c8031b7aa0724c9146863e2",
+            "source_sha256": "9fbb7a3eab4905d54a70f7d8b31d4d0a79a35b9ca19bd87ade8b5b5fe536f572",
+            "evidence_class": "assistant-reported",
+            "temporal": "current state not independently verified"
+          }
+        ]
+      },
+      "top_fact_identical_in_both_modes": true
+    },
+    {
+      "case_id": "N03",
+      "role": "secret-control",
+      "query_sha256": "c7711227971fd41e039ff0c972f95b4abd50eaa236511673bf7d16c0196271ac",
+      "search_depth": 24,
+      "strict": {
+        "elapsed_ms_shadow": 0.518,
+        "count": 0,
+        "source_fingerprints": []
+      },
+      "semantic": {
+        "elapsed_ms_shadow": 0.029,
+        "count": 0,
+        "source_fingerprints": []
+      },
+      "top_fact_identical_in_both_modes": false
+    }
+  ]
+}

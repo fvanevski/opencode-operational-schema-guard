@@ -1,0 +1,441 @@
+{
+  "schema": "issue81-index-growth-replay-matrix.v1",
+  "frozen_roster_sha256": "47e141bdc81f1f2cdc2e98c7697162dbbf3250a5eb209a56361b358bc2441652",
+  "group": "development-knowledge",
+  "workspace": "/workspace/mcp_servers/gh_mcp",
+  "project": "gh_mcp",
+  "positive_count": 16,
+  "negative_count": 4,
+  "strict_source_exact": "12/16",
+  "semantic_source_exact": "12/16",
+  "strict_semantic_regressions": [
+    "S04"
+  ],
+  "cases": [
+    {
+      "case_id": "S01",
+      "role": "positive",
+      "query_sha256": "6f5564559ef7437f4d433077ebe3645a8ea895693d8c3b6d8a1e180eafdfeaa3",
+      "expected_source_sha256": "7a5079b5cec0914e6a7e451191be78785895e4e11fc4e8946e29d35bd816ed3a",
+      "strict": {
+        "presented_count": 1,
+        "source_exact": true,
+        "rank": 1,
+        "elapsed_ms_shadow": 476.11
+      },
+      "semantic": {
+        "presented_count": 4,
+        "source_exact": true,
+        "rank": 2,
+        "elapsed_ms_shadow": 231.381
+      },
+      "stage": {
+        "strict": "HIT rank 1",
+        "semantic": "HIT rank 2"
+      }
+    },
+    {
+      "case_id": "S02",
+      "role": "positive",
+      "query_sha256": "b2ec8202e74eb6563022ecd7606e964dd793808ba12f082c47463d7dfec685b9",
+      "expected_source_sha256": "4225860cde83bbe35180db0a66adb31ad81bd0162a92e00aac53468e33253c7f",
+      "strict": {
+        "presented_count": 1,
+        "source_exact": true,
+        "rank": 1,
+        "elapsed_ms_shadow": 258.995
+      },
+      "semantic": {
+        "presented_count": 4,
+        "source_exact": true,
+        "rank": 1,
+        "elapsed_ms_shadow": 221.993
+      },
+      "stage": {
+        "strict": "HIT rank 1",
+        "semantic": "HIT rank 1"
+      }
+    },
+    {
+      "case_id": "S03",
+      "role": "positive",
+      "query_sha256": "f5713d4aaddf4bbf873e32fa34406cd3fccef4185751b794317ab51ae3a49004",
+      "expected_source_sha256": "74e232f5c5239bd9e606f7e214ff5d4bc1111511c125d5299fc7bb91bd0af591",
+      "strict": {
+        "presented_count": 1,
+        "source_exact": false,
+        "rank": null,
+        "elapsed_ms_shadow": 277.265
+      },
+      "semantic": {
+        "presented_count": 4,
+        "source_exact": false,
+        "rank": null,
+        "elapsed_ms_shadow": 237.969
+      },
+      "stage": {
+        "strict": "MISS stage=index-shortlist-truncation (episode not in local strict top-24 preselection; remote-list membership proven)",
+        "semantic": "MISS stage=index-shortlist-truncation (episode not in local semantic top-24 preselection; remote-list membership proven)"
+      }
+    },
+    {
+      "case_id": "S04",
+      "role": "positive",
+      "query_sha256": "edef5ef179d32d41536dbf37c0c950517bfefb26485d1b3171eebff44d207c3e",
+      "expected_source_sha256": "85397a269c2d3dde6e1b9b69602774d03f17684d8fb1925b72dc57831f08dc68",
+      "strict": {
+        "presented_count": 1,
+        "source_exact": true,
+        "rank": 1,
+        "elapsed_ms_shadow": 279.888
+      },
+      "semantic": {
+        "presented_count": 4,
+        "source_exact": false,
+        "rank": null,
+        "elapsed_ms_shadow": 226.923
+      },
+      "stage": {
+        "strict": "HIT rank 1",
+        "semantic": "MISS stage=final-rank-selection (episode in local semantic preselection, dropped in top-5)",
+        "regression": "strict->semantic: strict HIT rank 1 -> semantic MISS (final-rank-selection)"
+      }
+    },
+    {
+      "case_id": "S05",
+      "role": "positive",
+      "query_sha256": "cb8c0b4c3628dfbf25298abae39f83f470093e0d7f7e3a4a631799c9b257a1e4",
+      "expected_source_sha256": "46ebbc682f9cf65b8ac9e0c89cff9943c117a0d5d4e7f91c5b211c75044ac5bc",
+      "strict": {
+        "presented_count": 1,
+        "source_exact": false,
+        "rank": null,
+        "elapsed_ms_shadow": 278.861
+      },
+      "semantic": {
+        "presented_count": 4,
+        "source_exact": false,
+        "rank": null,
+        "elapsed_ms_shadow": 214.265
+      },
+      "stage": {
+        "strict": "MISS stage=index-shortlist-truncation (episode not in local strict top-24 preselection; remote-list membership proven)",
+        "semantic": "MISS stage=final-rank-selection (episode in local semantic preselection, dropped in top-5)"
+      }
+    },
+    {
+      "case_id": "S06",
+      "role": "positive",
+      "query_sha256": "7e14fc4edade633393e9edc1b7a5040d98128b02aa760568c00bb9cd979c0f62",
+      "expected_source_sha256": "cf0a9e8e9f26407a855dfae1b35dc1ede38ea3c83e120e01f8a9c1d3f1004301",
+      "strict": {
+        "presented_count": 1,
+        "source_exact": true,
+        "rank": 1,
+        "elapsed_ms_shadow": 274.801
+      },
+      "semantic": {
+        "presented_count": 3,
+        "source_exact": true,
+        "rank": 1,
+        "elapsed_ms_shadow": 224.178
+      },
+      "stage": {
+        "strict": "HIT rank 1",
+        "semantic": "HIT rank 1"
+      }
+    },
+    {
+      "case_id": "S07",
+      "role": "positive",
+      "query_sha256": "59a5d42a7c98aa45942deee6053882acb6d457a9832fa81665d92d9349065b40",
+      "expected_source_sha256": "8e26bd92276141605a5dc3f9d205710f2f07e211c695a061344a603472c26379",
+      "strict": {
+        "presented_count": 1,
+        "source_exact": true,
+        "rank": 1,
+        "elapsed_ms_shadow": 301.399
+      },
+      "semantic": {
+        "presented_count": 4,
+        "source_exact": true,
+        "rank": 2,
+        "elapsed_ms_shadow": 220.705
+      },
+      "stage": {
+        "strict": "HIT rank 1",
+        "semantic": "HIT rank 2"
+      }
+    },
+    {
+      "case_id": "S08",
+      "role": "positive",
+      "query_sha256": "792c293ef02a7b46077421fdf28657fe099be58d124040aed2a8e4bbe0e25f3a",
+      "expected_source_sha256": "4ccddc4eb3a7138daebb1a359bd4fcd4d72e061f737f803727d2a4aa089819b2",
+      "strict": {
+        "presented_count": 1,
+        "source_exact": true,
+        "rank": 1,
+        "elapsed_ms_shadow": 259.528
+      },
+      "semantic": {
+        "presented_count": 4,
+        "source_exact": true,
+        "rank": 1,
+        "elapsed_ms_shadow": 225.384
+      },
+      "stage": {
+        "strict": "HIT rank 1",
+        "semantic": "HIT rank 1"
+      }
+    },
+    {
+      "case_id": "S09",
+      "role": "positive",
+      "query_sha256": "2cbbdda9b9ef996c74552d85861ab48336c356ef31317b3b5529f98522a0a28b",
+      "expected_source_sha256": "c23ab7927ddbd8416e620da0a3a3f48691d2e4f3c871749c7ba22c7379b66540",
+      "strict": {
+        "presented_count": 1,
+        "source_exact": true,
+        "rank": 1,
+        "elapsed_ms_shadow": 264.2
+      },
+      "semantic": {
+        "presented_count": 4,
+        "source_exact": true,
+        "rank": 1,
+        "elapsed_ms_shadow": 214.777
+      },
+      "stage": {
+        "strict": "HIT rank 1",
+        "semantic": "HIT rank 1"
+      }
+    },
+    {
+      "case_id": "S10",
+      "role": "positive",
+      "query_sha256": "8be465fd892a80b41554dfb8d02f56b9063546ef93aeaa3ee1db1aca1a8db526",
+      "expected_source_sha256": "67c8d757f569f20a570f79ebac94f5c3fd75956ed451954f53e5aae8722ca4a9",
+      "strict": {
+        "presented_count": 1,
+        "source_exact": false,
+        "rank": null,
+        "elapsed_ms_shadow": 265.601
+      },
+      "semantic": {
+        "presented_count": 3,
+        "source_exact": true,
+        "rank": 3,
+        "elapsed_ms_shadow": 230.01
+      },
+      "stage": {
+        "strict": "MISS stage=final-rank-selection (episode in local strict preselection, dropped in top-5)",
+        "semantic": "HIT rank 3"
+      }
+    },
+    {
+      "case_id": "S11",
+      "role": "positive",
+      "query_sha256": "fb1770543b803ccbf1facc9ccfbda831a8a23439ef98004c11a186fcbe07b0fb",
+      "expected_source_sha256": "8420626f7f1d540f08a56290258e0ab08a202fc9065b4bb4eda5f6bb2119cb72",
+      "strict": {
+        "presented_count": 1,
+        "source_exact": true,
+        "rank": 1,
+        "elapsed_ms_shadow": 276.955
+      },
+      "semantic": {
+        "presented_count": 4,
+        "source_exact": true,
+        "rank": 1,
+        "elapsed_ms_shadow": 244.33
+      },
+      "stage": {
+        "strict": "HIT rank 1",
+        "semantic": "HIT rank 1"
+      }
+    },
+    {
+      "case_id": "S12",
+      "role": "positive",
+      "query_sha256": "f55b1d90f480c69750ca1dff4417b118d2e1ec61d5c72919e6c3d99d9a9037ab",
+      "expected_source_sha256": "499c1ac264029943062f9979875be01be355fe8b0d63facb9fb20644222d4d64",
+      "strict": {
+        "presented_count": 1,
+        "source_exact": true,
+        "rank": 1,
+        "elapsed_ms_shadow": 298.357
+      },
+      "semantic": {
+        "presented_count": 4,
+        "source_exact": true,
+        "rank": 1,
+        "elapsed_ms_shadow": 654.41
+      },
+      "stage": {
+        "strict": "HIT rank 1",
+        "semantic": "HIT rank 1"
+      }
+    },
+    {
+      "case_id": "S13",
+      "role": "positive",
+      "query_sha256": "ccf9aacf8df56220c9d83dd6e79b003c5569fc95073bfe549a1aef9e04830be8",
+      "expected_source_sha256": "4c7ab17718a64eecbf15a845e1c5ba3b2ef5a071ae35e66149b3addd8536232e",
+      "strict": {
+        "presented_count": 1,
+        "source_exact": false,
+        "rank": null,
+        "elapsed_ms_shadow": 259.671
+      },
+      "semantic": {
+        "presented_count": 4,
+        "source_exact": false,
+        "rank": null,
+        "elapsed_ms_shadow": 219.92
+      },
+      "stage": {
+        "strict": "MISS stage=index-shortlist-truncation (episode not in local strict top-24 preselection; remote-list membership proven)",
+        "semantic": "MISS stage=final-rank-selection (episode in local semantic preselection, dropped in top-5)"
+      }
+    },
+    {
+      "case_id": "S14",
+      "role": "positive",
+      "query_sha256": "f802235227139b18af49b636c8f045f40e53ca8ea911af9269dea80148693d4f",
+      "expected_source_sha256": "9c3ff5445694c1f8c1c9da0c337d8b55be862c1d8aa253b5a5262452f35b3c1b",
+      "strict": {
+        "presented_count": 1,
+        "source_exact": true,
+        "rank": 1,
+        "elapsed_ms_shadow": 276.689
+      },
+      "semantic": {
+        "presented_count": 3,
+        "source_exact": true,
+        "rank": 2,
+        "elapsed_ms_shadow": 222.543
+      },
+      "stage": {
+        "strict": "HIT rank 1",
+        "semantic": "HIT rank 2"
+      }
+    },
+    {
+      "case_id": "S15",
+      "role": "positive",
+      "query_sha256": "267e1e230e7399d75b4b86decadfbfd06e2fdff3871a6e8b02e833668c68787d",
+      "expected_source_sha256": "6b7229844ca6425bb177e9059285f500112d3f6f2de79b05908513b22a8e0a02",
+      "strict": {
+        "presented_count": 1,
+        "source_exact": true,
+        "rank": 1,
+        "elapsed_ms_shadow": 253.713
+      },
+      "semantic": {
+        "presented_count": 3,
+        "source_exact": true,
+        "rank": 1,
+        "elapsed_ms_shadow": 220.666
+      },
+      "stage": {
+        "strict": "HIT rank 1",
+        "semantic": "HIT rank 1"
+      }
+    },
+    {
+      "case_id": "S16",
+      "role": "positive",
+      "query_sha256": "9ac4aba351597830f7464db3fdd70369b4fb43401e0881013fb3de93ee6e4d74",
+      "expected_source_sha256": "70bc38e3e5a9acfa8a4d9d9fc263b0f1ffa0bdbfea2434b1f98ed484cc7f8499",
+      "strict": {
+        "presented_count": 1,
+        "source_exact": true,
+        "rank": 1,
+        "elapsed_ms_shadow": 268.231
+      },
+      "semantic": {
+        "presented_count": 3,
+        "source_exact": true,
+        "rank": 1,
+        "elapsed_ms_shadow": 225.325
+      },
+      "stage": {
+        "strict": "HIT rank 1",
+        "semantic": "HIT rank 1"
+      }
+    },
+    {
+      "case_id": "N01",
+      "role": "negative",
+      "query_sha256": "18aadf2fc202e1430ef72a7813d0a37c8e9593d03073fe18f2f034dbd9280a1a",
+      "expected_source_sha256": null,
+      "strict": {
+        "presented_count": 0,
+        "source_exact": null,
+        "rank": null,
+        "elapsed_ms_shadow": 241.404
+      },
+      "semantic": {
+        "presented_count": 4,
+        "source_exact": null,
+        "rank": null,
+        "elapsed_ms_shadow": 219.33
+      }
+    },
+    {
+      "case_id": "N02",
+      "role": "negative",
+      "query_sha256": "821947953003583d6be52b40d39e13312165d8534aae88643f0a74e7a58a1d99",
+      "expected_source_sha256": null,
+      "strict": {
+        "presented_count": 1,
+        "source_exact": null,
+        "rank": null,
+        "elapsed_ms_shadow": 266.055
+      },
+      "semantic": {
+        "presented_count": 3,
+        "source_exact": null,
+        "rank": null,
+        "elapsed_ms_shadow": 216.787
+      }
+    },
+    {
+      "case_id": "N03",
+      "role": "negative",
+      "query_sha256": "c7711227971fd41e039ff0c972f95b4abd50eaa236511673bf7d16c0196271ac",
+      "expected_source_sha256": null,
+      "strict": {
+        "presented_count": 0,
+        "source_exact": null,
+        "rank": null,
+        "elapsed_ms_shadow": 0.554
+      },
+      "semantic": {
+        "presented_count": 0,
+        "source_exact": null,
+        "rank": null,
+        "elapsed_ms_shadow": 0.031
+      }
+    },
+    {
+      "case_id": "N04",
+      "role": "negative",
+      "query_sha256": "8f434346648f6b96df89dda901c5176b10a6d83961dd3c1ac88b59b2dc327aa4",
+      "expected_source_sha256": null,
+      "strict": {
+        "presented_count": 0,
+        "source_exact": null,
+        "rank": null,
+        "elapsed_ms_shadow": 0.57
+      },
+      "semantic": {
+        "presented_count": 0,
+        "source_exact": null,
+        "rank": null,
+        "elapsed_ms_shadow": 0.034
+      }
+    }
+  ]
+}

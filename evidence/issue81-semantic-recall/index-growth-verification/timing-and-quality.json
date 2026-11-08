@@ -1,0 +1,71 @@
+{
+  "schema": "issue81-index-growth-timing-and-quality.v1",
+  "evidence_class": "FINGERPRINT_ONLY_SHADOW_REPLAY_NOT_NATIVE_ACCEPTANCE",
+  "percentile_definition": "nearest-rank (ceil(p*n)-1) over all 20 shadow Memory.search wall-clock times; sample n=20 (16 positive + 4 negative)",
+  "strict": {
+    "positive_source_exact_count": 12,
+    "positive_count": 16,
+    "positive_source_exact_rate": 0.75,
+    "positive_expected_at_first_count": 12,
+    "negative_nonempty_count": 1,
+    "negative_count": 4,
+    "negative_presented_observation_count": 1,
+    "total_presented_observation_count": 17,
+    "shadow_latency_n": 20,
+    "shadow_latency_p50_ms": 266.055,
+    "shadow_latency_p95_ms": 301.399,
+    "shadow_latency_max_ms": 476.11
+  },
+  "semantic": {
+    "positive_source_exact_count": 12,
+    "positive_count": 16,
+    "positive_source_exact_rate": 0.75,
+    "positive_expected_at_first_count": 8,
+    "negative_nonempty_count": 2,
+    "negative_count": 4,
+    "negative_presented_observation_count": 7,
+    "total_presented_observation_count": 66,
+    "shadow_latency_n": 20,
+    "shadow_latency_p50_ms": 221.993,
+    "shadow_latency_p95_ms": 244.33,
+    "shadow_latency_max_ms": 654.41
+  },
+  "strict_semantic_regressions": [
+    "S04"
+  ],
+  "negative_cost": {
+    "N01": {
+      "category": "unrelated",
+      "strict_presented": 0,
+      "semantic_presented": 4,
+      "note": "semantic injects same-group irrelevant context for an unrelated query (cost, not a hard cross-group/secret leak)"
+    },
+    "N02": {
+      "category": "wrong_group",
+      "strict_presented": 1,
+      "semantic_presented": 3,
+      "note": "same-group development-knowledge content-policy facts surface for a superseded-group query; no cross-group/secret leak verified"
+    },
+    "N03": {
+      "category": "private_marker",
+      "strict_presented": 0,
+      "semantic_presented": 0,
+      "note": "sk- secret marker short-circuited by the safeText privacy fence before any remote call (both modes)"
+    },
+    "N04": {
+      "category": "too_brief",
+      "strict_presented": 0,
+      "semantic_presented": 0,
+      "note": "2-char query below the 10-char recall floor"
+    }
+  },
+  "human_precision": {
+    "status": "PENDING_OPERATOR_REVIEW",
+    "verdicts": "0/126",
+    "worksheet_sha256": "9f9152cc1a5c0defc616dcced2869d30aa21738f78d698a5b8b2777659b7b56c",
+    "adjudication_status": "PENDING_OPERATOR_ADJUDICATION",
+    "note": "Prepared private 126-item operator batch reused without reauthoring; no human verdict signed, approximated, or filled by the local agent. Complete navigable batch supplied to the operator."
+  },
+  "native_context_hook_p95": "UNVERIFIED (shadow Memory.search wall-clock only; native fresh-process hook not measured before deployment)",
+  "native_assembled_model_request": "NOT_OBSERVED"
+}
