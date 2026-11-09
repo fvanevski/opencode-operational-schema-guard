@@ -181,7 +181,9 @@ export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='loca
     model_errors:0,model_ms:0,prompt_tokens:0,completion_tokens:0,
     usage_reported_calls:0,reasoning_tokens:0,reasoning_reported_calls:0,
     length_limited_responses:0};
-  // Resolve any old ambiguous/queued write before accepting more work.
+  // Recover any crash-interrupted fact bundle from its durable local plan
+  // before source ownership and remote identity reconciliation.
+  if(typeof store.restoreBundles==='function')await store.restoreBundles();
   let result=await reconcile(store,graphiti);
   stats.persisted+=result.persisted;stats.unresolved=result.unresolved;
   if(result.unresolved)return {...stats,status:'unresolved'};
@@ -216,9 +218,10 @@ export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='loca
   const ownedSources=new Map();
   for(const prior of await allRecords(store)){
     for(const id of prior.source_event_ids||[]){
-      if(ownedSources.has(id)&&ownedSources.get(id)!==prior.id)
+      const owner=prior.origin_cluster_id||prior.id;
+      if(ownedSources.has(id)&&ownedSources.get(id)!==owner)
         throw Error('SOURCE_EVENT_IN_MULTIPLE_REVIEWS');
-      ownedSources.set(id,prior.id);
+      ownedSources.set(id,owner);
       const row=await queue.get(id);
       if(!row)continue; // An older review may predate this queue instance.
       if(prior.state==='deferred'||prior.state==='skipped'){
@@ -238,13 +241,17 @@ export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='loca
   const clusters=selectClusters(list.items,{maxClusters});
   for(const cluster of clusters){
     if(Date.now()>deadline-5000)break;
-    const existing=await store.get(cluster.id);
+    const existing=(await store.get(cluster.id))||
+      (typeof store.restoreBundle==='function'&&await store.restoreBundle(cluster.id));
     if(existing){
       // Crash after durable review creation but before all source transitions:
       // converge the source queue without recalling the model or replaying writes.
       for(const e of cluster.events){
-        const state=existing.state==='skipped'?'skipped':
-          existing.state==='deferred'?'deferred':'reserved';
+        const parentState=existing.records?
+          (existing.records.some(r=>['approved','queued','persisted','submission_unknown'].includes(r.state))?
+            'approved':'deferred'):existing.state;
+        const state=parentState==='skipped'?'skipped':
+          parentState==='deferred'?'deferred':'reserved';
         if(state==='reserved'){
           if(await queue.transition(e.event_id,'new','reserved'))
             await queue.transition(e.event_id,'reserved','approved');
@@ -264,17 +271,21 @@ export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='loca
       proposal={ok:false,decision:'DEFER',facts:[],
         reason:'curator_unavailable_or_invalid'};
     }
-    const stored=await store.create(cluster,proposal);
+    const isBundle=proposal.ok&&proposal.decision==='EMIT'&&proposal.facts.length>1;
+    const stored=isBundle?await store.createBundle(cluster,proposal):
+      await store.create(cluster,proposal);
     if(!stored.created)continue;
+    const records=stored.records||[stored.record];
     stats.curated++;
-    if(stored.record.state==='deferred')stats.deferred++;
-    if(stored.record.state==='skipped')stats.skipped++;
-    if(stored.record.state==='approved')stats.approved++;
+    stats.deferred+=records.filter(r=>r.state==='deferred').length;
+    stats.skipped+=records.filter(r=>r.state==='skipped').length;
+    stats.approved+=records.filter(r=>r.state==='approved').length;
     // Every candidate event is still available with immutable source ID.
-    // Reservation happens only after the durable review entry exists.
+    // Reservation happens only after durable, recoverable per-fact reviews exist.
     for(const e of cluster.events){
-      const to=stored.record.state==='skipped'?'skipped':
-        stored.record.state==='deferred'?'deferred':'reserved';
+      const anyApproved=records.some(r=>r.state==='approved');
+      const to=records.every(r=>r.state==='skipped')?'skipped':
+        !anyApproved?'deferred':'reserved';
       if(to==='reserved'){
         if(await queue.transition(e.event_id,'new','reserved'))
           await queue.transition(e.event_id,'reserved','approved');

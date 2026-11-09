@@ -62,22 +62,23 @@ export function modelPrompt(cluster) {
     'A source handle ending :span:<offset> is a CONTIGUOUS PART of a longer native user message, not its full context. Do not infer omitted statements or join distinct spans into one assertion.',
     'Return ONLY one JSON object (no markdown) with decision, utility_class, reason, facts.',
     'decision must be SKIP, EMIT, MERGE, SUPERSEDE_PROPOSED or DEFER.',
-    'For EMIT supply exactly ONE factual assertion in this integration unit; other decisions can propose 0..3.',
-    'For ANY model-proposed fact, assertion must be a useful 25..450 character CONTIGUOUS VERBATIM EXTRACT copied from ONE cited source excerpt: exact words, capitalization, punctuation and order. Never paraphrase, summarize, join excerpts, add prefaces, or invent results.',
+    'For EMIT select 1..3 independently useful ATOMIC facts from distinct eligible source assertions in this cluster; each will get its own Graphiti episode/review identity. Never bundle unrelated claims into one fact.',
+    'For each fact, PREFER evidence_span:{source_ref,start,end} instead of reproducing a quotation. start/end are zero-based Unicode JS string offsets into one supplied excerpt, end exclusive. The host deterministically derives the 25..450-character CONTIGUOUS VERBATIM EXTRACT from that source; do not invent or approximate offsets. The legacy exact assertion format remains accepted for compatibility.',
+    'Optional normalized_claim is an UNVERIFIED proposal for later independent support review; it is NOT the auto-persisted assertion. Automatic persistence uses only the host-derived exact evidence span. Do not claim semantic verification from a lexical match.',
     'Cite ONLY the single exact source handle from which the assertion was copied. A source excerpt is evidence of what its author said or a tool reported, NOT independent verification.',
     'Distinguish literal source support from DURABLE FUTURE UTILITY. A correct observation is not automatically worth retaining across coding sessions.',
     'Classify the strongest proposed fact with utility_class from: durable_decision, root_cause_fix, stable_architecture, reusable_procedure, useful_negative, transient_result, repetition, superseded_stale, uncertain_unattributed.',
     'Only the FIRST FIVE classes can justify an automatic EMIT. They mean an explicit reusable decision/procedure, confirmed cause and correction, stable architecture or dependency, or a reproducible negative finding that avoids repeating a failed approach.',
     'Transient green test counts, one-off command success, incidental status, redundant excerpts, obsolete failures already corrected, unsupported assistant advice, and stale claims are not durable just because verbatim. SKIP unequivocally low-value/repeated/stale facts; DEFER conflicting, uncertain or insufficiently attributed claims.',
     'Before SKIPping a schema-validation failure, reproducible incompatibility or failed integration check, distinguish a repeatable negative constraint from a one-off execution failure. If one cited excerpt itself states the reusable limitation, contract, or disproven approach, prefer useful_negative or reusable_procedure rather than transient_result. A raw stack trace, isolated failure count, unanswered user question or uncorroborated assistant diagnosis is NOT enough by itself.',
-    'A durable negative result still requires an exact 25..450-character single-source extract. Never infer a root cause across separate messages or promote an assistant-reported assertion to verified fact; if the reusable conclusion is apparent but no eligible single excerpt states it, DEFER for review instead of SKIPping known valuable evidence.',
+    'A durable negative result still requires attributable source evidence. Never infer a root cause across separate messages or promote an assistant-reported assertion to verified fact; if a useful normalized claim requires unsupported cross-event synthesis, DEFER that claim for independent review instead of silently dropping the underlying evidence.',
     'Keep a useful failure->cause->fix relationship only if one contiguous cited source literally expresses it. Never synthesize a multi-event chain from distinct excerpts.',
-    'Before deciding, inspect EACH source excerpt for an exact 25..450-character span that independently states an enduring operator choice, interface/dependency contract, confirmed root cause, reproducible useful negative, or procedure. Rank admissible spans by future troubleshooting/reuse value; choose the BEST one from the cluster rather than classifying the whole session by its surrounding transient logs.',
-    'If at least one safe, source-attributed, exact durable span exists, choose EMIT with that SINGLE span, even when other events in the cluster are ephemeral, contradictory about a separate topic, or assistant-reported. Preserve the selected span original evidence class; assistant-reported is not independent technical verification.',
+    'Before deciding, inspect EACH source excerpt for independently source-supported decisions, interfaces, dependencies, root causes, useful negatives, and procedures. Rank distinct facts by future troubleshooting/reuse value; preserve up to THREE independently useful exact supporting spans rather than reducing the whole session to the BEST one from the cluster.',
+    'If one or more safe, attributed, exact durable spans exist, choose EMIT and select up to THREE distinct eligible spans, even in mixed transient clusters. Preserve each span original evidence class; assistant-reported is not independently verified.',
     'Choose SKIP only when NONE of the excerpts supports a durable assertion, or when the durable content is already an exact duplicate or demonstrably superseded. Do NOT SKIP an explicit durable user constraint, validated compatibility limitation, repeatable negative result or reusable fix merely because it appeared in a test run.',
     'Choose DEFER when a potentially durable conclusion cannot be quoted exactly from one safe authenticated source excerpt, when the candidate extract needs multi-event synthesis, or when provenance, privacy or conflict affecting that assertion remains unresolved. Do not use DEFER merely because other cluster members are unimportant. No forced EMIT, no authority upgrade and no speculative causal synthesis.',
     'Prioritize retaining all supported durable decisions and root causes over achieving a high precision percentage by withholding useful facts. Do not force EMIT to pass a benchmark.',
-    'Required fact fields: assertion (25..450 chars), kind, source_refs, temporal_status.',
+    'Required fact fields: kind, source_refs, temporal_status, and either evidence_span:{source_ref,start,end} or legacy assertion (25..450 chars). Optional normalized_claim is review-only and cannot upgrade a source assertion.',
     'Choose kind only from: decision, implementation, test_result, architecture, dependency, procedure, blocker, relationship, observation.',
     'Choose temporal_status only from: observed, historical, proposed, unknown.',
     'source_refs must be an array of EXACT supplied evidence SOURCE strings (the source field, NOT event id).',
@@ -85,7 +86,7 @@ export function modelPrompt(cluster) {
     'Do not invent scope, evidence_class, or observed_at. These may be omitted in model output: the validator binds missing values from authenticated source events.',
     'If you include scope, evidence_class or observed_at, each must match the source metadata exactly. observed_at is the LATEST referenced event timestamp.',
     'For SKIP or DEFER return facts: []. A plain-text reason (1..300 chars) is required.',
-    'Example JSON SHAPE ONLY, not a suggested claim: {"decision":"EMIT","utility_class":"durable_decision","reason":"Reusable source-stated decision","facts":[{"assertion":"<25..450-char grounded factual statement>","kind":"decision","source_refs":["<exact source string from evidence>"],"temporal_status":"observed"}]}.',
+    'Example JSON SHAPE ONLY, not a suggested claim: {"decision":"EMIT","utility_class":"durable_decision","reason":"Reusable source-stated decision","facts":[{"kind":"decision","source_refs":["<exact source string from evidence>"],"temporal_status":"observed","evidence_span":{"source_ref":"<same exact source string>","start":0,"end":64}}]}.',
     'Do not output literal placeholders from the example. Evidence class is NEVER verified.',
     'If uncertain, private, contradictory, redundant or unsupported choose DEFER.',
     'MERGE/SUPERSEDE_PROPOSED means proposal for operator review, never deletion.',
@@ -173,7 +174,8 @@ export function validateModelDecision(raw,cluster) {
   if(!proposed||typeof proposed!=='object'||!Array.isArray(proposed.facts))
     return validateDecision(proposed,cluster);
   const bySource=new Map((cluster.events||[]).map(e=>[e.source_refs[0],e]));
-  const facts=proposed.facts.map(f=>{
+  const unsupportedClaim=[];
+  const facts=proposed.facts.map((f,i)=>{
     if(!f||typeof f!=='object'||!Array.isArray(f.source_refs)||
        f.source_refs.length<1||f.source_refs.length>8)return f;
     const events=f.source_refs.map(ref=>bySource.get(ref));
@@ -181,7 +183,27 @@ export function validateModelDecision(raw,cluster) {
     const classes=new Set(events.map(e=>e.evidence_class));
     if(classes.size!==1)return f;
     const latest=events.map(e=>e.observed_at).sort().at(-1);
-    return {...f,
+    // Source range is checked independently of model-authored assertion and
+    // is the sole authority for the auto-persisted source statement.
+    let assertion=f.assertion;
+    if(f.evidence_span!==undefined){
+      const p=f.evidence_span,source=events[0];
+      if(events.length!==1||!p||typeof p!=='object'||
+        p.source_ref!==f.source_refs[0]||
+        !Number.isSafeInteger(p.start)||!Number.isSafeInteger(p.end)||
+        p.start<0||p.end<=p.start||p.end>source.excerpt.length||
+        p.end-p.start<25||p.end-p.start>450)
+        return {...f,assertion:null};
+      const verbatim=source.excerpt.slice(p.start,p.end);
+      if(assertion!==undefined&&assertion!==verbatim)
+        return {...f,assertion:null};
+      assertion=verbatim;
+      if(f.normalized_claim!==undefined&&
+        validText(f.normalized_claim,450,25)&&f.normalized_claim!==verbatim)
+        unsupportedClaim.push({index:i,source_ref:p.source_ref,
+          suggested:f.normalized_claim,status:'review_only_unverified'});
+    }
+    return {...f,assertion,
       scope:f.scope===undefined?{
         group:cluster.group,project:cluster.project,workspace:cluster.workspace}:f.scope,
       evidence_class:f.evidence_class===undefined?events[0].evidence_class:f.evidence_class,
@@ -212,7 +234,10 @@ export function validateModelDecision(raw,cluster) {
     if(!PERSISTABLE_UTILITY.has(utility))
       return {ok:false,decision:'DEFER',reason:'utility_class_not_durable',facts:[]};
   }
-  return {...checked,utility_class:utility??null};
+  return {...checked,utility_class:utility??null,
+    // Never put model-normalized claims in Graphiti without a separate,
+    // independent entailment review. Persisted assertion remains verbatim.
+    review_only_claims:unsupportedClaim};
 }
 async function atomic(dest,payload){
   const tmp=dest+'.'+randomUUID()+'.tmp';
@@ -309,18 +334,88 @@ export class ReviewStore {
         events:cluster.events.map(e=>({event_id:e.event_id,source_refs:e.source_refs,
           kind:e.kind,evidence_class:e.evidence_class,source_strength:e.source_strength,
           excerpt:e.excerpt,observed_at:e.observed_at,related_event_ids:e.related_event_ids})),
-        source_event_ids:cluster.source_event_ids,state,decision:valid.decision,
+        source_event_ids:cluster.source_event_ids,
+        origin_cluster_id:cluster.origin_cluster_id??cluster.id,
+        state,decision:valid.decision,
         reason:valid.reason,
         utility_class:decision?.ok===true&&UTILITY_CLASSES.has(decision.utility_class)?
           decision.utility_class:null,
         diagnostic_field:decision?.ok===false?decision.diagnostic_field??null:valid.diagnostic_field??null,
-        facts:valid.facts,reevaluate_requested:false,
+        facts:valid.facts,
+        review_only_claims:Array.isArray(decision?.review_only_claims)?
+          decision.review_only_claims.slice(0,3):[],
+        reevaluate_requested:false,
         revision:1,created_at:now,updated_at:now,
         remote_episode_uuid:null,origin,
         audit:[{at:now,action:origin,outcome:state}]};
       await atomic(this.filename(cluster.id),record);
       return {record,created:true};
     });
+  }
+
+  // Transactionally freeze the cluster-level model proposal before writing
+  // independently addressable single-fact review records. A crash can be
+  // repaired from the manifest without a second model decision or Graphiti write.
+  bundlePath(clusterId){
+    if(!HEX.test(clusterId))throw Error('Invalid bundle ID');
+    return path.join(this.dir,'_fact-bundles',clusterId+'.json');
+  }
+  async createBundle(cluster,decision){
+    const verified=validateDecision(decision,cluster);
+    if(!verified.ok||verified.decision!=='EMIT'||verified.facts.length<2||
+       verified.facts.length>3)throw Error('INVALID_BOUNDED_FACT_BUNDLE');
+    await this.ensure();
+    const id=cluster.id,folder=path.join(this.dir,'_fact-bundles');
+    await fs.mkdir(folder,{recursive:true,mode:0o700});
+    await this._mutex(id,async()=>{
+      let existing;
+      try{existing=JSON.parse(await fs.readFile(this.bundlePath(id),'utf8'));}
+      catch(e){if(e.code!=='ENOENT')throw e;}
+      if(existing)return;
+      if(await this.get(id))throw Error('CLUSTER_ALREADY_HAS_LEGACY_REVIEW');
+      const childIds=verified.facts.map((f,i)=>digest(
+        'issue92-fact-v2\n'+id+'\n'+i+'\n'+f.assertion+'\n'+f.source_refs.join(',')));
+      if(new Set(childIds).size!==childIds.length)throw Error('DUPLICATE_FACT_BUNDLE_CHILD');
+      await atomic(this.bundlePath(id),{
+        schema:'issue92-bounded-fact-bundle-v1',parent_id:id,
+        child_ids:childIds,cluster,decision:{
+          decision:'EMIT',reason:verified.reason,utility_class:decision.utility_class,
+          facts:verified.facts,review_only_claims:decision.review_only_claims||[]
+        },created_at:new Date().toISOString()
+      });
+    });
+    return this.restoreBundle(id);
+  }
+  async restoreBundle(id){
+    let b;
+    try{b=JSON.parse(await fs.readFile(this.bundlePath(id),'utf8'));}
+    catch(e){if(e.code==='ENOENT')return null;throw e;}
+    if(b?.schema!=='issue92-bounded-fact-bundle-v1'||b.parent_id!==id||
+      !Array.isArray(b.child_ids)||b.child_ids.length<2||b.child_ids.length>3||
+      b.child_ids.length!==b.decision?.facts?.length)
+      throw Error('CORRUPT_FACT_BUNDLE');
+    const checked=validateDecision(b.decision,b.cluster);
+    if(!checked.ok||checked.decision!=='EMIT')throw Error('INVALID_FACT_BUNDLE');
+    const records=[];
+    for(let i=0;i<checked.facts.length;i++){
+      const f=checked.facts[i],child=b.child_ids[i];
+      if(child!==digest('issue92-fact-v2\n'+id+'\n'+i+'\n'+
+        f.assertion+'\n'+f.source_refs.join(',')))throw Error('BUNDLE_CHILD_ID_MISMATCH');
+      const r=await this.create({...b.cluster,id:child,origin_cluster_id:id},
+        {ok:true,decision:'EMIT',reason:checked.reason,
+         utility_class:b.decision.utility_class,facts:[f],
+         review_only_claims:(b.decision.review_only_claims||[]).filter(x=>x.index===i)});
+      records.push(r.record);
+    }
+    return {created:true,records};
+  }
+  async restoreBundles(){
+    const folder=path.join(this.dir,'_fact-bundles');
+    let names;
+    try{names=(await fs.readdir(folder)).filter(n=>/^[a-f0-9]{64}\.json$/.test(n));}
+    catch(e){if(e.code==='ENOENT')return 0;throw e;}
+    for(const n of names)await this.restoreBundle(n.slice(0,-5));
+    return names.length;
   }
   async change(id,expectedRevision,action,{reason='',facts=null}={}){
     return this._mutex(id,async()=>{
@@ -363,7 +458,10 @@ export class ReviewStore {
         diagnostic_field:response?.ok===false?response.diagnostic_field??null:checked.diagnostic_field??null,
         utility_class:response?.ok===true&&UTILITY_CLASSES.has(response.utility_class)?
           response.utility_class:null,
-        facts:checked.facts,reevaluate_requested:false,revision:old.revision+1,
+        facts:checked.facts,
+        review_only_claims:Array.isArray(response?.review_only_claims)?
+          response.review_only_claims.slice(0,3):[],
+        reevaluate_requested:false,revision:old.revision+1,
         updated_at:now,audit:[...old.audit.slice(-59),{at:now,action:'recurated',outcome:state}]};
       await atomic(this.filename(id),updated);
       return updated;
