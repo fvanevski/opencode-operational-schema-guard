@@ -50,8 +50,12 @@ test('model-selected source offsets derive verbatim evidence and quarantine norm
  assert.equal(transient.reason,'per_fact_utility_required');
  assert.equal(validateModelDecision({...p,facts:[{...p.facts[0],
    evidence_span:{...p.facts[0].evidence_span,end:9999}}]},c).ok,false);
- assert.equal(validateModelDecision({...p,facts:[{...p.facts[0],
-   assertion:'This unrelated claim proves every future deployment is secure.'}]},c).ok,false);
+ const hallucinated=validateModelDecision({...p,facts:[{...p.facts[0],
+   assertion:'This unrelated claim proves every future deployment is secure.'}]},c);
+ assert.equal(hallucinated.ok,true);
+ assert.equal(hallucinated.facts[0].assertion,events[0].excerpt);
+ assert.ok(hallucinated.review_only_claims.some(c=>
+   c.suggested.includes('every future deployment')&&c.status==='review_only_unverified'));
 });
 test('two independently grounded child facts receive distinct terminal Graphiti episodes',()=>scratch(async root=>{
  const prev=process.env.GHDEV_MEMORY_POST_EXIT_LEASE;

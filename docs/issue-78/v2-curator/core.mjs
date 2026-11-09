@@ -86,7 +86,7 @@ export function modelPrompt(cluster) {
     'Do not invent scope, evidence_class, or observed_at. These may be omitted in model output: the validator binds missing values from authenticated source events.',
     'If you include scope, evidence_class or observed_at, each must match the source metadata exactly. observed_at is the LATEST referenced event timestamp.',
     'For SKIP or DEFER return facts: []. A plain-text reason (1..300 chars) is required.',
-    'Example JSON SHAPE ONLY, not a suggested claim: {"decision":"EMIT","utility_class":"durable_decision","reason":"Reusable source-stated decision","facts":[{"kind":"decision","source_refs":["<exact source string from evidence>"],"temporal_status":"observed","evidence_span":{"source_ref":"<same exact source string>","start":0,"end":64}}]}.',
+    'Example JSON SHAPE ONLY, not a suggested claim: {"decision":"EMIT","utility_class":"durable_decision","reason":"Reusable source-stated decision","facts":[{"kind":"decision","utility_class":"durable_decision","source_refs":["<exact source string from evidence>"],"temporal_status":"observed","evidence_span":{"source_ref":"<same exact source string>","start":0,"end":64}}]}.',
     'Do not output literal placeholders from the example. Evidence class is NEVER verified.',
     'If uncertain, private, contradictory, redundant or unsupported choose DEFER.',
     'MERGE/SUPERSEDE_PROPOSED means proposal for operator review, never deletion.',
@@ -195,13 +195,21 @@ export function validateModelDecision(raw,cluster) {
         p.end-p.start<25||p.end-p.start>450)
         return {...f,assertion:null};
       const verbatim=source.excerpt.slice(p.start,p.end);
-      if(assertion!==undefined&&assertion!==verbatim)
-        return {...f,assertion:null};
-      assertion=verbatim;
-      if(f.normalized_claim!==undefined&&
-        validText(f.normalized_claim,450,25)&&f.normalized_claim!==verbatim)
+      // A model-authored paraphrase is an unverified review suggestion, NOT
+      // the automatic graph assertion. It must not suppress a valid source
+      // span; this is the recall-critical separation of claim and evidence.
+      if(assertion!==undefined&&assertion!==verbatim){
+        if(!validText(assertion,450,25))return {...f,assertion:null};
         unsupportedClaim.push({index:i,source_ref:p.source_ref,
-          suggested:f.normalized_claim,status:'review_only_unverified'});
+          suggested:assertion,status:'review_only_unverified'});
+      }
+      assertion=verbatim;
+      if(f.normalized_claim!==undefined&&f.normalized_claim!==verbatim){
+        if(!validText(f.normalized_claim,450,25))return {...f,assertion:null};
+        if(!unsupportedClaim.some(c=>c.index===i&&c.suggested===f.normalized_claim))
+          unsupportedClaim.push({index:i,source_ref:p.source_ref,
+            suggested:f.normalized_claim,status:'review_only_unverified'});
+      }
     }
     return {...f,assertion,
       scope:f.scope===undefined?{
