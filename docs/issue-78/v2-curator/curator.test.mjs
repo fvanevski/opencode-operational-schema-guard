@@ -838,3 +838,35 @@ test('Issue 92 extract-first policy ranks durable content within mixed transient
  assert.equal(validateModelDecision({...f,facts:[{...f.facts[0],
    assertion:U.excerpt+' This is independently verified.'}]},c).ok,false);
 });
+
+test('Issue 92 ADR recall policy evaluates atomic facts before cluster framing, without relaxing hard evidence controls',()=>{
+ const c=cluster(),policy=modelPrompt(c)[0].content;
+ const required=[
+  'REQUIRED DECISION ORDER: FIRST scan EVERY source excerpt',
+  'SECOND evaluate exact source support and future utility for EACH fact independently',
+  'THIRD choose cluster EMIT if at least one safe durable fact qualifies',
+  'Never classify the whole cluster by its dominant task/test framing',
+  'PER-FACT exclusion, NOT a reason to SKIP a mixed cluster',
+  'A generic task with no substantive source-backed technical claim is still low-value',
+  'Keep a user-reported bug or proposed change explicitly source-attributed and provisional',
+  'Never let a weak cluster sibling veto a separate safe durable fact'
+ ];
+ for(const rule of required)assert.ok(policy.includes(rule),rule);
+ assert.ok(policy.indexOf('REQUIRED DECISION ORDER') <
+   policy.indexOf('Only the FIRST FIVE classes can justify automatic EMIT'));
+ // The policy changes when to consider a fact, not source authorization.
+ const valid=modelProposal(U);
+ assert.equal(validateModelDecision(valid,c).ok,true);
+ const unsafe=validateModelDecision({...valid,facts:[{...valid.facts[0],
+   source_refs:['opencode:invented:source']}]},c);
+ assert.equal(unsafe.ok,false);
+ const transient=validateModelDecision({...valid,utility_class:'transient_result'},c);
+ assert.equal(transient.ok,false);
+ assert.equal(transient.reason,'utility_class_not_durable');
+ assert.equal(validateModelDecision({decision:'SKIP',
+   utility_class:'transient_result',reason:'Only incidental execution status exists',
+   facts:[]},c).ok,true);
+ assert.equal(validateModelDecision({decision:'SKIP',
+   utility_class:'transient_result',reason:'No source-backed facts were identified',
+   facts:valid.facts},c).ok,false);
+});
