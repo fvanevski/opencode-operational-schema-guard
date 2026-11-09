@@ -6,12 +6,11 @@
 import {promises as fs} from 'node:fs';
 import {createHash} from 'node:crypto';
 import path from 'node:path';
-import {modelPrompt} from '../../issue-78/v2-curator/core.mjs';
 const hash=x=>createHash('sha256').update(x).digest('hex');
 const id=/^[a-f0-9]{64}$/;
-export function createPrivateTraceCurator(curate,{directory}){
- if(typeof curate!=='function'||typeof directory!=='string'||
-   !path.isAbsolute(directory))throw Error('ADR92_TRACE_INVALID_CONFIG');
+export function createPrivateTraceCurator(curate,{directory,promptBuilder}={}){
+ if(typeof curate!=='function'||typeof promptBuilder!=='function'||
+   typeof directory!=='string'||!path.isAbsolute(directory))throw Error('ADR92_TRACE_INVALID_CONFIG');
  return async (cluster,opts)=>{
    if(process.env.GHDEV_MEMORY_POST_EXIT_LEASE!=='admitted')
      throw Error('ADR92_TRACE_POST_EXIT_REQUIRED');
@@ -26,11 +25,13 @@ export function createPrivateTraceCurator(curate,{directory}){
    // Persist a private one-shot call intent BEFORE invoking the model. If the
    // process crashes after inference but before saving the response, the
    // intent remains and blocks an accidental second call.
+   const prompt=promptBuilder(cluster);
+   if(!Array.isArray(prompt)||prompt.length<2)
+     throw Error('ADR92_TRACE_INVALID_SOURCE_PROMPT');
    await fs.writeFile(dest+'.call-intent',JSON.stringify({
      cluster_id:cluster.id,group_id:cluster.group,created_at:new Date().toISOString(),
-     model_prompt_sha256:hash(JSON.stringify(modelPrompt(cluster)))
+     model_prompt_sha256:hash(JSON.stringify(prompt))
    }),{flag:'wx',mode:0o600});
-   const prompt=modelPrompt(cluster);
    const reply=await curate(cluster,opts);
    if(typeof reply?.content!=='string'||reply.content.length>12000)
      throw Error('ADR92_TRACE_INVALID_REPLY');

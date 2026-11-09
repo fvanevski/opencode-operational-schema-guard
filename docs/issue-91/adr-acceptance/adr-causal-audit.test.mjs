@@ -85,7 +85,9 @@ test('private raw response trace is once-only, mode 0600, gated by caller admiss
  let calls=0;
  try{
    const fn=createPrivateTraceCurator(async()=>{calls++;
-     return {content:rawSkip,duration_ms:1}}, {directory:dir});
+     return {content:rawSkip,duration_ms:1}}, {directory:dir,
+       promptBuilder:()=>[{role:'system',content:'Observed source policy'},
+         {role:'user',content:'Observed source events'}]});
    delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;
    await assert.rejects(fn(cluster,{}),/POST_EXIT_REQUIRED/);
    process.env.GHDEV_MEMORY_POST_EXIT_LEASE='admitted';
