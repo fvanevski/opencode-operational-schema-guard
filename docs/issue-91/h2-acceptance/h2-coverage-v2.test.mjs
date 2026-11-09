@@ -64,14 +64,19 @@ test('qualifying fact-supported cohort passes independently of clustering',()=>{
 test('cluster membership alone cannot produce fact-supported case credit',()=>{
  const {r,o}=setup(),f=o.arms.candidate.facts[0];
  f.case_ids=[ids[0],ids[1],ids[2],ids[3]];
- // Same fact supports only case zero, despite four cluster members.
+ // Remove direct facts for case 1..3: cluster membership is not fact support.
+ o.arms.candidate.facts.splice(1,3);
+ o.arms.candidate.cluster_decisions.EMIT=13;
  const s=score(r,o);
- assert.equal(s.arms.candidate.retained_valuable_cases,16);
- assert.ok(s.arms.candidate.missing_valuable_case_ids.every(id=>!f.case_ids.includes(id)));
+ assert.equal(s.arms.candidate.retained_valuable_cases,13);
+ assert.deepEqual(s.arms.candidate.missing_valuable_case_ids,[ids[1],ids[2],ids[3]]);
+ assert.equal(s.gates.valuable_persisted_case_coverage,'FAIL');
 });
 test('source ingestion is distinct from curator selection and persistence',()=>{
  const {r,o}=setup();
  o.arms.candidate.cases[0].captured=false;
+ o.arms.candidate.facts.shift(); // a non-selected case must not own a persisted fact
+ o.arms.candidate.cluster_decisions.EMIT=15;
  const s=score(r,o);
  assert.equal(s.arms.candidate.captured_valuable_cases,16);
  assert.equal(s.arms.candidate.curator_selected_valuable_cases,15);

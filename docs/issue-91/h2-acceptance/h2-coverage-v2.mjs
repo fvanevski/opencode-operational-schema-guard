@@ -117,7 +117,8 @@ export function scoreFactCoverageV2(r,rawRatification,outcomes,rawOutcomes){
   legacy.gates.redundancy_nonregression=
     c.redundant<=b.redundant&&
     (b.persisted===0?c.redundant===0:
-      c.redundant/c.persisted <= b.redundant/b.persisted)?'PASS':'FAIL';
+      c.persisted===0?c.redundant===0:
+        c.redundant/c.persisted <= b.redundant/b.persisted)?'PASS':'FAIL';
   // "selectivity" still assesses discarded low-value facts; redundancy is an
   // independent non-regression gate and cannot be disguised by useful==true.
   legacy.schema='issue92-fact-coverage-scorecard-v2';
