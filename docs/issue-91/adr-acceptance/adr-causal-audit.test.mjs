@@ -24,9 +24,12 @@ const freeze={schema:'issue92-adr-prospective-freeze-v1',
 const makeRow=(overrides={})=>({target_id:'target1',model_visible:true,cluster,
   review_state:'approved',review_reason:'original source checked',
   model_fact_indices:[],independently_reviewed:true,terminals:[],
-  model_raw_content:null,...overrides});
+  model_raw_content:null,
+  model_reply_sha256:typeof overrides.model_raw_content==='string'?
+    sha(overrides.model_raw_content):null,...overrides});
+const rawFreeze=JSON.stringify(freeze);
 const makeBundle=rows=>({schema:'issue92-adr-exposed-causal-audit-v1',
-  source_commits:{baseline,candidate},freeze_sha256:sha('frozen private bytes'),
+  source_commits:{baseline,candidate},freeze_sha256:sha(rawFreeze),
   runs:[{trial:'t1',arm:'candidate',targets:rows}]});
 const rawSkip=JSON.stringify({decision:'SKIP',utility_class:'transient_result',
   reason:'Model did not select a durable claim from this cluster',facts:[]});
@@ -37,7 +40,7 @@ const rawEmit=JSON.stringify({decision:'EMIT',utility_class:'durable_decision',
 const terminal={uuid:'12345678-abcd-4abc-9abc-0123456789ab',source_ref:ref,
   original_source_supported:true,independently_reviewed:true,
   review_store:true,graphiti_mcp:true,falkordb:true,source_index:true};
-const run=rows=>auditExposed(freeze,makeBundle(rows));
+const run=rows=>auditExposed(freeze,makeBundle(rows),rawFreeze);
 
 test('missing raw response stays UNKNOWN, never "model discovered"',()=>{
  const a=run([makeRow()]);
@@ -100,4 +103,12 @@ test('private raw response trace is once-only, mode 0600, gated by caller admiss
    else process.env.GHDEV_MEMORY_POST_EXIT_LEASE=old;
    await rm(dir,{recursive:true,force:true});
  }
+});
+
+test('auditor rejects stale freeze bytes and raw model transcript digest changes',()=>{
+ const b=makeBundle([makeRow()]);
+ assert.throws(()=>auditExposed(freeze,b,JSON.stringify({...freeze,change:true})),
+   /freeze_bytes_digest_mismatch/);
+ const row=makeRow({model_raw_content:rawSkip,model_reply_sha256:sha('tampered')});
+ assert.throws(()=>run([row]),/raw_model_digest_not_authenticated/);
 });

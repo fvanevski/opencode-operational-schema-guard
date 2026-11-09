@@ -50,6 +50,8 @@ function classify(row,frozen){
  }
  req(typeof raw==='string'&&raw.length>0&&raw.length<=12000,'raw_model_shape');
  result.model_reply_sha256=H(raw);
+ req(row.model_reply_sha256===result.model_reply_sha256,
+   'raw_model_digest_not_authenticated');
  let parsed;
  try{parsed=JSON.parse(raw);}catch{
    result.stage='MODEL_INVALID_PROPOSAL';result.validator_reason='invalid_model_json';
@@ -73,8 +75,14 @@ function classify(row,frozen){
  }
  result.fact_indices=[...row.model_fact_indices];
  result.evidence_tier='raw_model_response_plus_independent_source_review';
- if(parsed.decision==='SKIP'){result.stage='MODEL_SKIP';return result;}
- if(parsed.decision==='DEFER'){result.stage='MODEL_DEFER';return result;}
+ if(parsed.decision==='SKIP'){
+   req(row.terminals.length===0,'skip_has_terminal_receipt');
+   result.stage='MODEL_SKIP';return result;
+ }
+ if(parsed.decision==='DEFER'){
+   req(row.terminals.length===0,'defer_has_terminal_receipt');
+   result.stage='MODEL_DEFER';return result;
+ }
  if(['MERGE','SUPERSEDE_PROPOSED'].includes(parsed.decision)){
    result.stage='REVIEW_ONLY_PROPOSAL';return result;
  }
@@ -94,7 +102,9 @@ function classify(row,frozen){
  result.stage=verified.length?'REMOTE_TARGET_PRESERVED':'VALIDATED_NO_TERMINAL_PROOF';
  return result;
 }
-export function auditExposed(freeze,bundle){
+export function auditExposed(freeze,bundle,rawFreeze){
+ req(typeof rawFreeze==='string'&&H(rawFreeze)===bundle?.freeze_sha256,
+   'freeze_bytes_digest_mismatch');
  req(freeze?.schema==='issue92-adr-prospective-freeze-v1'&&
    bundle?.schema==='issue92-adr-exposed-causal-audit-v1'&&
    bundle.freeze_sha256&&SHA.test(bundle.freeze_sha256)&&
@@ -143,8 +153,9 @@ if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
  try{
    const [action,freezePath,inputPath]=process.argv.slice(2);
    req(action==='analyze'&&freezePath&&inputPath,'usage_analyze_freeze_and_private_bundle');
-   const result=auditExposed(JSON.parse(readFileSync(freezePath,'utf8')),
-     JSON.parse(readFileSync(inputPath,'utf8')));
+   const rawFreeze=readFileSync(freezePath,'utf8');
+   const result=auditExposed(JSON.parse(rawFreeze),
+     JSON.parse(readFileSync(inputPath,'utf8')),rawFreeze);
    console.log(JSON.stringify(result,null,2));
  }catch(e){console.error(e?.message||String(e));process.exitCode=2;}
 }
