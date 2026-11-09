@@ -1,0 +1,72 @@
+{
+  "schema": "issue92-adr-prospective-freeze-receipt-v1",
+  "kind": "sanitized, evidence-only, public",
+  "campaign": "issue92-adr-prospective two-trial matched qualification",
+  "repository": "fvanevski/opencode-operational-schema-guard",
+  "branch": "work/91-memory-utility-r1",
+  "identities": {
+    "required_starting_head": "96d50f563ebbe43242a675b3a1c5bd22c3f3091d",
+    "baseline_sha": "c8eb5260f2b10832346234b1b5d0cf28302ffba8",
+    "candidate_sha": "a684667a6eefa2dc19f29755bed0c3048874721d",
+    "scoring_head": "96d50f563ebbe43242a675b3a1c5bd22c3f3091d",
+    "architecture": "ADR-91-2026-11-09"
+  },
+  "cohort": {
+    "clusters": 24,
+    "families": { "graphiti-mcp": 4, "swebench-sphinx": 9, "swebench-django": 8, "swebench-pylint": 3 },
+    "eligible_sources": 24,
+    "ineligible_controls": 1,
+    "targets": 27,
+    "valuable_targets": 16,
+    "capacity_ceiling": 1.0,
+    "capacity_note": "all 16 valuable targets fall within the 3-per-cluster automatic bound; the 85% structural-coverage metric is feasible (no conflict)"
+  },
+  "digests": {
+    "freeze_sha256": "96cfef46ab642aeb1d05cf246478da92f34547daf6575ea2d756d192afbdbb5f",
+    "corpus_sha256": "b82840b69958a563c62918a522a5d52bec025c99484d5215075bb4d39be7db2d",
+    "model_policy_sha256": "38ea80aeafc8dbeb4a0d71e86bcfde7cc5f89867909a14daf8a77f9d05f30d40",
+    "freeze_file": "host-local, 0600: /tmp/opencode/issue92-adr-qual/freeze.json"
+  },
+  "model_policy": {
+    "alias": "chat-fast",
+    "endpoint": "http://127.0.0.1:8002/v1/chat/completions",
+    "temperature": 0,
+    "max_tokens": 1600,
+    "response_format": "json_object",
+    "reasoning_effort": null,
+    "timeout_ms": 90000,
+    "note": "frozen identical for all four arms; chat-fast litellm model, temperature 0"
+  },
+  "chronology": {
+    "frozen_at": "2026-11-09T19:56:33.000Z",
+    "ratified_at": "2026-11-09T19:57:03.000Z",
+    "first_model_observed": false,
+    "statement": "cohort, target labels, model policy and the two-trial (t1,t2) execution order are frozen BEFORE any model output; the four-arm campaign runs only after the interactive harness exits under the native EX gate"
+  },
+  "ai_adjudication": {
+    "authority": "user_authorized",
+    "reviewer_kind": "independent_ai",
+    "reviewer_identity": "OpenCode V2 build primary agent (Qwen3.8 Chat, local provider, bounded reasoning)",
+    "outputs_blinded": true,
+    "read_original_sources": true,
+    "native_source_of_truth": "opencode.db session_message (raw native event stream), not captured queue entries",
+    "preflight": "ADR92_FREEZE_PASS (native producer exit 0)"
+  },
+  "exposure_control": {
+    "exposed_sets": ["H2 tdarr/firecrawl/guard81 (30)", "H3 hermes/openviking/plex (38)", "H4 issue75/26/70/79/80 (26) + dev cronparse/firecrawl/hermes/openviking/plex (72)", "#81 cronparse dev (24)", "gh_mcp diagnostic (17 sessions)", "ADR exposed r05-r08 (synthetic s1-s7)"],
+    "selected_families": ["graphiti-mcp (mcp_servers/graphiti)", "swebench-sphinx/django/pylint (swebench-mini)"],
+    "independence_rule": "whole source sessions from project families not present in any exposed cohort; no renaming of previously exposed cases; the exposed #81 'Issue #81 first qualification campaign' session and all tdarr P5M sessions were excluded"
+  },
+  "group_allocation": {
+    "t1-baseline": "graphiti-adr92-prospective-t1-base",
+    "t1-candidate": "graphiti-adr92-prospective-t1-cand",
+    "t2-baseline": "graphiti-adr92-prospective-t2-base",
+    "t2-candidate": "graphiti-adr92-prospective-t2-cand",
+    "state_dirs": "host-local under /tmp/opencode/issue92-adr-qual/state/",
+    "episode_free_check": "all four groups verified 0 episodes via FalkorDB raw query AND Graphiti MCP get_episodes before seeding"
+  },
+  "seeding": "24 eligible frozen source opportunities staged into each of the four arm queues (candidate-specific capture preserved per arm worktree); review_count=0 pre-drain",
+  "phase2_reconciliation_note": "the five 64-char identifiers published as 'uuid' in the prior r07/r08 integration receipts are the local review-record-id (the curated-v1:<id> episode-name suffix; a 64-char SHA-256 local review identifier), NOT the Graphiti episode UUID and NOT a redacted digest of it. Real episode UUIDs (FalkorDB + Graphiti MCP readback): r07 0f66b63f..->fdbb1e8c-eba0-4bab-b764-4ca229fe04fa, 34cc936e..->d80375a3-5697-42c7-9560-5cf071e53d53, 8684e84a..->e36ca58c-22c8-4927-9ce9-a0c9d2f94b78; r08 4f6f1093..->292f218a-5242-4df8-8e58-acfcf2c881c5, 6204fa9c..->58f57ea5-4224-4644-ba7e-1982ea7774e6. sha256(real_episode_uuid) != published value for all five, so they are mislabeled identifier fields (review-record-id digests), to be published as review_record_id_sha256, not uuid.",
+  "ex_gate_readiness": "gate interface OK (Config/Worker/parse_vllm_metrics); lock /run/user/1000/openviking-agent.lock present; scheduler :8001 idle (running=0,waiting=0); active opencode harness present (post-exit admission required)",
+  "sanitization": "No raw private source text, credentials, raw inference payloads, or sensitive episode content in this receipt; digests authoritative; private bytes 0600 on host"
+}
