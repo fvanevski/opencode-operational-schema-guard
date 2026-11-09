@@ -219,22 +219,32 @@ export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='loca
   for(const prior of await allRecords(store)){
     for(const id of prior.source_event_ids||[]){
       const owner=prior.origin_cluster_id||prior.id;
-      if(ownedSources.has(id)&&ownedSources.get(id)!==owner)
+      const current=ownedSources.get(id);
+      if(current&&current.owner!==owner)
         throw Error('SOURCE_EVENT_IN_MULTIPLE_REVIEWS');
-      ownedSources.set(id,owner);
-      const row=await queue.get(id);
-      if(!row)continue; // An older review may predate this queue instance.
-      if(prior.state==='deferred'||prior.state==='skipped'){
-        const terminal=prior.state;
-        if(row.state==='new'||row.state==='reserved')
-          await queue.transition(id,row.state,terminal);
-      }else if(['approved','submission_unknown','queued','persisted',
-        'failed_extraction','retry_authorized'].includes(prior.state)){
-        if(row.state==='new')await queue.transition(id,'new','reserved');
-        else if(row.state==='deferred')
-          await queue.transition(id,'deferred','reserved');
+      if(current)current.records.push(prior);
+      else ownedSources.set(id,{owner,records:[prior]});
+    }
+  }
+  // Several single-fact children can share the same native source evidence.
+  // Reconcile the queue once per parent, prioritizing a live/persisted sibling
+  // over another sibling's local SKIP/DEFER decision.
+  for(const [id,entry] of ownedSources){
+    const row=await queue.get(id);
+    if(!row)continue;
+    const active=entry.records.some(r=>['approved','submission_unknown',
+      'queued','persisted','failed_extraction','retry_authorized'].includes(r.state));
+    const deferred=entry.records.some(r=>r.state==='deferred');
+    if(active){
+      if(row.state==='new')await queue.transition(id,'new','reserved');
+      else if(row.state==='deferred')await queue.transition(id,'deferred','reserved');
+      if((await queue.get(id))?.state==='reserved')
         await queue.transition(id,'reserved','approved');
-      }
+    }else if(deferred){
+      if(row.state==='new'||row.state==='reserved')
+        await queue.transition(id,row.state,'deferred');
+    }else if(row.state==='new'||row.state==='reserved'){
+      await queue.transition(id,row.state,'skipped');
     }
   }
   const list=await queue.list({limit:500,states:['new']});

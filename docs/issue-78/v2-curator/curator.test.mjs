@@ -809,8 +809,8 @@ test('curator prompt distinguishes reusable schema negatives from transient fail
   assert.match(instruction,/reproducible incompatibility/);
   assert.match(instruction,/useful_negative or reusable_procedure/);
   assert.match(instruction,/raw stack trace/);
-  assert.match(instruction,/DEFER for review/);
-  assert.match(instruction,/single-source extract/);
+  assert.match(instruction,/DEFER that claim for independent review/);
+  assert.match(instruction,/attributable source evidence/);
   const durable={decision:'EMIT',utility_class:'useful_negative',
     reason:'Source-stated repeatable invalid median result',
     facts:[{assertion:T.excerpt,kind:'test_result',
@@ -825,8 +825,8 @@ test('curator prompt distinguishes reusable schema negatives from transient fail
 test('Issue 92 extract-first policy ranks durable content within mixed transient clusters',()=>{
  const prompt=modelPrompt(cluster())[0].content;
  for(const exactRule of [
-   'inspect EACH source excerpt','BEST one from the cluster',
-   'If at least one safe, source-attributed, exact durable span exists',
+   'inspect EACH source excerpt','preserve up to THREE',
+   'If one or more safe, attributed, exact durable spans exist',
    'Choose SKIP only when NONE','Choose DEFER when a potentially durable conclusion',
    'No forced EMIT, no authority upgrade'
  ]) assert.ok(prompt.includes(exactRule),exactRule);
