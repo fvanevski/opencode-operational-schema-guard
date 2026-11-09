@@ -17,7 +17,8 @@ function fixture(){
  const f={schema:'issue92-adr-prospective-freeze-v1',
    source_commits:{...SOURCE_PINS},corpus_sha256:h('corpus'),
    model_policy_sha256:h('model'),frozen_at:'2026-11-09T08:00:00Z',
-   first_model_observed:false,trials:['t1','t2'],cases};
+   first_model_observed:false,ratified_at:'2026-11-09T08:00:30Z',
+   trials:['t1','t2'],cases};
  const arm=(name,num,low=0)=>{
    const subset=new Set(cases.slice(0,num).map(c=>c.targets[0].id));
    return {group_id:'new_group_'+name,
@@ -74,6 +75,7 @@ test('a second durable target in one cluster requires its own source-supported e
 });
 test('unsafe capture and unsupported target membership fail closed',()=>{
  const {f,o}=fixture();f.cases[0].sources[0].eligible=false;
+ f.cases[0].sources[0].safety_reason='private_content';
  assert.throws(()=>validateAdrFreeze(f),/valuable_target_unsafe_source/);
  const q=fixture();q.o.arms.candidate.targets[0].support.target_supported=false;
  const v=scoreAdrTrial(q.f,q.o);
@@ -99,4 +101,24 @@ test('noninferiority with zero baseline low-value and insufficient sample remain
  q.o.arms.candidate.targets.forEach((t,i)=>{if(i>=1){t.persisted=false;t.validated=false;
    t.selected=false;t.discovered=false;t.episode_uuid=null;delete t.support;}});
  const y=scoreAdrTrial(q.f,q.o);assert.equal(y.overall,'INSUFFICIENT_SAMPLE');
+});
+
+test('ratification chronology and three-episode cluster bound are hard pre-output controls',()=>{
+ const a=fixture();a.f.ratified_at='2026-11-09T08:03:00Z';
+ assert.throws(()=>scoreAdrTrial(a.f,a.o),/trial_identity_or_chronology/);
+ const b=fixture();const first=b.f.cases[0];
+ for(let i=1;i<=3;i++){
+   first.targets.push({...first.targets[0],id:'target_plus_'+i,
+      evidence_sha256:h('extra:'+i),valuable:false});
+   for(const arm of ['baseline','candidate'])
+     b.o.arms[arm].targets.push({id:'target_plus_'+i,discovered:false,
+       selected:false,validated:false,persisted:false,reason:'not_selected',
+       episode_uuid:null});
+ }
+ // A fourth independent persisted fact from one cluster cannot be credited,
+ // even if a purported remote receipt carries a syntactically valid UUID.
+ const eps=b.o.arms.candidate.episodes;
+ for(let i=1;i<=3;i++)eps.push({...eps[0],
+   uuid:uuid(400+i),assertion_sha256:h('extra_assertion:'+i)});
+ assert.throws(()=>scoreAdrTrial(b.f,b.o),/more_than_three_episodes_in_cluster/);
 });

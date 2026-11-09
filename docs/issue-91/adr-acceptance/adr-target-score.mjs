@@ -25,7 +25,8 @@ export function validateAdrFreeze(f){
  check(f?.source_commits?.baseline===SOURCE_PINS.baseline&&
    f.source_commits.candidate===SOURCE_PINS.candidate,'frozen_source_sha');
  check(hash(f.corpus_sha256)&&hash(f.model_policy_sha256)&&date(f.frozen_at)&&
-   f.first_model_observed===false,'frozen_identity_or_chronology');
+   f.first_model_observed===false&&date(f.ratified_at)&&
+   Date.parse(f.ratified_at)>=Date.parse(f.frozen_at),'frozen_identity_or_chronology');
  check(Array.isArray(f.trials)&&f.trials.length===2&&f.trials[0]==='t1'&&
    f.trials[1]==='t2','preregistered_two_trials');
  check(Array.isArray(f.cases)&&f.cases.length>=20,'cluster_count');
@@ -91,6 +92,7 @@ function analyzeArm(f,arm,indices,trial){
  }
  const group=arm.group_id;
  check(typeof group==='string'&&ID.test(group),'arm_group');
+ const perClusterEpisodeCounts=new Map();
  for(const e of arm.episodes){
    check(e&&UUID.test(e.uuid||'')&&!episodes.has(e.uuid)&&
      e.group_id===group&&refs.has(e.source_ref)&&
@@ -103,6 +105,10 @@ function analyzeArm(f,arm,indices,trial){
      e.remote_proof.falkordb===true&&e.remote_proof.source_index===true,
      'terminal_remote_proof');
    check(refs.get(e.source_ref).eligible,'episode_unsafe_source');
+   const sourceCase=refs.get(e.source_ref).case_id;
+   perClusterEpisodeCounts.set(sourceCase,(perClusterEpisodeCounts.get(sourceCase)||0)+1);
+   check(perClusterEpisodeCounts.get(sourceCase)<=3,
+     'more_than_three_episodes_in_cluster');
    episodes.set(e.uuid,e);
  }
  let discovered=0,selected=0,captured=0,retained=0;
@@ -164,7 +170,7 @@ export function scoreAdrTrial(f,o){
    o.source_commits?.baseline===f.source_commits.baseline&&
    o.source_commits.candidate===f.source_commits.candidate&&
    o.model_policy_sha256===f.model_policy_sha256&&
-   date(o.first_model_at)&&Date.parse(o.first_model_at)>Date.parse(f.frozen_at),
+   date(o.first_model_at)&&Date.parse(o.first_model_at)>Date.parse(f.ratified_at),
    'trial_identity_or_chronology');
  check(o.execution?.ex_admitted===true&&o.execution?.all_arms_terminal===true&&
    o.execution?.unresolved_remote===0&&
