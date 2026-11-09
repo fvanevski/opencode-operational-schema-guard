@@ -1,0 +1,23 @@
+{
+  "packet": "92-adr-integration",
+  "description": "Capture opportunity ledger: the events.mjs adapters exercised against representative native event shapes. event_id values are content hashes (not credentials or raw payloads). adapter_outcome: 'envelope' = envelope staged; 'spans=N' = segmented into N spans; 'rejected(no-envelope)' = vetoed at capture.",
+  "positive_admitted": [
+    {"id": "P1_readonly_file_access", "label": "read-only file tool (content-free file_access)", "adapter_outcome": "envelope", "kind": "file_access", "source_strength": "native-id", "evidence_class": "tool-reported"},
+    {"id": "P2_nonmarker_tool_output", "label": "rg non-marker output (no pass/fail keyword)", "adapter_outcome": "envelope", "kind": "tool_outcome", "source_strength": "native-id", "evidence_class": "tool-reported"},
+    {"id": "P3_json_braces_prompt", "label": "JSON/brace mixed user prompt (braces no longer a veto)", "adapter_outcome": "envelope", "kind": "user_turn", "source_strength": "native-id", "evidence_class": "user-stated"},
+    {"id": "P4_long_mixed_prompt", "label": "long >1100-char mixed code/prose prompt WITH native id (segmented spans)", "adapter_outcome": "spans=2", "kind": "user_turn", "source_strength": "native-id", "evidence_class": "user-stated"},
+    {"id": "P5_apply_patch_tool", "label": "apply_patch native tool (safe structured shape)", "adapter_outcome": "envelope", "kind": "file_change", "source_strength": "native-id", "evidence_class": "tool-reported"},
+    {"id": "P6_assistant_turn", "label": "completed assistant turn (durable finding, not verified)", "adapter_outcome": "envelope", "kind": "assistant_turn", "source_strength": "native-id", "evidence_class": "assistant-reported"}
+  ],
+  "safety_rejected": [
+    {"id": "S1_secret_json_key", "label": "secret-bearing JSON key in prompt (api_key)", "adapter_outcome": "rejected(no-envelope)"},
+    {"id": "S2_credential_tail", "label": "credential in long output tail (sk-)", "adapter_outcome": "rejected(no-envelope)"},
+    {"id": "S3_sensitive_path", "label": "sensitive file path (.env / .ssh)", "adapter_outcome": "rejected(no-envelope)"},
+    {"id": "S4_injected_memory", "label": "injected OpenViking memory context marker", "adapter_outcome": "rejected(no-envelope)"},
+    {"id": "S5_wrong_scope", "label": "wrong/non-absolute workspace (cross-scope)", "adapter_outcome": "rejected(no-envelope)"},
+    {"id": "S6a_long_no_nativeid", "label": "long >1100-char prompt WITHOUT native message id (segmentation requires stable native id)", "adapter_outcome": "rejected(no-envelope)"}
+  ],
+  "fallback_admitted": [
+    {"id": "S6b_short_no_nativeid", "label": "short prompt WITHOUT native id (weak content-hash fallback, labelled session-scoped)", "adapter_outcome": "envelope", "kind": "user_turn", "source_strength": "session-scoped-fallback", "evidence_class": "user-stated", "note": "admitted but not native-strength"}
+  ]
+}
