@@ -12,6 +12,10 @@ const SHA=/^[0-9a-f]{64}$/;
 const UUID=/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i;
 const H=s=>createHash('sha256').update(s).digest('hex');
 const req=(v,reason)=>{if(!v)throw Error('ADR92_CAUSAL_INVALID:'+reason)};
+export const D1_SOURCE_PINS=Object.freeze({
+ previous:'a684667a6eefa2dc19f29755bed0c3048874721d',
+ corrected:'e303a67786fd96491cbdab36790b81442c4340c6'
+});
 const stages=[
  'SOURCE_NOT_VISIBLE','RAW_MODEL_UNAVAILABLE','MODEL_SKIP','MODEL_DEFER',
  'MODEL_OTHER_FACT','MODEL_INVALID_PROPOSAL','VALIDATOR_REJECTED',
@@ -103,15 +107,22 @@ function classify(row,frozen){
  return result;
 }
 export function auditExposed(freeze,bundle,rawFreeze){
+ const development=bundle?.schema==='issue92-adr-exposed-d1-comparison-v1';
+ if(development){
+   req(bundle.comparison_sources?.previous===D1_SOURCE_PINS.previous&&
+     bundle.comparison_sources?.corrected===D1_SOURCE_PINS.corrected,
+     'development_comparison_source_identity');
+ }
  req(typeof rawFreeze==='string'&&H(rawFreeze)===bundle?.freeze_sha256,
    'freeze_bytes_digest_mismatch');
  req(freeze?.schema==='issue92-adr-prospective-freeze-v1'&&
-   bundle?.schema==='issue92-adr-exposed-causal-audit-v1'&&
+   (bundle?.schema==='issue92-adr-exposed-causal-audit-v1'||development)&&
    bundle.freeze_sha256&&SHA.test(bundle.freeze_sha256)&&
    bundle.source_commits?.baseline===freeze.source_commits?.baseline&&
    bundle.source_commits?.candidate===freeze.source_commits?.candidate,
    'immutable_campaign_identity');
- req(Array.isArray(bundle.runs)&&bundle.runs.length>=1&&
+ req(Array.isArray(bundle.runs)&&
+   (development?bundle.runs.length===2:bundle.runs.length>=1)&&
    Array.isArray(freeze.cases),'runs_and_cases');
  const byTarget=new Map();
  for(const c of freeze.cases){
@@ -123,9 +134,15 @@ export function auditExposed(freeze,bundle,rawFreeze){
  }
  const rows=[],summaries=[],seenRuns=new Set();
  for(const run of bundle.runs){
-   req(typeof run.trial==='string'&&/^(?:t1|t2|d[0-9]{1,2})$/.test(run.trial)&&
-     ['baseline','candidate'].includes(run.arm)&&
-     Array.isArray(run.targets),'run_identity');
+   if(development)
+     req(run.trial==='d1'&&
+       Object.hasOwn(D1_SOURCE_PINS,run.arm)&&
+       run.source_sha===D1_SOURCE_PINS[run.arm]&&
+       Array.isArray(run.targets),'development_run_exact_source');
+   else
+     req(typeof run.trial==='string'&&/^(?:t1|t2|d[0-9]{1,2})$/.test(run.trial)&&
+       ['baseline','candidate'].includes(run.arm)&&
+       Array.isArray(run.targets),'run_identity');
    const key=run.trial+':'+run.arm;
    req(!seenRuns.has(key),'duplicate_run');seenRuns.add(key);
    const seen=new Set(),counts=Object.fromEntries(stages.map(x=>[x,0]));
@@ -143,8 +160,14 @@ export function auditExposed(freeze,bundle,rawFreeze){
    summaries.push({trial:run.trial,arm:run.arm,reviewed_targets:seen.size,
      missing_valuable_targets:missing,complete:missing.length===0,counts});
  }
- return {schema:'issue92-adr-exposed-causal-result-v1',
-   source_commits:{...bundle.source_commits},freeze_sha256:bundle.freeze_sha256,
+ if(development)
+   req(seenRuns.has('d1:previous')&&seenRuns.has('d1:corrected'),
+     'development_run_pair_incomplete');
+ return {schema:development?
+     'issue92-adr-exposed-d1-result-v1':'issue92-adr-exposed-causal-result-v1',
+   source_commits:{...bundle.source_commits},
+   ...(development?{comparison_sources:{...D1_SOURCE_PINS}}:{}),
+   freeze_sha256:bundle.freeze_sha256,
    disposition:summaries.every(s=>s.complete)?'COMPLETE':'INCOMPLETE',
    summaries,rows,
    note:'No claim that model recognized a SKIPped target. Missing raw model trace is unknown, never credited as discovered. Semantic target matching and actual source/Graphiti receipts require separate independent host verification.'};

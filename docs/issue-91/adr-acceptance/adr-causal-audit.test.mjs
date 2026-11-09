@@ -4,7 +4,7 @@ import {mkdtemp,readFile,stat,rm} from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
 import {createHash} from 'node:crypto';
-import {auditExposed} from './adr-causal-audit.mjs';
+import {auditExposed,D1_SOURCE_PINS} from './adr-causal-audit.mjs';
 import {createPrivateTraceCurator} from './adr-private-trace.mjs';
 
 const sha=s=>createHash('sha256').update(s).digest('hex');
@@ -113,4 +113,27 @@ test('auditor rejects stale freeze bytes and raw model transcript digest changes
    /freeze_bytes_digest_mismatch/);
  const row=makeRow({model_raw_content:rawSkip,model_reply_sha256:sha('tampered')});
  assert.throws(()=>run([row]),/raw_model_digest_not_authenticated/);
+});
+
+test('D1 exposed comparison is pinned to previous and corrected model-tested SHAs',()=>{
+ const bundle=makeBundle([makeRow({model_raw_content:rawSkip,review_state:'skipped'})]);
+ bundle.schema='issue92-adr-exposed-d1-comparison-v1';
+ bundle.comparison_sources={...D1_SOURCE_PINS};
+ const original={...bundle.runs[0],trial:'d1'};
+ bundle.runs=[
+   {...original,arm:'previous',source_sha:D1_SOURCE_PINS.previous},
+   {...original,arm:'corrected',source_sha:D1_SOURCE_PINS.corrected}
+ ];
+ const result=auditExposed(freeze,bundle,rawFreeze);
+ assert.equal(result.schema,'issue92-adr-exposed-d1-result-v1');
+ assert.equal(result.rows.length,2);
+ assert.equal(result.disposition,'COMPLETE');
+ assert.equal(result.comparison_sources.corrected,D1_SOURCE_PINS.corrected);
+ bundle.runs[1].source_sha=D1_SOURCE_PINS.previous;
+ assert.throws(()=>auditExposed(freeze,bundle,rawFreeze),
+   /development_run_exact_source/);
+ bundle.runs[1].source_sha=D1_SOURCE_PINS.corrected;
+ bundle.comparison_sources.corrected='0'.repeat(40);
+ assert.throws(()=>auditExposed(freeze,bundle,rawFreeze),
+   /development_comparison_source_identity/);
 });
