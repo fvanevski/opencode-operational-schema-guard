@@ -1,0 +1,113 @@
+{
+ "schema_version": 1,
+ "kind": "issue92-h3-freeze-receipt-v1 (PUBLIC, sanitized, evidence-only)",
+ "campaign": "92-h2-next-qualification / i92h3 prospective multi-family holdout + exposed development regression",
+ "branch": "work/91-memory-utility-r1",
+ "base_branch_head_at_receipt": "21556fa39c7520cede0e53c6012cbf67f6ea3ed3",
+ "source_identities": {
+  "baseline_sha": "c8eb5260f2b10832346234b1b5d0cf28302ffba8",
+  "candidate_sha": "21556fa39c7520cede0e53c6012cbf67f6ea3ed3",
+  "note": "Candidate is the Central-staged branch tip (fix 9934b49 + test 21556fa). docs/issue-78/v2-curator/model.mjs is byte-identical across 270848a..21556fa, so the frozen inference identity is unchanged from the H2 campaign."
+ },
+ "lineage": {
+  "prior_campaigns": [
+   "92-a1-a3-first-campaign / i92h2 (30 cases) fully exposed and sealed: freeze 2026-11-09T01:08:11.317Z, ratification sha256 925a21dbeaebad47216b7cf438e6471fb70499668c72139f3c8a95c4a5271ad8, final scorecard INSUFFICIENT_SAMPLE (published at 0614c3b). Materials remain sealed and untouched.",
+   "#81 cronparse development corpus (24 cases) reused development-only."
+  ],
+  "central_fix_under_test": {
+   "fix_commit": "9934b49",
+   "candidate_tip": "21556fa39c7520cede0e53c6012cbf67f6ea3ed3",
+   "note": "Prompt-selection instructions for reusable negative findings (core.mjs) plus the h2-coverage-v2 fact-supported scorer. Baseline c8eb5260f2b10832346234b1b5d0cf28302ffba8 unchanged."
+  }
+ },
+ "corpora": {
+  "i92h3_untouched_holdout": {
+   "corpus_path_host": "/tmp/opencode/i92/issue92-h3-cohort.json (private, 0600)",
+   "corpus_sha256": "08b821199a1018ba43128783ecdad60b382877882dec284829cf6fd42774b47e",
+   "cases": 38,
+   "valuable_provisional": 30,
+   "families": { "hermes": 14, "openviking": 10, "plex": 14 },
+   "families_in_untouched_holdout": 3,
+   "frozen_at": "2026-11-09T02:28:59.169Z",
+   "freeze_manifest_sha256": "70915d5040610102e4bacdc7db8d7b5320346a66d0286d9d8c193ead79104ee4",
+   "note": "Native opencode.db events; zero model calls on these events so far. Historical September 2026 plex controls (cases 37-38) recorded as historical/transient controls."
+  },
+  "development_regression": {
+   "corpus_path_host": "/tmp/opencode/i92/issue92-h3-dev-corpus.json (private, 0600)",
+   "corpus_sha256": "6e3475ad0bb4eff52a44d25b417b8c6bb5b1f3ca9fdf38d6f0b7a54beafa2ca5",
+   "cases": 34,
+   "note": "Exposed development-only union: 24 #81 cronparse + 10 H2 firecrawl (incl. the negative pair i92h2-15-8f838410 / i92h2-16-0cae773f that the Central fix targets). Reported, not scored."
+  }
+ },
+ "exposure_control": {
+  "exposed_session_count": 35,
+  "exposed_sets": [
+   "gh_mcp diagnostic cohort (17 sessions)",
+   "#81 cronparse development corpus (1 session)",
+   "#81 native holdout capture group",
+   "H2 i92h2 30-case re-frozen cohort (16 sessions)"
+  ],
+  "session_message_overlap_with_i92h3": 0,
+  "pre_output_label_changes": 1,
+  "pre_output_label_change_detail": {
+   "case": "i92h3-21-7f60f29a",
+   "from_valuable": true,
+   "to_valuable": false,
+   "reason_class": "Pre-output AI review: the 503 log-line reconfirmation is transient evidence of the disabled-receipt state whose durable root cause is already carried by i92h3-20; keeping both valuable would double-count one root-cause family."
+  },
+  "rule": "Whole exposed sessions excluded; families (hermes/openviking/plex-stack) are materially distinct from the exposed tdarr/firecrawl/guard81/cronparse fact families."
+ },
+ "model_policy": {
+  "endpoint": "http://127.0.0.1:8002/v1/chat/completions",
+  "model_alias": "chat-fast",
+  "temperature": 0,
+  "max_tokens": 1600,
+  "response_format": "json_object",
+  "reasoning_effort": null,
+  "timeout_ms": 90000,
+  "digest_sha256": "39d8dd80b1427e1e24d52ece1ad30e1319869133201c8fba0c2c9c0caa2247a4",
+  "digest_method": "sha256 of compact JSON.stringify of the frozen model_policy object"
+ },
+ "ai_adjudication": {
+  "authority": "user_authorized",
+  "reviewer_kind": "independent_ai",
+  "reviewer_identity": "OpenCode V2 build primary agent (model Qwen3.8 Chat, provider local, bounded reasoning) acting as independent assessor under user-authorized AI adjudication for Issue #92; all 38 case texts read in full from opencode.db (read-only) before any model exposure",
+  "outputs_blinded": true,
+  "read_original_sources": true,
+  "used_private_source_access": true,
+  "ratification_schema": "issue92-h2-ai-ratification-v1",
+  "ratification_sha256": "0fbd7ed20fed9ad58b1ad6715156a562fba13263efccb1f2a313e29d0b5c7a7a",
+  "ratified_at": "2026-11-09T02:28:59.170Z",
+  "label_changes": 1,
+  "valuable_ratified": 29,
+  "case_count": 38,
+  "preflight": "H2_PREFLIGHT_PASS (native producer exit 0); original_corpus_sha256 cross-verified against the frozen cohort digest"
+ },
+ "group_allocation": {
+  "i92_base_dev": "graphiti-curator-utility-development-r11 (34-case exposed dev corpus, untouched queue)",
+  "i92_cand_dev": "graphiti-curator-utility-development-r12 (34-case exposed dev corpus, untouched queue)",
+  "i92_base_holdout": "graphiti-curator-utility-holdout-r13 (FRESH unused group, 38-case i92h3 cohort, untouched queue)",
+  "i92_cand_holdout": "graphiti-curator-utility-holdout-r14 (FRESH unused group, 38-case i92h3 cohort, untouched queue)",
+  "sealed_untouched_v1_groups": [
+   "graphiti-curator-utility-development-r05",
+   "graphiti-curator-utility-development-r06",
+   "graphiti-curator-utility-holdout-r09",
+   "graphiti-curator-utility-holdout-r10"
+  ],
+  "graphiti_check": "r11-r14 verified episode-free via Graphiti MCP get_episodes(group_ids) before seeding (2026-11-08); sealed v1 groups r05/r06/r09/r10 untouched."
+ },
+ "seed_status": {
+  "i92_base_dev": "34 new / 0 reviews",
+  "i92_cand_dev": "34 new / 0 reviews",
+  "i92_base_holdout": "38 new / 0 reviews",
+  "i92_cand_holdout": "38 new / 0 reviews",
+  "verified_via": "native curator-cli status with absolute state roots, 2026-11-08"
+ },
+ "chronology_proof": {
+  "statement": "No i92h3 model output has been generated as of this receipt: all four queues are untouched (new counts only, review_count=0), the freeze and AI ratification both predate any model call on these events, and the interactive harness is prohibited from triggering inference (EX gate exclusive admission; the single post-exit four-arm runner is the only admission path).",
+  "post_exit_runner": "one-shot post-exit launcher prepared host-side (four arms r11-r14 via the installed post-exit-drain EX wrapper); executed only after the interactive harness exits.",
+  "receipt_time": "2026-11-09T02:28:59.170Z"
+ },
+ "sanitization": "No raw private excerpts, credentials, or private text in this receipt; private byte locators (host paths) listed for the private auditor, digests authoritative.",
+ "next": "single post-exit four-arm run (exposed dev regressions + new holdout, frozen chat-fast identity across arms), then the consolidated final evidence-only commit (second evidence commit) with the v2 paired scorecard."
+}
