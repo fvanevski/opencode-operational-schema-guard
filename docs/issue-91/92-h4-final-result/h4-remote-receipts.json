@@ -1,0 +1,140 @@
+{
+ "schema": "issue92-h4-remote-receipts-v1",
+ "note": "Terminal remote proof for the H4 campaign. Counts and UUIDs transcribed from the local curation stores and independently read back from raw FalkorDB (Episodic nodes) and the Graphiti MCP get_episodes route. Reconciliation (h4-reconcile) verified name, assertion content, source references, scope group, and episode index agreement for every persisted record: ALL_OK=true, zero extra remote episodes.",
+ "falkor_db": {
+  "engine": "FalkorDB (redis protocol, port 6382)",
+  "episode_node_label": "Episodic",
+  "per_graph_episodic_counts": {
+   "graphiti-curator-utility-development-r15": 20,
+   "graphiti-curator-utility-development-r16": 5,
+   "graphiti-curator-utility-holdout-r17": 17,
+   "graphiti-curator-utility-holdout-r18": 1
+  }
+ },
+ "groups": [
+  {
+   "group": "graphiti-curator-utility-development-r15",
+   "arm": "i92-base-dev",
+   "records": 23,
+   "decisions": {
+    "DEFER": 3,
+    "EMIT": 20
+   },
+   "persisted": 20,
+   "episode_uuids": [
+    "09770361-c7a9-4fb7-9eec-c943e055f39d",
+    "1001b98b-cc7e-4f00-94ee-5523a6ab0691",
+    "1ebe4fc6-f8d6-4193-bb76-abb5f1eb1248",
+    "36c230bd-0272-4905-ad1e-20b51222264a",
+    "4f53109c-bb4c-48dc-b029-870ba97b00be",
+    "55436ffc-a465-4679-978d-9dfd9b6c0448",
+    "635064a9-e3db-4704-9f01-d06d0b57b413",
+    "64212770-ebd5-47b2-9fd1-695a140d29f8",
+    "6dcb2e24-dd71-4e4a-8bff-ea23e67ced78",
+    "72976222-f9c3-4c69-9f23-33bfea986d06",
+    "7aeaed26-abaa-420f-84bf-31d9c36a6215",
+    "7d76d255-fd9e-4d3f-82b6-14aec456afe5",
+    "8adae723-33c3-40ca-9fab-d9c5eaf12ca8",
+    "924b089c-5547-4004-941a-93bf1eae3a88",
+    "987f2b4c-7f90-4416-8013-f117d39c3a31",
+    "9fb16248-472e-4096-a4bf-52b761e87a64",
+    "c9622256-6520-4eca-9160-bd867f4db8d5",
+    "e10db79a-c5e7-47f3-83c9-f1d6b0d1c310",
+    "ef9acda2-3083-45e8-ab74-a1d2220ec7d0",
+    "f3bc666d-ef11-49f5-8eee-961647daa1b0"
+   ]
+  },
+  {
+   "group": "graphiti-curator-utility-development-r16",
+   "arm": "i92-cand-dev",
+   "records": 23,
+   "decisions": {
+    "DEFER": 10,
+    "EMIT": 5,
+    "SKIP": 8
+   },
+   "persisted": 5,
+   "episode_uuids": [
+    "22ca87a4-36f3-46bf-acc9-399dea48a1d4",
+    "25070467-3f2e-4de3-8b4d-f8098ec87ef1",
+    "7e15d9bc-113c-4f3d-9149-b0d92356b2c2",
+    "8fec22cd-2541-4761-af69-491f819aa030",
+    "9a8b322c-7b2e-4c7a-89e2-e03295c933ca"
+   ]
+  },
+  {
+   "group": "graphiti-curator-utility-holdout-r17",
+   "arm": "i92-base-prosp",
+   "records": 26,
+   "decisions": {
+    "EMIT": 17,
+    "DEFER": 8,
+    "SKIP": 1
+   },
+   "persisted": 17,
+   "episode_uuids": [
+    "01f26287-89c6-4679-adee-61fe7da8c11b",
+    "02f3c15b-6f0e-4c43-bc26-b4732b9bc4a3",
+    "27f39b69-7a9e-416e-8cec-64a971285b9f",
+    "286ee6bc-10a7-4bb9-bf3a-045c65aaa7e9",
+    "32f85168-ba5d-43ca-80b9-9f5658ccad36",
+    "3409b23e-29ac-4a1f-8c10-62f8008f712c",
+    "34f9a21e-3a22-460a-a9e5-51707cdac4c5",
+    "35db88c8-4017-45ca-a215-8be9325cb01d",
+    "3cdc9860-7c82-481f-b75c-be16477479a0",
+    "437c536d-e589-4ab5-8d88-2b01f127d16b",
+    "5effab3e-a2cf-4c9b-8a41-beb49c96adb1",
+    "666023a6-a214-4a24-a16f-9d1c116b7135",
+    "68a0ab4e-42a6-4ed0-8fba-602558ebdd3b",
+    "b7f3aaad-33a8-4fea-a8b6-4d0accc3e0be",
+    "bb120aec-7d47-4487-b21e-980e8fc8f06d",
+    "e857c1ba-9d31-426f-9509-af0fc97b3082",
+    "ec75a1f5-8733-4964-b827-e7f051c41906"
+   ]
+  },
+  {
+   "group": "graphiti-curator-utility-holdout-r18",
+   "arm": "i92-cand-prosp",
+   "records": 26,
+   "decisions": {
+    "DEFER": 7,
+    "SKIP": 18,
+    "EMIT": 1
+   },
+   "persisted": 1,
+   "episode_uuids": [
+    "4c8bf6b2-ae3f-4cd9-9031-61e0bc0d924e"
+   ]
+  }
+ ],
+ "reconciliation": {
+  "tool": "h4-reconcile.mjs (local record <-> raw FalkorDB rows, per-UUID field readback)",
+  "all_ok": true,
+  "problem_rows": 0,
+  "mcp_get_episodes_readback": {
+   "graphiti-curator-utility-holdout-r17": 17,
+   "graphiti-curator-utility-holdout-r18": 1
+  }
+ },
+ "execution": {
+  "first_drain": {
+   "launcher": "/tmp/opencode/i92/i92h4-post-exit-run.sh",
+   "start_utc": "2026-11-09T16:00:41Z",
+   "end_utc": "2026-11-09T16:06:31Z",
+   "runner_exit": 0,
+   "model_alias": "chat-fast",
+   "model_errors": {
+    "baseline": 0,
+    "candidate": 0
+   },
+   "note": "Graphiti :8766 was down during the first drain; all EMIT records were deferred duplicate_check_unavailable and nothing persisted remotely."
+  },
+  "recovery": {
+   "launcher": "/tmp/opencode/i92/i92h4-recovery-run.sh",
+   "end_utc": "2026-11-09T16:39:06Z",
+   "runner_exit": 0,
+   "note": "Graphiti :8766 restarted (stuck empty graphiti_live graph reset; zero episodes lost), 44 deferred records marked reevaluate_requested and re-modeled at temperature=0, then add_memory-persisted. Recovery drain exit=0; all 43 episodes persisted remotely."
+  },
+  "ex_gate": "canonical post-exit EX gate (exactly-once launcher); production development-knowledge group untouched"
+ }
+}
