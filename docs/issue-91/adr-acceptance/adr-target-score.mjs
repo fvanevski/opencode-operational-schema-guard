@@ -179,7 +179,7 @@ export function scoreAdrTrial(f,o){
    'trial_execution_proof');
  const refs=new Map(),targets=new Map();
  for(const c of f.cases){
-   for(const s of c.sources)refs.set(s.ref,s);
+   for(const s of c.sources)refs.set(s.ref,{...s,case_id:c.id});
    for(const t of c.targets)targets.set(t.id,t);
  }
  const indices={refs,targets};
