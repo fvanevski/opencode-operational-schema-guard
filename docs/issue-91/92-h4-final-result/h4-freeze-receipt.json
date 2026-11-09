@@ -1,0 +1,67 @@
+{
+ "schema": "issue92-h4-freeze-receipt-v1",
+ "campaign": "issue92-h4",
+ "note": "Sanitized chronological freeze receipt for the H4 extract-first qualification campaign. The prospective and development freezes and both AI ratifications were created BEFORE the first model start (chronology below) and committed evidence-only after the campaign. No source text, credentials, or inference payloads are included.",
+ "source_identity": {
+  "baseline": "c8eb5260f2b10832346234b1b5d0cf28302ffba8",
+  "candidate": "e0360f03bbaf2d47f5ad167ff0c57c021cc12aed",
+  "candidate_description": "H3 model-tested candidate 21556fa39c7520cede0e53c6012cbf67f6ea3ed3 + 4 extract-first prompt instructions in core.mjs modelPrompt",
+  "scorer_head": "86ce73ac522357a5918a9d3ca84c71ed944296c8"
+ },
+ "model_policy": {
+  "sha256": "39d8dd80b1427e1e24d52ece1ad30e1319869133201c8fba0c2c9c0caa2247a4",
+  "alias": "chat-fast",
+  "temperature": 0,
+  "continuity": "byte-for-byte reuse of the H3 frozen model_policy object"
+ },
+ "chronology": {
+  "prospective_freeze_at": "2026-11-09T05:19:10.847Z",
+  "prospective_ratified_at": "2026-11-09T05:19:10.847Z",
+  "dev_freeze_at": "2026-11-09T05:19:10.847Z",
+  "dev_ratified_at": "2026-11-09T05:19:10.847Z",
+  "first_model_start_utc": "2026-11-09T16:00:41Z",
+  "first_drain_end_utc": "2026-11-09T16:06:31Z",
+  "recovery_drain_end_utc": "2026-11-09T16:39:06Z"
+ },
+ "prospective": {
+  "schema": "issue92-h4-prospective-cluster-cohort-v1",
+  "corpus_sha256": "2f76a4378744a3f49d912564b5dbabd5711cc56596c171aa0acc73621be19fa2",
+  "freeze_manifest_sha256": "010a9c62207bea265bb61805a73e5b944d8a22435f99feb37a71ad0ed4485c6f",
+  "ratification_sha256": "584c78392b6a4896e83acacd10b54b0e41a2cfe4fe21eafb3b224ddf0dff6b3b",
+  "cases": 26,
+  "valuable": 24,
+  "families": {
+   "issue75": 7,
+   "issue26": 7,
+   "issue70": 6,
+   "issue79_80": 6
+  },
+  "cluster_grain": "one representative durable target per independent review cluster (session-level cluster keys)",
+  "preflight": "H2_PREFLIGHT_PASS"
+ },
+ "development": {
+  "schema": "issue92-h4-prospective-cluster-cohort-v1",
+  "corpus_sha256": "0a34021cb983fb0c72a291bb460fca7750e0157386443a97945466abb06dd41e",
+  "freeze_manifest_sha256": "c6170f71636476314e71827e00af7da5dcd180aaa9770e2c6dcc5b1267044800",
+  "ratification_sha256": "a5dc8fce03ad3961f9ca3b091fd7647284940c135d17dd7268ad71d9c95b54bd",
+  "cases": 72,
+  "valuable": 49,
+  "families": {
+   "cronparse": 24,
+   "firecrawl": 10,
+   "hermes": 14,
+   "openviking": 10,
+   "plex": 14
+  },
+  "label_changes": 1,
+  "purpose": "development-only readiness diagnostic (exposed H2/H3 corpus); reported separately, not the acceptance score",
+  "preflight": "H2_PREFLIGHT_PASS"
+ },
+ "groups": {
+  "baseline_development": "graphiti-curator-utility-development-r15",
+  "candidate_development": "graphiti-curator-utility-development-r16",
+  "baseline_prospective": "graphiti-curator-utility-holdout-r17",
+  "candidate_prospective": "graphiti-curator-utility-holdout-r18",
+  "note": "fresh disposable groups; H3 campaign groups r11-r14 and all #81 groups untouched"
+ }
+}
