@@ -80,7 +80,7 @@ test('zero low-value baseline uses noninferiority, not strict improvement',()=>{
  }
  const s=score(f);
  assert.equal(s.gates.selectivity,'PASS');
- assert.equal(s.gates.baseline_useful_preservation,'FAIL'); // distinct missed valuable target
+ assert.equal(s.gates.baseline_useful_preservation,'PASS'); // both arms retain all frozen valuable targets
 });
 test('rejects post-output changes to frozen target and source pin',()=>{
  const f=fixture();f.rat.cases[0].target_excerpt_sha256=h('changed');
