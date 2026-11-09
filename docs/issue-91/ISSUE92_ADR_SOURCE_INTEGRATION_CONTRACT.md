@@ -36,3 +36,22 @@ Validate negatives: secret in the tail/JSON key, wrong group/workspace, injected
 ## Required handback
 
 Return exact source and generated file hashes, native test exits/CI evidence, representative raw opportunity/admission/loss metrics, source-range and normalized-claim outcomes, per-fact ReviewStore and remote UUID/index proofs, no-replay/ambiguous submission tests, exposed H2–H4 per-cause recovery, sanitized utility/grounding/duplication/privacy results, operator-review load and resource use, unchanged production evidence, precise remaining blockers, and canonical GHDEV command-shape friction. No public raw transcript or credentials.
+
+
+## Central follow-up after exposed integration readback
+
+The exposed integration packet at \`9de7b08f3c421e4b4e5b33eeae7e17d52847359c\`
+reported 55/55 focused, 524/524 broader local tests, grounded per-fact remote
+episodes, and a source-range whitespace suppression defect. Central subsequently
+changed only (1) deterministic normalization of a validated quoted span to
+\`slice(start,end).trim()\`, with the 25..450-character validator unchanged, and
+(2) single-fact persisted utility labeling to prioritize its already-validated
+per-fact class over the cluster-wide class. Focused regressions cover both.
+
+**Causal boundary:** a clean no-whitespace span was already accepted, and
+the unmodified source also persisted the exposed s4 fact in one of four
+development runs. Consequently the host paired runs do not isolate a statistical
+treatment effect for \`.trim()\`; the deterministic before/after span-validation
+probe is the narrow direct support. The repaired source requires fresh native
+verification at its exact new HEAD. No claim of deterministic LLM replay or
+new prospective acceptance is made by this addendum.

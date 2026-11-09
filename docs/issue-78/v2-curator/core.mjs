@@ -194,7 +194,11 @@ export function validateModelDecision(raw,cluster) {
         p.start<0||p.end<=p.start||p.end>source.excerpt.length||
         p.end-p.start<25||p.end-p.start>450)
         return {...f,assertion:null};
-      const verbatim=source.excerpt.slice(p.start,p.end);
+      // Boundary whitespace is not part of the stored assertion. Preserve
+      // exact contiguous source wording while respecting validText's existing
+      // normalized/trimmed assertion invariant. Both source offsets still
+      // must be valid, and the trimmed result must satisfy 25..450 chars.
+      const verbatim=source.excerpt.slice(p.start,p.end).trim();
       // A model-authored paraphrase is an unverified review suggestion, NOT
       // the automatic graph assertion. It must not suppress a valid source
       // span; this is the recall-critical separation of claim and evidence.
@@ -350,8 +354,14 @@ export class ReviewStore {
         origin_cluster_id:cluster.origin_cluster_id??cluster.id,
         state,decision:valid.decision,
         reason:valid.reason,
-        utility_class:decision?.ok===true&&UTILITY_CLASSES.has(decision.utility_class)?
-          decision.utility_class:null,
+        // For a single model-selected fact, the independently validated fact
+        // classification governs the persisted review. The top-level label
+        // remains a compatibility fallback; operator edits remain unclassified.
+        utility_class:decision?.ok===true&&valid.facts.length===1&&
+          UTILITY_CLASSES.has(decision.fact_utilities?.[0])?
+          decision.fact_utilities[0]:
+          decision?.ok===true&&UTILITY_CLASSES.has(decision.utility_class)?
+            decision.utility_class:null,
         diagnostic_field:decision?.ok===false?decision.diagnostic_field??null:valid.diagnostic_field??null,
         facts:valid.facts,
         review_only_claims:Array.isArray(decision?.review_only_claims)?

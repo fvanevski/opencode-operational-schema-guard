@@ -114,3 +114,43 @@ test('bundle manifest heals an interrupted child write without model replay',()=
  assert.equal(after.length,2);
  assert.ok(after.every(r=>r.state==='approved'&&r.origin_cluster_id===c.id));
 }));
+
+test('source-ranged claim trims only boundary whitespace and preserves original attribution',()=>{
+ const events=source(),c=selectClusters(events)[0],tool=events[1];
+ const start=tool.excerpt.indexOf(' The parser requires');
+ assert.ok(start>0);
+ const raw=tool.excerpt.slice(start);
+ assert.equal(raw[0],' ');
+ const decision={decision:'EMIT',utility_class:'stable_architecture',
+   reason:'Source-backed parser contract is useful for future maintenance',
+   facts:[{kind:'dependency',utility_class:'stable_architecture',
+     source_refs:[tool.source_refs[0]],temporal_status:'observed',
+     evidence_span:{source_ref:tool.source_refs[0],start,end:tool.excerpt.length}}]};
+ const result=validateModelDecision(decision,c);
+ assert.equal(result.ok,true,JSON.stringify(result));
+ assert.equal(result.facts[0].assertion,raw.trim());
+ assert.ok(tool.excerpt.includes(result.facts[0].assertion));
+ assert.equal(result.facts[0].source_refs[0],tool.source_refs[0]);
+ assert.equal(result.facts[0].evidence_class,'tool-reported');
+ assert.equal(result.facts[0].scope.group,scope.group);
+ assert.equal(result.facts[0].observed_at,tool.observed_at);
+ const unsupported=validateModelDecision({...decision,
+   facts:[{...decision.facts[0],evidence_span:{
+      ...decision.facts[0].evidence_span,end:tool.excerpt.length+1}}]},c);
+ assert.equal(unsupported.ok,false);
+});
+test('single-fact persisted utility classification follows validated per-fact judgment',()=>scratch(async root=>{
+ const e=source(),c=selectClusters(e)[0],tool=e[1];
+ const decision={decision:'EMIT',utility_class:'durable_decision',
+   reason:'Validated utility belongs to the atomic persisted claim',
+   facts:[{kind:'dependency',utility_class:'stable_architecture',
+     assertion:tool.excerpt,source_refs:[tool.source_refs[0]],
+     temporal_status:'observed'}]};
+ const checked=validateModelDecision(decision,c);
+ assert.equal(checked.ok,true);
+ assert.deepEqual(checked.fact_utilities,['stable_architecture']);
+ const record=(await new ReviewStore(root,scope.group).create(c,checked)).record;
+ assert.equal(record.state,'approved');
+ assert.equal(record.facts.length,1);
+ assert.equal(record.utility_class,'stable_architecture');
+}));
