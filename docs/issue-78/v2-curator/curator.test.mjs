@@ -802,3 +802,22 @@ test('replay of a legal edge against an advanced record fails with clean false',
   assert.equal((await store.get(record.id)).state,'failed_extraction');
  }finally{delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;}
 }));
+
+test('curator prompt distinguishes reusable schema negatives from transient failures without changing the validator',()=>{
+  const c=cluster(),instruction=modelPrompt(c)[0].content;
+  assert.match(instruction,/schema-validation failure/);
+  assert.match(instruction,/reproducible incompatibility/);
+  assert.match(instruction,/useful_negative or reusable_procedure/);
+  assert.match(instruction,/raw stack trace/);
+  assert.match(instruction,/DEFER for review/);
+  assert.match(instruction,/single-source extract/);
+  const durable={decision:'EMIT',utility_class:'useful_negative',
+    reason:'Source-stated repeatable invalid median result',
+    facts:[{assertion:T.excerpt,kind:'test_result',
+      source_refs:[T.source_refs[0]],temporal_status:'observed'}]};
+  const valid=validateModelDecision(durable,c);
+  assert.equal(valid.ok,true);
+  const ephemeral=validateModelDecision({...durable,utility_class:'transient_result'},c);
+  assert.equal(ephemeral.ok,false);
+  assert.equal(ephemeral.reason,'utility_class_not_durable');
+});
