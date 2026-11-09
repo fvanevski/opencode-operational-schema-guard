@@ -19,8 +19,17 @@ export function createPrivateTraceCurator(curate,{directory}){
    await fs.mkdir(directory,{recursive:true,mode:0o700});
    const dest=path.join(directory,cluster.id+'.json');
    // wx preflight avoids accidental second model call in a diagnostic group.
-   try{await fs.access(dest);throw Error('ADR92_TRACE_ALREADY_EXISTS');}
-   catch(e){if(e.code!=='ENOENT')throw e;}
+   for(const existing of [dest,dest+'.call-intent']){
+     try{await fs.access(existing);throw Error('ADR92_TRACE_ALREADY_EXISTS');}
+     catch(e){if(e.code!=='ENOENT')throw e;}
+   }
+   // Persist a private one-shot call intent BEFORE invoking the model. If the
+   // process crashes after inference but before saving the response, the
+   // intent remains and blocks an accidental second call.
+   await fs.writeFile(dest+'.call-intent',JSON.stringify({
+     cluster_id:cluster.id,group_id:cluster.group,created_at:new Date().toISOString(),
+     model_prompt_sha256:hash(JSON.stringify(modelPrompt(cluster)))
+   }),{flag:'wx',mode:0o600});
    const prompt=modelPrompt(cluster);
    const reply=await curate(cluster,opts);
    if(typeof reply?.content!=='string'||reply.content.length>12000)
