@@ -23,7 +23,9 @@ function raw(events){
  return {decision:'EMIT',utility_class:'durable_decision',
    reason:'Two independently sourced reusable development requirements',
    facts:events.map((e,i)=>({
-      kind:i?'dependency':'decision',source_refs:[e.source_refs[0]],
+      kind:i?'dependency':'decision',
+      utility_class:i?'stable_architecture':'durable_decision',
+      source_refs:[e.source_refs[0]],
       temporal_status:'observed',
       evidence_span:{source_ref:e.source_refs[0],start:0,end:e.excerpt.length},
       ...(i===0?{normalized_claim:'Retain the historical CLI when repairing the median implementation.'}:{})
@@ -41,6 +43,11 @@ test('model-selected source offsets derive verbatim evidence and quarantine norm
  assert.equal(checked.facts.length,2);
  assert.equal(checked.facts[0].assertion,events[0].excerpt);
  assert.equal(checked.review_only_claims[0].status,'review_only_unverified');
+ assert.deepEqual(checked.fact_utilities,['durable_decision','stable_architecture']);
+ const transient=validateModelDecision({...p,facts:[
+   p.facts[0],{...p.facts[1],utility_class:'transient_result'}]},c);
+ assert.equal(transient.ok,false);
+ assert.equal(transient.reason,'per_fact_utility_required');
  assert.equal(validateModelDecision({...p,facts:[{...p.facts[0],
    evidence_span:{...p.facts[0].evidence_span,end:9999}}]},c).ok,false);
  assert.equal(validateModelDecision({...p,facts:[{...p.facts[0],
@@ -77,6 +84,8 @@ test('two independently grounded child facts receive distinct terminal Graphiti 
   const rows=(await store.list({limit:50})).items;
   assert.equal(rows.length,2);
   assert.ok(rows.every(r=>r.origin_cluster_id===cluster.id&&r.facts.length===1&&r.state==='persisted'));
+  assert.deepEqual(new Set(rows.map(r=>r.utility_class)),
+    new Set(['durable_decision','stable_architecture']));
   for(const r of rows){
     const matches=await sourcedEpisodeResolver(root,scope.group,scope.workspace,
       scope.project,[r.remote_episode_uuid]);

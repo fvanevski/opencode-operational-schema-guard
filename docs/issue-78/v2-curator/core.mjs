@@ -78,7 +78,7 @@ export function modelPrompt(cluster) {
     'Choose SKIP only when NONE of the excerpts supports a durable assertion, or when the durable content is already an exact duplicate or demonstrably superseded. Do NOT SKIP an explicit durable user constraint, validated compatibility limitation, repeatable negative result or reusable fix merely because it appeared in a test run.',
     'Choose DEFER when a potentially durable conclusion cannot be quoted exactly from one safe authenticated source excerpt, when the candidate extract needs multi-event synthesis, or when provenance, privacy or conflict affecting that assertion remains unresolved. Do not use DEFER merely because other cluster members are unimportant. No forced EMIT, no authority upgrade and no speculative causal synthesis.',
     'Prioritize retaining all supported durable decisions and root causes over achieving a high precision percentage by withholding useful facts. Do not force EMIT to pass a benchmark.',
-    'Required fact fields: kind, source_refs, temporal_status, and either evidence_span:{source_ref,start,end} or legacy assertion (25..450 chars). Optional normalized_claim is review-only and cannot upgrade a source assertion.',
+    'Required fact fields: kind, source_refs, temporal_status, and either evidence_span:{source_ref,start,end} or legacy assertion (25..450 chars). For multiple EMIT facts, EACH fact needs its own utility_class from the listed durable classes; do not apply one class to unrelated claims. Optional normalized_claim is review-only and cannot upgrade a source assertion.',
     'Choose kind only from: decision, implementation, test_result, architecture, dependency, procedure, blocker, relationship, observation.',
     'Choose temporal_status only from: observed, historical, proposed, unknown.',
     'source_refs must be an array of EXACT supplied evidence SOURCE strings (the source field, NOT event id).',
@@ -228,13 +228,17 @@ export function validateModelDecision(raw,cluster) {
   const utility=proposed.utility_class;
   if(utility!==undefined&&!UTILITY_CLASSES.has(utility))
     return {ok:false,decision:'DEFER',reason:'invalid_utility_class',facts:[]};
+  const factUtilities=proposed.facts.map(f=>
+    f?.utility_class??(proposed.facts.length===1?utility:null));
   if(checked.decision==='EMIT'){
     if(utility===undefined)
       return {ok:false,decision:'DEFER',reason:'utility_class_required',facts:[]};
     if(!PERSISTABLE_UTILITY.has(utility))
       return {ok:false,decision:'DEFER',reason:'utility_class_not_durable',facts:[]};
+    if(factUtilities.some(v=>!PERSISTABLE_UTILITY.has(v)))
+      return {ok:false,decision:'DEFER',reason:'per_fact_utility_required',facts:[]};
   }
-  return {...checked,utility_class:utility??null,
+  return {...checked,utility_class:utility??null,fact_utilities:factUtilities,
     // Never put model-normalized claims in Graphiti without a separate,
     // independent entailment review. Persisted assertion remains verbatim.
     review_only_claims:unsupportedClaim};
@@ -361,9 +365,13 @@ export class ReviewStore {
     return path.join(this.dir,'_fact-bundles',clusterId+'.json');
   }
   async createBundle(cluster,decision){
-    const verified=validateDecision(decision,cluster);
+    const verified=validateModelDecision(decision,cluster);
     if(!verified.ok||verified.decision!=='EMIT'||verified.facts.length<2||
-       verified.facts.length>3)throw Error('INVALID_BOUNDED_FACT_BUNDLE');
+       verified.facts.length>3||
+       !Array.isArray(decision.fact_utilities)||
+       decision.fact_utilities.length!==verified.facts.length||
+       decision.fact_utilities.some(x=>!PERSISTABLE_UTILITY.has(x)))
+      throw Error('INVALID_BOUNDED_FACT_BUNDLE');
     await this.ensure();
     const id=cluster.id,folder=path.join(this.dir,'_fact-bundles');
     await fs.mkdir(folder,{recursive:true,mode:0o700});
@@ -380,7 +388,8 @@ export class ReviewStore {
         schema:'issue92-bounded-fact-bundle-v1',parent_id:id,
         child_ids:childIds,cluster,decision:{
           decision:'EMIT',reason:verified.reason,utility_class:decision.utility_class,
-          facts:verified.facts,review_only_claims:decision.review_only_claims||[]
+          facts:verified.facts,fact_utilities:decision.fact_utilities,
+          review_only_claims:decision.review_only_claims||[]
         },created_at:new Date().toISOString()
       });
     });
@@ -403,7 +412,7 @@ export class ReviewStore {
         f.assertion+'\n'+f.source_refs.join(',')))throw Error('BUNDLE_CHILD_ID_MISMATCH');
       const r=await this.create({...b.cluster,id:child,origin_cluster_id:id},
         {ok:true,decision:'EMIT',reason:checked.reason,
-         utility_class:b.decision.utility_class,facts:[f],
+         utility_class:b.decision.fact_utilities[i],facts:[f],
          review_only_claims:(b.decision.review_only_claims||[]).filter(x=>x.index===i)});
       records.push(r.record);
     }
