@@ -150,3 +150,44 @@ test('v2 accepts only frozen H3 source identity, not historical H2 or arbitrary 
  const x=setup();x.o.source_commits.baseline='0'.repeat(40);
  assert.throws(()=>score(x.r,x.o),/h3_frozen_source_mismatch/);
 });
+
+test('prospective target mode corrects zero-baseline selectivity and retains true selection gate',()=>{
+ const {r,o}=setup();
+ for(const c of r.cases){
+   c.cluster_id=h('cluster:'+c.id);
+   c.fact_family='distinct:'+c.id;
+   c.target_excerpt_sha256=c.valuable?h('target:'+c.id):null;
+ }
+ o.ratification_sha256=h(JSON.stringify(r));
+ for(const c of o.source_cases){
+   const frozen=r.cases.find(x=>x.id===c.id);
+   c.cluster_id=frozen.cluster_id;
+   c.fact_family=frozen.fact_family;
+   c.target_excerpt_sha256=frozen.target_excerpt_sha256;
+   c.original_target_verified=true;
+ }
+ for(const arm of ['baseline','candidate']){
+   for(const f of o.arms[arm].facts){
+     for(const p of f.supported_cases){
+       p.target_excerpt_sha256=r.cases.find(x=>x.id===p.case_id).target_excerpt_sha256;
+       p.target_supported=true;
+       p.target_reviewed_independently=true;
+       p.target_rationale='The persisted assertion independently supports the frozen durable target';
+     }
+   }
+ }
+ const s=scoreFactCoverageV2(r,JSON.stringify(r),o,JSON.stringify(o),{
+   expectedSource:{...o.source_commits},prospectiveTargets:true});
+ assert.equal(s.schema,'issue92-fact-coverage-scorecard-v3');
+ assert.equal(s.gates.selectivity,'PASS'); // both arms low-value = 0? baseline has 2, see below
+ assert.equal(s.gates.valuable_selection,'PASS');
+ const f=o.arms.candidate.facts[0].supported_cases[0];
+ f.target_supported=false;
+ const declined=scoreFactCoverageV2(r,JSON.stringify(r),o,JSON.stringify(o),{
+   expectedSource:{...o.source_commits},prospectiveTargets:true});
+ assert.equal(declined.arms.candidate.retained_valuable_cases,15);
+ f.target_supported=true;f.target_excerpt_sha256=h('post_output_invented');
+ assert.throws(()=>scoreFactCoverageV2(r,JSON.stringify(r),o,JSON.stringify(o),{
+   expectedSource:{...o.source_commits},prospectiveTargets:true}),
+   /target_support_unreviewed_or_unfrozen/);
+});

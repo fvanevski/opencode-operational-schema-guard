@@ -821,3 +821,20 @@ test('curator prompt distinguishes reusable schema negatives from transient fail
   assert.equal(ephemeral.ok,false);
   assert.equal(ephemeral.reason,'utility_class_not_durable');
 });
+
+test('Issue 92 extract-first policy ranks durable content within mixed transient clusters',()=>{
+ const prompt=modelPrompt(cluster())[0].content;
+ for(const exactRule of [
+   'inspect EACH source excerpt','BEST one from the cluster',
+   'If at least one safe, source-attributed, exact durable span exists',
+   'Choose SKIP only when NONE','Choose DEFER when a potentially durable conclusion',
+   'No forced EMIT, no authority upgrade'
+ ]) assert.ok(prompt.includes(exactRule),exactRule);
+ // The stronger model instruction does not grant unsupported or multi-source EMIT.
+ const c=cluster(),f=modelProposal(U);
+ assert.equal(validateModelDecision(f,c).ok,true);
+ assert.equal(validateModelDecision({...f,facts:[{...f.facts[0],
+   source_refs:[U.source_refs[0],T.source_refs[0]]}]},c).ok,false);
+ assert.equal(validateModelDecision({...f,facts:[{...f.facts[0],
+   assertion:U.excerpt+' This is independently verified.'}]},c).ok,false);
+});

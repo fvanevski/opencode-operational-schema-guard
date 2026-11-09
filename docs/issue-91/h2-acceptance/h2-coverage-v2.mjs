@@ -28,11 +28,16 @@ const positiveSourceRef=s=>typeof s==='string'&&s.startsWith('opencode:')&&s.len
  * supports a specific valuable case. Every credited case has to carry its own
  * original-source exact-assertion readback attestation and source identity.
  */
-export function scoreFactCoverageV2(r,rawRatification,outcomes,rawOutcomes){
+export function scoreFactCoverageV2(r,rawRatification,outcomes,rawOutcomes,{
+  expectedSource=H3_SOURCE, prospectiveTargets=false
+}={}){
+  assert(typeof prospectiveTargets==='boolean'&&
+    /^[a-f0-9]{40}$/.test(expectedSource?.baseline||'')&&
+    /^[a-f0-9]{40}$/.test(expectedSource?.candidate||''),'trusted_score_mode');
   const {cases,case_count,useful}=validateRatification(r);
   assert(outcomes?.fact_coverage_version==='issue92-fact-support-v2','schema');
-  assert(outcomes.source_commits?.baseline===H3_SOURCE.baseline&&
-    outcomes.source_commits?.candidate===H3_SOURCE.candidate,
+  assert(outcomes.source_commits?.baseline===expectedSource.baseline&&
+    outcomes.source_commits?.candidate===expectedSource.candidate,
     'h3_frozen_source_mismatch');
   // v1 is immutable and validates the H2 candidate identity. The v2 adapter
   // validates the exact H3 identity above, and maps *only that field* in an
@@ -50,6 +55,17 @@ export function scoreFactCoverageV2(r,rawRatification,outcomes,rawOutcomes){
     assert(c.source_sha256===cases.get(c.id).source_sha256,'source_case_hash');
     assert(positiveSourceRef(c.source_ref)&&c.original_source_verified===true,
       'source_case_unverified');
+    if(prospectiveTargets){
+      const frozen=cases.get(c.id);
+      assert(typeof frozen.cluster_id==='string'&&SHA.test(frozen.cluster_id)&&
+        c.cluster_id===frozen.cluster_id,'target_cluster_not_frozen');
+      assert(typeof frozen.fact_family==='string'&&frozen.fact_family.length>=3&&
+        c.fact_family===frozen.fact_family,'target_family_not_frozen');
+      assert(frozen.target_excerpt_sha256===c.target_excerpt_sha256&&
+        (frozen.valuable?SHA.test(c.target_excerpt_sha256||''):
+          c.target_excerpt_sha256===null),'target_not_frozen');
+      assert(c.original_target_verified===true,'target_original_unverified');
+    }
     sourceCases.set(c.id,c);
   }
   const retained={};
@@ -84,7 +100,14 @@ export function scoreFactCoverageV2(r,rawRatification,outcomes,rawOutcomes){
           p.reviewed_independently===true&&rationale(p.rationale),
           'support_not_fact_exact_or_unreviewed_'+arm);
         if(p.source_ref===f.extracted_source_ref)direct=true;
-        if(f.grounded&&f.useful&&cases.get(p.case_id).valuable)supported.add(p.case_id);
+        if(prospectiveTargets){
+          assert(typeof p.target_supported==='boolean'&&
+            p.target_excerpt_sha256===source.target_excerpt_sha256&&
+            p.target_reviewed_independently===true&&rationale(p.target_rationale),
+            'target_support_unreviewed_or_unfrozen_'+arm);
+        }
+        if(f.grounded&&f.useful&&cases.get(p.case_id).valuable&&
+          (!prospectiveTargets||p.target_supported))supported.add(p.case_id);
       }
       assert(direct,'missing_direct_cited_case_'+arm);
       if(f.useful&&f.supported_cases.length===0)unsupportedUseful++;
@@ -138,8 +161,22 @@ export function scoreFactCoverageV2(r,rawRatification,outcomes,rawOutcomes){
         c.redundant/c.persisted <= b.redundant/b.persisted)?'PASS':'FAIL';
   // "selectivity" still assesses discarded low-value facts; redundancy is an
   // independent non-regression gate and cannot be disguised by useful==true.
-  legacy.schema='issue92-fact-coverage-scorecard-v2';
-  legacy.score_method='fact_supported_case_source_verified';
+  if(prospectiveTargets){
+    // Pre-registered Issue #92: when baseline has zero low-value persistence,
+    // require non-inferiority instead of an impossible strictly lower count.
+    legacy.gates.selectivity=b.low_value===0?
+      (c.low_value===0?'PASS':'FAIL'):
+      (c.low_value<b.low_value&&
+        c.rates.low_value_among_persisted<b.rates.low_value_among_persisted?
+        'PASS':'FAIL');
+    // Candidate queue ingress and semantic curator selection are distinct.
+    legacy.gates.valuable_selection=c.rates.curator_selected_valuable_cases>=0.85?
+      'PASS':'FAIL';
+    legacy.score_method='prospective_target_supported_fact';
+  }
+  legacy.schema=prospectiveTargets?
+    'issue92-fact-coverage-scorecard-v3':'issue92-fact-coverage-scorecard-v2';
+  if(!prospectiveTargets)legacy.score_method='fact_supported_case_source_verified';
   legacy.gates_complete=true;
   legacy.overall=Object.values(legacy.gates).every(x=>x==='PASS')?'PASS':
     Object.values(legacy.gates).includes('INSUFFICIENT_SAMPLE')?'INSUFFICIENT_SAMPLE':
