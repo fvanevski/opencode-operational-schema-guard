@@ -167,6 +167,11 @@ test('prospective target mode corrects zero-baseline selectivity and retains tru
    c.original_target_verified=true;
  }
  for(const arm of ['baseline','candidate']){
+   // Prospective cluster-target mode: one target case per review cluster, so
+   // declared cluster decisions must equal the per-case decision counts. The
+   // shared H3 fixture leaves all 20 cases EMIT/captured, so align the
+   // declared counts (added by the later bcd48df scorer tightening) to them.
+   o.arms[arm].cluster_decisions={EMIT:20,SKIP:0,DEFER:0,MERGE:0,SUPERSEDE_PROPOSED:0};
    for(const f of o.arms[arm].facts){
      for(const p of f.supported_cases){
        p.target_excerpt_sha256=r.cases.find(x=>x.id===p.case_id).target_excerpt_sha256;
