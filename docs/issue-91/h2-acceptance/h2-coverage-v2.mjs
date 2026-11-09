@@ -11,6 +11,13 @@ import {validateRatification,scoreOutcomes} from './h2-acceptance.mjs';
 const SHA=/^[a-f0-9]{64}$/;
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ARMS=['baseline','candidate'];
+// H3 source identity is frozen before the first model run. Do not silently
+// admit another candidate head simply because the historical v1 scorer did.
+const H3_SOURCE=Object.freeze({
+  baseline:'c8eb5260f2b10832346234b1b5d0cf28302ffba8',
+  candidate:'21556fa39c7520cede0e53c6012cbf67f6ea3ed3'
+});
+const HISTORICAL_H2_CANDIDATE='270848aa108df22b9d12738cc6f4903ec45da9c1';
 const DECISIONS=['EMIT','SKIP','DEFER','MERGE','SUPERSEDE_PROPOSED'];
 const assert=(ok,why)=>{if(!ok)throw Error('COVERAGE_V2_INVALID:'+why);};
 const ratio=(n,d)=>d?Number((n/d).toFixed(6)):null;
@@ -24,7 +31,17 @@ const positiveSourceRef=s=>typeof s==='string'&&s.startsWith('opencode:')&&s.len
 export function scoreFactCoverageV2(r,rawRatification,outcomes,rawOutcomes){
   const {cases,case_count,useful}=validateRatification(r);
   assert(outcomes?.fact_coverage_version==='issue92-fact-support-v2','schema');
-  const legacy=scoreOutcomes(r,rawRatification,outcomes,rawOutcomes);
+  assert(outcomes.source_commits?.baseline===H3_SOURCE.baseline&&
+    outcomes.source_commits?.candidate===H3_SOURCE.candidate,
+    'h3_frozen_source_mismatch');
+  // v1 is immutable and validates the H2 candidate identity. The v2 adapter
+  // validates the exact H3 identity above, and maps *only that field* in an
+  // in-memory view so the historical v1 structural/EX/receipt gates still run.
+  // Raw outcomes bytes/hash and the returned actual source identities remain H3.
+  const historicalValidationView={...outcomes,source_commits:{
+    ...outcomes.source_commits,candidate:HISTORICAL_H2_CANDIDATE}};
+  const legacy=scoreOutcomes(r,rawRatification,historicalValidationView,rawOutcomes);
+  legacy.source_commits={...outcomes.source_commits};
   const sourceCases=new Map();
   assert(Array.isArray(outcomes.source_cases)&&outcomes.source_cases.length===case_count,
     'source_case_count');

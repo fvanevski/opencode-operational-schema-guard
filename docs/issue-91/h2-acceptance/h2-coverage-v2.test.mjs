@@ -40,7 +40,7 @@ function setup(){
  fact_coverage_version:'issue92-fact-support-v2',corpus_sha256:r.corpus_sha256,
  ratification_sha256:h(JSON.stringify(r)),
  source_commits:{baseline:'c8eb5260f2b10832346234b1b5d0cf28302ffba8',
- candidate:'270848aa108df22b9d12738cc6f4903ec45da9c1'},
+ candidate:'21556fa39c7520cede0e53c6012cbf67f6ea3ed3'},
  first_model_started_at:'2026-11-08T22:00:00Z',model_alias:'chat-fast',
  model_policy_sha256:r.model_policy_sha256,source_unchanged:true,production_unchanged:true,
  execution:{ex_admitted:true,model_policy_same_across_arms:true,
@@ -136,4 +136,17 @@ test('duplicate support cases cannot double-count',()=>{
 test('missing ingress evidence blocks high-value capture interpretation',()=>{
  const {r,o}=setup();delete o.arms.candidate.cases[0].ingested;
  assert.throws(()=>score(r,o),/ingestion_not_measured/);
+});
+
+test('v2 accepts only frozen H3 source identity, not historical H2 or arbitrary candidate heads',()=>{
+ const {r,o}=setup();
+ assert.equal(score(r,o).source_commits.candidate,
+   '21556fa39c7520cede0e53c6012cbf67f6ea3ed3');
+ for(const bad of ['270848aa108df22b9d12738cc6f4903ec45da9c1','0'.repeat(40)]){
+   const x=setup();
+   x.o.source_commits.candidate=bad;
+   assert.throws(()=>score(x.r,x.o),/h3_frozen_source_mismatch/);
+ }
+ const x=setup();x.o.source_commits.baseline='0'.repeat(40);
+ assert.throws(()=>score(x.r,x.o),/h3_frozen_source_mismatch/);
 });
