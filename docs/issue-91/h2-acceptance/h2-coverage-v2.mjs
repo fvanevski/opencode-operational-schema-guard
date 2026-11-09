@@ -132,6 +132,14 @@ export function scoreFactCoverageV2(r,rawRatification,outcomes,rawOutcomes,{
       'cluster_decision_counts_'+arm);
     const clusters=Object.values(input.cluster_decisions).reduce((n,x)=>n+x,0);
     assert(clusters>0&&Number.isInteger(clusters),'cluster_decision_total_'+arm);
+    if(prospectiveTargets){
+      // H4 evaluates exactly one target case per independent review cluster.
+      // Unlike H3 event-level denominators, case/cluster decisions must match.
+      assert(clusters===input.cases.length&&DECISIONS.every(d=>
+        decisions[d]===input.cluster_decisions[d]),'cluster_case_decision_mismatch_'+arm);
+      assert(input.cases.every(c=>c.captured===(c.decision==='EMIT')),
+        'cluster_selected_state_mismatch_'+arm);
+    }
     delete summary.model_decisions;
     summary.case_decisions=decisions;
     summary.cluster_decisions=input.cluster_decisions;
