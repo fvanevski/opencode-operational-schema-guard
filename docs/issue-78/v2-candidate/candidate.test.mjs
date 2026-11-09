@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { fromPrompt, fromTool, fromFinishedTurn } from './events.mjs';
+import { fromPrompt, fromPromptCandidates, fromTool, fromFinishedTurn } from './events.mjs';
 import { CandidateQueue } from './queue.mjs';
 import plugin from './plugin.mjs';
 import { selectUserDecision, selectCompletedTest } from '../../issue-75/v2-candidate/memory-core.mjs';
@@ -51,7 +51,11 @@ test('tool failures and successful tests are separate source events, not verifie
   assert.equal(fail.evidence_class, 'tool-reported');
   assert.match(fail.excerpt, /exit 1/);
   assert.equal(fromTool({ ...tool(), callID: undefined }, scope), null);
-  assert.equal(fromTool({ ...tool(), input: {command:'cat private.txt'} }, scope), null);
+  const readOnly=fromTool({ ...tool(), input: {command:'cat public-status.txt'},
+    result:{output:{exit:0,output:'feature flag requires the current release'}} },scope);
+  assert.ok(readOnly);
+  assert.match(readOnly.excerpt,/feature flag requires/);
+  assert.equal(fromTool({...tool(),input:{command:'cat .env'}},scope),null);
   assert.equal(fromTool(tool('large', 'x'.repeat(20000)), scope), null);
   assert.equal(fromTool(tool('secret', 'api_key=abc123 in pytest output'), scope), null);
 });
@@ -83,12 +87,16 @@ test('native edit/write/apply_patch receipts are scoped, content-free and tool-r
   assert.ok(failure);
   assert.match(failure.excerpt, /tool error/);
 });
-test('read-only file access does not assert a file change or durable source fact',()=>{
+test('read-only file access is safely captured without asserting file modification',()=>{
  const base={sessionID:'ses-read',callID:'call-read',tool:'read',status:'completed',
   input:{path:scope.workspace+'/docs/reference.md'},
   result:{output:{exit:0,output:'A file was read; its contents are not a change.'}}};
- assert.equal(fromTool(base,scope),null);
- // The preexisting mutation-only adapter remains available and distinct.
+ const read=fromTool(base,scope);
+ assert.ok(read);
+ assert.equal(read.kind,'file_access');
+ assert.match(read.excerpt,/contents not stored/);
+ assert.doesNotMatch(read.excerpt,/A file was read/);
+ // The mutation-only adapter remains available and distinct.
  const write=fromTool({...base,callID:'call-write',tool:'write',
   input:{path:scope.workspace+'/docs/reference.md',content:'Updated documentation.'}},scope);
  assert.ok(write);
@@ -298,3 +306,20 @@ test('finished-turn: ID-less, short, and secret-bearing assistant messages are n
   const q = new CandidateQueue(root, scope.group);
   assert.equal((await q.status()).total, 0);
 }));
+
+test('safe JSON, braces, long mixed technical prompts and non-keyword tools remain eligible',()=>{
+ const source='Please preserve these contracts in the next release: '+JSON.stringify({
+  type:'config',validation:{mode:'strict'},relationship:'controller requires parser v2'
+ })+'. The old parser rejects valid values; preserve that technical finding.';
+ const a=fromPrompt(prompt(source,'msg-json'),scope,{admitted:true});
+ assert.ok(a);
+ assert.match(a.excerpt,/parser rejects valid values/);
+ const long='The build must preserve reproducibility across platforms. '+('{code block} '+('Reference configuration keeps stable semantics. '.repeat(40)));
+ const spans=fromPromptCandidates(prompt(long,'msg-long-json'),scope,{admitted:true});
+ assert.ok(spans.length>=1);
+ const normal=fromTool({...tool('call-plain','Interface contract: module A owns path normalization',0),
+    input:{command:'rg owner src/config'}},scope);
+ assert.ok(normal);
+ assert.match(normal.excerpt,/module A owns path normalization/);
+ assert.equal(fromPrompt(prompt('Please save {"api_key":"secret123"}'),scope,{admitted:true}),null);
+});
