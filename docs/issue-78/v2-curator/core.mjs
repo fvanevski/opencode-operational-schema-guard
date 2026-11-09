@@ -365,7 +365,15 @@ export class ReviewStore {
     return path.join(this.dir,'_fact-bundles',clusterId+'.json');
   }
   async createBundle(cluster,decision){
-    const verified=validateModelDecision(decision,cluster);
+    const verified=validateModelDecision({
+      ...decision,
+      // Source facts were already canonicalized by validateModelDecision.
+      // Reapply their independent per-fact utility classes for replay-safe
+      // verification instead of falling back to one cluster-wide label.
+      facts:(decision.facts||[]).map((f,i)=>({
+        ...f,utility_class:decision.fact_utilities?.[i]
+      }))
+    },cluster);
     if(!verified.ok||verified.decision!=='EMIT'||verified.facts.length<2||
        verified.facts.length>3||
        !Array.isArray(decision.fact_utilities)||
