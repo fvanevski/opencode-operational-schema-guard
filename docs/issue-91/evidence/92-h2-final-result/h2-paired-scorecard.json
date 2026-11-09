@@ -1,0 +1,120 @@
+{
+  "schema": "issue92-h2-scorecard-v1",
+  "cohort_sha256": "63948f771f96632b0e8272736739e3a6fe97505431abcbda2356962d974efb36",
+  "ratification_sha256": "925a21dbeaebad47216b7cf438e6471fb70499668c72139f3c8a95c4a5271ad8",
+  "outcomes_sha256": "25e3d41ee0464eeb88d6ccbe677768938d7a26e7ea185e639c9fce38b6f79b9a",
+  "case_count": 30,
+  "valuable_cases": 19,
+  "families": {
+    "tdarr": 10,
+    "firecrawl": 10,
+    "guard81": 10
+  },
+  "source_commits": {
+    "baseline": "c8eb5260f2b10832346234b1b5d0cf28302ffba8",
+    "candidate": "270848aa108df22b9d12738cc6f4903ec45da9c1"
+  },
+  "arms": {
+    "baseline": {
+      "persisted": 12,
+      "grounded": 12,
+      "useful": 7,
+      "low_value": 5,
+      "redundant": 0,
+      "privacy": 0,
+      "source_authority": 0,
+      "fabricated": 0,
+      "captured_valuable_cases": 17,
+      "retained_valuable_cases": 13,
+      "missing_valuable_case_ids": [
+        "i92h2-11-1cf7eaad",
+        "i92h2-12-d1faaabe",
+        "i92h2-13-79483c7a",
+        "i92h2-21-f9a73bff",
+        "i92h2-25-02b0da5d",
+        "i92h2-26-2d430b9a"
+      ],
+      "model_decisions": {
+        "EMIT": 26,
+        "SKIP": 0,
+        "DEFER": 4,
+        "MERGE": 0,
+        "SUPERSEDE_PROPOSED": 0
+      },
+      "rates": {
+        "useful_among_grounded": 0.583333,
+        "usefulness_wilson95": [
+          0.319511,
+          0.80674
+        ],
+        "grounded_among_persisted": 1,
+        "grounded_wilson95": [
+          0.757506,
+          1
+        ],
+        "low_value_among_persisted": 0.416667,
+        "valuable_capture": 0.894737,
+        "valuable_persisted_case_coverage": 0.684211
+      }
+    },
+    "candidate": {
+      "persisted": 5,
+      "grounded": 5,
+      "useful": 5,
+      "low_value": 0,
+      "redundant": 3,
+      "privacy": 0,
+      "source_authority": 0,
+      "fabricated": 0,
+      "captured_valuable_cases": 11,
+      "retained_valuable_cases": 11,
+      "missing_valuable_case_ids": [
+        "i92h2-11-1cf7eaad",
+        "i92h2-12-d1faaabe",
+        "i92h2-13-79483c7a",
+        "i92h2-15-8f838410",
+        "i92h2-16-0cae773f",
+        "i92h2-21-f9a73bff",
+        "i92h2-25-02b0da5d",
+        "i92h2-26-2d430b9a"
+      ],
+      "model_decisions": {
+        "EMIT": 14,
+        "SKIP": 16,
+        "DEFER": 0,
+        "MERGE": 0,
+        "SUPERSEDE_PROPOSED": 0
+      },
+      "rates": {
+        "useful_among_grounded": 1,
+        "usefulness_wilson95": [
+          0.565518,
+          1
+        ],
+        "grounded_among_persisted": 1,
+        "grounded_wilson95": [
+          0.565518,
+          1
+        ],
+        "low_value_among_persisted": 0,
+        "valuable_capture": 0.578947,
+        "valuable_persisted_case_coverage": 0.578947
+      }
+    }
+  },
+  "missed_baseline_useful_cases": [
+    "i92h2-15-8f838410",
+    "i92h2-16-0cae773f"
+  ],
+  "gates": {
+    "sample": "INSUFFICIENT_SAMPLE",
+    "usefulness": "INSUFFICIENT_SAMPLE",
+    "groundedness": "PASS",
+    "valuable_capture": "FAIL",
+    "valuable_persisted_case_coverage": "FAIL",
+    "selectivity": "PASS",
+    "baseline_useful_preservation": "FAIL",
+    "privacy_source_authority": "PASS"
+  },
+  "overall": "INSUFFICIENT_SAMPLE"
+}
