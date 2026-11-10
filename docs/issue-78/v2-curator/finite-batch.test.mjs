@@ -7,7 +7,9 @@ import {fromPrompt} from '../v2-candidate/events.mjs';
 import {CandidateQueue} from '../v2-candidate/queue.mjs';
 import {ReviewStore} from './core.mjs';
 import {runAdmittedFiniteBatch,representativePrompt,
-  validateRepresentativeFamilies} from './finite-batch.mjs';
+  validateRepresentativeFamilies,finiteBatchDiscoveryPrompt,
+  finiteBatchUtilityPrompt} from './finite-batch.mjs';
+import {selectClusters,validateModelDecision} from './core.mjs';
 
 const scope={group:'issue92batch',project:'repo92',workspace:'/workspace/repo92'};
 const strong='Sphinx reStructuredText output drops dictionary parameter header rows, causing expected table columns to disappear in rendered API documentation.';
@@ -212,3 +214,27 @@ test('snapshot resumes only if native source bytes match authenticated queue eve
   /SNAPSHOT_QUEUE_SOURCE_DRIFT/);
  assert.equal(f.graphiti.writes.length,0);
 }));
+
+test('finite-batch discovery prefers actual technical predicates over task boilerplate',()=>{
+ const c=selectClusters([source('probe',strong)])[0];
+ const msgs=finiteBatchDiscoveryPrompt(c);
+ assert.match(msgs[0].content,/technical predicate/);
+ assert.match(msgs[0].content,/NOT the generic task header/);
+ const data=JSON.parse(msgs[1].content);
+ assert.equal(data.evidence[0].excerpt,strong);
+ assert.equal(data.evidence[0].source,c.events[0].source_refs[0]);
+});
+test('independent batch utility does not inherit earlier same-group duplication anchors',()=>{
+ const c=selectClusters([source('probe2',strong)])[0],e=c.events[0];
+ const p=validateModelDecision({decision:'EMIT',reason:'Exact supported excerpt',
+  utility_class:'useful_negative',facts:[{kind:'blocker',
+   utility_class:'useful_negative',source_refs:[e.source_refs[0]],
+   temporal_status:'observed',evidence_span:{
+    source_ref:e.source_refs[0],start:0,end:e.excerpt.length}}]},c);
+ assert.equal(p.ok,true);
+ const msgs=finiteBatchUtilityPrompt(c,p);
+ assert.match(msgs[0].content,/FIRST independent utility judgment/);
+ assert.match(msgs[0].content,/There are NO earlier same-batch facts/);
+ assert.match(msgs[0].content,/REPORTED defect/);
+ assert.equal(JSON.parse(msgs[1].content).prior_same_group_facts.length,0);
+});
