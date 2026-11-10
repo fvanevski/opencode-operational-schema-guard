@@ -26,10 +26,20 @@ async function readMaybe(file){
  catch(e){if(e.code==='ENOENT')return null;throw e;}
 }
 async function writeOnce(file,data){
- await fs.mkdir(path.dirname(file),{recursive:true,mode:0o700});
- const handle=await fs.open(file,'wx',0o600);
- try{await handle.writeFile(JSON.stringify(data)+'\n');await handle.sync();}
- finally{await handle.close();}
+ const dir=path.dirname(file);
+ await fs.mkdir(dir,{recursive:true,mode:0o700});
+ await fs.chmod(dir,0o700);
+ const temp=file+'.'+randomUUID()+'.tmp';
+ try{
+  const handle=await fs.open(temp,'wx',0o600);
+  try{
+   await handle.writeFile(JSON.stringify(data)+'\n');
+   await handle.sync();
+  }finally{await handle.close();}
+  // Publish the complete fsynced file under an immutable destination name.
+  // A prior call intent, snapshot or plan must never be overwritten.
+  await fs.link(temp,file);
+ }finally{await fs.rm(temp,{force:true});}
 }
 async function listAll(store){
  const rows=[];
