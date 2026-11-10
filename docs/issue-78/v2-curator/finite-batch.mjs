@@ -360,7 +360,9 @@ export async function runAdmittedFiniteBatch({
    const result=await readMaybe(resultFile);
    if(!result)throw Error('ISSUE92_BATCH_MODEL_CALL_AMBIGUOUS_NO_REPLAY');
    assert(result.prompt_sha256===prompt_sha256&&
-    typeof result.reply?.content==='string','MODEL_RESULT_AUTHENTICITY');
+    typeof result.reply?.content==='string'&&
+    result.reply_sha256===hash(result.reply.content),
+    'MODEL_RESULT_AUTHENTICITY');
    return result.reply;
   }
   await writeOnce(intent,{schema:'issue92-finite-model-call-v1',
@@ -375,7 +377,7 @@ export async function runAdmittedFiniteBatch({
   assert(typeof reply?.content==='string'&&reply.content.length>0&&
    reply.content.length<=12000,'MODEL_OUTPUT_SHAPE');
   await writeOnce(resultFile,{schema:'issue92-finite-model-result-v1',
-   stage:kind,identity,prompt_sha256,
+   stage:kind,identity,prompt_sha256,reply_sha256:hash(reply.content),
    reply:{content:reply.content,usage:reply.usage??null,
     finish_reason:reply.finish_reason??null,duration_ms:reply.duration_ms??null},
    received_at:new Date().toISOString()});
@@ -460,17 +462,41 @@ export async function runAdmittedFiniteBatch({
       fact.review_reason||deferred.get(fact.id)||'independent_review_required'));
    }
   }
+  const calls=[];
+  const callDir=path.join(baseDir,'model-calls');
+  const filenames=(await fs.readdir(callDir)).filter(x=>/^[a-f0-9]{64}\.result\.json$/.test(x)).sort();
+  for(const name of filenames){
+   const result=await readMaybe(path.join(callDir,name));
+   assert(result?.schema==='issue92-finite-model-result-v1'&&
+    result.reply_sha256===hash(result.reply?.content),
+    'PLAN_CALL_RESULT_INTEGRITY');
+   calls.push({file:name,stage:result.stage,identity:result.identity,
+    prompt_sha256:result.prompt_sha256,reply_sha256:result.reply_sha256});
+  }
   plan={schema:'issue92-finite-batch-plan-v1',batch_id:active.batch_id,
    snapshot_sha256:hash(snapshot),created_at:new Date().toISOString(),
    cluster_outcomes:outcomes.map(x=>({cluster_id:x.cluster_id,
     decision:x.decision,reason:x.reason,
     fact_ids:x.facts.map(f=>f.id)})),
-   items:items.sort(byId),families,
-   calls:[],policy:'review_before_graphiti_and_order_neutral_arbitration'};
+   items:items.sort(byId),families,calls,
+   policy:'review_before_graphiti_and_order_neutral_arbitration'};
   assertPlan(plan,snapshot);
   await writeOnce(path.join(baseDir,'plan.json'),plan);
   await checkpoint('plan_frozen');
  }else assertPlan(plan,snapshot);
+ // Private model replies are the immutable inference evidence behind this plan.
+ // Verify them again on a resumed run BEFORE any durable review/Graphiti action.
+ for(const entry of plan.calls){
+  assert(/^[a-f0-9]{64}\.result\.json$/.test(entry.file),
+   'PLAN_CALL_FILE_IDENTITY');
+  const result=await readMaybe(path.join(baseDir,'model-calls',entry.file));
+  assert(result?.schema==='issue92-finite-model-result-v1'&&
+   result.stage===entry.stage&&result.identity===entry.identity&&
+   result.prompt_sha256===entry.prompt_sha256&&
+   result.reply_sha256===entry.reply_sha256&&
+   result.reply_sha256===hash(result.reply?.content),
+   'PLAN_MODEL_RECEIPT_MISMATCH');
+ }
  // Any model call is now over. Durable, validated plan exists before creating
  // even one approved ReviewStore identity or issuing any Graphiti write intent.
  const itemsByCluster=new Map();
