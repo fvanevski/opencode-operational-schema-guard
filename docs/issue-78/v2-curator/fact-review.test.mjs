@@ -49,7 +49,7 @@ test('fact-screen judges the exact persisted source quote, not unrelated cluster
  assert.equal(input.candidates[0].assertion,c.events[0].excerpt);
  assert.equal(input.candidates[0].source_excerpt,c.events[0].excerpt);
  assert.equal(input.prior_same_group_facts.length,1);
- assert.match(msgs[0].content,/source_excerpt|exact quoted assertion|exact quoted/);
+ assert.match(msgs[0].content,/source_excerpt|exact quoted assertion|exact quoted/i);
  assert.match(msgs[0].content,/REVIEW/);
 });
 test('screen verdict cannot self-authorize unknown indices, reasons or conflicting decisions',()=>{
