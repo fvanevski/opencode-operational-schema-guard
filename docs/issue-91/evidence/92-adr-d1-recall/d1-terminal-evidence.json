@@ -1,0 +1,182 @@
+{
+  "schema": "issue92-adr-d1-terminal-evidence-v1",
+  "kind": "sanitized, evidence-only, public",
+  "collected_at": "2026-11-10T00:20:00Z",
+  "surfaces": [
+    "review_store",
+    "graphiti_mcp",
+    "falkordb",
+    "source_index"
+  ],
+  "arms": {
+    "previous": {
+      "group": "graphiti-adr92-d1-previous",
+      "review_record_count": 25,
+      "episode_count": 2,
+      "all_four_surface": true,
+      "uuids": [
+        {
+          "uuid": "9265f9d0-b501-4a49-b119-3eeaa24e55d3",
+          "group": "graphiti-adr92-d1-previous",
+          "review_store": true,
+          "graphiti_mcp": true,
+          "falkordb": true,
+          "source_index": true,
+          "state": "persisted"
+        },
+        {
+          "uuid": "42bd32ba-95c2-490b-8be5-0a2d7ffb9d2d",
+          "group": "graphiti-adr92-d1-previous",
+          "review_store": true,
+          "graphiti_mcp": true,
+          "falkordb": true,
+          "source_index": true,
+          "state": "persisted"
+        }
+      ]
+    },
+    "corrected": {
+      "group": "graphiti-adr92-d1-corrected",
+      "review_record_count": 24,
+      "episode_count": 15,
+      "all_four_surface": true,
+      "uuids": [
+        {
+          "uuid": "d32e9237-83ab-415a-9525-61bfa0db2991",
+          "group": "graphiti-adr92-d1-corrected",
+          "review_store": true,
+          "graphiti_mcp": true,
+          "falkordb": true,
+          "source_index": true,
+          "state": "persisted"
+        },
+        {
+          "uuid": "8dd6291b-2b1c-4204-b335-6601043fa76c",
+          "group": "graphiti-adr92-d1-corrected",
+          "review_store": true,
+          "graphiti_mcp": true,
+          "falkordb": true,
+          "source_index": true,
+          "state": "persisted"
+        },
+        {
+          "uuid": "f890428e-c39b-4777-8bd0-85d1abaadd2d",
+          "group": "graphiti-adr92-d1-corrected",
+          "review_store": true,
+          "graphiti_mcp": true,
+          "falkordb": true,
+          "source_index": true,
+          "state": "persisted"
+        },
+        {
+          "uuid": "3a5d6373-c499-4079-9333-809d0a5037f7",
+          "group": "graphiti-adr92-d1-corrected",
+          "review_store": true,
+          "graphiti_mcp": true,
+          "falkordb": true,
+          "source_index": true,
+          "state": "persisted"
+        },
+        {
+          "uuid": "b90c3eff-b66d-4f77-9366-a0c175c4b6c8",
+          "group": "graphiti-adr92-d1-corrected",
+          "review_store": true,
+          "graphiti_mcp": true,
+          "falkordb": true,
+          "source_index": true,
+          "state": "persisted"
+        },
+        {
+          "uuid": "606811f4-8629-4bf4-b88f-910ee02425fd",
+          "group": "graphiti-adr92-d1-corrected",
+          "review_store": true,
+          "graphiti_mcp": true,
+          "falkordb": true,
+          "source_index": true,
+          "state": "persisted"
+        },
+        {
+          "uuid": "dfb35cf2-5027-4108-82a1-be25b2369a95",
+          "group": "graphiti-adr92-d1-corrected",
+          "review_store": true,
+          "graphiti_mcp": true,
+          "falkordb": true,
+          "source_index": true,
+          "state": "persisted"
+        },
+        {
+          "uuid": "fdcfe69c-7e45-4cdc-a460-4c77a3829d41",
+          "group": "graphiti-adr92-d1-corrected",
+          "review_store": true,
+          "graphiti_mcp": true,
+          "falkordb": true,
+          "source_index": true,
+          "state": "persisted"
+        },
+        {
+          "uuid": "74751290-f099-469f-80de-a053db6a84a4",
+          "group": "graphiti-adr92-d1-corrected",
+          "review_store": true,
+          "graphiti_mcp": true,
+          "falkordb": true,
+          "source_index": true,
+          "state": "persisted"
+        },
+        {
+          "uuid": "9d6c887d-b1b2-4dd8-a8f9-1b6043e625d1",
+          "group": "graphiti-adr92-d1-corrected",
+          "review_store": true,
+          "graphiti_mcp": true,
+          "falkordb": true,
+          "source_index": true,
+          "state": "persisted"
+        },
+        {
+          "uuid": "033f7f17-7c38-4587-a7ae-92ca10b152e5",
+          "group": "graphiti-adr92-d1-corrected",
+          "review_store": true,
+          "graphiti_mcp": true,
+          "falkordb": true,
+          "source_index": true,
+          "state": "persisted"
+        },
+        {
+          "uuid": "f667c12d-e4f1-462c-b69e-fb1574899b1e",
+          "group": "graphiti-adr92-d1-corrected",
+          "review_store": true,
+          "graphiti_mcp": true,
+          "falkordb": true,
+          "source_index": true,
+          "state": "persisted"
+        },
+        {
+          "uuid": "d1f7ea7b-0589-479b-b130-d4a7b7be3039",
+          "group": "graphiti-adr92-d1-corrected",
+          "review_store": true,
+          "graphiti_mcp": true,
+          "falkordb": true,
+          "source_index": true,
+          "state": "persisted"
+        },
+        {
+          "uuid": "de6456dc-0f2b-411f-a9a6-1b4d28bfbc81",
+          "group": "graphiti-adr92-d1-corrected",
+          "review_store": true,
+          "graphiti_mcp": true,
+          "falkordb": true,
+          "source_index": true,
+          "state": "persisted"
+        },
+        {
+          "uuid": "7c50d377-d19b-435d-bdb6-12425cb2c213",
+          "group": "graphiti-adr92-d1-corrected",
+          "review_store": true,
+          "graphiti_mcp": true,
+          "falkordb": true,
+          "source_index": true,
+          "state": "persisted"
+        }
+      ]
+    }
+  }
+}
