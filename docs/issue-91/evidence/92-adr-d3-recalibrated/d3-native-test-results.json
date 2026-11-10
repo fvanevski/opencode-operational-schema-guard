@@ -1,27 +1,25 @@
 {
   "schema": "issue92-adr-d3-native-test-results-v1",
   "kind": "sanitized, evidence-only, public",
-  "run_at_head": "bcca58324aab70d3e2fabbf2b08bcff1deb588de",
+  "run_at_head": "2bda5ab4268c2184835d7e82ecda26ece6408cd0",
   "branch": "work/91-memory-utility-r1",
   "node_version": "v26.13.0",
   "capture_note": "producer exit codes captured individually per mandated command; no pipe/tee masking of producer status",
+  "supersedes": "the 2026-11-09 Phase-A-only capture at bcca583 (13/14 fact-review, BLOCKED_SOURCE_DEFECT); the single case-sensitive prompt-wording assertion was repaired by Central at 2bda5ab",
   "commands": [
     {"id": 1, "command": "node --check docs/issue-78/v2-curator/fact-review.mjs", "exit": 0, "result": "pass"},
     {"id": 2, "command": "node --check docs/issue-78/v2-curator/model.mjs", "exit": 0, "result": "pass"},
     {"id": 3, "command": "node --check docs/issue-78/v2-curator/worker.mjs", "exit": 0, "result": "pass"},
     {"id": 4, "command": "node --check docs/issue-91/adr-acceptance/adr-causal-audit.mjs", "exit": 0, "result": "pass"},
     {"id": 5, "command": "node --check docs/issue-91/adr-acceptance/adr-private-trace.mjs", "exit": 0, "result": "pass"},
-    {"id": 6, "command": "node --test docs/issue-78/v2-curator/fact-review.test.mjs", "exit": 1, "result": "13/14 pass, 1 fail",
-     "failing_test": "fact-screen judges the exact persisted source quote, not unrelated cluster context",
-     "failing_assertion": "assert.match(msgs[0].content, /source_excerpt|exact quoted assertion|exact quoted/)",
-     "location": "docs/issue-78/v2-curator/fact-review.test.mjs:52",
-     "baseline_at_d3_previous_pin_50db627": "10/10 pass, exit 0 (same test file, pre-correction prompt wording)"},
+    {"id": 6, "command": "node --test docs/issue-78/v2-curator/fact-review.test.mjs", "exit": 0, "result": "14/14 pass"},
     {"id": 7, "command": "node --test docs/issue-78/v2-curator/curator.test.mjs", "exit": 0, "result": "36/36 pass"},
     {"id": 8, "command": "node --test docs/issue-78/v2-curator/issue92-source-fact.test.mjs", "exit": 0, "result": "5/5 pass"},
     {"id": 9, "command": "node --test docs/issue-91/adr-acceptance/adr-causal-audit.test.mjs", "exit": 0, "result": "14/14 pass"},
     {"id": 10, "command": "npm run check", "exit": 0, "result": "pass"},
     {"id": 11, "command": "npm test", "exit": 0, "result": "524 pass, 0 fail; OPERATIONAL_PLUGIN_TEST_RESULT: PASS"}
   ],
-  "suite_gate": "RED (command 6)",
-  "disposition": "BLOCKED_SOURCE_DEFECT; Phase B model campaign not started"
+  "suite_gate": "GREEN (all 11 producer exits 0)",
+  "scorer_d2_historical_preservation": "adr-causal-audit.mjs analyze on the private D2 bundle exit 0, byte-identical to the published D2 result (issue92-adr-exposed-d2-result-v1, COMPLETE)",
+  "disposition": "Phase A green; Phase B matched two-stage campaign executed"
 }
