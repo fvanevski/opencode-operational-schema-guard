@@ -14,6 +14,11 @@ const group=arg('group');
 const root=arg('state-dir')||path.join(process.env.XDG_STATE_HOME||path.join(os.homedir(),'.local','state'),'ghdev-graphiti');
 const maxSeconds=Number(arg('max-seconds')||'600');
 const maxClusters=Number(arg('max-clusters')||'6');
+// Explicit development-only opt-in. Installed production callers retain the
+// historical one-model policy until independent Issue #92 qualification.
+const factReviewArg=arg('fact-review');
+if(factReviewArg&&factReviewArg!=='on')throw Error('FACT_REVIEW_OPT_IN_INVALID');
+const factReview=factReviewArg==='on';
 if(command==='validate-config'){
   const policy=modelPolicy(process.env);
   console.log(JSON.stringify({status:'VALID_CURATOR_MODEL_OPTIONS',
@@ -21,7 +26,8 @@ if(command==='validate-config'){
 }else if(!group||!['drain','status','list','reconcile-only'].includes(command)||
    !Number.isInteger(maxSeconds)||maxSeconds<5||maxSeconds>3600){
   console.error('Usage: node curator-cli.mjs drain|status|list|reconcile-only --group GROUP --state-dir DIR '+
-    '[--endpoint LOOPBACK_GRAPHITI_MCP --max-seconds 600 --max-clusters 6]. '+
+    '[--endpoint LOOPBACK_GRAPHITI_MCP --max-seconds 600 --max-clusters 6] '+ 
+    '[--fact-review on (development only)]. '+
     'For drain set LOCAL_CURATOR_URL, LOCAL_CURATOR_MODEL, LOCAL_CURATOR_API_KEY.');
   process.exitCode=2;
 }else{
@@ -85,7 +91,8 @@ if(command==='validate-config'){
       modelEndpoint:process.env.LOCAL_CURATOR_URL,
       modelId:process.env.LOCAL_CURATOR_MODEL,
       apiKey:process.env.LOCAL_CURATOR_API_KEY||'local',
-      modelOptions:modelPolicy(process.env),maxSeconds,maxClusters});
+      modelOptions:modelPolicy(process.env),maxSeconds,maxClusters,
+      factReview});
     console.log(JSON.stringify(data));
     if(data.status==='unresolved'||data.status==='incomplete')process.exitCode=3;
   }
