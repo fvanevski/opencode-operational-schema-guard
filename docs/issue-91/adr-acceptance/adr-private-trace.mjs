@@ -48,3 +48,47 @@ export function createPrivateTraceCurator(curate,{directory,promptBuilder}={}){
    return reply;
  };
 }
+
+
+/** D2 second-stage trace. The actual reviewer prompt is supplied by the
+ * admitted reviewProposedFacts call in opts.promptMessages, not reconstructed.
+ * A prior call-intent prevents any ambiguous second inference attempt.
+ */
+export function createPrivateMessageTraceCall(modelCall,{directory}={}){
+ if(typeof modelCall!=='function'||typeof directory!=='string'||
+   !path.isAbsolute(directory))throw Error('ADR92_REVIEW_TRACE_INVALID_CONFIG');
+ return async (cluster,opts)=>{
+   if(process.env.GHDEV_MEMORY_POST_EXIT_LEASE!=='admitted')
+     throw Error('ADR92_TRACE_POST_EXIT_REQUIRED');
+   if(!id.test(cluster?.id||''))throw Error('ADR92_TRACE_BAD_CLUSTER');
+   const messages=opts?.promptMessages;
+   if(!Array.isArray(messages)||messages.length!==2||
+     messages[0]?.role!=='system'||messages[1]?.role!=='user'||
+     messages.some(x=>typeof x.content!=='string'||x.content.length>60000))
+     throw Error('ADR92_REVIEW_TRACE_INVALID_PROMPT');
+   await fs.mkdir(directory,{recursive:true,mode:0o700});
+   const dest=path.join(directory,cluster.id+'.json');
+   for(const candidate of [dest,dest+'.call-intent']){
+     try{await fs.access(candidate);throw Error('ADR92_TRACE_ALREADY_EXISTS');}
+     catch(e){if(e.code!=='ENOENT')throw e;}
+   }
+   const promptSha=hash(JSON.stringify(messages));
+   await fs.writeFile(dest+'.call-intent',JSON.stringify({
+     schema:'issue92-adr-review-call-intent-v1',
+     cluster_id:cluster.id,group_id:cluster.group,
+     model_prompt_sha256:promptSha,created_at:new Date().toISOString()
+   }),{flag:'wx',mode:0o600});
+   const reply=await modelCall(cluster,opts);
+   if(typeof reply?.content!=='string'||reply.content.length>12000)
+     throw Error('ADR92_REVIEW_TRACE_INVALID_REPLY');
+   await fs.writeFile(dest,JSON.stringify({
+     schema:'issue92-adr-private-review-trace-v1',
+     cluster_id:cluster.id,group_id:cluster.group,
+     model_prompt_sha256:promptSha,
+     model_reply_sha256:hash(reply.content),
+     raw_model_content:reply.content,
+     completed_at:new Date().toISOString()
+   }),{flag:'wx',mode:0o600});
+   return reply;
+ };
+}

@@ -5,7 +5,7 @@ import path from 'node:path';
 import os from 'node:os';
 import {createHash} from 'node:crypto';
 import {auditExposed,D1_SOURCE_PINS,D2_SOURCE_PINS} from './adr-causal-audit.mjs';
-import {createPrivateTraceCurator} from './adr-private-trace.mjs';
+import {createPrivateTraceCurator,createPrivateMessageTraceCall} from './adr-private-trace.mjs';
 
 const sha=s=>createHash('sha256').update(s).digest('hex');
 const baseline='c8eb5260f2b10832346234b1b5d0cf28302ffba8';
@@ -191,4 +191,36 @@ test('D2 two-stage raw discovery and raw review require separate digest-proven a
  assert.equal(result.rows.find(x=>x.arm==='two_stage').stage,'REMOTE_TARGET_PRESERVED');
  d2.review_reply_sha256=sha('tampered');
  assert.throws(()=>auditExposed(freeze,b,rawFreeze),/d2_review_digest/);
+});
+
+test('second-stage private trace binds actual reviewer prompt before exactly one model call',async()=>{
+ const dir=await mkdtemp(path.join(os.tmpdir(),'adr92-review-'));
+ const before=process.env.GHDEV_MEMORY_POST_EXIT_LEASE;
+ let calls=0;
+ try{
+   process.env.GHDEV_MEMORY_POST_EXIT_LEASE='admitted';
+   const messages=[{role:'system',content:'Review the quoted fact only'},
+     {role:'user',content:'{"candidates":[{"index":0}]}'}];
+   const wrapped=createPrivateMessageTraceCall(async(_cluster,opts)=>{
+     calls++;
+     assert.deepEqual(opts.promptMessages,messages);
+     return {content:JSON.stringify({decisions:[{
+       index:0,disposition:'REVIEW',reason_code:'not_substantive'}]}),
+       duration_ms:1};
+   },{directory:dir});
+   await wrapped(cluster,{promptMessages:messages});
+   const location=path.join(dir,cluster.id+'.json');
+   const result=JSON.parse(await readFile(location,'utf8'));
+   assert.equal(result.schema,'issue92-adr-private-review-trace-v1');
+   assert.equal((await stat(location)).mode&0o777,0o600);
+   assert.equal((await stat(location+'.call-intent')).mode&0o777,0o600);
+   assert.equal(calls,1);
+   await assert.rejects(wrapped(cluster,{promptMessages:messages}),
+     /ADR92_TRACE_ALREADY_EXISTS/);
+   assert.equal(calls,1);
+ }finally{
+   if(before===undefined)delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;
+   else process.env.GHDEV_MEMORY_POST_EXIT_LEASE=before;
+   await rm(dir,{recursive:true,force:true});
+ }
 });
