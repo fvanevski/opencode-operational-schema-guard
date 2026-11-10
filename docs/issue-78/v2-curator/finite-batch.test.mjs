@@ -177,3 +177,38 @@ test('interactive harness cannot invoke the finite-batch worker',()=>fixture(asy
   /EX_POST_EXIT_ADMISSION_REQUIRED/);
  assert.equal(f.graphiti.writes.length,0);
 }));
+
+test('remote ACK loss is reconciled by positive episode identity without a second write',()=>fixture(async f=>{
+ const original=f.graphiti.call.bind(f.graphiti);
+ let submitted=0;
+ f.graphiti.call=async(method,args)=>{
+  if(method==='add_memory'){submitted++;await original(method,args);
+   throw Error('remote ACK lost after committed episode');}
+  return original(method,args);
+ };
+ const counter={n:0},curate=model({distinct:true,counter});
+ const first=await runAdmittedFiniteBatch(opts({...f,curate}));
+ assert.equal(first.status,'unresolved');
+ assert.equal(submitted,1);
+ assert.equal(f.graphiti.episodes.length,1);
+ const resumed=await runAdmittedFiniteBatch(opts({...f,curate}));
+ assert.equal(resumed.model_calls,0);
+ assert.equal(resumed.persisted,1);
+ assert.equal(submitted,1);
+ assert.equal(counter.n,3);
+},[strong]));
+test('snapshot resumes only if native source bytes match authenticated queue events',()=>fixture(async f=>{
+ await assert.rejects(runAdmittedFiniteBatch(opts({...f,curate:model(),
+  onCheckpoint:s=>{if(s==='snapshot_frozen')throw Error('INJECTED_SNAPSHOT_STOP');}
+ })),/INJECTED_SNAPSHOT_STOP/);
+ const queued=(await f.queue.list({limit:20,states:['new']})).items;
+ const event=queued[0];
+ const file=f.queue.filename(event.event_id);
+ const actual=JSON.parse(await readFile(file,'utf8'));
+ const altered={...actual,excerpt:actual.excerpt+' modified'};
+ const {writeFile}=await import('node:fs/promises');
+ await writeFile(file,JSON.stringify(altered));
+ await assert.rejects(runAdmittedFiniteBatch(opts({...f,curate:model()})),
+  /SNAPSHOT_QUEUE_SOURCE_DRIFT/);
+ assert.equal(f.graphiti.writes.length,0);
+}));
