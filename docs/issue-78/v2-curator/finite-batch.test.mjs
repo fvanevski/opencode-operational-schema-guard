@@ -238,3 +238,22 @@ test('independent batch utility does not inherit earlier same-group duplication 
  assert.match(msgs[0].content,/REPORTED defect/);
  assert.equal(JSON.parse(msgs[1].content).prior_same_group_facts.length,0);
 });
+
+test('a corrupted frozen model receipt blocks recovery before any Graphiti write',()=>fixture(async f=>{
+ await assert.rejects(runAdmittedFiniteBatch(opts({...f,curate:model(),
+  onCheckpoint:s=>{if(s==='plan_frozen')throw Error('INJECTED_POST_PLAN');}
+ })),/INJECTED_POST_PLAN/);
+ const {readdir,writeFile}=await import('node:fs/promises');
+ const active=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,'_active.json'),'utf8'));
+ const dir=path.join(f.root,'issue92-finite-batches-v1',scope.group,
+  active.batch_id,'model-calls');
+ const name=(await readdir(dir)).find(x=>x.endsWith('.result.json'));
+ assert.ok(name);
+ const file=path.join(dir,name),item=JSON.parse(await readFile(file,'utf8'));
+ await writeFile(file,JSON.stringify({...item,reply_sha256:'0'.repeat(64)}));
+ await assert.rejects(runAdmittedFiniteBatch(opts({...f,curate:model()})),
+  /PLAN_MODEL_RECEIPT_MISMATCH/);
+ assert.equal(f.graphiti.writes.length,0);
+ assert.equal((await f.store.list({limit:20})).total,0);
+}));
