@@ -15,9 +15,9 @@ const scope={group:'issue92batch',project:'repo92',workspace:'/workspace/repo92'
 const strong='Sphinx reStructuredText output drops dictionary parameter header rows, causing expected table columns to disappear in rendered API documentation.';
 const weak='The Sphinx reStructuredText output has an issue with dictionary parameter header rows in rendered API documentation.';
 const different='Pylint --verbose fails when the required argument is omitted, even though the short -v flag is accepted by its command-line parser.';
-const source=(id,body)=>fromPrompt({sessionID:'sess-'+id,
+const source=(id,body,eventScope=scope)=>fromPrompt({sessionID:'sess-'+id,
   messageID:'msg-'+id,prompt:{text:body},
-  timestamp:'2026-11-09T19:00:00Z'},scope,{admitted:true});
+  timestamp:'2026-11-09T19:00:00Z'},eventScope,{admitted:true});
 function graph(){
  return {episodes:[],writes:[],
   async call(method,args){
@@ -67,7 +67,7 @@ function model({uncertain=false,distinct=false,invalid=false,reject=false,counte
    usage:{prompt_tokens:10,completion_tokens:15}};
  };
 }
-async function fixture(fn,order=[strong,weak]){
+async function fixture(fn,order=[strong,weak],{scopeFor=null}={}){
  const root=await mkdtemp(path.join(os.tmpdir(),'issue92-finite-'));
  const previous=process.env.GHDEV_MEMORY_POST_EXIT_LEASE;
  process.env.GHDEV_MEMORY_POST_EXIT_LEASE='admitted';
@@ -76,7 +76,7 @@ async function fixture(fn,order=[strong,weak]){
   const store=new ReviewStore(root,scope.group);
   for(const body of order){
    const id=body===strong?'strong':body===weak?'weak':'different';
-   const e=source(id,body);
+   const e=source(id,body,scopeFor?scopeFor(id):scope);
    assert.ok(e);
    assert.equal((await queue.stage(e)).status,'staged');
   }
@@ -257,3 +257,68 @@ test('a corrupted frozen model receipt blocks recovery before any Graphiti write
  assert.equal(f.graphiti.writes.length,0);
  assert.equal((await f.store.list({limit:20})).total,0);
 }));
+
+test('cross-workspace Sphinx siblings share one project arbitration pool and preserve their original native scopes',async()=>{
+ const scopes=id=>({...scope,workspace:'/workspace/swebench/'+id});
+ const run=order=>fixture(async f=>{
+  const out=await runAdmittedFiniteBatch(opts({...f,curate:model()}));
+  assert.equal(out.model_calls,5); // two discoveries, two utility calls, ONE joint review
+  assert.equal(out.persisted,1);
+  assert.equal(out.deferred,1);
+  assert.equal(f.graphiti.writes.length,1);
+  assert.ok(f.graphiti.writes[0].episode_body.includes(strong));
+  const rows=(await f.store.list({limit:20})).items;
+  assert.equal(rows.length,2);
+  const kept=rows.find(r=>r.state==='persisted'),alternate=rows.find(r=>r.state==='deferred');
+  assert.ok(kept&&alternate);
+  assert.equal(kept.scope?.workspace,scopes('strong').workspace);
+  assert.equal(alternate.scope?.workspace,scopes('weak').workspace);
+  const active=JSON.parse(await readFile(path.join(f.root,
+   'issue92-finite-batches-v1',scope.group,'_active.json'),'utf8'));
+  const plan=JSON.parse(await readFile(path.join(f.root,
+   'issue92-finite-batches-v1',scope.group,active.batch_id,'plan.json'),'utf8'));
+  assert.equal(plan.families.length,1);
+  assert.equal(plan.families[0].pool.length,2);
+  assert.equal(plan.families[0].selected.length,1);
+  return {families:plan.families,items:plan.items};
+ },order,{scopeFor:scopes});
+ assert.deepEqual(await run([weak,strong]),await run([strong,weak]));
+});
+test('cross-workspace uncertain-equivalence families defer both instead of promoting first arrival',()=>fixture(async f=>{
+ const out=await runAdmittedFiniteBatch(opts({...f,curate:model({uncertain:true})}));
+ assert.equal(out.model_calls,5);
+ assert.equal(out.approved,0);
+ assert.equal(out.deferred,2);
+ assert.equal(f.graphiti.writes.length,0);
+},[strong,weak],{scopeFor:id=>({...scope,workspace:'/workspace/swebench/'+id})}));
+test('same group but different authenticated projects cannot be compared as one family',()=>fixture(async f=>{
+ const out=await runAdmittedFiniteBatch(opts({...f,curate:model()}));
+ assert.equal(out.model_calls,6); // two discoveries, two utilities, two singleton arbitration calls
+ assert.equal(out.approved,2);
+ assert.equal(out.persisted,2);
+ const active=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,'_active.json'),'utf8'));
+ const plan=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,active.batch_id,'plan.json'),'utf8'));
+ assert.equal(plan.families.length,2);
+ for(const family of plan.families)assert.equal(family.pool.length,1);
+},[strong,weak],{scopeFor:id=>({
+ ...scope,project:id==='strong'?'repo92':'repo93',
+ workspace:'/workspace/swebench/'+id
+})}));
+test('arbitration rejects cross-project candidate data, but accepts separate workspaces of one project',()=>{
+ const make=(id,project,workspace)=>({id,group:scope.group,project,workspace,
+  utility_class:'useful_negative',fact:{assertion:strong,kind:'blocker',
+   evidence_class:'user-stated',temporal_status:'observed',
+   source_refs:['opencode:session:message:'+id]}});
+ const a=make('a'.repeat(64),'repo92','/repo-a');
+ const b=make('b'.repeat(64),'repo92','/repo-b');
+ const prompt=representativePrompt([a,b]);
+ const data=JSON.parse(prompt[1].content);
+ assert.equal(data.scope.comparison_scope,'project');
+ assert.equal(data.scope.native_workspace_scopes,'retained_individually');
+ assert.equal(data.candidates.length,2);
+ assert.notEqual(data.candidates[0].workspace_sha256,data.candidates[1].workspace_sha256);
+ assert.throws(()=>representativePrompt([a,{...b,project:'repo93'}]),
+  /ARBITRATION_CROSS_PROJECT_OR_INVALID_WORKSPACE/);
+});
