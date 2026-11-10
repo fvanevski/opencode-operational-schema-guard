@@ -7,6 +7,8 @@ import {readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 import {pathToFileURL} from 'node:url';
 import {validateModelDecision} from '../../issue-78/v2-curator/core.mjs';
+import {validateFactDiscovery,validateFactReview,filterFactProposal}
+ from '../../issue-78/v2-curator/fact-review.mjs';
 
 const SHA=/^[0-9a-f]{64}$/;
 const UUID=/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i;
@@ -18,12 +20,15 @@ export const D1_SOURCE_PINS=Object.freeze({
 });
 export const D2_SOURCE_PINS=Object.freeze({
  previous:'e303a67786fd96491cbdab36790b81442c4340c6',
- two_stage:'08b82f29ebae9a386b6237c415e2d0b9c416dcbc'
+ two_stage:'50db627850c28f2ce31a68f547f91f51ee3e43b0'
 });
 const stages=[
  'SOURCE_NOT_VISIBLE','RAW_MODEL_UNAVAILABLE','MODEL_SKIP','MODEL_DEFER',
  'MODEL_OTHER_FACT','MODEL_INVALID_PROPOSAL','VALIDATOR_REJECTED',
- 'VALIDATED_NO_TERMINAL_PROOF','REMOTE_TARGET_PRESERVED','REVIEW_ONLY_PROPOSAL'
+ 'VALIDATED_NO_TERMINAL_PROOF','REMOTE_TARGET_PRESERVED','REVIEW_ONLY_PROPOSAL',
+ 'DISCOVERY_NO_CANDIDATE','DISCOVERY_VALIDATOR_REJECTED',
+ 'RAW_REVIEW_UNAVAILABLE','REVIEW_INVALID_RESPONSE','REVIEW_DEFER',
+ 'REVIEW_VALIDATOR_REJECTED','DISCOVERED_OTHER_FACT'
 ];
 const validReviewState=new Set(['skipped','deferred','approved','queued','persisted',
  'submission_unknown','failed_extraction','retry_authorized','unknown']);
@@ -110,6 +115,90 @@ function classify(row,frozen){
  result.stage=verified.length?'REMOTE_TARGET_PRESERVED':'VALIDATED_NO_TERMINAL_PROOF';
  return result;
 }
+
+/** D2 treats discovery and independent review as two distinct raw model calls.
+ * A provisional source candidate is NOT yet a durable utility judgment.
+ */
+function classifyTwoStage(row,frozen){
+ const result={target_id:row.target_id,case_id:frozen.case_id,
+   source_ref_sha256:H(frozen.source_ref),stage:null,model_decision:'TWO_STAGE',
+   validator_reason:null,review_state:row.review_state,
+   discovery_reply_sha256:null,review_reply_sha256:null,
+   fact_indices:[],terminal_count:0,evidence_tier:null};
+ req(typeof row.model_visible==='boolean'&&validReviewState.has(row.review_state)&&
+   typeof row.review_reason==='string'&&Array.isArray(row.model_fact_indices)&&
+   Array.isArray(row.terminals),'d2_row_shape');
+ req(new Set(row.model_fact_indices).size===row.model_fact_indices.length&&
+   row.model_fact_indices.every(x=>Number.isSafeInteger(x)&&x>=0),
+   'd2_fact_index_shape');
+ if(!row.model_visible){
+   req(row.terminals.length===0&&row.model_fact_indices.length===0,
+     'd2_unseen_has_model_or_remote_credit');
+   result.stage='SOURCE_NOT_VISIBLE';result.evidence_tier='captured_state';return result;
+ }
+ req(row.cluster?.id===frozen.cluster_id&&
+   row.cluster?.events?.some(e=>e.source_refs?.includes(frozen.source_ref)),
+   'd2_source_not_in_actual_prompt');
+ const discovery=row.discovery_raw_content;
+ if(discovery===null||discovery===undefined){
+   req(row.model_fact_indices.length===0,'d2_missing_discovery_claim');
+   result.stage='RAW_MODEL_UNAVAILABLE';result.evidence_tier='review_state_only';
+   return result;
+ }
+ req(typeof discovery==='string'&&discovery.length>0&&discovery.length<=12000&&
+   row.discovery_reply_sha256===H(discovery),'d2_discovery_digest');
+ result.discovery_reply_sha256=H(discovery);
+ const p=validateFactDiscovery(discovery,row.cluster);
+ result.validator_reason=p.ok?null:p.reason;
+ result.evidence_tier='raw_discovery_and_original_source';
+ if(!p.ok){result.stage='DISCOVERY_VALIDATOR_REJECTED';return result;}
+ if(p.decision==='SKIP'){
+   req(row.model_fact_indices.length===0&&row.terminals.length===0,
+     'd2_skip_has_target_or_terminal');
+   result.stage='DISCOVERY_NO_CANDIDATE';return result;
+ }
+ req(p.decision==='EMIT','d2_discovery_unexpected_decision');
+ req(row.independently_reviewed===true||row.model_fact_indices.length===0,
+   'd2_source_adjudication_missing');
+ for(const idx of row.model_fact_indices)
+   req(p.facts[idx]?.source_refs?.includes(frozen.source_ref),
+     'd2_source_target_index_mismatch');
+ result.fact_indices=[...row.model_fact_indices];
+ const reviewRaw=row.review_raw_content;
+ if(reviewRaw===null||reviewRaw===undefined){
+   result.stage='RAW_REVIEW_UNAVAILABLE';return result;
+ }
+ req(typeof reviewRaw==='string'&&reviewRaw.length>0&&reviewRaw.length<=12000&&
+   row.review_reply_sha256===H(reviewRaw),'d2_review_digest');
+ result.review_reply_sha256=H(reviewRaw);
+ const decision=validateFactReview(reviewRaw,p);
+ if(!decision.ok){
+   result.stage='REVIEW_INVALID_RESPONSE';result.validator_reason=decision.reason;
+   return result;
+ }
+ if(row.model_fact_indices.length===0){
+   result.stage='DISCOVERED_OTHER_FACT';return result;
+ }
+ const matched=decision.accepted.filter(x=>row.model_fact_indices.includes(x.index));
+ if(!matched.length){
+   req(row.terminals.length===0,'d2_reviewed_target_has_terminal');
+   result.stage='REVIEW_DEFER';return result;
+ }
+ const checked=validateModelDecision(filterFactProposal(p,decision),row.cluster);
+ if(!checked.ok){
+   result.stage='REVIEW_VALIDATOR_REJECTED';result.validator_reason=checked.reason;
+   return result;
+ }
+ const verified=row.terminals.filter(e=>e&&UUID.test(e.uuid||'')&&
+   e.source_ref===frozen.source_ref&&e.original_source_supported===true&&
+   e.independently_reviewed===true&&e.review_store===true&&
+   e.graphiti_mcp===true&&e.falkordb===true&&e.source_index===true);
+ req(verified.length===row.terminals.length,'d2_unverified_terminal_proof');
+ result.terminal_count=verified.length;
+ result.stage=verified.length?'REMOTE_TARGET_PRESERVED':'VALIDATED_NO_TERMINAL_PROOF';
+ result.evidence_tier='source_discovery_review_and_remote';
+ return result;
+}
 export function auditExposed(freeze,bundle,rawFreeze){
  const d1=bundle?.schema==='issue92-adr-exposed-d1-comparison-v1';
  const d2=bundle?.schema==='issue92-adr-exposed-d2-comparison-v1';
@@ -157,7 +246,8 @@ export function auditExposed(freeze,bundle,rawFreeze){
      req(target&&target.valuable===true&&!seen.has(row.target_id),
        'target_not_frozen_valuable_or_duplicate');
      seen.add(row.target_id);
-     const outcome=classify(row,target);
+     const outcome=d2&&run.arm==='two_stage'?
+       classifyTwoStage(row,target):classify(row,target);
      rows.push({trial:run.trial,arm:run.arm,...outcome});
      counts[outcome.stage]++;
    }

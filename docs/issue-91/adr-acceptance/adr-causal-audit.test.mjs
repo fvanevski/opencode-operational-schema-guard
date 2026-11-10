@@ -143,9 +143,14 @@ test('D2 exposed two-stage comparison is source-pinned and does not rewrite D1',
  bundle.schema='issue92-adr-exposed-d2-comparison-v1';
  bundle.comparison_sources={...D2_SOURCE_PINS};
  const common={...bundle.runs[0],trial:'d2'};
+ const emptyDiscovery=JSON.stringify({reason:'No attributable source claim',candidates:[]});
  bundle.runs=[
   {...common,arm:'previous',source_sha:D2_SOURCE_PINS.previous},
-  {...common,arm:'two_stage',source_sha:D2_SOURCE_PINS.two_stage}
+  {...common,arm:'two_stage',source_sha:D2_SOURCE_PINS.two_stage,
+    targets:[{...makeRow({review_state:'skipped',model_raw_content:null}),
+      discovery_raw_content:emptyDiscovery,
+      discovery_reply_sha256:sha(emptyDiscovery),
+      review_raw_content:null,review_reply_sha256:null}]}
  ];
  const result=auditExposed(freeze,bundle,rawFreeze);
  assert.equal(result.schema,'issue92-adr-exposed-d2-result-v1');
@@ -154,4 +159,36 @@ test('D2 exposed two-stage comparison is source-pinned and does not rewrite D1',
  bundle.runs[1].source_sha=D1_SOURCE_PINS.corrected;
  assert.throws(()=>auditExposed(freeze,bundle,rawFreeze),
    /development_run_exact_source/);
+});
+
+test('D2 two-stage raw discovery and raw review require separate digest-proven attribution',()=>{
+ const b=makeBundle([makeRow({model_raw_content:rawSkip,review_state:'skipped'})]);
+ b.schema='issue92-adr-exposed-d2-comparison-v1';
+ b.comparison_sources={...D2_SOURCE_PINS};
+ const common={...b.runs[0],trial:'d2'};
+ const d2=makeRow({model_raw_content:null,model_reply_sha256:null,
+   review_state:'deferred',review_reason:'screened candidate'});
+ d2.discovery_raw_content=JSON.stringify({reason:'Potential technical fact',
+   candidates:[{kind:'decision',source_ref:ref,start:0,end:excerpt.length,
+     temporal_status:'observed'}]});
+ d2.discovery_reply_sha256=sha(d2.discovery_raw_content);
+ d2.review_raw_content=JSON.stringify({decisions:[
+   {index:0,disposition:'REVIEW',reason_code:'not_substantive'}]});
+ d2.review_reply_sha256=sha(d2.review_raw_content);
+ d2.model_fact_indices=[0];
+ b.runs=[
+  {...common,arm:'previous',source_sha:D2_SOURCE_PINS.previous},
+  {...common,arm:'two_stage',source_sha:D2_SOURCE_PINS.two_stage,targets:[d2]}
+ ];
+ let result=auditExposed(freeze,b,rawFreeze);
+ assert.equal(result.rows.find(x=>x.arm==='two_stage').stage,'REVIEW_DEFER');
+ d2.review_raw_content=JSON.stringify({decisions:[
+   {index:0,disposition:'ACCEPT',reason_code:'source_specific_durable',
+    utility_class:'durable_decision'}]});
+ d2.review_reply_sha256=sha(d2.review_raw_content);
+ d2.terminals=[terminal];
+ result=auditExposed(freeze,b,rawFreeze);
+ assert.equal(result.rows.find(x=>x.arm==='two_stage').stage,'REMOTE_TARGET_PRESERVED');
+ d2.review_reply_sha256=sha('tampered');
+ assert.throws(()=>auditExposed(freeze,b,rawFreeze),/d2_review_digest/);
 });
