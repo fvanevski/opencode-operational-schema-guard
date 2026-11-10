@@ -146,7 +146,7 @@ test('utility policy is an additional model-only persistence gate',()=>{
   assert.equal(validateDecision({decision:'EMIT',reason:'Operator source review',
     facts:[fact(U)]},c).ok,true);
   assert.match(modelPrompt(c)[0].content,/durable_decision/);
-  assert.match(modelPrompt(c)[0].content,/Transient green test counts/);
+  assert.match(modelPrompt(c)[0].content,/Transient green counts/);
 });
 
 test('field-level model schema diagnostic survives durable deferred review without source text',()=>temp(async root=>{
