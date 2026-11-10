@@ -322,3 +322,41 @@ test('arbitration rejects cross-project candidate data, but accepts separate wor
  assert.throws(()=>representativePrompt([a,{...b,project:'repo93'}]),
   /ARBITRATION_CROSS_PROJECT_OR_INVALID_WORKSPACE/);
 });
+
+test('nineteen same-project, cross-workspace candidates form real semantic-family choices instead of nineteen singleton calls',()=>{
+ const make=(name,assertion,i)=>({
+  id:(i+1).toString(16).padStart(64,'0'),group:scope.group,
+  project:scope.project,workspace:'/workspace/swebench/'+name,
+  utility_class:'useful_negative',fact:{
+   assertion,evidence_class:'user-stated',temporal_status:'observed',
+   kind:'blocker',source_refs:['opencode:sess-'+name+':message:m'+i]
+  }
+ });
+ const entries=[
+  ...Array.from({length:5},(_,i)=>make('sphinx-'+i,
+   'Sphinx dictionary parameter table header row missing in rendering variant '+i,i)),
+  ...Array.from({length:6},(_,i)=>make('django-'+i,
+   'Django lazy string proxy raises TypeError in filter variant '+i,i+5)),
+  ...Array.from({length:8},(_,i)=>make('distinct-'+i,
+   'Unique independent technical constraint number '+i+' uses another interface',i+11))
+ ];
+ const input=representativePrompt([...entries].reverse());
+ const parsed=JSON.parse(input[1].content);
+ assert.equal(parsed.candidates.length,19);
+ assert.equal(new Set(parsed.candidates.map(x=>x.workspace_sha256)).size,19);
+ assert.equal(parsed.scope.comparison_scope,'project');
+ const families=[
+  {members:[0,1,2,3,4],representative:0,certainty:'high',
+   reason_code:'same_technical_predicate'},
+  {members:[5,6,7,8,9,10],representative:5,certainty:'high',
+   reason_code:'same_technical_predicate'},
+  ...Array.from({length:8},(_,j)=>({members:[11+j],representative:11+j,
+   certainty:'high',reason_code:'distinct_predicate'}))
+ ];
+ const solution=validateRepresentativeFamilies({families},entries);
+ assert.equal(solution.ok,true);
+ assert.equal(solution.selected.length,10); // 2 meaningful family reps + 8 distinct
+ assert.equal(solution.deferred.length,9); // all 9 repeated variants remain reviewable
+ assert.deepEqual(solution,validateRepresentativeFamilies({families},[...entries].reverse()));
+ assert.deepEqual(input,representativePrompt(entries));
+});
