@@ -271,8 +271,8 @@ test('cross-workspace Sphinx siblings share one project arbitration pool and pre
   assert.equal(rows.length,2);
   const kept=rows.find(r=>r.state==='persisted'),alternate=rows.find(r=>r.state==='deferred');
   assert.ok(kept&&alternate);
-  assert.equal(kept.scope?.workspace,scopes('strong').workspace);
-  assert.equal(alternate.scope?.workspace,scopes('weak').workspace);
+  assert.equal(kept.workspace,scopes('strong').workspace);
+  assert.equal(alternate.workspace,scopes('weak').workspace);
   const active=JSON.parse(await readFile(path.join(f.root,
    'issue92-finite-batches-v1',scope.group,'_active.json'),'utf8'));
   const plan=JSON.parse(await readFile(path.join(f.root,
