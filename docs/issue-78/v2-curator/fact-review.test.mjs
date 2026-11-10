@@ -248,3 +248,45 @@ test('independent mixed review keeps a supported fact and routes boilerplate to 
  assert.equal(out.review_only_claims.length,1);
  assert.equal(out.review_only_claims[0].screen_reason,'not_substantive');
 });
+
+
+test('D2 long narrative commentary cannot veto a valid source candidate',()=>{
+ const c=selectClusters([source()])[0],e=c.events[0];
+ const a=validateFactDiscovery({
+  reason:'narrative '.repeat(100),
+  candidates:[{source_ref:e.source_refs[0],start:0,end:e.excerpt.length,
+    kind:'blocker',temporal_status:'observed'}]
+ },c);
+ assert.equal(a.ok,true);
+ assert.equal(a.facts[0].assertion,e.excerpt);
+ const empty=validateFactDiscovery({reason:'x'.repeat(1000),candidates:[]},c);
+ assert.equal(empty.ok,true);
+ assert.equal(empty.decision,'SKIP');
+});
+test('only a narrowly bounded EOF overshoot can be source-adjusted, preserving the authentic start',()=>{
+ const c=selectClusters([source()])[0],e=c.events[0];
+ const req=(end,start=0,ref=e.source_refs[0])=>validateFactDiscovery({
+  reason:'Possible native technical constraint',
+  candidates:[{source_ref:ref,start,end,kind:'blocker',temporal_status:'observed'}]
+ },c);
+ const repaired=req(e.excerpt.length+28);
+ assert.equal(repaired.ok,true);
+ assert.equal(repaired.facts[0].assertion,e.excerpt);
+ assert.deepEqual(repaired.source_span_adjustments,[{
+  index:0,source_ref:e.source_refs[0],requested_end:e.excerpt.length+28,
+  authorized_end:e.excerpt.length,reason:'bounded_eof_offset_adjustment'
+ }]);
+ assert.equal(req(e.excerpt.length+33).ok,false);
+ assert.equal(req(e.excerpt.length+28,-1).ok,false);
+ assert.equal(req(e.excerpt.length+28,0,'opencode:untrusted-forged-ref').ok,false);
+ assert.equal(req(e.excerpt.length+28,e.excerpt.length-3).ok,false);
+});
+test('independent reviewer is explicitly asked to credit a specific source-stated defect without promoting generic headings',()=>{
+ const c=selectClusters([source()])[0],p=proposal(c);
+ const system=factReviewPrompt(c,p)[0].content;
+ assert.match(system,/REPORTED defect/);
+ assert.match(system,/technically specific issue\/bug title CAN convey a claim/);
+ assert.match(system,/REVIEW with repetition_candidate/);
+ assert.match(system,/REVIEW with not_substantive only/);
+ assert.match(system,/itself must support/);
+});
