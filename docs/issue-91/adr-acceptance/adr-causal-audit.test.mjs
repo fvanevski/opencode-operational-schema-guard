@@ -4,7 +4,7 @@ import {mkdtemp,readFile,stat,rm} from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
 import {createHash} from 'node:crypto';
-import {auditExposed,D1_SOURCE_PINS} from './adr-causal-audit.mjs';
+import {auditExposed,D1_SOURCE_PINS,D2_SOURCE_PINS} from './adr-causal-audit.mjs';
 import {createPrivateTraceCurator} from './adr-private-trace.mjs';
 
 const sha=s=>createHash('sha256').update(s).digest('hex');
@@ -136,4 +136,22 @@ test('D1 exposed comparison is pinned to previous and corrected model-tested SHA
  bundle.comparison_sources.corrected='0'.repeat(40);
  assert.throws(()=>auditExposed(freeze,bundle,rawFreeze),
    /development_comparison_source_identity/);
+});
+
+test('D2 exposed two-stage comparison is source-pinned and does not rewrite D1',()=>{
+ const bundle=makeBundle([makeRow({model_raw_content:rawSkip,review_state:'skipped'})]);
+ bundle.schema='issue92-adr-exposed-d2-comparison-v1';
+ bundle.comparison_sources={...D2_SOURCE_PINS};
+ const common={...bundle.runs[0],trial:'d2'};
+ bundle.runs=[
+  {...common,arm:'previous',source_sha:D2_SOURCE_PINS.previous},
+  {...common,arm:'two_stage',source_sha:D2_SOURCE_PINS.two_stage}
+ ];
+ const result=auditExposed(freeze,bundle,rawFreeze);
+ assert.equal(result.schema,'issue92-adr-exposed-d2-result-v1');
+ assert.equal(result.comparison_sources.two_stage,D2_SOURCE_PINS.two_stage);
+ assert.equal(result.disposition,'COMPLETE');
+ bundle.runs[1].source_sha=D1_SOURCE_PINS.corrected;
+ assert.throws(()=>auditExposed(freeze,bundle,rawFreeze),
+   /development_run_exact_source/);
 });

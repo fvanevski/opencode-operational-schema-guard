@@ -16,6 +16,10 @@ export const D1_SOURCE_PINS=Object.freeze({
  previous:'a684667a6eefa2dc19f29755bed0c3048874721d',
  corrected:'e303a67786fd96491cbdab36790b81442c4340c6'
 });
+export const D2_SOURCE_PINS=Object.freeze({
+ previous:'e303a67786fd96491cbdab36790b81442c4340c6',
+ two_stage:'08b82f29ebae9a386b6237c415e2d0b9c416dcbc'
+});
 const stages=[
  'SOURCE_NOT_VISIBLE','RAW_MODEL_UNAVAILABLE','MODEL_SKIP','MODEL_DEFER',
  'MODEL_OTHER_FACT','MODEL_INVALID_PROPOSAL','VALIDATOR_REJECTED',
@@ -107,12 +111,14 @@ function classify(row,frozen){
  return result;
 }
 export function auditExposed(freeze,bundle,rawFreeze){
- const development=bundle?.schema==='issue92-adr-exposed-d1-comparison-v1';
- if(development){
-   req(bundle.comparison_sources?.previous===D1_SOURCE_PINS.previous&&
-     bundle.comparison_sources?.corrected===D1_SOURCE_PINS.corrected,
+ const d1=bundle?.schema==='issue92-adr-exposed-d1-comparison-v1';
+ const d2=bundle?.schema==='issue92-adr-exposed-d2-comparison-v1';
+ const development=d1||d2;
+ const pins=d1?D1_SOURCE_PINS:d2?D2_SOURCE_PINS:null;
+ const name=d1?'d1':'d2';
+ if(development)
+   req(Object.keys(pins).every(key=>bundle.comparison_sources?.[key]===pins[key]),
      'development_comparison_source_identity');
- }
  req(typeof rawFreeze==='string'&&H(rawFreeze)===bundle?.freeze_sha256,
    'freeze_bytes_digest_mismatch');
  req(freeze?.schema==='issue92-adr-prospective-freeze-v1'&&
@@ -135,9 +141,9 @@ export function auditExposed(freeze,bundle,rawFreeze){
  const rows=[],summaries=[],seenRuns=new Set();
  for(const run of bundle.runs){
    if(development)
-     req(run.trial==='d1'&&
-       Object.hasOwn(D1_SOURCE_PINS,run.arm)&&
-       run.source_sha===D1_SOURCE_PINS[run.arm]&&
+     req(run.trial===name&&
+       Object.hasOwn(pins,run.arm)&&
+       run.source_sha===pins[run.arm]&&
        Array.isArray(run.targets),'development_run_exact_source');
    else
      req(typeof run.trial==='string'&&/^(?:t1|t2|d[0-9]{1,2})$/.test(run.trial)&&
@@ -161,12 +167,12 @@ export function auditExposed(freeze,bundle,rawFreeze){
      missing_valuable_targets:missing,complete:missing.length===0,counts});
  }
  if(development)
-   req(seenRuns.has('d1:previous')&&seenRuns.has('d1:corrected'),
+   req(Object.keys(pins).every(arm=>seenRuns.has(name+':'+arm)),
      'development_run_pair_incomplete');
- return {schema:development?
-     'issue92-adr-exposed-d1-result-v1':'issue92-adr-exposed-causal-result-v1',
+ return {schema:d2?'issue92-adr-exposed-d2-result-v1':
+     d1?'issue92-adr-exposed-d1-result-v1':'issue92-adr-exposed-causal-result-v1',
    source_commits:{...bundle.source_commits},
-   ...(development?{comparison_sources:{...D1_SOURCE_PINS}}:{}),
+   ...(development?{comparison_sources:{...pins}}:{}),
    freeze_sha256:bundle.freeze_sha256,
    disposition:summaries.every(s=>s.complete)?'COMPLETE':'INCOMPLETE',
    summaries,rows,
