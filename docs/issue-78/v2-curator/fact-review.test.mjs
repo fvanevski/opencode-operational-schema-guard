@@ -220,3 +220,31 @@ test('second-stage durable utility cannot be fabricated or omitted by reviewer',
  assert.equal(valid.ok,true);
  assert.equal(filterFactProposal(p,valid).fact_utilities[0],'stable_architecture');
 });
+
+test('independent mixed review keeps a supported fact and routes boilerplate to review without cross-fact veto',()=>{
+ const c=selectClusters([source()])[0];
+ const p={ok:true,decision:'EMIT',utility_class:'durable_decision',
+  reason:'Two tentative source claims from same cluster',
+  facts:[
+   {assertion:'The CLI option --verbose requires an argument in the installed Pylint version.',
+    source_refs:[c.events[0].source_refs[0]],kind:'blocker',
+    temporal_status:'observed',evidence_class:'user-stated'},
+   {assertion:'The installed Pylint version has a command-line option.',
+    source_refs:[c.events[0].source_refs[0]],kind:'observation',
+    temporal_status:'observed',evidence_class:'user-stated'}
+  ],fact_utilities:['durable_decision','durable_decision']};
+ const raw={decisions:[
+  {index:0,disposition:'ACCEPT',reason_code:'source_specific_durable',
+   utility_class:'useful_negative'},
+  {index:1,disposition:'REVIEW',reason_code:'not_substantive'}
+ ]};
+ const screen=validateFactReview(raw,p);
+ assert.equal(screen.ok,true);
+ const out=filterFactProposal(p,screen);
+ assert.equal(out.ok,true);
+ assert.equal(out.facts.length,1);
+ assert.equal(out.facts[0].assertion,p.facts[0].assertion);
+ assert.equal(out.fact_utilities[0],'useful_negative');
+ assert.equal(out.review_only_claims.length,1);
+ assert.equal(out.review_only_claims[0].screen_reason,'not_substantive');
+});
