@@ -3,6 +3,7 @@ import { CandidateQueue } from '../v2-candidate/queue.mjs';
 import { GraphitiMcp, EXTRACTION_INSTRUCTIONS } from '../../issue-75/v2-candidate/memory-core.mjs';
 import { ReviewStore, selectClusters, validateDecision, validateModelDecision, normalizedAssertion } from './core.mjs';
 import { curateCluster } from './model.mjs';
+import { reviewProposedFacts } from './fact-review.mjs';
 const validUUID=s=>typeof s==='string'&&/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i.test(s);
 const nameOf=r=>'curated-v1:'+r.id;
 async function allRecords(store){
@@ -169,8 +170,13 @@ export function tallyModelUsage(stats,reply){
 }
 export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='local',
   graphitiEndpoint,queue,store,graphiti,curate=curateCluster,
-  modelOptions={},maxClusters=6,maxSeconds=600}={}){
+  modelOptions={},maxClusters=6,maxSeconds=600,
+  // Optional only for ADR exposed qualification until independent acceptance.
+  factReview=false,factReviewModelCall=null}={}){
   admitted();
+  if(typeof factReview!=='boolean'||
+    (factReviewModelCall!==null&&typeof factReviewModelCall!=='function'))
+    throw Error('Invalid optional fact review setting');
   if(!Number.isInteger(maxClusters)||maxClusters<1||maxClusters>12)throw Error('Invalid cluster bound');
   const deadline=Date.now()+maxSeconds*1000;
   queue??=new CandidateQueue(root,group);
@@ -280,6 +286,22 @@ export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='loca
       stats.model_errors++;
       proposal={ok:false,decision:'DEFER',facts:[],
         reason:'curator_unavailable_or_invalid'};
+    }
+    if(factReview&&proposal.ok&&proposal.decision==='EMIT'){
+      try{
+        const reviewed=await reviewProposedFacts(cluster,proposal,{
+          store,modelEndpoint,modelId,apiKey,modelOptions,
+          ...(factReviewModelCall?{modelCall:factReviewModelCall}:{})
+        });
+        tallyModelUsage(stats,reviewed.reply);
+        proposal=reviewed.proposal;
+      }catch{
+        // Preserve a reviewable source record on verifier/novelty failure.
+        // Do NOT silently drop the potentially useful native evidence.
+        stats.model_errors++;
+        proposal={ok:false,decision:'DEFER',
+          reason:'independent_fact_review_unavailable',facts:[]};
+      }
     }
     const isBundle=proposal.ok&&proposal.decision==='EMIT'&&proposal.facts.length>1;
     const stored=isBundle?await store.createBundle(cluster,proposal):
