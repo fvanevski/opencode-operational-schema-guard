@@ -22,6 +22,34 @@ export const D2_SOURCE_PINS=Object.freeze({
  previous:'e303a67786fd96491cbdab36790b81442c4340c6',
  two_stage:'50db627850c28f2ce31a68f547f91f51ee3e43b0'
 });
+export const D3_SOURCE_PINS=Object.freeze({
+ previous:'50db627850c28f2ce31a68f547f91f51ee3e43b0',
+ corrected:'a19e82c7ab68e710339dfd8b4f1381c75b37e8a5'
+});
+// Frozen D2 discovery adapter (fact-review.mjs at 50db627...).
+// Historical outputs MUST be interpreted with their as-executed source rules;
+// the D3 correction must not retroactively reclassify D2 parser failures.
+export function validateD2Discovery(raw,cluster){
+ let parsed;
+ try{parsed=typeof raw==='string'?JSON.parse(raw):raw;}
+ catch{return {ok:false,decision:'DEFER',reason:'discovery_invalid_json',facts:[]};}
+ if(!parsed||typeof parsed.reason!=='string'||parsed.reason.length>300||
+   !Array.isArray(parsed.candidates)||parsed.candidates.length>3)
+   return {ok:false,decision:'DEFER',reason:'discovery_invalid_shape',facts:[]};
+ if(parsed.candidates.length===0)
+   return {ok:true,decision:'SKIP',reason:'No attributable source candidate',facts:[]};
+ const facts=parsed.candidates.map(c=>({
+   kind:c?.kind,source_refs:[c?.source_ref],
+   temporal_status:c?.temporal_status,
+   evidence_span:{source_ref:c?.source_ref,start:c?.start,end:c?.end},
+   utility_class:'durable_decision'
+ }));
+ return validateModelDecision({
+   decision:'EMIT',utility_class:'durable_decision',
+   reason:'Provisional exact-source candidate awaiting independent utility review',
+   facts
+ },cluster);
+}
 const stages=[
  'SOURCE_NOT_VISIBLE','RAW_MODEL_UNAVAILABLE','MODEL_SKIP','MODEL_DEFER',
  'MODEL_OTHER_FACT','MODEL_INVALID_PROPOSAL','VALIDATOR_REJECTED',
@@ -119,7 +147,7 @@ function classify(row,frozen){
 /** D2 treats discovery and independent review as two distinct raw model calls.
  * A provisional source candidate is NOT yet a durable utility judgment.
  */
-function classifyTwoStage(row,frozen){
+function classifyTwoStage(row,frozen,sourceDiscoveryValidator){
  const result={target_id:row.target_id,case_id:frozen.case_id,
    source_ref_sha256:H(frozen.source_ref),stage:null,model_decision:'TWO_STAGE',
    validator_reason:null,review_state:row.review_state,
@@ -148,7 +176,7 @@ function classifyTwoStage(row,frozen){
  req(typeof discovery==='string'&&discovery.length>0&&discovery.length<=12000&&
    row.discovery_reply_sha256===H(discovery),'d2_discovery_digest');
  result.discovery_reply_sha256=H(discovery);
- const p=validateFactDiscovery(discovery,row.cluster);
+ const p=sourceDiscoveryValidator(discovery,row.cluster);
  result.validator_reason=p.ok?null:p.reason;
  result.evidence_tier='raw_discovery_and_original_source';
  if(!p.ok){result.stage='DISCOVERY_VALIDATOR_REJECTED';return result;}
@@ -202,9 +230,10 @@ function classifyTwoStage(row,frozen){
 export function auditExposed(freeze,bundle,rawFreeze){
  const d1=bundle?.schema==='issue92-adr-exposed-d1-comparison-v1';
  const d2=bundle?.schema==='issue92-adr-exposed-d2-comparison-v1';
- const development=d1||d2;
- const pins=d1?D1_SOURCE_PINS:d2?D2_SOURCE_PINS:null;
- const name=d1?'d1':'d2';
+ const d3=bundle?.schema==='issue92-adr-exposed-d3-comparison-v1';
+ const development=d1||d2||d3;
+ const pins=d1?D1_SOURCE_PINS:d2?D2_SOURCE_PINS:d3?D3_SOURCE_PINS:null;
+ const name=d1?'d1':d2?'d2':'d3';
  if(development)
    req(Object.keys(pins).every(key=>bundle.comparison_sources?.[key]===pins[key]),
      'development_comparison_source_identity');
@@ -246,8 +275,11 @@ export function auditExposed(freeze,bundle,rawFreeze){
      req(target&&target.valuable===true&&!seen.has(row.target_id),
        'target_not_frozen_valuable_or_duplicate');
      seen.add(row.target_id);
-     const outcome=d2&&run.arm==='two_stage'?
-       classifyTwoStage(row,target):classify(row,target);
+     const twoStage=(d2&&run.arm==='two_stage')||d3;
+     const sourceValidator=d2||(d3&&run.arm==='previous')?
+       validateD2Discovery:validateFactDiscovery;
+     const outcome=twoStage?
+       classifyTwoStage(row,target,sourceValidator):classify(row,target);
      rows.push({trial:run.trial,arm:run.arm,...outcome});
      counts[outcome.stage]++;
    }
@@ -259,7 +291,8 @@ export function auditExposed(freeze,bundle,rawFreeze){
  if(development)
    req(Object.keys(pins).every(arm=>seenRuns.has(name+':'+arm)),
      'development_run_pair_incomplete');
- return {schema:d2?'issue92-adr-exposed-d2-result-v1':
+ return {schema:d3?'issue92-adr-exposed-d3-result-v1':
+     d2?'issue92-adr-exposed-d2-result-v1':
      d1?'issue92-adr-exposed-d1-result-v1':'issue92-adr-exposed-causal-result-v1',
    source_commits:{...bundle.source_commits},
    ...(development?{comparison_sources:{...pins}}:{}),

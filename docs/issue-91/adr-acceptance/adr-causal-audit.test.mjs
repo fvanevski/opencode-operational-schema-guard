@@ -4,7 +4,9 @@ import {mkdtemp,readFile,stat,rm} from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
 import {createHash} from 'node:crypto';
-import {auditExposed,D1_SOURCE_PINS,D2_SOURCE_PINS} from './adr-causal-audit.mjs';
+import {auditExposed,D1_SOURCE_PINS,D2_SOURCE_PINS,D3_SOURCE_PINS,
+ validateD2Discovery} from './adr-causal-audit.mjs';
+import {validateFactDiscovery} from '../../issue-78/v2-curator/fact-review.mjs';
 import {createPrivateTraceCurator,createPrivateMessageTraceCall} from './adr-private-trace.mjs';
 
 const sha=s=>createHash('sha256').update(s).digest('hex');
@@ -223,4 +225,52 @@ test('second-stage private trace binds actual reviewer prompt before exactly one
    else process.env.GHDEV_MEMORY_POST_EXIT_LEASE=before;
    await rm(dir,{recursive:true,force:true});
  }
+});
+
+
+test('D3 reclassifies no D2 historical failures: discovery validators are source-specific',()=>{
+ const raw={reason:'tool output '.repeat(50),
+   candidates:[{kind:'decision',source_ref:ref,start:0,end:excerpt.length,
+     temporal_status:'observed'}]};
+ assert.equal(validateD2Discovery(raw,cluster).reason,'discovery_invalid_shape');
+ assert.equal(validateFactDiscovery(raw,cluster).ok,true);
+ const invalidOffset={reason:'Valid prompt',candidates:[{
+   kind:'decision',source_ref:ref,start:0,end:excerpt.length+28,
+   temporal_status:'observed'}]};
+ assert.equal(validateD2Discovery(invalidOffset,cluster).ok,false);
+ const repaired=validateFactDiscovery(invalidOffset,cluster);
+ assert.equal(repaired.ok,true);
+ assert.equal(repaired.source_span_adjustments[0].authorized_end,excerpt.length);
+ assert.equal(validateFactDiscovery({...invalidOffset,candidates:[{
+   ...invalidOffset.candidates[0],end:excerpt.length+33
+ }]},cluster).ok,false);
+});
+test('D3 paired scorecard preserves exact previous/updated validator identities and raw digests',()=>{
+ const raw=JSON.stringify({reason:'commentary '.repeat(40),
+   candidates:[{kind:'decision',source_ref:ref,start:0,end:excerpt.length,
+     temporal_status:'observed'}]});
+ const review=JSON.stringify({decisions:[{
+   index:0,disposition:'REVIEW',reason_code:'not_substantive'
+ }]});
+ const row=makeRow({review_state:'deferred',review_reason:'screened',
+   discovery_raw_content:raw,discovery_reply_sha256:sha(raw),
+   review_raw_content:review,review_reply_sha256:sha(review),
+   model_fact_indices:[0]});
+ const b=makeBundle([]);
+ b.schema='issue92-adr-exposed-d3-comparison-v1';
+ b.comparison_sources={...D3_SOURCE_PINS};
+ b.runs=[
+   {trial:'d3',arm:'previous',source_sha:D3_SOURCE_PINS.previous,targets:[row]},
+   {trial:'d3',arm:'corrected',source_sha:D3_SOURCE_PINS.corrected,targets:[row]}
+ ];
+ const result=auditExposed(freeze,b,rawFreeze);
+ assert.equal(result.schema,'issue92-adr-exposed-d3-result-v1');
+ assert.equal(result.disposition,'COMPLETE');
+ assert.equal(result.rows.find(x=>x.arm==='previous').stage,'DISCOVERY_VALIDATOR_REJECTED');
+ assert.equal(result.rows.find(x=>x.arm==='corrected').stage,'REVIEW_DEFER');
+ b.runs[1].source_sha=D3_SOURCE_PINS.previous;
+ assert.throws(()=>auditExposed(freeze,b,rawFreeze),/development_run_exact_source/);
+ b.runs[1].source_sha=D3_SOURCE_PINS.corrected;
+ b.runs[1].targets[0]={...row,review_reply_sha256:sha('altered')};
+ assert.throws(()=>auditExposed(freeze,b,rawFreeze),/d2_review_digest/);
 });
