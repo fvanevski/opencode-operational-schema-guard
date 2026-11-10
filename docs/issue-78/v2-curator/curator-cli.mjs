@@ -5,6 +5,7 @@ import os from 'node:os';
 import { CandidateQueue } from '../v2-candidate/queue.mjs';
 import { ReviewStore } from './core.mjs';
 import { runAdmitted, reconcile } from './worker.mjs';
+import { runAdmittedFiniteBatch } from './finite-batch.mjs';
 import { modelPolicy } from './model-policy.mjs';
 import { GraphitiMcp } from '../../issue-75/v2-candidate/memory-core.mjs';
 import {describeFixtureGroup} from '../fixture-groups.mjs';
@@ -19,6 +20,11 @@ const maxClusters=Number(arg('max-clusters')||'6');
 const factReviewArg=arg('fact-review');
 if(factReviewArg&&factReviewArg!=='on')throw Error('FACT_REVIEW_OPT_IN_INVALID');
 const factReview=factReviewArg==='on';
+const finiteBatchArg=arg('finite-batch');
+if(finiteBatchArg&&finiteBatchArg!=='on')throw Error('FINITE_BATCH_OPT_IN_INVALID');
+const finiteBatch=finiteBatchArg==='on';
+if(finiteBatch&&factReview)throw Error('FINITE_BATCH_ALREADY_INCLUDES_FACT_REVIEW');
+const maxCandidates=Number(arg('max-candidates')||'48');
 if(command==='validate-config'){
   const policy=modelPolicy(process.env);
   console.log(JSON.stringify({status:'VALID_CURATOR_MODEL_OPTIONS',
@@ -27,7 +33,8 @@ if(command==='validate-config'){
    !Number.isInteger(maxSeconds)||maxSeconds<5||maxSeconds>3600){
   console.error('Usage: node curator-cli.mjs drain|status|list|reconcile-only --group GROUP --state-dir DIR '+
     '[--endpoint LOOPBACK_GRAPHITI_MCP --max-seconds 600 --max-clusters 6] '+ 
-    '[--fact-review on (development only)]. '+
+    '[--fact-review on | --finite-batch on (development only)] '+ 
+    '[--max-candidates 48]. '+
     'For drain set LOCAL_CURATOR_URL, LOCAL_CURATOR_MODEL, LOCAL_CURATOR_API_KEY.');
   process.exitCode=2;
 }else{
@@ -87,12 +94,14 @@ if(command==='validate-config'){
     if(result.unresolved)process.exitCode=3;
     else if(eligible)process.exitCode=4;
   }else{
-    const data=await runAdmitted({root,group,graphitiEndpoint:arg('endpoint'),
+    const inputs={root,group,graphitiEndpoint:arg('endpoint'),
       modelEndpoint:process.env.LOCAL_CURATOR_URL,
       modelId:process.env.LOCAL_CURATOR_MODEL,
       apiKey:process.env.LOCAL_CURATOR_API_KEY||'local',
-      modelOptions:modelPolicy(process.env),maxSeconds,maxClusters,
-      factReview});
+      modelOptions:modelPolicy(process.env),maxSeconds,maxClusters};
+    const data=finiteBatch?
+      await runAdmittedFiniteBatch({...inputs,maxCandidates}):
+      await runAdmitted({...inputs,factReview});
     console.log(JSON.stringify(data));
     if(data.status==='unresolved'||data.status==='incomplete')process.exitCode=3;
   }

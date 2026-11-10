@@ -219,7 +219,12 @@ export async function runAdmittedFiniteBatch({
   assert(Array.isArray(episodes?.episodes)&&episodes.episodes.length===0,
    'DEVELOPMENT_REMOTE_GROUP_MUST_START_EMPTY');
   const rows=await newEvents(queue);
-  const clusters=selectClusters(rows,{maxClusters}).map(sourceCluster)
+  const candidates=selectClusters(rows,{maxClusters:maxClusters+1});
+  // Never use first-arrival order to choose which related siblings are
+  // considered for semantic arbitration. A partial cohort must be separately
+  // scoped by the caller, not silently truncated by a scheduler limit.
+  assert(candidates.length<=maxClusters,'COHORT_EXCEEDS_BOUND');
+  const clusters=candidates.map(sourceCluster)
    .sort((a,b)=>a.id.localeCompare(b.id));
   if(!clusters.length)return {status:'empty',model_calls:0,persisted:0};
   snapshot={schema:'issue92-finite-batch-snapshot-v1',group,clusters};
@@ -247,6 +252,17 @@ export async function runAdmittedFiniteBatch({
   assert(snapshot&&hash(snapshot)===active.snapshot_sha256,'SNAPSHOT_DIGEST');
  }
  assertSnapshot(snapshot,group);
+ // Queue-backed native source identity must survive plan restart; state and
+ // updated_at are mutable transition metadata, not source evidence.
+ const sourcePayload=e=>{
+  const {state,updated_at,...immutable}=e;
+  return immutable;
+ };
+ for(const cluster of snapshot.clusters)for(const event of cluster.events){
+  const current=await queue.get(event.event_id);
+  assert(current&&hash(sourcePayload(current))===hash(sourcePayload(event)),
+   'SNAPSHOT_QUEUE_SOURCE_DRIFT');
+ }
  const clusterById=new Map(snapshot.clusters.map(c=>[c.id,c]));
  let modelCalls=0,modelErrors=0,promptTokens=0,completionTokens=0;
  async function callOnce(kind,identity,cluster,messages){
