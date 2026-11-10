@@ -3,7 +3,8 @@ import { CandidateQueue } from '../v2-candidate/queue.mjs';
 import { GraphitiMcp, EXTRACTION_INSTRUCTIONS } from '../../issue-75/v2-candidate/memory-core.mjs';
 import { ReviewStore, selectClusters, validateDecision, validateModelDecision, normalizedAssertion } from './core.mjs';
 import { curateCluster } from './model.mjs';
-import { reviewProposedFacts, factDiscoveryPrompt } from './fact-review.mjs';
+import { reviewProposedFacts, factDiscoveryPrompt,
+  validateFactDiscovery } from './fact-review.mjs';
 const validUUID=s=>typeof s==='string'&&/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i.test(s);
 const nameOf=r=>'curated-v1:'+r.id;
 async function allRecords(store){
@@ -281,7 +282,9 @@ export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='loca
       const reply=await curate(cluster,{endpoint:modelEndpoint,model:modelId,apiKey,
         ...modelOptions,
         ...(factReview?{promptMessages:factDiscoveryPrompt(cluster)}:{})});
-      proposal=validateModelDecision(reply.content,cluster);
+      proposal=factReview?
+        validateFactDiscovery(reply.content,cluster):
+        validateModelDecision(reply.content,cluster);
       tallyModelUsage(stats,reply);
     }catch(e){
       stats.model_errors++;

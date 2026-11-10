@@ -6,7 +6,8 @@ import path from 'node:path';
 import {fromPrompt} from '../v2-candidate/events.mjs';
 import {CandidateQueue} from '../v2-candidate/queue.mjs';
 import {selectClusters,validateModelDecision,ReviewStore} from './core.mjs';
-import {factDiscoveryPrompt,factReviewPrompt,validateFactReview,filterFactProposal,
+import {factDiscoveryPrompt,validateFactDiscovery,
+ factReviewPrompt,validateFactReview,filterFactProposal,
  reviewProposedFacts} from './fact-review.mjs';
 import {runAdmitted} from './worker.mjs';
 
@@ -28,7 +29,7 @@ function proposal(c){
        start:0,end:e.excerpt.length}}]},c);
 }
 const accepted=JSON.stringify({decisions:[{index:0,disposition:'ACCEPT',
-  reason_code:'source_specific_durable'}]});
+  reason_code:'source_specific_durable',utility_class:'useful_negative'}]});
 const boilerplate=JSON.stringify({decisions:[{index:0,disposition:'REVIEW',
   reason_code:'not_substantive'}]});
 const repeated=JSON.stringify({decisions:[{index:0,disposition:'REVIEW',
@@ -55,9 +56,12 @@ test('screen verdict cannot self-authorize unknown indices, reasons or conflicti
  const c=selectClusters([source()])[0],p=proposal(c);
  assert.equal(validateFactReview(accepted,p).ok,true);
  for(const raw of [
-  {decisions:[{index:1,disposition:'ACCEPT',reason_code:'source_specific_durable'}]},
-  {decisions:[{index:0,disposition:'ACCEPT',reason_code:'invented_reason'}]},
-  {decisions:[{index:0,disposition:'REJECT',reason_code:'source_specific_durable'}]},
+  {decisions:[{index:1,disposition:'ACCEPT',reason_code:'source_specific_durable',
+    utility_class:'useful_negative'}]},
+  {decisions:[{index:0,disposition:'ACCEPT',reason_code:'invented_reason',
+    utility_class:'useful_negative'}]},
+  {decisions:[{index:0,disposition:'REJECT',reason_code:'source_specific_durable',
+    utility_class:'useful_negative'}]},
   {decisions:[]}
  ])assert.equal(validateFactReview(raw,p).ok,false);
  assert.deepEqual(validateFactReview(repeated,p).accepted,[]);
@@ -107,13 +111,10 @@ test('opt-in worker screen can reject boilerplate before Graphiti while preservi
     throw Error('unexpected:'+method);
   }};
   const result=await runAdmitted({root,group:scope.group,queue,store,graphiti,
-    curate:async()=>({content:JSON.stringify({decision:'EMIT',
-      utility_class:'useful_negative',
-      reason:'Reported CLI incompatibility',facts:[{
-       kind:'blocker',utility_class:'useful_negative',
-       source_refs:[e.source_refs[0]],temporal_status:'observed',
-       evidence_span:{source_ref:e.source_refs[0],start:0,end:e.excerpt.length}
-      }]}),duration_ms:1}),
+    curate:async()=>({content:JSON.stringify({reason:'Source-backed potential',
+      candidates:[{kind:'blocker',source_ref:e.source_refs[0],
+        temporal_status:'observed',start:0,end:e.excerpt.length}]}),
+      duration_ms:1}),
     factReview:true,factReviewModelCall:async()=>({content:boilerplate,duration_ms:1}),
     maxClusters:2,maxSeconds:10});
   assert.equal(result.model_calls,2);
@@ -140,12 +141,9 @@ test('screen unavailability fails to deferred evidence, not an unreviewed automa
     if(method==='add_memory')throw Error('BAD_AUTOMATIC_WRITE');
    }};
   const result=await runAdmitted({root,group:scope.group,queue,store,graphiti,
-   curate:async()=>({content:JSON.stringify({decision:'EMIT',
-    utility_class:'useful_negative',reason:'Valid reported CLI incompatibility',
-    facts:[{kind:'blocker',source_refs:[e.source_refs[0]],
-      utility_class:'useful_negative',temporal_status:'observed',
-      evidence_span:{source_ref:e.source_refs[0],start:0,end:e.excerpt.length}}]}),
-    duration_ms:1}),
+   curate:async()=>({content:JSON.stringify({reason:'Source-backed potential',
+    candidates:[{kind:'blocker',source_ref:e.source_refs[0],
+      temporal_status:'observed',start:0,end:e.excerpt.length}]}),duration_ms:1}),
    factReview:true,factReviewModelCall:async()=>{throw Error('review unavailable');},
    maxClusters:2,maxSeconds:10});
   assert.equal(result.persisted,0);
@@ -182,8 +180,8 @@ test('optional worker passes the genuine discovery prompt, not the old SKIP-heav
   await runAdmitted({root,group:scope.group,queue,store,graphiti,
    curate:async(_cluster,options)=>{
      firstPrompt=options.promptMessages;
-     return {content:JSON.stringify({decision:'SKIP',utility_class:'transient_result',
-       reason:'No source-specific technical claim extracted',facts:[]}),
+     return {content:JSON.stringify({reason:'No source-specific technical claim',
+       candidates:[]}),
        duration_ms:1};
    },factReview:true,maxSeconds:10,maxClusters:2});
   assert.ok(firstPrompt);
@@ -193,3 +191,32 @@ test('optional worker passes the genuine discovery prompt, not the old SKIP-heav
   else process.env.GHDEV_MEMORY_POST_EXIT_LEASE=prior;
  }
 }));
+
+test('discovery proposal requires only exact original source evidence, not a first-pass utility label',()=>{
+ const c=selectClusters([source()])[0],e=c.events[0];
+ const p=validateFactDiscovery(JSON.stringify({reason:'Potential source issue',
+   candidates:[{source_ref:e.source_refs[0],start:0,end:e.excerpt.length,
+     kind:'blocker',temporal_status:'observed'}]}),c);
+ assert.equal(p.ok,true);
+ assert.equal(p.decision,'EMIT');
+ assert.equal(p.facts[0].assertion,e.excerpt);
+ const invalid=validateFactDiscovery({reason:'Unattributed',
+   candidates:[{source_ref:'opencode:invented',start:0,end:75,
+     kind:'blocker',temporal_status:'observed'}]},c);
+ assert.equal(invalid.ok,false);
+ const empty=validateFactDiscovery({reason:'No source fact',candidates:[]},c);
+ assert.equal(empty.decision,'SKIP');
+ const msg=factDiscoveryPrompt(c);
+ assert.doesNotMatch(msg[0].content,/return EMIT with durable utility_class/);
+});
+test('second-stage durable utility cannot be fabricated or omitted by reviewer',()=>{
+ const p=proposal(selectClusters([source()])[0]);
+ const invalid=validateFactReview({decisions:[{index:0,disposition:'ACCEPT',
+   reason_code:'source_specific_durable'}]},p);
+ assert.equal(invalid.ok,false);
+ assert.equal(invalid.reason,'invalid_durable_utility');
+ const valid=validateFactReview({decisions:[{index:0,disposition:'ACCEPT',
+   reason_code:'source_specific_durable',utility_class:'stable_architecture'}]},p);
+ assert.equal(valid.ok,true);
+ assert.equal(filterFactProposal(p,valid).fact_utilities[0],'stable_architecture');
+});

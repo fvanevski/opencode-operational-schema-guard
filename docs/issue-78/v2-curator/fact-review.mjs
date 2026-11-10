@@ -5,10 +5,12 @@
  */
 import {createHash} from 'node:crypto';
 import {curateCluster} from './model.mjs';
-import {normalizedAssertion} from './core.mjs';
+import {normalizedAssertion,validateModelDecision} from './core.mjs';
 
 const hash=s=>createHash('sha256').update(String(s)).digest('hex');
 const DISPOSITION=new Set(['ACCEPT','REVIEW']);
+const DURABLE=new Set(['durable_decision','root_cause_fix',
+ 'stable_architecture','reusable_procedure','useful_negative']);
 const REASONS=new Set(['source_specific_durable','not_substantive',
  'transient_execution','repetition_candidate','unsupported_inference',
  'source_ambiguous','conflict_or_stale','review_uncertain']);
@@ -36,12 +38,15 @@ export function factDiscoveryPrompt(cluster){
   'express an actual technical observation; do not fabricate or stitch excerpts.',
   'Do not invent verified fixes from user bug reports or assistant hypotheses.',
   'Preserve the stated evidence class implicitly through the exact source ref.',
-  'If there are candidate facts, return EMIT with durable utility_class for',
-  'each, kind, temporal_status and exact source_ref. Otherwise SKIP with facts: [].',
-  'This is a high-recall discovery stage; do not reject a potentially useful',
-  'source-specific fact just because it is in a short-lived test/task context.',
-  'Do not copy duplicates within this cluster. Output one JSON object with',
-  'decision, utility_class, reason and facts. No markdown.'
+  'This pass does NOT classify utility or choose EMIT/SKIP: give every plausible',
+  'substantive source-anchored candidate even if its eventual value is uncertain.',
+  'The separate independent review will decide durability and novelty.',
+  'Avoid passing generic task boilerplate as a candidate, but do not omit a',
+  'specific source-stated technical defect merely because it appears in a short-lived run.',
+  'Return ONLY JSON {"reason":"brief explanation","candidates":[{"kind":"blocker",',
+  '"source_ref":"<exact provided source>","start":0,"end":100,',
+  '"temporal_status":"observed"}]}. Use candidates:[] if no source spans qualify.',
+  'Do not invent source handles or concatenate excerpts. No markdown.'
  ].join(' ');
  const evidence=cluster.events.map(e=>({
    source:e.source_refs?.[0],kind:e.kind,evidence_class:e.evidence_class,
@@ -50,6 +55,32 @@ export function factDiscoveryPrompt(cluster){
  return [{role:'system',content:system},{role:'user',
    content:JSON.stringify({scope:{group:cluster.group,project:cluster.project,
      workspace:cluster.workspace},evidence})}];
+}
+/** Convert a source-only discovery into source-validated provisional facts.
+ * The temporary durable class is INTERNAL parser compatibility only and never
+ * authorizes persistence: the worker ALWAYS invokes independent fact review
+ * before storing an EMIT proposal when this development mode is enabled.
+ */
+export function validateFactDiscovery(raw,cluster){
+ let parsed;
+ try{parsed=typeof raw==='string'?JSON.parse(raw):raw;}
+ catch{return {ok:false,decision:'DEFER',reason:'discovery_invalid_json',facts:[]};}
+ if(!parsed||typeof parsed.reason!=='string'||parsed.reason.length>300||
+   !Array.isArray(parsed.candidates)||parsed.candidates.length>3)
+   return {ok:false,decision:'DEFER',reason:'discovery_invalid_shape',facts:[]};
+ if(parsed.candidates.length===0)
+   return {ok:true,decision:'SKIP',reason:'No attributable source candidate',facts:[]};
+ const facts=parsed.candidates.map(c=>({
+   kind:c?.kind,source_refs:[c?.source_ref],
+   temporal_status:c?.temporal_status,
+   evidence_span:{source_ref:c?.source_ref,start:c?.start,end:c?.end},
+   utility_class:'durable_decision'
+ }));
+ return validateModelDecision({
+   decision:'EMIT',utility_class:'durable_decision',
+   reason:'Provisional exact-source candidate awaiting independent utility review',
+   facts
+ },cluster);
 }
 export function factReviewPrompt(cluster,proposal,priorFacts=[]){
  if(!Array.isArray(cluster?.events)||!Array.isArray(proposal?.facts)||
@@ -62,8 +93,7 @@ export function factReviewPrompt(cluster,proposal,priorFacts=[]){
    const src=bySource.get(f.source_refs[0]);
    if(!src||!src.excerpt.includes(f.assertion))
      throw Error('FACT_REVIEW_UNATTRIBUTED_QUOTE');
-   return {index:i,assertion:f.assertion,kind:f.kind,utility_class:
-     proposal.fact_utilities?.[i]??proposal.utility_class,
+   return {index:i,assertion:f.assertion,kind:f.kind,
      source_ref:f.source_refs[0],source_excerpt:src.excerpt,
      evidence_class:src.evidence_class,temporal_status:f.temporal_status,
      model_proposed_normalized_claim:(proposal.review_only_claims||[])
@@ -87,10 +117,14 @@ export function factReviewPrompt(cluster,proposal,priorFacts=[]){
   'Do not mark different constraints as duplicates merely because they share a topic.',
   'Do not use surrounding source text to supply missing meaning to a boilerplate quote.',
   'If any utility or novelty judgment is ambiguous choose REVIEW, not ACCEPT.',
+  'For ACCEPT specify exactly one of durable_decision, root_cause_fix,',
+  'stable_architecture, reusable_procedure, useful_negative as utility_class.',
+  'Do not take utility from the discovery pass: it made no such judgment.',
   'Return JSON: {"decisions":[{"index":0,"disposition":"ACCEPT|REVIEW",',
   '"reason_code":"source_specific_durable|not_substantive|transient_execution|',
   'repetition_candidate|unsupported_inference|source_ambiguous|conflict_or_stale|',
-  'review_uncertain"}]}. Every fact index once. No invented evidence.'
+  'review_uncertain","utility_class":"useful_negative"}]}. Every index once.',
+  'Do not mark boilerplate quotes as useful. No invented evidence.'
  ].join(' ');
  return [{role:'system',content:system},{role:'user',
    content:JSON.stringify({scope:{group:cluster.group,project:cluster.project},
@@ -108,11 +142,13 @@ export function validateFactReview(raw,proposal){
      !DISPOSITION.has(d.disposition)||!REASONS.has(d.reason_code))
      return {ok:false,reason:'invalid_decision'};
    seen.add(d.index);
-   if(d.disposition==='ACCEPT'&&d.reason_code==='source_specific_durable')
-     accepted.push(d.index);
-   else review.push({index:d.index,reason_code:d.reason_code});
+   if(d.disposition==='ACCEPT'&&d.reason_code==='source_specific_durable'){
+     if(!DURABLE.has(d.utility_class))
+       return {ok:false,reason:'invalid_durable_utility'};
+     accepted.push({index:d.index,utility_class:d.utility_class});
+   }else review.push({index:d.index,reason_code:d.reason_code});
  }
- return {ok:true,accepted:accepted.sort((a,b)=>a-b),
+ return {ok:true,accepted:accepted.sort((a,b)=>a.index-b.index),
    review:review.sort((a,b)=>a.index-b.index)};
 }
 export function filterFactProposal(proposal,screen){
@@ -128,13 +164,13 @@ export function filterFactProposal(proposal,screen){
  if(!keep.length)
    return {ok:false,decision:'DEFER',reason:'independent_fact_review_required',
      facts:[],review_only_claims:notes};
- const facts=keep.map(i=>({
-   ...proposal.facts[i],utility_class:proposal.fact_utilities?.[i]??proposal.utility_class
+ const facts=keep.map(item=>({
+   ...proposal.facts[item.index],utility_class:item.utility_class
  }));
- const top=proposal.fact_utilities?.[keep[0]]??proposal.utility_class;
+ const top=keep[0].utility_class;
  return {ok:true,decision:'EMIT',reason:'Independent source-specific fact review: '+
    clamp(proposal.reason).slice(0,210),utility_class:top,facts,
-   fact_utilities:keep.map(i=>proposal.fact_utilities?.[i]??proposal.utility_class),
+   fact_utilities:keep.map(item=>item.utility_class),
    review_only_claims:[...(proposal.review_only_claims||[]),...notes].slice(0,3)};
 }
 export async function reviewProposedFacts(cluster,proposal,{
