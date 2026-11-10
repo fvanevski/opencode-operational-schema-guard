@@ -184,11 +184,30 @@ function assertPlan(plan,snapshot){
   Array.isArray(plan.cluster_outcomes)&&Array.isArray(plan.calls),'PLAN_IDENTITY');
  const clusters=new Map(snapshot.clusters.map(c=>[c.id,c]));
  assert(plan.cluster_outcomes.length===clusters.size,'PLAN_CLUSTER_COVERAGE');
+ const coverage=new Map();
+ for(const outcome of plan.cluster_outcomes){
+  assert(clusters.has(outcome.cluster_id)&&!coverage.has(outcome.cluster_id)&&
+   Array.isArray(outcome.fact_ids),'PLAN_OUTCOME_IDENTITY');
+  coverage.set(outcome.cluster_id,new Set(outcome.fact_ids));
+ }
+ assert(coverage.size===clusters.size,'PLAN_MISSING_SOURCE');
+ assert(Array.isArray(plan.families),'PLAN_FAMILY_FORMAT');
+ const selected=new Set();
+ for(const family of plan.families){
+  assert(Array.isArray(family.selected)&&Array.isArray(family.pool)&&
+   family.selected.every(x=>family.pool.includes(x)&&!selected.has(x)),
+   'PLAN_ARBITRATION_SELECTION');
+  for(const id of family.selected)selected.add(id);
+ }
  const identities=new Set();
  for(const item of plan.items){
   assert(SHA.test(item.id)&&!identities.has(item.id) &&
    ['approved','deferred'].includes(item.decision),'PLAN_ITEM_ID');
   identities.add(item.id);
+  assert(coverage.get(item.cluster_id)?.has(item.id),
+   'PLAN_ITEM_WITHOUT_DISCOVERY');
+  assert((item.decision==='approved')===selected.has(item.id),
+   'PLAN_APPROVAL_ARBITRATION_MISMATCH');
   const cluster=clusters.get(item.cluster_id);
   assert(cluster&&item.id===childId(cluster,item.fact),'PLAN_CHILD_ID');
   const d=decisionFor(item);
@@ -196,6 +215,8 @@ function assertPlan(plan,snapshot){
    validateModelDecision(d,cluster):validateDecision(d,cluster);
   assert(valid.ok,'PLAN_SOURCE_VALIDATION');
  }
+ for(const ids of coverage.values())for(const id of ids)
+  assert(identities.has(id),'PLAN_MISSING_FACT_REVIEW');
 }
 export async function runAdmittedFiniteBatch({
  root,group,queue=null,store=null,graphiti=null,graphitiEndpoint=null,
