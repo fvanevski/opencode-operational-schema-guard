@@ -6,7 +6,7 @@ import path from 'node:path';
 import {fromPrompt} from '../v2-candidate/events.mjs';
 import {CandidateQueue} from '../v2-candidate/queue.mjs';
 import {selectClusters,validateModelDecision,ReviewStore} from './core.mjs';
-import {factReviewPrompt,validateFactReview,filterFactProposal,
+import {factDiscoveryPrompt,factReviewPrompt,validateFactReview,filterFactProposal,
  reviewProposedFacts} from './fact-review.mjs';
 import {runAdmitted} from './worker.mjs';
 
@@ -151,6 +151,43 @@ test('screen unavailability fails to deferred evidence, not an unreviewed automa
   assert.equal(result.persisted,0);
   assert.equal(result.model_errors,1);
   assert.equal((await store.list({limit:20})).items[0].state,'deferred');
+ }finally{
+  if(prior===undefined)delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;
+  else process.env.GHDEV_MEMORY_POST_EXIT_LEASE=prior;
+ }
+}));
+
+test('two-stage development discovery enumerates source-specific candidates before utility judgment',()=>{
+ const c=selectClusters([source()])[0];
+ const msg=factDiscoveryPrompt(c);
+ assert.equal(msg.length,2);
+ assert.match(msg[0].content,/SOURCE-FIRST candidate discovery/);
+ assert.match(msg[0].content,/Do not perform final utility\/novelty gatekeeping/);
+ assert.match(msg[0].content,/substantive technical observation amid test results/);
+ assert.equal(JSON.parse(msg[1].content).evidence[0].source,c.events[0].source_refs[0]);
+});
+test('optional worker passes the genuine discovery prompt, not the old SKIP-heavy prompt',()=>scratch(async root=>{
+ const prior=process.env.GHDEV_MEMORY_POST_EXIT_LEASE;
+ process.env.GHDEV_MEMORY_POST_EXIT_LEASE='admitted';
+ try{
+  const e=source(),queue=new CandidateQueue(root,scope.group),
+   store=new ReviewStore(root,scope.group);
+  await queue.stage(e);
+  let firstPrompt=null;
+  const graphiti={call:async(method)=>{
+   if(method==='get_episodes')return {episodes:[]};
+   if(method==='search_memory_facts')return {facts:[]};
+   if(method==='add_memory')throw Error('unexpected write');
+  }};
+  await runAdmitted({root,group:scope.group,queue,store,graphiti,
+   curate:async(_cluster,options)=>{
+     firstPrompt=options.promptMessages;
+     return {content:JSON.stringify({decision:'SKIP',utility_class:'transient_result',
+       reason:'No source-specific technical claim extracted',facts:[]}),
+       duration_ms:1};
+   },factReview:true,maxSeconds:10,maxClusters:2});
+  assert.ok(firstPrompt);
+  assert.match(firstPrompt[0].content,/SOURCE-FIRST candidate discovery/);
  }finally{
   if(prior===undefined)delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;
   else process.env.GHDEV_MEMORY_POST_EXIT_LEASE=prior;
