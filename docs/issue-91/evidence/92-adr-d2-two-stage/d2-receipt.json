@@ -1,0 +1,114 @@
+{
+  "schema": "issue92-adr-d2-receipt-v1",
+  "kind": "sanitized, evidence-only, public",
+  "campaign": "issue92-adr-d2 two-stage exposed development comparison (one run, exactly-once)",
+  "repository": "fvanevski/opencode-operational-schema-guard",
+  "branch": "work/91-memory-utility-r1",
+  "branch_head_at_publication": "self-referential: the evidence commit containing this file; exact SHA recorded in the remote readback of the typed handback",
+  "identities": {
+    "starting_github_head_sha": "9e335908c52aa1df37342e5726c45bb640f61b2b",
+    "previous_candidate_sha": "e303a67786fd96491cbdab36790b81442c4340c6",
+    "two_stage_candidate_sha": "50db627850c28f2ce31a68f547f91f51ee3e43b0",
+    "historical_baseline_sha": "c8eb5260f2b10832346234b1b5d0cf28302ffba8",
+    "original_freeze_sha256": "96cfef46ab642aeb1d05cf246478da92f34547daf6575ea2d756d192afbdbb5f",
+    "trace_wrapper_sha256": "f4ef907957179fe1c5e863509b35d62f289f5fae44245ab4318ebced75d6d213",
+    "diagnostic_head_sha": "9e33590"
+  },
+  "ex_admission": {
+    "gate": "canonical openviking-commit-gate EX lock (flock) + harness-exit + quiet-grace + scheduler-idle observation",
+    "wrapper": "docs/issue-75/v2-candidate/post-exit-drain.py (installed plugin)",
+    "previous_wrapper_exit": 0,
+    "two_stage_wrapper_exit": 0,
+    "admission_evidence": "EX admission proven; invoking candidate drain with lock retained (per arm); LATE_RECONCILIATION_LOCAL_WORK resumes under retained EX; final reconcile-only settled (both wrapper exits 0)",
+    "no_inference_from_interactive_harness": true,
+    "campaign_window_utc": "2026-11-10T01:25:17Z harness exit -> 01:28:45Z completed"
+  },
+  "model": {
+    "profile": "chat-fast (temperature 0, max_tokens 1600, response_format json_object, timeout 90000)",
+    "previous": {
+      "mode": "one-pass runAdmitted (factReview=false), D1 corrected source",
+      "drain_resumes": 4,
+      "final_status": "settled",
+      "final_curated": 6,
+      "final_persisted": 1,
+      "totals": {
+        "model_calls": 24,
+        "model_errors": 0,
+        "model_ms": 15879,
+        "prompt_tokens": 48309,
+        "completion_tokens": 4076
+      }
+    },
+    "two_stage": {
+      "mode": "two-stage runAdmitted (factReview=true) with separate discovery and review model calls",
+      "drain_resumes": 4,
+      "final_status": "review_required",
+      "final_curated": 6,
+      "final_persisted": 0,
+      "totals": {
+        "model_calls": 44,
+        "discovery_calls": 24,
+        "review_calls": 20,
+        "model_errors": 0,
+        "model_ms": 16925,
+        "prompt_tokens": 32139,
+        "completion_tokens": 3857
+      }
+    },
+    "exactly_once_traces": {
+      "previous_one_pass": 24,
+      "two_stage_discovery": 24,
+      "two_stage_review": 20,
+      "call_intents_match": true,
+      "unfinished_call_intents": 0,
+      "mode_0600": true
+    },
+    "nondeterminism": "single run per arm; decisions are not reproducible across runs"
+  },
+  "final_state": {
+    "previous": {
+      "review": {
+        "persisted": 14,
+        "skipped": 9,
+        "deferred": 1
+      },
+      "episodes": 14,
+      "valuable_targets_retained": "2/16 (django_add_filter_lazy_string_typeerror, django_lazy_proxy_string_concat via one verbatim defect span)",
+      "valuable_targets_persisted_but_boilerplate": 4,
+      "nonvaluable_targets_persisted": 9
+    },
+    "two_stage": {
+      "review": {
+        "deferred": 24
+      },
+      "episodes": 0,
+      "valuable_targets_retained": "0/16",
+      "nonvaluable_targets_persisted": 0,
+      "first_loss_matrix": {
+        "discovery_validator_rejected": 5,
+        "review_defer": 11
+      },
+      "discovery_rejection_detail": {
+        "discovery_invalid_shape_reason_gt_300_chars": ["adr92-g1 (2 candidates)", "adr92-g4 (0 candidates)", "adr92-dj6 (1 candidate)"],
+        "invalid_fact_fields_assertion_span_end_beyond_excerpt": ["adr92-dj1 (span end 1000 > excerpt length 972)"]
+      },
+      "review_defer_reasons": {
+        "not_substantive": 18,
+        "source_ambiguous": 1,
+        "review_uncertain": 1
+      }
+    }
+  },
+  "controls": {
+    "production_group_unchanged": "development-knowledge: 0 episodes created in D2 window (newest episode 2026-11-08T03:57:03Z)",
+    "historical_groups_unchanged": [
+      "graphiti-adr92-d1-previous: 2 episodes (D1 published count)",
+      "graphiti-adr92-d1-corrected: 15 episodes (D1 published count)"
+    ],
+    "privacy_control": "ineligible :ctrl source (out_of_scope_workspace) not staged -> 0 queue events and 0 trace prompts reference it in either arm",
+    "no_replay": "call-intent preflight (wx) + exactly-once 0600 trace files; no second model call per cluster; 0 unfinished call intents",
+    "fresh_state": "two fresh empty ReviewStore state roots + two fresh empty Graphiti groups (0 episodes pre-campaign)"
+  },
+  "verdict": "REMEDIATION_REQUIRED",
+  "verdict_basis": "Two-stage candidate shows a large reduction in low-value persistence (9 nonvaluable -> 0; 4 valuable-source boilerplate episodes -> 0) but valuable-target retention fell to 0/16 (previous arm retained 2/16 via one source-supported defect span). The reviewer deferred every candidate (20/20) as not_substantive/source_ambiguous/review_uncertain, and the discovery validator rejected 4 candidate clusters (3 reason-length shape rejections, 1 out-of-bounds span). A fall in low-value persistence alone is not sufficient while 16 valuable targets still disappear; retention must materially improve."
+}

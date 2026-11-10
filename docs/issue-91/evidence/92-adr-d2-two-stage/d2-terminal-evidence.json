@@ -1,0 +1,166 @@
+{
+  "schema": "issue92-adr-d2-terminal-evidence-v1",
+  "kind": "sanitized, evidence-only, public",
+  "collected_at": "2026-11-10T01:35:23.934Z",
+  "surfaces": [
+    "review_store",
+    "graphiti_mcp",
+    "falkordb",
+    "source_index"
+  ],
+  "arms": {
+    "previous": {
+      "group": "graphiti-adr92-d2-previous",
+      "review_record_count": 24,
+      "review_state_counts": {
+        "skipped": 9,
+        "persisted": 14,
+        "deferred": 1
+      },
+      "episode_count": 14,
+      "all_four_surface": true,
+      "uuids": [
+        {
+          "uuid": "00133384-0e93-4248-bb5c-52f1bac91cf4",
+          "group": "graphiti-adr92-d2-previous",
+          "review_store": true,
+          "graphiti_mcp": true,
+          "falkordb": true,
+          "source_index": true,
+          "state": "persisted"
+        },
+        {
+          "uuid": "a08d3836-765a-4c0b-82eb-5c173975d9f0",
+          "group": "graphiti-adr92-d2-previous",
+          "review_store": true,
+          "graphiti_mcp": true,
+          "falkordb": true,
+          "source_index": true,
+          "state": "persisted"
+        },
+        {
+          "uuid": "04118fa7-a400-4033-9152-4a2de3897dd6",
+          "group": "graphiti-adr92-d2-previous",
+          "review_store": true,
+          "graphiti_mcp": true,
+          "falkordb": true,
+          "source_index": true,
+          "state": "persisted"
+        },
+        {
+          "uuid": "1ff66204-040f-4645-b570-0b2377d0a2ad",
+          "group": "graphiti-adr92-d2-previous",
+          "review_store": true,
+          "graphiti_mcp": true,
+          "falkordb": true,
+          "source_index": true,
+          "state": "persisted"
+        },
+        {
+          "uuid": "603ca5fa-2046-4474-82c4-a03d828b1f69",
+          "group": "graphiti-adr92-d2-previous",
+          "review_store": true,
+          "graphiti_mcp": true,
+          "falkordb": true,
+          "source_index": true,
+          "state": "persisted"
+        },
+        {
+          "uuid": "38bd1451-9f51-4054-b26d-35ea0db88ded",
+          "group": "graphiti-adr92-d2-previous",
+          "review_store": true,
+          "graphiti_mcp": true,
+          "falkordb": true,
+          "source_index": true,
+          "state": "persisted"
+        },
+        {
+          "uuid": "c2dd9006-aa9d-4421-9122-7243a1b62ae0",
+          "group": "graphiti-adr92-d2-previous",
+          "review_store": true,
+          "graphiti_mcp": true,
+          "falkordb": true,
+          "source_index": true,
+          "state": "persisted"
+        },
+        {
+          "uuid": "0386a64c-32d5-47c3-a13c-ab7e482d3359",
+          "group": "graphiti-adr92-d2-previous",
+          "review_store": true,
+          "graphiti_mcp": true,
+          "falkordb": true,
+          "source_index": true,
+          "state": "persisted"
+        },
+        {
+          "uuid": "1b95e16a-861c-4364-a165-65e8fe5b992a",
+          "group": "graphiti-adr92-d2-previous",
+          "review_store": true,
+          "graphiti_mcp": true,
+          "falkordb": true,
+          "source_index": true,
+          "state": "persisted"
+        },
+        {
+          "uuid": "5d7c7015-53c4-4fd0-8412-bae991c65dbc",
+          "group": "graphiti-adr92-d2-previous",
+          "review_store": true,
+          "graphiti_mcp": true,
+          "falkordb": true,
+          "source_index": true,
+          "state": "persisted"
+        },
+        {
+          "uuid": "3c45d7bc-06e2-40f3-ab36-10bb94f43c95",
+          "group": "graphiti-adr92-d2-previous",
+          "review_store": true,
+          "graphiti_mcp": true,
+          "falkordb": true,
+          "source_index": true,
+          "state": "persisted"
+        },
+        {
+          "uuid": "87ed080d-42c9-499f-8b67-110f211228e1",
+          "group": "graphiti-adr92-d2-previous",
+          "review_store": true,
+          "graphiti_mcp": true,
+          "falkordb": true,
+          "source_index": true,
+          "state": "persisted"
+        },
+        {
+          "uuid": "83c60611-c13f-4f6f-a505-78d50a259669",
+          "group": "graphiti-adr92-d2-previous",
+          "review_store": true,
+          "graphiti_mcp": true,
+          "falkordb": true,
+          "source_index": true,
+          "state": "persisted"
+        },
+        {
+          "uuid": "98188b82-f37c-4b54-9483-3d4278139a59",
+          "group": "graphiti-adr92-d2-previous",
+          "review_store": true,
+          "graphiti_mcp": true,
+          "falkordb": true,
+          "source_index": true,
+          "state": "persisted"
+        }
+      ],
+      "falkordb_query_ok": true,
+      "collection_errors": []
+    },
+    "two_stage": {
+      "group": "graphiti-adr92-d2-two-stage",
+      "review_record_count": 24,
+      "review_state_counts": {
+        "deferred": 24
+      },
+      "episode_count": 0,
+      "all_four_surface": true,
+      "uuids": [],
+      "falkordb_query_ok": true,
+      "collection_errors": []
+    }
+  }
+}
