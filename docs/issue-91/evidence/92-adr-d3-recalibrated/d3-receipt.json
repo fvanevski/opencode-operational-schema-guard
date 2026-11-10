@@ -1,0 +1,91 @@
+{
+  "schema": "issue92-adr-d3-receipt-v1",
+  "kind": "sanitized, evidence-only, public",
+  "campaign": "issue92-adr-d3 recalibrated two-stage exposed development comparison (Phase A gate; Phase B model campaign not started)",
+  "repository": "fvanevski/opencode-operational-schema-guard",
+  "branch": "work/91-memory-utility-r1",
+  "identities": {
+    "starting_github_head_sha": "bcca58324aab70d3e2fabbf2b08bcff1deb588de",
+    "d3_previous_source_sha": "50db627850c28f2ce31a68f547f91f51ee3e43b0",
+    "d3_corrected_source_sha": "a19e82c7ab68e710339dfd8b4f1381c75b37e8a5",
+    "d3_previous_fact_review_blob": "b91a09c444dced446ad7eb51e37682451b2cb28a",
+    "d3_corrected_fact_review_blob": "0131c5f03b3d524517a7ee7d488c4754839f175f",
+    "diagnostic_head_sha256": "12f4f62b29e4efd9b54aecc5b6060ac69a03ff4a25574e41802445c25ffd399c",
+    "trace_wrapper_sha256": "f4ef907957179fe1c5e863509b35d62f289f5fae44245ab4318ebced75d6d213",
+    "original_freeze_sha256": "96cfef46ab642aeb1d05cf246478da92f34547daf6575ea2d756d192afbdbb5f",
+    "treatment_scope": "a19e82c confined to docs/issue-78/v2-curator/fact-review.mjs (+56/-22) and fact-review.test.mjs (+42); core/worker/model/model-policy/curator-cli and docs/issue-75 Graphiti source invariant between pins"
+  },
+  "phase_a_native_suite": {
+    "node_check_exits": {
+      "fact-review.mjs": 0,
+      "model.mjs": 0,
+      "worker.mjs": 0,
+      "adr-causal-audit.mjs": 0,
+      "adr-private-trace.mjs": 0
+    },
+    "node_test_exits": {
+      "fact-review.test.mjs": 1,
+      "curator.test.mjs": 0,
+      "issue92-source-fact.test.mjs": 0,
+      "adr-causal-audit.test.mjs": 0
+    },
+    "node_test_counts": {
+      "fact-review.test.mjs": {"tests": 14, "pass": 13, "fail": 1},
+      "curator.test.mjs": {"tests": 36, "pass": 36, "fail": 0},
+      "issue92-source-fact.test.mjs": {"tests": 5, "pass": 5, "fail": 0},
+      "adr-causal-audit.test.mjs": {"tests": 14, "pass": 14, "fail": 0}
+    },
+    "npm_check_exit": 0,
+    "npm_test_exit": 0,
+    "npm_test_counts": {"pass": 524, "fail": 0},
+    "node_version": "v26.13.0"
+  },
+  "blocked_source_defect": {
+    "failing_command": "node --test docs/issue-78/v2-curator/fact-review.test.mjs",
+    "failing_test": "fact-screen judges the exact persisted source quote, not unrelated cluster context",
+    "location": "docs/issue-78/v2-curator/fact-review.test.mjs:52 (test at :41)",
+    "assertion": "assert.match(msgs[0].content, /source_excerpt|exact quoted assertion|exact quoted/)",
+    "cause": "a19e82c rewrote the factReviewPrompt system prompt (uppercase 'EXACT quoted assertion', 'source excerpts') and added three new prompt-wording tests, but left this pre-existing assertion pinning the old lowercase 'the exact quoted assertion' wording; case-sensitive regex no longer matches",
+    "discriminating_baseline": "identical test file at d3:previous pin 50db627 passes 10/10 (exit 0); at d3:corrected pin a19e82c and at starting head bcca583 it is 13/14 with exactly this failure",
+    "scope": "single stale prompt-wording assertion; no runtime validator behavior change; the three new a19e82c tests (long-reason non-veto, bounded EOF pointer recovery, reviewer-credit wording) all pass",
+    "bounded_corrective_action": "Central updates the one stale assertion to the corrected prompt wording in a new commit, re-stages the corrected source, and D3 re-admits at the new starting head and re-runs this contract",
+    "campaign_actions_withheld": ["replacing the treatment source", "weakening the test", "running the model campaign against a locally uncommitted patch", "changing scorer source pins"]
+  },
+  "scorer_historical_preservation": {
+    "check": "D3 scorer at starting head re-run on the private frozen D2 bundle (adr-causal-audit.mjs analyze)",
+    "producer_exit": 0,
+    "result_schema": "issue92-adr-exposed-d2-result-v1",
+    "disposition": "COMPLETE",
+    "identical_to_published_d2_result": true,
+    "d2_previous_counts": {"REMOTE_TARGET_PRESERVED": 2, "VALIDATED_NO_TERMINAL_PROOF": 4, "MODEL_SKIP": 10},
+    "d2_two_stage_counts": {"DISCOVERY_VALIDATOR_REJECTED": 5, "REVIEW_DEFER": 11}
+  },
+  "phase_b_model_campaign": {
+    "status": "NOT_STARTED",
+    "reason": "Phase A native gate red at the corrected treatment pin (BLOCKED_SOURCE_DEFECT); contract forbids running the campaign against a locally uncommitted patch",
+    "arms_planned": {"d3:previous": "50db627850c28f2ce31a68f547f91f51ee3e43b0 (two-stage, factReview=true)", "d3:corrected": "a19e82c7ab68e710339dfd8b4f1381c75b37e8a5 (two-stage, factReview=true)"},
+    "model": {"alias": "chat-fast", "temperature": 0, "max_tokens": 1600, "output": "json", "timeout_s": 90, "model_calls": 0, "prompt_tokens": 0, "completion_tokens": 0},
+    "two_arm_stage_scorecards": "N/A this round (campaign not started)",
+    "valuable_targets_16": "N/A this round",
+    "nonvaluable_targets_11": "N/A this round",
+    "remote_uuid_evidence": "N/A this round (0 episodes persisted by this campaign)",
+    "exactly_once_traces": {"d3_discovery_trace_files": 0, "d3_review_trace_files": 0, "call_intents": 0, "unfinished_call_intents": 0}
+  },
+  "controls": {
+    "production_group_unchanged": "development-knowledge: 355 episodes, newest created_at 2026-11-08T03:57:03.076489+00:00 (identical to D2 receipt baseline 2026-11-08T03:57:03Z); 0 new episodes since D2",
+    "historical_groups_unchanged": [
+      "graphiti-adr92-d1-previous: 2 episodes (D1 published count)",
+      "graphiti-adr92-d1-corrected: 15 episodes (D1 published count)",
+      "graphiti-adr92-d2-previous: 14 episodes (D2 published count)",
+      "graphiti-adr92-d2-two-stage: 0 episodes (D2 published count)"
+    ],
+    "d3_groups_absent": "graphiti-adr92-d3-previous and graphiti-adr92-d3-corrected: 0 episodes (groups not created; no D3 state roots, no D3 trace dirs)",
+    "installed_production_unchanged": "installed plugin v2-curator has no fact-review.mjs (one-pass installed default intact; two-stage opt-in exists only in disposable campaign worktrees)",
+    "privacy_control": "capture-ineligible :ctrl source never staged (no D3 queue roots) -> 0 queue events, 0 trace prompts reference it in either arm",
+    "no_inference_from_interactive_harness": "no model call and no Graphiti write issued from the interactive session; all Graphiti access was read-only get_episodes",
+    "frozen_corpus": "original freeze.json sha256 verified before campaign and unmodified; no new holdout created"
+  },
+  "verdict": "BLOCKED",
+  "verdict_basis": "The mandated Phase A native regression suite is red at the corrected treatment pin a19e82c (starting head bcca583): node --test docs/issue-78/v2-curator/fact-review.test.mjs exits 1 (13/14) because a19e82c rewrote the reviewer prompt and left one stale prompt-wording assertion (fact-review.test.mjs:52) pinning the old wording. Per the D3 contract, an acceptance-bearing source defect reproduced in the native gate is reported as BLOCKED_SOURCE_DEFECT with the exact command, trace, and bounded corrective diagnosis, without replacing the treatment source, weakening the test, or changing the scorer pins. The Phase B paired model campaign was therefore not started; the D3 scorer's historical D2 preservation check passed (byte-identical re-run), and all safety/privacy/production controls verify invariant.",
+  "next_step": "Central lands the one-line test repair as a new commit on work/91-memory-utility-r1, re-stages the corrected source, and D3 re-admits at the new starting head and re-runs this contract end-to-end (no D4, no unplanned model sweep in the meantime)."
+}
