@@ -734,16 +734,22 @@ export async function runAdmittedFiniteBatch({
    'PLAN_MODEL_RECEIPT_MISMATCH');
   const aggregate=modelMetrics[entry.stage]??={
    calls:0,prompt_tokens:0,completion_tokens:0,reasoning_tokens:0,
-   cached_prompt_tokens:0,latency_ms:0};
+   cached_prompt_tokens:0,latency_ms:0,latency_reports:0,
+   usage_field_reports:{}};
   aggregate.calls++;
   for(const key of ['prompt_tokens','completion_tokens',
    'reasoning_tokens','cached_prompt_tokens']){
    const value=result.reply?.usage?.[key];
-   if(Number.isSafeInteger(value)&&value>=0)aggregate[key]+=value;
+   if(Number.isSafeInteger(value)&&value>=0){
+    aggregate[key]+=value;
+    aggregate.usage_field_reports[key]=(aggregate.usage_field_reports[key]||0)+1;
+   }
   }
   const duration=result.reply?.duration_ms;
-  if(Number.isSafeInteger(duration)&&duration>=0)
+  if(Number.isSafeInteger(duration)&&duration>=0){
    aggregate.latency_ms+=duration;
+   aggregate.latency_reports++;
+  }
  }
  // Any model call is now over. Durable, validated plan exists before creating
  // even one approved ReviewStore identity or issuing any Graphiti write intent.
