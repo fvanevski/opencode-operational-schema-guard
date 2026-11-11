@@ -63,7 +63,7 @@ export function factDiscoveryPrompt(cluster){
  * authorizes persistence: the worker ALWAYS invokes independent fact review
  * before storing an EMIT proposal when this development mode is enabled.
  */
-export function validateFactDiscovery(raw,cluster){
+export function validateFactDiscovery(raw,cluster,{isolateCandidates=false}={}){
  let parsed;
  try{parsed=typeof raw==='string'?JSON.parse(raw):raw;}
  catch{return {ok:false,decision:'DEFER',reason:'discovery_invalid_json',facts:[]};}
@@ -94,6 +94,33 @@ export function validateFactDiscovery(raw,cluster){
      evidence_span:{source_ref:c?.source_ref,start:c?.start,end},
      utility_class:'durable_decision'};
  });
+ if(isolateCandidates){
+  // S3 opt-in: every candidate must still pass the original validator;
+  // malformed siblings must not suppress unrelated source-grounded facts.
+  const supported=[],invalid=[],validIndices=new Set();
+  for(let i=0;i<facts.length;i++){
+    const one=validateModelDecision({decision:'EMIT',
+      utility_class:'durable_decision',
+      reason:'Provisional exact-source candidate awaiting independent utility review',
+      facts:[facts[i]]},cluster);
+    if(!one.ok){
+      invalid.push({index:i,reason:one.reason,
+        diagnostic_field:one.diagnostic_field??null});
+      continue;
+    }
+    supported.push(Object.freeze({...one.facts[0],
+      evidence_span:Object.freeze({...facts[i].evidence_span})}));
+    validIndices.add(i);
+  }
+  const adjustments=repairs.filter(x=>validIndices.has(x.index));
+  if(!supported.length)return {ok:false,decision:'DEFER',
+    reason:invalid[0]?.reason||'discovery_invalid',
+    facts:[],invalid_candidates:invalid,source_span_adjustments:adjustments};
+  return {ok:true,decision:'EMIT',utility_class:'durable_decision',
+    reason:'Provisional exact-source candidate awaiting independent utility review',
+    facts:supported,invalid_candidates:invalid,
+    source_span_adjustments:adjustments};
+ }
  const checked=validateModelDecision({
    decision:'EMIT',utility_class:'durable_decision',
    reason:'Provisional exact-source candidate awaiting independent utility review',

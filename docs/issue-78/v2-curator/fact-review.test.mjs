@@ -243,6 +243,32 @@ test('discovery preserves validated source offsets, including bounded EOF correc
  assert.equal(invalid.ok,false);
  assert.deepEqual(invalid.facts,[]);
 });
+test('S3 isolated discovery keeps valid source facts and blocks invalid siblings',()=>{
+ const c=selectClusters([source()])[0],e=c.events[0],ref=e.source_refs[0];
+ const candidates=[
+  {kind:'blocker',source_ref:ref,start:0,end:e.excerpt.length,temporal_status:'observed'},
+  {kind:'invented_kind',source_ref:ref,start:0,end:e.excerpt.length,temporal_status:'observed'},
+  {kind:'blocker',source_ref:'opencode:forged',start:0,end:e.excerpt.length,temporal_status:'observed'}
+ ];
+ const legacy=validateFactDiscovery({reason:'mixed source',candidates},c);
+ assert.equal(legacy.ok,false);
+ const isolated=validateFactDiscovery({reason:'mixed source',candidates},c,
+  {isolateCandidates:true});
+ assert.equal(isolated.ok,true);
+ assert.equal(isolated.facts.length,1);
+ assert.equal(isolated.facts[0].assertion,e.excerpt);
+ assert.deepEqual(isolated.facts[0].evidence_span,
+  {source_ref:ref,start:0,end:e.excerpt.length});
+ assert.deepEqual(isolated.invalid_candidates.map(x=>[x.index,x.reason]),
+  [[1,'invalid_fact_fields'],[2,'unattributed_or_weak_source']]);
+ assert.equal(Object.isFrozen(isolated.facts[0]),true);
+ assert.equal(Object.isFrozen(isolated.facts[0].evidence_span),true);
+ const invalidOnly=validateFactDiscovery({reason:'forged',
+  candidates:candidates.slice(2)},c,{isolateCandidates:true});
+ assert.equal(invalidOnly.ok,false);
+ assert.equal(invalidOnly.reason,'unattributed_or_weak_source');
+ assert.deepEqual(invalidOnly.facts,[]);
+});
 test('second-stage durable utility cannot be fabricated or omitted by reviewer',()=>{
  const p=proposal(selectClusters([source()])[0]);
  const invalid=validateFactReview({decisions:[{index:0,disposition:'ACCEPT',
