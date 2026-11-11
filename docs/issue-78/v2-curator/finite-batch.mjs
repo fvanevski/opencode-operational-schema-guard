@@ -157,6 +157,36 @@ export function finiteBatchRecoveryUtilityPrompt(cluster,proposal){
   base[1]];
 }
 
+/** S3-only model prompts. Every proposition still requires strict source proof. */
+export function finiteBatchResilientDiscoveryPrompt(cluster,{recovery=false,rejected=[],invalid=[]}={}){
+ const base=recovery?finiteBatchRecoveryDiscoveryPrompt(cluster,rejected):
+   finiteBatchDiscoveryPrompt(cluster);
+ const guidance=' FIELD-SAFE DISCOVERY: Return concrete reported defects or required'+
+  ' technical behavior, not uninformative task headers or mid-word snippets.'+
+  ' Choose a complete standalone source technical predicate. Never infer a'+
+  ' verified fix or root cause. Every candidate must use an exact provided'+
+  ' source_ref, integer JS UTF-16 start/end offsets, 25..450-character source'+
+  ' quote after trim, kind from decision|implementation|test_result|architecture|'+
+  ' dependency|procedure|blocker|relationship|observation, and temporal_status'+
+  ' from observed|historical|proposed|unknown. No fabricated source, outcome'+
+  ' or concatenated passages. All candidates undergo original validation.';
+ const data=JSON.parse(base[1].content);
+ if(invalid.length)data.previous_validation_failures=invalid.slice(0,3).map(x=>({
+  index:x.index,reason:x.reason,diagnostic_field:x.diagnostic_field??null
+ }));
+ return [{role:'system',content:base[0].content+guidance},
+  {role:'user',content:JSON.stringify(data)}];
+}
+export function finiteBatchResilientUtilityPrompt(cluster,proposal,{recovery=false}={}){
+ const base=recovery?finiteBatchRecoveryUtilityPrompt(cluster,proposal):
+   finiteBatchUtilityPrompt(cluster,proposal);
+ return [{role:'system',content:base[0].content+
+  ' SOURCE-SPECIFIC UTILITY: A source-stated technical requirement or reported'+
+  ' malfunction can be durable without an implemented fix. Reject generic'+
+  ' instructions without a technical predicate. Preserve temporal and source'+
+  ' authority; never promote a reported claim into a verified outcome.'},base[1]];
+}
+
 /** Semantic grouping is a model judgment, NEVER a hard source authority.
  * The reviewer sees all accepted same-scope candidate assertions in stable
  * order and returns one family partition independent of encounter order.
@@ -447,6 +477,7 @@ export async function runAdmittedFiniteBatch({
  modelEndpoint,modelId,apiKey='local',modelOptions={},curate=curateCluster,
  maxClusters=24,maxCandidates=48,maxSeconds=1200,
  noveltyPolicy='recall',tuning=null,replayOnly=false,sourceRecovery=false,
+  resilientDiscovery=false,
  onCheckpoint=null
 }={}){
  admitted();
@@ -458,6 +489,7 @@ export async function runAdmittedFiniteBatch({
   maxSeconds>=60&&maxSeconds<=3600&&
   ['recall','conservative'].includes(noveltyPolicy)&&
   typeof replayOnly==='boolean'&&typeof sourceRecovery==='boolean'&&
+  typeof resilientDiscovery==='boolean'&&(!resilientDiscovery||sourceRecovery)&&
   (!sourceRecovery||noveltyPolicy==='recall'),'INVALID_BOUNDS');
  const tuningProfile=validateFiniteBatchTuning(tuning);
  const tuningSha=tuningIdentity(tuningProfile);
@@ -504,7 +536,8 @@ export async function runAdmittedFiniteBatch({
   else await writeOnce(path.join(baseDir,'snapshot.json'),snapshot);
   active={schema:'issue92-finite-batch-active-v1',group,batch_id:batchId,
    snapshot_sha256:hash(snapshot),tuning_sha256:tuningSha,
-   ...(sourceRecovery?{source_recovery:true}:{})};
+   ...(sourceRecovery?{source_recovery:true}:{}),
+   ...(resilientDiscovery?{resilient_discovery:true}:{})};
   try{await writeOnce(activePath,active);}
   catch(e){if(e.code!=='EEXIST')throw e;}
   const actual=await readMaybe(activePath);
@@ -516,6 +549,8 @@ export async function runAdmittedFiniteBatch({
    SHA.test(active.batch_id),'ACTIVE_POINTER');
   assert(Boolean(active.source_recovery)===sourceRecovery,
    'SOURCE_RECOVERY_IDENTITY_CHANGED');
+  assert(Boolean(active.resilient_discovery)===resilientDiscovery,
+   'RESILIENT_DISCOVERY_IDENTITY_CHANGED');
   if(active.tuning_sha256!==undefined)
    assert(active.tuning_sha256===tuningSha,'TUNING_IDENTITY_CHANGED');
   else assert(legacyIdentity,'LEGACY_TUNING_IDENTITY_UNVERIFIED');
@@ -601,14 +636,31 @@ export async function runAdmittedFiniteBatch({
    const entries=new Map(),approved=[];
    let decision='SKIP',reason='no_attributable_source_candidate';
    let recoveryTrigger=null,recoveryAttempted=false,rejected=[];
+   const validationFailures=[];
    for(let pass=0;pass<(sourceRecovery?2:1);pass++){
     if(pass===1){if(!recoveryTrigger)break;recoveryAttempted=true;}
-    const identity=pass===0?cluster.id:cluster.id+':source-recovery-v1';
-    const messages=pass===0?finiteBatchDiscoveryPrompt(cluster):
-     finiteBatchRecoveryDiscoveryPrompt(cluster,rejected);
+    const identity=pass===0?
+     cluster.id+(resilientDiscovery?':resilient-discovery-v1':''):
+     cluster.id+(resilientDiscovery?':source-recovery-v2':':source-recovery-v1');
+    const messages=resilientDiscovery?
+     finiteBatchResilientDiscoveryPrompt(cluster,{recovery:pass===1,rejected,
+      invalid:validationFailures.flatMap(x=>x.candidates)}):
+     pass===0?finiteBatchDiscoveryPrompt(cluster):
+      finiteBatchRecoveryDiscoveryPrompt(cluster,rejected);
     const reply=await callOnce('discovery',identity,cluster,messages);
-    const proposal=validateFactDiscovery(reply.content,cluster);
-    if(!proposal.ok){decision='DEFER';reason=proposal.reason||'discovery_invalid';break;}
+    const proposal=validateFactDiscovery(reply.content,cluster,
+     {isolateCandidates:resilientDiscovery});
+    if(resilientDiscovery&&proposal.invalid_candidates?.length)
+     validationFailures.push({pass:pass+1,candidates:proposal.invalid_candidates,
+      valid_candidate_count:proposal.facts.length});
+    if(!proposal.ok){
+     decision=approved.length?'REVIEWED':'DEFER';reason=proposal.reason||'discovery_invalid';
+     if(pass===0&&resilientDiscovery&&proposal.invalid_candidates?.length>0&&
+       proposal.invalid_candidates.every(x=>x.reason==='invalid_fact_fields')){
+      recoveryTrigger='invalid_discovery';continue;
+     }
+     break;
+    }
     if(proposal.decision!=='EMIT'){
      decision=proposal.decision;reason=proposal.reason||'discovery_unavailable';
      if(pass===0&&sourceRecovery&&proposal.decision==='SKIP'){
@@ -617,6 +669,8 @@ export async function runAdmittedFiniteBatch({
      break;
     }
     const reviewed=await callOnce('utility',identity,cluster,
+     resilientDiscovery?finiteBatchResilientUtilityPrompt(cluster,proposal,
+      {recovery:pass===1}):
      pass===0?finiteBatchUtilityPrompt(cluster,proposal):
       finiteBatchRecoveryUtilityPrompt(cluster,proposal));
     const screen=validateFactReview(reviewed.content,proposal);
@@ -646,6 +700,10 @@ export async function runAdmittedFiniteBatch({
      if(!entries.has(e.id))entries.set(e.id,e);
     }
     decision='REVIEWED';reason='independent_utility_review_complete';
+    if(pass===0&&resilientDiscovery&&
+      proposal.invalid_candidates?.some(x=>x.reason==='invalid_fact_fields')){
+     recoveryTrigger='partial_invalid_discovery';continue;
+    }
     if(pass===0&&sourceRecovery&&newApproved===0&&
       screen.review.length===proposal.facts.length&&
       screen.review.every(d=>['not_substantive','transient_execution']
@@ -665,7 +723,8 @@ export async function runAdmittedFiniteBatch({
    outcomes.push({cluster_id:cluster.id,decision,reason,
     facts:[...entries.values()].sort(byId),
     ...(sourceRecovery?{source_recovery_attempted:recoveryAttempted,
-     source_recovery_trigger:recoveryTrigger}:{})});
+     source_recovery_trigger:recoveryTrigger}:{}),
+    ...(resilientDiscovery?{source_validation_failures:validationFailures}:{})});
   }
   assert(accepted.length<=maxCandidates,'ACCEPTED_POOL_OVER_BOUND_NO_PROMOTION');
   const selected=new Set(),deferred=new Map(),families=[];
@@ -771,12 +830,14 @@ export async function runAdmittedFiniteBatch({
   plan={schema:'issue92-finite-batch-plan-v1',batch_id:active.batch_id,
    snapshot_sha256:hash(snapshot),tuning_sha256:tuningSha,
    ...(sourceRecovery?{source_recovery:true}:{}),
+   ...(resilientDiscovery?{resilient_discovery:true}:{}),
    created_at:new Date().toISOString(),
    cluster_outcomes:outcomes.map(x=>({cluster_id:x.cluster_id,
     decision:x.decision,reason:x.reason,
     fact_ids:x.facts.map(f=>f.id),
     ...(sourceRecovery?{source_recovery_attempted:x.source_recovery_attempted,
-     source_recovery_trigger:x.source_recovery_trigger}:{})})),
+     source_recovery_trigger:x.source_recovery_trigger}:{}),
+     ...(resilientDiscovery?{source_validation_failures:x.source_validation_failures}:{})})),
    items:items.sort(byId),families,calls,
    policy:noveltyPolicy==='recall'?
     'issue92_recall_first_source_and_utility_v1':
@@ -791,6 +852,8 @@ export async function runAdmittedFiniteBatch({
   'review_before_graphiti_and_order_neutral_arbitration');
  assert(Boolean(plan.source_recovery)===sourceRecovery,
   'PLAN_SOURCE_RECOVERY_IDENTITY_CHANGED');
+ assert(Boolean(plan.resilient_discovery)===resilientDiscovery,
+  'PLAN_RESILIENT_DISCOVERY_IDENTITY_CHANGED');
  if(plan.tuning_sha256!==undefined)
   assert(plan.tuning_sha256===tuningSha,'PLAN_TUNING_IDENTITY_CHANGED');
  else assert(legacyIdentity,'PLAN_LEGACY_TUNING_UNVERIFIED');
