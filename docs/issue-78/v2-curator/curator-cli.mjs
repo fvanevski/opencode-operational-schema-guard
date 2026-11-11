@@ -31,6 +31,11 @@ if(!['recall','conservative'].includes(noveltyPolicy)||
  throw Error('FINITE_BATCH_NOVELTY_POLICY_INVALID');
 const maxCandidates=Number(arg('max-candidates')||'48');
 const tuningPath=arg('tuning-file');
+const replayOnlyArg=arg('replay-only');
+if(replayOnlyArg&&replayOnlyArg!=='on')throw Error('REPLAY_ONLY_OPT_IN_INVALID');
+if(replayOnlyArg&&(!finiteBatch||command!=='drain'))
+ throw Error('REPLAY_ONLY_FINITE_BATCH_DRAIN_REQUIRED');
+const replayOnly=replayOnlyArg==='on';
 if(tuningPath&&command!=='validate-tuning'&&(!finiteBatch||command!=='drain'))
  throw Error('FINITE_BATCH_TUNING_ONLY_ON_DRAIN');
 if(command==='validate-tuning'){
@@ -46,7 +51,7 @@ if(command==='validate-tuning'){
     '[--endpoint LOOPBACK_GRAPHITI_MCP --max-seconds 600 --max-clusters 6] '+ 
     '[--fact-review on | --finite-batch on (development only)] '+ 
     '[--max-candidates 48] [--novelty-policy recall|conservative] '+
-    '[--tuning-file ABSOLUTE_JSON_PATH]. '+
+    '[--tuning-file ABSOLUTE_JSON_PATH] [--replay-only on]. '+
     'For drain set LOCAL_CURATOR_URL, LOCAL_CURATOR_MODEL, LOCAL_CURATOR_API_KEY.');
   process.exitCode=2;
 }else{
@@ -112,7 +117,7 @@ if(command==='validate-tuning'){
       apiKey:process.env.LOCAL_CURATOR_API_KEY||'local',
       modelOptions:modelPolicy(process.env),maxSeconds,maxClusters};
     const data=finiteBatch?
-      await runAdmittedFiniteBatch({...inputs,maxCandidates,noveltyPolicy,
+      await runAdmittedFiniteBatch({...inputs,maxCandidates,noveltyPolicy,replayOnly,
        tuning:tuningPath?await loadFiniteBatchTuning(tuningPath):null}):
       await runAdmitted({...inputs,factReview});
     console.log(JSON.stringify(data));

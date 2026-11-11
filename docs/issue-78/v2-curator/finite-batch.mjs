@@ -413,7 +413,7 @@ export async function runAdmittedFiniteBatch({
  root,group,queue=null,store=null,graphiti=null,graphitiEndpoint=null,
  modelEndpoint,modelId,apiKey='local',modelOptions={},curate=curateCluster,
  maxClusters=24,maxCandidates=48,maxSeconds=1200,
- noveltyPolicy='recall',tuning=null,
+ noveltyPolicy='recall',tuning=null,replayOnly=false,
  onCheckpoint=null
 }={}){
  admitted();
@@ -423,7 +423,8 @@ export async function runAdmittedFiniteBatch({
   Number.isInteger(maxCandidates)&&maxCandidates>=3&&maxCandidates<=72&&
   typeof curate==='function'&&Number.isInteger(maxSeconds)&&
   maxSeconds>=60&&maxSeconds<=3600&&
-  ['recall','conservative'].includes(noveltyPolicy),'INVALID_BOUNDS');
+  ['recall','conservative'].includes(noveltyPolicy)&&
+  typeof replayOnly==='boolean','INVALID_BOUNDS');
  const tuningProfile=validateFiniteBatchTuning(tuning);
  const tuningSha=tuningIdentity(tuningProfile);
  const legacyIdentity=tuning===null&&modelId==='chat-fast'&&
@@ -529,6 +530,7 @@ export async function runAdmittedFiniteBatch({
      'MODEL_RESULT_AUTHENTICITY');
     return result.reply;
    }
+   if(replayOnly)throw Error('ISSUE92_BATCH_REPLAY_ONLY_MISSING_FROZEN_CALL');
    await writeOnce(intent,{schema:'issue92-finite-model-call-v1',
     stage:kind,identity,prompt_sha256,request_sha256,
     created_at:new Date().toISOString()});
@@ -719,6 +721,7 @@ export async function runAdmittedFiniteBatch({
  else assert(legacyIdentity,'PLAN_LEGACY_TUNING_UNVERIFIED');
  // Private model replies are the immutable inference evidence behind this plan.
  // Verify them again on a resumed run BEFORE any durable review/Graphiti action.
+ const modelMetrics={};
  for(const entry of plan.calls){
   assert(/^[a-f0-9]{64}\.result\.json$/.test(entry.file),
    'PLAN_CALL_FILE_IDENTITY');
@@ -729,6 +732,18 @@ export async function runAdmittedFiniteBatch({
    result.reply_sha256===entry.reply_sha256&&
    result.reply_sha256===hash(result.reply?.content),
    'PLAN_MODEL_RECEIPT_MISMATCH');
+  const aggregate=modelMetrics[entry.stage]??={
+   calls:0,prompt_tokens:0,completion_tokens:0,reasoning_tokens:0,
+   cached_prompt_tokens:0,latency_ms:0};
+  aggregate.calls++;
+  for(const key of ['prompt_tokens','completion_tokens',
+   'reasoning_tokens','cached_prompt_tokens']){
+   const value=result.reply?.usage?.[key];
+   if(Number.isSafeInteger(value)&&value>=0)aggregate[key]+=value;
+  }
+  const duration=result.reply?.duration_ms;
+  if(Number.isSafeInteger(duration)&&duration>=0)
+   aggregate.latency_ms+=duration;
  }
  // Any model call is now over. Durable, validated plan exists before creating
  // even one approved ReviewStore identity or issuing any Graphiti write intent.
@@ -807,6 +822,7 @@ export async function runAdmittedFiniteBatch({
   deferred:plan.items.filter(x=>x.decision==='deferred').length,
   model_calls:modelCalls,model_errors:modelErrors,
   prompt_tokens:promptTokens,completion_tokens:completionTokens,
+  model_metrics:modelMetrics,tuning_sha256:tuningSha,replay_only:replayOnly,
   persisted:all.filter(r=>r.state==='persisted').length,
   unresolved:unresolved.length,write_outcomes:writeOutcomes};
 }
