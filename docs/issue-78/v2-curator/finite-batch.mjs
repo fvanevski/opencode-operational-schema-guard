@@ -555,10 +555,41 @@ export async function runAdmittedFiniteBatch({
     representativePrompt(sorted));
    const resolved=validateRepresentativeFamilies(verdict.content,sorted);
    assert(resolved.ok,'ARBITRATION_UNVERIFIED_NO_GRAPH_WRITES');
-   for(const key of resolved.selected)selected.add(key);
-   for(const other of resolved.deferred)deferred.set(other.id,other.reason);
+   const memberById=new Map(sorted.map(x=>[x.id,x]));
+   const localSelected=new Set(),localDeferred=new Map(),refinements=[];
+   for(const family of resolved.groups){
+    if(family.certainty==='uncertain'){
+     for(const member of family.members)
+      localDeferred.set(member,'uncertain_representative');
+     continue;
+    }
+    if(family.members.length===1){
+     localSelected.add(family.representative);
+     continue;
+    }
+    // An arbitrator's "same family" label is not enough to discard any
+    // independently useful source-backed candidate. Revisit this family in
+    // a separate, source-quoted counter-review before approving suppression.
+    const members=family.members.map(member=>memberById.get(member)).sort(byId);
+    assert(members.every(Boolean),'ARBITRATION_UNKNOWN_MEMBER');
+    const refinementId=hash('specificity\n'+scope+'\n'+members.map(x=>x.id).join('\n'));
+    const refinement=await callOnce('specificity',refinementId,synthetic,
+     specificityPrompt(members));
+    const verified=validateSpecificityFamilies(refinement.content,members);
+    assert(verified.ok,'SPECIFICITY_UNVERIFIED_NO_GRAPH_WRITES');
+    for(const member of verified.selected)localSelected.add(member);
+    for(const other of verified.deferred)
+     localDeferred.set(other.id,other.reason);
+    refinements.push({candidate_ids:members.map(x=>x.id),
+     selected:verified.selected,deferred:verified.deferred,
+     source_proof:verified.proof});
+   }
+   for(const key of localSelected)selected.add(key);
+   for(const [id,reason] of localDeferred)deferred.set(id,reason);
    families.push({scope_sha256:hash(scope),pool:sorted.map(x=>x.id),
-    selected:resolved.selected,deferred:resolved.deferred});
+    selected:[...localSelected].sort(),
+    deferred:[...localDeferred].map(([id,reason])=>({id,reason})).sort(byId),
+    provisional:resolved.groups,refinements});
   }
   const items=[];
   for(const item of outcomes){
