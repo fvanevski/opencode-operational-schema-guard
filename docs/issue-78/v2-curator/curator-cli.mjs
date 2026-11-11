@@ -6,6 +6,7 @@ import { CandidateQueue } from '../v2-candidate/queue.mjs';
 import { ReviewStore } from './core.mjs';
 import { runAdmitted, reconcile } from './worker.mjs';
 import { runAdmittedFiniteBatch } from './finite-batch.mjs';
+import {loadFiniteBatchTuning,tuningSummary} from './finite-batch-tuning.mjs';
 import { modelPolicy } from './model-policy.mjs';
 import { GraphitiMcp } from '../../issue-75/v2-candidate/memory-core.mjs';
 import {describeFixtureGroup} from '../fixture-groups.mjs';
@@ -29,7 +30,13 @@ if(!['recall','conservative'].includes(noveltyPolicy)||
  (!finiteBatch&&arg('novelty-policy')))
  throw Error('FINITE_BATCH_NOVELTY_POLICY_INVALID');
 const maxCandidates=Number(arg('max-candidates')||'48');
-if(command==='validate-config'){
+const tuningPath=arg('tuning-file');
+if(tuningPath&&command!=='validate-tuning'&&(!finiteBatch||command!=='drain'))
+ throw Error('FINITE_BATCH_TUNING_ONLY_ON_DRAIN');
+if(command==='validate-tuning'){
+ if(!tuningPath)throw Error('TUNING_FILE_REQUIRED');
+ console.log(JSON.stringify(tuningSummary(await loadFiniteBatchTuning(tuningPath))));
+}else if(command==='validate-config'){
   const policy=modelPolicy(process.env);
   console.log(JSON.stringify({status:'VALID_CURATOR_MODEL_OPTIONS',
     modelOptions:policy,default_behavior:!Object.keys(policy).length}));
@@ -38,7 +45,8 @@ if(command==='validate-config'){
   console.error('Usage: node curator-cli.mjs drain|status|list|reconcile-only --group GROUP --state-dir DIR '+
     '[--endpoint LOOPBACK_GRAPHITI_MCP --max-seconds 600 --max-clusters 6] '+ 
     '[--fact-review on | --finite-batch on (development only)] '+ 
-    '[--max-candidates 48] [--novelty-policy recall|conservative]. '+
+    '[--max-candidates 48] [--novelty-policy recall|conservative] '+
+    '[--tuning-file ABSOLUTE_JSON_PATH]. '+
     'For drain set LOCAL_CURATOR_URL, LOCAL_CURATOR_MODEL, LOCAL_CURATOR_API_KEY.');
   process.exitCode=2;
 }else{
@@ -104,7 +112,8 @@ if(command==='validate-config'){
       apiKey:process.env.LOCAL_CURATOR_API_KEY||'local',
       modelOptions:modelPolicy(process.env),maxSeconds,maxClusters};
     const data=finiteBatch?
-      await runAdmittedFiniteBatch({...inputs,maxCandidates,noveltyPolicy}):
+      await runAdmittedFiniteBatch({...inputs,maxCandidates,noveltyPolicy,
+       tuning:tuningPath?await loadFiniteBatchTuning(tuningPath):null}):
       await runAdmitted({...inputs,factReview});
     console.log(JSON.stringify(data));
     if(data.status==='unresolved'||data.status==='incomplete')process.exitCode=3;

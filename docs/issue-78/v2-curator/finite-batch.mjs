@@ -13,6 +13,8 @@ import {factDiscoveryPrompt,validateFactDiscovery,factReviewPrompt,
   validateFactReview,filterFactProposal} from './fact-review.mjs';
 import {promoteOne,reconcile} from './worker.mjs';
 import {GraphitiMcp} from '../../issue-75/v2-candidate/memory-core.mjs';
+import {validateFiniteBatchTuning,tuningIdentity,stageModelSettings,
+ tunedMessages} from './finite-batch-tuning.mjs';
 
 const SHA=/^[a-f0-9]{64}$/;
 const SAFE=/^[A-Za-z0-9_.-]{1,100}$/;
@@ -411,7 +413,7 @@ export async function runAdmittedFiniteBatch({
  root,group,queue=null,store=null,graphiti=null,graphitiEndpoint=null,
  modelEndpoint,modelId,apiKey='local',modelOptions={},curate=curateCluster,
  maxClusters=24,maxCandidates=48,maxSeconds=1200,
- noveltyPolicy='recall',
+ noveltyPolicy='recall',tuning=null,
  onCheckpoint=null
 }={}){
  admitted();
@@ -422,6 +424,13 @@ export async function runAdmittedFiniteBatch({
   typeof curate==='function'&&Number.isInteger(maxSeconds)&&
   maxSeconds>=60&&maxSeconds<=3600&&
   ['recall','conservative'].includes(noveltyPolicy),'INVALID_BOUNDS');
+ const tuningProfile=validateFiniteBatchTuning(tuning);
+ const tuningSha=tuningIdentity(tuningProfile);
+ const legacyIdentity=tuning===null&&modelId==='chat-fast'&&
+  (modelOptions.maxTokens===undefined||modelOptions.maxTokens===1600)&&
+  (modelOptions.reasoningEffort===undefined||modelOptions.reasoningEffort===null)&&
+  (modelOptions.temperature===undefined||modelOptions.temperature===0)&&
+  (modelOptions.timeoutMs===undefined||modelOptions.timeoutMs===90000);
  const deadline=Date.now()+maxSeconds*1000;
  const tick=(stage)=>{if(Date.now()>deadline-5000)
   throw Error('ISSUE92_BATCH_DEADLINE_'+stage);};
@@ -459,7 +468,7 @@ export async function runAdmittedFiniteBatch({
    'SNAPSHOT_ALREADY_DIFFERS');
   else await writeOnce(path.join(baseDir,'snapshot.json'),snapshot);
   active={schema:'issue92-finite-batch-active-v1',group,batch_id:batchId,
-   snapshot_sha256:hash(snapshot)};
+   snapshot_sha256:hash(snapshot),tuning_sha256:tuningSha};
   try{await writeOnce(activePath,active);}
   catch(e){if(e.code!=='EEXIST')throw e;}
   const actual=await readMaybe(activePath);
@@ -469,6 +478,9 @@ export async function runAdmittedFiniteBatch({
  }else{
   assert(active.schema==='issue92-finite-batch-active-v1'&&active.group===group&&
    SHA.test(active.batch_id),'ACTIVE_POINTER');
+  if(active.tuning_sha256!==undefined)
+   assert(active.tuning_sha256===tuningSha,'TUNING_IDENTITY_CHANGED');
+  else assert(legacyIdentity,'LEGACY_TUNING_IDENTITY_UNVERIFIED');
   baseDir=path.join(folder,active.batch_id);
   snapshot=await readMaybe(path.join(baseDir,'snapshot.json'));
   assert(snapshot&&hash(snapshot)===active.snapshot_sha256,'SNAPSHOT_DIGEST');
@@ -487,49 +499,62 @@ export async function runAdmittedFiniteBatch({
  }
  const clusterById=new Map(snapshot.clusters.map(c=>[c.id,c]));
  let modelCalls=0,modelErrors=0,promptTokens=0,completionTokens=0;
- async function callOnce(kind,identity,cluster,messages){
-  tick(kind);admitted();
-  const key=hash(kind+'\n'+identity);
-  const callDir=path.join(baseDir,'model-calls');
-  const intent=path.join(callDir,key+'.intent.json');
-  const resultFile=path.join(callDir,key+'.result.json');
-  const prompt_sha256=hash(messages);
-  const recorded=await readMaybe(intent);
-  if(recorded){
-   assert(recorded.stage===kind&&recorded.identity===identity&&
-    recorded.prompt_sha256===prompt_sha256,'MODEL_PROMPT_IDENTITY_CHANGED');
-   const result=await readMaybe(resultFile);
-   if(!result)throw Error('ISSUE92_BATCH_MODEL_CALL_AMBIGUOUS_NO_REPLAY');
-   assert(result.prompt_sha256===prompt_sha256&&
-    typeof result.reply?.content==='string'&&
-    result.reply_sha256===hash(result.reply.content),
-    'MODEL_RESULT_AUTHENTICITY');
-   return result.reply;
+  async function callOnce(kind,identity,cluster,messages){
+   tick(kind);admitted();
+   const stage=stageModelSettings(kind,{modelId,modelOptions},tuningProfile);
+   const finalMessages=tunedMessages(messages,stage);
+   const key=hash(kind+'\n'+identity);
+   const callDir=path.join(baseDir,'model-calls');
+   const intent=path.join(callDir,key+'.intent.json');
+   const resultFile=path.join(callDir,key+'.result.json');
+   const prompt_sha256=hash(finalMessages);
+   // This digest binds model/params/endpoint to the frozen native prompt.
+   const request_sha256=hash({model:stage.model,options:stage.options,
+    endpoint:modelEndpoint,kind});
+   const recorded=await readMaybe(intent);
+   if(recorded){
+    assert(recorded.stage===kind&&recorded.identity===identity&&
+     recorded.prompt_sha256===prompt_sha256,'MODEL_PROMPT_IDENTITY_CHANGED');
+    if(recorded.request_sha256!==undefined)
+     assert(recorded.request_sha256===request_sha256,
+      'MODEL_REQUEST_SETTINGS_CHANGED');
+    else assert(legacyIdentity,'MODEL_LEGACY_REQUEST_UNVERIFIED');
+    const result=await readMaybe(resultFile);
+    if(!result)throw Error('ISSUE92_BATCH_MODEL_CALL_AMBIGUOUS_NO_REPLAY');
+    assert(result.prompt_sha256===prompt_sha256&&
+     (result.request_sha256===undefined?
+      legacyIdentity:result.request_sha256===request_sha256)&&
+     typeof result.reply?.content==='string'&&
+     result.reply_sha256===hash(result.reply.content),
+     'MODEL_RESULT_AUTHENTICITY');
+    return result.reply;
+   }
+   await writeOnce(intent,{schema:'issue92-finite-model-call-v1',
+    stage:kind,identity,prompt_sha256,request_sha256,
+    created_at:new Date().toISOString()});
+   await checkpoint('model_intent_frozen');
+   let reply;
+   try{reply=await curate(cluster,{
+    endpoint:modelEndpoint,model:stage.model,apiKey,
+    ...modelOptions,...stage.options,promptMessages:finalMessages
+   });}
+   catch(e){modelErrors++;throw Error('ISSUE92_BATCH_MODEL_CALL_OUTCOME_UNKNOWN_NO_REPLAY');}
+   assert(typeof reply?.content==='string'&&reply.content.length>0&&
+    reply.content.length<=12000,'MODEL_OUTPUT_SHAPE');
+   await writeOnce(resultFile,{schema:'issue92-finite-model-result-v1',
+    stage:kind,identity,prompt_sha256,request_sha256,
+    reply_sha256:hash(reply.content),
+    reply:{content:reply.content,usage:reply.usage??null,
+     finish_reason:reply.finish_reason??null,duration_ms:reply.duration_ms??null},
+    received_at:new Date().toISOString()});
+   modelCalls++;
+   if(Number.isSafeInteger(reply.usage?.prompt_tokens))
+    promptTokens+=reply.usage.prompt_tokens;
+   if(Number.isSafeInteger(reply.usage?.completion_tokens))
+    completionTokens+=reply.usage.completion_tokens;
+   await checkpoint('model_result_frozen');
+   return reply;
   }
-  await writeOnce(intent,{schema:'issue92-finite-model-call-v1',
-   stage:kind,identity,prompt_sha256,created_at:new Date().toISOString()});
-  await checkpoint('model_intent_frozen');
-  let reply;
-  try{reply=await curate(cluster,{
-   endpoint:modelEndpoint,model:modelId,apiKey,...modelOptions,
-   promptMessages:messages
-  });}
-  catch(e){modelErrors++;throw Error('ISSUE92_BATCH_MODEL_CALL_OUTCOME_UNKNOWN_NO_REPLAY');}
-  assert(typeof reply?.content==='string'&&reply.content.length>0&&
-   reply.content.length<=12000,'MODEL_OUTPUT_SHAPE');
-  await writeOnce(resultFile,{schema:'issue92-finite-model-result-v1',
-   stage:kind,identity,prompt_sha256,reply_sha256:hash(reply.content),
-   reply:{content:reply.content,usage:reply.usage??null,
-    finish_reason:reply.finish_reason??null,duration_ms:reply.duration_ms??null},
-   received_at:new Date().toISOString()});
-  modelCalls++;
-  if(Number.isSafeInteger(reply.usage?.prompt_tokens))
-   promptTokens+=reply.usage.prompt_tokens;
-  if(Number.isSafeInteger(reply.usage?.completion_tokens))
-   completionTokens+=reply.usage.completion_tokens;
-  await checkpoint('model_result_frozen');
-  return reply;
- }
  let plan=await readMaybe(path.join(baseDir,'plan.json'));
  if(!plan){
   const outcomes=[],accepted=[];
@@ -672,7 +697,8 @@ export async function runAdmittedFiniteBatch({
     prompt_sha256:result.prompt_sha256,reply_sha256:result.reply_sha256});
   }
   plan={schema:'issue92-finite-batch-plan-v1',batch_id:active.batch_id,
-   snapshot_sha256:hash(snapshot),created_at:new Date().toISOString(),
+   snapshot_sha256:hash(snapshot),tuning_sha256:tuningSha,
+   created_at:new Date().toISOString(),
    cluster_outcomes:outcomes.map(x=>({cluster_id:x.cluster_id,
     decision:x.decision,reason:x.reason,
     fact_ids:x.facts.map(f=>f.id)})),
@@ -688,6 +714,9 @@ export async function runAdmittedFiniteBatch({
  }else assertPlan(plan,snapshot,noveltyPolicy==='recall'?
   'issue92_recall_first_source_and_utility_v1':
   'review_before_graphiti_and_order_neutral_arbitration');
+ if(plan.tuning_sha256!==undefined)
+  assert(plan.tuning_sha256===tuningSha,'PLAN_TUNING_IDENTITY_CHANGED');
+ else assert(legacyIdentity,'PLAN_LEGACY_TUNING_UNVERIFIED');
  // Private model replies are the immutable inference evidence behind this plan.
  // Verify them again on a resumed run BEFORE any durable review/Graphiti action.
  for(const entry of plan.calls){
