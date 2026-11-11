@@ -209,6 +209,40 @@ test('discovery proposal requires only exact original source evidence, not a fir
  const msg=factDiscoveryPrompt(c);
  assert.doesNotMatch(msg[0].content,/return EMIT with durable utility_class/);
 });
+test('discovery preserves validated source offsets, including bounded EOF correction',()=>{
+ const c=selectClusters([source()])[0],e=c.events[0];
+ const ref=e.source_refs[0],boundary=65;
+ assert.ok(e.excerpt.length>boundary+25);
+ const p=validateFactDiscovery({
+  reason:'Two independently source-cited portions',
+  candidates:[
+   {kind:'blocker',source_ref:ref,start:0,end:boundary,temporal_status:'observed'},
+   {kind:'blocker',source_ref:ref,start:boundary,
+    end:e.excerpt.length+8,temporal_status:'observed'}
+  ]
+ },c);
+ assert.equal(p.ok,true);
+ assert.equal(p.facts.length,2);
+ assert.deepEqual(p.facts.map(f=>f.evidence_span),[
+  {source_ref:ref,start:0,end:boundary},
+  {source_ref:ref,start:boundary,end:e.excerpt.length}
+ ]);
+ assert.equal(p.facts[0].assertion,e.excerpt.slice(0,boundary).trim());
+ assert.equal(p.facts[1].assertion,e.excerpt.slice(boundary).trim());
+ assert.equal(p.source_span_adjustments.length,1);
+ assert.equal(p.source_span_adjustments[0].authorized_end,e.excerpt.length);
+ for(const f of p.facts){
+  assert.equal(Object.isFrozen(f),true);
+  assert.equal(Object.isFrozen(f.evidence_span),true);
+ }
+ const invalid=validateFactDiscovery({
+  reason:'Outside authenticated source',
+  candidates:[{kind:'blocker',source_ref:'unknown:source',
+   start:0,end:boundary,temporal_status:'observed'}]
+ },c);
+ assert.equal(invalid.ok,false);
+ assert.deepEqual(invalid.facts,[]);
+});
 test('second-stage durable utility cannot be fabricated or omitted by reviewer',()=>{
  const p=proposal(selectClusters([source()])[0]);
  const invalid=validateFactReview({decisions:[{index:0,disposition:'ACCEPT',

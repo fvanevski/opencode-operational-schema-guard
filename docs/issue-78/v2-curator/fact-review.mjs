@@ -99,7 +99,14 @@ export function validateFactDiscovery(raw,cluster){
    reason:'Provisional exact-source candidate awaiting independent utility review',
    facts
  },cluster);
- return {...checked,source_span_adjustments:repairs};
+ // validateModelDecision authenticates and normalizes source quotes, but its
+ // generic fact representation omits offsets. Retain corrected authenticated
+ // offsets for S2 source-recovery diagnostics without bypassing validation.
+ if(!checked.ok)return {...checked,source_span_adjustments:repairs};
+ const supported=checked.facts.map((fact,i)=>Object.freeze({
+  ...fact,evidence_span:Object.freeze({...facts[i].evidence_span})
+ }));
+ return {...checked,facts:supported,source_span_adjustments:repairs};
 }
 export function factReviewPrompt(cluster,proposal,priorFacts=[]){
  if(!Array.isArray(cluster?.events)||!Array.isArray(proposal?.facts)||
