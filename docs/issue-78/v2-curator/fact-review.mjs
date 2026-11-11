@@ -98,7 +98,16 @@ export function validateFactDiscovery(raw,cluster,{isolateCandidates=false}={}){
   // S3 opt-in: every candidate must still pass the original validator;
   // malformed siblings must not suppress unrelated source-grounded facts.
   const supported=[],invalid=[],validIndices=new Set();
+  // Canonical source identity is the primary reference used by the validator.
+  const knownRefs=new Set((cluster?.events??[]).map(e=>e?.source_refs?.[0])
+    .filter(ref=>typeof ref==='string'));
   for(let i=0;i<facts.length;i++){
+    if(!knownRefs.has(facts[i].source_refs[0])){
+      // Authentication failure must not masquerade as repairable invalid fields.
+      invalid.push({index:i,reason:'unattributed_or_weak_source',
+        diagnostic_field:null});
+      continue;
+    }
     const one=validateModelDecision({decision:'EMIT',
       utility_class:'durable_decision',
       reason:'Provisional exact-source candidate awaiting independent utility review',
