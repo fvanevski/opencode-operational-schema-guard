@@ -702,7 +702,16 @@ export async function runAdmittedFiniteBatch({
     decision='REVIEWED';reason='independent_utility_review_complete';
     if(pass===0&&resilientDiscovery&&
       proposal.invalid_candidates?.some(x=>x.reason==='invalid_fact_fields')){
-     recoveryTrigger='partial_invalid_discovery';continue;
+     recoveryTrigger='partial_invalid_discovery';
+     // The correction prompt must not forget separately rejected source spans.
+     // A contradictory second-pass ACCEPT still cannot override their records.
+     rejected=screen.review.map(d=>({
+      source_ref:proposal.facts[d.index].source_refs[0],
+      start:proposal.facts[d.index].evidence_span.start,
+      end:proposal.facts[d.index].evidence_span.end,
+      reason_code:d.reason_code
+     }));
+     continue;
     }
     if(pass===0&&sourceRecovery&&newApproved===0&&
       screen.review.length===proposal.facts.length&&

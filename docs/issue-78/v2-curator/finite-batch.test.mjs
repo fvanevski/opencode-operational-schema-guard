@@ -990,3 +990,36 @@ test('S3 ambiguous correction request is not retried after frozen intent',()=>fi
   /MODEL_CALL_AMBIGUOUS_NO_REPLAY/);
  assert.equal(calls,2);assert.equal(f.graphiti.writes.length,0);
 },[strong]));
+
+test('S3 partial recovery cannot reverse a rejected identical source quote',()=>fixture(async f=>{
+ const body=strong+' '+different;
+ let discoveries=0,utilities=0;
+ const curate=async(_,{promptMessages})=>{
+  const sys=promptMessages[0].content,data=JSON.parse(promptMessages[1].content);
+  if(sys.includes('SOURCE-FIRST candidate discovery')){
+   discoveries++;
+   const e=data.evidence[0];
+   if(discoveries===1)return {content:JSON.stringify({reason:'mixed',
+    candidates:[
+     {kind:'blocker',source_ref:e.source,start:0,end:strong.length,temporal_status:'observed'},
+     {kind:'bad_kind',source_ref:e.source,start:strong.length+1,end:e.excerpt.length,
+      temporal_status:'observed'}
+    ]})};
+   assert.equal(data.previously_reviewed_spans.length,1);
+   return {content:JSON.stringify({reason:'same quote',
+    candidates:[{kind:'blocker',source_ref:e.source,start:0,end:strong.length,
+     temporal_status:'observed'}]})};
+  }
+  utilities++;
+  return {content:JSON.stringify({decisions:[{index:0,
+   disposition:utilities===1?'REVIEW':'ACCEPT',
+   reason_code:utilities===1?'not_substantive':'source_specific_durable',
+   ...(utilities===1?{}:{utility_class:'useful_negative'})}]})};
+ };
+ const out=await runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true,resilientDiscovery:true}));
+ assert.equal(discoveries,2);assert.equal(utilities,2);
+ assert.equal(out.model_calls,4);assert.equal(out.approved,0);
+ assert.equal(out.persisted,0);assert.equal(out.deferred,1);
+ assert.equal(f.graphiti.writes.length,0);
+},[strong+' '+different]));
