@@ -464,3 +464,44 @@ test('first-pass uncertain equivalence remains deferred without specificity call
  assert.equal(out.model_calls,5);
  assert.equal(calls.n,5);
 }));
+
+test('multi-variant source-specificity review preserves distinct conditions while deferring true repetitions',()=>{
+ const subjects=[
+  'Sphinx output drops dictionary parameter headers from the rendered table.',
+  'Sphinx rendering has missing dictionary parameter header columns in its table.',
+  'Sphinx table headings disappear for dictionary parameter documentation.',
+  'Sphinx documentation lacks required dictionary parameter header rows.',
+  'Sphinx ASCII-only formatting omits required output key/value labels.',
+  'The Sphinx plain-ASCII formatter drops its output key/value labels.',
+  'Sphinx RST export escapes a literal backslash in a parameter name.',
+  'Sphinx nested-list output duplicates indentation of wrapped descriptions.'
+ ];
+ const rows=subjects.map((assertion,i)=>({
+  id:(i+1).toString(16).padStart(64,'0'),group:scope.group,
+  project:scope.project,workspace:'/workspace/swebench/run-'+i,
+  utility_class:'useful_negative',fact:{
+   assertion,kind:'blocker',evidence_class:'user-stated',
+   temporal_status:'observed',source_refs:['opencode:session:message:'+i]
+  }
+ }));
+ const family=(members,rep)=>({members,representative:rep,
+  certainty:'high',reason_code:members.length>1?
+  'same_technical_predicate':'distinct_predicate',
+  representative_quote:subjects[rep].slice(0,100),
+  equivalence_checks:members.filter(i=>i!==rep).map(i=>({
+   index:i,shared_behavior:'Both descriptions identify the same documented output failure'
+  }))
+ });
+ const outcome=validateSpecificityFamilies({families:[
+  family([0,1,2,3],0),family([4,5],4),family([6],6),family([7],7)
+ ]},rows);
+ assert.equal(outcome.ok,true);
+ assert.equal(outcome.selected.length,4);
+ assert.equal(outcome.deferred.length,4);
+ assert.equal(outcome.proof.length,4);
+ assert.deepEqual(outcome,validateSpecificityFamilies({families:[
+  family([0,1,2,3],0),family([4,5],4),family([6],6),family([7],7)
+ ]},[...rows].reverse()));
+ assert.throws(()=>specificityPrompt([rows[0],{...rows[4],project:'other-project'}]),
+  /SPECIFICITY_SCOPE/);
+});
