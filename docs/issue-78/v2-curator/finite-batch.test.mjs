@@ -437,11 +437,21 @@ test('specificity quote and per-alternate equivalence checks are mandatory and s
   equivalence_checks:[]}))};
  assert.equal(validateSpecificityFamilies(refined,entries).selected.length,2);
 });
-test('malformed independent specificity output halts before any ReviewStore or Graphiti write',()=>fixture(async f=>{
- await assert.rejects(runAdmittedFiniteBatch(opts({...f,
-   curate:model({specificity:'invalid'})})),/SPECIFICITY_UNVERIFIED_NO_GRAPH_WRITES/);
+test('invalid optional specificity model output defers only that family, not the source or the batch',()=>fixture(async f=>{
+ const out=await runAdmittedFiniteBatch(opts({...f,
+  curate:model({specificity:'invalid'})}));
+ assert.equal(out.model_calls,6);
+ assert.equal(out.persisted,0);
+ assert.equal(out.approved,0);
+ assert.equal(out.deferred,2);
  assert.equal(f.graphiti.writes.length,0);
- assert.equal((await f.store.list({limit:20})).total,0);
+ assert.equal((await f.store.list({limit:20})).items.filter(x=>x.state==='deferred').length,2);
+ const active=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,'_active.json'),'utf8'));
+ const plan=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,active.batch_id,'plan.json'),'utf8'));
+ assert.equal(plan.families[0].refinements[0].result,'review_required_invalid_specificity');
+ assert.ok(plan.families[0].refinements[0].validation_reason.includes('quote_not_from_selected_fact'));
 }));
 test('unknown result for independent specificity cannot be replayed after restart',()=>fixture(async f=>{
  let attempts=0;
@@ -580,3 +590,27 @@ test('already frozen recall plans cannot switch back to restrictive policy on re
  assert.equal(recovered.persisted,2);
  assert.equal(count.n,4);
 }));
+
+test('specificity response shape alias and exact long quote do not become safety vetoes',()=>{
+ const rep='Sphinx output drops dictionary parameter header rows in rendered documentation and affects the table-column layout for text-based output, including a reproducible exception when the output contains a nested rendering mode or additional versioned parameters.';
+ const other='Sphinx documentation output suppresses the same table header rows for dictionary parameters in the generated API page.';
+ const mk=(id,assertion)=>({id,group:scope.group,project:scope.project,
+  workspace:'/workspace/swebench/'+id,utility_class:'useful_negative',
+  fact:{assertion,kind:'blocker',source_refs:['opencode:source:'+id],
+   evidence_class:'user-stated',temporal_status:'observed'}});
+ const rows=[mk('a'.repeat(64),rep),mk('b'.repeat(64),other)];
+ const raw={family:[0,1],representative:0,certainty:'high',
+  reason_code:'same_technical_predicate',
+  representative_quote:rep,
+  equivalence_checks:[{index:1,
+   shared_behavior:'Both statements describe missing Sphinx dictionary table headers'}]};
+ assert.ok(rep.length>220&&rep.length<=450);
+ const v=validateSpecificityFamilies(raw,rows);
+ assert.equal(v.ok,true);
+ assert.equal(v.normalization,'flat_single_family');
+ assert.equal(v.selected.length,1);
+ assert.equal(v.deferred.length,1);
+ assert.equal(validateSpecificityFamilies({family:[0,1],representative:0},rows).ok,false);
+ assert.equal(validateSpecificityFamilies({...raw,representative_quote:'fabricated quote'},rows).ok,false);
+ assert.equal(validateSpecificityFamilies({...raw,family:[0]},rows).ok,false);
+});
