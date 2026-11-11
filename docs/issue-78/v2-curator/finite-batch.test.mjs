@@ -7,7 +7,8 @@ import {fromPrompt} from '../v2-candidate/events.mjs';
 import {CandidateQueue} from '../v2-candidate/queue.mjs';
 import {ReviewStore} from './core.mjs';
 import {runAdmittedFiniteBatch,representativePrompt,
-  validateRepresentativeFamilies,finiteBatchDiscoveryPrompt,
+  validateRepresentativeFamilies,specificityPrompt,validateSpecificityFamilies,
+  finiteBatchDiscoveryPrompt,
   finiteBatchUtilityPrompt} from './finite-batch.mjs';
 import {selectClusters,validateModelDecision} from './core.mjs';
 
@@ -33,7 +34,8 @@ function graph(){
    throw Error('unexpected Graphiti method');
   }};
 }
-function model({uncertain=false,distinct=false,invalid=false,reject=false,counter=null}={}){
+function model({uncertain=false,distinct=false,invalid=false,reject=false,
+ specificity='same',counter=null}={}){
  return async(_cluster,{promptMessages})=>{
   if(counter)counter.n++;
   const system=promptMessages[0].content;
@@ -61,6 +63,30 @@ function model({uncertain=false,distinct=false,invalid=false,reject=false,counte
     representative:cs.find(c=>c.assertion===strong)?.index??0,
     certainty:uncertain?'uncertain':'high',
     reason_code:uncertain?'uncertain':'same_technical_predicate'}];
+   content=JSON.stringify({families});
+  }else if(system.includes('INDEPENDENT COUNTER-REVIEW')){
+   const cs=data.candidates;
+   let families;
+   if(specificity==='invalid'){
+    families=[{members:cs.map(c=>c.index),representative:0,
+      certainty:'high',reason_code:'same_technical_predicate',
+      representative_quote:'fabricated quote not in source',
+      equivalence_checks:cs.slice(1).map(c=>({index:c.index,
+       shared_behavior:'Same underlying technical behavior as representative'}))}];
+   }else if(specificity==='split'){
+    families=cs.map(c=>({members:[c.index],representative:c.index,
+     certainty:'high',reason_code:'distinct_predicate',
+     representative_quote:c.assertion.slice(0,200),equivalence_checks:[]}));
+   }else{
+    const rep=cs.find(c=>c.assertion===strong)?.index??0;
+    families=[{members:cs.map(c=>c.index),representative:rep,
+     certainty:'high',reason_code:'same_technical_predicate',
+     representative_quote:cs[rep].assertion.slice(0,200),
+     equivalence_checks:cs.filter(c=>c.index!==rep).map(c=>({
+      index:c.index,
+      shared_behavior:'This statement describes the identical missing-row behavior'
+     }))}];
+   }
    content=JSON.stringify({families});
   }else throw Error('unknown model stage');
   return {content,duration_ms:1,
@@ -113,7 +139,7 @@ test('batch picks substantive representative and preserves the weaker review rec
   assert.equal(result.persisted,1);
   assert.equal(result.approved,1);
   assert.equal(result.deferred,1);
-  assert.equal(result.model_calls,5);
+  assert.equal(result.model_calls,6);
   assert.equal(f.graphiti.writes.length,1);
   assert.ok(f.graphiti.writes[0].episode_body.includes(strong));
   const records=(await f.store.list({limit:20})).items;
@@ -156,12 +182,12 @@ test('crash after frozen plan resumes without any additional model calls',()=>fi
  await assert.rejects(runAdmittedFiniteBatch(opts({...f,curate,
   onCheckpoint:s=>{if(s==='plan_frozen')throw Error('INJECTED_CRASH');}
  })),/INJECTED_CRASH/);
- assert.equal(count.n,5);
+ assert.equal(count.n,6);
  assert.equal(f.graphiti.writes.length,0);
  const out=await runAdmittedFiniteBatch(opts({...f,curate}));
  assert.equal(out.persisted,1);
  assert.equal(out.model_calls,0);
- assert.equal(count.n,5);
+ assert.equal(count.n,6);
 }));
 test('ambiguous model call intent remains non-replayable after interruption',()=>fixture(async f=>{
  let calls=0;
@@ -262,7 +288,7 @@ test('cross-workspace Sphinx siblings share one project arbitration pool and pre
  const scopes=id=>({...scope,workspace:'/workspace/swebench/'+id});
  const run=order=>fixture(async f=>{
   const out=await runAdmittedFiniteBatch(opts({...f,curate:model()}));
-  assert.equal(out.model_calls,5); // two discoveries, two utility calls, ONE joint review
+  assert.equal(out.model_calls,6); // two discoveries, two utility calls, joint review + specificity
   assert.equal(out.persisted,1);
   assert.equal(out.deferred,1);
   assert.equal(f.graphiti.writes.length,1);
@@ -292,7 +318,7 @@ test('cross-workspace uncertain-equivalence families defer both instead of promo
  assert.equal(f.graphiti.writes.length,0);
 },[strong,weak],{scopeFor:id=>({...scope,workspace:'/workspace/swebench/'+id})}));
 test('same group but different authenticated projects cannot be compared as one family',()=>fixture(async f=>{
- const out=await runAdmittedFiniteBatch(opts({...f,curate:model()}));
+ const out=await runAdmittedFiniteBatch(opts({...f,curate:model({distinct:true})}));
  assert.equal(out.model_calls,6); // two discoveries, two utilities, two singleton arbitration calls
  assert.equal(out.approved,2);
  assert.equal(out.persisted,2);
@@ -360,3 +386,81 @@ test('nineteen same-project, cross-workspace candidates form real semantic-famil
  assert.deepEqual(solution,validateRepresentativeFamilies({families},[...entries].reverse()));
  assert.deepEqual(input,representativePrompt(entries));
 });
+
+test('independent specificity counter-review splits supported distinct technical variants',()=>fixture(async f=>{
+ const out=await runAdmittedFiniteBatch(opts({...f,curate:model({specificity:'split'})}));
+ assert.equal(out.model_calls,6);
+ assert.equal(out.approved,2);
+ assert.equal(out.persisted,2);
+ assert.equal(out.deferred,0);
+ assert.equal(f.graphiti.writes.length,2);
+ const active=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,'_active.json'),'utf8'));
+ const plan=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,active.batch_id,'plan.json'),'utf8'));
+ assert.equal(plan.families.length,1);
+ assert.equal(plan.families[0].provisional.length,1);
+ assert.equal(plan.families[0].provisional[0].members.length,2);
+ assert.equal(plan.families[0].refinements.length,1);
+ assert.equal(plan.families[0].refinements[0].selected.length,2);
+ assert.equal(plan.families[0].refinements[0].source_proof.length,2);
+},[strong,different],{scopeFor:id=>({...scope,
+ workspace:'/workspace/swebench/'+id})}));
+test('specificity quote and per-alternate equivalence checks are mandatory and source-authenticated',()=>{
+ const make=(id,text)=>({id,group:scope.group,project:scope.project,
+  workspace:'/workspace/swebench/'+id,utility_class:'useful_negative',
+  fact:{assertion:text,kind:'blocker',temporal_status:'observed',
+   evidence_class:'user-stated',source_refs:['opencode:source:'+id]}});
+ const entries=[make('a'.repeat(64),strong),make('b'.repeat(64),weak)];
+ const prompt=specificityPrompt([...entries].reverse());
+ assert.deepEqual(prompt,specificityPrompt(entries));
+ assert.match(prompt[0].content,/additional independently useful constraint/);
+ const accepted={families:[{members:[0,1],representative:0,certainty:'high',
+  reason_code:'same_technical_predicate',
+  representative_quote:strong.slice(0,90),
+  equivalence_checks:[{index:1,
+   shared_behavior:'Both passages report the same Sphinx header-row defect'}]}]};
+ assert.equal(validateSpecificityFamilies(accepted,entries).ok,true);
+ const missing={families:[{...accepted.families[0],equivalence_checks:[]}]};
+ assert.equal(validateSpecificityFamilies(missing,entries).ok,false);
+ assert.equal(validateSpecificityFamilies({families:[{
+  ...accepted.families[0],representative_quote:'a fabricated assertion that is absent'
+ }]},entries).ok,false);
+ const refined={families:entries.map((c,index)=>({
+  members:[index],representative:index,certainty:'high',
+  reason_code:'distinct_predicate',representative_quote:c.fact.assertion.slice(0,95),
+  equivalence_checks:[]}))};
+ assert.equal(validateSpecificityFamilies(refined,entries).selected.length,2);
+});
+test('malformed independent specificity output halts before any ReviewStore or Graphiti write',()=>fixture(async f=>{
+ await assert.rejects(runAdmittedFiniteBatch(opts({...f,
+   curate:model({specificity:'invalid'})})),/SPECIFICITY_UNVERIFIED_NO_GRAPH_WRITES/);
+ assert.equal(f.graphiti.writes.length,0);
+ assert.equal((await f.store.list({limit:20})).total,0);
+}));
+test('unknown result for independent specificity cannot be replayed after restart',()=>fixture(async f=>{
+ let attempts=0;
+ const otherwise=model();
+ const unstable=async(cluster,opts)=>{
+  if(opts.promptMessages[0].content.includes('INDEPENDENT COUNTER-REVIEW')){
+   attempts++;throw Error('unknown model outcome at specificity');
+  }
+  return otherwise(cluster,opts);
+ };
+ await assert.rejects(runAdmittedFiniteBatch(opts({...f,curate:unstable})),
+  /MODEL_CALL_OUTCOME_UNKNOWN_NO_REPLAY/);
+ await assert.rejects(runAdmittedFiniteBatch(opts({...f,curate:unstable})),
+  /MODEL_CALL_AMBIGUOUS_NO_REPLAY/);
+ assert.equal(attempts,1);
+ assert.equal(f.graphiti.writes.length,0);
+}));
+test('first-pass uncertain equivalence remains deferred without specificity call',()=>fixture(async f=>{
+ const calls={n:0};
+ const out=await runAdmittedFiniteBatch(opts({...f,
+  curate:model({uncertain:true,counter:calls})}));
+ assert.equal(out.approved,0);
+ assert.equal(out.persisted,0);
+ assert.equal(out.deferred,2);
+ assert.equal(out.model_calls,5);
+ assert.equal(calls.n,5);
+}));
