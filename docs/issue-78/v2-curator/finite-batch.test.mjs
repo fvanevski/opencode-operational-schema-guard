@@ -865,3 +865,128 @@ test('S2 conflicting verdict on the same exact quote cannot silently upgrade it'
  assert.equal(out.approved,0);assert.equal(out.persisted,0);assert.equal(out.deferred,1);
  assert.equal(f.graphiti.writes.length,0);
 },[strong]));
+
+
+test('S3 retries one invalid discovery once and persists only corrected sourced fact',()=>fixture(async f=>{
+ const stages=[];
+ const curate=async(_,{promptMessages})=>{
+  const system=promptMessages[0].content,data=JSON.parse(promptMessages[1].content);
+  const discovery=system.includes('SOURCE-FIRST candidate discovery');
+  const recovery=system.includes('SECOND-PASS SOURCE RECOVERY');
+  stages.push(discovery?(recovery?'recovery':'first'):'utility');
+  if(discovery){
+   const e=data.evidence[0];
+   if(recovery){
+    assert.deepEqual(data.previous_validation_failures.map(x=>x.reason),
+     ['invalid_fact_fields']);
+    return {content:JSON.stringify({reason:'correct source fields',
+     candidates:[{kind:'blocker',source_ref:e.source,start:0,
+      end:e.excerpt.length,temporal_status:'observed'}]})};
+   }
+   return {content:JSON.stringify({reason:'unsupported kind',
+    candidates:[{kind:'bad_kind',source_ref:e.source,start:0,
+     end:e.excerpt.length,temporal_status:'observed'}]})};
+  }
+  return {content:JSON.stringify({decisions:[{index:0,
+   disposition:'ACCEPT',reason_code:'source_specific_durable',
+   utility_class:'useful_negative'}]})};
+ };
+ const out=await runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true,resilientDiscovery:true}));
+ assert.deepEqual(stages,['first','recovery','utility']);
+ assert.equal(out.model_calls,3);
+ assert.equal(out.approved,1);assert.equal(out.persisted,1);
+ assert.equal(f.graphiti.writes.length,1);
+ const active=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,'_active.json'),'utf8'));
+ assert.equal(active.resilient_discovery,true);
+ const plan=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,active.batch_id,'plan.json'),'utf8'));
+ assert.equal(plan.resilient_discovery,true);
+ assert.equal(plan.cluster_outcomes[0].source_recovery_trigger,'invalid_discovery');
+ assert.equal(plan.cluster_outcomes[0].source_validation_failures[0].candidates[0]
+  .diagnostic_field,'kind');
+},[strong]));
+
+test('S3 independently validates mixed discovery and preserves two distinct facts',()=>fixture(async f=>{
+ const combined=strong+' '+different;
+ let discoveries=0,utilities=0;
+ const curate=async(_,{promptMessages})=>{
+  const system=promptMessages[0].content,data=JSON.parse(promptMessages[1].content);
+  if(system.includes('SOURCE-FIRST candidate discovery')){
+   discoveries++;
+   const e=data.evidence[0],split=strong.length+1;
+   if(discoveries===1)return {content:JSON.stringify({reason:'mixed source',
+    candidates:[
+     {kind:'blocker',source_ref:e.source,start:0,end:strong.length,temporal_status:'observed'},
+     {kind:'invalid_kind',source_ref:e.source,start:split,end:e.excerpt.length,temporal_status:'observed'}
+    ]})};
+   assert.deepEqual(data.previous_validation_failures.map(x=>x.reason),
+    ['invalid_fact_fields']);
+   return {content:JSON.stringify({reason:'correct sibling',
+    candidates:[{kind:'blocker',source_ref:e.source,start:split,
+     end:e.excerpt.length,temporal_status:'observed'}]})};
+  }
+  utilities++;
+  return {content:JSON.stringify({decisions:data.candidates.map(x=>({
+   index:x.index,disposition:'ACCEPT',reason_code:'source_specific_durable',
+   utility_class:'useful_negative'}))})};
+ };
+ const out=await runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true,resilientDiscovery:true}));
+ assert.equal(discoveries,2);assert.equal(utilities,2);
+ assert.equal(out.model_calls,4);
+ assert.equal(out.approved,2);assert.equal(out.persisted,2);
+ assert.equal(f.graphiti.writes.length,2);
+ const active=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,'_active.json'),'utf8'));
+ const plan=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,active.batch_id,'plan.json'),'utf8'));
+ assert.equal(plan.cluster_outcomes[0].source_recovery_trigger,'partial_invalid_discovery');
+ assert.equal(plan.cluster_outcomes[0].source_validation_failures[0].valid_candidate_count,1);
+},[strong+' '+different]));
+
+test('S3 does not retry a forged source reference',()=>fixture(async f=>{
+ let calls=0;
+ const curate=async()=>{calls++;return {content:JSON.stringify({
+  reason:'invented source',candidates:[{kind:'blocker',
+   source_ref:'opencode:forged',start:0,end:strong.length,
+   temporal_status:'observed'}]})};};
+ const out=await runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true,resilientDiscovery:true}));
+ assert.equal(calls,1);assert.equal(out.approved,0);
+ assert.equal(out.persisted,0);assert.equal(f.graphiti.writes.length,0);
+},[strong]));
+
+test('S3 opt-in cannot change existing S2 active identity',()=>fixture(async f=>{
+ let calls=0;
+ const curate=async()=>{calls++;return {content:JSON.stringify({
+  reason:'No source quote',candidates:[]})};};
+ await runAdmittedFiniteBatch(recallOpts({...f,curate,sourceRecovery:true}));
+ const before=calls;
+ await assert.rejects(runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true,resilientDiscovery:true})),
+  /RESILIENT_DISCOVERY_IDENTITY_CHANGED/);
+ assert.equal(calls,before);assert.equal(f.graphiti.writes.length,0);
+},[strong]));
+
+test('S3 ambiguous correction request is not retried after frozen intent',()=>fixture(async f=>{
+ let calls=0;
+ const curate=async(_,{promptMessages})=>{
+  calls++;
+  const system=promptMessages[0].content;
+  if(system.includes('SECOND-PASS SOURCE RECOVERY'))
+   throw Error('unresolved model response');
+  const e=JSON.parse(promptMessages[1].content).evidence[0];
+  return {content:JSON.stringify({reason:'invalid kind',
+   candidates:[{kind:'unsupported_kind',source_ref:e.source,
+    start:0,end:e.excerpt.length,temporal_status:'observed'}]})};
+ };
+ await assert.rejects(runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true,resilientDiscovery:true})),
+  /MODEL_CALL_OUTCOME_UNKNOWN_NO_REPLAY/);
+ await assert.rejects(runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true,resilientDiscovery:true})),
+  /MODEL_CALL_AMBIGUOUS_NO_REPLAY/);
+ assert.equal(calls,2);assert.equal(f.graphiti.writes.length,0);
+},[strong]));
