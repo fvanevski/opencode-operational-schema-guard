@@ -686,3 +686,36 @@ test('a frozen batch cannot change its stage profile after the first model resul
  assert.equal(recovered.model_calls,3);
  assert.equal(count.n,4);
 }));
+
+
+test('replay-only refuses to infer when even one frozen model-call intent is missing',()=>fixture(async f=>{
+ let calls=0;
+ await assert.rejects(runAdmittedFiniteBatch(recallOpts({...f,replayOnly:true,
+  curate:async()=>{calls++;throw Error('NEVER_CALL_MODEL');}
+ })),/REPLAY_ONLY_MISSING_FROZEN_CALL/);
+ assert.equal(calls,0);
+ assert.equal(f.graphiti.writes.length,0);
+ assert.equal((await f.store.list({limit:20})).total,0);
+}));
+test('replay-only recovers completed model responses with per-stage metrics and no inference',()=>fixture(async f=>{
+ const count={n:0},curate=model({counter:count});
+ await assert.rejects(runAdmittedFiniteBatch(recallOpts({...f,curate,
+  onCheckpoint:s=>{if(s==='plan_frozen')throw Error('STOP_AFTER_FREEZE');}
+ })),/STOP_AFTER_FREEZE/);
+ assert.equal(count.n,4);
+ assert.equal(f.graphiti.writes.length,0);
+ let unexpected=0;
+ const result=await runAdmittedFiniteBatch(recallOpts({...f,replayOnly:true,
+  curate:async()=>{unexpected++;throw Error('UNAUTHORIZED_MODEL_CALL');}
+ }));
+ assert.equal(unexpected,0);
+ assert.equal(result.model_calls,0);
+ assert.equal(result.replay_only,true);
+ assert.equal(result.persisted,2);
+ assert.equal(result.model_metrics.discovery.calls,2);
+ assert.equal(result.model_metrics.utility.calls,2);
+ assert.equal(result.model_metrics.discovery.prompt_tokens,20);
+ assert.equal(result.model_metrics.utility.completion_tokens,30);
+ assert.equal(result.model_metrics.discovery.latency_ms,2);
+ assert.equal(f.graphiti.writes.length,2);
+}));
