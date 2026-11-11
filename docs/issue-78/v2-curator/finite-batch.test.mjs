@@ -614,3 +614,75 @@ test('specificity response shape alias and exact long quote do not become safety
  assert.equal(validateSpecificityFamilies({...raw,representative_quote:'fabricated quote'},rows).ok,false);
  assert.equal(validateSpecificityFamilies({...raw,family:[0]},rows).ok,false);
 });
+
+
+test('recall-first finite batch applies separate discovery/utility model knobs without novelty calls',()=>fixture(async f=>{
+ const tuning={schema:'issue92-finite-batch-tuning-v1',stages:{
+  discovery:{model:'chat-fast',temperature:0.1,max_tokens:1024,
+   prompt_guidance:'Identify actual source-stated technical constraints.'},
+  utility:{model:'chat-review',reasoning_effort:'low',temperature:0,
+   max_tokens:3072,prompt_guidance:'Accept potentially useful reported defects.'}
+ }};
+ const calls=[],base=model();
+ const mocked=async(cluster,opts)=>{
+  calls.push({model:opts.model,temperature:opts.temperature,
+   reasoningEffort:opts.reasoningEffort,maxTokens:opts.maxTokens,
+   promptMessages:opts.promptMessages});
+  return base(cluster,opts);
+ };
+ const result=await runAdmittedFiniteBatch(recallOpts({...f,curate:mocked,tuning}));
+ assert.equal(result.model_calls,4);
+ assert.equal(result.approved,2);
+ assert.equal(result.persisted,2);
+ assert.equal(calls.length,4);
+ assert.equal(calls.filter(x=>x.model==='chat-fast').length,2);
+ assert.equal(calls.filter(x=>x.model==='chat-review').length,2);
+ for(const x of calls){
+  if(x.model==='chat-fast'){
+   assert.equal(x.maxTokens,1024);
+   assert.equal(x.temperature,0.1);
+   assert.ok(x.promptMessages[0].content.includes('Identify actual source-stated'));
+  }else{
+   assert.equal(x.maxTokens,3072);
+   assert.equal(x.reasoningEffort,'low');
+   assert.ok(x.promptMessages[0].content.includes('Accept potentially useful'));
+  }
+ }
+ const active=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,'_active.json'),'utf8'));
+ const baseDir=path.join(f.root,'issue92-finite-batches-v1',
+  scope.group,active.batch_id);
+ const plan=JSON.parse(await readFile(path.join(baseDir,'plan.json'),'utf8'));
+ assert.match(plan.tuning_sha256,/^[0-9a-f]{64}$/);
+ assert.equal(plan.tuning_sha256,active.tuning_sha256);
+ const {readdir}=await import('node:fs/promises');
+ const intents=(await readdir(path.join(baseDir,'model-calls')))
+   .filter(n=>n.endsWith('.intent.json'));
+ assert.equal(intents.length,4);
+ for(const n of intents){
+  const intent=JSON.parse(await readFile(path.join(baseDir,'model-calls',n),'utf8'));
+  assert.match(intent.request_sha256,/^[0-9a-f]{64}$/);
+ }
+}));
+test('a frozen batch cannot change its stage profile after the first model result',()=>fixture(async f=>{
+ const count={n:0},curate=model({counter:count});
+ const tuning={schema:'issue92-finite-batch-tuning-v1',stages:{
+  utility:{model:'chat-review',reasoning_effort:'medium',max_tokens:2048}
+ }};
+ await assert.rejects(runAdmittedFiniteBatch(recallOpts({...f,curate,tuning,
+  onCheckpoint:stage=>{
+   if(stage==='model_result_frozen'&&count.n===1)
+    throw Error('STOP_AFTER_FIRST_TUNED_RESPONSE');
+  }
+ })),/STOP_AFTER_FIRST_TUNED_RESPONSE/);
+ assert.equal(count.n,1);
+ await assert.rejects(runAdmittedFiniteBatch(recallOpts({...f,curate,
+  tuning:{...tuning,stages:{utility:{
+   ...tuning.stages.utility,reasoning_effort:'high'}}}
+ })),/ISSUE92_BATCH_TUNING_IDENTITY_CHANGED/);
+ assert.equal(count.n,1);
+ const recovered=await runAdmittedFiniteBatch(recallOpts({...f,curate,tuning}));
+ assert.equal(recovered.persisted,2);
+ assert.equal(recovered.model_calls,3);
+ assert.equal(count.n,4);
+}));
