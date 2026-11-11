@@ -113,9 +113,14 @@ async function fixture(fn,order=[strong,weak],{scopeFor=null}={}){
   await rm(root,{recursive:true,force:true});
  }
 }
+// Existing finite-batch tests retain the explicit conservative policy to
+// verify legacy recovery behavior, while the new tests below exercise the
+// production-facing development default: recall, not model-gated novelty.
 const opts=f=>({...f,group:scope.group,
  modelEndpoint:'http://127.0.0.1:8002/v1/chat/completions',
- modelId:'chat-fast',maxClusters:24,maxSeconds:180});
+ modelId:'chat-fast',maxClusters:24,maxSeconds:180,
+ noveltyPolicy:'conservative'});
+const recallOpts=f=>({...opts(f),noveltyPolicy:undefined});
 
 test('representative input and resolution are invariant to candidate order',()=>{
  const make=(id,assertion)=>({id,group:scope.group,project:scope.project,
@@ -505,3 +510,73 @@ test('multi-variant source-specificity review preserves distinct conditions whil
  assert.throws(()=>specificityPrompt([rows[0],{...rows[4],project:'other-project'}]),
   /SPECIFICITY_SCOPE/);
 });
+
+
+test('recall-first default promotes both independently useful, source-validated facts without a semantic veto',()=>fixture(async f=>{
+ const count={n:0};
+ const result=await runAdmittedFiniteBatch(recallOpts({...f,curate:model({invalid:true,counter:count})}));
+ assert.equal(result.status,'settled');
+ assert.equal(result.model_calls,4); // discovery + independent utility only
+ assert.equal(count.n,4); // no arbitration or specificity inference
+ assert.equal(result.approved,2);
+ assert.equal(result.deferred,0);
+ assert.equal(result.persisted,2);
+ assert.equal(f.graphiti.writes.length,2);
+ const active=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,'_active.json'),'utf8'));
+ const plan=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,active.batch_id,'plan.json'),'utf8'));
+ assert.equal(plan.policy,'issue92_recall_first_source_and_utility_v1');
+ assert.equal(plan.families.length,1);
+ assert.equal(plan.families[0].novelty_status,
+  'semantic_equivalence_advisory_not_promotion_gate');
+ assert.equal(plan.families[0].selected.length,2);
+ assert.equal(plan.calls.length,4);
+ assert.ok(plan.calls.every(c=>['discovery','utility'].includes(c.stage)));
+}));
+test('recall-first default is not defeated by previously uncertain model equivalence',()=>fixture(async f=>{
+ const count={n:0};
+ const result=await runAdmittedFiniteBatch(recallOpts({...f,
+  curate:model({uncertain:true,counter:count})}));
+ assert.equal(count.n,4);
+ assert.equal(result.persisted,2);
+ assert.equal(result.deferred,0);
+ assert.equal(f.graphiti.writes.length,2);
+},[strong,weak],{scopeFor:id=>({...scope,
+ workspace:'/workspace/swebench/'+id})}));
+test('frozen discovery/utility replies can be reused without model replay when novelty is no longer a gate',()=>fixture(async f=>{
+ const count={n:0},curate=model({counter:count});
+ await assert.rejects(runAdmittedFiniteBatch(opts({...f,curate,
+  onCheckpoint:stage=>{
+   if(stage==='model_result_frozen'&&count.n===4)
+    throw Error('STOP_AFTER_UTILITY_BEFORE_NOVELTY');
+  }
+ })),/STOP_AFTER_UTILITY_BEFORE_NOVELTY/);
+ assert.equal(count.n,4);
+ assert.equal(f.graphiti.writes.length,0);
+ const noInference=async()=>{throw Error('NO_REPLAY_OF_FROZEN_INFERENCE_ALLOWED');};
+ const result=await runAdmittedFiniteBatch(recallOpts({...f,curate:noInference}));
+ assert.equal(result.model_calls,0);
+ assert.equal(result.persisted,2);
+ assert.equal(result.approved,2);
+ assert.equal(f.graphiti.writes.length,2);
+ assert.equal(count.n,4);
+}));
+test('already frozen recall plans cannot switch back to restrictive policy on restart',()=>fixture(async f=>{
+ const count={n:0},curate=model({counter:count});
+ await assert.rejects(runAdmittedFiniteBatch(recallOpts({...f,curate,
+  onCheckpoint:stage=>{
+   if(stage==='plan_frozen')throw Error('STOP_AT_RECALL_PLAN');
+  }
+ })),/STOP_AT_RECALL_PLAN/);
+ assert.equal(count.n,4);
+ assert.equal(f.graphiti.writes.length,0);
+ await assert.rejects(runAdmittedFiniteBatch(opts({...f,curate})),
+  /ISSUE92_BATCH_PLAN_IDENTITY/);
+ assert.equal(count.n,4);
+ assert.equal(f.graphiti.writes.length,0);
+ const recovered=await runAdmittedFiniteBatch(recallOpts({...f,curate}));
+ assert.equal(recovered.model_calls,0);
+ assert.equal(recovered.persisted,2);
+ assert.equal(count.n,4);
+}));
