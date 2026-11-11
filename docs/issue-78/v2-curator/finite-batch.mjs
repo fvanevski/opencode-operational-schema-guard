@@ -270,10 +270,38 @@ export function specificityPrompt(candidates){
     workspace_sha256:hash(c.workspace)}))
  })}];
 }
-export function validateSpecificityFamilies(raw,candidates){
- let payload;
- try{payload=typeof raw==='string'?JSON.parse(raw):raw;}
+/** Narrow response-shape alias, not a semantic repair. The model may use a
+ * flat {"family":[indices],...} for one complete partition, but all decision
+ * fields must be explicitly present. No implicit family, representative,
+ * certainty, evidence or equivalence is manufactured here.
+ * Raw model replies and original prompt identities stay frozen.
+ */
+export function normalizeSpecificityResponse(raw){
+ let parsed;
+ try{parsed=typeof raw==='string'?JSON.parse(raw):raw;}
  catch{return {ok:false,reason:'specificity_invalid_json'};}
+ if(!parsed||typeof parsed!=='object'||Array.isArray(parsed))
+  return {ok:false,reason:'specificity_invalid_shape'};
+ if(Object.hasOwn(parsed,'families'))
+  return {ok:true,payload:parsed,normalization:'canonical'};
+ if(!Array.isArray(parsed.family)||!parsed.family.length||
+    parsed.family.some(i=>!Number.isSafeInteger(i))||
+    !Number.isSafeInteger(parsed.representative)||
+    !['high','uncertain'].includes(parsed.certainty)||
+    !['same_technical_predicate','distinct_predicate','uncertain']
+      .includes(parsed.reason_code)||
+    (parsed.certainty==='high'&&
+     (typeof parsed.representative_quote!=='string'||
+      !Array.isArray(parsed.equivalence_checks))))
+  return {ok:false,reason:'specificity_flat_family_incomplete'};
+ const {family,...fields}=parsed;
+ return {ok:true,payload:{families:[{...fields,members:family}]},
+  normalization:'flat_single_family'};
+}
+export function validateSpecificityFamilies(raw,candidates){
+ const normalized=normalizeSpecificityResponse(raw);
+ if(!normalized.ok)return {ok:false,reason:normalized.reason};
+ const payload=normalized.payload;
  const v=validateRepresentativeFamilies(payload,candidates);
  if(!v.ok)return {ok:false,reason:'specificity_'+v.reason};
  const ordered=[...candidates].sort(byId);
@@ -282,7 +310,11 @@ export function validateSpecificityFamilies(raw,candidates){
   if(family.certainty==='uncertain')continue;
   const chosen=ordered[family.representative];
   const quote=family.representative_quote;
-  if(typeof quote!=='string'||quote.length<15||quote.length>220||
+  // The prompt requests <=220 chars. A longer exact quote is still source-
+  // authoritative up to the existing 450-character original excerpt bound.
+  // Do not silently truncate: the final characters might state the actual
+  // distinguishing condition and must remain available for adjudication.
+  if(typeof quote!=='string'||quote.length<15||quote.length>450||
     !chosen.fact.assertion.includes(quote))
    return {ok:false,reason:'specificity_quote_not_from_selected_fact'};
   const checks=family.equivalence_checks;
@@ -300,7 +332,7 @@ export function validateSpecificityFamilies(raw,candidates){
     claimed_equivalence:checks.map(c=>({id:ordered[c.index].id,
       reason:c.shared_behavior}))});
  }
- return {...v,proof};
+ return {...v,proof,normalization:normalized.normalization};
 }
 
 function factEntry(cluster,fact,utility,reviewReason=null){
@@ -576,13 +608,26 @@ export async function runAdmittedFiniteBatch({
     const refinement=await callOnce('specificity',refinementId,synthetic,
      specificityPrompt(members));
     const verified=validateSpecificityFamilies(refinement.content,members);
-    assert(verified.ok,'SPECIFICITY_UNVERIFIED_NO_GRAPH_WRITES');
+    if(!verified.ok){
+     // A completed model response that cannot authorize a semantic partition
+     // must not veto the entire batch or be rerun for favorable output. Preserve
+     // every source-validated member as operator-reviewable, with the exact
+     // validation reason, and permit unrelated families to finish.
+     const reason='specificity_unverified_'+verified.reason;
+     for(const member of members)localDeferred.set(member.id,reason);
+     refinements.push({candidate_ids:members.map(x=>x.id),
+      selected:[],deferred:members.map(x=>({id:x.id,reason})),
+      result:'review_required_invalid_specificity',
+      validation_reason:verified.reason,source_proof:[]});
+     continue;
+    }
     for(const member of verified.selected)localSelected.add(member);
     for(const other of verified.deferred)
      localDeferred.set(other.id,other.reason);
     refinements.push({candidate_ids:members.map(x=>x.id),
      selected:verified.selected,deferred:verified.deferred,
-     source_proof:verified.proof});
+     result:'validated_specificity',
+     normalization:verified.normalization,source_proof:verified.proof});
    }
    for(const key of localSelected)selected.add(key);
    for(const [id,reason] of localDeferred)deferred.set(id,reason);
