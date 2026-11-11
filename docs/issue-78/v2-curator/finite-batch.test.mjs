@@ -815,3 +815,53 @@ test('S2 unsupported inference is deferred without a recovery retry',()=>fixture
  assert.equal(calls,2);assert.equal(result.persisted,0);
  assert.equal(f.graphiti.writes.length,0);
 },[strong]));
+
+test('S2 source recovery can recover an authenticated empty first discovery',()=>fixture(async f=>{
+ const stages=[];
+ const curate=async(_,{promptMessages})=>{
+  const system=promptMessages[0].content;
+  const rescue=system.includes('SECOND-PASS SOURCE RECOVERY');
+  const discovery=system.includes('SOURCE-FIRST candidate discovery');
+  stages.push(rescue?'rescue':discovery?'discovery':'utility');
+  if(rescue){
+   const e=JSON.parse(promptMessages[1].content).evidence[0];
+   return {content:JSON.stringify({reason:'specific original source',candidates:[{
+    kind:'blocker',source_ref:e.source,start:0,end:e.excerpt.length,
+    temporal_status:'observed'}]})};
+  }
+  if(discovery)return {content:JSON.stringify({reason:'initial empty',candidates:[]})};
+  return {content:JSON.stringify({decisions:[{index:0,disposition:'ACCEPT',
+   reason_code:'source_specific_durable',utility_class:'useful_negative'}]})};
+ };
+ const out=await runAdmittedFiniteBatch(recallOpts({...f,curate,sourceRecovery:true}));
+ assert.deepEqual(stages,['discovery','rescue','utility']);
+ assert.equal(out.model_calls,3);
+ assert.equal(out.persisted,1);assert.equal(f.graphiti.writes.length,1);
+ const active=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,'_active.json'),'utf8'));
+ const plan=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,active.batch_id,'plan.json'),'utf8'));
+ assert.equal(plan.cluster_outcomes[0].source_recovery_trigger,'discovery_skip');
+},[strong]));
+
+test('S2 conflicting verdict on the same exact quote cannot silently upgrade it',()=>fixture(async f=>{
+ let utility=0;
+ const curate=async(_,{promptMessages})=>{
+  const system=promptMessages[0].content;
+  if(system.includes('SOURCE-FIRST candidate discovery')){
+   const e=JSON.parse(promptMessages[1].content).evidence[0];
+   return {content:JSON.stringify({reason:'exact same quote',candidates:[{
+    kind:'blocker',source_ref:e.source,start:0,end:e.excerpt.length,
+    temporal_status:'observed'}]})};
+  }
+  utility++;
+  return {content:JSON.stringify({decisions:[{index:0,
+   disposition:utility===1?'REVIEW':'ACCEPT',
+   reason_code:utility===1?'not_substantive':'source_specific_durable',
+   ...(utility===1?{}:{utility_class:'useful_negative'})}]})};
+ };
+ const out=await runAdmittedFiniteBatch(recallOpts({...f,curate,sourceRecovery:true}));
+ assert.equal(utility,2);assert.equal(out.model_calls,4);
+ assert.equal(out.approved,0);assert.equal(out.persisted,0);assert.equal(out.deferred,1);
+ assert.equal(f.graphiti.writes.length,0);
+},[strong]));
