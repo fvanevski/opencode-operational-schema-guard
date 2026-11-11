@@ -719,3 +719,99 @@ test('replay-only recovers completed model responses with per-stage metrics and 
  assert.equal(result.model_metrics.discovery.latency_ms,2);
  assert.equal(f.graphiti.writes.length,2);
 }));
+
+test('S2 recovers a source-supported technical quote after weak-header utility rejection',()=>fixture(async f=>{
+ const stages=[];
+ const curate=async(_,{promptMessages})=>{
+  const system=promptMessages[0].content,data=JSON.parse(promptMessages[1].content);
+  const recoveryDiscovery=system.includes('SECOND-PASS SOURCE RECOVERY');
+  const recoveryUtility=system.includes('SECOND-PASS UTILITY REVIEW');
+  const discovery=system.includes('SOURCE-FIRST candidate discovery');
+  stages.push(recoveryDiscovery?'recovery-discovery':recoveryUtility?
+   'recovery-utility':discovery?'discovery':'utility');
+  if(discovery){
+   const e=data.evidence[0],start=e.excerpt.indexOf(strong);
+   assert.ok(start>25);
+   return {content:JSON.stringify({reason:'source technical passage',candidates:[{
+    kind:'blocker',source_ref:e.source,start:recoveryDiscovery?start:0,
+    end:recoveryDiscovery?start+strong.length:start-1,temporal_status:'observed'
+   }]})};
+  }
+  return {content:JSON.stringify({decisions:data.candidates.map(x=>({
+   index:x.index,disposition:recoveryUtility?'ACCEPT':'REVIEW',
+   reason_code:recoveryUtility?'source_specific_durable':'not_substantive',
+   ...(recoveryUtility?{utility_class:'useful_negative'}:{})
+  }))})};
+ };
+ const result=await runAdmittedFiniteBatch(recallOpts({...f,curate,sourceRecovery:true}));
+ assert.deepEqual(stages,['discovery','utility','recovery-discovery','recovery-utility']);
+ assert.equal(result.persisted,1);assert.equal(result.approved,1);
+ assert.equal(result.deferred,1);assert.equal(f.graphiti.writes.length,1);
+ const active=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,'_active.json'),'utf8'));
+ assert.equal(active.source_recovery,true);
+ const plan=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,active.batch_id,'plan.json'),'utf8'));
+ assert.equal(plan.cluster_outcomes[0].source_recovery_trigger,'utility_non_substantive');
+ assert.equal(plan.cluster_outcomes[0].source_recovery_attempted,true);
+ assert.equal(plan.calls.length,4);
+ assert.ok(plan.calls.some(x=>x.identity.endsWith(':source-recovery-v1')));
+},['Please investigate this issue and send a progress update. '+strong]));
+
+test('S2 default is unchanged and cannot adopt rescue after a plan is frozen',()=>fixture(async f=>{
+ let calls=0;
+ const curate=async()=>{calls++;return {content:JSON.stringify({
+  reason:'No source candidates',candidates:[]})};};
+ const result=await runAdmittedFiniteBatch(recallOpts({...f,curate}));
+ assert.equal(result.persisted,0);assert.equal(calls,1);
+ const active=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,'_active.json'),'utf8'));
+ assert.equal(active.source_recovery,undefined);
+ await assert.rejects(runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true})),/SOURCE_RECOVERY_IDENTITY_CHANGED/);
+ assert.equal(calls,1);assert.equal(f.graphiti.writes.length,0);
+},[strong]));
+
+test('S2 fabricated source reference in recovery cannot reach Graphiti',()=>fixture(async f=>{
+ const curate=async(_,{promptMessages})=>({content:JSON.stringify(
+  promptMessages[0].content.includes('SECOND-PASS SOURCE RECOVERY')?
+  {reason:'unattributed',candidates:[{kind:'blocker',source_ref:'forged',
+   start:0,end:strong.length,temporal_status:'observed'}]}:
+  {reason:'no initial source candidates',candidates:[]})});
+ const result=await runAdmittedFiniteBatch(recallOpts({...f,curate,sourceRecovery:true}));
+ assert.equal(result.approved,0);assert.equal(result.persisted,0);
+ assert.equal(f.graphiti.writes.length,0);
+},[strong]));
+
+test('S2 ambiguous second-pass model outcome is not replayed',()=>fixture(async f=>{
+ let attempts=0;
+ const curate=async(_,{promptMessages})=>{
+  if(promptMessages[0].content.includes('SECOND-PASS SOURCE RECOVERY')){
+   attempts++;throw Error('network outcome unknown');
+  }
+  return {content:JSON.stringify({reason:'No source candidates',candidates:[]})};
+ };
+ await assert.rejects(runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true})),/MODEL_CALL_OUTCOME_UNKNOWN_NO_REPLAY/);
+ await assert.rejects(runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true})),/MODEL_CALL_AMBIGUOUS_NO_REPLAY/);
+ assert.equal(attempts,1);assert.equal(f.graphiti.writes.length,0);
+},[strong]));
+
+test('S2 unsupported inference is deferred without a recovery retry',()=>fixture(async f=>{
+ let calls=0;
+ const curate=async(_,{promptMessages})=>{
+  calls++;
+  if(promptMessages[0].content.includes('SOURCE-FIRST candidate discovery')){
+   const e=JSON.parse(promptMessages[1].content).evidence[0];
+   return {content:JSON.stringify({reason:'proposed exact quote',candidates:[{
+    kind:'blocker',source_ref:e.source,start:0,end:e.excerpt.length,
+    temporal_status:'observed'}]})};
+  }
+  return {content:JSON.stringify({decisions:[{index:0,disposition:'REVIEW',
+   reason_code:'unsupported_inference'}]})};
+ };
+ const result=await runAdmittedFiniteBatch(recallOpts({...f,curate,sourceRecovery:true}));
+ assert.equal(calls,2);assert.equal(result.persisted,0);
+ assert.equal(f.graphiti.writes.length,0);
+},[strong]));
