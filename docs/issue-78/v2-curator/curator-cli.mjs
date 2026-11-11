@@ -24,6 +24,10 @@ const finiteBatchArg=arg('finite-batch');
 if(finiteBatchArg&&finiteBatchArg!=='on')throw Error('FINITE_BATCH_OPT_IN_INVALID');
 const finiteBatch=finiteBatchArg==='on';
 if(finiteBatch&&factReview)throw Error('FINITE_BATCH_ALREADY_INCLUDES_FACT_REVIEW');
+const noveltyPolicy=arg('novelty-policy')||'recall';
+if(!['recall','conservative'].includes(noveltyPolicy)||
+ (!finiteBatch&&arg('novelty-policy')))
+ throw Error('FINITE_BATCH_NOVELTY_POLICY_INVALID');
 const maxCandidates=Number(arg('max-candidates')||'48');
 if(command==='validate-config'){
   const policy=modelPolicy(process.env);
@@ -34,7 +38,7 @@ if(command==='validate-config'){
   console.error('Usage: node curator-cli.mjs drain|status|list|reconcile-only --group GROUP --state-dir DIR '+
     '[--endpoint LOOPBACK_GRAPHITI_MCP --max-seconds 600 --max-clusters 6] '+ 
     '[--fact-review on | --finite-batch on (development only)] '+ 
-    '[--max-candidates 48]. '+
+    '[--max-candidates 48] [--novelty-policy recall|conservative]. '+
     'For drain set LOCAL_CURATOR_URL, LOCAL_CURATOR_MODEL, LOCAL_CURATOR_API_KEY.');
   process.exitCode=2;
 }else{
@@ -100,7 +104,7 @@ if(command==='validate-config'){
       apiKey:process.env.LOCAL_CURATOR_API_KEY||'local',
       modelOptions:modelPolicy(process.env),maxSeconds,maxClusters};
     const data=finiteBatch?
-      await runAdmittedFiniteBatch({...inputs,maxCandidates}):
+      await runAdmittedFiniteBatch({...inputs,maxCandidates,noveltyPolicy}):
       await runAdmitted({...inputs,factReview});
     console.log(JSON.stringify(data));
     if(data.status==='unresolved'||data.status==='incomplete')process.exitCode=3;

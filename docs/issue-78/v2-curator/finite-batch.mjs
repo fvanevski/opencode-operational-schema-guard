@@ -366,10 +366,11 @@ function assertSnapshot(snapshot,group){
   Array.isArray(c.events)&&c.events.length>0&&c.events.every(e=>
    c.source_event_ids.includes(e.event_id)),'SNAPSHOT_SOURCE');
 }
-function assertPlan(plan,snapshot){
+function assertPlan(plan,snapshot,expectedPolicy){
  assert(plan?.schema==='issue92-finite-batch-plan-v1'&&
   plan.snapshot_sha256===hash(snapshot)&&Array.isArray(plan.items)&&
-  Array.isArray(plan.cluster_outcomes)&&Array.isArray(plan.calls),'PLAN_IDENTITY');
+  Array.isArray(plan.cluster_outcomes)&&Array.isArray(plan.calls)&&
+  plan.policy===expectedPolicy,'PLAN_IDENTITY');
  const clusters=new Map(snapshot.clusters.map(c=>[c.id,c]));
  assert(plan.cluster_outcomes.length===clusters.size,'PLAN_CLUSTER_COVERAGE');
  const coverage=new Map();
@@ -410,6 +411,7 @@ export async function runAdmittedFiniteBatch({
  root,group,queue=null,store=null,graphiti=null,graphitiEndpoint=null,
  modelEndpoint,modelId,apiKey='local',modelOptions={},curate=curateCluster,
  maxClusters=24,maxCandidates=48,maxSeconds=1200,
+ noveltyPolicy='recall',
  onCheckpoint=null
 }={}){
  admitted();
@@ -418,7 +420,8 @@ export async function runAdmittedFiniteBatch({
  assert(Number.isInteger(maxClusters)&&maxClusters>=1&&maxClusters<=24&&
   Number.isInteger(maxCandidates)&&maxCandidates>=3&&maxCandidates<=72&&
   typeof curate==='function'&&Number.isInteger(maxSeconds)&&
-  maxSeconds>=60&&maxSeconds<=3600,'INVALID_BOUNDS');
+  maxSeconds>=60&&maxSeconds<=3600&&
+  ['recall','conservative'].includes(noveltyPolicy),'INVALID_BOUNDS');
  const deadline=Date.now()+maxSeconds*1000;
  const tick=(stage)=>{if(Date.now()>deadline-5000)
   throw Error('ISSUE92_BATCH_DEADLINE_'+stage);};
@@ -578,6 +581,17 @@ export async function runAdmittedFiniteBatch({
   }
   for(const [scope,pool] of [...partitions].sort(([a],[b])=>a.localeCompare(b))){
    const sorted=pool.sort(byId);
+   if(noveltyPolicy==='recall'){
+    // The source/utility gate, not uncertain semantic sameness, decides what
+    // enters the development knowledge graph. Existing exact-duplicate,
+    // privacy, source class, CAS, remote provenance and EX controls remain.
+    for(const candidate of sorted)selected.add(candidate.id);
+    families.push({scope_sha256:hash(scope),pool:sorted.map(x=>x.id),
+     selected:sorted.map(x=>x.id),deferred:[],
+     novelty_status:'semantic_equivalence_advisory_not_promotion_gate',
+     provisional:[],refinements:[]});
+    continue;
+   }
    const id=hash('scope\n'+scope+'\n'+sorted.map(x=>x.id).join('\n'));
    // Synthetic cluster is a transport envelope ONLY for the model call:
    // source validation always uses each original cluster/workspace.
@@ -663,11 +677,17 @@ export async function runAdmittedFiniteBatch({
     decision:x.decision,reason:x.reason,
     fact_ids:x.facts.map(f=>f.id)})),
    items:items.sort(byId),families,calls,
-   policy:'review_before_graphiti_and_order_neutral_arbitration'};
-  assertPlan(plan,snapshot);
+   policy:noveltyPolicy==='recall'?
+    'issue92_recall_first_source_and_utility_v1':
+    'review_before_graphiti_and_order_neutral_arbitration'};
+  assertPlan(plan,snapshot,noveltyPolicy==='recall'?
+   'issue92_recall_first_source_and_utility_v1':
+   'review_before_graphiti_and_order_neutral_arbitration');
   await writeOnce(path.join(baseDir,'plan.json'),plan);
   await checkpoint('plan_frozen');
- }else assertPlan(plan,snapshot);
+ }else assertPlan(plan,snapshot,noveltyPolicy==='recall'?
+  'issue92_recall_first_source_and_utility_v1':
+  'review_before_graphiti_and_order_neutral_arbitration');
  // Private model replies are the immutable inference evidence behind this plan.
  // Verify them again on a resumed run BEFORE any durable review/Graphiti action.
  for(const entry of plan.calls){
