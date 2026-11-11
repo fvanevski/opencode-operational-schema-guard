@@ -124,6 +124,39 @@ export function finiteBatchUtilityPrompt(cluster,proposal){
  return [{role:'system',content:system},payload[1]];
 }
 
+
+/** S2 opt-in recovery only: original S1 prompts and call IDs remain unchanged. */
+export function finiteBatchRecoveryDiscoveryPrompt(cluster,rejected=[]){
+ const base=factDiscoveryPrompt(cluster);
+ return [{role:'system',content:base[0].content+' SECOND-PASS SOURCE RECOVERY: '+
+  'The first pass retained ZERO useful facts. Reinspect EVERY authenticated '+
+  'original excerpt for exact technical failures, constraints, requirements, '+
+  'negative findings and reusable procedures hidden by temporary task framing. '+
+  'Select the COMPLETE specific technical predicate rather than a generic '+
+  'task header, weak short fragment or mid-word slice. Avoid previously '+
+  'rejected source spans. Propose up to THREE independent 25..450-character '+
+  'contiguous exact quotes with original source_ref and JS start/end. '+
+  'Never join excerpts, infer an unreported cause/fix, invent missing tool '+
+  'results, or promote source assertions to independently verified outcomes. '+
+  'If there is no attributable technical predicate return candidates:[]; '+
+  'every proposal still requires independent utility and source validation.'},
+  {role:'user',content:JSON.stringify({...JSON.parse(base[1].content),
+   previously_reviewed_spans:rejected.slice(0,3).map(x=>({
+    source_ref:x.source_ref,start:x.start,end:x.end,reason_code:x.reason_code
+   }))})}];
+}
+export function finiteBatchRecoveryUtilityPrompt(cluster,proposal){
+ const base=finiteBatchUtilityPrompt(cluster,proposal);
+ return [{role:'system',content:base[0].content+
+  ' SECOND-PASS UTILITY REVIEW: independently judge EACH exact quoted '+
+  'technical predicate rather than the temporary context. A source-reported '+
+  'unresolved defect or requirement can be durable even without a proven '+
+  'fix. ACCEPT only a concrete claim supported by that exact quote; preserve '+
+  'source evidence class, temporal uncertainty and reported-vs-verified status. '+
+  'REVIEW boilerplate, unsupported inference and genuinely ambiguous facts.'},
+  base[1]];
+}
+
 /** Semantic grouping is a model judgment, NEVER a hard source authority.
  * The reviewer sees all accepted same-scope candidate assertions in stable
  * order and returns one family partition independent of encounter order.
@@ -413,7 +446,7 @@ export async function runAdmittedFiniteBatch({
  root,group,queue=null,store=null,graphiti=null,graphitiEndpoint=null,
  modelEndpoint,modelId,apiKey='local',modelOptions={},curate=curateCluster,
  maxClusters=24,maxCandidates=48,maxSeconds=1200,
- noveltyPolicy='recall',tuning=null,replayOnly=false,
+ noveltyPolicy='recall',tuning=null,replayOnly=false,sourceRecovery=false,
  onCheckpoint=null
 }={}){
  admitted();
@@ -424,7 +457,8 @@ export async function runAdmittedFiniteBatch({
   typeof curate==='function'&&Number.isInteger(maxSeconds)&&
   maxSeconds>=60&&maxSeconds<=3600&&
   ['recall','conservative'].includes(noveltyPolicy)&&
-  typeof replayOnly==='boolean','INVALID_BOUNDS');
+  typeof replayOnly==='boolean'&&typeof sourceRecovery==='boolean'&&
+  (!sourceRecovery||noveltyPolicy==='recall'),'INVALID_BOUNDS');
  const tuningProfile=validateFiniteBatchTuning(tuning);
  const tuningSha=tuningIdentity(tuningProfile);
  const legacyIdentity=tuning===null&&modelId==='chat-fast'&&
@@ -469,7 +503,8 @@ export async function runAdmittedFiniteBatch({
    'SNAPSHOT_ALREADY_DIFFERS');
   else await writeOnce(path.join(baseDir,'snapshot.json'),snapshot);
   active={schema:'issue92-finite-batch-active-v1',group,batch_id:batchId,
-   snapshot_sha256:hash(snapshot),tuning_sha256:tuningSha};
+   snapshot_sha256:hash(snapshot),tuning_sha256:tuningSha,
+   ...(sourceRecovery?{source_recovery:true}:{})};
   try{await writeOnce(activePath,active);}
   catch(e){if(e.code!=='EEXIST')throw e;}
   const actual=await readMaybe(activePath);
@@ -479,6 +514,8 @@ export async function runAdmittedFiniteBatch({
  }else{
   assert(active.schema==='issue92-finite-batch-active-v1'&&active.group===group&&
    SHA.test(active.batch_id),'ACTIVE_POINTER');
+  assert(Boolean(active.source_recovery)===sourceRecovery,
+   'SOURCE_RECOVERY_IDENTITY_CHANGED');
   if(active.tuning_sha256!==undefined)
    assert(active.tuning_sha256===tuningSha,'TUNING_IDENTITY_CHANGED');
   else assert(legacyIdentity,'LEGACY_TUNING_IDENTITY_UNVERIFIED');
@@ -561,41 +598,74 @@ export async function runAdmittedFiniteBatch({
  if(!plan){
   const outcomes=[],accepted=[];
   for(const cluster of snapshot.clusters){
-   const reply=await callOnce('discovery',cluster.id,cluster,
-    finiteBatchDiscoveryPrompt(cluster));
-   const proposal=validateFactDiscovery(reply.content,cluster);
-   if(!proposal.ok||proposal.decision!=='EMIT'){
-    outcomes.push({cluster_id:cluster.id,decision:proposal.decision,
-      reason:proposal.reason||'discovery_unavailable',facts:[]});
-    continue;
+   const entries=new Map(),approved=[];
+   let decision='SKIP',reason='no_attributable_source_candidate';
+   let recoveryTrigger=null,recoveryAttempted=false,rejected=[];
+   for(let pass=0;pass<(sourceRecovery?2:1);pass++){
+    if(pass===1){if(!recoveryTrigger)break;recoveryAttempted=true;}
+    const identity=pass===0?cluster.id:cluster.id+':source-recovery-v1';
+    const messages=pass===0?finiteBatchDiscoveryPrompt(cluster):
+     finiteBatchRecoveryDiscoveryPrompt(cluster,rejected);
+    const reply=await callOnce('discovery',identity,cluster,messages);
+    const proposal=validateFactDiscovery(reply.content,cluster);
+    if(!proposal.ok){decision='DEFER';reason=proposal.reason||'discovery_invalid';break;}
+    if(proposal.decision!=='EMIT'){
+     decision=proposal.decision;reason=proposal.reason||'discovery_unavailable';
+     if(pass===0&&sourceRecovery&&proposal.decision==='SKIP'){
+      recoveryTrigger='discovery_skip';continue;
+     }
+     break;
+    }
+    const reviewed=await callOnce('utility',identity,cluster,
+     pass===0?finiteBatchUtilityPrompt(cluster,proposal):
+      finiteBatchRecoveryUtilityPrompt(cluster,proposal));
+    const screen=validateFactReview(reviewed.content,proposal);
+    if(!screen.ok){
+     decision='DEFER';reason='independent_utility_review_invalid';
+     for(const fact of proposal.facts){
+      const e=factEntry(cluster,fact,null,'review_invalid');
+      if(!entries.has(e.id))entries.set(e.id,e);
+     }
+     break;
+    }
+    const result=filterFactProposal(proposal,screen);
+    let newApproved=0;
+    if(result.ok)for(let k=0;k<result.facts.length;k++){
+     const fact=result.facts[k],utility=result.fact_utilities[k];
+     const valid=validateModelDecision({decision:'EMIT',
+      reason:'Independent source specific utility approval',
+      utility_class:utility,facts:[{...fact,utility_class:utility}]},cluster);
+     if(!valid.ok)throw Error('ISSUE92_BATCH_INDEPENDENT_FACT_INVALID');
+     const e=factEntry(cluster,valid.facts[0],utility);
+     // Conflicting verdicts on an identical rejected quote are not new evidence.
+     if(entries.has(e.id))continue;
+     entries.set(e.id,e);approved.push(e);newApproved++;
+    }
+    for(const d of screen.review){
+     const e=factEntry(cluster,proposal.facts[d.index],null,d.reason_code);
+     if(!entries.has(e.id))entries.set(e.id,e);
+    }
+    decision='REVIEWED';reason='independent_utility_review_complete';
+    if(pass===0&&sourceRecovery&&newApproved===0&&
+      screen.review.length===proposal.facts.length&&
+      screen.review.every(d=>['not_substantive','transient_execution']
+       .includes(d.reason_code))){
+     recoveryTrigger='utility_non_substantive';
+     rejected=screen.review.map(d=>({
+      source_ref:proposal.facts[d.index].source_refs[0],
+      start:proposal.facts[d.index].evidence_span.start,
+      end:proposal.facts[d.index].evidence_span.end,
+      reason_code:d.reason_code
+     }));
+     continue;
+    }
+    break;
    }
-   const prompt=finiteBatchUtilityPrompt(cluster,proposal);
-   const reviewed=await callOnce('utility',cluster.id,cluster,prompt);
-   const screen=validateFactReview(reviewed.content,proposal);
-   if(!screen.ok){
-    outcomes.push({cluster_id:cluster.id,decision:'DEFER',
-      reason:'independent_utility_review_invalid',facts:proposal.facts.map(
-       f=>factEntry(cluster,f,null,'review_invalid'))});
-    continue;
-   }
-   const result=filterFactProposal(proposal,screen);
-   const supported=[];
-   if(result.ok)for(let i=0;i<result.facts.length;i++){
-    const fact=result.facts[i],utility=result.fact_utilities[i];
-    const single=validateModelDecision({decision:'EMIT',
-     reason:'Independent source specific utility approval',
-     utility_class:utility,facts:[{...fact,utility_class:utility}]},cluster);
-    if(!single.ok)throw Error('ISSUE92_BATCH_INDEPENDENT_FACT_INVALID');
-    supported.push(factEntry(cluster,single.facts[0],utility));
-   }
-   accepted.push(...supported);
-   outcomes.push({cluster_id:cluster.id,decision:'REVIEWED',
-    reason:'independent_utility_review_complete',
-    facts:[
-     ...supported,
-     ...screen.review.map(d=>factEntry(cluster,proposal.facts[d.index],
-      null,d.reason_code))
-    ].sort(byId)});
+   accepted.push(...approved);
+   outcomes.push({cluster_id:cluster.id,decision,reason,
+    facts:[...entries.values()].sort(byId),
+    ...(sourceRecovery?{source_recovery_attempted:recoveryAttempted,
+     source_recovery_trigger:recoveryTrigger}:{})});
   }
   assert(accepted.length<=maxCandidates,'ACCEPTED_POOL_OVER_BOUND_NO_PROMOTION');
   const selected=new Set(),deferred=new Map(),families=[];
@@ -700,10 +770,13 @@ export async function runAdmittedFiniteBatch({
   }
   plan={schema:'issue92-finite-batch-plan-v1',batch_id:active.batch_id,
    snapshot_sha256:hash(snapshot),tuning_sha256:tuningSha,
+   ...(sourceRecovery?{source_recovery:true}:{}),
    created_at:new Date().toISOString(),
    cluster_outcomes:outcomes.map(x=>({cluster_id:x.cluster_id,
     decision:x.decision,reason:x.reason,
-    fact_ids:x.facts.map(f=>f.id)})),
+    fact_ids:x.facts.map(f=>f.id),
+    ...(sourceRecovery?{source_recovery_attempted:x.source_recovery_attempted,
+     source_recovery_trigger:x.source_recovery_trigger}:{})})),
    items:items.sort(byId),families,calls,
    policy:noveltyPolicy==='recall'?
     'issue92_recall_first_source_and_utility_v1':
@@ -716,6 +789,8 @@ export async function runAdmittedFiniteBatch({
  }else assertPlan(plan,snapshot,noveltyPolicy==='recall'?
   'issue92_recall_first_source_and_utility_v1':
   'review_before_graphiti_and_order_neutral_arbitration');
+ assert(Boolean(plan.source_recovery)===sourceRecovery,
+  'PLAN_SOURCE_RECOVERY_IDENTITY_CHANGED');
  if(plan.tuning_sha256!==undefined)
   assert(plan.tuning_sha256===tuningSha,'PLAN_TUNING_IDENTITY_CHANGED');
  else assert(legacyIdentity,'PLAN_LEGACY_TUNING_UNVERIFIED');
@@ -829,6 +904,7 @@ export async function runAdmittedFiniteBatch({
   model_calls:modelCalls,model_errors:modelErrors,
   prompt_tokens:promptTokens,completion_tokens:completionTokens,
   model_metrics:modelMetrics,tuning_sha256:tuningSha,replay_only:replayOnly,
+  source_recovery:sourceRecovery,
   persisted:all.filter(r=>r.state==='persisted').length,
   unresolved:unresolved.length,write_outcomes:writeOutcomes};
 }
