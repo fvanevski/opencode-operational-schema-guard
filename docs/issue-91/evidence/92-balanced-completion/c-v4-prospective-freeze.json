@@ -1,0 +1,45 @@
+{
+ "schema": "issue92-balanced-completion-C-v1",
+ "section": "prepare_next_untouched_prospective",
+ "family": "gh_mcp-development-v4",
+ "group": "graphiti-adr92-a3-prospective-v2 (stage.mjs hard-pin)",
+ "fresh_empty_group": "graphiti-adr92-a3-prospective-v4 (0 episodes)",
+ "cohort": {
+  "valuable": 10,
+  "controls": 10,
+  "valuable_composition": "6 real-dev (rtk-exclude, React-Flow, shared-fixture, FileFlows-ABI, FFmpeg-disposition, ffdeps-reference) + 4 new fsm81 (log-format, transition-throw, export-format, terminal-state)",
+  "nonoverlap": "0 message-ID overlap with v3/v2/B3/gh_mcp; 2 fsm81 predicates (export, terminal) are same-predicate sibling native events (distinct message IDs, not v3 IDs)",
+  "distinct_text_digests": "20/20 within cohort"
+ },
+ "freeze": {
+  "PRIVATE_MANIFEST_SHA256": "9b64831e9f411e34680042d58dd0d08ca73cb47938974f77d15a20f121c0e55d",
+  "LABEL_FREEZE_SHA256": "b36680886c41410c4d314fa78f8f0ec300ee56d1d7515ac35e9219a9afcc984e",
+  "staged_native_spans": 34,
+  "multi_span": {
+   "i92-v4-04": 3,
+   "i92-v4-05": 6,
+   "i92-v4-06": 6,
+   "i92-v4-09": 2,
+   "i92-v4-10": 2
+  }
+ },
+ "state_root": "/tmp/opencode/issue92-a3/state-v4 (fresh)",
+ "pre_inference_ratification": "issue92-a3-v4-ratification.json (0600, pre-inference, independent_reviewer, 20 ratified cases)",
+ "treatment": {
+  "finite_batch": true,
+  "novelty_policy": "recall",
+  "source_recovery": true,
+  "resilient_discovery": true,
+  "claim_evidence": true,
+  "source_exact_complement": true,
+  "balanced_dedup": true,
+  "max_clusters": 24,
+  "max_candidates": 72,
+  "max_seconds": 3600
+ },
+ "launcher": "a3-v4-host-ex-launcher.py + a3-v4-host-driver.mjs (balancedDedup:true), provenance -> e31d22bb (8 blobs verified), negative EX preflight PASS (marker-only missing_lock_fd / non-inherited wrong_inode), Hermes exempt",
+ "scorer_readiness": "issue92-a3-score.mjs validates the v4 freeze contract (roster/stage/ratification/authority) and fails closed at insufficient_review_samples (exit 1, no simulated PASS) \u2014 requires post-inference judgments",
+ "empty_group_proof": "graphiti-adr92-a3-prospective-v4 = 0 episodes (empty); graphiti-adr92-a3-prospective-v2 = 13 episodes (v3, non-empty, stage.mjs hard-pin)",
+ "central_constraint": "issue92-a3-stage.mjs:27 hard-pins the group to graphiti-adr92-a3-prospective-v2, which is now non-empty (13 v3 episodes). A fresh empty v4 group is available (0 episodes); the v4 inference group must be resolved by Central (clear v2, or update the stage.mjs hard-pin to a fresh empty group) before the gated v4 inference.",
+ "execution_command": "A3_HOST_APPROVED=1 python3 /tmp/opencode/issue92-a3/a3-v4-host-ex-launcher.py (GATED on Central acceptance)"
+}
