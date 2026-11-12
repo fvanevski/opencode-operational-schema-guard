@@ -644,6 +644,7 @@ export async function runAdmittedFiniteBatch({
    let decision='SKIP',reason='no_attributable_source_candidate';
    let recoveryTrigger=null,recoveryAttempted=false,rejected=[];
    const validationFailures=[];
+   const supportOutcomes=[];
    for(let pass=0;pass<(sourceRecovery?2:1);pass++){
     if(pass===1){if(!recoveryTrigger)break;recoveryAttempted=true;}
     const identity=pass===0?
@@ -651,21 +652,27 @@ export async function runAdmittedFiniteBatch({
        resilientDiscovery?':resilient-discovery-v1':''):
       cluster.id+(claimEvidence?':claim-evidence-recovery-v1':
        resilientDiscovery?':source-recovery-v2':':source-recovery-v1');
-    const messages=resilientDiscovery?
-     finiteBatchResilientDiscoveryPrompt(cluster,{recovery:pass===1,rejected,
+    const messages=claimEvidence?
+     claimEvidenceDiscoveryPrompt(cluster,{recovery:pass===1,rejected,
       invalid:validationFailures.flatMap(x=>x.candidates)}):
-     pass===0?finiteBatchDiscoveryPrompt(cluster):
-      finiteBatchRecoveryDiscoveryPrompt(cluster,rejected);
+     resilientDiscovery?
+      finiteBatchResilientDiscoveryPrompt(cluster,{recovery:pass===1,rejected,
+       invalid:validationFailures.flatMap(x=>x.candidates)}):
+      pass===0?finiteBatchDiscoveryPrompt(cluster):
+       finiteBatchRecoveryDiscoveryPrompt(cluster,rejected);
     const reply=await callOnce('discovery',identity,cluster,messages);
-    const proposal=validateFactDiscovery(reply.content,cluster,
-     {isolateCandidates:resilientDiscovery});
+    let proposal=claimEvidence?
+     validateClaimEvidenceDiscovery(reply.content,cluster):
+     validateFactDiscovery(reply.content,cluster,
+      {isolateCandidates:resilientDiscovery});
     if(resilientDiscovery&&proposal.invalid_candidates?.length)
      validationFailures.push({pass:pass+1,candidates:proposal.invalid_candidates,
       valid_candidate_count:proposal.facts.length});
     if(!proposal.ok){
      decision=approved.length?'REVIEWED':'DEFER';reason=proposal.reason||'discovery_invalid';
      if(pass===0&&resilientDiscovery&&proposal.invalid_candidates?.length>0&&
-       proposal.invalid_candidates.every(x=>x.reason==='invalid_fact_fields')){
+       proposal.invalid_candidates.every(x=>
+       ['invalid_fact_fields','invalid_claim_fields'].includes(x.reason))){
       recoveryTrigger='invalid_discovery';continue;
      }
      break;
@@ -677,7 +684,45 @@ export async function runAdmittedFiniteBatch({
      }
      break;
     }
+    if(claimEvidence){
+     // The independent source critic is prerequisite to utility selection;
+     // only exact authenticated quotes reach automatic ReviewStore/Graphiti.
+     const supportReply=await callOnce('support',identity,cluster,
+      claimSupportPrompt(cluster,proposal));
+     const verdict=validateClaimSupport(supportReply.content,proposal);
+     if(!verdict.ok){
+      decision='DEFER';reason='independent_claim_support_invalid';
+      for(const fact of proposal.facts){
+       const e=factEntry(cluster,fact,null,'claim_support_invalid');
+       if(!entries.has(e.id))entries.set(e.id,e);
+      }
+      supportOutcomes.push({pass:pass+1,result:'invalid',reason:verdict.reason});
+      break;
+     }
+     const filtered=supportedClaimProposal(proposal,verdict);
+     for(const d of filtered.deferred){
+      const e=factEntry(cluster,d.fact,null,'claim_support_'+d.reason);
+      if(!entries.has(e.id))entries.set(e.id,e);
+     }
+     supportOutcomes.push({pass:pass+1,result:'reviewed',
+      supported:verdict.supported.map(x=>({
+       claim_sha256:x.claim_sha256,evidence_sha256:x.evidence_sha256,
+       supporting_phrase_sha256:x.supporting_phrase_sha256,
+       reason_code:x.reason_code})),
+      deferred:verdict.review.map(x=>x.reason_code)});
+     if(!filtered.proposal.ok){
+      decision='DEFER';reason='independent_claim_support_required';
+      if(pass===0&&verdict.review.length>0&&verdict.review.every(d=>
+        ['source_ambiguous','review_uncertain','missing_predicate']
+          .includes(d.reason_code))){
+       recoveryTrigger='claim_support_unresolved';continue;
+      }
+      break;
+     }
+     proposal=filtered.proposal;
+    }
     const reviewed=await callOnce('utility',identity,cluster,
+     claimEvidence?claimUtilityPrompt(cluster,proposal):
      resilientDiscovery?finiteBatchResilientUtilityPrompt(cluster,proposal,
       {recovery:pass===1}):
      pass===0?finiteBatchUtilityPrompt(cluster,proposal):
@@ -742,7 +787,8 @@ export async function runAdmittedFiniteBatch({
     facts:[...entries.values()].sort(byId),
     ...(sourceRecovery?{source_recovery_attempted:recoveryAttempted,
      source_recovery_trigger:recoveryTrigger}:{}),
-    ...(resilientDiscovery?{source_validation_failures:validationFailures}:{})});
+    ...(resilientDiscovery?{source_validation_failures:validationFailures}:{}),
+    ...(claimEvidence?{claim_support_outcomes:supportOutcomes}:{})});
   }
   assert(accepted.length<=maxCandidates,'ACCEPTED_POOL_OVER_BOUND_NO_PROMOTION');
   const selected=new Set(),deferred=new Map(),families=[];
@@ -856,7 +902,8 @@ export async function runAdmittedFiniteBatch({
     fact_ids:x.facts.map(f=>f.id),
     ...(sourceRecovery?{source_recovery_attempted:x.source_recovery_attempted,
      source_recovery_trigger:x.source_recovery_trigger}:{}),
-     ...(resilientDiscovery?{source_validation_failures:x.source_validation_failures}:{})})),
+     ...(resilientDiscovery?{source_validation_failures:x.source_validation_failures}:{}),
+     ...(claimEvidence?{claim_support_outcomes:x.claim_support_outcomes}:{})})),
    items:items.sort(byId),families,calls,
    policy:noveltyPolicy==='recall'?
     'issue92_recall_first_source_and_utility_v1':
