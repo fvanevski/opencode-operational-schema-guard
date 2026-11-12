@@ -34,7 +34,9 @@ function fixture({persisted=10,longSource=false}={}){
   manifest_sha256:roster.private_manifest_sha256,events:raw.stageRows};
  const records=[],adjudications=[],remoteIds=[];
  for(let i=0;i<persisted;i++){
-  const entry=raw.events.find(e=>e.session_id==='session'+i);
+  // Nine independently valuable cases and one deliberately nonvaluable control.
+  const caseIndex=i===9?10:i;
+  const entry=raw.events.find(e=>e.session_id==='session'+caseIndex);
   assert.ok(entry);
   const id=sha('review'+i),quote=entry.excerpt.slice(0,Math.min(150,entry.excerpt.length));
   const review={id,state:'persisted',group:GROUP,
@@ -44,10 +46,10 @@ function fixture({persisted=10,longSource=false}={}){
    facts:[{assertion:quote,source_refs:entry.source_refs,
     evidence_span:{source_ref:entry.source_refs[0],start:0,end:quote.length}}]};
   records.push(review);remoteIds.push(uuid(i));
-  const valuable=i<10;
+  const valuable=caseIndex<10;
   adjudications.push({record_id:id,remote_episode_uuid:uuid(i),
-   source_case_id:'case-'+i,source_excerpt_sha256:sha(entry.excerpt),
-   target_case_ids:valuable?['case-'+i]:[],adjudicator:'independent-operator',
+   source_case_id:'case-'+caseIndex,source_excerpt_sha256:sha(entry.excerpt),
+   target_case_ids:valuable?['case-'+caseIndex]:[],adjudicator:'independent-operator',
    rationale:'Direct source quotation independently reviewed with original context.',
    grounded:true,useful:valuable,duplicate_of:null,privacy_ok:true,authority_ok:true,
    temporal_ok:true,evidence_class_ok:true,correct_group:true,no_false_verified:true});
