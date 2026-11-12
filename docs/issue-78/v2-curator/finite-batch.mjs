@@ -243,7 +243,7 @@ export function representativePrompt(candidates){
   'the concrete problem or constraint over generic/repeated/boilerplate wording.',
   'Do NOT equate a source-reported defect with a verified fix. Preserve evidence class.',
   'If equivalence or representative quality is uncertain, mark that FAMILY uncertain;',
-  'no automatic Graphiti promotion will occur for uncertain families.',
+  'downstream policy decides whether uncertain families are retained or deferred.',
   'Return one JSON object: {"families":[{"members":[0,1],',
   '"representative":1,"certainty":"high","reason_code":"same_technical_predicate"}]}.',
   'Every candidate index 0..N-1 must occur in exactly one family.',
@@ -507,6 +507,7 @@ export async function runAdmittedFiniteBatch({
  maxClusters=24,maxCandidates=48,maxSeconds=1200,
  noveltyPolicy='recall',tuning=null,replayOnly=false,sourceRecovery=false,
   resilientDiscovery=false,claimEvidence=false,sourceExactComplement=false,
+   balancedDedup=false,
   onCheckpoint=null
 }={}){
  // Preserve mock-only Node test fixtures; live claim/evidence clients must
@@ -529,6 +530,7 @@ export async function runAdmittedFiniteBatch({
   typeof resilientDiscovery==='boolean'&&(!resilientDiscovery||sourceRecovery)&&
   typeof claimEvidence==='boolean'&&(!claimEvidence||resilientDiscovery)&&
    typeof sourceExactComplement==='boolean'&&(!sourceExactComplement||claimEvidence)&&
+   typeof balancedDedup==='boolean'&&(!balancedDedup||noveltyPolicy==='recall')&&
   (!sourceRecovery||noveltyPolicy==='recall'),'INVALID_BOUNDS');
  const tuningProfile=validateFiniteBatchTuning(tuning);
  const tuningSha=tuningIdentity(tuningProfile);
@@ -578,7 +580,8 @@ export async function runAdmittedFiniteBatch({
    ...(sourceRecovery?{source_recovery:true}:{}),
    ...(resilientDiscovery?{resilient_discovery:true}:{}),
    ...(claimEvidence?{claim_evidence:true}:{}),
-   ...(sourceExactComplement?{source_exact_complement:true}:{})};
+   ...(sourceExactComplement?{source_exact_complement:true}:{}),
+   ...(balancedDedup?{balanced_dedup:true}:{})};
   try{await writeOnce(activePath,active);}
   catch(e){if(e.code!=='EEXIST')throw e;}
   const actual=await readMaybe(activePath);
@@ -596,6 +599,8 @@ export async function runAdmittedFiniteBatch({
    'CLAIM_EVIDENCE_IDENTITY_CHANGED');
    assert(Boolean(active.source_exact_complement)===sourceExactComplement,
     'SOURCE_EXACT_COMPLEMENT_IDENTITY_CHANGED');
+  assert(Boolean(active.balanced_dedup)===balancedDedup,
+   'BALANCED_DEDUP_IDENTITY_CHANGED');
   if(active.tuning_sha256!==undefined)
    assert(active.tuning_sha256===tuningSha,'TUNING_IDENTITY_CHANGED');
   else assert(legacyIdentity,'LEGACY_TUNING_IDENTITY_UNVERIFIED');
@@ -922,6 +927,74 @@ export async function runAdmittedFiniteBatch({
   }
   for(const [scope,pool] of [...partitions].sort(([a],[b])=>a.localeCompare(b))){
    const sorted=pool.sort(byId);
+   if(noveltyPolicy==='recall'&&balancedDedup){
+    // A positive, source-quoted equivalence check suppresses repetitions.
+    // Uncertain or malformed semantic judgments retain already sourced facts.
+    const all=()=>sorted.map(x=>x.id);
+    const keepAll=(status,reason=null)=>{
+     for(const c of sorted)selected.add(c.id);
+     families.push({scope_sha256:hash(scope),pool:all(),selected:all(),
+      deferred:[],novelty_status:status,
+      ...(reason?{reason}:{}),provisional:[],refinements:[]});
+    };
+    if(sorted.length===1){keepAll('balanced_singleton');continue;}
+    const id=hash(['balanced-dedup-v1',scope,...all()].join('|'));
+    const envelope={id,group,project:sorted[0].project,
+     workspace:sorted[0].workspace,events:[],source_event_ids:[]};
+    const initialReply=await callOnce('arbitration',id,envelope,
+     representativePrompt(sorted));
+    const initial=validateRepresentativeFamilies(initialReply.content,sorted);
+    if(!initial.ok){
+     keepAll('invalid_equivalence_retained',initial.reason);continue;
+    }
+    const byCandidate=new Map(sorted.map(x=>[x.id,x]));
+    const kept=new Set(),duplicates=new Map(),refinements=[];
+    for(const fam of initial.groups){
+     const members=fam.members.map(id=>byCandidate.get(id)).sort(byId);
+     assert(members.every(Boolean),'BALANCED_SOURCE_FAMILY_INVALID');
+     if(members.length===1||fam.certainty!=='high'){
+      for(const c of members)kept.add(c.id);
+      refinements.push({member_ids:fam.members,status:members.length===1?
+       'distinct':'uncertain_retained'});
+      continue;
+     }
+     const reviewId=hash(['balanced-quote-v1',scope,...fam.members].join('|'));
+     const reply=await callOnce('specificity',reviewId,envelope,
+      specificityPrompt(members));
+     const verdict=validateSpecificityFamilies(reply.content,members);
+     if(!verdict.ok){
+      for(const c of members)kept.add(c.id);
+      refinements.push({member_ids:fam.members,status:'quote_invalid_retained',
+       reason:verdict.reason});
+      continue;
+     }
+     const ids=new Set(members.map(c=>c.id));
+     const decided=[...verdict.selected,...verdict.deferred.map(x=>x.id)];
+     if(new Set(decided).size!==members.length||decided.some(id=>!ids.has(id))){
+      for(const c of members)kept.add(c.id);
+      refinements.push({member_ids:fam.members,status:'incomplete_review_retained'});
+      continue;
+     }
+     for(const id of verdict.selected)kept.add(id);
+     for(const d of verdict.deferred){
+      if(d.reason==='alternative_equivalent_fact')
+       duplicates.set(d.id,'source_quoted_semantic_duplicate');
+      else kept.add(d.id);
+     }
+     refinements.push({member_ids:fam.members,status:'source_quoted_review',
+      selected:verdict.selected,deferred:verdict.deferred,
+      source_proof:verdict.proof});
+    }
+    // A malformed/incomplete family cannot accidentally lose a useful fact.
+    for(const c of sorted)
+     if(!kept.has(c.id)&&!duplicates.has(c.id))kept.add(c.id);
+    for(const id of kept)selected.add(id);
+    for(const [id,why] of duplicates)deferred.set(id,why);
+    families.push({scope_sha256:hash(scope),pool:all(),selected:[...kept].sort(),
+     deferred:[...duplicates].map(([id,reason])=>({id,reason})).sort(byId),
+     novelty_status:'balanced_source_quoted',provisional:initial.groups,refinements});
+    continue;
+   }
    if(noveltyPolicy==='recall'){
     // The source/utility gate, not uncertain semantic sameness, decides what
     // enters the development knowledge graph. Existing exact-duplicate,
@@ -1018,6 +1091,7 @@ export async function runAdmittedFiniteBatch({
    ...(resilientDiscovery?{resilient_discovery:true}:{}),
     ...(claimEvidence?{claim_evidence:true}:{}),
     ...(sourceExactComplement?{source_exact_complement:true}:{}),
+    ...(balancedDedup?{balanced_dedup:true}:{}),
     created_at:new Date().toISOString(),
    cluster_outcomes:outcomes.map(x=>({cluster_id:x.cluster_id,
     decision:x.decision,reason:x.reason,
@@ -1047,6 +1121,8 @@ export async function runAdmittedFiniteBatch({
   'PLAN_CLAIM_EVIDENCE_IDENTITY_CHANGED');
   assert(Boolean(plan.source_exact_complement)===sourceExactComplement,
    'PLAN_SOURCE_EXACT_COMPLEMENT_IDENTITY_CHANGED');
+ assert(Boolean(plan.balanced_dedup)===balancedDedup,
+  'PLAN_BALANCED_DEDUP_IDENTITY_CHANGED');
  if(plan.tuning_sha256!==undefined)
   assert(plan.tuning_sha256===tuningSha,'PLAN_TUNING_IDENTITY_CHANGED');
  else assert(legacyIdentity,'PLAN_LEGACY_TUNING_UNVERIFIED');

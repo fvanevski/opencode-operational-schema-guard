@@ -1289,3 +1289,41 @@ test('S6 never promotes a rejected normalized claim through a different exact qu
  assert.equal(records.filter(r=>r.state==='persisted').length,1);
  assert.equal(records.filter(r=>r.state==='deferred').length,1);
 },[strong]));
+
+test('Issue92 balanced opt-in suppresses only source-quoted duplicates',()=>fixture(async f=>{
+ const out=await runAdmittedFiniteBatch(recallOpts({...f,balancedDedup:true,
+  curate:model()}));
+ assert.equal(out.persisted,1);assert.equal(out.deferred,1);
+ assert.equal(f.graphiti.writes.length,1);
+ const active=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,'_active.json'),'utf8'));
+ assert.equal(active.balanced_dedup,true);
+ const plan=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,active.batch_id,'plan.json'),'utf8'));
+ assert.equal(plan.families[0].refinements[0].status,'source_quoted_review');
+},[strong,weak]));
+
+test('Issue92 balanced opt-in retains uncertain source facts',()=>fixture(async f=>{
+ const out=await runAdmittedFiniteBatch(recallOpts({...f,balancedDedup:true,
+  curate:model({uncertain:true})}));
+ assert.equal(out.persisted,2);assert.equal(out.deferred,0);
+},[strong,weak]));
+
+test('Issue92 balanced opt-in retains sourced facts after invalid arbitration',()=>fixture(async f=>{
+ const out=await runAdmittedFiniteBatch(recallOpts({...f,balancedDedup:true,
+  curate:model({invalid:true})}));
+ assert.equal(out.persisted,2);assert.equal(out.deferred,0);
+},[strong,weak]));
+
+test('Issue92 balanced opt-in retains sourced facts after invalid quote review',()=>fixture(async f=>{
+ const out=await runAdmittedFiniteBatch(recallOpts({...f,balancedDedup:true,
+  curate:model({specificity:'invalid'})}));
+ assert.equal(out.persisted,2);assert.equal(out.deferred,0);
+},[strong,weak]));
+
+test('Issue92 balanced opt-in cannot retrofit frozen recall batches',()=>fixture(async f=>{
+ const curate=model({distinct:true});
+ await runAdmittedFiniteBatch(recallOpts({...f,curate}));
+ await assert.rejects(runAdmittedFiniteBatch(recallOpts({...f,curate,
+  balancedDedup:true})),/BALANCED_DEDUP_IDENTITY_CHANGED/);
+},[strong,different]));

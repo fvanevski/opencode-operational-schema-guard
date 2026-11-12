@@ -56,6 +56,11 @@ if(complementArg&&complementArg!=='on')throw Error('SOURCE_EXACT_COMPLEMENT_OPT_
 if(complementArg&&(!claimEvidence||!finiteBatch||command!=='drain'))
  throw Error('SOURCE_EXACT_COMPLEMENT_REQUIRES_CLAIM_EVIDENCE');
 const sourceExactComplement=complementArg==='on';
+const dedupArg=arg('balanced-dedup');
+if(dedupArg&&dedupArg!=='on')throw Error('BALANCED_DEDUP_OPT_IN_INVALID');
+if(dedupArg&&(!finiteBatch||command!=='drain'||noveltyPolicy!=='recall'))
+ throw Error('BALANCED_DEDUP_REQUIRES_RECALL_FINITE_BATCH');
+const balancedDedup=dedupArg==='on';
 if(tuningPath&&command!=='validate-tuning'&&(!finiteBatch||command!=='drain'))
  throw Error('FINITE_BATCH_TUNING_ONLY_ON_DRAIN');
 if(command==='validate-tuning'){
@@ -74,7 +79,8 @@ if(command==='validate-tuning'){
     '[--tuning-file ABSOLUTE_JSON_PATH] [--replay-only on] [--source-recovery on] '+
      '[--resilient-discovery on (requires source-recovery)] '+
      '[--claim-evidence on (requires resilient-discovery)] '+
-     '[--source-exact-complement on (requires claim-evidence)]. '+
+     '[--source-exact-complement on (requires claim-evidence)] '+
+     '[--balanced-dedup on (recall mode, semantic duplicate review)]. '+
     'For drain set LOCAL_CURATOR_URL, LOCAL_CURATOR_MODEL, LOCAL_CURATOR_API_KEY.');
   process.exitCode=2;
 }else{
@@ -142,6 +148,7 @@ if(command==='validate-tuning'){
     const data=finiteBatch?
       await runAdmittedFiniteBatch({...inputs,maxCandidates,noveltyPolicy,replayOnly,
        sourceRecovery,resilientDiscovery,claimEvidence,sourceExactComplement,
+        balancedDedup,
        tuning:tuningPath?await loadFiniteBatchTuning(tuningPath):null}):
       await runAdmitted({...inputs,factReview});
     console.log(JSON.stringify(data));
