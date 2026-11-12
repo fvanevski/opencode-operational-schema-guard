@@ -116,3 +116,41 @@ test('native plugin stages all admitted long spans but no speculative or missing
  assert.equal(fromTool({sessionID:'ses-native',callID:'tool-empty',tool:'shell',
   status:'completed',input:{command:'node --test source.test.mjs'}},scope),null);
 }));
+
+test('injected OpenViking context is not new user evidence; authored technical tail survives',()=>{
+ const raw='<openviking-context>Relevant context from OpenViking. '+
+  'viking://user/project memory says a fabricated fix has shipped. '+
+  '</openviking-context> The source author explicitly requires that the '+
+  'state machine reject unknown transitions without caching a failed result.';
+ const rows=accepted(native(raw,'msg-openviking-tail'));
+ assert.equal(rows.length,1);
+ assert.match(rows[0].excerpt,/source author explicitly requires/);
+ assert.doesNotMatch(rows[0].excerpt,/fabricated fix|viking:\/\//);
+ assert.equal(rows[0].evidence_class,'user-stated');
+ assert.equal(rows[0].source_strength,'native-id');
+ assert.equal(rows[0].source_refs[0],'opencode:ses-native:message:msg-openviking-tail');
+ assert.deepEqual(rows,accepted(native(raw,'msg-openviking-tail')));
+});
+test('OpenViking blocks in middle preserve both authored statements',()=>{
+ const text='The cache invalidation must reject stale writes. '+
+  '<openviking-context>external recalled assistant theory</openviking-context> '+
+  'The revision counter must be checked before advancing the pointer.';
+ const rows=accepted(native(text,'msg-context-middle'));
+ assert.equal(rows.length,1);
+ assert.match(rows[0].excerpt,/cache invalidation must reject/);
+ assert.match(rows[0].excerpt,/revision counter must be checked/);
+ assert.doesNotMatch(rows[0].excerpt,/recalled assistant theory/);
+});
+test('OpenViking memory-only or malformed tags have no source authority',()=>{
+ const only='<openviking-context>From OpenViking memories: code passed.</openviking-context>';
+ assert.deepEqual(accepted(native(only,'msg-context-only')),[]);
+ assert.deepEqual(accepted(native('<openviking-context>Unclosed memory and a fix request.')),[]);
+ assert.deepEqual(accepted(native('</openviking-context> Unmatched tag plus a fix request.')),[]);
+});
+test('original-input secret scan is not bypassed by a removable context block',()=>{
+ const input='<openviking-context>api_key=never_publish_this</openviking-context> '+
+  'The user requests that cache entries be invalidated on schema changes.';
+ assert.deepEqual(accepted(native(input,'msg-context-secret')),[]);
+ assert.deepEqual(accepted(native('The user requires more source facts. '+
+  '[GHDEV_GRAPHITI_CONTEXT] previous memory context')),[]);
+});

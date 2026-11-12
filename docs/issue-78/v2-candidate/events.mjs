@@ -123,14 +123,49 @@ function promptSpans(text) {
   return Array.from({ length: MAX_PROMPT_SPANS }, (_, i) =>
     spans[Math.round(i * (spans.length - 1) / (MAX_PROMPT_SPANS - 1))]);
 }
+/** OpenViking memory injections can precede an otherwise authored prompt.
+ * They are NOT native user testimony. Remove only complete tagged blocks.
+ * Keep the rest of the native message, with its original session/message ID.
+ * Incomplete or mismatched wrappers fail closed instead of being promoted.
+ */
+export function withoutInjectedOpenVikingContext(text){
+ if(typeof text!=='string')return '';
+ const open=/<openviking-context(?:\s[^>]*)?>/gi;
+ const close=/<\/openviking-context\s*>/gi;
+ let match,offset=0,authored='',seen=false;
+ while((match=open.exec(text))){
+  seen=true;
+  const before=text.slice(offset,match.index);
+  close.lastIndex=offset;
+  if(close.exec(before))return '';
+  const tail=text.slice(match.index+match[0].length);
+  const closing=/<\/openviking-context\s*>/i.exec(tail);
+  if(!closing)return '';
+  const nested=/<openviking-context(?:\s[^>]*)?>/i.exec(tail);
+  if(nested&&nested.index<closing.index)return '';
+  authored+=before+' ';
+  offset=match.index+match[0].length+closing.index+closing[0].length;
+  open.lastIndex=offset;
+ }
+ const remainder=text.slice(offset);
+ close.lastIndex=0;
+ if(close.exec(remainder))return '';
+ return seen?(authored+remainder).trim():text;
+}
 export function fromPromptCandidates(event, scope, { admitted = false } = {}) {
   if (!admitted) return []; // Only prompts observed in an admitted native context.
   const sessionID = field(event, ['sessionID', 'sessionId']);
   const text = promptText(event);
+  // Scan the full ORIGINAL native input for secrets and prohibited controls.
+  // A retrieval wrapper never hides a secret from the privacy veto.
   if (!text || text.length > MAX_LONG_PROMPT_CHARS ||
-    PRIVATE.test(text) || SELF.test(text) ||
+    PRIVATE.test(text) ||
     /[\0-\u0008\u000b\u000e-\u001f]/u.test(text)) return [];
-  const condensed = text.replace(/\s+/g, ' ').trim();
+  // Remove external memory excerpts without losing an adjacent authored
+  // technical instruction. SELF checks still apply to surviving source text.
+  const authored=withoutInjectedOpenVikingContext(text);
+  if (!authored || SELF.test(authored)) return [];
+  const condensed = authored.replace(/\s+/g, ' ').trim();
   if (!condensed || CHATTER.test(condensed) || /^[?!. ]+$/.test(condensed) ||
     // Structure is evidence, not a determination of low utility. JSON and
     // mixed code/prose remain bounded, private-scanned native user statements.
