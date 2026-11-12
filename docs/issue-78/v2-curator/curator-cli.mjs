@@ -51,6 +51,11 @@ if(claimArg&&claimArg!=='on')throw Error('CLAIM_EVIDENCE_OPT_IN_INVALID');
 if(claimArg&&(!resilientDiscovery||!finiteBatch||command!=='drain'))
  throw Error('CLAIM_EVIDENCE_REQUIRES_RESILIENT_FINITE_BATCH');
 const claimEvidence=claimArg==='on';
+const complementArg=arg('source-exact-complement');
+if(complementArg&&complementArg!=='on')throw Error('SOURCE_EXACT_COMPLEMENT_OPT_IN_INVALID');
+if(complementArg&&(!claimEvidence||!finiteBatch||command!=='drain'))
+ throw Error('SOURCE_EXACT_COMPLEMENT_REQUIRES_CLAIM_EVIDENCE');
+const sourceExactComplement=complementArg==='on';
 if(tuningPath&&command!=='validate-tuning'&&(!finiteBatch||command!=='drain'))
  throw Error('FINITE_BATCH_TUNING_ONLY_ON_DRAIN');
 if(command==='validate-tuning'){
@@ -68,7 +73,8 @@ if(command==='validate-tuning'){
     '[--max-candidates 48] [--novelty-policy recall|conservative] '+
     '[--tuning-file ABSOLUTE_JSON_PATH] [--replay-only on] [--source-recovery on] '+
      '[--resilient-discovery on (requires source-recovery)] '+
-     '[--claim-evidence on (requires resilient-discovery)]. '+
+     '[--claim-evidence on (requires resilient-discovery)] '+
+     '[--source-exact-complement on (requires claim-evidence)]. '+
     'For drain set LOCAL_CURATOR_URL, LOCAL_CURATOR_MODEL, LOCAL_CURATOR_API_KEY.');
   process.exitCode=2;
 }else{
@@ -135,7 +141,7 @@ if(command==='validate-tuning'){
       modelOptions:modelPolicy(process.env),maxSeconds,maxClusters};
     const data=finiteBatch?
       await runAdmittedFiniteBatch({...inputs,maxCandidates,noveltyPolicy,replayOnly,
-       sourceRecovery,resilientDiscovery,claimEvidence,
+       sourceRecovery,resilientDiscovery,claimEvidence,sourceExactComplement,
        tuning:tuningPath?await loadFiniteBatchTuning(tuningPath):null}):
       await runAdmitted({...inputs,factReview});
     console.log(JSON.stringify(data));

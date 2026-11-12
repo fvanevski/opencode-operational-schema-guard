@@ -181,6 +181,30 @@ export function finiteBatchResilientDiscoveryPrompt(cluster,{recovery=false,reje
  return [{role:'system',content:base[0].content+guidance},
   {role:'user',content:JSON.stringify(data)}];
 }
+export function finiteBatchSourceExactComplementPrompt(cluster,rejected=[]){
+ const base=finiteBatchResilientDiscoveryPrompt(cluster,{recovery:true,
+  rejected:rejected.slice(0,3)});
+ const user=JSON.parse(base[1].content);
+ user.previously_reviewed_spans=rejected.slice(0,9);
+ return [{role:'system',content:base[0].content+
+  ' SOURCE-EXACT COMPLEMENT: find DISTINCT source-stated technical predicates'+
+  ' overlooked in the preceding normalized-claim lane, including independent'+
+  ' reported defects, required behavior and meaningful negative findings.'+
+  ' Do NOT accept a previously rejected normalized claim or repeat an already'+
+  ' reviewed exact quote. Each candidate must be a self-contained, contiguous'+
+  ' 25..450-character original source quote with accurate source_ref and'+
+  ' UTF-16 offsets. Utility is reviewed independently; when no other specific'+
+  ' predicate exists return candidates:[].'},
+  {role:'user',content:JSON.stringify(user)}];
+}
+export function finiteBatchSourceExactComplementUtilityPrompt(cluster,proposal){
+ const base=finiteBatchResilientUtilityPrompt(cluster,proposal);
+ return [{role:'system',content:base[0].content+
+  ' SOURCE-EXACT COMPLEMENT UTILITY: judge ONLY the actual quotation as a'+
+  ' source-stated technical observation. A rejected paraphrase grants NO'+
+  ' authority. Preserve source/temporal uncertainty; do not invent a fix.'},
+  base[1]];
+}
 export function finiteBatchResilientUtilityPrompt(cluster,proposal,{recovery=false}={}){
  const base=recovery?finiteBatchRecoveryUtilityPrompt(cluster,proposal):
    finiteBatchUtilityPrompt(cluster,proposal);
@@ -481,7 +505,7 @@ export async function runAdmittedFiniteBatch({
  modelEndpoint,modelId,apiKey='local',modelOptions={},curate=curateCluster,
  maxClusters=24,maxCandidates=48,maxSeconds=1200,
  noveltyPolicy='recall',tuning=null,replayOnly=false,sourceRecovery=false,
-  resilientDiscovery=false,claimEvidence=false,
+  resilientDiscovery=false,claimEvidence=false,sourceExactComplement=false,
   onCheckpoint=null
 }={}){
  // Preserve mock-only Node test fixtures; live claim/evidence clients must
@@ -503,6 +527,7 @@ export async function runAdmittedFiniteBatch({
   typeof replayOnly==='boolean'&&typeof sourceRecovery==='boolean'&&
   typeof resilientDiscovery==='boolean'&&(!resilientDiscovery||sourceRecovery)&&
   typeof claimEvidence==='boolean'&&(!claimEvidence||resilientDiscovery)&&
+   typeof sourceExactComplement==='boolean'&&(!sourceExactComplement||claimEvidence)&&
   (!sourceRecovery||noveltyPolicy==='recall'),'INVALID_BOUNDS');
  const tuningProfile=validateFiniteBatchTuning(tuning);
  const tuningSha=tuningIdentity(tuningProfile);
@@ -551,7 +576,8 @@ export async function runAdmittedFiniteBatch({
    snapshot_sha256:hash(snapshot),tuning_sha256:tuningSha,
    ...(sourceRecovery?{source_recovery:true}:{}),
    ...(resilientDiscovery?{resilient_discovery:true}:{}),
-   ...(claimEvidence?{claim_evidence:true}:{})};
+   ...(claimEvidence?{claim_evidence:true}:{}),
+   ...(sourceExactComplement?{source_exact_complement:true}:{})};
   try{await writeOnce(activePath,active);}
   catch(e){if(e.code!=='EEXIST')throw e;}
   const actual=await readMaybe(activePath);
@@ -567,6 +593,8 @@ export async function runAdmittedFiniteBatch({
    'RESILIENT_DISCOVERY_IDENTITY_CHANGED');
   assert(Boolean(active.claim_evidence)===claimEvidence,
    'CLAIM_EVIDENCE_IDENTITY_CHANGED');
+   assert(Boolean(active.source_exact_complement)===sourceExactComplement,
+    'SOURCE_EXACT_COMPLEMENT_IDENTITY_CHANGED');
   if(active.tuning_sha256!==undefined)
    assert(active.tuning_sha256===tuningSha,'TUNING_IDENTITY_CHANGED');
   else assert(legacyIdentity,'LEGACY_TUNING_IDENTITY_UNVERIFIED');
@@ -920,6 +948,7 @@ export async function runAdmittedFiniteBatch({
    ...(sourceRecovery?{source_recovery:true}:{}),
    ...(resilientDiscovery?{resilient_discovery:true}:{}),
     ...(claimEvidence?{claim_evidence:true}:{}),
+    ...(sourceExactComplement?{source_exact_complement:true}:{}),
     created_at:new Date().toISOString(),
    cluster_outcomes:outcomes.map(x=>({cluster_id:x.cluster_id,
     decision:x.decision,reason:x.reason,
@@ -946,6 +975,8 @@ export async function runAdmittedFiniteBatch({
   'PLAN_RESILIENT_DISCOVERY_IDENTITY_CHANGED');
  assert(Boolean(plan.claim_evidence)===claimEvidence,
   'PLAN_CLAIM_EVIDENCE_IDENTITY_CHANGED');
+  assert(Boolean(plan.source_exact_complement)===sourceExactComplement,
+   'PLAN_SOURCE_EXACT_COMPLEMENT_IDENTITY_CHANGED');
  if(plan.tuning_sha256!==undefined)
   assert(plan.tuning_sha256===tuningSha,'PLAN_TUNING_IDENTITY_CHANGED');
  else assert(legacyIdentity,'PLAN_LEGACY_TUNING_UNVERIFIED');
@@ -1060,6 +1091,7 @@ export async function runAdmittedFiniteBatch({
   prompt_tokens:promptTokens,completion_tokens:completionTokens,
   model_metrics:modelMetrics,tuning_sha256:tuningSha,replay_only:replayOnly,
   source_recovery:sourceRecovery,
+   ...(sourceExactComplement?{source_exact_complement:true}:{}),
   persisted:all.filter(r=>r.state==='persisted').length,
   unresolved:unresolved.length,write_outcomes:writeOutcomes};
 }
