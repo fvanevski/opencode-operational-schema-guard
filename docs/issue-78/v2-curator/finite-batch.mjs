@@ -834,13 +834,75 @@ export async function runAdmittedFiniteBatch({
     }
     break;
    }
+   // Independent SOURCE-EXACT complement: a failed normalized-claim critic
+   // never becomes a Graphiti authorization. Every new quote independently
+   // passes deterministic source validation AND a separate utility reviewer.
+   let complementOutcome=null;
+   if(sourceExactComplement&&approved.length<3){
+    const reviewed=[...entries.values()].filter(e=>
+     Number.isSafeInteger(e.fact?.evidence_span?.start)).map(e=>({
+      source_ref:e.fact.source_refs[0],start:e.fact.evidence_span.start,
+      end:e.fact.evidence_span.end,
+      reason_code:e.review_reason||'source_already_reviewed'
+     }));
+    const identity=cluster.id+':source-exact-complement-v1';
+    const discovered=await callOnce('discovery',identity,cluster,
+     finiteBatchSourceExactComplementPrompt(cluster,reviewed));
+    const exact=validateFactDiscovery(discovered.content,cluster,
+     {isolateCandidates:true});
+    const newFacts=exact.ok&&exact.decision==='EMIT'?
+     exact.facts.filter(f=>!entries.has(childId(cluster,f))):[];
+    complementOutcome={proposed:exact.facts?.length||0,
+     invalid_source_candidates:exact.invalid_candidates??[],
+     new_source_quotes:newFacts.length,approved:0,deferred:0};
+    if(newFacts.length){
+     const proposal={...exact,facts:newFacts};
+     const answer=await callOnce('utility',identity,cluster,
+      finiteBatchSourceExactComplementUtilityPrompt(cluster,proposal));
+     const screen=validateFactReview(answer.content,proposal);
+     if(!screen.ok){
+      complementOutcome.invalid_utility=screen.reason;
+      for(const fact of proposal.facts){
+       const e=factEntry(cluster,fact,null,'source_exact_utility_invalid');
+       if(!entries.has(e.id))entries.set(e.id,e);
+       complementOutcome.deferred++;
+      }
+     }else{
+      const review=filterFactProposal(proposal,screen);
+      if(review.ok)for(let k=0;k<review.facts.length;k++){
+       const fact=review.facts[k],utility=review.fact_utilities[k];
+       const verifiedFact=validateModelDecision({decision:'EMIT',
+        reason:'Independent exact-source utility review',utility_class:utility,
+        facts:[{...fact,utility_class:utility}]},cluster);
+       if(!verifiedFact.ok)throw Error('ISSUE92_BATCH_COMPLEMENT_SOURCE_INVALID');
+       const e=factEntry(cluster,verifiedFact.facts[0],utility);
+       if(entries.has(e.id))continue;
+       if(approved.length>=3){
+        entries.set(e.id,{...e,utility_class:null,
+         review_reason:'per_cluster_three_fact_bound'});
+        complementOutcome.deferred++;continue;
+       }
+       entries.set(e.id,e);approved.push(e);complementOutcome.approved++;
+      }
+      for(const d of screen.review){
+       const e=factEntry(cluster,proposal.facts[d.index],null,d.reason_code);
+       if(!entries.has(e.id))entries.set(e.id,e);
+       complementOutcome.deferred++;
+      }
+     }
+    }
+    if(complementOutcome.approved>0){
+     decision='REVIEWED';reason='source_exact_complement_reviewed';
+    }
+   }
    accepted.push(...approved);
    outcomes.push({cluster_id:cluster.id,decision,reason,
     facts:[...entries.values()].sort(byId),
     ...(sourceRecovery?{source_recovery_attempted:recoveryAttempted,
      source_recovery_trigger:recoveryTrigger}:{}),
     ...(resilientDiscovery?{source_validation_failures:validationFailures}:{}),
-    ...(claimEvidence?{claim_support_outcomes:supportOutcomes}:{})});
+    ...(claimEvidence?{claim_support_outcomes:supportOutcomes}:{}),
+    ...(sourceExactComplement?{source_exact_complement_outcome:complementOutcome}:{})});
   }
   assert(accepted.length<=maxCandidates,'ACCEPTED_POOL_OVER_BOUND_NO_PROMOTION');
   const selected=new Set(),deferred=new Map(),families=[];
@@ -956,7 +1018,8 @@ export async function runAdmittedFiniteBatch({
     ...(sourceRecovery?{source_recovery_attempted:x.source_recovery_attempted,
      source_recovery_trigger:x.source_recovery_trigger}:{}),
      ...(resilientDiscovery?{source_validation_failures:x.source_validation_failures}:{}),
-     ...(claimEvidence?{claim_support_outcomes:x.claim_support_outcomes}:{})})),
+     ...(claimEvidence?{claim_support_outcomes:x.claim_support_outcomes}:{}),
+     ...(sourceExactComplement?{source_exact_complement_outcome:x.source_exact_complement_outcome}:{})})),
    items:items.sort(byId),families,calls,
    policy:noveltyPolicy==='recall'?
     'issue92_recall_first_source_and_utility_v1':
