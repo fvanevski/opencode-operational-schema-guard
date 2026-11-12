@@ -800,6 +800,12 @@ export async function runAdmittedFiniteBatch({
      const e=factEntry(cluster,valid.facts[0],utility);
      // Conflicting verdicts on an identical rejected quote are not new evidence.
      if(entries.has(e.id))continue;
+     // S6 joint claim/source-exact lanes have one per-cluster fact ceiling.
+     if(sourceExactComplement&&approved.length>=3){
+      entries.set(e.id,{...e,utility_class:null,
+       review_reason:'per_cluster_three_fact_bound'});
+      continue;
+     }
      entries.set(e.id,e);approved.push(e);newApproved++;
     }
     for(const d of screen.review){
