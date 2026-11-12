@@ -1070,7 +1070,7 @@ test('S4 three-stage claim critic and utility persist ONLY the exact original qu
  assert.equal(plan.cluster_outcomes[0].claim_support_outcomes[0].supported.length,1);
 },[strong]));
 
-test('S4 rejects unsupported claim without utility call or Graphiti writes',()=>fixture(async f=>{
+test('S4 low-overlap unsupported claim reaches support but never utility/Graphiti',()=>fixture(async f=>{
  let discovery=0,support=0,utility=0;
  const curate=async(_,{promptMessages})=>{
   const sys=promptMessages[0].content,data=JSON.parse(promptMessages[1].content);
@@ -1078,10 +1078,12 @@ test('S4 rejects unsupported claim without utility call or Graphiti writes',()=>
    discovery++;const e=data.evidence[0];
    return {content:JSON.stringify({reason:'source',candidates:[{
     kind:'blocker',source_ref:e.source,start:0,end:e.excerpt.length,
-    temporal_status:'observed',normalized_claim:strong}]})};
+    temporal_status:'observed',normalized_claim:'Graphiti implements caching.'}]})};
   }
   if(sys.includes('independent SOURCE-SUPPORT critic')){
-   support++;return {content:JSON.stringify({decisions:[{
+   support++;
+   assert.equal(data.candidates[0].normalized_claim,'Graphiti implements caching.');
+   return {content:JSON.stringify({decisions:[{
     index:0,disposition:'REVIEW',reason_code:'unsupported_inference'}]})};
   }
   utility++;throw Error('UTILITY_NOT_AUTHORIZED');
@@ -1090,6 +1092,13 @@ test('S4 rejects unsupported claim without utility call or Graphiti writes',()=>
   sourceRecovery:true,resilientDiscovery:true,claimEvidence:true}));
  assert.equal(discovery,1);assert.equal(support,1);assert.equal(utility,0);
  assert.equal(out.persisted,0);assert.equal(f.graphiti.writes.length,0);
+ const active=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,'_active.json'),'utf8'));
+ const plan=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,active.batch_id,'plan.json'),'utf8'));
+ const outcomes=plan.cluster_outcomes[0].claim_support_outcomes;
+ assert.equal(outcomes.length,1);
+ assert.equal(outcomes[0].claim_diagnostics[0].source_vocabulary_overlap,0);
 },[strong]));
 
 test('S4 opt-in identity cannot retrofit frozen S3 state',()=>fixture(async f=>{

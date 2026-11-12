@@ -19,12 +19,12 @@ const validClaim=x=>typeof x==='string'&&x.length>=25&&x.length<=450&&
 const words=s=>new Set((String(s).toLowerCase().match(/[a-z0-9_.:-]{4,}/g)||[])
  .filter(x=>!['that','this','with','from','were','have','does','will','into',
   'when','then','only','also','their','after','before','should','would','could'].includes(x)));
-function claimHasSourceVocabulary(claim,quote){
+export function claimSourceVocabularyOverlap(claim,quote){
  const wanted=words(claim),available=words(quote);
- // This is only a conservative plausibility check. Real entailment requires
- // the separately recorded support review plus independent source audit.
- return wanted.size>0&&[...wanted].filter(w=>available.has(w)).length/
-   wanted.size>=0.35;
+ // Metric only: word overlap is neither semantic proof nor a reason to
+ // suppress a source-authenticated candidate ahead of independent review.
+ return wanted.size?
+  [...wanted].filter(w=>available.has(w)).length/wanted.size:null;
 }
 export function claimEvidenceDiscoveryPrompt(cluster,{recovery=false,
  rejected=[],invalid=[]}={}){
@@ -88,14 +88,13 @@ export function validateClaimEvidenceDiscovery(raw,cluster){
    continue;
   }
   const fact=candidateCheck.facts[0],claim=candidate.normalized_claim;
-  if(!claimHasSourceVocabulary(claim,fact.assertion)){
-   invalid.push({index,reason:'claim_source_vocabulary_weak',
-    diagnostic_field:'normalized_claim'});
-   continue;
-  }
+  const overlap=claimSourceVocabularyOverlap(claim,fact.assertion);
+  // Lexically dissimilar claims still require independent semantic support,
+  // not an automatic authorization or an automatic rejection.
   facts.push(fact);
   claims.push(Object.freeze({index:claims.length,original_index:index,
    claim,claim_sha256:hash(claim),source_ref:fact.source_refs[0],
+   source_vocabulary_overlap:overlap,
    exact_evidence_quote:fact.assertion,evidence_sha256:hash(fact.assertion),
    evidence_span:fact.evidence_span,evidence_class:fact.evidence_class,
    temporal_status:fact.temporal_status}));

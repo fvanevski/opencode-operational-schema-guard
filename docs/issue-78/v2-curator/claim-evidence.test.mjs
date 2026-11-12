@@ -4,7 +4,7 @@ import {fromPrompt} from '../v2-candidate/events.mjs';
 import {selectClusters} from './core.mjs';
 import {claimEvidenceDiscoveryPrompt,validateClaimEvidenceDiscovery,
  claimSupportPrompt,validateClaimSupport,supportedClaimProposal,
- claimUtilityPrompt} from './claim-evidence.mjs';
+ claimUtilityPrompt,claimSourceVocabularyOverlap} from './claim-evidence.mjs';
 
 const scope={group:'issue92claims',project:'project92',workspace:'/workspace/project92'};
 const evidence='Graphiti MCP get_episodes requires group_ids to be an array to return the requested group episodes.';
@@ -32,12 +32,12 @@ test('S4 discovery keeps normalized proposal distinct from authenticated exact q
  assert.match(prompt[0].content,/normalized_claim/);
  assert.match(prompt[0].content,/never a verified fix/i);
 });
-test('S4 attribution, span and source vocabulary failures cannot become facts',()=>{
+test('S4 malformed source attribution, span and claim fields cannot become facts',()=>{
  const c=cluster(),e=c.events[0],valid=proposal(c);
  const rejected=[
   {...valid.candidates[0],source_ref:'opencode:forged'},
   {...valid.candidates[0],end:e.excerpt.length+200},
-  {...valid.candidates[0],normalized_claim:'Completed production deployment successfully to verified live hosts.'}
+  {...valid.candidates[0],normalized_claim:'too short'}
  ];
  for(const bad of rejected){
   const p=validateClaimEvidenceDiscovery({reason:'bad',candidates:[bad]},c);
@@ -48,6 +48,38 @@ test('S4 attribution, span and source vocabulary failures cannot become facts',(
   valid.candidates[0],rejected[0]]},c);
  assert.equal(mixed.ok,true);assert.equal(mixed.facts.length,1);
  assert.equal(mixed.invalid_candidates[0].index,1);
+});
+test('S4 lexical near miss reaches independent support and remains rejectable',()=>{
+ const c=cluster(),e=c.events[0],candidate={
+  ...proposal(c).candidates[0],normalized_claim:'Graphiti implements caching.'
+ };
+ const p=validateClaimEvidenceDiscovery({reason:'unverified paraphrase',
+  candidates:[candidate]},c);
+ assert.equal(p.ok,true);
+ assert.equal(p.facts.length,1);
+ assert.equal(p.facts[0].assertion,e.excerpt);
+ assert.equal(p.claims[0].source_vocabulary_overlap,1/3);
+ assert.equal(claimSourceVocabularyOverlap(candidate.normalized_claim,e.excerpt),1/3);
+ const support=claimSupportPrompt(c,p);
+ assert.equal(JSON.parse(support[1].content).candidates[0].normalized_claim,
+  candidate.normalized_claim);
+ const verdict=validateClaimSupport({decisions:[{
+  index:0,disposition:'REVIEW',reason_code:'missing_predicate'}]},p);
+ assert.equal(verdict.ok,true);
+ assert.equal(supportedClaimProposal(p,verdict).proposal.ok,false);
+});
+test('S4 lexical zero overlap remains a diagnostic, not semantic authorization',()=>{
+ const c=cluster(),candidate={...proposal(c).candidates[0],
+  normalized_claim:'Successful deployment finished without any production incidents.'};
+ const p=validateClaimEvidenceDiscovery({reason:'unsupported claim',
+  candidates:[candidate]},c);
+ assert.equal(p.ok,true);
+ assert.equal(p.claims[0].source_vocabulary_overlap,0);
+ assert.equal(p.invalid_candidates.length,0);
+ const verdict=validateClaimSupport({decisions:[{
+  index:0,disposition:'REVIEW',reason_code:'unsupported_inference'}]},p);
+ assert.equal(verdict.ok,true);
+ assert.equal(supportedClaimProposal(p,verdict).proposal.facts.length,0);
 });
 test('S4 independent source critic must return exact support quote and preserve source class',()=>{
  const c=cluster(),p=validateClaimEvidenceDiscovery(proposal(c),c);

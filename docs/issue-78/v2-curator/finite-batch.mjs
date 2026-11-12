@@ -687,6 +687,10 @@ export async function runAdmittedFiniteBatch({
     if(claimEvidence){
      // The independent source critic is prerequisite to utility selection;
      // only exact authenticated quotes reach automatic ReviewStore/Graphiti.
+     const diagnostics=proposal.claims.map(c=>({
+      claim_sha256:c.claim_sha256,evidence_sha256:c.evidence_sha256,
+      source_vocabulary_overlap:c.source_vocabulary_overlap
+     }));
      const supportReply=await callOnce('support',identity,cluster,
       claimSupportPrompt(cluster,proposal));
      const verdict=validateClaimSupport(supportReply.content,proposal);
@@ -696,7 +700,8 @@ export async function runAdmittedFiniteBatch({
        const e=factEntry(cluster,fact,null,'claim_support_invalid');
        if(!entries.has(e.id))entries.set(e.id,e);
       }
-      supportOutcomes.push({pass:pass+1,result:'invalid',reason:verdict.reason});
+      supportOutcomes.push({pass:pass+1,result:'invalid',reason:verdict.reason,
+       claim_diagnostics:diagnostics});
       break;
      }
      const filtered=supportedClaimProposal(proposal,verdict);
@@ -705,6 +710,7 @@ export async function runAdmittedFiniteBatch({
       if(!entries.has(e.id))entries.set(e.id,e);
      }
      supportOutcomes.push({pass:pass+1,result:'reviewed',
+      claim_diagnostics:diagnostics,
       supported:verdict.supported.map(x=>({
        claim_sha256:x.claim_sha256,evidence_sha256:x.evidence_sha256,
        supporting_phrase_sha256:x.supporting_phrase_sha256,
