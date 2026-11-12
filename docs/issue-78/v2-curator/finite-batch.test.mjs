@@ -1023,3 +1023,109 @@ test('S3 partial recovery cannot reverse a rejected identical source quote',()=>
  assert.equal(out.persisted,0);assert.equal(out.deferred,1);
  assert.equal(f.graphiti.writes.length,0);
 },[strong+' '+different]));
+
+
+test('S4 three-stage claim critic and utility persist ONLY the exact original quote',()=>fixture(async f=>{
+ const calls={discovery:0,support:0,utility:0};
+ const normalized='Sphinx reStructuredText output omits dictionary parameter header rows in rendered API documentation.';
+ const curate=async(_,{promptMessages})=>{
+  const sys=promptMessages[0].content,data=JSON.parse(promptMessages[1].content);
+  if(sys.includes('CLAIM/EVIDENCE SEPARATION')){
+   calls.discovery++;
+   const e=data.evidence[0];
+   return {content:JSON.stringify({reason:'specific source finding',
+    candidates:[{kind:'blocker',temporal_status:'observed',source_ref:e.source,
+     start:0,end:e.excerpt.length,normalized_claim:normalized}]})};
+  }
+  if(sys.includes('independent SOURCE-SUPPORT critic')){
+   calls.support++;
+   assert.equal(data.candidates[0].normalized_claim,normalized);
+   return {content:JSON.stringify({decisions:[{index:0,
+    disposition:'SUPPORTED',reason_code:'supported_as_reported',
+    supporting_phrase:data.candidates[0].exact_evidence_quote}]})};
+  }
+  if(sys.includes('CLAIM-LED UTILITY')){
+   calls.utility++;
+   assert.equal(data.candidates[0].source_supported_claim,normalized);
+   return {content:JSON.stringify({decisions:[{index:0,
+    disposition:'ACCEPT',reason_code:'source_specific_durable',
+    utility_class:'useful_negative'}]})};
+  }
+  throw Error('UNEXPECTED_MODEL_STAGE');
+ };
+ const out=await runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true,resilientDiscovery:true,claimEvidence:true}));
+ assert.deepEqual(calls,{discovery:1,support:1,utility:1});
+ assert.equal(out.persisted,1);assert.equal(out.approved,1);
+ assert.equal(f.graphiti.writes.length,1);
+ assert.ok(f.graphiti.writes[0].episode_body.includes(strong));
+ assert.equal(f.graphiti.writes[0].episode_body.includes(normalized),false);
+ const active=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,'_active.json'),'utf8'));
+ assert.equal(active.claim_evidence,true);
+ const plan=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,active.batch_id,'plan.json'),'utf8'));
+ assert.equal(plan.claim_evidence,true);
+ assert.deepEqual(plan.calls.map(x=>x.stage).sort(),['discovery','support','utility']);
+ assert.equal(plan.cluster_outcomes[0].claim_support_outcomes[0].supported.length,1);
+},[strong]));
+
+test('S4 rejects unsupported claim without utility call or Graphiti writes',()=>fixture(async f=>{
+ let discovery=0,support=0,utility=0;
+ const curate=async(_,{promptMessages})=>{
+  const sys=promptMessages[0].content,data=JSON.parse(promptMessages[1].content);
+  if(sys.includes('CLAIM/EVIDENCE SEPARATION')){
+   discovery++;const e=data.evidence[0];
+   return {content:JSON.stringify({reason:'source',candidates:[{
+    kind:'blocker',source_ref:e.source,start:0,end:e.excerpt.length,
+    temporal_status:'observed',normalized_claim:strong}]})};
+  }
+  if(sys.includes('independent SOURCE-SUPPORT critic')){
+   support++;return {content:JSON.stringify({decisions:[{
+    index:0,disposition:'REVIEW',reason_code:'unsupported_inference'}]})};
+  }
+  utility++;throw Error('UTILITY_NOT_AUTHORIZED');
+ };
+ const out=await runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true,resilientDiscovery:true,claimEvidence:true}));
+ assert.equal(discovery,1);assert.equal(support,1);assert.equal(utility,0);
+ assert.equal(out.persisted,0);assert.equal(f.graphiti.writes.length,0);
+},[strong]));
+
+test('S4 opt-in identity cannot retrofit frozen S3 state',()=>fixture(async f=>{
+ let calls=0;
+ const curate=async()=>{calls++;return {content:JSON.stringify({
+  reason:'empty',candidates:[]})};};
+ await runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true,resilientDiscovery:true}));
+ const before=calls;
+ await assert.rejects(runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true,resilientDiscovery:true,claimEvidence:true})),
+  /CLAIM_EVIDENCE_IDENTITY_CHANGED/);
+ assert.equal(calls,before);assert.equal(f.graphiti.writes.length,0);
+},[strong]));
+
+test('S4 unknown support-call result is never replayed',()=>fixture(async f=>{
+ let discovery=0,support=0;
+ const curate=async(_,{promptMessages})=>{
+  const sys=promptMessages[0].content;
+  if(sys.includes('CLAIM/EVIDENCE SEPARATION')){
+   discovery++;const e=JSON.parse(promptMessages[1].content).evidence[0];
+   return {content:JSON.stringify({reason:'source',candidates:[{
+    kind:'blocker',source_ref:e.source,start:0,end:e.excerpt.length,
+    temporal_status:'observed',normalized_claim:strong}]})};
+  }
+  if(sys.includes('independent SOURCE-SUPPORT critic')){
+   support++;throw Error('transport ambiguous');
+  }
+  throw Error('ILLEGAL_UTILITY');
+ };
+ await assert.rejects(runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true,resilientDiscovery:true,claimEvidence:true})),
+  /MODEL_CALL_OUTCOME_UNKNOWN_NO_REPLAY/);
+ await assert.rejects(runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true,resilientDiscovery:true,claimEvidence:true})),
+  /MODEL_CALL_AMBIGUOUS_NO_REPLAY/);
+ assert.equal(discovery,1);assert.equal(support,1);
+ assert.equal(f.graphiti.writes.length,0);
+},[strong]));
