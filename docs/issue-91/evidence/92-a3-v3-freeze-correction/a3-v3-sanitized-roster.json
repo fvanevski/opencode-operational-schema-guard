@@ -1,0 +1,333 @@
+{
+ "schema_version": 1,
+ "kind": "issue92-a3-v3-sanitized-roster",
+ "family": "gh_mcp-development-v3",
+ "group": "graphiti-adr92-a3-prospective-v2",
+ "case_count": 20,
+ "valuable": 10,
+ "nonvaluable_controls": 10,
+ "private_manifest_sha256": "7b96a1075cbcd94866553bbfc37e26877df460e803d0beb798b9985954b5c4f0",
+ "cases": [
+  {
+   "id": "i92-v3-01-6a2d4401",
+   "message_id": "msg_1aeb0cfa4001WmFltu732cZHal",
+   "source_locator_sha256": "1090279b63610704e5037e3f779d728af546d05cb750da010d59eb632ee606d2",
+   "native_event_text_sha256": "2be300179e60a35f01cad99b8e9f37c84bbae485d524980a94e48b356bd877b1",
+   "observed_at": "2026-11-06T02:29:46.100000Z",
+   "evidence_class": "user-stated",
+   "project": "f6e7bce8c4c55e2b6d837cfe4eb5af30617dae00",
+   "workspace": "/tmp/opencode/issue81-qual/fresh-session/work",
+   "label": {
+    "valuable": true,
+    "prospective": true,
+    "ratification": "operator-pending",
+    "predicate": "falkordb_per_group_graph_layout"
+   }
+  },
+  {
+   "id": "i92-v3-02-cff2ba70",
+   "message_id": "msg_199b9ca48001KKf3ulXBY8LBuT",
+   "source_locator_sha256": "75a7d0fb9559efe91c640cbe4e621e1c1824fb4307266961040e2e1ab136971b",
+   "native_event_text_sha256": "8651f98a5cce27379cf6e82917048e5e88d9be450b972260ece435dd8c349b12",
+   "observed_at": "2026-11-02T00:47:33.094000Z",
+   "evidence_class": "user-stated",
+   "project": "08cca5d3f5e9af4f7be35ad55aa846f2b88207b2",
+   "workspace": "/tmp/opencode/issue75-final-qual/v2demo",
+   "label": {
+    "valuable": true,
+    "prospective": true,
+    "ratification": "operator-pending",
+    "predicate": "qualification_state_disposable_b75_journal_decision"
+   }
+  },
+  {
+   "id": "i92-v3-03-c07f27c9",
+   "message_id": "msg_137e208c4001nkrW0Q1lnIXDCL",
+   "source_locator_sha256": "e9347c0b240701281c969d8aeba3d984a5e4786ece8c4ec23398e0ace9d00547",
+   "native_event_text_sha256": "1a4a165d7a10111e1dbdf87b9fb4c3d5077b88287f24d392690485977db81062",
+   "observed_at": "2026-10-14T00:48:42.728000Z",
+   "evidence_class": "user-stated",
+   "project": "53f15a255e83bbb3064cea4cb862ec78fe90138f",
+   "workspace": "/opt/containers/tdarr",
+   "label": {
+    "valuable": true,
+    "prospective": true,
+    "ratification": "operator-pending",
+    "predicate": "abi_incompatibility_assumption_analysis"
+   }
+  },
+  {
+   "id": "i92-v3-04-0d1013a5",
+   "message_id": "msg_19ef275dd001xFwxUDDqjHZaPJ",
+   "source_locator_sha256": "edf2da4a411b47fb35af27234150689fca71492b34e5910809c9ed792596181b",
+   "native_event_text_sha256": "9db30cf552594c65c745e0689e9b7bbe9efe56e0240cbe29cb20e6773d8b75b9",
+   "observed_at": "2026-11-03T01:07:32.472000Z",
+   "evidence_class": "user-stated",
+   "project": "0f5d6bf45db635bc9c239ddd5c1329d651ed13fa",
+   "workspace": "/home/filip/.local/share/ghdev/issue75-postmerge-f11ceaf4",
+   "label": {
+    "valuable": true,
+    "prospective": true,
+    "ratification": "operator-pending",
+    "predicate": "issue75_graphiti_recall_close_constraint"
+   }
+  },
+  {
+   "id": "i92-v3-05-4814d284",
+   "message_id": "msg_1993e6e9b001eWiRa0zuhvEodc",
+   "source_locator_sha256": "7f1c57280d78f2e35a84585d61a177c9af5c925726f9124957ba1c5dff158abf",
+   "native_event_text_sha256": "9abbeddc3a8e5f69f417f73de8173034f33c9898604c9b0b69aedbb2132759bd",
+   "observed_at": "2026-11-01T22:32:48.137000Z",
+   "evidence_class": "user-stated",
+   "project": "8754d4814566ec907f077d26e41c166be499026e",
+   "workspace": "/tmp/opencode/issue75-evidence/v2proj",
+   "label": {
+    "valuable": true,
+    "prospective": true,
+    "ratification": "operator-pending",
+    "predicate": "release_quality_gate_hard_prerequisite_decision"
+   }
+  },
+  {
+   "id": "i92-v3-06-7486f6e4",
+   "message_id": "msg_1a7f37606001D5VpId7oG7R1M0",
+   "source_locator_sha256": "d0b39c1a7ca526c5788e470e3ddd0f010bac0e2911da9c4df1a803bfb91388cf",
+   "native_event_text_sha256": "fc01d5b4105c976785e439182f2729856e74862f92f0c365e124d772fae96d9c",
+   "observed_at": "2026-11-04T19:05:13.612000Z",
+   "evidence_class": "user-stated",
+   "project": "0be245d66e24443694590a9715098eb65bdfb716",
+   "workspace": "/tmp/opencode/issue81-qual/terminal81-a1f3c9/native-ws/fsm81",
+   "label": {
+    "valuable": true,
+    "prospective": true,
+    "ratification": "operator-pending",
+    "predicate": "fsm81_unknown_event_must_throw_supersession"
+   }
+  },
+  {
+   "id": "i92-v3-07-29751d99",
+   "message_id": "msg_1a8014ca70017ZovguTE4Kvnsd",
+   "source_locator_sha256": "3790eba7c10781cd5f56705b0e0a163cec0fc66dfbf3573209160bbda3cb5555",
+   "native_event_text_sha256": "3511d650a3eeb9651f7e289e4fbef4bb6a0dae75d9119d82caa3c6f58749ec9f",
+   "observed_at": "2026-11-04T19:20:20.578000Z",
+   "evidence_class": "user-stated",
+   "project": "5469ec53485ab619c9ffbf7dd5384d9884e16013",
+   "workspace": "/tmp/opencode/issue81-qual/terminal81-a1f3c9/native-ws-holdout/fsm81",
+   "label": {
+    "valuable": true,
+    "prospective": true,
+    "ratification": "operator-pending",
+    "predicate": "fsm81_log_rotation_policy_design_decision"
+   }
+  },
+  {
+   "id": "i92-v3-08-76a0a3a7",
+   "message_id": "msg_1a7f25b45001zF2zfbzULz4VKJ",
+   "source_locator_sha256": "6fcac95f57d5056813809b4a957493bdcacf1bddc21ac692d79e5f9ec0550acb",
+   "native_event_text_sha256": "51d44a32075681db69203ac506e90920335a734dc7343d2cc76f3df29f47db5a",
+   "observed_at": "2026-11-04T19:04:01.213000Z",
+   "evidence_class": "user-stated",
+   "project": "0be245d66e24443694590a9715098eb65bdfb716",
+   "workspace": "/tmp/opencode/issue81-qual/terminal81-a1f3c9/native-ws/fsm81",
+   "label": {
+    "valuable": true,
+    "prospective": true,
+    "ratification": "operator-pending",
+    "predicate": "fsm81_transition_function_pure_constraint"
+   }
+  },
+  {
+   "id": "i92-v3-09-630b1bd1",
+   "message_id": "msg_1a7ef3f9a001beyxKc4ab4f5N0",
+   "source_locator_sha256": "f2b8aac06ec3e90e0ca4f6b3219816e1833726c5ecb1ad51698668ecba558be6",
+   "native_event_text_sha256": "2fba85a3c4fa80c299d64c0fa0c424ea445ae585983ebdc2a74f7226efd3952d",
+   "observed_at": "2026-11-04T19:00:37.555000Z",
+   "evidence_class": "user-stated",
+   "project": "0be245d66e24443694590a9715098eb65bdfb716",
+   "workspace": "/tmp/opencode/issue81-qual/terminal81-a1f3c9/native-ws/fsm81",
+   "label": {
+    "valuable": true,
+    "prospective": true,
+    "ratification": "operator-pending",
+    "predicate": "fsm81_terminal_state_modeling_decision"
+   }
+  },
+  {
+   "id": "i92-v3-10-f68e2d7a",
+   "message_id": "msg_1a801a7230012rXaFbfcCw5dUc",
+   "source_locator_sha256": "0b0389143d8426593999a29a1ebaa4e2c21e3effe78c1ba7e059bfd54d1be993",
+   "native_event_text_sha256": "f6e58cbe4c97164563a4719ebde218c5da8c76fdbe87cd6aa6a77d8dadf165aa",
+   "observed_at": "2026-11-04T19:20:43.700000Z",
+   "evidence_class": "user-stated",
+   "project": "5469ec53485ab619c9ffbf7dd5384d9884e16013",
+   "workspace": "/tmp/opencode/issue81-qual/terminal81-a1f3c9/native-ws-holdout/fsm81",
+   "label": {
+    "valuable": true,
+    "prospective": true,
+    "ratification": "operator-pending",
+    "predicate": "fsm81_export_format_serialization_decision"
+   }
+  },
+  {
+   "id": "i92-v3-11-c5f544d4",
+   "message_id": "msg_170554897001gP1mHe1a1hHgog",
+   "source_locator_sha256": "f8f3e90ba61fbbd1a240c01ca0b47903be226d079e257bbf0ff86a01ffaaaee5",
+   "native_event_text_sha256": "bd2b6867b41d7fb31be2e0798faab0fe7e80ff6e997b604cd14ac74bb74cbf62",
+   "observed_at": "2026-10-24T23:53:19.779000Z",
+   "evidence_class": "user-stated",
+   "project": "2cfa05e81c79265ab99a7ab992d9bf8f4ac2699b",
+   "workspace": "/home/filip",
+   "label": {
+    "valuable": false,
+    "prospective": true,
+    "ratification": "operator-pending",
+    "predicate": "routine_shell_echo_command"
+   }
+  },
+  {
+   "id": "i92-v3-12-3a1ea0ff",
+   "message_id": "msg_082995aef001DvZ5jI3TOLz4cy",
+   "source_locator_sha256": "ddf0fe369c78052af013476a79c38c8c35b76ec0eb7e842aea30c30f39ef6b87",
+   "native_event_text_sha256": "b9781acc4cd2ac4bb499702ac1a22a70eb535da818051f13ae3e31f472504329",
+   "observed_at": "2026-09-08T19:58:03.503000Z",
+   "evidence_class": "user-stated",
+   "project": "0f5d6bf45db635bc9c239ddd5c1329d651ed13fa",
+   "workspace": "/workspace/opencode-operational-schema-guard",
+   "label": {
+    "valuable": false,
+    "prospective": true,
+    "ratification": "operator-pending",
+    "predicate": "routine_touch_bash_command"
+   }
+  },
+  {
+   "id": "i92-v3-13-7f365366",
+   "message_id": "msg_17a9b63a5001B3TDRkWXyv4lnq",
+   "source_locator_sha256": "70ef375651a3dcf87bfe0e52d3a9d77bdb3ce6bf380cfbe1b16870191d7148e0",
+   "native_event_text_sha256": "af0e03653b0607d627c7782829309841fc29f48f6ba100d789dc7785d7581eea",
+   "observed_at": "2026-10-26T23:46:06.477000Z",
+   "evidence_class": "user-stated",
+   "project": "53f15a255e83bbb3064cea4cb862ec78fe90138f",
+   "workspace": "/opt/containers/tdarr",
+   "label": {
+    "valuable": false,
+    "prospective": true,
+    "ratification": "operator-pending",
+    "predicate": "routine_execution_time_query"
+   }
+  },
+  {
+   "id": "i92-v3-14-0f588618",
+   "message_id": "msg_1c1094fbe001Y0MxqVt91F5ZzD",
+   "source_locator_sha256": "ca054dd23d48f787bd935b923332458bd68ab3073728bb108f4e2af7c8ef748d",
+   "native_event_text_sha256": "23aa754a59a983e265784933a7d6f1a9feec8860128fceca2f843ea835dce20c",
+   "observed_at": "2026-11-09T15:59:35.410000Z",
+   "evidence_class": "user-stated",
+   "project": "0f5d6bf45db635bc9c239ddd5c1329d651ed13fa",
+   "workspace": "/workspace/opencode-operational-schema-guard",
+   "label": {
+    "valuable": false,
+    "prospective": true,
+    "ratification": "operator-pending",
+    "predicate": "routine_post_exit_tui_confirmation"
+   }
+  },
+  {
+   "id": "i92-v3-15-3f44a8e8",
+   "message_id": "msg_0d9205c80001xUiqKn5IB3sxJq",
+   "source_locator_sha256": "96ed48b1fd47c5d11bc4928f421f6e762592c37edd4688bfd24b1e5f3e452e19",
+   "native_event_text_sha256": "f3a9bb0adf8ff60881331b5eaf6dadd2e22af636e78d329fc55422e7adcaff70",
+   "observed_at": "2026-09-25T15:12:51.840000Z",
+   "evidence_class": "user-stated",
+   "project": "global",
+   "workspace": "/home/filip",
+   "label": {
+    "valuable": false,
+    "prospective": true,
+    "ratification": "operator-pending",
+    "predicate": "routine_media_deletion_state"
+   }
+  },
+  {
+   "id": "i92-v3-16-355fdc53",
+   "message_id": "msg_1b7876fd4001cgITBIs5d1Mnet",
+   "source_locator_sha256": "6e1fac87251ee0a9f39ccceda066cc3427d465d1a5fc14bcd029badbd2a26e6d",
+   "native_event_text_sha256": "c35cddd6372691c9c00185feb9a2b987bcc0ae6c202749f5ca61c60a92eaa4cc",
+   "observed_at": "2026-11-07T19:41:08.975000Z",
+   "evidence_class": "user-stated",
+   "project": "6e1d1f14113b8296790eb58270fae14c20edf5be",
+   "workspace": "/workspace/mcp_servers/gh_mcp",
+   "label": {
+    "valuable": false,
+    "prospective": true,
+    "ratification": "operator-pending",
+    "predicate": "routine_query_generation_task"
+   }
+  },
+  {
+   "id": "i92-v3-17-dfec8bbf",
+   "message_id": "msg_1892c50bf001UtjsNNRuCvx0Rp",
+   "source_locator_sha256": "a921d51922e291f38f08e1d9550d0cd8e8cde8af37cb86489acf9e4240a14389",
+   "native_event_text_sha256": "7a351ef99d8a0afcec0756a3d7d42024b587f8bd2110791b066de4d8f1a9d8fd",
+   "observed_at": "2026-10-29T19:39:05.324000Z",
+   "evidence_class": "user-stated",
+   "project": "2d5b82f298ebae09c6670dfbbf361dc7246493a3",
+   "workspace": "/opt/containers/graphiti",
+   "label": {
+    "valuable": false,
+    "prospective": true,
+    "ratification": "operator-pending",
+    "predicate": "routine_dependency_bump_request"
+   }
+  },
+  {
+   "id": "i92-v3-18-9f360bff",
+   "message_id": "msg_1b211871f001xONjgGL2NXxMRH",
+   "source_locator_sha256": "cb1db6d46b49f1c5410b9e4c8a5ab97d540fcec0583ec780fdabe31eab9ba52a",
+   "native_event_text_sha256": "9fc4425cc836a712966addcb16c1ecb0c1a7df5a912382ada51054961331c3c9",
+   "observed_at": "2026-11-06T18:14:16.298000Z",
+   "evidence_class": "user-stated",
+   "project": "7d7a2e305630bc45e21a2e34258e5583879cccdb",
+   "workspace": "/tmp/opencode/issue81-fresh-native-acceptance/fresh-native-v1",
+   "label": {
+    "valuable": false,
+    "prospective": true,
+    "ratification": "operator-pending",
+    "predicate": "meta_process_evidence_question"
+   }
+  },
+  {
+   "id": "i92-v3-19-93bb3b1f",
+   "message_id": "msg_1ae7b897c0012q0rSotb46Vs7O",
+   "source_locator_sha256": "1fb26fad2355a39c62d795ccff8dd9dd047fc446c46f9b3fb78cf7895c2d2c56",
+   "native_event_text_sha256": "a83b51138e51f6ad55b7af32d72e4f28ba00263a9238f2dcf9e225fcb50010ea",
+   "observed_at": "2026-11-06T01:31:36.664000Z",
+   "evidence_class": "user-stated",
+   "project": "0f5d6bf45db635bc9c239ddd5c1329d651ed13fa",
+   "workspace": "/workspace/opencode-issue81-merged-deploy",
+   "label": {
+    "valuable": false,
+    "prospective": true,
+    "ratification": "operator-pending",
+    "predicate": "speculative_ninfer_log_hypothesis"
+   }
+  },
+  {
+   "id": "i92-v3-20-ad9d6169",
+   "message_id": "msg_146180ec3001h1kCgA1SAR8zRy",
+   "source_locator_sha256": "3e83a74f42749d83edb08f28ebb7d4b5733a1025a264e33a7931e4dbfffca0cc",
+   "native_event_text_sha256": "7cf8f189c313a7dadb95a8eb6b2eaae607616001c59ef86974a5893d31749451",
+   "observed_at": "2026-10-16T19:02:24.222000Z",
+   "evidence_class": "user-stated",
+   "project": "53f15a255e83bbb3064cea4cb862ec78fe90138f",
+   "workspace": "/opt/containers/tdarr",
+   "label": {
+    "valuable": false,
+    "prospective": true,
+    "ratification": "operator-pending",
+    "predicate": "routine_session_continuation"
+   }
+  }
+ ],
+ "label_freeze_sha256": "96b9e51ee76182729f1426873e538ce164fa5855139173e8da875e53a2cb0f11"
+}

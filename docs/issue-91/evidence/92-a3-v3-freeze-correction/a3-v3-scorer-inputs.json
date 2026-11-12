@@ -1,0 +1,54 @@
+{
+ "scorer": "docs/issue-91/adr-acceptance/issue92-a3-score.mjs",
+ "cohort": "gh_mcp-development-v3",
+ "exit_codes": {
+  "0": "measured PASS",
+  "3": "measured FAIL"
+ },
+ "command": [
+  "node",
+  "docs/issue-91/adr-acceptance/issue92-a3-score.mjs",
+  "/tmp/opencode/issue92-a3/a3-v3-sanitized-roster.json",
+  "/tmp/opencode/issue92-a3/state-v3/a3-v2-staged.json",
+  "/tmp/opencode/issue92-a3/state-v3",
+  "graphiti-adr92-a3-prospective-v2",
+  "/home/filip/.local/state/ghdev-graphiti-issue92/private/issue92-a3-v3-remote-readback.json",
+  "/home/filip/.local/state/ghdev-graphiti-issue92/private/issue92-a3-v3-ratification.json",
+  "/home/filip/.local/state/ghdev-graphiti-issue92/private/issue92-a3-v3-fact-adjudications.json",
+  "/home/filip/.local/state/ghdev-graphiti-issue92/private/issue92-a3-v3-authority-audit.json"
+ ],
+ "inputs": {
+  "roster": {
+   "path": "/tmp/opencode/issue92-a3/a3-v3-sanitized-roster.json",
+   "status": "READY (manifest 7b96a107, label 96b9e51e)"
+  },
+  "staged": {
+   "path": "/tmp/opencode/issue92-a3/state-v3/a3-v2-staged.json",
+   "status": "READY (26 native spans)"
+  },
+  "state_root": {
+   "path": "/tmp/opencode/issue92-a3/state-v3",
+   "status": "READY (fresh)"
+  },
+  "group": {
+   "value": "graphiti-adr92-a3-prospective-v2",
+   "status": "READY (0 episodes)"
+  },
+  "ratification": {
+   "path": "/home/filip/.local/state/ghdev-graphiti-issue92/private/issue92-a3-v3-ratification.json",
+   "status": "READY (pre-inference 0600 20/20)"
+  },
+  "remote_readback": {
+   "path": "/home/filip/.local/state/ghdev-graphiti-issue92/private/issue92-a3-v3-remote-readback.json",
+   "status": "TEMPLATE (post-inference)"
+  },
+  "fact_adjudications": {
+   "path": "/home/filip/.local/state/ghdev-graphiti-issue92/private/issue92-a3-v3-fact-adjudications.json",
+   "status": "TEMPLATE (post-inference; missing=block to PASS)"
+  },
+  "authority_audit": {
+   "path": "/home/filip/.local/state/ghdev-graphiti-issue92/private/issue92-a3-v3-authority-audit.json",
+   "status": "TEMPLATE (post-inference)"
+  }
+ }
+}
