@@ -1,0 +1,7 @@
+2026-11-12T05:21:02Z EX_FLOCK_ACQUIRED: /run/user/1000/openviking-agent.lock fd=3
+2026-11-12T05:21:02Z ADMISSION_WAIT: scheduler busy (running/waiting nonzero); retry in 5s
+2026-11-12T05:21:07Z QUIET_GRACE: 30s
+2026-11-12T05:21:37Z RECONCILE_ADMISSION_PROVEN
+2026-11-12T05:21:37Z RECONCILE_ONLY attempt=1 rc=0 tail=(inherited-stdout)
+2026-11-12T05:21:37Z RECONCILE_SETTLED rc=0
+2026-11-12T05:21:37Z RECONCILE_RECEIPT: /tmp/opencode/issue92-s5/s5-reconcile-receipt.json

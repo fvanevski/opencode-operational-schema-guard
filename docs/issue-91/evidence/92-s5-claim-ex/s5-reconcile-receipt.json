@@ -1,0 +1,7 @@
+{
+ "group": "graphiti-adr92-s5-claim-ex-proof",
+ "state": "/tmp/opencode/issue92-s5/state/s5",
+ "endpoint": "http://127.0.0.1:8766/mcp",
+ "attempts": 1,
+ "completed_utc": "2026-11-12T05:21:37Z"
+}
