@@ -1241,3 +1241,51 @@ test('S6 cannot retrofit complement into frozen S5 claim batch',()=>fixture(asyn
  assert.equal(calls,before);
  assert.equal(f.graphiti.writes.length,0);
 },[strong]));
+
+test('S6 never promotes a rejected normalized claim through a different exact quote',()=>fixture(async f=>{
+ const badClaim='Graphiti provides persistent cached episode graph results.';
+ const subquote=strong.slice(0,strong.indexOf(', causing'));
+ let support=0,complement=0,utility=0;
+ const curate=async(_,{promptMessages})=>{
+  const system=promptMessages[0].content;
+  const data=JSON.parse(promptMessages[1].content);
+  if(system.includes('SOURCE-EXACT COMPLEMENT UTILITY')){
+   utility++;
+   assert.equal(data.candidates[0].assertion,subquote);
+   return {content:JSON.stringify({decisions:[{index:0,
+    disposition:'ACCEPT',reason_code:'source_specific_durable',
+    utility_class:'useful_negative'}]})};
+  }
+  if(system.includes('SOURCE-EXACT COMPLEMENT')){
+   complement++;
+   assert.ok(data.previously_reviewed_spans.length>=1);
+   const e=data.evidence[0];
+   return {content:JSON.stringify({reason:'different precise source quote',
+    candidates:[{source_ref:e.source,start:0,end:subquote.length,
+     kind:'blocker',temporal_status:'observed'}]})};
+  }
+  if(system.includes('independent SOURCE-SUPPORT critic')){
+   support++;assert.equal(data.candidates[0].normalized_claim,badClaim);
+   return {content:JSON.stringify({decisions:[{index:0,
+    disposition:'REVIEW',reason_code:'unsupported_inference'}]})};
+  }
+  if(system.includes('CLAIM/EVIDENCE SEPARATION')){
+   const e=data.evidence[0];
+   return {content:JSON.stringify({reason:'unsupported paraphrase',
+    candidates:[{source_ref:e.source,start:0,end:e.excerpt.length,
+     kind:'blocker',temporal_status:'observed',normalized_claim:badClaim}]})};
+  }
+  throw Error('UNEXPECTED_STAGE');
+ };
+ const result=await runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true,resilientDiscovery:true,claimEvidence:true,
+  sourceExactComplement:true}));
+ assert.equal(result.persisted,1);
+ assert.deepEqual([support,complement,utility],[1,1,1]);
+ assert.equal(f.graphiti.writes.length,1);
+ assert.ok(f.graphiti.writes[0].episode_body.includes(subquote));
+ assert.equal(f.graphiti.writes[0].episode_body.includes(badClaim),false);
+ const records=(await f.store.list({limit:10})).items;
+ assert.equal(records.filter(r=>r.state==='persisted').length,1);
+ assert.equal(records.filter(r=>r.state==='deferred').length,1);
+},[strong]));
