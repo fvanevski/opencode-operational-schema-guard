@@ -1,0 +1,50 @@
+{
+ "schema": "issue92-s3-source-digest-roster-v1",
+ "kind": "frozen S3 execution source binding + corrective verification binding (40-char blob SHAs)",
+ "original_execution_head": "626df9eace9e9b1b141466a5d69c20df06d0995e",
+ "corrective_verification_head": "9b98e0e40f60c4fad964182510664e703dc6f44d",
+ "original_run_binding": {
+  "source": "state/s3/s3-resilient-discovery-result.json source_binding",
+  "repo_head": "626df9eace9e9b1b141466a5d69c20df06d0995e",
+  "blobs": {
+   "finite-batch.mjs": "ba7c66d262a1b4f9e254b6460346ad71ea4f8beb",
+   "fact-review.mjs": "7fb02596384ffd19a5e3f1dd091992cf8dbfbe12",
+   "curator-cli.mjs": "0be1ce23670c23683cc6000a4ec20e67eb616ef3"
+  }
+ },
+ "cross_commit_compatibility": {
+  "note": "reconcile-only code path is byte-identical between the two heads; the only delta is the 9-line S3 isolate branch in fact-review.mjs (validateFactDiscovery), which reconcile-only never calls",
+  "shared_blobs": {
+   "curator-cli.mjs": "0be1ce23670c23683cc6000a4ec20e67eb616ef3",
+   "finite-batch.mjs": "ba7c66d262a1b4f9e254b6460346ad71ea4f8beb",
+   "core.mjs": "5b1d33efedc62b5ba0ad5f74ed68cddbee6afb0e",
+   "worker.mjs": "503bf766ca7b61c574edfc2b73aecd6d082ef629",
+   "acknowledged-retry.mjs": "31bdec87ccb1276f0c904da646f7736f60201fbe",
+   "graph-evidence.mjs": "4970b5a1200bfdbfc31b2b7ae28d323a556c2dc1",
+   "finite-batch-tuning.mjs": "f0ce696c131f7ceae2f8117ddca5a740f650b8af"
+  },
+  "corrective_only_blob": {
+   "fact-review.mjs": "20da07bcb99010c4c9ab5d4b8c7f9d3c8cb62ba9"
+  },
+  "verification": "git rev-parse <head>:docs/issue-78/v2-curator/<file> at both heads"
+ },
+ "frozen_batch": {
+  "group": "graphiti-adr92-s3-resilient-discovery",
+  "batch_id": "003aa99faaa944cd81e83a6d7fd314815857cb0dafbd69d359244b6cfd28db1c",
+  "snapshot_sha256": "dde6705c2161af9570b9d02db2307c2e165ab0c8f65a60a1a5c85f24e035ba69",
+  "tuning_sha256": "8d671d06a550b0f85d187cac4e181973bea748f71986487e2a6b0765385bc8e7",
+  "resilient_discovery": true,
+  "source_recovery": true,
+  "model_calls": 55,
+  "model_call_files": "55 intent + 55 result (paired, unique stage+identity keys, prompt/reply sha256 field-verified)",
+  "plan": "24 cluster outcomes (22 REVIEWED / 1 SKIP / 1 DEFER); 29 items (19 approved / 10 deferred); 55 calls (29 discovery + 26 utility); recovery triggers {utility_non_substantive: 4, invalid_discovery: 1}"
+ },
+ "reviewstore_pre_reconcile": {
+  "records": 30,
+  "queued": 18,
+  "deferred": 12,
+  "deferred_breakdown": "10 plan-level deferrals + 1 LOCAL_REPEATED_ASSERTION (e4fe14a3..., 19th approved item) + 1 cluster-level DEFER (73ea40cb..., invalid_fact_fields on 'assertion')",
+  "queue_counts": {"new": 0, "reserved": 0, "deferred": 4, "skipped": 1, "approved": 19, "submission_unknown": 0, "persisted": 0},
+  "reevaluate_requested": 0
+ }
+}
