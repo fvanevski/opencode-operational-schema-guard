@@ -182,8 +182,9 @@ export function finiteBatchResilientDiscoveryPrompt(cluster,{recovery=false,reje
   {role:'user',content:JSON.stringify(data)}];
 }
 export function finiteBatchSourceExactComplementPrompt(cluster,rejected=[]){
- const base=finiteBatchResilientDiscoveryPrompt(cluster,{recovery:true,
-  rejected:rejected.slice(0,3)});
+ // This is an independent complement even when the claim lane approved facts.
+ // Do not tell the model that ZERO useful facts were found when this is false.
+ const base=finiteBatchResilientDiscoveryPrompt(cluster,{recovery:false});
  const user=JSON.parse(base[1].content);
  user.previously_reviewed_spans=rejected.slice(0,9);
  return [{role:'system',content:base[0].content+
