@@ -1161,3 +1161,83 @@ test('S4 direct real-client call cannot use ambient admitted marker without floc
   else process.env.GHDEV_MEMORY_POST_EXIT_LOCK_FD=fd;
  }
 });
+
+test('S6 exact complement rescues a source-stated fact without any normalized claim',()=>fixture(async f=>{
+ const counts={claim:0,complement:0,utility:0};
+ const curate=async(_,{promptMessages})=>{
+  const sys=promptMessages[0].content,data=JSON.parse(promptMessages[1].content);
+  if(sys.includes('SOURCE-EXACT COMPLEMENT UTILITY')){
+   counts.utility++;
+   assert.equal(data.candidates.length,1);
+   assert.equal(data.candidates[0].assertion,strong);
+   return {content:JSON.stringify({decisions:[{index:0,disposition:'ACCEPT',
+    reason_code:'source_specific_durable',utility_class:'useful_negative'}]})};
+  }
+  if(sys.includes('SOURCE-EXACT COMPLEMENT')){
+   counts.complement++;
+   const e=data.evidence[0];
+   return {content:JSON.stringify({reason:'independent source exact defect',
+    candidates:[{source_ref:e.source,start:0,end:e.excerpt.length,
+     kind:'blocker',temporal_status:'observed'}]})};
+  }
+  if(sys.includes('CLAIM/EVIDENCE SEPARATION')){
+   counts.claim++;return {content:JSON.stringify({reason:'none',
+    candidates:[]})};
+  }
+  throw Error('UNEXPECTED_MODEL_STAGE');
+ };
+ const result=await runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true,resilientDiscovery:true,claimEvidence:true,
+  sourceExactComplement:true}));
+ assert.deepEqual(counts,{claim:2,complement:1,utility:1});
+ assert.equal(result.persisted,1);assert.equal(result.approved,1);
+ assert.equal(f.graphiti.writes.length,1);
+ assert.ok(f.graphiti.writes[0].episode_body.includes(strong));
+ const active=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,'_active.json'),'utf8'));
+ assert.equal(active.source_exact_complement,true);
+ const plan=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,active.batch_id,'plan.json'),'utf8'));
+ assert.equal(plan.source_exact_complement,true);
+ assert.equal(plan.cluster_outcomes[0].source_exact_complement_outcome.approved,1);
+ assert.deepEqual(plan.calls.map(c=>c.stage).sort(),
+  ['discovery','discovery','discovery','utility']);
+},[strong]));
+
+test('S6 exact complement cannot promote forged source reference or call utility',()=>fixture(async f=>{
+ let complementCalls=0,utility=0;
+ const curate=async(_,{promptMessages})=>{
+  const sys=promptMessages[0].content;
+  if(sys.includes('SOURCE-EXACT COMPLEMENT UTILITY')){
+   utility++;throw Error('UTILITY_FORGED_QUOTE');
+  }
+  if(sys.includes('SOURCE-EXACT COMPLEMENT')){
+   complementCalls++;
+   return {content:JSON.stringify({reason:'forged',candidates:[{
+    source_ref:'opencode:forged',start:0,end:strong.length,
+    kind:'blocker',temporal_status:'observed'}]})};
+  }
+  if(sys.includes('CLAIM/EVIDENCE SEPARATION'))
+   return {content:JSON.stringify({reason:'none',candidates:[]})};
+  throw Error('UNEXPECTED_MODEL_STAGE');
+ };
+ const result=await runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true,resilientDiscovery:true,claimEvidence:true,
+  sourceExactComplement:true}));
+ assert.equal(complementCalls,1);assert.equal(utility,0);
+ assert.equal(result.persisted,0);assert.equal(f.graphiti.writes.length,0);
+},[strong]));
+
+test('S6 cannot retrofit complement into frozen S5 claim batch',()=>fixture(async f=>{
+ let calls=0;
+ const curate=async()=>{calls++;return {content:JSON.stringify({
+  reason:'no claim',candidates:[]})};};
+ await runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true,resilientDiscovery:true,claimEvidence:true}));
+ const before=calls;
+ await assert.rejects(runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true,resilientDiscovery:true,claimEvidence:true,
+  sourceExactComplement:true})),/SOURCE_EXACT_COMPLEMENT_IDENTITY_CHANGED/);
+ assert.equal(calls,before);
+ assert.equal(f.graphiti.writes.length,0);
+},[strong]));
