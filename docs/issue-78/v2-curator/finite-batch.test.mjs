@@ -1138,3 +1138,26 @@ test('S4 unknown support-call result is never replayed',()=>fixture(async f=>{
  assert.equal(discovery,1);assert.equal(support,1);
  assert.equal(f.graphiti.writes.length,0);
 },[strong]));
+
+test('S4 direct real-client call cannot use ambient admitted marker without flock',async()=>{
+ const prev=process.env.GHDEV_MEMORY_POST_EXIT_LEASE;
+ const fd=process.env.GHDEV_MEMORY_POST_EXIT_LOCK_FD;
+ try{
+  process.env.GHDEV_MEMORY_POST_EXIT_LEASE='admitted';
+  delete process.env.GHDEV_MEMORY_POST_EXIT_LOCK_FD;
+  let modelInvocations=0;
+  await assert.rejects(runAdmittedFiniteBatch({
+   root:'/tmp/issue92-no-side-effects',group:scope.group,
+   modelEndpoint:'http://127.0.0.1:8002/v1/chat/completions',
+   modelId:'chat-fast',claimEvidence:true,
+   resilientDiscovery:true,sourceRecovery:true,
+   curate:async()=>{modelInvocations++;throw Error('unexpected model');}
+  }),/EX_KERNEL_ADMISSION_REQUIRED:missing_lock_fd/);
+  assert.equal(modelInvocations,0);
+ }finally{
+  if(prev===undefined)delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;
+  else process.env.GHDEV_MEMORY_POST_EXIT_LEASE=prev;
+  if(fd===undefined)delete process.env.GHDEV_MEMORY_POST_EXIT_LOCK_FD;
+  else process.env.GHDEV_MEMORY_POST_EXIT_LOCK_FD=fd;
+ }
+});

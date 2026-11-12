@@ -16,6 +16,7 @@ import {claimEvidenceDiscoveryPrompt,validateClaimEvidenceDiscovery,
  claimSupportPrompt,validateClaimSupport,supportedClaimProposal,
  claimUtilityPrompt} from './claim-evidence.mjs';
 import {GraphitiMcp} from '../../issue-75/v2-candidate/memory-core.mjs';
+import {requireKernelExAdmission} from './ex-admission-proof.mjs';
 import {validateFiniteBatchTuning,tuningIdentity,stageModelSettings,
  tunedMessages} from './finite-batch-tuning.mjs';
 
@@ -483,7 +484,15 @@ export async function runAdmittedFiniteBatch({
   resilientDiscovery=false,claimEvidence=false,
   onCheckpoint=null
 }={}){
- admitted();
+ // Preserve mock-only Node test fixtures; live claim/evidence clients must
+ // carry a kernel-backed EX admission (not merely a forged environment marker).
+ const mockOnly=Boolean(process.env.NODE_TEST_CONTEXT)&&graphiti!==null&&
+  !(graphiti instanceof GraphitiMcp)&&curate!==curateCluster;
+ const verified=()=>{
+  admitted();
+  if(claimEvidence&&!mockOnly)requireKernelExAdmission();
+ };
+ verified();
  assert(typeof root==='string'&&path.isAbsolute(root)&&SAFE.test(group),
   'INVALID_SCOPE');
  assert(Number.isInteger(maxClusters)&&maxClusters>=1&&maxClusters<=24&&
@@ -580,7 +589,7 @@ export async function runAdmittedFiniteBatch({
  const clusterById=new Map(snapshot.clusters.map(c=>[c.id,c]));
  let modelCalls=0,modelErrors=0,promptTokens=0,completionTokens=0;
   async function callOnce(kind,identity,cluster,messages){
-   tick(kind);admitted();
+   tick(kind);verified();
    const stage=stageModelSettings(kind,{modelId,modelOptions},tuningProfile);
    const finalMessages=tunedMessages(messages,stage);
    const key=hash(kind+'\n'+identity);
@@ -972,7 +981,7 @@ export async function runAdmittedFiniteBatch({
   itemsByCluster.get(item.cluster_id).push(item);
  }
  for(const cluster of snapshot.clusters){
-  tick('materialize');admitted();
+  tick('materialize');verified();
   const items=itemsByCluster.get(cluster.id)||[];
   if(!items.length){
    const outcome=plan.cluster_outcomes.find(x=>x.cluster_id===cluster.id);
@@ -1016,7 +1025,7 @@ export async function runAdmittedFiniteBatch({
   unresolved:recon.unresolved,persisted:recon.persisted};
  const writeOutcomes=[];
  for(const item of plan.items.filter(x=>x.decision==='approved')){
-  tick('remote_write');admitted();
+  tick('remote_write');verified();
   const rec=await store.get(item.id);
   if(!rec)throw Error('ISSUE92_BATCH_MISSING_REVIEW');
   if(rec.state==='persisted'||rec.state==='queued')continue;
