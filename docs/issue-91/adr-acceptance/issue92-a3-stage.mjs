@@ -23,7 +23,10 @@ if((privateMode&0o077)!==0)die('private_manifest_permissions');
 const manifest=JSON.parse(mbytes.toString('utf8'));
 const prepared=prepareProspectiveEvents(manifest,roster);
 const group=roster.group;
-if(group!=='graphiti-adr92-a3-prospective-v2')
+// The frozen roster must control its own prospective group; never
+// silently reuse an earlier experimental group containing historical episodes.
+if(typeof group!=='string'||
+ !/^graphiti-adr92-a3-prospective-v[2-9][0-9]*$/.test(group))
  die('unapproved_group');
 const queueRoot=path.join(root,'candidate-events-v1',group);
 const receipt=path.join(root,'a3-v2-staged.json');
