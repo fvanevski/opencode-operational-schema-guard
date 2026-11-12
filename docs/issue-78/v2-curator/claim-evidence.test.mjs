@@ -113,3 +113,18 @@ test('S4 unsupported/ambiguous claims remain deferred before utility or remote w
  assert.equal(result.proposal.ok,false);
  assert.equal(result.deferred[0].reason,'unsupported_inference');
 });
+
+test('S4 support recovery prompt carries rejected exact-source span and reason',()=>{
+ const c=cluster(),p=validateClaimEvidenceDiscovery(proposal(c),c);
+ assert.equal(p.ok,true);
+ const fact=p.facts[0];
+ const rejected=[{
+  source_ref:fact.source_refs[0],start:fact.evidence_span.start,
+  end:fact.evidence_span.end,reason_code:'claim_support_missing_predicate'
+ }];
+ const prompt=claimEvidenceDiscoveryPrompt(c,{recovery:true,rejected});
+ const data=JSON.parse(prompt[1].content);
+ assert.deepEqual(data.previously_reviewed_spans,rejected);
+ assert.match(prompt[0].content,/predicate-bearing span/);
+ assert.match(prompt[0].content,/never select headings/i);
+});

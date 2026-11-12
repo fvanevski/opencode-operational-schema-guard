@@ -40,6 +40,10 @@ export function claimEvidenceDiscoveryPrompt(cluster,{recovery=false,
   ' because its surrounding event is a transient task or test. An unfinished'+
   ' requirement stays reported/proposed, never a verified fix or successful'+
   ' run. Select up to THREE distinct source-supported technical propositions.'+
+  ' Each exact quoted span MUST itself contain the material technical predicate'+
+  ' and its qualifiers. Prefer the narrowest original predicate-bearing span'+
+  ' (25..450 UTF-16 code units); never select headings, generic task wrappers,'+
+  ' SWE-bench boilerplate, unrelated sentences, or >450-character excerpts.'+
   ' Never stitch excerpts, invent results, infer a root cause, or fabricate'+
   ' source handles. For each candidate emit kind, temporal_status, exact'+
   ' source_ref, integer JS UTF-16 start/end and normalized_claim (25..450'+

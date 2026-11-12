@@ -714,6 +714,13 @@ export async function runAdmittedFiniteBatch({
       break;
      }
      const filtered=supportedClaimProposal(proposal,verdict);
+     // A rejected quote cannot be repaired without telling the second
+     // discovery pass which ORIGINAL source span failed independent support.
+     const supportRejected=filtered.deferred.map(d=>({
+      source_ref:d.fact.source_refs[0],
+      start:d.fact.evidence_span.start,end:d.fact.evidence_span.end,
+      reason_code:'claim_support_'+d.reason
+     }));
      for(const d of filtered.deferred){
       const e=factEntry(cluster,d.fact,null,'claim_support_'+d.reason);
       if(!entries.has(e.id))entries.set(e.id,e);
@@ -730,7 +737,9 @@ export async function runAdmittedFiniteBatch({
       if(pass===0&&verdict.review.length>0&&verdict.review.every(d=>
         ['source_ambiguous','review_uncertain','missing_predicate']
           .includes(d.reason_code))){
-       recoveryTrigger='claim_support_unresolved';continue;
+       recoveryTrigger='claim_support_unresolved';
+       rejected=supportRejected;
+       continue;
       }
       break;
      }
