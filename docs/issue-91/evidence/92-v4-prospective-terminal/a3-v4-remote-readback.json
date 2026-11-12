@@ -1,0 +1,18 @@
+{
+ "schema": "issue92-a3-remote-readback-v1",
+ "group": "graphiti-adr92-a3-prospective-v4",
+ "source_index_intact": true,
+ "readback_after_persistence": true,
+ "remote_episode_uuids": [
+  "6ad72a8c-4a79-4cf0-9f00-1a0893f21661",
+  "b1b31866-11db-40ce-aae4-5a59369208b7",
+  "f312e890-effe-4028-b656-06ce297a2aa9",
+  "3248fedc-529d-4b34-97db-8aa52e60fe37",
+  "1ca3a733-d657-4e48-be66-555e8ff435d8",
+  "87bc7a63-613a-45a9-a364-db5d02eeed42",
+  "20512ad7-aea7-4e86-9eb5-928c9745f028",
+  "8216c57b-2605-4e88-bf30-d57eecc423b1"
+ ],
+ "write_outcome_count": 8,
+ "note": "positive get_episodes readback after the single v4 inference; 8/8 persisted content-hashes present as episode names (source index intact)"
+}

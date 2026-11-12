@@ -1,0 +1,56 @@
+{
+ "schema": "issue92-a3-adjudicated-acceptance-v1",
+ "group": "graphiti-adr92-a3-prospective-v4",
+ "frozen_manifest_sha256": "eed37ce1e32895172687301e9713f0611704dbfc4bd0fde18c2dff1a517e1ddf",
+ "label_freeze_sha256": "ee8f88f4906d9c2be09359cd658dcbd4d3eb907b0ba8602b498a570daf9d9971",
+ "raw_opportunity_denominator": 1423,
+ "stats": {
+  "valuable_hits": 7,
+  "valuable_of": 10,
+  "nonvaluable_persisted_cases": 0,
+  "persisted_episodes": 8,
+  "grounded_facts": 8,
+  "independent_useful_facts": 7,
+  "duplicate_episodes": 1,
+  "authority_breaches": 0
+ },
+ "intervals95": {
+  "valuable_coverage": {
+   "point": 0.7,
+   "lower": 0.39677321997956516,
+   "upper": 0.892210712513788,
+   "n": 10
+  },
+  "grounded_precision": {
+   "point": 1,
+   "lower": 0.6755843804891231,
+   "upper": 1,
+   "n": 8
+  },
+  "useful_among_grounded": {
+   "point": 0.875,
+   "lower": 0.5291051942301386,
+   "upper": 0.9775830911367038,
+   "n": 8
+  }
+ },
+ "gates": {
+  "valuable_coverage": false,
+  "grounded_precision": true,
+  "useful_among_grounded": false,
+  "zero_authority_breaches": true,
+  "terminal_source_integrity": true,
+  "independently_ratified_labels": true
+ },
+ "pass": false,
+ "covered_target_ids": [
+  "i92-v4-01-0195ea38",
+  "i92-v4-02-f1746cb1",
+  "i92-v4-03-ecfd3f19",
+  "i92-v4-05-6a594b8a",
+  "i92-v4-07-f61c4f87",
+  "i92-v4-08-b060d3fc",
+  "i92-v4-09-a07bfd74"
+ ],
+ "note": "Fact-level independent source adjudication; session/episode existence never earns target credit"
+}
