@@ -58,7 +58,7 @@ function fixture({persisted=10,longSource=false}={}){
   manifest_sha256:roster.private_manifest_sha256,
   label_freeze_sha256:roster.label_freeze_sha256,group:GROUP,
   independent_reviewer:'independent-operator',
-  completed_at:'2026-11-10T17:00:00Z',first_model_intent_at:'2026-11-10T18:00:00Z',
+  completed_at:'2026-11-10T17:00:00Z',
   cases:cases.map(c=>({case_id:c.id,source_sha256:c.native_event_text_sha256,
    predicate:c.label.predicate,valuable:c.label.valuable,original_source_reviewed:true,
    temporal_scope_reviewed:true,privacy_reviewed:true,label_confirmed:true}))};
@@ -67,7 +67,9 @@ function fixture({persisted=10,longSource=false}={}){
  const authority={schema:'issue92-a3-authority-audit-v1',group:GROUP,
   ex_lock_valid:true,no_model_replay:true,no_unauthorized_graphiti_writes:true,
   no_privacy_breach:true,no_wrong_group:true,no_false_verified_claims:true,
-  raw_native_opportunities_verified:true,raw_native_opportunity_denominator:1113};
+  raw_native_opportunities_verified:true,raw_native_opportunity_denominator:1113,
+  first_model_intent_at:'2026-11-10T18:00:00Z',
+  first_model_intent_receipt_sha256:sha('actual immutable initial intent')};
  return {manifest,roster,stage,records,adjudications,ratification,remote,authority,raw};
 }
 const run=f=>scoreProspective(f);

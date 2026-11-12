@@ -65,9 +65,10 @@ export function scoreProspective({
     !Array.isArray(ratification.cases)||ratification.cases.length!==20||
     typeof ratification.completed_at!=='string'||
     !Number.isFinite(Date.parse(ratification.completed_at))||
-    typeof ratification.first_model_intent_at!=='string'||
-    !Number.isFinite(Date.parse(ratification.first_model_intent_at))||
-    Date.parse(ratification.completed_at)>=Date.parse(ratification.first_model_intent_at))
+    typeof authority?.first_model_intent_at!=='string'||
+    !Number.isFinite(Date.parse(authority.first_model_intent_at))||
+    !validHash(authority?.first_model_intent_receipt_sha256)||
+    Date.parse(ratification.completed_at)>=Date.parse(authority.first_model_intent_at))
   fail('independent_pre_inference_ratification');
  const ratIds=unique(ratification.cases.map(x=>x.case_id),'ratified_case');
  if([...ids].some(id=>!ratIds.has(id))||ratification.cases.some(x=>
