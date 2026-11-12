@@ -46,6 +46,11 @@ if(resilientArg&&resilientArg!=='on')throw Error('RESILIENT_DISCOVERY_OPT_IN_INV
 if(resilientArg&&(!sourceRecovery||!finiteBatch||command!=='drain'))
  throw Error('RESILIENT_DISCOVERY_REQUIRES_SOURCE_RECOVERY');
 const resilientDiscovery=resilientArg==='on';
+const claimArg=arg('claim-evidence');
+if(claimArg&&claimArg!=='on')throw Error('CLAIM_EVIDENCE_OPT_IN_INVALID');
+if(claimArg&&(!resilientDiscovery||!finiteBatch||command!=='drain'))
+ throw Error('CLAIM_EVIDENCE_REQUIRES_RESILIENT_FINITE_BATCH');
+const claimEvidence=claimArg==='on';
 if(tuningPath&&command!=='validate-tuning'&&(!finiteBatch||command!=='drain'))
  throw Error('FINITE_BATCH_TUNING_ONLY_ON_DRAIN');
 if(command==='validate-tuning'){
@@ -62,7 +67,8 @@ if(command==='validate-tuning'){
     '[--fact-review on | --finite-batch on (development only)] '+ 
     '[--max-candidates 48] [--novelty-policy recall|conservative] '+
     '[--tuning-file ABSOLUTE_JSON_PATH] [--replay-only on] [--source-recovery on] '+
-     '[--resilient-discovery on (requires source-recovery)]. '+
+     '[--resilient-discovery on (requires source-recovery)] '+
+     '[--claim-evidence on (requires resilient-discovery)]. '+
     'For drain set LOCAL_CURATOR_URL, LOCAL_CURATOR_MODEL, LOCAL_CURATOR_API_KEY.');
   process.exitCode=2;
 }else{
@@ -129,7 +135,7 @@ if(command==='validate-tuning'){
       modelOptions:modelPolicy(process.env),maxSeconds,maxClusters};
     const data=finiteBatch?
       await runAdmittedFiniteBatch({...inputs,maxCandidates,noveltyPolicy,replayOnly,
-       sourceRecovery,resilientDiscovery,
+       sourceRecovery,resilientDiscovery,claimEvidence,
        tuning:tuningPath?await loadFiniteBatchTuning(tuningPath):null}):
       await runAdmitted({...inputs,factReview});
     console.log(JSON.stringify(data));

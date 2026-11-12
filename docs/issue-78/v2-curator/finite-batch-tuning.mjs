@@ -8,7 +8,7 @@ import {promises as fs} from 'node:fs';
 import path from 'node:path';
 
 export const TUNING_SCHEMA='issue92-finite-batch-tuning-v1';
-const STAGES=['discovery','utility','arbitration','specificity'];
+const STAGES=['discovery','support','utility','arbitration','specificity'];
 const STAGE_FIELDS=new Set(['model','temperature','max_tokens',
  'reasoning_effort','timeout_ms','prompt_guidance']);
 const EFFORT=['off','low','medium','high','xhigh'];

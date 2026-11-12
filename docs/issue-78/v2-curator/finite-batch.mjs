@@ -12,6 +12,9 @@ import {curateCluster} from './model.mjs';
 import {factDiscoveryPrompt,validateFactDiscovery,factReviewPrompt,
   validateFactReview,filterFactProposal} from './fact-review.mjs';
 import {promoteOne,reconcile} from './worker.mjs';
+import {claimEvidenceDiscoveryPrompt,validateClaimEvidenceDiscovery,
+ claimSupportPrompt,validateClaimSupport,supportedClaimProposal,
+ claimUtilityPrompt} from './claim-evidence.mjs';
 import {GraphitiMcp} from '../../issue-75/v2-candidate/memory-core.mjs';
 import {validateFiniteBatchTuning,tuningIdentity,stageModelSettings,
  tunedMessages} from './finite-batch-tuning.mjs';
@@ -477,8 +480,8 @@ export async function runAdmittedFiniteBatch({
  modelEndpoint,modelId,apiKey='local',modelOptions={},curate=curateCluster,
  maxClusters=24,maxCandidates=48,maxSeconds=1200,
  noveltyPolicy='recall',tuning=null,replayOnly=false,sourceRecovery=false,
-  resilientDiscovery=false,
- onCheckpoint=null
+  resilientDiscovery=false,claimEvidence=false,
+  onCheckpoint=null
 }={}){
  admitted();
  assert(typeof root==='string'&&path.isAbsolute(root)&&SAFE.test(group),
@@ -490,6 +493,7 @@ export async function runAdmittedFiniteBatch({
   ['recall','conservative'].includes(noveltyPolicy)&&
   typeof replayOnly==='boolean'&&typeof sourceRecovery==='boolean'&&
   typeof resilientDiscovery==='boolean'&&(!resilientDiscovery||sourceRecovery)&&
+  typeof claimEvidence==='boolean'&&(!claimEvidence||resilientDiscovery)&&
   (!sourceRecovery||noveltyPolicy==='recall'),'INVALID_BOUNDS');
  const tuningProfile=validateFiniteBatchTuning(tuning);
  const tuningSha=tuningIdentity(tuningProfile);
@@ -537,7 +541,8 @@ export async function runAdmittedFiniteBatch({
   active={schema:'issue92-finite-batch-active-v1',group,batch_id:batchId,
    snapshot_sha256:hash(snapshot),tuning_sha256:tuningSha,
    ...(sourceRecovery?{source_recovery:true}:{}),
-   ...(resilientDiscovery?{resilient_discovery:true}:{})};
+   ...(resilientDiscovery?{resilient_discovery:true}:{}),
+   ...(claimEvidence?{claim_evidence:true}:{})};
   try{await writeOnce(activePath,active);}
   catch(e){if(e.code!=='EEXIST')throw e;}
   const actual=await readMaybe(activePath);
@@ -551,6 +556,8 @@ export async function runAdmittedFiniteBatch({
    'SOURCE_RECOVERY_IDENTITY_CHANGED');
   assert(Boolean(active.resilient_discovery)===resilientDiscovery,
    'RESILIENT_DISCOVERY_IDENTITY_CHANGED');
+  assert(Boolean(active.claim_evidence)===claimEvidence,
+   'CLAIM_EVIDENCE_IDENTITY_CHANGED');
   if(active.tuning_sha256!==undefined)
    assert(active.tuning_sha256===tuningSha,'TUNING_IDENTITY_CHANGED');
   else assert(legacyIdentity,'LEGACY_TUNING_IDENTITY_UNVERIFIED');
@@ -640,8 +647,10 @@ export async function runAdmittedFiniteBatch({
    for(let pass=0;pass<(sourceRecovery?2:1);pass++){
     if(pass===1){if(!recoveryTrigger)break;recoveryAttempted=true;}
     const identity=pass===0?
-     cluster.id+(resilientDiscovery?':resilient-discovery-v1':''):
-     cluster.id+(resilientDiscovery?':source-recovery-v2':':source-recovery-v1');
+      cluster.id+(claimEvidence?':claim-evidence-v1':
+       resilientDiscovery?':resilient-discovery-v1':''):
+      cluster.id+(claimEvidence?':claim-evidence-recovery-v1':
+       resilientDiscovery?':source-recovery-v2':':source-recovery-v1');
     const messages=resilientDiscovery?
      finiteBatchResilientDiscoveryPrompt(cluster,{recovery:pass===1,rejected,
       invalid:validationFailures.flatMap(x=>x.candidates)}):
@@ -840,7 +849,8 @@ export async function runAdmittedFiniteBatch({
    snapshot_sha256:hash(snapshot),tuning_sha256:tuningSha,
    ...(sourceRecovery?{source_recovery:true}:{}),
    ...(resilientDiscovery?{resilient_discovery:true}:{}),
-   created_at:new Date().toISOString(),
+    ...(claimEvidence?{claim_evidence:true}:{}),
+    created_at:new Date().toISOString(),
    cluster_outcomes:outcomes.map(x=>({cluster_id:x.cluster_id,
     decision:x.decision,reason:x.reason,
     fact_ids:x.facts.map(f=>f.id),
@@ -863,6 +873,8 @@ export async function runAdmittedFiniteBatch({
   'PLAN_SOURCE_RECOVERY_IDENTITY_CHANGED');
  assert(Boolean(plan.resilient_discovery)===resilientDiscovery,
   'PLAN_RESILIENT_DISCOVERY_IDENTITY_CHANGED');
+ assert(Boolean(plan.claim_evidence)===claimEvidence,
+  'PLAN_CLAIM_EVIDENCE_IDENTITY_CHANGED');
  if(plan.tuning_sha256!==undefined)
   assert(plan.tuning_sha256===tuningSha,'PLAN_TUNING_IDENTITY_CHANGED');
  else assert(legacyIdentity,'PLAN_LEGACY_TUNING_UNVERIFIED');
