@@ -1435,8 +1435,9 @@ test('source-quote salvage requires an already admitted source-exact complement 
  assert.equal(calls,0);assert.equal(f.graphiti.writes.length,0);
 },[strong]));
 
-test('invalid claim-support response still allows independent utility of exact config source',()=>fixture(async f=>{
+test('invalid claim-support response still allows independent utility of exact config source',()=>{
  const config='i had to uncomment LITELLM_MASTER_KEY for litellm to be able to start';
+ return fixture(async f=>{
  let support=0,utility=0;
  const curate=async(_,{promptMessages})=>{
   const system=promptMessages[0].content,data=JSON.parse(promptMessages[1].content);
@@ -1473,9 +1474,10 @@ test('invalid claim-support response still allows independent utility of exact c
   'issue92-finite-batches-v1',scope.group,active.batch_id,'plan.json'),'utf8'));
  assert.equal(plan.cluster_outcomes[0].source_quote_salvage_outcome.approved,1);
  assert.equal(plan.cluster_outcomes[0].source_only_outcome,null);
-},[config]));
+},[config]);
+});
 
-test('dense command text with zero discovery candidates receives bounded exact-source utility',()=>fixture(async f=>{
+test('dense command text with zero discovery candidates receives bounded exact-source utility',()=>{
  const command='opencode.db was recently pruned using sqlite3 DELETE FROM session '+
   'WHERE time_archived IS NOT NULL OR time_updated < seven_days; '+
   'DELETE FROM message WHERE session_id NOT IN (SELECT id FROM session); '+
@@ -1483,6 +1485,7 @@ test('dense command text with zero discovery candidates receives bounded exact-s
   'DELETE FROM event WHERE aggregate_id NOT IN (SELECT id FROM session); '+
   'VACUUM; '+('Repeat details of the durable sqlite maintenance procedure. '.repeat(4));
  assert.ok(command.length>450);
+ return fixture(async f=>{
  let utility=0;
  const curate=async(_,{promptMessages})=>{
   const system=promptMessages[0].content,data=JSON.parse(promptMessages[1].content);
@@ -1512,10 +1515,12 @@ test('dense command text with zero discovery candidates receives bounded exact-s
  const plan=JSON.parse(await readFile(path.join(f.root,
   'issue92-finite-batches-v1',scope.group,active.batch_id,'plan.json'),'utf8'));
  assert.equal(plan.cluster_outcomes[0].source_only_outcome.approved,1);
-},[command]));
+},[command]);
+});
 
-test('original-source fallback retains operator chatter in review, not Graphiti',()=>fixture(async f=>{
+test('original-source fallback retains operator chatter in review, not Graphiti',()=>{
  const status='The post-exit run appears complete; please provide the status summary.';
+ return fixture(async f=>{
  let utility=0;
  const curate=async(_,{promptMessages})=>{
   const system=promptMessages[0].content;
@@ -1541,4 +1546,5 @@ test('original-source fallback retains operator chatter in review, not Graphiti'
  const plan=JSON.parse(await readFile(path.join(f.root,
   'issue92-finite-batches-v1',scope.group,active.batch_id,'plan.json'),'utf8'));
  assert.equal(plan.cluster_outcomes[0].source_only_outcome.approved,0);
-},[status]));
+},[status]);
+});
