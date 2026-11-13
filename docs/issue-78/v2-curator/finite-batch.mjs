@@ -266,7 +266,8 @@ export function deferContainingSameSourceQuotes(entries,approved){
  for(const outer of approved)for(const inner of approved){
   if(outer===inner||outer.cluster_id!==inner.cluster_id||
      outer.fact?.source_refs?.[0]!==inner.fact?.source_refs?.[0])continue;
-  const a=outer.fact?.evidence_span,c=inner.fact?.evidence_span;
+  const a=outer.reviewed_source_span??outer.fact?.evidence_span,
+        c=inner.reviewed_source_span??inner.fact?.evidence_span;
   if(!a||!c||a.source_ref!==c.source_ref||
      !Number.isSafeInteger(a.start)||!Number.isSafeInteger(a.end)||
      !Number.isSafeInteger(c.start)||!Number.isSafeInteger(c.end))continue;
@@ -492,11 +493,13 @@ export function validateSpecificityFamilies(raw,candidates){
  return {...v,proof,normalization:normalized.normalization};
 }
 
-function factEntry(cluster,fact,utility,reviewReason=null,atomicityReview=null){
+function factEntry(cluster,fact,utility,reviewReason=null,atomicityReview=null,reviewedSourceSpan=null){
  const id=childId(cluster,fact);
  return {id,cluster_id:cluster.id,group:cluster.group,project:cluster.project,
   workspace:cluster.workspace,fact,utility_class:utility,
-  review_reason:reviewReason,atomicity_review:atomicityReview};
+  review_reason:reviewReason,atomicity_review:atomicityReview,
+  // V2 private review-only metadata; never included in Graphiti fact payload.
+  ...(reviewedSourceSpan?{reviewed_source_span:reviewedSourceSpan}:{})};
 }
 function planCandidate(cluster,entry,decision,reason){
  return {id:entry.id,cluster_id:cluster.id,decision,reason,
@@ -898,7 +901,8 @@ export async function runAdmittedFiniteBatch({
       utility_class:utility,facts:[{...fact,utility_class:utility}]},cluster);
      if(!valid.ok)throw Error('ISSUE92_BATCH_INDEPENDENT_FACT_INVALID');
      const e=factEntry(cluster,valid.facts[0],utility,null,
-       result.fact_atomicity_reviews?.[k]);
+       result.fact_atomicity_reviews?.[k],
+        quoteIntegrityV2?fact.evidence_span:null);
      // Conflicting verdicts on an identical rejected quote are not new evidence.
      if(entries.has(e.id))continue;
      // S6 joint claim/source-exact lanes have one per-cluster fact ceiling.
@@ -975,7 +979,8 @@ export async function runAdmittedFiniteBatch({
         utility_class:utility,facts:[{...fact,utility_class:utility}]},cluster);
        if(!validated.ok)throw Error('QUOTE_SALVAGE_SOURCE_INVALID');
        const e=factEntry(cluster,validated.facts[0],utility,null,
-         passed.fact_atomicity_reviews?.[k]);
+         passed.fact_atomicity_reviews?.[k],
+        quoteIntegrityV2?fact.evidence_span:null);
        const previous=entries.get(e.id);
        if(!previous||!/^(?:claim_support_(?:missing_predicate|unsupported_inference|review_uncertain)|claim_support_invalid)$/
         .test(previous.review_reason??''))continue;
@@ -1036,7 +1041,8 @@ export async function runAdmittedFiniteBatch({
         facts:[{...fact,utility_class:utility}]},cluster);
        if(!verifiedFact.ok)throw Error('ISSUE92_BATCH_COMPLEMENT_SOURCE_INVALID');
        const e=factEntry(cluster,verifiedFact.facts[0],utility,null,
-         review.fact_atomicity_reviews?.[k]);
+         review.fact_atomicity_reviews?.[k],
+        quoteIntegrityV2?fact.evidence_span:null);
        if(entries.has(e.id))continue;
        if(approved.length>=3){
         entries.set(e.id,{...e,utility_class:null,
@@ -1113,7 +1119,8 @@ export async function runAdmittedFiniteBatch({
         utility_class:utility,facts:[{...fact,utility_class:utility}]},cluster);
        if(!verified.ok)throw Error('SOURCE_ONLY_INVALID_ORIGINAL_QUOTE');
        const e=factEntry(cluster,verified.facts[0],utility,null,
-         result.fact_atomicity_reviews?.[k]);
+         result.fact_atomicity_reviews?.[k],
+        quoteIntegrityV2?fact.evidence_span:null);
        if(entries.has(e.id))continue;
        if(approved.length>=3)break;
        entries.set(e.id,e);approved.push(e);sourceOnlyOutcome.approved++;

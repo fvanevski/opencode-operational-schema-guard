@@ -450,7 +450,7 @@ test('V2 word-boundary repair uses only original source characters before model 
  const old=validateFactDiscovery(input,cluster,{isolateCandidates:true});
  const fixed=validateFactDiscovery(input,cluster,
   {isolateCandidates:true,repairWordBoundaries:true});
- assert.equal(old.facts[0].assertion,original.slice(start,end));
+ assert.equal(old.ok,false); // Invalid clipped quote was already rejected by legacy validation.
  assert.equal(fixed.facts[0].assertion,
   original.slice(original.indexOf('adapter'),
    original.indexOf('compatible')+'compatible'.length));
