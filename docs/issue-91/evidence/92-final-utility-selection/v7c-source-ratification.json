@@ -1,0 +1,98 @@
+{
+ "schema": "issue92-v7c-source-ratification-v1",
+ "group": "graphiti-adr92-a3-prospective-v7",
+ "result": "V7_SOURCE_CORRECTION_REQUIRED",
+ "source_head": "91ca1fae1174380c156f680360eedcf3259d4bc7",
+ "semantic_source_binding": "5a0d2ddb0cb2284439740b036a587016a42a50b7 (finite-batch.mjs utility fix, unchanged; ancestor of source_head)",
+ "evidence_head": "N/A (evidence-only commit optional; artifacts in /tmp/opencode/issue92-a3 and private state dir, uncommitted)",
+ "focused_test": {
+  "command": "node --test docs/issue-78/v2-curator/finite-batch.test.mjs",
+  "rc": 0,
+  "cases": "70 pass / 0 fail"
+ },
+ "source_assessment": {
+  "v7-v-05": {
+   "decision": "RETAIN",
+   "classification": "durable config-location fact",
+   "safe_quote": "check mcp-mux-2.0-dev config: /workspace/mcp_servers/mcp-mux-2.0-dev/mcp_router/config.yaml",
+   "note": "task-boundary 'check'; payload is a source-stated config location"
+  },
+  "v7-v-06": {
+   "decision": "QUALIFY",
+   "classification": "source-reported, temporally bounded; NOT externally verified",
+   "original_safe_quote": "Why does the production data physically live in the development-knowledge graph even though the MCP config points at graphiti_live?",
+   "new_predicate": "user-reported storage discrepancy (2026-11-08): production data observed in the development-knowledge graph while the MCP config pointed at graphiti_live; source-reported, temporally bounded, not independently verified"
+  },
+  "v7-v-07": {
+   "decision": "REPLACE",
+   "classification": "question-framed + garbled pasted/generated block; no unambiguous user assertion in original",
+   "original_safe_quote": "\"What FalkorDB layout is **per-group graphs**: `development-knowledge`, `ghdev_gh_mcp`, and an empty `graphiti_live` (0 nodes). ... graph.?\"",
+   "replaced_with": "msg_1991c6d17"
+  },
+  "v7-v-08": {
+   "decision": "REPLACE",
+   "classification": "pure question; never names the LiteLLM success_callback key; no separate source-anchored clause",
+   "original_safe_quote": "Under which litellm settings key does the success_callback belong?",
+   "replaced_with": "msg_160509336"
+  },
+  "v7-v-10": {
+   "decision": "QUALIFY",
+   "classification": "task/time-bounded source-stated location (one-off integration handoff)",
+   "original_safe_quote": "carry out integration of P5M44R using the handoff at /opt/containers/tdarr/integration/P5M44R-central-remediation/INTEGRATION-HANDOFF.md and associated files stored in /opt/containers/tdarr/integration/P5M44R-central-remediation",
+   "new_predicate": "P5M44R central-remediation integration handoff and associated files located at /opt/containers/tdarr/integration/P5M44R-central-remediation (task/time-bounded, 2026-09-27); source-stated location, not general durable infrastructure"
+  }
+ },
+ "replacements": [
+  {
+   "slot": "v7-v-07",
+   "source_id": "msg_1991c6d17001NHrCACDa8AuvtF",
+   "session_id": "ses_e66ec50ffffekQVHlwf6XEcu8g",
+   "observed_at": "2026-11-01T21:55:40.343000+00:00",
+   "native_event_text_sha256": "292674d5ef73eeac08a191d0078f3328e4f9951a1de5d2ca84139605aeb80cf0",
+   "safe_quote": "i believe it was demonstrated before that when adding new memories you should not include a uuid, it will be generated when creating the memory",
+   "temporal_class": "durable operational convention (timeless)",
+   "predicate": "when adding new OpenViking memories, do not include a uuid; it is auto-generated at memory creation",
+   "nonoverlap": "not in used-messages.json (214 ids), not in v7 cohort, not a v2-v6/B/exposed predicate, not a memory-echo"
+  },
+  {
+   "slot": "v7-v-08",
+   "source_id": "msg_160509336001zc8AM5tccpDCaM",
+   "session_id": "ses_e9fb58b6dffeSr8tVVkjxI4CHM",
+   "observed_at": "2026-10-21T21:14:26.673000+00:00",
+   "native_event_text_sha256": "2c03af01093b4e136aee70b5e396a85bcb72b8d3231ec7b9b8dfe7ee10804c60",
+   "safe_quote": "tdarr server/node are v3, use context7 and firecrawl mcp server tools for software documentation and general web-based queries",
+   "temporal_class": "observed (2026-10-21) version + tool-usage convention",
+   "predicate": "tdarr server/node are v3; use context7 and firecrawl MCP server tools for software documentation and general web queries",
+   "nonoverlap": "not in used-messages.json (214 ids), not in v7 cohort, distinct from v07 convention and from v2-v6 predicates"
+  }
+ ],
+ "manifest_sha256": "9356e663092df3a82b6b549e5d2c6208ff19a429205502388ba7d41b207af691",
+ "label_freeze_sha256": "401e57abae879653b2c37dff9173e3ba43a8f8b02e052ee87cbf319b954ecfc0",
+ "stage_sha256": "868cf358ee3aae89a4d3d086b201b2827fbd27496e020e7b296ea4b2502f163c",
+ "native_source_provenance_digest": "a76f7942f39f18e8d5ea0722c9ec143a8071e9286ad025dce317c5f56225cbcc",
+ "empty_group_proof": "get_episodes(group_ids=[graphiti-adr92-a3-prospective-v7]) -> 'No episodes found' (0 episodes); pre-inference, 0 inference calls, no model intent; a3-v7c-remote.json episode_count=0",
+ "ex_preflight": "a3-v7c-ex-preflight.json verdict=PASS (positive ADMITTED; neg_marker_only DENIED missing_lock_fd; neg_noninherited_fd DENIED wrong_inode)",
+ "scorer_preflight": "8-arg scorer fails closed pre-inference: A3_ACCEPTANCE_UNVERIFIED:independent_pre_inference_ratification",
+ "prepared_launch": {
+  "command": "V5_HOST_APPROVED=1 python3 /tmp/opencode/issue92-a3/a3-v7c-prospective-launcher.py",
+  "state_root": "/home/filip/.local/state/ghdev-graphiti-issue92/state-v7c (0700, fresh; 20 events / 20 cases staged)",
+  "group": "graphiti-adr92-a3-prospective-v7 (reused: 0 episodes, no prior/ambiguous model intent)",
+  "marker": "state-v7c/.v7c-prospective-ran (absent)",
+  "model_endpoint": "chat-fast@127.0.0.1:8002",
+  "treatment": "24/72/3600",
+  "bridge_blob": "004188b1cdcd3a99956f20e581621eadc63c4663"
+ },
+ "execution_source_blobs_verified_at_source_head": {
+  "finite-batch.mjs": "358aa2150a49c33eda80138091d6d6f702d79851",
+  "claim-evidence.mjs": "104544605f467ca102b46da148b2512857db683e",
+  "fact-review.mjs": "20da07bcb99010c4c9ab5d4b8c7f9d3c8cb62ba9",
+  "curator-cli.mjs": "63a23e29e4fc14e942a2f85009d18718ebe44106",
+  "ex-admission-proof.mjs": "e63b8a36b51627a6211bf4367c62a5c76461fa76",
+  "queue.mjs": "b4e2df18e3741917e8f3f2513b54cb6aef874e98",
+  "events.mjs": "3f04633b0e98d34e987363285743f8a38875ced3",
+  "ex_admitted_node_bridge.py": "004188b1cdcd3a99956f20e581621eadc63c4663"
+ },
+ "historical_state": "unchanged: old v7 corpus d111717b..., old v7 state-v7 (20 events), state-v5/v5-native/v5-native-v2/v6/exposed-utility-final-r1/exposed-final-recall-r1 all present; v2..v6/B/exposed groups and old v7 freeze untouched",
+ "checked_utc": "2026-11-13T04:17:57.301495+00:00",
+ "_label_freeze_note": "label_freeze_sha256 = independent canonical digest over the 20 labels (10 valuable predicates + 10 control reasons, sorted by case_id); value stored consistently in manifest.label_digest_sha256, roster.label_freeze_sha256, and ratification.label_freeze_sha256"
+}

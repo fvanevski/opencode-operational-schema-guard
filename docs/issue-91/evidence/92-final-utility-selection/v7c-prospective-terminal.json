@@ -1,0 +1,278 @@
+{
+ "schema": "issue92-a3-v7c-prospective-terminal-v1",
+ "group": "graphiti-adr92-a3-prospective-v7",
+ "result": "A3_V7C_PROSPECTIVE_PASS",
+ "authorization": "A3_V7C_PROSPECTIVE_APPROVED",
+ "execution_count": 1,
+ "source_head": "91ca1fae1174380c156f680360eedcf3259d4bc7",
+ "treatment_source_sha": "5a0d2ddb0cb2284439740b036a587016a42a50b7",
+ "batch_id": "4a62ac5b69f6f1431edd287650fd11ac828236fb3cdb404b36c1722dd503a004",
+ "snapshot_sha256": "ee79909a8870bc0b59bf4508cef9333defd5dec72e2876e24defba46f0bd43d5",
+ "tuning_sha256": "8d671d06a550b0f85d187cac4e181973bea748f71986487e2a6b0765385bc8e7",
+ "immutable_batch_id": "4a62ac5b69f6f1431edd287650fd11ac828236fb3cdb404b36c1722dd503a004",
+ "model_calls_total": 85,
+ "model_calls_by_stage": {
+  "discovery": 52,
+  "utility": 21,
+  "support": 9,
+  "arbitration": 1,
+  "specificity": 2
+ },
+ "model_errors": 0,
+ "prompt_tokens": 80078,
+ "completion_tokens": 5567,
+ "candidates": 22,
+ "approved": 10,
+ "deferred": 12,
+ "replay_only": false,
+ "source_recovery": true,
+ "source_exact_complement": true,
+ "settled_by": "reconcile-only (DRIVER rc=3 -> RECONCILE rc=0); no model replay",
+ "driver_elapsed_ms": 37366,
+ "frozen_digests": {
+  "manifest_sha256": "9356e663092df3a82b6b549e5d2c6208ff19a429205502388ba7d41b207af691",
+  "label_freeze_sha256": "401e57abae879653b2c37dff9173e3ba43a8f8b02e052ee87cbf319b954ecfc0",
+  "staging_receipt_sha256": "868cf358ee3aae89a4d3d086b201b2827fbd27496e020e7b296ea4b2502f163c",
+  "native_source_provenance_sha256": "a76f7942f39f18e8d5ea0722c9ec143a8071e9286ad025dce317c5f56225cbcc",
+  "host_result_receipt_sha256": "8e81c313b642c87e25945ed8a037518e3ed2a612bf17dedfc739711e29138231"
+ },
+ "execution_source_blobs": {
+  "finite-batch.mjs": "358aa2150a49c33eda80138091d6d6f702d79851",
+  "claim-evidence.mjs": "104544605f467ca102b46da148b2512857db683e",
+  "fact-review.mjs": "20da07bcb99010c4c9ab5d4b8c7f9d3c8cb62ba9",
+  "curator-cli.mjs": "63a23e29e4fc14e942a2f85009d18718ebe44106",
+  "ex-admission-proof.mjs": "e63b8a36b51627a6211bf4367c62a5c76461fa76",
+  "queue.mjs": "b4e2df18e3741917e8f3f2513b54cb6aef874e98",
+  "events.mjs": "3f04633b0e98d34e987363285743f8a38875ced3",
+  "ex_admitted_node_bridge.py": "004188b1cdcd3a99956f20e581621eadc63c4663"
+ },
+ "admission": {
+  "ex_inherited_flock": "PASS",
+  "scheduler_idle": "PASS (vllm 8001 running=0 waiting=0)",
+  "quiet_grace_seconds": 30,
+  "hermes_supervisor_exemption": "retained (watched names codex/opencode/agy/opencode-desktop; hermes exempt)",
+  "pre_inference_scheduler_busy_retries": 2,
+  "pre_inference_scoter_fail_closed": "A3_ACCEPTANCE_UNVERIFIED:independent_pre_inference_ratification"
+ },
+ "ex_evidence": {
+  "ex_lock_valid": true,
+  "no_model_replay": true,
+  "no_unauthorized_graphiti_writes": true,
+  "no_privacy_breach": true,
+  "no_wrong_group": true,
+  "no_false_verified_claims": true,
+  "inference_calls": 1,
+  "settled": "reconcile-only"
+ },
+ "review_store_states": {
+  "persisted": 9,
+  "deferred": 13,
+  "total_records": 22
+ },
+ "target_coverage": {
+  "valuable_targets": 10,
+  "covered": [
+   "v7-v-01",
+   "v7-v-02",
+   "v7-v-03",
+   "v7-v-04",
+   "v7-v-05",
+   "v7-v-07",
+   "v7-v-08",
+   "v7-v-09",
+   "v7-v-10"
+  ],
+  "covered_count": 9,
+  "not_covered": [
+   "v7-v-06"
+  ],
+  "note": "v7-v-06 (qualified storage-discrepancy, not externally verified) was not independently persisted; the other 9 valuable targets including both replacements (v07,v08) and qualified v10 were persisted"
+ },
+ "replacements": {
+  "v7-v-07": "msg_1991c6d17001NHrCACDa8AuvtF",
+  "v7-v-08": "msg_160509336001zc8AM5tccpDCaM"
+ },
+ "fact_adjudications": [
+  {
+   "case": "v7-v-01",
+   "record": "b590deca7f2104f1",
+   "remote_episode_uuid": "51437df1-9889-41c2-b340-4c2d67ceaaf1",
+   "grounded": true,
+   "useful": true,
+   "safe": true,
+   "duplicate_of": null,
+   "rationale": "tdarr docker network = media-arr: exact source-stated config predicate; independently useful durable infra fact"
+  },
+  {
+   "case": "v7-v-02",
+   "record": "a97c58fc60ebce30",
+   "remote_episode_uuid": "9a48aed5-b66c-4234-a6a1-b26709dbdc95",
+   "grounded": true,
+   "useful": true,
+   "safe": true,
+   "duplicate_of": null,
+   "rationale": "rtk proxy bypasses wrapper transformation: source-stated tool-usage fact; independently useful"
+  },
+  {
+   "case": "v7-v-03",
+   "record": "ff0378667dc4058c",
+   "remote_episode_uuid": "fb14008f-937e-42fd-80de-95dcdef77711",
+   "grounded": true,
+   "useful": true,
+   "safe": true,
+   "duplicate_of": null,
+   "rationale": "loaded model is the NInfer artifact at /workspace/models/...: source-stated location fact; useful"
+  },
+  {
+   "case": "v7-v-04",
+   "record": "3b2b98e707515397",
+   "remote_episode_uuid": "163499bb-fcea-4ee7-a131-3a58bd0ea7b8",
+   "grounded": true,
+   "useful": true,
+   "safe": true,
+   "duplicate_of": null,
+   "rationale": "qbittorrent configured to not download .exe (fake tv-sonarr torrents): source-stated operational config; useful"
+  },
+  {
+   "case": "v7-v-05",
+   "record": "b9f7fc64f009ed87",
+   "remote_episode_uuid": "0f696d5b-4513-4071-aa3c-c88b4cc6f46a",
+   "grounded": true,
+   "useful": true,
+   "safe": true,
+   "duplicate_of": null,
+   "rationale": "mcp-mux-2.0-dev config path: source-stated location, task-boundary 'check'; useful durable config location"
+  },
+  {
+   "case": "v7-v-07",
+   "record": "7a3bd71c670acf56",
+   "remote_episode_uuid": "0639d557-031c-4852-8bb5-cfe69f452c51",
+   "grounded": true,
+   "useful": true,
+   "safe": true,
+   "duplicate_of": null,
+   "rationale": "OpenViking memory uuid auto-generated (do not include): source-stated durable convention; useful"
+  },
+  {
+   "case": "v7-v-08",
+   "record": "ab4ef3f01e925401",
+   "remote_episode_uuid": "f699fd62-c952-49aa-a79c-4ff5428402d5",
+   "grounded": true,
+   "useful": true,
+   "safe": true,
+   "duplicate_of": null,
+   "rationale": "tdarr server/node v3 + context7/firecrawl MCP tool-usage: source-stated version/convention; useful"
+  },
+  {
+   "case": "v7-v-09",
+   "record": "34f6066e485eb8fa",
+   "remote_episode_uuid": "2be0899b-8761-426c-96c0-b9747d25a20d",
+   "grounded": true,
+   "useful": true,
+   "safe": true,
+   "duplicate_of": null,
+   "rationale": "openviking MCP 403 auth config at ~/.openviking/ovcli.conf or OPENVIKING_API_KEY: source-stated config/troubleshooting; useful"
+  },
+  {
+   "case": "v7-v-10",
+   "record": "5fa56d32d17a8272",
+   "remote_episode_uuid": "5ebeaa9f-888a-4ecb-bf06-bb9c25af5cb2",
+   "grounded": true,
+   "useful": true,
+   "safe": true,
+   "duplicate_of": null,
+   "rationale": "P5M44R integration handoff + files at /opt/containers/tdarr/integration/...: task/time-bounded source-stated location; useful within bound"
+  }
+ ],
+ "controls": {
+  "total": 10,
+  "persisted": 0,
+  "nonvaluable_persisted_cases": 0,
+  "ids": [
+   "v7-c-01",
+   "v7-c-02",
+   "v7-c-03",
+   "v7-c-04",
+   "v7-c-05",
+   "v7-c-06",
+   "v7-c-07",
+   "v7-c-08",
+   "v7-c-09",
+   "v7-c-10"
+  ]
+ },
+ "duplicates": {
+  "duplicate_episodes": 0
+ },
+ "precision_usefulness": {
+  "valuable_coverage": {
+   "point": 0.9,
+   "wilson95": [
+    0.596,
+    0.982
+   ],
+   "n": 10
+  },
+  "grounded_precision": {
+   "point": 1.0,
+   "wilson95": [
+    0.701,
+    1.0
+   ],
+   "n": 9
+  },
+  "useful_among_grounded": {
+   "point": 1.0,
+   "wilson95": [
+    0.701,
+    1.0
+   ],
+   "n": 9
+  },
+  "independent_useful_facts": 9
+ },
+ "thresholds_met": {
+  "valuable_recall_ge_9_of_10": true,
+  "grounded_precision_ge_90": true,
+  "useful_among_grounded_ge_75": true,
+  "independent_useful_ge_8": true,
+  "zero_breaches": true,
+  "terminal_remote_reconciliation_complete": true
+ },
+ "gates": {
+  "valuable_coverage": true,
+  "grounded_precision": true,
+  "useful_among_grounded": true,
+  "zero_authority_breaches": true,
+  "terminal_source_integrity": true,
+  "independently_ratified_labels": true
+ },
+ "scorecard_pass": true,
+ "remote_positive_uuids": [
+  "0639d557-031c-4852-8bb5-cfe69f452c51",
+  "0f696d5b-4513-4071-aa3c-c88b4cc6f46a",
+  "163499bb-fcea-4ee7-a131-3a58bd0ea7b8",
+  "2be0899b-8761-426c-96c0-b9747d25a20d",
+  "51437df1-9889-41c2-b340-4c2d67ceaaf1",
+  "5ebeaa9f-888a-4ecb-bf06-bb9c25af5cb2",
+  "9a48aed5-b66c-4234-a6a1-b26709dbdc95",
+  "f699fd62-c952-49aa-a79c-4ff5428402d5",
+  "fb14008f-937e-42fd-80de-95dcdef77711"
+ ],
+ "material_execution_friction": {
+  "summary": "Two ADMISSION_WAIT scheduler-busy refusals before the first admitted model intent (transient vLLM load); retried per contract and admission proved at ADMISSION_PROVEN. Driver finished rc=3 (9 queued write-outcomes), settled by reconcile-only (no model replay). No friction after the first admitted intent.",
+  "no_model_replay_after_admission": true
+ },
+ "historical_state_unchanged": {
+  "preserved": [
+   "state-v5",
+   "state-v5-native",
+   "state-v5-native-v2",
+   "state-v6",
+   "exposed-utility-final-r1",
+   "exposed-final-recall-r1",
+   "state-v7 (original v7 freeze, corpus d111717b)"
+  ],
+  "note": "v2-v6, exposed groups, and the original v7 freeze are untouched"
+ }
+}
