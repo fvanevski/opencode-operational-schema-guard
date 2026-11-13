@@ -137,18 +137,25 @@ test('injected OpenViking context is not new user evidence; authored technical t
  assert.doesNotMatch(rows[0].excerpt,/fabricated fix|viking:\/\//);
  assert.equal(rows[0].evidence_class,'user-stated');
  assert.equal(rows[0].source_strength,'native-id');
- assert.equal(rows[0].source_refs[0],'opencode:ses-native:message:msg-openviking-tail');
+ assert.equal(rows[0].source_refs[0],
+  'opencode:ses-native:message:msg-openviking-tail:span:'+
+  raw.indexOf('The source author explicitly requires'));
  assert.deepEqual(rows,accepted(native(raw,'msg-openviking-tail')));
 });
-test('OpenViking blocks in middle preserve both authored statements',()=>{
+test('OpenViking blocks in middle preserve two independently source-ranged authored statements',()=>{
  const text='The cache invalidation must reject stale writes. '+
   '<openviking-context>external recalled assistant theory</openviking-context> '+
   'The revision counter must be checked before advancing the pointer.';
  const rows=accepted(native(text,'msg-context-middle'));
- assert.equal(rows.length,1);
+ assert.equal(rows.length,2);
  assert.match(rows[0].excerpt,/cache invalidation must reject/);
- assert.match(rows[0].excerpt,/revision counter must be checked/);
- assert.doesNotMatch(rows[0].excerpt,/recalled assistant theory/);
+ assert.match(rows[1].excerpt,/revision counter must be checked/);
+ for(const row of rows){
+  const offset=Number(/:span:(\d+)$/.exec(row.source_refs[0])?.[1]);
+  assert.ok(Number.isSafeInteger(offset));
+  assert.equal(text.slice(offset,offset+row.excerpt.length),row.excerpt);
+  assert.doesNotMatch(row.excerpt,/recalled assistant theory/);
+ }
 });
 test('OpenViking memory-only or malformed tags have no source authority',()=>{
  const only='<openviking-context>From OpenViking memories: code passed.</openviking-context>';
@@ -162,4 +169,49 @@ test('original-input secret scan is not bypassed by a removable context block',(
  assert.deepEqual(accepted(native(input,'msg-context-secret')),[]);
  assert.deepEqual(accepted(native('The user requires more source facts. '+
   '[GHDEV_GRAPHITI_CONTEXT] previous memory context')),[]);
+});
+
+test('native original multiline quotations remain literal and attributable',()=>{
+ const text='The runtime setting must be preserved.\r\n'+
+  'The default should not be changed without a migration review.\t'+
+  'The operator reported another compatibility limitation.';
+ const one=accepted(native(text,'msg-literal'));
+ assert.equal(one.length,1);
+ assert.equal(one[0].excerpt,text);
+ assert.deepEqual(accepted(native(JSON.stringify(text),'msg-decoded'))[0].excerpt,text);
+ const pref='<openviking-context>external retrieval</openviking-context>\n';
+ const after=accepted(native(pref+text,'msg-after-injection'));
+ assert.equal(after.length,1);
+ assert.equal(after[0].excerpt,text);
+ assert.equal(after[0].source_refs[0],
+   'opencode:ses-native:message:msg-after-injection:span:'+pref.length);
+});
+test('multiple context blocks cannot create a synthetic joint source citation',()=>{
+ const text='The cache must reject stale writes. '+
+  '<openviking-context>first injection</openviking-context> '+
+  'The revision counter must be checked. '+
+  '<openviking-context>second injection</openviking-context> '+
+  'The gate must reject a stale writer.';
+ const rows=accepted(native(text,'msg-fragments'));
+ assert.equal(rows.length,3);
+ for(const row of rows){
+  const offset=Number(/:span:(\d+)$/.exec(row.source_refs[0])?.[1]);
+  assert.equal(text.slice(offset,offset+row.excerpt.length),row.excerpt);
+  assert.ok(!row.excerpt.includes('injection'));
+ }
+});
+test('natural-language credential values fail the complete-input admission filter',()=>{
+ const prefix='An original technical requirement affects the migration code. '.repeat(22);
+ for(const secret of [
+  'Graphiti password is DEMO_VALUE_DO_NOT_USE',
+  'OpenViking access token is DEMO_VALUE_DO_NOT_USE',
+  'The client secret was DEMO_VALUE_DO_NOT_USE'
+ ]){
+  assert.deepEqual(accepted(native(secret)),[]);
+  assert.deepEqual(accepted(native(prefix+secret)),[]);
+  assert.deepEqual(accepted(native(
+    '<openviking-context>'+secret+'</openviking-context> '+prefix)),[]);
+ }
+ const safe='OpenSubtitles credentials can be found in ~/temp/opensubtitles, including API token, username and password field types.';
+ assert.equal(accepted(native(safe)).length,1);
 });

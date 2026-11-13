@@ -111,7 +111,8 @@ test('long assistant text uses bounded whole-message privacy scan before truncat
   const accepted = fromFinishedTurn({...base,text}, scope);
   assert.ok(accepted);
   assert.ok(accepted.excerpt.length <= 1100);
-  assert.match(accepted.excerpt, /truncated/);
+  assert.ok(text.includes(accepted.excerpt));
+   assert.doesNotMatch(accepted.excerpt,/\[truncated;/);
   assert.equal(fromFinishedTurn({...base, text:text+' password=secret123'}, scope), null);
   assert.equal(fromFinishedTurn({...base, text:'A'.repeat(16001)}, scope), null);
 });
@@ -322,4 +323,17 @@ test('safe JSON, braces, long mixed technical prompts and non-keyword tools rema
  assert.ok(normal);
  assert.match(normal.excerpt,/module A owns path normalization/);
  assert.equal(fromPrompt(prompt('Please save {"api_key":"secret123"}'),scope,{admitted:true}),null);
+});
+
+test('explicit credential values are rejected across user, assistant, tool and file inputs',()=>{
+ const secret='Graphiti password is DEMO_VALUE_DO_NOT_USE';
+ assert.equal(fromPrompt(prompt('The service reports '+secret),scope,{admitted:true}),null);
+ assert.equal(fromFinishedTurn({sessionID:'ses-1',messageID:'msg-secret-literal',
+  role:'assistant',status:'completed',
+  text:'The service cannot authenticate because '+secret},scope),null);
+ assert.equal(fromTool(tool('natural-secret','Service response: '+secret,1),scope),null);
+ assert.equal(fromTool({...tool(),tool:'write',
+  input:{filePath:scope.workspace+'/docs/notes.md',
+  content:'The login value is '+secret}},scope),null);
+ assert.ok(fromPrompt(prompt('OpenSubtitles credentials are stored at ~/temp/opensubtitles; the values are not included.'),scope,{admitted:true}));
 });
