@@ -1,0 +1,62 @@
+[
+ {
+  "record_id": "678744b834b8cc387e8e4928b2ba6f1165f7705e727f8e6499b12694193d62f0",
+  "remote_episode_uuid": "b20cfe84-5517-4536-93d2-dbdd0fcfaa60",
+  "source_case_id": "v6-v-02",
+  "source_excerpt_sha256": "b9dfa7a7a57b3cc6a8c4ff402b8cc63e819c68ec4fb5a14073849965ac285fe4",
+  "target_case_ids": [
+   "v6-v-02"
+  ],
+  "rationale": "Independent durable package-identity fact: the opencode plugin is @opencode-ai/plugin. Grounded (author-stated); reusable dependency identity.",
+  "adjudicator": "Hermes (independent operator fact-level adjudication; distinct from A3 model adjudicators)",
+  "grounded": true,
+  "useful": true,
+  "privacy_ok": true,
+  "authority_ok": true,
+  "temporal_ok": true,
+  "evidence_class_ok": true,
+  "correct_group": true,
+  "no_false_verified": true,
+  "duplicate_of": null
+ },
+ {
+  "record_id": "8434919325b235355c1815d6a04f4dbf53a3dd3c3f9f3e1cd85d564d351bf536",
+  "remote_episode_uuid": "61991ec8-f3fe-4f15-b725-07feee3b310e",
+  "source_case_id": "v6-v-01",
+  "source_excerpt_sha256": "4538905acdd750eb324aa57d6bcd7ef3b7862b55934eaa447f6a0695c115e58b",
+  "target_case_ids": [
+   "v6-v-01"
+  ],
+  "rationale": "Independent durable operational finding: TBA-titled imports succeed only via manual operator acceptance of blocklisted releases. Grounded user-stated source; reusable import-queue maintenance knowledge.",
+  "adjudicator": "Hermes (independent operator fact-level adjudication; distinct from A3 model adjudicators)",
+  "grounded": true,
+  "useful": true,
+  "privacy_ok": true,
+  "authority_ok": true,
+  "temporal_ok": true,
+  "evidence_class_ok": true,
+  "correct_group": true,
+  "no_false_verified": true,
+  "duplicate_of": null
+ },
+ {
+  "record_id": "feed50984252c113d66626b625358d18bb2244a10217f4714dfbdff22df2a907",
+  "remote_episode_uuid": "651447b9-3e19-40a6-a105-b14e9e315e2a",
+  "source_case_id": "v6-v-06",
+  "source_excerpt_sha256": "2b873aadc9b6c8c82b23125d68cf614d669f2849f94d6d6c9f0497778277956d",
+  "target_case_ids": [
+   "v6-v-06"
+  ],
+  "rationale": "Independent durable design-history fact: the original fsm81 pilot kept the state map in a separate states.json file read at startup, later retired to an inline map. Grounded 'for the record' note; reusable architecture history.",
+  "adjudicator": "Hermes (independent operator fact-level adjudication; distinct from A3 model adjudicators)",
+  "grounded": true,
+  "useful": true,
+  "privacy_ok": true,
+  "authority_ok": true,
+  "temporal_ok": true,
+  "evidence_class_ok": true,
+  "correct_group": true,
+  "no_false_verified": true,
+  "duplicate_of": null
+ }
+]
