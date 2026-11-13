@@ -1,0 +1,124 @@
+{
+  "schema": "issue92-pr95-v8d-prospective-execution-receipt-v1",
+  "repo": "fvanevski/opencode-operational-schema-guard",
+  "pr": 95,
+  "branch": "issue/92-v7c-accepted",
+  "result": "A3_V8D_PROSPECTIVE_FAIL",
+  "source_head": "c402658e6b6d15174aa5b9234eda2471baf44472",
+  "authorization": "A3_V8D_PROSPECTIVE_APPROVED",
+  "execution_count": 1,
+  "batch_id": "6d7afb9de1f9f7e8c2af31022b0824b0a1762f48919672067856b49843a2b2b2",
+  "frozen_digests": {
+    "manifest": "aa42941a2b040f941435021ddac6dcce911b838bf4f2f42238100b89abd05440",
+    "label_freeze": "c9befd79c59e91bc48f0e1441766f79ad94bbb39dffb12ce33d176c02bb599c7",
+    "roster": "3414d767c713c49425bff292820f21182b0a40e116850dc72f4d6e0e5ac2d809"
+  },
+  "group": "graphiti-adr92-a3-prospective-v8",
+  "model_calls": {
+    "total": 74,
+    "by_stage": {"discovery": 49, "utility": 18, "support": 6, "arbitration": 1},
+    "errors": 0,
+    "candidates": 18,
+    "approved": 8,
+    "deferred": 10
+  },
+  "atomicity": {
+    "plan_identities": {"atomicity_review_v1": true, "atomicity_structural_v1": true},
+    "treatment": "production atomicity_review_v1 + atomicity_structural_v1",
+    "persisted_facts": 8
+  },
+  "valuable_coverage": {
+    "threshold": ">=9/10 recovered as independently useful",
+    "recovered_useful": ["v8d-v-01", "v8d-v-03", "v8d-v-05", "v8d-v-09", "v8d-v-10"],
+    "not_recovered": {
+      "v8d-v-02": "deferred (plex media-state assumption not persisted)",
+      "v8d-v-04": "persisted but NOT independently useful (DESIRED network-name policy, proposed not deployed)",
+      "v8d-v-06": "persisted but NOT independently useful (transient graphiti-MCP failure observation)",
+      "v8d-v-07": "bundled into the v-01 record; not its own persisted fact",
+      "v8d-v-08": "persisted but NOT independently useful (tentative 'appears to have been' pairing-loop defect)"
+    },
+    "verdicts": {
+      "v8d-v-01": "persisted+useful (plex host-path location; user-reported, no false verification claimed)",
+      "v8d-v-02": "deferred",
+      "v8d-v-03": "persisted+useful (versioned NInfer model-artifact identity at observed time)",
+      "v8d-v-04": "persisted, not useful (proposed Tdarr network-name policy)",
+      "v8d-v-05": "persisted+useful (rtk-proxy bypasses wrapper compression)",
+      "v8d-v-06": "persisted, not useful (transient failure observation)",
+      "v8d-v-07": "bundled into v-01 record (nekoBT/Prowlarr); no independent fact",
+      "v8d-v-08": "persisted, not useful (tentative pairing-loop defect)",
+      "v8d-v-09": "persisted+useful (P5M49 integration-handoff materialization location)",
+      "v8d-v-10": "persisted+useful (P5M45C integration-handoff location)"
+    }
+  },
+  "controls": {
+    "threshold": "zero control pollution",
+    "verdicts": {
+      "v8d-c-01": "CONTROL POLLUTION: bundled as a source event into the persisted v-01 (plex) fact",
+      "v8d-c-02": "deferred", "v8d-c-03": "deferred", "v8d-c-04": "deferred", "v8d-c-05": "deferred",
+      "v8d-c-06": "deferred", "v8d-c-07": "deferred", "v8d-c-08": "deferred", "v8d-c-09": "deferred", "v8d-c-10": "deferred"
+    }
+  },
+  "precision_and_utility": {
+    "grounded_facts": 8,
+    "independent_useful_facts": 5,
+    "grounded_precision": 1.0,
+    "useful_among_grounded": 0.625,
+    "note": "A stored statement was not credited as independently verified where the source only reported an observation, tentative explanation, assumption or proposed configuration (v-04 proposed, v-06 transient, v-08 tentative)."
+  },
+  "ex_admission": {
+    "kernel_lock": "GHDEV_MEMORY_POST_EXIT_LOCK_FD inherited; /proc/self/fd readable; fdinfo FLOCK held by launcher pid",
+    "once_only_marker": "/tmp/opencode/issue92-a3-v8d/state/.v8d-prospective-ran written after settle",
+    "reconcile_only_attempts": 1,
+    "no_model_replay": true,
+    "scheduler_idle_at_admission": true,
+    "harness_exit": true,
+    "quiet_grace_seconds": 30,
+    "settled": {"reconciled_persisted": 8, "unresolved": 0, "status": "settled"}
+  },
+  "remote_reconciliation": {
+    "positive": true,
+    "persisted_uuids": [
+      "56bd9e5c-6da1-4e91-9c86-5a53545331f8",
+      "57eaa8c7-427c-4711-a3eb-fa222fe6db8a",
+      "d6046831-fb87-48b9-95ff-dfa27a5130ce",
+      "6f758877-01f6-40f2-9150-c501f5ae6abb",
+      "0d2314ab-c272-4ae6-b051-7b09ac4b20a8",
+      "fd02f051-c39d-4e12-87e6-323ab0885eeb",
+      "fa0007ce-5915-4ac3-8acb-5ea1f5cdb6b4",
+      "1227b814-2912-4077-8887-eab06edb809e"
+    ],
+    "group_episodes": 8,
+    "all_persisted_present": true,
+    "extra_episodes": 0,
+    "source_index_intact": true
+  },
+  "wilson_95": {
+    "valuable_coverage": {"point": 0.5, "lower": 0.23658959361548731, "upper": 0.7634104063845126, "n": 10},
+    "grounded_precision": {"point": 1.0, "lower": 0.6755843804891231, "upper": 1.0, "n": 8},
+    "useful_among_grounded": {"point": 0.625, "lower": 0.30573785458380187, "upper": 0.863158240538479, "n": 8}
+  },
+  "scorer_gates": {
+    "valuable_coverage": false,
+    "grounded_precision": true,
+    "useful_among_grounded": false,
+    "zero_authority_breaches": true,
+    "terminal_source_integrity": true,
+    "independently_ratified_labels": true,
+    "pass": false
+  },
+  "historical_integrity": {
+    "v8": "dcd723a6... unchanged",
+    "v8c": "65348946... unchanged",
+    "v7c": "9356e663... unchanged",
+    "r1": "unchanged",
+    "r2": "unchanged",
+    "v8d_freeze": "immutable (no label revision, no prompt change, no re-inference)",
+    "no_graphiti_writes_beyond_batch": true,
+    "no_model_replay": true
+  },
+  "decision_blockers": [
+    "valuable_coverage 5/10 (0.50) below the 0.85 gate: v-02 deferred, v-07 bundled, v-04/v-06/v-08 persisted-but-not-independently-useful",
+    "independent_useful_facts 5 below the >=8 floor",
+    "control pollution: v8d-c-01 (a control) bundled as a source event into the persisted v-01 fact"
+  ]
+}
