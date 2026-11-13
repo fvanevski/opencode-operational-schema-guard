@@ -507,7 +507,7 @@ export async function runAdmittedFiniteBatch({
  maxClusters=24,maxCandidates=48,maxSeconds=1200,
  noveltyPolicy='recall',tuning=null,replayOnly=false,sourceRecovery=false,
   resilientDiscovery=false,claimEvidence=false,sourceExactComplement=false,
-   balancedDedup=false,
+   balancedDedup=false,sourceQuoteSalvage=false,
   onCheckpoint=null
 }={}){
  // Preserve mock-only Node test fixtures; live claim/evidence clients must
@@ -530,6 +530,7 @@ export async function runAdmittedFiniteBatch({
   typeof resilientDiscovery==='boolean'&&(!resilientDiscovery||sourceRecovery)&&
   typeof claimEvidence==='boolean'&&(!claimEvidence||resilientDiscovery)&&
    typeof sourceExactComplement==='boolean'&&(!sourceExactComplement||claimEvidence)&&
+   typeof sourceQuoteSalvage==='boolean'&&(!sourceQuoteSalvage||sourceExactComplement)&&
    typeof balancedDedup==='boolean'&&(!balancedDedup||noveltyPolicy==='recall')&&
   (!sourceRecovery||noveltyPolicy==='recall'),'INVALID_BOUNDS');
  const tuningProfile=validateFiniteBatchTuning(tuning);
@@ -581,7 +582,8 @@ export async function runAdmittedFiniteBatch({
    ...(resilientDiscovery?{resilient_discovery:true}:{}),
    ...(claimEvidence?{claim_evidence:true}:{}),
    ...(sourceExactComplement?{source_exact_complement:true}:{}),
-   ...(balancedDedup?{balanced_dedup:true}:{})};
+   ...(balancedDedup?{balanced_dedup:true}:{}),
+   ...(sourceQuoteSalvage?{source_quote_salvage:true}:{})};
   try{await writeOnce(activePath,active);}
   catch(e){if(e.code!=='EEXIST')throw e;}
   const actual=await readMaybe(activePath);
@@ -601,6 +603,8 @@ export async function runAdmittedFiniteBatch({
     'SOURCE_EXACT_COMPLEMENT_IDENTITY_CHANGED');
   assert(Boolean(active.balanced_dedup)===balancedDedup,
    'BALANCED_DEDUP_IDENTITY_CHANGED');
+  assert(Boolean(active.source_quote_salvage)===sourceQuoteSalvage,
+   'SOURCE_QUOTE_SALVAGE_IDENTITY_CHANGED');
   if(active.tuning_sha256!==undefined)
    assert(active.tuning_sha256===tuningSha,'TUNING_IDENTITY_CHANGED');
   else assert(legacyIdentity,'LEGACY_TUNING_IDENTITY_UNVERIFIED');
@@ -1092,6 +1096,7 @@ export async function runAdmittedFiniteBatch({
     ...(claimEvidence?{claim_evidence:true}:{}),
     ...(sourceExactComplement?{source_exact_complement:true}:{}),
     ...(balancedDedup?{balanced_dedup:true}:{}),
+    ...(sourceQuoteSalvage?{source_quote_salvage:true}:{}),
     created_at:new Date().toISOString(),
    cluster_outcomes:outcomes.map(x=>({cluster_id:x.cluster_id,
     decision:x.decision,reason:x.reason,
@@ -1123,6 +1128,8 @@ export async function runAdmittedFiniteBatch({
    'PLAN_SOURCE_EXACT_COMPLEMENT_IDENTITY_CHANGED');
  assert(Boolean(plan.balanced_dedup)===balancedDedup,
   'PLAN_BALANCED_DEDUP_IDENTITY_CHANGED');
+ assert(Boolean(plan.source_quote_salvage)===sourceQuoteSalvage,
+  'PLAN_SOURCE_QUOTE_SALVAGE_IDENTITY_CHANGED');
  if(plan.tuning_sha256!==undefined)
   assert(plan.tuning_sha256===tuningSha,'PLAN_TUNING_IDENTITY_CHANGED');
  else assert(legacyIdentity,'PLAN_LEGACY_TUNING_UNVERIFIED');

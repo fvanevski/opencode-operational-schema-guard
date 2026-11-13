@@ -61,6 +61,11 @@ if(dedupArg&&dedupArg!=='on')throw Error('BALANCED_DEDUP_OPT_IN_INVALID');
 if(dedupArg&&(!finiteBatch||command!=='drain'||noveltyPolicy!=='recall'))
  throw Error('BALANCED_DEDUP_REQUIRES_RECALL_FINITE_BATCH');
 const balancedDedup=dedupArg==='on';
+const salvageArg=arg('source-quote-salvage');
+if(salvageArg&&salvageArg!=='on')throw Error('SOURCE_QUOTE_SALVAGE_OPT_IN_INVALID');
+if(salvageArg&&(!sourceExactComplement||!finiteBatch||command!=='drain'))
+ throw Error('SOURCE_QUOTE_SALVAGE_REQUIRES_SOURCE_EXACT_COMPLEMENT');
+const sourceQuoteSalvage=salvageArg==='on';
 if(tuningPath&&command!=='validate-tuning'&&(!finiteBatch||command!=='drain'))
  throw Error('FINITE_BATCH_TUNING_ONLY_ON_DRAIN');
 if(command==='validate-tuning'){
@@ -80,7 +85,8 @@ if(command==='validate-tuning'){
      '[--resilient-discovery on (requires source-recovery)] '+
      '[--claim-evidence on (requires resilient-discovery)] '+
      '[--source-exact-complement on (requires claim-evidence)] '+
-     '[--balanced-dedup on (recall mode, semantic duplicate review)]. '+
+     '[--balanced-dedup on (recall mode, semantic duplicate review)] '+
+     '[--source-quote-salvage on (independent source-quote utility)]. '+
     'For drain set LOCAL_CURATOR_URL, LOCAL_CURATOR_MODEL, LOCAL_CURATOR_API_KEY.');
   process.exitCode=2;
 }else{
@@ -148,7 +154,7 @@ if(command==='validate-tuning'){
     const data=finiteBatch?
       await runAdmittedFiniteBatch({...inputs,maxCandidates,noveltyPolicy,replayOnly,
        sourceRecovery,resilientDiscovery,claimEvidence,sourceExactComplement,
-        balancedDedup,
+        balancedDedup,sourceQuoteSalvage,
        tuning:tuningPath?await loadFiniteBatchTuning(tuningPath):null}):
       await runAdmitted({...inputs,factReview});
     console.log(JSON.stringify(data));
