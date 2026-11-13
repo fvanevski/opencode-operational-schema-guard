@@ -139,8 +139,19 @@ export function finiteBatchUtilityPrompt(cluster,proposal){
   'For unsupported, generic, stale or genuinely ambiguous content choose REVIEW',
   'with reason_code not_substantive,transient_execution,unsupported_inference,',
   'source_ambiguous,conflict_or_stale or review_uncertain.',
+  'ATOMICITY: inspect the ENTIRE quoted assertion, not a normalized claim.',
+  'If one quote bundles independent unrelated technical facts, e.g. a package',
+  'version AND a separate tool-use instruction, choose REVIEW with',
+  'review_uncertain; discovery/complement may offer separately sourced spans.',
+  'A condition and its direct operational consequence count as one predicate.',
+  'For ACCEPT include atomicity:{independent_predicates:1,rationale:"Explain',
+  'why the COMPLETE source quote is ONE independently useful technical',
+  'predicate (at least twenty characters)"}. Do not rubber-stamp that count.',
+  'Missing or multiple-predicate attestations will fail closed.',
   'Return JSON ONLY: {"decisions":[{"index":0,"disposition":"ACCEPT",',
-  '"reason_code":"source_specific_durable","utility_class":"useful_negative"}]}.',
+  '"reason_code":"source_specific_durable","utility_class":"useful_negative",',
+  '"atomicity":{"independent_predicates":1,"rationale":"One coherent',
+  'predicate with its direct conditions and consequences"}}]}.',
   'Every candidate index exactly once, no invented sources or normalized claims.'
  ].join(' ');
  return [{role:'system',content:system},payload[1]];
@@ -447,15 +458,16 @@ export function validateSpecificityFamilies(raw,candidates){
  return {...v,proof,normalization:normalized.normalization};
 }
 
-function factEntry(cluster,fact,utility,reviewReason=null){
+function factEntry(cluster,fact,utility,reviewReason=null,atomicityReview=null){
  const id=childId(cluster,fact);
  return {id,cluster_id:cluster.id,group:cluster.group,project:cluster.project,
   workspace:cluster.workspace,fact,utility_class:utility,
-  review_reason:reviewReason};
+  review_reason:reviewReason,atomicity_review:atomicityReview};
 }
 function planCandidate(cluster,entry,decision,reason){
  return {id:entry.id,cluster_id:cluster.id,decision,reason,
-  utility_class:entry.utility_class,fact:entry.fact};
+  utility_class:entry.utility_class,fact:entry.fact,
+  atomicity_review:entry.atomicity_review??null};
 }
 function decisionFor(item){
  if(item.decision==='approved')
@@ -478,7 +490,8 @@ function assertSnapshot(snapshot,group){
   Array.isArray(c.events)&&c.events.length>0&&c.events.every(e=>
    c.source_event_ids.includes(e.event_id)),'SNAPSHOT_SOURCE');
 }
-function assertPlan(plan,snapshot,expectedPolicy){
+function assertPlan(plan,snapshot,expectedPolicy,
+ requireAtomicity=Boolean(plan?.atomicity_review_v1)){
  assert(plan?.schema==='issue92-finite-batch-plan-v1'&&
   plan.snapshot_sha256===hash(snapshot)&&Array.isArray(plan.items)&&
   Array.isArray(plan.cluster_outcomes)&&Array.isArray(plan.calls)&&
@@ -509,6 +522,13 @@ function assertPlan(plan,snapshot,expectedPolicy){
    'PLAN_ITEM_WITHOUT_DISCOVERY');
   assert((item.decision==='approved')===selected.has(item.id),
    'PLAN_APPROVAL_ARBITRATION_MISMATCH');
+  if(requireAtomicity&&item.decision==='approved'){
+   const p=item.atomicity_review;
+   assert(p?.independent_predicates===1&&
+    typeof p.rationale==='string'&&p.rationale.length>=20&&
+    p.rationale.length<=350&&p.assertion_sha256===hash(item.fact.assertion),
+    'PLAN_ATOMICITY_REVIEW_UNVERIFIED');
+  }
   const cluster=clusters.get(item.cluster_id);
   assert(cluster&&item.id===childId(cluster,item.fact),'PLAN_CHILD_ID');
   const d=decisionFor(item);
@@ -551,6 +571,9 @@ export async function runAdmittedFiniteBatch({
    typeof sourceQuoteSalvage==='boolean'&&(!sourceQuoteSalvage||sourceExactComplement)&&
    typeof balancedDedup==='boolean'&&(!balancedDedup||noveltyPolicy==='recall')&&
   (!sourceRecovery||noveltyPolicy==='recall'),'INVALID_BOUNDS');
+ // The final source-quote treatment activates frozen, independent atomicity
+ // review. A legacy active state lacking this identity may not be replayed.
+ const atomicityReview=sourceQuoteSalvage;
  const tuningProfile=validateFiniteBatchTuning(tuning);
  const tuningSha=tuningIdentity(tuningProfile);
  const legacyIdentity=tuning===null&&modelId==='chat-fast'&&
@@ -601,7 +624,8 @@ export async function runAdmittedFiniteBatch({
    ...(claimEvidence?{claim_evidence:true}:{}),
    ...(sourceExactComplement?{source_exact_complement:true}:{}),
    ...(balancedDedup?{balanced_dedup:true}:{}),
-   ...(sourceQuoteSalvage?{source_quote_salvage:true}:{})};
+   ...(sourceQuoteSalvage?{source_quote_salvage:true}:{}),
+   ...(atomicityReview?{atomicity_review_v1:true}:{})};
   try{await writeOnce(activePath,active);}
   catch(e){if(e.code!=='EEXIST')throw e;}
   const actual=await readMaybe(activePath);
@@ -623,6 +647,8 @@ export async function runAdmittedFiniteBatch({
    'BALANCED_DEDUP_IDENTITY_CHANGED');
   assert(Boolean(active.source_quote_salvage)===sourceQuoteSalvage,
    'SOURCE_QUOTE_SALVAGE_IDENTITY_CHANGED');
+  assert(Boolean(active.atomicity_review_v1)===atomicityReview,
+   'ATOMICITY_REVIEW_IDENTITY_CHANGED');
   if(active.tuning_sha256!==undefined)
    assert(active.tuning_sha256===tuningSha,'TUNING_IDENTITY_CHANGED');
   else assert(legacyIdentity,'LEGACY_TUNING_IDENTITY_UNVERIFIED');
@@ -807,7 +833,7 @@ export async function runAdmittedFiniteBatch({
       {recovery:pass===1}):
      pass===0?finiteBatchUtilityPrompt(cluster,proposal):
       finiteBatchRecoveryUtilityPrompt(cluster,proposal));
-    const screen=validateFactReview(reviewed.content,proposal);
+    const screen=validateFactReview(reviewed.content,proposal,{requireAtomicity:atomicityReview});
     if(!screen.ok){
      decision='DEFER';reason='independent_utility_review_invalid';
      for(const fact of proposal.facts){
@@ -824,7 +850,8 @@ export async function runAdmittedFiniteBatch({
       reason:'Independent source specific utility approval',
       utility_class:utility,facts:[{...fact,utility_class:utility}]},cluster);
      if(!valid.ok)throw Error('ISSUE92_BATCH_INDEPENDENT_FACT_INVALID');
-     const e=factEntry(cluster,valid.facts[0],utility);
+     const e=factEntry(cluster,valid.facts[0],utility,null,
+       result.fact_atomicity_reviews?.[k]);
      // Conflicting verdicts on an identical rejected quote are not new evidence.
      if(entries.has(e.id))continue;
      // S6 joint claim/source-exact lanes have one per-cluster fact ceiling.
@@ -887,7 +914,7 @@ export async function runAdmittedFiniteBatch({
      const reply=await callOnce('utility',
       cluster.id+':source-quote-salvage-v1',cluster,
       finiteBatchSourceExactComplementUtilityPrompt(cluster,proposal));
-     const screen=validateFactReview(reply.content,proposal);
+     const screen=validateFactReview(reply.content,proposal,{requireAtomicity:atomicityReview});
      if(!screen.ok){
       quoteSalvageOutcome.invalid_review=screen.reason;
       quoteSalvageOutcome.deferred=eligible.length;
@@ -899,7 +926,8 @@ export async function runAdmittedFiniteBatch({
         reason:'Source-exact independent utility approval',
         utility_class:utility,facts:[{...fact,utility_class:utility}]},cluster);
        if(!validated.ok)throw Error('QUOTE_SALVAGE_SOURCE_INVALID');
-       const e=factEntry(cluster,validated.facts[0],utility);
+       const e=factEntry(cluster,validated.facts[0],utility,null,
+         passed.fact_atomicity_reviews?.[k]);
        const previous=entries.get(e.id);
        if(!previous||!/^(?:claim_support_(?:missing_predicate|unsupported_inference|review_uncertain)|claim_support_invalid)$/
         .test(previous.review_reason??''))continue;
@@ -944,7 +972,7 @@ export async function runAdmittedFiniteBatch({
      const proposal={...exact,facts:newFacts};
      const answer=await callOnce('utility',identity,cluster,
       finiteBatchSourceExactComplementUtilityPrompt(cluster,proposal));
-     const screen=validateFactReview(answer.content,proposal);
+     const screen=validateFactReview(answer.content,proposal,{requireAtomicity:atomicityReview});
      if(!screen.ok){
       complementOutcome.invalid_utility=screen.reason;
       for(const fact of proposal.facts){
@@ -960,7 +988,8 @@ export async function runAdmittedFiniteBatch({
         reason:'Independent exact-source utility review',utility_class:utility,
         facts:[{...fact,utility_class:utility}]},cluster);
        if(!verifiedFact.ok)throw Error('ISSUE92_BATCH_COMPLEMENT_SOURCE_INVALID');
-       const e=factEntry(cluster,verifiedFact.facts[0],utility);
+       const e=factEntry(cluster,verifiedFact.facts[0],utility,null,
+         review.fact_atomicity_reviews?.[k]);
        if(entries.has(e.id))continue;
        if(approved.length>=3){
         entries.set(e.id,{...e,utility_class:null,
@@ -1011,7 +1040,7 @@ export async function runAdmittedFiniteBatch({
      const reply=await callOnce('utility',
       cluster.id+':original-source-empty-discovery-v1',cluster,
       finiteBatchSourceExactComplementUtilityPrompt(cluster,proposal));
-     const screen=validateFactReview(reply.content,proposal);
+     const screen=validateFactReview(reply.content,proposal,{requireAtomicity:atomicityReview});
      if(!screen.ok){
       sourceOnlyOutcome.invalid_utility=screen.reason;
       sourceOnlyOutcome.deferred=proposal.facts.length;
@@ -1023,7 +1052,8 @@ export async function runAdmittedFiniteBatch({
         reason:'Independent utility for exact original quote',
         utility_class:utility,facts:[{...fact,utility_class:utility}]},cluster);
        if(!verified.ok)throw Error('SOURCE_ONLY_INVALID_ORIGINAL_QUOTE');
-       const e=factEntry(cluster,verified.facts[0],utility);
+       const e=factEntry(cluster,verified.facts[0],utility,null,
+         result.fact_atomicity_reviews?.[k]);
        if(entries.has(e.id))continue;
        if(approved.length>=3)break;
        entries.set(e.id,e);approved.push(e);sourceOnlyOutcome.approved++;
@@ -1228,6 +1258,7 @@ export async function runAdmittedFiniteBatch({
     ...(sourceExactComplement?{source_exact_complement:true}:{}),
     ...(balancedDedup?{balanced_dedup:true}:{}),
     ...(sourceQuoteSalvage?{source_quote_salvage:true}:{}),
+    ...(atomicityReview?{atomicity_review_v1:true}:{}),
     created_at:new Date().toISOString(),
    cluster_outcomes:outcomes.map(x=>({cluster_id:x.cluster_id,
     decision:x.decision,reason:x.reason,
@@ -1263,6 +1294,8 @@ export async function runAdmittedFiniteBatch({
   'PLAN_BALANCED_DEDUP_IDENTITY_CHANGED');
  assert(Boolean(plan.source_quote_salvage)===sourceQuoteSalvage,
   'PLAN_SOURCE_QUOTE_SALVAGE_IDENTITY_CHANGED');
+ assert(Boolean(plan.atomicity_review_v1)===atomicityReview,
+  'PLAN_ATOMICITY_REVIEW_IDENTITY_CHANGED');
  if(plan.tuning_sha256!==undefined)
   assert(plan.tuning_sha256===tuningSha,'PLAN_TUNING_IDENTITY_CHANGED');
  else assert(legacyIdentity,'PLAN_LEGACY_TUNING_UNVERIFIED');
