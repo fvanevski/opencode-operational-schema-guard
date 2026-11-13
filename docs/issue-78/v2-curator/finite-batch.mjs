@@ -256,6 +256,29 @@ export function finiteBatchResilientUtilityPrompt(cluster,proposal,{recovery=fal
   ' authority; never promote a reported claim into a verified outcome.'},base[1]];
 }
 
+/**
+ * Only the narrower independently approved quote is an automatic fact
+ * when a second approved quote strictly contains it from the SAME source.
+ * Preserve the containing fact as a deferred operator-review record.
+ */
+export function deferContainingSameSourceQuotes(entries,approved){
+ const deferred=new Set();
+ for(const outer of approved)for(const inner of approved){
+  if(outer===inner||outer.cluster_id!==inner.cluster_id||
+     outer.fact?.source_refs?.[0]!==inner.fact?.source_refs?.[0])continue;
+  const a=outer.fact?.evidence_span,c=inner.fact?.evidence_span;
+  if(!a||!c||a.source_ref!==c.source_ref||
+     !Number.isSafeInteger(a.start)||!Number.isSafeInteger(a.end)||
+     !Number.isSafeInteger(c.start)||!Number.isSafeInteger(c.end))continue;
+  if(a.start<=c.start&&c.end<=a.end&&
+     (a.start<c.start||c.end<a.end))deferred.add(outer.id);
+ }
+ for(const e of approved)if(deferred.has(e.id))
+  entries.set(e.id,{...e,utility_class:null,
+   review_reason:'strict_containing_source_quote_needs_review'});
+ return approved.filter(e=>!deferred.has(e.id));
+}
+
 /** Semantic grouping is a model judgment, NEVER a hard source authority.
  * The reviewer sees all accepted same-scope candidate assertions in stable
  * order and returns one family partition independent of encounter order.
@@ -778,9 +801,8 @@ export async function runAdmittedFiniteBatch({
        finiteBatchRecoveryDiscoveryPrompt(cluster,rejected);
     const reply=await callOnce('discovery',identity,cluster,messages);
     let proposal=claimEvidence?
-     validateClaimEvidenceDiscovery(reply.content,cluster):
-     validateFactDiscovery(reply.content,cluster,
-      {isolateCandidates:resilientDiscovery});
+     validateClaimEvidenceDiscovery(reply.content,cluster,{quoteIntegrityV2}):
+     validateFactDiscovery(reply.content,cluster,{isolateCandidates:resilientDiscovery,repairWordBoundaries:quoteIntegrityV2});
     if(resilientDiscovery&&proposal.invalid_candidates?.length)
      validationFailures.push({pass:pass+1,candidates:proposal.invalid_candidates,
       valid_candidate_count:proposal.facts.length});
@@ -987,8 +1009,7 @@ export async function runAdmittedFiniteBatch({
     const identity=cluster.id+':source-exact-complement-v1';
     const discovered=await callOnce('discovery',identity,cluster,
      finiteBatchSourceExactComplementPrompt(cluster,reviewed,{quoteIntegrityV2}));
-    const exact=validateFactDiscovery(discovered.content,cluster,
-     {isolateCandidates:true});
+    const exact=validateFactDiscovery(discovered.content,cluster,{isolateCandidates:true,repairWordBoundaries:quoteIntegrityV2});
     const newFacts=exact.ok&&exact.decision==='EMIT'?
      exact.facts.filter(f=>!entries.has(childId(cluster,f))):[];
     complementOutcome={proposed:exact.facts?.length||0,
@@ -1068,7 +1089,7 @@ export async function runAdmittedFiniteBatch({
      }).filter(c=>c.end-c.start>=25);
     const provisional=validateFactDiscovery({
      reason:'Original native quote awaiting independent utility; no model claim',
-     candidates},cluster,{isolateCandidates:true});
+     candidates},cluster,{isolateCandidates:true,repairWordBoundaries:quoteIntegrityV2});
     sourceOnlyOutcome={mode:emptyDiscovery?'empty_discovery':'unrepresented_sibling',
      proposed:candidates.length,
      source_valid:provisional.facts?.length||0,approved:0,deferred:0,
@@ -1108,6 +1129,10 @@ export async function runAdmittedFiniteBatch({
     if(sourceOnlyOutcome.approved>0){
      decision='REVIEWED';reason='original_source_independent_utility_complete';
     }
+   }
+   if(quoteIntegrityV2){
+    const keep=deferContainingSameSourceQuotes(entries,approved);
+    approved.length=0;approved.push(...keep);
    }
    accepted.push(...approved);
    outcomes.push({cluster_id:cluster.id,decision,reason,

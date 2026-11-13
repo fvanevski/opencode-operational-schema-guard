@@ -62,7 +62,7 @@ export function claimEvidenceDiscoveryPrompt(cluster,{recovery=false,
  }));
  return [{role:'system',content:system},{role:'user',content:JSON.stringify(user)}];
 }
-export function validateClaimEvidenceDiscovery(raw,cluster){
+export function validateClaimEvidenceDiscovery(raw,cluster,{quoteIntegrityV2=false}={}){
  let parsed;
  try{parsed=typeof raw==='string'?JSON.parse(raw):raw;}
  catch{return {ok:false,decision:'DEFER',reason:'claim_discovery_invalid_json',
@@ -84,7 +84,7 @@ export function validateClaimEvidenceDiscovery(raw,cluster){
    reason:'Source-bound provisional claim passage',candidates:[{
     source_ref:candidate.source_ref,start:candidate.start,end:candidate.end,
     kind:candidate.kind,temporal_status:candidate.temporal_status
-   }]},cluster,{isolateCandidates:true});
+   }]},cluster,{isolateCandidates:true,repairWordBoundaries:quoteIntegrityV2});
   if(!candidateCheck.ok){
    invalid.push({index,reason:candidateCheck.invalid_candidates?.[0]?.reason||
     candidateCheck.reason,diagnostic_field:

@@ -53,6 +53,26 @@ export function sourceAtomicityStructuralRisk(quote){
  return null;
 }
 
+/**
+ * V2: bounded lexical repair of a clipped word in one authenticated excerpt.
+ * Do not join sentences or alter meaning; reject unrepairable source pointers.
+ */
+export function repairWordBoundarySpan(text,start,end,{maxAdjustment=24}={}){
+ if(typeof text!=='string'||!Number.isSafeInteger(start)||
+    !Number.isSafeInteger(end)||start<0||end<=start||end>text.length)return null;
+ const word=c=>typeof c==='string'&&/^[A-Za-z0-9_]$/.test(c);
+ let a=start,z=end;
+ while(a>0&&a<text.length&&word(text[a-1])&&word(text[a])){
+  if(start-a>=maxAdjustment)return null;
+  a--;
+ }
+ while(z<text.length&&word(text[z-1])&&word(text[z])){
+  if(z-end>=maxAdjustment)return null;
+  z++;
+ }
+ if(z-a<25||z-a>450)return null;
+ return {start:a,end:z};
+}
 const flatten=record=>Array.isArray(record?.facts)?record.facts:[];
 export function factDiscoveryPrompt(cluster){
  if(!Array.isArray(cluster?.events)||!cluster.events.length||
@@ -100,7 +120,7 @@ export function factDiscoveryPrompt(cluster){
  * authorizes persistence: the worker ALWAYS invokes independent fact review
  * before storing an EMIT proposal when this development mode is enabled.
  */
-export function validateFactDiscovery(raw,cluster,{isolateCandidates=false}={}){
+export function validateFactDiscovery(raw,cluster,{isolateCandidates=false,repairWordBoundaries=false}={}){
  let parsed;
  try{parsed=typeof raw==='string'?JSON.parse(raw):raw;}
  catch{return {ok:false,decision:'DEFER',reason:'discovery_invalid_json',facts:[]};}
@@ -114,7 +134,7 @@ export function validateFactDiscovery(raw,cluster,{isolateCandidates=false}={}){
  const repairs=[];
  const facts=parsed.candidates.map((c,i)=>{
    const event=cluster?.events?.find(e=>e?.source_refs?.[0]===c?.source_ref);
-   let end=c?.end;
+   let start=c?.start,end=c?.end;
    // A small end-of-excerpt overshoot is a recoverable pointer error, not
    // permission to infer text. Preserve the model's original start and
    // deterministically use only the authenticated exact trailing source text.
@@ -126,9 +146,21 @@ export function validateFactDiscovery(raw,cluster,{isolateCandidates=false}={}){
        authorized_end:event.excerpt.length,reason:'bounded_eof_offset_adjustment'});
      end=event.excerpt.length;
    }
+   if(repairWordBoundaries&&event&&Number.isSafeInteger(start)&&
+      Number.isSafeInteger(end)&&start>=0&&end>start&&end<=event.excerpt.length){
+    const fix=repairWordBoundarySpan(event.excerpt,start,end);
+    if(!fix)start=-1; // Fail closed at the original source validator.
+    else if(fix.start!==start||fix.end!==end){
+     repairs.push({index:i,source_ref:c.source_ref,
+      requested_start:start,requested_end:end,
+      authorized_start:fix.start,authorized_end:fix.end,
+      reason:'bounded_word_boundary_expansion'});
+     start=fix.start;end=fix.end;
+    }
+   }
    return {kind:c?.kind,source_refs:[c?.source_ref],
-     temporal_status:c?.temporal_status,
-     evidence_span:{source_ref:c?.source_ref,start:c?.start,end},
+    temporal_status:c?.temporal_status,
+    evidence_span:{source_ref:c?.source_ref,start,end},
      utility_class:'durable_decision'};
  });
  if(isolateCandidates){
