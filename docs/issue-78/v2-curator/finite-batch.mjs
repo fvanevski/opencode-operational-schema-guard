@@ -863,7 +863,8 @@ export async function runAdmittedFiniteBatch({
      entries.set(e.id,e);approved.push(e);newApproved++;
     }
     for(const d of screen.review){
-     const e=factEntry(cluster,proposal.facts[d.index],null,d.reason_code);
+     const e=factEntry(cluster,proposal.facts[d.index],null,
+        d.atomicity_reason||d.reason_code);
      if(!entries.has(e.id))entries.set(e.id,e);
     }
     decision='REVIEWED';reason='independent_utility_review_complete';
@@ -936,7 +937,7 @@ export async function runAdmittedFiniteBatch({
       }
       for(const item of screen.review){
        const e=factEntry(cluster,proposal.facts[item.index],null,
-        'source_quote_utility_'+item.reason_code);
+        'source_quote_utility_'+(item.atomicity_reason||item.reason_code));
        if(entries.has(e.id)&&!approved.some(x=>x.id===e.id))
         entries.set(e.id,e);
        quoteSalvageOutcome.deferred++;
@@ -999,7 +1000,8 @@ export async function runAdmittedFiniteBatch({
        entries.set(e.id,e);approved.push(e);complementOutcome.approved++;
       }
       for(const d of screen.review){
-       const e=factEntry(cluster,proposal.facts[d.index],null,d.reason_code);
+       const e=factEntry(cluster,proposal.facts[d.index],null,
+        d.atomicity_reason||d.reason_code);
        if(!entries.has(e.id))entries.set(e.id,e);
        complementOutcome.deferred++;
       }
@@ -1060,7 +1062,7 @@ export async function runAdmittedFiniteBatch({
       }
       for(const item of screen.review){
        const e=factEntry(cluster,proposal.facts[item.index],null,
-        'source_only_utility_'+item.reason_code);
+        'source_only_utility_'+(item.atomicity_reason||item.reason_code));
        if(!entries.has(e.id))entries.set(e.id,e);
        sourceOnlyOutcome.deferred++;
       }
