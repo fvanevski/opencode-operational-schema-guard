@@ -1,0 +1,91 @@
+{
+  "schema": "issue92-pr95-v8d-first-loss-forensics-v1",
+  "repo": "fvanevski/opencode-operational-schema-guard",
+  "pr": 95,
+  "branch": "issue/92-v7c-accepted",
+  "result": "V8D_FIRST_LOSS_RESOLVED",
+  "source_head": "1a5ed42711448b4645dced31f32244aa82a228e6",
+  "frozen_execution_head": "c402658e6b6d15174aa5b9234eda2471baf44472",
+  "terminal_evidence_head": "530340929ef375e1a901c332c2710c7cb36c28dd",
+  "batch_id": "6d7afb9de1f9f7e8c2af31022b0824b0a1762f48919672067856b49843a2b2b2",
+  "group": "graphiti-adr92-a3-prospective-v8",
+  "frozen_identities": {
+    "manifest_sha256": "aa42941a2b040f941435021ddac6dcce911b838bf4f2f42238100b89abd05440",
+    "label_freeze_sha256": "c9befd79c59e91bc48f0e1441766f79ad94bbb39dffb12ce33d176c02bb599c7",
+    "roster_sha256": "3414d767c713c49425bff292820f21182b0a40e116850dc72f4d6e0e5ac2d809",
+    "plan_file": "issue92-finite-batches-v1/graphiti-adr92-a3-prospective-v8/6d7afb9d.../plan.json",
+    "model_call_pairs": 74,
+    "once_only_marker": "state/.v8d-prospective-ran (rc=0, 1 reconcile attempt)",
+    "scorer_recheck": "scoreProspective re-run (read-only, same frozen inputs): pass=false, valuable_coverage false (5/10), useful_among_grounded false (5/8), grounded_precision true (8/8), zero_authority_breaches true"
+  },
+  "case_ledger": {
+    "tally": {"COVERED": 5, "PERSISTED_NOT_USEFUL": 3, "UTILITY_DEFER": 1, "CLUSTER_CAP_OR_FALLBACK": 1},
+    "v8d-v-01": {"first_loss": "COVERED", "plan": "approved/finite_batch_representative_selected", "curator_utility": "stable_architecture", "record": "persisted 56bd9e5c", "independent_useful": true, "note": "independent useful plex host-path fact; siblings v-07+c-01 absorbed as review context"},
+    "v8d-v-02": {"first_loss": "UTILITY_DEFER", "plan": "deferred/source_only_utility_transient_execution", "curator_utility": null, "record": "deferred", "independent_useful": null, "note": "lost at utility stage (transient task-state assumption); never persisted"},
+    "v8d-v-03": {"first_loss": "COVERED", "plan": "approved/finite_batch_representative_selected", "curator_utility": "stable_architecture", "record": "persisted d6046831", "independent_useful": true, "note": "versioned NInfer model-artifact identity"},
+    "v8d-v-04": {"first_loss": "PERSISTED_NOT_USEFUL", "plan": "approved/durable_decision", "curator_utility": "durable_decision", "record": "persisted 0d2314ab", "independent_useful": false, "note": "proposed Tdarr network-name policy; unverified deployment"},
+    "v8d-v-05": {"first_loss": "COVERED", "plan": "approved/finite_batch_representative_selected", "curator_utility": "useful_negative", "record": "persisted 6f758877", "independent_useful": true, "note": "rtk-proxy bypasses wrapper compression"},
+    "v8d-v-06": {"first_loss": "PERSISTED_NOT_USEFUL", "plan": "approved/useful_negative", "curator_utility": "useful_negative", "record": "persisted fd02f051", "independent_useful": false, "note": "transient graphiti-MCP-failure observation"},
+    "v8d-v-07": {"first_loss": "CLUSTER_CAP_OR_FALLBACK", "plan": "ABSORBED_NO_ITEM (no own plan item)", "curator_utility": null, "record": "persisted as sibling of 56bd9e5c", "independent_useful": null, "note": "shared-session cluster with v-01/c-01; plex (v-01) won finite-batch representative selection; v-07 not an independent fact"},
+    "v8d-v-08": {"first_loss": "PERSISTED_NOT_USEFUL", "plan": "approved/useful_negative", "curator_utility": "useful_negative", "record": "persisted 1227b814", "independent_useful": false, "note": "tentative 'appears to have been' pairing-loop defect"},
+    "v8d-v-09": {"first_loss": "COVERED", "plan": "approved/finite_batch_representative_selected", "curator_utility": "stable_architecture", "record": "persisted 57eaa8c7", "independent_useful": true, "note": "P5M49 integration-handoff location"},
+    "v8d-v-10": {"first_loss": "COVERED", "plan": "approved/finite_batch_representative_selected", "curator_utility": "stable_architecture", "record": "persisted fa0007ce", "independent_useful": true, "note": "P5M45C integration-handoff location"}
+  },
+  "v01_v07_c01": {
+    "shared_session": "ses_f778e7103ffeQpw0IzHBwX37Fb (v-01, v-07, c-01 all in one native session)",
+    "classification": "REVIEW_CONTEXT_OVERINCLUSION",
+    "proof": {
+      "fact_source_refs": ["v8d-v-01 only (msg_089998671001)"],
+      "record_source_event_ids": ["v8d-c-01", "v8d-v-07", "v8d-v-01"],
+      "persisted_source_index_owner": "v8d-v-01",
+      "graphiti_episode_56bd9e5c_body_cites": ["msg_089998671001 (v-01) ONLY"],
+      "c01_in_episode_body": false,
+      "v07_in_episode_body": false
+    },
+    "finding": "c-01 (control) was NOT persisted as a factual source: it appears only as a sibling in the review-record's source_event_ids/events provenance (the shared-session cluster materialized all 3 events into the record), and is absent from both fact.source_refs and the persisted Graphiti episode body. It is REVIEW_CONTEXT_OVERINCLUSION, not CONTROL_FACT_PERSISTED. v-07 (nekoBT) is likewise a review-context sibling, not an independent fact.",
+    "v07_first_loss": "CLUSTER_CAP_OR_FALLBACK: the plex cluster (approved.length=1, so the source-only fallback predicate approved.length===0 && entries.size===0 did NOT fire); v-07 was discovered+clustered but v-01 won finite-batch representative selection, so v-07 got no independent item/fact."
+  },
+  "utility_authority": {
+    "note": "Original adjudications inspected, not rescored. Distinguishes source uncertainty from lack of durable value.",
+    "v8d-v-04": {
+      "source_excerpt_sha256": "241aa02c8e77dc40",
+      "evidence_class": "user-stated", "temporal_status": "observed", "curator_utility_class": "durable_decision",
+      "adjudicator_reason": "DESIRED Tdarr network-name policy (proposed), not a deployed fact; not independently useful.",
+      "classification": "CONFOUNDS_UNVERIFIED_WITH_NO_VALUE: a desired network-name requirement is a durable architectural fact even if not yet deployed; the 'unverified deployment' was treated as 'no durable value'."
+    },
+    "v8d-v-06": {
+      "source_excerpt_sha256": "2451067c7deb6f33",
+      "evidence_class": "user-stated", "temporal_status": "observed", "curator_utility_class": "useful_negative",
+      "adjudicator_reason": "Transient failure observation (graphiti MCP failing after restart); not a durable independently useful fact.",
+      "classification": "CONFOUNDS_TRANSIENT_OBSERVATION_WITH_NO_VALUE: an operator-reported MCP failure after restart is a useful diagnostic signal; 'transient' was treated as 'not durable'."
+    },
+    "v8d-v-08": {
+      "source_excerpt_sha256": "7bf6d33973e0c1ed",
+      "evidence_class": "user-stated", "temporal_status": "observed", "curator_utility_class": "useful_negative",
+      "adjudicator_reason": "Tentative pairing-loop defect report ('appears to have been'); not independently verified useful.",
+      "classification": "GENUINE_SOURCE_UNCERTAINTY: the hedged 'appears to have been' makes this a tentative explanation, not a verified defect; not-useful is defensible on source-uncertainty grounds (distinct from v-04/v-06)."
+    }
+  },
+  "scorer_discrepancy": {
+    "file": "docs/issue-91/adr-acceptance/issue92-a3-acceptance.mjs",
+    "rule": "scoreProspective tracks nonvaluable_persisted_cases (falsePositives) in stats, keyed on the fact's primary source case; a control-sourced fact increments it.",
+    "gap": "The gates object has NO gate over nonvaluable_persisted_cases (no zero-control-pollution gate). The reference test issue92-a3-acceptance.test.mjs fixture() persists 9 valuable + 1 control and asserts pass===true with nonvaluable_persisted_cases===1.",
+    "classification": "VALIDATION_CONTROL_DISCREPANCY: the contract requires 'zero control pollution', but the frozen scorer has no pass gate enforcing it and its own test permits one control fact to persist while passing. This is a report, not a modified standard (labels/score unchanged)."
+  },
+  "historical_integrity": {
+    "v8": "dcd723a6... unchanged",
+    "v8c": "65348946... unchanged",
+    "v7c": "9356e663... unchanged",
+    "v8d_freeze": "immutable (manifest/labels/roster digests verified; no label revision)",
+    "model_responses": "74 call result hashes unchanged",
+    "graphiti_state": "8 persisted episodes unchanged (read-only get_episodes)",
+    "score": "FAIL preserved (5/10 coverage, 5/8 useful) without recalculation",
+    "no_inference": true,
+    "no_graphiti_writes": true
+  },
+  "code_edits": "none (read-only forensics; additive evidence only)",
+  "decision_blockers": [
+    "None blocking: all ten first-loss stages, the c-01 fact-vs-context question, the v-04/v-06/v-08 authority analysis, and the scorer nonvaluable-gate gap are resolved from immutable records.",
+    "Open for Central: (1) the scorer lacks a zero-control-pollution gate (validation-control gap); (2) the v-04/v-06 durable-value-vs-unverified adjudications are a standard question for Central to decide (not rescored here); (3) the shared-session finite-batch representative selection absorbed v-07 (a cohort-design choice, not a source defect)."
+  ]
+}
