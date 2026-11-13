@@ -40,7 +40,12 @@ test('whole-message privacy, SELF, control, oversized payload and weak-ID gates 
  assert.deepEqual(accepted(missing),[]);
  assert.deepEqual(fromPromptCandidates(native(long),scope),[]);
  assert.deepEqual(accepted(native(long)),accepted(native(long)));
- assert.deepEqual(accepted(native('{"source":"'+filler.repeat(70)+'"}')),[]);
+ // Structure alone is not a hard capture veto. Independent post-exit
+ // source/utility review decides whether raw structured data is durable.
+ const structured=accepted(native('{"source":"'+filler.repeat(70)+'"}'));
+ assert.ok(structured.length>0&&structured.length<=6);
+ assert.ok(structured.every(e=>e.evidence_class==='user-stated'&&
+  e.source_strength==='native-id'));
 });
 test('native multi-line quoted prompt recovers exact text under bounded whole-source controls',()=>{
  const input=filler.repeat(27)+'\nThe final decision is to retain the source-scoped export API.\r\n'+
@@ -64,7 +69,10 @@ test('narrative spans survive surrounding code without storing code segments as 
    filler.repeat(20)+'The project owner prefers continued source-bound memories. ';
  const spans=accepted(native(source));
  assert.ok(spans.length>0);
- assert.ok(spans.every(e=>!/[{}]/.test(e.excerpt)));
+ // Code next to authored technical narrative is bounded SOURCE evidence,
+ // not an independently verified memory assertion or an automatic graph write.
+ assert.ok(spans.some(e=>e.excerpt.includes(
+  'project owner prefers continued source-bound memories')));
  assert.ok(spans.every(e=>e.source_refs[0].includes(':span:')));
 });
 test('long source span is a real native source handle and cannot become a model-invented statement',async()=>{
@@ -80,7 +88,8 @@ test('long source span is a real native source handle and cannot become a model-
   assert.match(modelPrompt(clusters[0])[0].content,/omitted statements/);
   const target=clusters[0].events[0];
   const quote=target.excerpt.slice(0,74).trim();
-  const proposal={decision:'EMIT',reason:'grounded source',facts:[{
+  const proposal={decision:'EMIT',reason:'grounded source',
+  utility_class:'durable_decision',facts:[{
     assertion:quote,kind:'observation',
     source_refs:[target.source_refs[0]],temporal_status:'observed'}]};
   assert.equal(validateModelDecision(proposal,clusters[0]).ok,true);

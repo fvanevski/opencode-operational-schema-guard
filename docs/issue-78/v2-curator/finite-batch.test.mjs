@@ -1377,7 +1377,7 @@ test('source-quote salvage retains independently useful exact quote after reject
   'issue92-finite-batches-v1',scope.group,active.batch_id,'plan.json'),'utf8'));
  assert.equal(plan.source_quote_salvage,true);
  assert.equal(plan.cluster_outcomes[0].source_quote_salvage_outcome.approved,1);
- assert.equal(plan.cluster_outcomes[0].facts.filter(x=>x.utility_class).length,1);
+ assert.equal(plan.items.filter(x=>x.utility_class).length,1);
 },[strong]));
 
 test('source-quote salvage never overrides independent exact quote utility REJECT',()=>fixture(async f=>{
