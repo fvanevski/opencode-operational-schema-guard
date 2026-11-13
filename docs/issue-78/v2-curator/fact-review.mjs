@@ -24,7 +24,7 @@ const enough=s=>typeof s==='string'&&s.length>=25&&s.length<=450;
  * review remains responsible for other semantic combinations.
  * Never rewrite/split a quote here: discovery must cite separate native spans.
  */
-const ATOMIC_STANDALONE = /\b(?:is|are|was|were|has|have|had|uses?|runs?|points?|requires?|depends?|supports?|contains?|stores?|reads?|works?|fails?|installed|enabled|disabled|configured|reported|shows?|must|should|can|will)\b/i;
+const ATOMIC_STANDALONE = /\b(?:is|are|was|were|has|have|had|uses?|runs?|points?|requires?|depends?|supports?|contains?|stores?|reads?|works?|fails?|shows?|must|should|can|will)\b/i;
 const ATOMIC_DIRECTIVE = /^(?:please\s+)?(?:use|run|install|configure|restart|enable|disable|check|verify|read|write|apply|set|keep|update|fetch|call|send|make|remove|delete|consult|invoke|inspect|execute|provide)\b/i;
 const ATOMIC_NEW_SUBJECT = /^(?:(?:the|a|an|this|that|another)\s+)?(?:[a-z][\w./-]*\s+){1,5}(?:is|are|was|were|has|have|uses?|runs?|points?|requires?|supports?|contains?|stores?|reads?|works?|fails?|must|should|can|will)\b/i;
 const ATOMIC_DEPENDENT = /^(?:if|when|once|after|before|while|unless|provided|given|assuming|because)\b/i;
