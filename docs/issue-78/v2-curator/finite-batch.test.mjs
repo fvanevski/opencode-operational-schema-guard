@@ -11,6 +11,7 @@ import {runAdmittedFiniteBatch,representativePrompt,
   finiteBatchDiscoveryPrompt,
   finiteBatchUtilityPrompt,finiteBatchSourceExactComplementUtilityPrompt} from './finite-batch.mjs';
 import {selectClusters,validateModelDecision} from './core.mjs';
+import {validateFactReview,filterFactProposal} from './fact-review.mjs';
 
 const scope={group:'issue92batch',project:'repo92',workspace:'/workspace/repo92'};
 const strong='Sphinx reStructuredText output drops dictionary parameter header rows, causing expected table columns to disappear in rendered API documentation.';
@@ -326,7 +327,12 @@ test('utility rubric still expressly defers unsupported, transient and privacy-r
   reason_code:'not_substantive'}]};
  // Source evidence and a strong prompt cannot turn an explicit utility
  // rejection into an automatic Graphiti authorization.
- assert.equal(JSON.parse(JSON.stringify(rejection)).decisions[0].disposition,'REVIEW');
+ const review=validateFactReview(JSON.stringify(rejection),p);
+ assert.equal(review.ok,true);
+ const filtered=filterFactProposal(p,review);
+ assert.equal(filtered.ok,false);
+ assert.equal(filtered.decision,'DEFER');
+ assert.equal(filtered.review_only_claims[0].screen_reason,'not_substantive');
 });
 
 test('a corrupted frozen model receipt blocks recovery before any Graphiti write',()=>fixture(async f=>{
