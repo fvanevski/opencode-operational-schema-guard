@@ -9,7 +9,7 @@ import {ReviewStore} from './core.mjs';
 import {runAdmittedFiniteBatch,representativePrompt,
   validateRepresentativeFamilies,specificityPrompt,validateSpecificityFamilies,
   finiteBatchDiscoveryPrompt,
-  finiteBatchUtilityPrompt} from './finite-batch.mjs';
+  finiteBatchUtilityPrompt,finiteBatchSourceExactComplementUtilityPrompt} from './finite-batch.mjs';
 import {selectClusters,validateModelDecision} from './core.mjs';
 
 const scope={group:'issue92batch',project:'repo92',workspace:'/workspace/repo92'};
@@ -268,6 +268,65 @@ test('independent batch utility does not inherit earlier same-group duplication 
  assert.match(msgs[0].content,/There are NO earlier same-batch facts/);
  assert.match(msgs[0].content,/REPORTED defect/);
  assert.equal(JSON.parse(msgs[1].content).prior_same_group_facts.length,0);
+});
+
+test('source-exact utility rubric covers durable facts without confusing them with setup chatter',()=>{
+ const cases=[
+  'The /workspace/mcp_servers/mcp-mux-2.0-dev directory is a local clone of the repository.',
+  'dovi-tool version 2.3.3-1 and libdovi 3.4.0-1 were installed on the host.',
+  'The probe MCP configuration in opencode.json points to the vLLM endpoint at port 8002.',
+  'When the commit gate reports queue_empty instead of harness active, operator commands are permitted.',
+  'After the root API key was removed, the commit gate operated and drained its pending queue.',
+  'The subtitle service credentials are stored in a local configuration path, with no secret values quoted.',
+  'I manually deleted an obsolete scratch directory; please do not investigate it again.',
+  'The last task is completed; please produce a status summary.'
+ ];
+ const expected=[
+  /local repository\/source/,/package\/version installation/,/endpoint or port mapping/,
+  /conditional rule/,/post-change system state/,/credential-store LOCATION/,
+  /one-off deletion or cleanup/,/generic task header/
+ ];
+ for(let i=0;i<cases.length;i++){
+  const c=selectClusters([source('utility-rubric-'+i,cases[i])])[0];
+  assert.ok(c, 'native source must stage');
+  const event=c.events[0];
+  const p=validateModelDecision({decision:'EMIT',reason:'Source-exact quotation',
+   utility_class:'useful_negative',facts:[{kind:'observation',
+    source_refs:[event.source_refs[0]],temporal_status:'observed',
+    evidence_span:{source_ref:event.source_refs[0],start:0,end:event.excerpt.length}}]},c);
+  assert.equal(p.ok,true);
+  const first=finiteBatchUtilityPrompt(c,p);
+  const exact=finiteBatchSourceExactComplementUtilityPrompt(c,p);
+  for(const prompt of [first,exact]){
+   assert.match(prompt[0].content,expected[i]);
+   assert.match(prompt[0].content,/never automatic approvals/i);
+   const payload=JSON.parse(prompt[1].content);
+   assert.equal(payload.candidates[0].assertion,event.excerpt);
+   assert.equal(payload.candidates[0].source_ref,event.source_refs[0]);
+   assert.equal(payload.candidates[0].evidence_class,'user-stated');
+  }
+ }
+});
+test('utility rubric still expressly defers unsupported, transient and privacy-risk sources',()=>{
+ const c=selectClusters([source('utility-negative',
+  'The last task is complete; please produce an operator status summary.')])[0];
+ const e=c.events[0];
+ const p=validateModelDecision({decision:'EMIT',reason:'Provisional original quotation',
+  utility_class:'useful_negative',facts:[{kind:'observation',
+   source_refs:[e.source_refs[0]],temporal_status:'observed',
+   evidence_span:{source_ref:e.source_refs[0],start:0,end:e.excerpt.length}}]},c);
+ assert.equal(p.ok,true);
+ const prompt=finiteBatchSourceExactComplementUtilityPrompt(c,p);
+ assert.match(prompt[0].content,/Use transient_execution for a one-off command/);
+ assert.match(prompt[0].content,/existing full-source privacy/i);
+ assert.match(prompt[0].content,/not_substantive/);
+ assert.match(prompt[0].content,/review_uncertain/);
+ assert.match(prompt[0].content,/DO NOT/);
+ const rejection={decisions:[{index:0,disposition:'REVIEW',
+  reason_code:'not_substantive'}]};
+ // Source evidence and a strong prompt cannot turn an explicit utility
+ // rejection into an automatic Graphiti authorization.
+ assert.equal(JSON.parse(JSON.stringify(rejection)).decisions[0].disposition,'REVIEW');
 });
 
 test('a corrupted frozen model receipt blocks recovery before any Graphiti write',()=>fixture(async f=>{
