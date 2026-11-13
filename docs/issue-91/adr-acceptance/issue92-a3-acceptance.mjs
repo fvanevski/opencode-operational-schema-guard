@@ -89,6 +89,11 @@ export function scoreProspective({
      !validHash(row.native_event_text_sha256)||!validHash(row.excerpt_sha256))
    fail('stage_event_identity');
   const c=cases.find(x=>x.id===row.case_id);
+  const originalLocator='opencode:'+row.session_id+':message:'+row.message_id;
+  if(sha(originalLocator)!==c.source_locator_sha256||
+     !(row.source_ref===originalLocator||
+       row.source_ref.startsWith(originalLocator+':span:')))
+   fail('stage_native_locator_identity_mismatch');
   if(row.native_event_text_sha256!==c.native_event_text_sha256||
      sha(row.source_ref)!==c.source_locator_sha256&&
       row.primary_source_locator_sha256!==c.source_locator_sha256)

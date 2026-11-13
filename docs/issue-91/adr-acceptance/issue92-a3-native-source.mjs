@@ -27,6 +27,11 @@ export function prepareProspectiveEvents(manifest,roster){
    typeof c.source_locator==='string'&&
    sha(c.source_locator)===frozen.source_locator_sha256,
    'original_locator_digest_'+c.id);
+  // A source-locator hash does not authorize replacing native session/message
+  // identity with a synthetic shared session to reduce cluster count.
+  const expectedLocator='opencode:'+c.session_id+':message:'+c.message_id;
+  assert(c.source_locator===expectedLocator,
+   'native_session_message_locator_mismatch_'+c.id);
   assert(c.label?.valuable===frozen.label?.valuable&&
    c.label?.predicate===frozen.label?.predicate&&
    c.observed_at===frozen.observed_at,'label_or_timestamp_drift_'+c.id);
@@ -39,7 +44,10 @@ export function prepareProspectiveEvents(manifest,roster){
   assert(produced.length>=1&&produced.length<=6,'capture_privacy_or_bounds_'+c.id);
   for(const event of produced){
    assert(event.source_strength==='native-id'&&
-    event.evidence_class==='user-stated'&&event.group===roster.group,
+    event.evidence_class==='user-stated'&&event.group===roster.group&&
+    event.session_id===c.session_id&&
+    (event.source_refs[0]===expectedLocator||
+     event.source_refs[0].startsWith(expectedLocator+':span:')),
     'source_authority_'+c.id);
    const row={case_id:c.id,event_id:event.event_id,
     source_ref:event.source_refs[0],

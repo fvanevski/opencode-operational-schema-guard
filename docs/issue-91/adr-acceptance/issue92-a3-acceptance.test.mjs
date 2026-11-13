@@ -149,3 +149,15 @@ test('duplicate episodes do not inflate independently useful-fact floor',()=>{
  const r=run(f);assert.equal(r.stats.independent_useful_facts,6);
  assert.equal(r.pass,false);
 });
+
+test('native freeze refuses relabeling an original message into a shared synthetic session',()=>{
+ const f=fixture({persisted:0});
+ f.manifest.cases[0].session_id='shared_cluster_session';
+ assert.throws(()=>prepareProspectiveEvents(f.manifest,f.roster),
+  /native_session_message_locator_mismatch/);
+});
+test('A3 scorer rejects synthetic staged session even if original locator hash survives',()=>{
+ const f=fixture();
+ f.stage.events[0].session_id='shared_cluster_session';
+ assert.throws(()=>run(f),/stage_native_locator_identity_mismatch/);
+});
