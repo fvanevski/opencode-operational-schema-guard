@@ -80,6 +80,9 @@ export function scoreProspective({
   fail('unratified_case');
  if(stage?.schema!=='issue92-a3-staged-v2'||stage.group!==group||
     stage.manifest_sha256!==roster.private_manifest_sha256||
+    // Stage receipt labels are frozen pre-inference. A later roster/ratification
+    // amendment cannot retroactively satisfy prospective acceptance.
+    stage.label_freeze_sha256!==roster.label_freeze_sha256||
     !Array.isArray(stage.events)||stage.events.length<20)
   fail('staging_identity');
  const byEvent=new Map(),bySource=new Map(),stagedCases=new Set();

@@ -31,7 +31,8 @@ function fixture({persisted=10,longSource=false}={}){
   label_freeze_sha256:sha('predeclared labels'),cases};
  const raw=prepareProspectiveEvents(manifest,roster);
  const stage={schema:'issue92-a3-staged-v2',group:GROUP,
-  manifest_sha256:roster.private_manifest_sha256,events:raw.stageRows};
+  manifest_sha256:roster.private_manifest_sha256,
+  label_freeze_sha256:roster.label_freeze_sha256,events:raw.stageRows};
  const records=[],adjudications=[],remoteIds=[];
  for(let i=0;i<persisted;i++){
   // Nine independently valuable cases and one deliberately nonvaluable control.
@@ -130,6 +131,17 @@ test('operator-pending source labels cannot produce prospective PASS',()=>{
  const f=fixture();
  f.ratification.cases[0].label_confirmed=false;
  assert.throws(()=>run(f),/unratified_case/);
+});
+test('post-staging label-hash drift fails even with updated ratification',()=>{
+ const f=fixture({persisted:9});
+ f.roster.label_freeze_sha256=sha('post-staging roster amendment');
+ f.ratification.label_freeze_sha256=f.roster.label_freeze_sha256;
+ assert.throws(()=>run(f),/staging_identity/);
+});
+test('missing stage label-freeze binding fails closed',()=>{
+ const f=fixture({persisted:9});
+ delete f.stage.label_freeze_sha256;
+ assert.throws(()=>run(f),/staging_identity/);
 });
 test('ratification cannot occur after first model intent',()=>{
  const f=fixture();
