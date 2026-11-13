@@ -300,7 +300,7 @@ test('source-exact utility rubric covers durable facts without confusing them wi
   const exact=finiteBatchSourceExactComplementUtilityPrompt(c,p);
   for(const prompt of [first,exact]){
    assert.match(prompt[0].content,expected[i]);
-   assert.match(prompt[0].content,/never automatic approvals/i);
+   assert.match(prompt[0].content,/not automatic approvals/i);
    const payload=JSON.parse(prompt[1].content);
    assert.equal(payload.candidates[0].assertion,event.excerpt);
    assert.equal(payload.candidates[0].source_ref,event.source_refs[0]);
@@ -322,7 +322,7 @@ test('utility rubric still expressly defers unsupported, transient and privacy-r
  assert.match(prompt[0].content,/existing full-source privacy/i);
  assert.match(prompt[0].content,/not_substantive/);
  assert.match(prompt[0].content,/review_uncertain/);
- assert.match(prompt[0].content,/DO NOT/);
+ assert.match(prompt[0].content,/Do NOT/);
  const rejection={decisions:[{index:0,disposition:'REVIEW',
   reason_code:'not_substantive'}]};
  // Source evidence and a strong prompt cannot turn an explicit utility
