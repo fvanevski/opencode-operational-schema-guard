@@ -9,7 +9,8 @@ import {ReviewStore} from './core.mjs';
 import {runAdmittedFiniteBatch,representativePrompt,
   validateRepresentativeFamilies,specificityPrompt,validateSpecificityFamilies,
   finiteBatchDiscoveryPrompt,
-  finiteBatchUtilityPrompt,finiteBatchSourceExactComplementUtilityPrompt} from './finite-batch.mjs';
+  finiteBatchUtilityPrompt,finiteBatchSourceExactComplementUtilityPrompt,
+  finiteBatchSourceExactComplementPrompt} from './finite-batch.mjs';
 import {selectClusters,validateModelDecision} from './core.mjs';
 import {validateFactReview,filterFactProposal} from './fact-review.mjs';
 
@@ -1786,3 +1787,71 @@ test('source-only recovery does not invent temporal certainty for proposed or he
   },[reported]);
  }
 });
+
+test('V2 complement allows narrower sources only after an atomicity veto',()=>{
+ const text='The client proxy handles compatibility calls. The new adapter uses a different endpoint.';
+ const e=source('v2atom',text),c=selectClusters([e])[0];
+ const r=[{source_ref:e.source_refs[0],start:0,end:text.length,
+  reason_code:'source_structural_independent_clause_boundary'}];
+ assert.doesNotMatch(finiteBatchSourceExactComplementPrompt(c,r)[0].content,/NON-ATOMICITY RECOVERY/);
+ assert.match(finiteBatchSourceExactComplementPrompt(c,r,{quoteIntegrityV2:true})[0].content,
+  /NON-ATOMICITY RECOVERY/);
+ assert.doesNotMatch(finiteBatchSourceExactComplementPrompt(c,[{...r[0],
+  reason_code:'not_substantive'}],{quoteIntegrityV2:true})[0].content,
+  /NON-ATOMICITY RECOVERY/);
+});
+test('V2 recovers one atomic source claim after structural rejection of the combined quote',()=>
+ fixture(async f=>{
+  const first='The local compatibility proxy forwards malformed API calls to the serving endpoint.';
+  const combined=first+' The replacement client uses a different direct endpoint.';
+  const stages=[];
+  const curate=async(_,{promptMessages})=>{
+   const sys=promptMessages[0].content,data=JSON.parse(promptMessages[1].content);
+   if(sys.includes('SOURCE-EXACT COMPLEMENT UTILITY')){
+    stages.push('complement-utility');
+    assert.equal(data.candidates[0].assertion,first);
+    return {content:JSON.stringify({decisions:[{index:0,disposition:'ACCEPT',
+      reason_code:'source_specific_durable',utility_class:'stable_architecture',
+      atomicity:{independent_predicates:1,
+       rationale:'One independently reported local proxy routing behavior.'}}]})};
+   }
+   if(sys.includes('SOURCE-EXACT COMPLEMENT')){
+    stages.push('complement-discovery');
+    assert.match(sys,/NON-ATOMICITY RECOVERY/);
+    assert.ok(data.previously_reviewed_spans.some(x=>
+     x.reason_code==='source_structural_independent_clause_boundary'));
+    return {content:JSON.stringify({reason:'One atomic quote',
+     candidates:[{kind:'blocker',source_ref:data.evidence[0].source,
+      start:0,end:first.length,temporal_status:'observed'}]})};
+   }
+   if(sys.includes('CLAIM-LED UTILITY')){
+    stages.push('claim-utility');
+    return {content:JSON.stringify({decisions:[{index:0,disposition:'ACCEPT',
+      reason_code:'source_specific_durable',utility_class:'stable_architecture',
+      atomicity:{independent_predicates:1,
+       rationale:'The combined text mistakenly seems like one proxy contract.'}}]})};
+   }
+   if(sys.includes('independent SOURCE-SUPPORT critic')){
+    stages.push('support');
+    return {content:JSON.stringify({decisions:[{index:0,disposition:'SUPPORTED',
+      reason_code:'supported_as_reported',supporting_phrase:first}]})};
+   }
+   if(sys.includes('CLAIM/EVIDENCE SEPARATION')){
+    stages.push('claim-discovery');
+    return {content:JSON.stringify({reason:'Source-provided routing fact',
+     candidates:[{kind:'blocker',source_ref:data.evidence[0].source,
+      start:0,end:combined.length,normalized_claim:first,
+      temporal_status:'observed'}]})};
+   }
+   throw Error('UNEXPECTED_V2_STAGE');
+  };
+  const result=await runAdmittedFiniteBatch(recallOpts({...f,curate,
+   sourceRecovery:true,resilientDiscovery:true,claimEvidence:true,
+   sourceExactComplement:true,sourceQuoteSalvage:true,quoteIntegrityV2:true}));
+  assert.equal(result.persisted,1);
+  assert.equal(f.graphiti.writes.length,1);
+  assert.ok(f.graphiti.writes[0].episode_body.includes(first));
+  assert.ok(!f.graphiti.writes[0].episode_body.includes('replacement client'));
+  assert.deepEqual(stages,['claim-discovery','support','claim-utility',
+   'complement-discovery','complement-utility']);
+ },['The local compatibility proxy forwards malformed API calls to the serving endpoint. The replacement client uses a different direct endpoint.']));

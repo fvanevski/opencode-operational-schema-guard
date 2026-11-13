@@ -213,12 +213,14 @@ export function finiteBatchResilientDiscoveryPrompt(cluster,{recovery=false,reje
  return [{role:'system',content:base[0].content+guidance},
   {role:'user',content:JSON.stringify(data)}];
 }
-export function finiteBatchSourceExactComplementPrompt(cluster,rejected=[]){
+export function finiteBatchSourceExactComplementPrompt(cluster,rejected=[],{quoteIntegrityV2=false}={}){
  // This is an independent complement even when the claim lane approved facts.
  // Do not tell the model that ZERO useful facts were found when this is false.
  const base=finiteBatchResilientDiscoveryPrompt(cluster,{recovery:false});
  const user=JSON.parse(base[1].content);
  user.previously_reviewed_spans=rejected.slice(0,9);
+ const atomicGap=quoteIntegrityV2&&rejected.some(x=>
+  /^(?:source_structural_|multiple_independent_predicates|atomicity_not_proven)/.test(x.reason_code||''));
  return [{role:'system',content:base[0].content+
   ' SOURCE-EXACT COMPLEMENT: find DISTINCT source-stated technical predicates'+
   ' overlooked in the preceding normalized-claim lane, including independent'+
@@ -227,7 +229,13 @@ export function finiteBatchSourceExactComplementPrompt(cluster,rejected=[]){
   ' reviewed exact quote. Each candidate must be a self-contained, contiguous'+
   ' 25..450-character original source quote with accurate source_ref and'+
   ' UTF-16 offsets. Utility is reviewed independently; when no other specific'+
-  ' predicate exists return candidates:[].'},
+  ' predicate exists return candidates:[].'+
+  (atomicGap?' NON-ATOMICITY RECOVERY: the original source span of an'+
+  ' independently rejected non-atomic candidate remains available.'+
+  ' Extract strictly smaller self-contained ATOMIC subspans from that same'+
+  ' source region; do not repeat the rejected full quote or an unsupported'+
+  ' paraphrase. Each subspan undergoes separate source, temporal, utility'+
+  ' and atomicity checks.':'')},
   {role:'user',content:JSON.stringify(user)}];
 }
 export function finiteBatchSourceExactComplementUtilityPrompt(cluster,proposal){
@@ -552,7 +560,7 @@ export async function runAdmittedFiniteBatch({
  maxClusters=24,maxCandidates=48,maxSeconds=1200,
  noveltyPolicy='recall',tuning=null,replayOnly=false,sourceRecovery=false,
   resilientDiscovery=false,claimEvidence=false,sourceExactComplement=false,
-   balancedDedup=false,sourceQuoteSalvage=false,
+   balancedDedup=false,sourceQuoteSalvage=false,quoteIntegrityV2=false,
   onCheckpoint=null
 }={}){
  // Preserve mock-only Node test fixtures; live claim/evidence clients must
@@ -576,6 +584,7 @@ export async function runAdmittedFiniteBatch({
   typeof claimEvidence==='boolean'&&(!claimEvidence||resilientDiscovery)&&
    typeof sourceExactComplement==='boolean'&&(!sourceExactComplement||claimEvidence)&&
    typeof sourceQuoteSalvage==='boolean'&&(!sourceQuoteSalvage||sourceExactComplement)&&
+    typeof quoteIntegrityV2==='boolean'&&(!quoteIntegrityV2||sourceQuoteSalvage)&&
    typeof balancedDedup==='boolean'&&(!balancedDedup||noveltyPolicy==='recall')&&
   (!sourceRecovery||noveltyPolicy==='recall'),'INVALID_BOUNDS');
  // The final source-quote treatment activates frozen, independent atomicity
@@ -635,6 +644,7 @@ export async function runAdmittedFiniteBatch({
    ...(sourceExactComplement?{source_exact_complement:true}:{}),
    ...(balancedDedup?{balanced_dedup:true}:{}),
    ...(sourceQuoteSalvage?{source_quote_salvage:true}:{}),
+    ...(quoteIntegrityV2?{quote_integrity_v2:true}:{}),
    ...(atomicityReview?{atomicity_review_v1:true}:{}),
    ...(structuralAtomicityReview?{atomicity_structural_v1:true}:{})};
   try{await writeOnce(activePath,active);}
@@ -657,7 +667,9 @@ export async function runAdmittedFiniteBatch({
   assert(Boolean(active.balanced_dedup)===balancedDedup,
    'BALANCED_DEDUP_IDENTITY_CHANGED');
   assert(Boolean(active.source_quote_salvage)===sourceQuoteSalvage,
-   'SOURCE_QUOTE_SALVAGE_IDENTITY_CHANGED');
+    'SOURCE_QUOTE_SALVAGE_IDENTITY_CHANGED');
+   assert(Boolean(active.quote_integrity_v2)===quoteIntegrityV2,
+    'QUOTE_INTEGRITY_IDENTITY_CHANGED');
   assert(Boolean(active.atomicity_review_v1)===atomicityReview,
    'ATOMICITY_REVIEW_IDENTITY_CHANGED');
   assert(Boolean(active.atomicity_structural_v1)===structuralAtomicityReview,
@@ -974,7 +986,7 @@ export async function runAdmittedFiniteBatch({
      }));
     const identity=cluster.id+':source-exact-complement-v1';
     const discovered=await callOnce('discovery',identity,cluster,
-     finiteBatchSourceExactComplementPrompt(cluster,reviewed));
+     finiteBatchSourceExactComplementPrompt(cluster,reviewed,{quoteIntegrityV2}));
     const exact=validateFactDiscovery(discovered.content,cluster,
      {isolateCandidates:true});
     const newFacts=exact.ok&&exact.decision==='EMIT'?
@@ -1285,6 +1297,7 @@ export async function runAdmittedFiniteBatch({
     ...(sourceExactComplement?{source_exact_complement:true}:{}),
     ...(balancedDedup?{balanced_dedup:true}:{}),
     ...(sourceQuoteSalvage?{source_quote_salvage:true}:{}),
+    ...(quoteIntegrityV2?{quote_integrity_v2:true}:{}),
     ...(atomicityReview?{atomicity_review_v1:true}:{}),
     ...(structuralAtomicityReview?{atomicity_structural_v1:true}:{}),
     created_at:new Date().toISOString(),
@@ -1321,7 +1334,9 @@ export async function runAdmittedFiniteBatch({
  assert(Boolean(plan.balanced_dedup)===balancedDedup,
   'PLAN_BALANCED_DEDUP_IDENTITY_CHANGED');
  assert(Boolean(plan.source_quote_salvage)===sourceQuoteSalvage,
-  'PLAN_SOURCE_QUOTE_SALVAGE_IDENTITY_CHANGED');
+   'PLAN_SOURCE_QUOTE_SALVAGE_IDENTITY_CHANGED');
+  assert(Boolean(plan.quote_integrity_v2)===quoteIntegrityV2,
+   'PLAN_QUOTE_INTEGRITY_IDENTITY_CHANGED');
  assert(Boolean(plan.atomicity_review_v1)===atomicityReview,
   'PLAN_ATOMICITY_REVIEW_IDENTITY_CHANGED');
  assert(Boolean(plan.atomicity_structural_v1)===structuralAtomicityReview,
