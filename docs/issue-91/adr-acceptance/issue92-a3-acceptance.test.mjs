@@ -93,14 +93,33 @@ test('privacy marker in omitted tail vetoes entire native source before staging'
  assert.throws(()=>prepareProspectiveEvents(f.manifest,f.roster),
   /capture_privacy_or_bounds/);
 });
-test('9 of 10 truly useful grounded facts pass even with grounded nonvaluable control',()=>{
- const f=fixture();const r=run(f);
+test('nine source-grounded valuable facts pass with zero control-sourced persistence',()=>{
+ const r=run(fixture({persisted:9}));
+ assert.equal(r.stats.valuable_hits,9);
+ assert.equal(r.stats.independent_useful_facts,9);
+ assert.equal(r.stats.nonvaluable_persisted_cases,0);
+ assert.equal(r.gates.zero_control_fact_persistence,true);
+ assert.equal(r.pass,true);
+});
+test('a grounded control-sourced persisted fact blocks overall PASS',()=>{
+ const r=run(fixture());
  assert.equal(r.stats.valuable_hits,9);
  assert.equal(r.stats.nonvaluable_persisted_cases,1);
- assert.equal(r.stats.independent_useful_facts,9);
- assert.equal(r.stats.grounded_facts,10);
  assert.equal(r.intervals95.grounded_precision.point,1);
  assert.equal(r.intervals95.useful_among_grounded.point,.9);
+ assert.equal(r.gates.zero_control_fact_persistence,false);
+ assert.equal(r.pass,false);
+});
+test('control appearing only as review-context sibling does not pollute graph',()=>{
+ const f=fixture({persisted:9});
+ const control=f.raw.events.find(e=>e.session_id==='session10');
+ assert.ok(control);
+ f.records[0].source_event_ids.push(control.event_id);
+ f.records[0].events.push({event_id:control.event_id,
+  source_refs:control.source_refs,excerpt:control.excerpt});
+ const r=run(f);
+ assert.equal(r.stats.nonvaluable_persisted_cases,0);
+ assert.equal(r.gates.zero_control_fact_persistence,true);
  assert.equal(r.pass,true);
 });
 test('session-matched but source-mismatched facts never earn target credit',()=>{

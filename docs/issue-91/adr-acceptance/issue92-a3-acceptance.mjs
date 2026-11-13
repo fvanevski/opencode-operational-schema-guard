@@ -195,6 +195,9 @@ export function scoreProspective({
  const useful=wilson(independentUseful,grounded);
  const gates={
   valuable_coverage:recall.point>=0.85,
+  // The source of the persisted FACT, not mere review-context siblings,
+  // determines whether a negative-control event polluted the graph.
+  zero_control_fact_persistence:falsePositives.size===0,
   grounded_precision:precision.point>=0.9,
   useful_among_grounded:useful.point>=0.75&&independentUseful>=8,
   zero_authority_breaches:violations===0,

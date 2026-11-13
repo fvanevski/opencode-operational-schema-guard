@@ -17,7 +17,7 @@ const scope={group:'issue92batch',project:'repo92',workspace:'/workspace/repo92'
 const strong='Sphinx reStructuredText output drops dictionary parameter header rows, causing expected table columns to disappear in rendered API documentation.';
 const weak='The Sphinx reStructuredText output has an issue with dictionary parameter header rows in rendered API documentation.';
 const different='Pylint --verbose fails when the required argument is omitted, even though the short -v flag is accepted by its command-line parser.';
-const source=(id,body,eventScope=scope)=>fromPrompt({sessionID:'sess-'+id,
+const source=(id,body,eventScope=scope,session='sess-'+id)=>fromPrompt({sessionID:session,
   messageID:'msg-'+id,prompt:{text:body},
   timestamp:'2026-11-09T19:00:00Z'},eventScope,{admitted:true});
 function graph(){
@@ -94,7 +94,7 @@ function model({uncertain=false,distinct=false,invalid=false,reject=false,
    usage:{prompt_tokens:10,completion_tokens:15}};
  };
 }
-async function fixture(fn,order=[strong,weak],{scopeFor=null}={}){
+async function fixture(fn,order=[strong,weak],{scopeFor=null,sharedSession=false}={}){
  const root=await mkdtemp(path.join(os.tmpdir(),'issue92-finite-'));
  const previous=process.env.GHDEV_MEMORY_POST_EXIT_LEASE;
  process.env.GHDEV_MEMORY_POST_EXIT_LEASE='admitted';
@@ -103,7 +103,8 @@ async function fixture(fn,order=[strong,weak],{scopeFor=null}={}){
   const store=new ReviewStore(root,scope.group);
   for(const body of order){
    const id=body===strong?'strong':body===weak?'weak':'different';
-   const e=source(id,body,scopeFor?scopeFor(id):scope);
+   const e=source(id,body,scopeFor?scopeFor(id):scope,
+     sharedSession?'sess-shared':undefined);
    assert.ok(e);
    assert.equal((await queue.stage(e)).status,'staged');
   }
@@ -1675,3 +1676,70 @@ test('missing atomicity attestation cannot write a Graphiti episode',()=>{
   assert.equal(f.graphiti.writes.length,0);
  },[sourceText]);
 });
+
+test('unrepresented same-session sibling can become a second atomic fact without persisting a weak sibling',()=>
+ fixture(async f=>{
+  const calls={claim:0,complement:0,sibling:0};
+  const curate=async(_,{promptMessages})=>{
+   const sys=promptMessages[0].content,data=JSON.parse(promptMessages[1].content);
+   if(sys.includes('SOURCE-EXACT COMPLEMENT UTILITY')){
+    calls.sibling++;
+    assert.equal(data.candidates.length,2);
+    assert.deepEqual(new Set(data.candidates.map(x=>x.assertion)),
+     new Set([different,weak]));
+    return {content:JSON.stringify({decisions:data.candidates.map(x=>
+     x.assertion===different?{index:x.index,disposition:'ACCEPT',
+      reason_code:'source_specific_durable',utility_class:'useful_negative',
+      atomicity:{independent_predicates:1,
+       rationale:'The Pylint parser difference states one independent technical fact'}}:
+     {index:x.index,disposition:'REVIEW',reason_code:'not_substantive'})})};
+   }
+   if(sys.includes('SOURCE-EXACT COMPLEMENT')){
+    calls.complement++;
+    return {content:JSON.stringify({reason:'No other discovered source claims',
+     candidates:[]})};
+   }
+   if(sys.includes('independent SOURCE-SUPPORT critic')){
+    assert.equal(data.candidates.length,1);
+    return {content:JSON.stringify({decisions:[{index:0,disposition:'SUPPORTED',
+     reason_code:'supported_as_reported',supporting_phrase:strong}]})};
+   }
+   if(sys.includes('CLAIM-LED UTILITY')){
+    return {content:JSON.stringify({decisions:[{index:0,disposition:'ACCEPT',
+     reason_code:'source_specific_durable',utility_class:'useful_negative',
+     atomicity:{independent_predicates:1,
+      rationale:'The Sphinx missing-row report is one independent technical fact'}}]})};
+   }
+   if(sys.includes('CLAIM/EVIDENCE SEPARATION')){
+    calls.claim++;
+    const e=data.evidence.find(x=>x.excerpt===strong);
+    assert.ok(e);
+    return {content:JSON.stringify({reason:'Original source-backed Sphinx defect',
+     candidates:[{source_ref:e.source,start:0,end:strong.length,
+      kind:'blocker',temporal_status:'observed',normalized_claim:strong}]})};
+   }
+   throw Error('UNEXPECTED_SHARED_SESSION_STAGE');
+  };
+  const result=await runAdmittedFiniteBatch(recallOpts({...f,curate,
+   sourceRecovery:true,resilientDiscovery:true,claimEvidence:true,
+   sourceExactComplement:true,sourceQuoteSalvage:true}));
+  assert.equal(result.persisted,2);
+  assert.equal(f.graphiti.writes.length,2);
+  assert.equal(new Set(f.graphiti.writes.map(x=>x.name)).size,2);
+  assert.ok(f.graphiti.writes.some(x=>x.episode_body.includes(strong)));
+  assert.ok(f.graphiti.writes.some(x=>x.episode_body.includes(different)));
+  assert.ok(f.graphiti.writes.every(x=>!x.episode_body.includes(weak)));
+  const records=(await f.store.list({limit:20})).items.filter(x=>x.state==='persisted');
+  assert.equal(records.length,2);
+  assert.equal(new Set(records.map(x=>x.remote_episode_uuid)).size,2);
+  assert.equal(new Set(records.map(x=>x.facts[0].source_refs[0])).size,2);
+  const active=JSON.parse(await readFile(path.join(f.root,
+   'issue92-finite-batches-v1',scope.group,'_active.json'),'utf8'));
+  const plan=JSON.parse(await readFile(path.join(f.root,
+   'issue92-finite-batches-v1',scope.group,active.batch_id,'plan.json'),'utf8'));
+  assert.equal(plan.cluster_outcomes.length,1);
+  assert.equal(plan.cluster_outcomes[0].source_only_outcome.mode,'unrepresented_sibling');
+  assert.equal(plan.cluster_outcomes[0].source_only_outcome.approved,1);
+  assert.equal(plan.cluster_outcomes[0].source_only_outcome.deferred,1);
+  assert.deepEqual(calls,{claim:1,complement:1,sibling:1});
+ },[strong,different,weak],{sharedSession:true}));

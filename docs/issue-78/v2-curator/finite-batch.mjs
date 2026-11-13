@@ -1024,16 +1024,23 @@ export async function runAdmittedFiniteBatch({
      decision='REVIEWED';reason='source_exact_complement_reviewed';
     }
    }
-   // No normalized claim and no source-exact model candidate does not mean
-   // the authenticated native source has no useful technical predicate.
-   // Offer at most three bounded CONTIGUOUS original quotes for one separate
-   // utility verdict. No model paraphrase or source/temporal shortcut persists.
+   // A previously approved fact must not hide a separate valuable source.
+   // Never retry a source that already received an independent review;
+   // this path considers only unrepresented siblings, each under the existing
+   // exact-source, utility, atomicity and per-cluster bound.
+   const reviewedRefs=new Set([...entries.values()].flatMap(e=>
+    e.fact?.source_refs||[]));
+   const unrepresented=cluster.events.filter(e=>
+    e.source_refs?.length===1&&!reviewedRefs.has(e.source_refs[0]));
+   const emptyDiscovery=approved.length===0&&entries.size===0;
+   const siblingGap=approved.length>0&&unrepresented.length>0;
    let sourceOnlyOutcome=null;
-   if(sourceQuoteSalvage&&sourceExactComplement&&approved.length===0&&
-      entries.size===0){
-    const candidates=[...cluster.events].sort((a,b)=>
-     b.excerpt.length-a.excerpt.length||
-     a.source_refs[0].localeCompare(b.source_refs[0])).slice(0,3)
+   if(sourceQuoteSalvage&&sourceExactComplement&&approved.length<3&&
+      (emptyDiscovery||siblingGap)){
+    const candidates=[...(emptyDiscovery?cluster.events:unrepresented)]
+     .sort((a,b)=>b.excerpt.length-a.excerpt.length||
+      a.source_refs[0].localeCompare(b.source_refs[0]))
+     .slice(0,3-approved.length)
      .map(event=>{
       const text=event.excerpt;
       let end=Math.min(text.length,450);
@@ -1047,13 +1054,15 @@ export async function runAdmittedFiniteBatch({
     const provisional=validateFactDiscovery({
      reason:'Original native quote awaiting independent utility; no model claim',
      candidates},cluster,{isolateCandidates:true});
-    sourceOnlyOutcome={proposed:candidates.length,
+    sourceOnlyOutcome={mode:emptyDiscovery?'empty_discovery':'unrepresented_sibling',
+     proposed:candidates.length,
      source_valid:provisional.facts?.length||0,approved:0,deferred:0,
      invalid_source:provisional.invalid_candidates??[]};
     if(provisional.ok&&provisional.facts.length){
      const proposal={...provisional};
      const reply=await callOnce('utility',
-      cluster.id+':original-source-empty-discovery-v1',cluster,
+      cluster.id+(emptyDiscovery?':original-source-empty-discovery-v1':
+       ':original-source-unrepresented-sibling-v1'),cluster,
       finiteBatchSourceExactComplementUtilityPrompt(cluster,proposal));
      const screen=validateFactReview(reply.content,proposal,{requireAtomicity:atomicityReview});
      if(!screen.ok){
