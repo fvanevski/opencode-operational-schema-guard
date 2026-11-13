@@ -25,17 +25,13 @@ export function auditV9Lineage({
  const discrepancies=[],internal=[],report=(code)=>discrepancies.push(code);
  const check=(condition,code)=>{if(!condition)internal.push(code);};
  const group=roster?.group;
+ // The plan itself does not carry a group field; bind it through the
+ // digest-authenticated snapshot and each cluster's exact group identity.
  check(safeGroup(group)&&group===stage?.group&&group===snapshot?.group&&
-  group===ratification?.group&&group===freezeReceipt?.group&&group===scorecard?.group&&
-  group===active?.group&&group===plan?.group /* optional plan.group handled below */,
-  'GROUP_IDENTITY'); // plan historically has no group, validated separately below
- // The finite batch plan intentionally has no group property; bind via snapshot.
- if(plan?.group===undefined&&internal.includes('GROUP_IDENTITY')){
-  const correct=safeGroup(group)&&group===stage?.group&&group===ratification?.group&&
-    group===freezeReceipt?.group&&group===scorecard?.group&&group===active?.group&&
-    snapshot?.clusters?.every(c=>c.group===group);
-  if(correct)internal.splice(internal.indexOf('GROUP_IDENTITY'),1);
- }
+  group===ratification?.group&&group===freezeReceipt?.group&&
+  group===scorecard?.group&&group===active?.group&&
+  Array.isArray(snapshot?.clusters)&&
+  snapshot.clusters.every(c=>c.group===group),'GROUP_IDENTITY');
  const cases=Array.isArray(roster?.cases)?roster.cases:[];
  const rows=Array.isArray(stage?.events)?stage.events:[];
  const clusters=Array.isArray(snapshot?.clusters)?snapshot.clusters:[];
