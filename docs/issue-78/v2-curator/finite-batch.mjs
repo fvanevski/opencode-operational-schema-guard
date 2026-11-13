@@ -898,6 +898,9 @@ export async function runAdmittedFiniteBatch({
      }
     }
    }
+   if(quoteSalvageOutcome?.approved>0){
+    decision='REVIEWED';reason='independent_source_quote_utility_complete';
+   }
    // Independent SOURCE-EXACT complement: a failed normalized-claim critic
    // never becomes a Graphiti authorization. Every new quote independently
    // passes deterministic source validation AND a separate utility reviewer.

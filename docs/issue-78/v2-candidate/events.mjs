@@ -136,8 +136,7 @@ export function withoutInjectedOpenVikingContext(text){
  while((match=open.exec(text))){
   seen=true;
   const before=text.slice(offset,match.index);
-  close.lastIndex=offset;
-  if(close.exec(before))return '';
+  if(/<\/openviking-context\s*>/i.test(before))return '';
   const tail=text.slice(match.index+match[0].length);
   const closing=/<\/openviking-context\s*>/i.exec(tail);
   if(!closing)return '';
