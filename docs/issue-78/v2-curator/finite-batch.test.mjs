@@ -1327,3 +1327,110 @@ test('Issue92 balanced opt-in cannot retrofit frozen recall batches',()=>fixture
  await assert.rejects(runAdmittedFiniteBatch(recallOpts({...f,curate,
   balancedDedup:true})),/BALANCED_DEDUP_IDENTITY_CHANGED/);
 },[strong,different]));
+
+test('source-quote salvage retains independently useful exact quote after rejecting normalized inference',()=>fixture(async f=>{
+ const unsupported='Graphiti automatically fixes every broken documentation renderer.';
+ const calls={support:0,salvage:0,complement:0};
+ const curate=async(_,{promptMessages})=>{
+  const sys=promptMessages[0].content;
+  const data=JSON.parse(promptMessages[1].content);
+  if(sys.includes('SOURCE-EXACT COMPLEMENT UTILITY')){
+   calls.salvage++;
+   assert.equal(data.candidates.length,1);
+   assert.equal(data.candidates[0].assertion,strong);
+   assert.equal(JSON.stringify(data).includes(unsupported),false);
+   return {content:JSON.stringify({decisions:[{index:0,disposition:'ACCEPT',
+    reason_code:'source_specific_durable',utility_class:'useful_negative'}]})};
+  }
+  if(sys.includes('SOURCE-EXACT COMPLEMENT')){
+   calls.complement++;
+   return {content:JSON.stringify({reason:'No other source predicates',candidates:[]})};
+  }
+  if(sys.includes('independent SOURCE-SUPPORT critic')){
+   calls.support++;
+   assert.equal(data.candidates[0].normalized_claim,unsupported);
+   return {content:JSON.stringify({decisions:[{index:0,disposition:'REVIEW',
+    reason_code:'missing_predicate'}]})};
+  }
+  if(sys.includes('CLAIM/EVIDENCE SEPARATION')){
+   if(sys.includes('ONE bounded second pass'))
+    return {content:JSON.stringify({reason:'none beyond original',candidates:[]})};
+   const src=data.evidence[0];
+   return {content:JSON.stringify({reason:'unsupported paraphrase from good quote',
+    candidates:[{source_ref:src.source,start:0,end:src.excerpt.length,
+     kind:'blocker',temporal_status:'observed',normalized_claim:unsupported}]})};
+  }
+  throw Error('UNEXPECTED_CALL');
+ };
+ const result=await runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true,resilientDiscovery:true,claimEvidence:true,
+  sourceExactComplement:true,sourceQuoteSalvage:true}));
+ assert.deepEqual(calls,{support:1,salvage:1,complement:1});
+ assert.equal(result.persisted,1);
+ assert.equal(f.graphiti.writes.length,1);
+ assert.ok(f.graphiti.writes[0].episode_body.includes(strong));
+ assert.equal(f.graphiti.writes[0].episode_body.includes(unsupported),false);
+ const active=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,'_active.json'),'utf8'));
+ assert.equal(active.source_quote_salvage,true);
+ const plan=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,active.batch_id,'plan.json'),'utf8'));
+ assert.equal(plan.source_quote_salvage,true);
+ assert.equal(plan.cluster_outcomes[0].source_quote_salvage_outcome.approved,1);
+ assert.equal(plan.cluster_outcomes[0].facts.filter(x=>x.utility_class).length,1);
+},[strong]));
+
+test('source-quote salvage never overrides independent exact quote utility REJECT',()=>fixture(async f=>{
+ let utility=0;
+ const curate=async(_,{promptMessages})=>{
+  const sys=promptMessages[0].content,data=JSON.parse(promptMessages[1].content);
+  if(sys.includes('SOURCE-EXACT COMPLEMENT UTILITY')){
+   utility++;
+   return {content:JSON.stringify({decisions:[{index:0,
+    disposition:'REVIEW',reason_code:'not_substantive'}]})};
+  }
+  if(sys.includes('SOURCE-EXACT COMPLEMENT'))
+   return {content:JSON.stringify({reason:'no other quote',candidates:[]})};
+  if(sys.includes('independent SOURCE-SUPPORT critic'))
+   return {content:JSON.stringify({decisions:[{index:0,
+    disposition:'REVIEW',reason_code:'unsupported_inference'}]})};
+  if(sys.includes('CLAIM/EVIDENCE SEPARATION')){
+   if(sys.includes('ONE bounded second pass'))
+    return {content:JSON.stringify({reason:'none',candidates:[]})};
+   const e=data.evidence[0];
+   return {content:JSON.stringify({reason:'claim unsupported',candidates:[{
+    source_ref:e.source,start:0,end:e.excerpt.length,
+    kind:'blocker',temporal_status:'observed',
+    normalized_claim:'Graphiti has magically fixed every incorrect output.'}]})};
+  }
+  throw Error('UNEXPECTED_STAGE');
+ };
+ const out=await runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true,resilientDiscovery:true,claimEvidence:true,
+  sourceExactComplement:true,sourceQuoteSalvage:true}));
+ assert.equal(utility,1);
+ assert.equal(out.persisted,0);assert.equal(f.graphiti.writes.length,0);
+},[strong]));
+
+test('source-quote salvage cannot be retrofitted into an older frozen batch',()=>fixture(async f=>{
+ let calls=0;
+ const curate=async()=>{calls++;return {content:JSON.stringify({
+  reason:'No source candidate',candidates:[]})};};
+ await runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true,resilientDiscovery:true,claimEvidence:true,
+  sourceExactComplement:true}));
+ const before=calls;
+ await assert.rejects(runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true,resilientDiscovery:true,claimEvidence:true,
+  sourceExactComplement:true,sourceQuoteSalvage:true})),
+  /SOURCE_QUOTE_SALVAGE_IDENTITY_CHANGED/);
+ assert.equal(calls,before);assert.equal(f.graphiti.writes.length,0);
+},[strong]));
+
+test('source-quote salvage requires an already admitted source-exact complement mode',()=>fixture(async f=>{
+ let calls=0;
+ await assert.rejects(runAdmittedFiniteBatch(recallOpts({...f,
+  sourceQuoteSalvage:true,curate:async()=>{calls++;throw Error('INVALID_CALL');}})),
+  /INVALID_BOUNDS/);
+ assert.equal(calls,0);assert.equal(f.graphiti.writes.length,0);
+},[strong]));
