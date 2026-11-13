@@ -10,7 +10,8 @@ import {CandidateQueue} from '../v2-candidate/queue.mjs';
 import {ReviewStore,selectClusters,validateModelDecision,validateDecision} from './core.mjs';
 import {curateCluster} from './model.mjs';
 import {factDiscoveryPrompt,validateFactDiscovery,factReviewPrompt,
-  validateFactReview,filterFactProposal} from './fact-review.mjs';
+  validateFactReview,filterFactProposal,
+  sourceAtomicityStructuralRisk} from './fact-review.mjs';
 import {promoteOne,reconcile} from './worker.mjs';
 import {claimEvidenceDiscoveryPrompt,validateClaimEvidenceDiscovery,
  claimSupportPrompt,validateClaimSupport,supportedClaimProposal,
@@ -140,6 +141,8 @@ export function finiteBatchUtilityPrompt(cluster,proposal){
   'with reason_code not_substantive,transient_execution,unsupported_inference,',
   'source_ambiguous,conflict_or_stale or review_uncertain.',
   'ATOMICITY: inspect the ENTIRE quoted assertion, not a normalized claim.',
+  'A fact followed by a separate comma/semicolon-linked instruction or',
+  'an unrelated second technical subject is NOT one independent predicate.',
   'If one quote bundles independent unrelated technical facts, e.g. a package',
   'version AND a separate tool-use instruction, choose REVIEW with',
   'review_uncertain; discovery/complement may offer separately sourced spans.',
@@ -492,6 +495,8 @@ function assertSnapshot(snapshot,group){
 }
 function assertPlan(plan,snapshot,expectedPolicy,
  requireAtomicity=Boolean(plan?.atomicity_review_v1)){
+ if(requireAtomicity)assert(plan?.atomicity_structural_v1===true,
+  'PLAN_ATOMICITY_STRUCTURAL_VERSION');
  assert(plan?.schema==='issue92-finite-batch-plan-v1'&&
   plan.snapshot_sha256===hash(snapshot)&&Array.isArray(plan.items)&&
   Array.isArray(plan.cluster_outcomes)&&Array.isArray(plan.calls)&&
@@ -526,7 +531,9 @@ function assertPlan(plan,snapshot,expectedPolicy,
    const p=item.atomicity_review;
    assert(p?.independent_predicates===1&&
     typeof p.rationale==='string'&&p.rationale.length>=20&&
-    p.rationale.length<=350&&p.assertion_sha256===hash(item.fact.assertion),
+    p.rationale.length<=350&&p.assertion_sha256===hash(item.fact.assertion)&&
+    p.structural_review==='no_independent_clause_v1'&&
+    sourceAtomicityStructuralRisk(item.fact.assertion)===null,
     'PLAN_ATOMICITY_REVIEW_UNVERIFIED');
   }
   const cluster=clusters.get(item.cluster_id);
@@ -574,6 +581,9 @@ export async function runAdmittedFiniteBatch({
  // The final source-quote treatment activates frozen, independent atomicity
  // review. A legacy active state lacking this identity may not be replayed.
  const atomicityReview=sourceQuoteSalvage;
+ // Freeze structural-veto version so existing model receipts cannot be
+ // reinterpreted as having passed a different source review policy.
+ const structuralAtomicityReview=atomicityReview;
  const tuningProfile=validateFiniteBatchTuning(tuning);
  const tuningSha=tuningIdentity(tuningProfile);
  const legacyIdentity=tuning===null&&modelId==='chat-fast'&&
@@ -625,7 +635,8 @@ export async function runAdmittedFiniteBatch({
    ...(sourceExactComplement?{source_exact_complement:true}:{}),
    ...(balancedDedup?{balanced_dedup:true}:{}),
    ...(sourceQuoteSalvage?{source_quote_salvage:true}:{}),
-   ...(atomicityReview?{atomicity_review_v1:true}:{})};
+   ...(atomicityReview?{atomicity_review_v1:true}:{}),
+   ...(structuralAtomicityReview?{atomicity_structural_v1:true}:{})};
   try{await writeOnce(activePath,active);}
   catch(e){if(e.code!=='EEXIST')throw e;}
   const actual=await readMaybe(activePath);
@@ -649,6 +660,8 @@ export async function runAdmittedFiniteBatch({
    'SOURCE_QUOTE_SALVAGE_IDENTITY_CHANGED');
   assert(Boolean(active.atomicity_review_v1)===atomicityReview,
    'ATOMICITY_REVIEW_IDENTITY_CHANGED');
+  assert(Boolean(active.atomicity_structural_v1)===structuralAtomicityReview,
+   'ATOMICITY_STRUCTURAL_IDENTITY_CHANGED');
   if(active.tuning_sha256!==undefined)
    assert(active.tuning_sha256===tuningSha,'TUNING_IDENTITY_CHANGED');
   else assert(legacyIdentity,'LEGACY_TUNING_IDENTITY_UNVERIFIED');
@@ -1261,6 +1274,7 @@ export async function runAdmittedFiniteBatch({
     ...(balancedDedup?{balanced_dedup:true}:{}),
     ...(sourceQuoteSalvage?{source_quote_salvage:true}:{}),
     ...(atomicityReview?{atomicity_review_v1:true}:{}),
+    ...(structuralAtomicityReview?{atomicity_structural_v1:true}:{}),
     created_at:new Date().toISOString(),
    cluster_outcomes:outcomes.map(x=>({cluster_id:x.cluster_id,
     decision:x.decision,reason:x.reason,
@@ -1298,6 +1312,8 @@ export async function runAdmittedFiniteBatch({
   'PLAN_SOURCE_QUOTE_SALVAGE_IDENTITY_CHANGED');
  assert(Boolean(plan.atomicity_review_v1)===atomicityReview,
   'PLAN_ATOMICITY_REVIEW_IDENTITY_CHANGED');
+ assert(Boolean(plan.atomicity_structural_v1)===structuralAtomicityReview,
+  'PLAN_ATOMICITY_STRUCTURAL_IDENTITY_CHANGED');
  if(plan.tuning_sha256!==undefined)
   assert(plan.tuning_sha256===tuningSha,'PLAN_TUNING_IDENTITY_CHANGED');
  else assert(legacyIdentity,'PLAN_LEGACY_TUNING_UNVERIFIED');

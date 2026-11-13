@@ -16,6 +16,38 @@ const REASONS=new Set(['source_specific_durable','not_substantive',
  'source_ambiguous','conflict_or_stale','review_uncertain']);
 const clamp=s=>String(s??'').slice(0,450);
 const enough=s=>typeof s==='string'&&s.length>=25&&s.length<=450;
+
+/**
+ * Model-independent, conservative veto for clearly separable factual clauses.
+ * This is not a general semantic atomicity proof. It only catches confident
+ * status-plus-instruction or separate-subject boundaries; independent utility
+ * review remains responsible for other semantic combinations.
+ * Never rewrite/split a quote here: discovery must cite separate native spans.
+ */
+const ATOMIC_STANDALONE = /\b(?:is|are|was|were|has|have|had|uses?|runs?|points?|requires?|depends?|supports?|contains?|stores?|reads?|works?|fails?|installed|enabled|disabled|configured|reported|shows?|must|should|can|will)\b/i;
+const ATOMIC_DIRECTIVE = /^(?:please\s+)?(?:use|run|install|configure|restart|enable|disable|check|verify|read|write|apply|set|keep|update|fetch|call|send|make|remove|delete|consult|invoke|inspect|execute|provide)\b/i;
+const ATOMIC_NEW_SUBJECT = /^(?:(?:the|a|an|this|that|another)\s+)?(?:[a-z][\w./-]*\s+){1,5}(?:is|are|was|were|has|have|uses?|runs?|points?|requires?|supports?|contains?|stores?|reads?|works?|fails?|must|should|can|will)\b/i;
+const ATOMIC_DEPENDENT = /^(?:if|when|once|after|before|while|unless|provided|given|assuming|because)\b/i;
+export function sourceAtomicityStructuralRisk(quote){
+ if(typeof quote!=='string')return null;
+ const boundary=/[,;.!?]\s+|\s+(?:and|plus)\s+/gi;
+ let match;
+ while((match=boundary.exec(quote))){
+  const prior=quote.slice(0,match.index).trim();
+  const next=quote.slice(match.index+match[0].length).trim()
+   .replace(/^(?:and|then)\s+/i,'');
+  if(prior.length<12||next.length<12||
+    ATOMIC_DEPENDENT.test(prior)||!ATOMIC_STANDALONE.test(prior))
+   continue;
+  // "transition function read it at startup" may describe the same
+  // architecture relation as the preceding clause, not a separate fact.
+  if(/\b(?:it|its)\b/i.test(next)&&!ATOMIC_DIRECTIVE.test(next))continue;
+  if(ATOMIC_DIRECTIVE.test(next)||ATOMIC_NEW_SUBJECT.test(next))
+   return 'independent_clause_boundary';
+ }
+ return null;
+}
+
 const flatten=record=>Array.isArray(record?.facts)?record.facts:[];
 export function factDiscoveryPrompt(cluster){
  if(!Array.isArray(cluster?.events)||!cluster.events.length||
@@ -240,10 +272,18 @@ export function validateFactReview(raw,proposal,{requireAtomicity=false}={}){
             'multiple_independent_predicates':'atomicity_not_proven'});
          continue;
        }
+       const sourceRisk=sourceAtomicityStructuralRisk(
+         proposal.facts[d.index].assertion);
+       if(sourceRisk){
+         review.push({index:d.index,reason_code:'review_uncertain',
+           atomicity_reason:'source_structural_'+sourceRisk});
+         continue;
+       }
        accepted.push({index:d.index,utility_class:d.utility_class,
          atomicity_review:{independent_predicates:1,
            rationale:a.rationale.trim(),
-           assertion_sha256:hash(proposal.facts[d.index].assertion)}});
+           assertion_sha256:hash(proposal.facts[d.index].assertion),
+           structural_review:'no_independent_clause_v1'}});
      }else accepted.push({index:d.index,utility_class:d.utility_class});
    }else review.push({index:d.index,reason_code:d.reason_code});
  }
