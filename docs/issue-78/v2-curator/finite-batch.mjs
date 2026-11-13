@@ -857,7 +857,7 @@ export async function runAdmittedFiniteBatch({
    let quoteSalvageOutcome=null;
    if(sourceQuoteSalvage&&approved.length<3){
     const eligible=[...entries.values()].filter(e=>
-     /^claim_support_(?:missing_predicate|unsupported_inference|review_uncertain)$/
+     /^(?:claim_support_(?:missing_predicate|unsupported_inference|review_uncertain)|claim_support_invalid)$/
       .test(e.review_reason??'')&&
      Number.isSafeInteger(e.fact?.evidence_span?.start)).sort(byId)
      .slice(0,3-approved.length);
@@ -883,7 +883,7 @@ export async function runAdmittedFiniteBatch({
        if(!validated.ok)throw Error('QUOTE_SALVAGE_SOURCE_INVALID');
        const e=factEntry(cluster,validated.facts[0],utility);
        const previous=entries.get(e.id);
-       if(!previous||!/^claim_support_(?:missing_predicate|unsupported_inference|review_uncertain)$/
+       if(!previous||!/^(?:claim_support_(?:missing_predicate|unsupported_inference|review_uncertain)|claim_support_invalid)$/
         .test(previous.review_reason??''))continue;
        if(approved.length>=3)break;
        entries.set(e.id,e);approved.push(e);quoteSalvageOutcome.approved++;
@@ -962,6 +962,66 @@ export async function runAdmittedFiniteBatch({
      decision='REVIEWED';reason='source_exact_complement_reviewed';
     }
    }
+   // No normalized claim and no source-exact model candidate does not mean
+   // the authenticated native source has no useful technical predicate.
+   // Offer at most three bounded CONTIGUOUS original quotes for one separate
+   // utility verdict. No model paraphrase or source/temporal shortcut persists.
+   let sourceOnlyOutcome=null;
+   if(sourceQuoteSalvage&&sourceExactComplement&&approved.length===0&&
+      entries.size===0){
+    const candidates=[...cluster.events].sort((a,b)=>
+     b.excerpt.length-a.excerpt.length||
+     a.source_refs[0].localeCompare(b.source_refs[0])).slice(0,3)
+     .map(event=>{
+      const text=event.excerpt;
+      let end=Math.min(text.length,450);
+      if(end<text.length){
+       const wordEnd=text.lastIndexOf(' ',end);
+       if(wordEnd>=250)end=wordEnd;
+      }
+      return {source_ref:event.source_refs[0],start:0,end,
+       kind:'observation',temporal_status:'observed'};
+     }).filter(c=>c.end-c.start>=25);
+    const provisional=validateFactDiscovery({
+     reason:'Original native quote awaiting independent utility; no model claim',
+     candidates},cluster,{isolateCandidates:true});
+    sourceOnlyOutcome={proposed:candidates.length,
+     source_valid:provisional.facts?.length||0,approved:0,deferred:0,
+     invalid_source:provisional.invalid_candidates??[]};
+    if(provisional.ok&&provisional.facts.length){
+     const proposal={...provisional};
+     const reply=await callOnce('utility',
+      cluster.id+':original-source-empty-discovery-v1',cluster,
+      finiteBatchSourceExactComplementUtilityPrompt(cluster,proposal));
+     const screen=validateFactReview(reply.content,proposal);
+     if(!screen.ok){
+      sourceOnlyOutcome.invalid_utility=screen.reason;
+      sourceOnlyOutcome.deferred=proposal.facts.length;
+     }else{
+      const result=filterFactProposal(proposal,screen);
+      if(result.ok)for(let k=0;k<result.facts.length;k++){
+       const fact=result.facts[k],utility=result.fact_utilities[k];
+       const verified=validateModelDecision({decision:'EMIT',
+        reason:'Independent utility for exact original quote',
+        utility_class:utility,facts:[{...fact,utility_class:utility}]},cluster);
+       if(!verified.ok)throw Error('SOURCE_ONLY_INVALID_ORIGINAL_QUOTE');
+       const e=factEntry(cluster,verified.facts[0],utility);
+       if(entries.has(e.id))continue;
+       if(approved.length>=3)break;
+       entries.set(e.id,e);approved.push(e);sourceOnlyOutcome.approved++;
+      }
+      for(const item of screen.review){
+       const e=factEntry(cluster,proposal.facts[item.index],null,
+        'source_only_utility_'+item.reason_code);
+       if(!entries.has(e.id))entries.set(e.id,e);
+       sourceOnlyOutcome.deferred++;
+      }
+     }
+    }
+    if(sourceOnlyOutcome.approved>0){
+     decision='REVIEWED';reason='original_source_independent_utility_complete';
+    }
+   }
    accepted.push(...approved);
    outcomes.push({cluster_id:cluster.id,decision,reason,
     facts:[...entries.values()].sort(byId),
@@ -970,7 +1030,8 @@ export async function runAdmittedFiniteBatch({
     ...(resilientDiscovery?{source_validation_failures:validationFailures}:{}),
     ...(claimEvidence?{claim_support_outcomes:supportOutcomes}:{}),
     ...(sourceExactComplement?{source_exact_complement_outcome:complementOutcome}:{}),
-     ...(sourceQuoteSalvage?{source_quote_salvage_outcome:quoteSalvageOutcome}:{})});
+     ...(sourceQuoteSalvage?{source_quote_salvage_outcome:quoteSalvageOutcome,
+      source_only_outcome:sourceOnlyOutcome}:{})});
   }
   assert(accepted.length<=maxCandidates,'ACCEPTED_POOL_OVER_BOUND_NO_PROMOTION');
   const selected=new Set(),deferred=new Map(),families=[];
@@ -1158,7 +1219,8 @@ export async function runAdmittedFiniteBatch({
      ...(resilientDiscovery?{source_validation_failures:x.source_validation_failures}:{}),
      ...(claimEvidence?{claim_support_outcomes:x.claim_support_outcomes}:{}),
      ...(sourceExactComplement?{source_exact_complement_outcome:x.source_exact_complement_outcome}:{}),
-      ...(sourceQuoteSalvage?{source_quote_salvage_outcome:x.source_quote_salvage_outcome}:{})})),
+      ...(sourceQuoteSalvage?{source_quote_salvage_outcome:x.source_quote_salvage_outcome,
+      source_only_outcome:x.source_only_outcome}:{})})),
    items:items.sort(byId),families,calls,
    policy:noveltyPolicy==='recall'?
     'issue92_recall_first_source_and_utility_v1':
