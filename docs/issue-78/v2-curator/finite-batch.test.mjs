@@ -1434,3 +1434,111 @@ test('source-quote salvage requires an already admitted source-exact complement 
   /INVALID_BOUNDS/);
  assert.equal(calls,0);assert.equal(f.graphiti.writes.length,0);
 },[strong]));
+
+test('invalid claim-support response still allows independent utility of exact config source',()=>fixture(async f=>{
+ const config='i had to uncomment LITELLM_MASTER_KEY for litellm to be able to start';
+ let support=0,utility=0;
+ const curate=async(_,{promptMessages})=>{
+  const system=promptMessages[0].content,data=JSON.parse(promptMessages[1].content);
+  if(system.includes('SOURCE-EXACT COMPLEMENT UTILITY')){
+   utility++;
+   assert.equal(data.candidates.length,1);
+   assert.equal(data.candidates[0].assertion,config);
+   return {content:JSON.stringify({decisions:[{index:0,disposition:'ACCEPT',
+    reason_code:'source_specific_durable',utility_class:'reusable_procedure'}]})};
+  }
+  if(system.includes('SOURCE-EXACT COMPLEMENT'))
+   return {content:JSON.stringify({reason:'No other distinct source facts',candidates:[]})};
+  if(system.includes('independent SOURCE-SUPPORT critic')){
+   support++;return {content:'{"invalid_support_verdict":true}'};
+  }
+  if(system.includes('CLAIM/EVIDENCE SEPARATION')){
+   const e=data.evidence[0];
+   return {content:JSON.stringify({reason:'Original source reports startup dependency',
+    candidates:[{source_ref:e.source,start:0,end:e.excerpt.length,
+     kind:'dependency',temporal_status:'observed',normalized_claim:config}]})};
+  }
+  throw Error('UNEXPECTED_STAGE');
+ };
+ const result=await runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true,resilientDiscovery:true,claimEvidence:true,
+  sourceExactComplement:true,sourceQuoteSalvage:true}));
+ assert.equal(result.persisted,1);
+ assert.equal(f.graphiti.writes.length,1);
+ assert.deepEqual({support,utility},{support:1,utility:1});
+ assert.match(f.graphiti.writes[0].episode_body,/LITELLM_MASTER_KEY/);
+ const active=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,'_active.json'),'utf8'));
+ const plan=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,active.batch_id,'plan.json'),'utf8'));
+ assert.equal(plan.cluster_outcomes[0].source_quote_salvage_outcome.approved,1);
+ assert.equal(plan.cluster_outcomes[0].source_only_outcome,null);
+},[config]));
+
+test('dense command text with zero discovery candidates receives bounded exact-source utility',()=>fixture(async f=>{
+ const command='opencode.db was recently pruned using sqlite3 DELETE FROM session '+
+  'WHERE time_archived IS NOT NULL OR time_updated < seven_days; '+
+  'DELETE FROM message WHERE session_id NOT IN (SELECT id FROM session); '+
+  'DELETE FROM part WHERE session_id NOT IN (SELECT id FROM session); '+
+  'DELETE FROM event WHERE aggregate_id NOT IN (SELECT id FROM session); '+
+  'VACUUM; '+('Repeat details of the durable sqlite maintenance procedure. '.repeat(4));
+ assert.ok(command.length>450);
+ let utility=0;
+ const curate=async(_,{promptMessages})=>{
+  const system=promptMessages[0].content,data=JSON.parse(promptMessages[1].content);
+  if(system.includes('SOURCE-EXACT COMPLEMENT UTILITY')){
+   utility++;
+   assert.equal(data.candidates.length,1);
+   assert.ok(data.candidates[0].assertion.length<=450);
+   assert.match(data.candidates[0].assertion,/opencode.db was recently pruned/);
+   assert.match(data.candidates[0].assertion,/DELETE FROM session/);
+   return {content:JSON.stringify({decisions:[{index:0,disposition:'ACCEPT',
+    reason_code:'source_specific_durable',utility_class:'reusable_procedure'}]})};
+  }
+  if(system.includes('CLAIM/EVIDENCE SEPARATION')||
+     system.includes('SOURCE-EXACT COMPLEMENT'))
+   return {content:JSON.stringify({reason:'No extracted model claim',candidates:[]})};
+  throw Error('UNEXPECTED_STAGE');
+ };
+ const result=await runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true,resilientDiscovery:true,claimEvidence:true,
+  sourceExactComplement:true,sourceQuoteSalvage:true}));
+ assert.equal(result.persisted,1);
+ assert.equal(utility,1);
+ assert.equal(f.graphiti.writes.length,1);
+ assert.match(f.graphiti.writes[0].episode_body,/DELETE FROM session/);
+ const active=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,'_active.json'),'utf8'));
+ const plan=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,active.batch_id,'plan.json'),'utf8'));
+ assert.equal(plan.cluster_outcomes[0].source_only_outcome.approved,1);
+},[command]));
+
+test('original-source fallback retains operator chatter in review, not Graphiti',()=>fixture(async f=>{
+ const status='The post-exit run appears complete; please provide the status summary.';
+ let utility=0;
+ const curate=async(_,{promptMessages})=>{
+  const system=promptMessages[0].content;
+  if(system.includes('SOURCE-EXACT COMPLEMENT UTILITY')){
+   utility++;
+   return {content:JSON.stringify({decisions:[{index:0,disposition:'REVIEW',
+    reason_code:'not_substantive'}]})};
+  }
+  if(system.includes('CLAIM/EVIDENCE SEPARATION')||
+     system.includes('SOURCE-EXACT COMPLEMENT'))
+   return {content:JSON.stringify({reason:'No durable technical predicate',
+    candidates:[]})};
+  throw Error('UNEXPECTED_STAGE');
+ };
+ const result=await runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true,resilientDiscovery:true,claimEvidence:true,
+  sourceExactComplement:true,sourceQuoteSalvage:true}));
+ assert.equal(result.persisted,0);
+ assert.equal(f.graphiti.writes.length,0);
+ assert.equal(utility,1);
+ const active=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,'_active.json'),'utf8'));
+ const plan=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,active.batch_id,'plan.json'),'utf8'));
+ assert.equal(plan.cluster_outcomes[0].source_only_outcome.approved,0);
+},[status]));
