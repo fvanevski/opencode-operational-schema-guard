@@ -42,6 +42,11 @@ export function sourceAtomicityStructuralRisk(quote){
   // "transition function read it at startup" may describe the same
   // architecture relation as the preceding clause, not a separate fact.
   if(/\b(?:it|its)\b/i.test(next)&&!ATOMIC_DIRECTIVE.test(next))continue;
+  // SQL statements in one quoted maintenance procedure are executable
+  // steps, not separate independently verifiable developer-memory facts.
+  if(/\b(?:DELETE\s+FROM|INSERT\s+INTO|UPDATE\s+\w+\s+SET)\b/i.test(prior)&&
+     /^(?:DELETE\s+FROM|INSERT\s+INTO|UPDATE\s+\w+\s+SET|VACUUM\b)/i.test(next))
+    continue;
   if(ATOMIC_DIRECTIVE.test(next)||ATOMIC_NEW_SUBJECT.test(next))
    return 'independent_clause_boundary';
  }
