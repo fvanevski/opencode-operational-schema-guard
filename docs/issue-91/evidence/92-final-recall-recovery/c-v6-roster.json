@@ -1,0 +1,332 @@
+{
+  "schema": "issue92-a3-v6-roster-native",
+  "group": "graphiti-adr92-a3-prospective-v6",
+  "case_count": 20,
+  "valuable": 10,
+  "nonvaluable_controls": 10,
+  "private_manifest_sha256": "70f02cefdb0cfeb92340a17a1b63203cb894b4645132e5796c29d4a9e5f3b715",
+  "label_freeze_sha256": "ceebf3f2fbde21cc1c601d997b5736bed9f2e88144da4c13f46aeced7711eecd",
+  "created_utc": "2026-11-13T02:44:12.191139+00:00",
+  "cases": [
+    {
+      "id": "v6-v-01",
+      "session_id": "ses_e585a7a53ffeT7TLEtYjTO1qmp",
+      "message_id": "msg_1a7a7447b001g97uM011bRJ8Nc",
+      "source_locator": "opencode:ses_e585a7a53ffeT7TLEtYjTO1qmp:message:msg_1a7a7447b001g97uM011bRJ8Nc",
+      "source_locator_sha256": "883f16fa650f05c9b27139c490f0c0cc6244bd213e465dc54ed03d3ea05f269c",
+      "native_event_text_sha256": "4538905acdd750eb324aa57d6bcd7ef3b7862b55934eaa447f6a0695c115e58b",
+      "observed_at": "2026-11-04T17:42:00.104000+00:00",
+      "project": "2cfa05e81c79265ab99a7ab992d9bf8f4ac2699b",
+      "workspace": "/home/filip",
+      "label": {
+        "valuable": true,
+        "predicate": "TBA-titled imports succeed only with operator intervention to manually accept blocklisted releases",
+        "prospective": true
+      }
+    },
+    {
+      "id": "v6-v-02",
+      "session_id": "ses_e6687fb2dffe9v0uAQQ3M6vDOR",
+      "message_id": "msg_1997d50e1001nLkYUQBkDYeYDq",
+      "source_locator": "opencode:ses_e6687fb2dffe9v0uAQQ3M6vDOR:message:msg_1997d50e1001nLkYUQBkDYeYDq",
+      "source_locator_sha256": "0dedf673d187f9b92a88d936f4e853507b59a20603f5a2b3ef0266283765bf54",
+      "native_event_text_sha256": "b9dfa7a7a57b3cc6a8c4ff402b8cc63e819c68ec4fb5a14073849965ac285fe4",
+      "observed_at": "2026-11-01T23:41:32.622000+00:00",
+      "project": "0f5d6bf45db635bc9c239ddd5c1329d651ed13fa",
+      "workspace": "/tmp/ghdev-issue75.BuzBwKeu/worktree",
+      "label": {
+        "valuable": true,
+        "predicate": "the opencode plugin is the @opencode-ai/plugin package",
+        "prospective": true
+      }
+    },
+    {
+      "id": "v6-v-03",
+      "session_id": "ses_e76e885afffe5nDb1ch2WTfrNh",
+      "message_id": "msg_189298a7e001Xui2m118kcRNEM",
+      "source_locator": "opencode:ses_e76e885afffe5nDb1ch2WTfrNh:message:msg_189298a7e001Xui2m118kcRNEM",
+      "source_locator_sha256": "fd60d25e4cdaa5e76f1ea4aa701688ef167b603d5e94a6f927d06a9dc316efff",
+      "native_event_text_sha256": "9d822b15729ffcc16463974259280417751bd40c62db07d15b0d9b887d40b189",
+      "observed_at": "2026-10-29T19:36:03.493000+00:00",
+      "project": "2d5b82f298ebae09c6670dfbbf361dc7246493a3",
+      "workspace": "/opt/containers/graphiti",
+      "label": {
+        "valuable": true,
+        "predicate": "/workspace/mcp_servers/mcp-mux-2.0-dev is a local clone of the gh repo",
+        "prospective": true
+      }
+    },
+    {
+      "id": "v6-v-04",
+      "session_id": "ses_ede61a7c4ffeiBTS6W9wnkW9PA",
+      "message_id": "msg_121bbc2a1001HRrLVCKMlnDKeZ",
+      "source_locator": "opencode:ses_ede61a7c4ffeiBTS6W9wnkW9PA:message:msg_121bbc2a1001HRrLVCKMlnDKeZ",
+      "source_locator_sha256": "d83d3384b69605ded0cbd48d7f067bb02552481ca4ee567eb622abe04952cded",
+      "native_event_text_sha256": "560222940cf9fe3732ca5cf6c199b80b6b491e52e0f1ee62e60d38e38d0f64fc",
+      "observed_at": "2026-10-09T17:35:15.617000+00:00",
+      "project": "global",
+      "workspace": "/home/filip",
+      "label": {
+        "valuable": true,
+        "predicate": "the openviking commit gate works correctly after removing the root API key, with pending sessions drained",
+        "prospective": true
+      }
+    },
+    {
+      "id": "v6-v-05",
+      "session_id": "ses_f2706ab22ffeamEgcuGNjMizOy",
+      "message_id": "msg_0d91e9c930011zUlqOTzEmmzGq",
+      "source_locator": "opencode:ses_f2706ab22ffeamEgcuGNjMizOy:message:msg_0d91e9c930011zUlqOTzEmmzGq",
+      "source_locator_sha256": "12e0787326410c42fa818efe0cc8dbab595b972d38c8d859a749758c15b4fda5",
+      "native_event_text_sha256": "5a1a956b3f3c4fb8b5581f3863feb2a020d8c95285432c3ed478d547c8de4a21",
+      "observed_at": "2026-09-25T15:10:57.171000+00:00",
+      "project": "global",
+      "workspace": "/home/filip",
+      "label": {
+        "valuable": true,
+        "predicate": "the FALLBACK_2 source directory was manually deleted as a maintenance step (no further investigation needed)",
+        "prospective": true
+      }
+    },
+    {
+      "id": "v6-v-06",
+      "session_id": "ses_e5811b72dffeHsBS4pVp98BgX7",
+      "message_id": "msg_1a7f3485000178qFlqqOIq5WCc",
+      "source_locator": "opencode:ses_e5811b72dffeHsBS4pVp98BgX7:message:msg_1a7f3485000178qFlqqOIq5WCc",
+      "source_locator_sha256": "e181af0b78fc3ff86572626b33f7b5a9dd13fa2bd350ab3987267f097a7c596c",
+      "native_event_text_sha256": "daf24aed9c42bf63d71d431d749384c218c299cac56f45db02520d3dde579a23",
+      "observed_at": "2026-11-04T19:05:01.902000+00:00",
+      "project": "0be245d66e24443694590a9715098eb65bdfb716",
+      "workspace": "/tmp/opencode/issue81-qual/terminal81-a1f3c9/native-ws/fsm81",
+      "label": {
+        "valuable": true,
+        "predicate": "in the original fsm81 pilot the state map lived in a separate states.json file read by the transition function",
+        "prospective": true
+      }
+    },
+    {
+      "id": "v6-v-07",
+      "session_id": "ses_f35de9234ffe02HqwtuVqKaIkP",
+      "message_id": "msg_0cb222a8f001LPvHhxuxNOpAD8",
+      "source_locator": "opencode:ses_f35de9234ffe02HqwtuVqKaIkP:message:msg_0cb222a8f001LPvHhxuxNOpAD8",
+      "source_locator_sha256": "379db364642b85acdf8bbae86493f10ee4864d62dd75ba143faeb183ca78b195",
+      "native_event_text_sha256": "27f754c7988894d497fdc5c18c91fe774c9d26d5a90e7e62357a2cb348e76f8e",
+      "observed_at": "2026-09-22T22:00:09.104000+00:00",
+      "project": "global",
+      "workspace": "/opt/containers",
+      "label": {
+        "valuable": true,
+        "predicate": "dovi-tool and libdovi (3.4.0-1) are installed on the garuda linux host",
+        "prospective": true
+      }
+    },
+    {
+      "id": "v6-v-08",
+      "session_id": "ses_f778e7103ffeQpw0IzHBwX37Fb",
+      "message_id": "msg_0896b0103001qNSWJwdK9W9sJx",
+      "source_locator": "opencode:ses_f778e7103ffeQpw0IzHBwX37Fb:message:msg_0896b0103001qNSWJwdK9W9sJx",
+      "source_locator_sha256": "7606c02e334960b54215f37960b7dfe399fe7572a3dbb10ba947a5b5df91911d",
+      "native_event_text_sha256": "897d3a84dedabc43cf1300fad252708af20a732dc5f2848039c06ec8cc5a6809",
+      "observed_at": "2026-09-10T03:44:46.339000+00:00",
+      "project": "global",
+      "workspace": "/home/filip",
+      "label": {
+        "valuable": true,
+        "predicate": "opensubtitles credentials (API token, username, password) are stored in ~/temp/opensubtitles",
+        "prospective": true
+      }
+    },
+    {
+      "id": "v6-v-09",
+      "session_id": "ses_f8160a155ffeHwoJqWjU0cfrvs",
+      "message_id": "msg_07ebbd65e001pqIqAbIiWnc49J",
+      "source_locator": "opencode:ses_f8160a155ffeHwoJqWjU0cfrvs:message:msg_07ebbd65e001pqIqAbIiWnc49J",
+      "source_locator_sha256": "b56ccd1d26a9c0cfef50226214aee175c69aa7e49cd49a687d7f6e0c806ffd4e",
+      "native_event_text_sha256": "e3de201e05966af9abe37ac6068a750198e3d789318f91df9b95ff2111fd14c4",
+      "observed_at": "2026-09-08T01:57:14.462000+00:00",
+      "project": "global",
+      "workspace": "/home/filip/.config/opencode",
+      "label": {
+        "valuable": true,
+        "predicate": "the probe MCP config in opencode.json points to the port 8002 vLLM server",
+        "prospective": true
+      }
+    },
+    {
+      "id": "v6-v-10",
+      "session_id": "ses_edc3e4340ffexdeQA4usVnxLv2",
+      "message_id": "msg_126767afe001cCKNF19FVBu3VX",
+      "source_locator": "opencode:ses_edc3e4340ffexdeQA4usVnxLv2:message:msg_126767afe001cCKNF19FVBu3VX",
+      "source_locator_sha256": "88d28fc9765672e278c665c90ab3fd5b5984fa53f6bdf2f959552a41ec05f38b",
+      "native_event_text_sha256": "390779420a4cd4fc43001520b728e5af8b497131988b2e1908654b6c69219956",
+      "observed_at": "2026-10-10T15:37:41.374000+00:00",
+      "project": "global",
+      "workspace": "/tmp/ov-closeout.4kVVgMp2/ov-r4e2-production-closeout-v1",
+      "label": {
+        "valuable": true,
+        "predicate": "when the commit gate shows queue_empty (not harness active), operator commands may be run",
+        "prospective": true
+      }
+    },
+    {
+      "id": "v6-c-01",
+      "session_id": "ses_e37aa8517ffeg7n4zGhE4vBuVL",
+      "message_id": "msg_1c8676071001prBBGxFD6GUr1x",
+      "source_locator": "opencode:ses_e37aa8517ffeg7n4zGhE4vBuVL:message:msg_1c8676071001prBBGxFD6GUr1x",
+      "source_locator_sha256": "27be6abef89f6b0738b5776e3dbbc3f86e35eeda5079fc450a21d506ff679a48",
+      "native_event_text_sha256": "0b868c4a9d1cad2e027678f8a7feaab99cb2f23c407d2d7c7f97ce784f0d64c1",
+      "observed_at": "2026-11-11T02:19:40.586000+00:00",
+      "project": "0f5d6bf45db635bc9c239ddd5c1329d651ed13fa",
+      "workspace": "/workspace/opencode-operational-schema-guard",
+      "label": {
+        "valuable": false,
+        "predicate": "operator status chatter: post-exit sequence appears completed (no technical requirement)",
+        "prospective": true
+      }
+    },
+    {
+      "id": "v6-c-02",
+      "session_id": "ses_e3cf66e67ffel8mYeHJd0RMPxR",
+      "message_id": "msg_1c315cda9001RScS5KscfQRHlI",
+      "source_locator": "opencode:ses_e3cf66e67ffel8mYeHJd0RMPxR:message:msg_1c315cda9001RScS5KscfQRHlI",
+      "source_locator_sha256": "d641f0b9ea83b9d0cf9b550e91421015402ab49d6626f42c96438e0f69497fb9",
+      "native_event_text_sha256": "8a29a2fe116a6a02fe16ea1f5d2bf51d5fda1560462363d4cde78ac18bd59135",
+      "observed_at": "2026-11-10T01:32:28.493000+00:00",
+      "project": "0f5d6bf45db635bc9c239ddd5c1329d651ed13fa",
+      "workspace": "/workspace/opencode-operational-schema-guard",
+      "label": {
+        "valuable": false,
+        "predicate": "operator status chatter: post-exit sequence should have completed (no technical requirement)",
+        "prospective": true
+      }
+    },
+    {
+      "id": "v6-c-03",
+      "session_id": "ses_e48972b74ffelp1G0HWJE6vNsS",
+      "message_id": "msg_1b7844d2c0012Jd14ARiYdsuJa",
+      "source_locator": "opencode:ses_e48972b74ffelp1G0HWJE6vNsS:message:msg_1b7844d2c0012Jd14ARiYdsuJa",
+      "source_locator_sha256": "6314a718894a7f1475dd956e48d9530ba5301c74828a6ad77741331d2c6a518f",
+      "native_event_text_sha256": "af82e19f91d3f2cb64dc3f5210a5d09392ee8bbfc807e3efb9bdb296fcb92e6f",
+      "observed_at": "2026-11-07T19:37:43.521000+00:00",
+      "project": "6e1d1f14113b8296790eb58270fae14c20edf5be",
+      "workspace": "/workspace/mcp_servers/gh_mcp",
+      "label": {
+        "valuable": false,
+        "predicate": "transient operator note: a process was killed and opencode restarted (no durable requirement)",
+        "prospective": true
+      }
+    },
+    {
+      "id": "v6-c-04",
+      "session_id": "ses_eb4c77772ffeLq0ZbyWJA4FD5E",
+      "message_id": "msg_14b38888e001AxK1zNx8IluDH3_66",
+      "source_locator": "opencode:ses_eb4c77772ffeLq0ZbyWJA4FD5E:message:msg_14b38888e001AxK1zNx8IluDH3_66",
+      "source_locator_sha256": "34321f8ee7f34309508fb2a3d2d6dd940baf3a47bf295add844516f13e400e2c",
+      "native_event_text_sha256": "c80f5d60284a2ef41255251eff4f907bbcbcc9d4fdd6d4feb91679a1b27fc349",
+      "observed_at": "2026-10-16T19:06:24.097000+00:00",
+      "project": "53f15a255e83bbb3064cea4cb862ec78fe90138f",
+      "workspace": "/opt/containers/tdarr",
+      "label": {
+        "valuable": false,
+        "predicate": "transient session-export path note (no technical requirement)",
+        "prospective": true
+      }
+    },
+    {
+      "id": "v6-c-05",
+      "session_id": "ses_e3ec371ddffed64IaMCB5zOMhg",
+      "message_id": "msg_1c15c5242001ggQVMtNvTYLX77",
+      "source_locator": "opencode:ses_e3ec371ddffed64IaMCB5zOMhg:message:msg_1c15c5242001ggQVMtNvTYLX77",
+      "source_locator_sha256": "44d079f3b598d9bee239aa35a787a299f44f2b929f525ed82e4178881423878f",
+      "native_event_text_sha256": "265f18b76dac90b406872ba5d3df4ae5df9b0c260a828f71d840a9c3192e61cc",
+      "observed_at": "2026-11-09T17:30:15.524000+00:00",
+      "project": "0f5d6bf45db635bc9c239ddd5c1329d651ed13fa",
+      "workspace": "/workspace/opencode-operational-schema-guard",
+      "label": {
+        "valuable": false,
+        "predicate": "task instruction to monitor checks and merge #30 when green (no durable fact)",
+        "prospective": true
+      }
+    },
+    {
+      "id": "v6-c-06",
+      "session_id": "ses_e6bc6ad6effetmmDSU1MovS4Cy",
+      "message_id": "msg_194395295001rxaah67byWe0yC",
+      "source_locator": "opencode:ses_e6bc6ad6effetmmDSU1MovS4Cy:message:msg_194395295001rxaah67byWe0yC",
+      "source_locator_sha256": "16d88186de7285a2cf255d5d38fa3d3c541be2c0b37c6874cefa87a89f622652",
+      "native_event_text_sha256": "4ab127c5dbbd2eefea834a1751b889378010845d521808e3af2c04ea8b6013be",
+      "observed_at": "2026-10-31T23:09:07.237000+00:00",
+      "project": "2cfa05e81c79265ab99a7ab992d9bf8f4ac2699b",
+      "workspace": "/home/filip",
+      "label": {
+        "valuable": false,
+        "predicate": "task instruction to fetch and follow a remote INSTALL.md (no durable fact)",
+        "prospective": true
+      }
+    },
+    {
+      "id": "v6-c-07",
+      "session_id": "ses_e4dedf35effeJ1TpWN8wRqwO5g",
+      "message_id": "msg_1b2120cb0001azFKI9YyQZJvwY",
+      "source_locator": "opencode:ses_e4dedf35effeJ1TpWN8wRqwO5g:message:msg_1b2120cb0001azFKI9YyQZJvwY",
+      "source_locator_sha256": "f584a111b2aa00e86595cbb93be9316acc601ebb8a40f09c464d51f8eb57be00",
+      "native_event_text_sha256": "e4eac92a2a876d4e5a97a2b124d2ecc59f0ec5d7cb4d90d829d9858c1046fbd0",
+      "observed_at": "2026-11-06T18:14:50.388000+00:00",
+      "project": "7d7a2e305630bc45e21a2e34258e5583879cccdb",
+      "workspace": "/tmp/opencode/issue81-fresh-native-acceptance/fresh-native-v1",
+      "label": {
+        "valuable": false,
+        "predicate": "nonvaluable diagnostic question about v2smoke4 test failures",
+        "prospective": true
+      }
+    },
+    {
+      "id": "v6-c-08",
+      "session_id": "ses_e4df2c8d4ffe4gDUe2CPPFMaGo",
+      "message_id": "msg_1b20d3738001zGgQqTVFsDsVBF",
+      "source_locator": "opencode:ses_e4df2c8d4ffe4gDUe2CPPFMaGo:message:msg_1b20d3738001zGgQqTVFsDsVBF",
+      "source_locator_sha256": "dd693c7438435c1fc38ac8b154f1bc3e36bbf74f1d25385b2d9bb0bfba74ccb3",
+      "native_event_text_sha256": "8af3483669d5c3f0e24db4c31fa601a381106b88bc95eb6df51265f739304c8d",
+      "observed_at": "2026-11-06T18:09:33.631000+00:00",
+      "project": "7d7a2e305630bc45e21a2e34258e5583879cccdb",
+      "workspace": "/tmp/opencode/issue81-fresh-native-acceptance/fresh-native-v1",
+      "label": {
+        "valuable": false,
+        "predicate": "nonvaluable status question about the last CPU regression run",
+        "prospective": true
+      }
+    },
+    {
+      "id": "v6-c-09",
+      "session_id": "ses_e38332863fferhaaQ323SRY6d0",
+      "message_id": "msg_1c7cdf64300111JgMfZXQzs52X",
+      "source_locator": "opencode:ses_e38332863fferhaaQ323SRY6d0:message:msg_1c7cdf64300111JgMfZXQzs52X",
+      "source_locator_sha256": "a71612cb39b8537c543e11c3f3143482fd961063b671a167186b48e3ecc98fa3",
+      "native_event_text_sha256": "b95f31842c803d2ef24f13ce5cce7917720cf6657895d7ff50ec38abce194930",
+      "observed_at": "2026-11-10T23:33:34.670000+00:00",
+      "project": "0f5d6bf45db635bc9c239ddd5c1329d651ed13fa",
+      "workspace": "/workspace/opencode-operational-schema-guard",
+      "label": {
+        "valuable": false,
+        "predicate": "transient observation that a recent reboot purged /tmp (no durable requirement)",
+        "prospective": true
+      }
+    },
+    {
+      "id": "v6-c-10",
+      "session_id": "ses_e3e07fabdffeqb4n3B6Ip41ZdK",
+      "message_id": "msg_1c1ff3143001WxYWfTTkjDvvwd",
+      "source_locator": "opencode:ses_e3e07fabdffeqb4n3B6Ip41ZdK:message:msg_1c1ff3143001WxYWfTTkjDvvwd",
+      "source_locator_sha256": "f2bb044c310afc0f03b4623c654a1a3ee7c6f66fb0d93bc7259b46c9fa0b2ac7",
+      "native_event_text_sha256": "e70c8b8562ed8100cf52fce4604cfbbd4dffc7a5c5cf3fc1b49435f4e8a4d422",
+      "observed_at": "2026-11-09T20:28:09.440000+00:00",
+      "project": "2cfa05e81c79265ab99a7ab992d9bf8f4ac2699b",
+      "workspace": "/home/filip",
+      "label": {
+        "valuable": false,
+        "predicate": "operator action note: hermes-gateway reloaded via systemctl (transient, no durable requirement)",
+        "prospective": true
+      }
+    }
+  ]
+}

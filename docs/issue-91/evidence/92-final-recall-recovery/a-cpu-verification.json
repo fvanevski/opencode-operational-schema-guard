@@ -1,0 +1,10 @@
+{
+ "head":"cc6461de40cb63ce536ec88fbf00fe2744c93a55",
+ "modified_source_blobs":{"finite-batch.mjs":"ceb81740","finite-batch.test.mjs":"a3063276"},
+ "node_check":"rc=0 x2",
+ "focused_regressions":{"finite-batch":"68/0 (after 3-line test-scope fix)","claim-evidence":"pass","long-prompt":"pass","a3-stage":"pass","a3-acceptance":"pass"},
+ "test_scope_fix":"3 new tests referenced fixture dep-array consts (config/command/status) defined inside the callback -> ReferenceError; hoisted into test body (no semantic/assertion change)",
+ "python_ex_bridge":"OK (rc=0)",
+ "npm_check":"rc=0",
+ "npm_test":"524/0 PASS"
+}

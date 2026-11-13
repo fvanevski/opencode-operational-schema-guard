@@ -1,0 +1,11 @@
+{
+ "group":"graphiti-adr92-a3-prospective-v6",
+ "corpus_sha256":"70f02cefdb0cfeb92340a17a1b63203cb894b4645132e5796c29d4a9e5f3b715",
+ "label_freeze_sha256":"ceebf3f2fbde21cc1c601d997b5736bed9f2e88144da4c13f46aeced7711eecd",
+ "staged_events":20,"natural_clusters":20,"cluster_bound":24,
+ "ex_preflight":"PASS (positive ADMITTED; neg missing_lock_fd, wrong_inode fail-closed)",
+ "group_empty":"No episodes found (0 episodes)",
+ "scorer_pre_inference":"fails closed at insufficient_review_samples",
+ "once_only_marker":"state-v6/.v6-ran (absent, not executed)",
+ "bounds":"24/72/3600","not_executed":true
+}
