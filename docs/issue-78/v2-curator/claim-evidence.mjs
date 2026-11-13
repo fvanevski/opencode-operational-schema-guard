@@ -200,6 +200,14 @@ export function claimUtilityPrompt(cluster,proposal){
   ' A specific unresolved defect or requested technical contract can be'+
   ' reusable. Generic chatter, false completion claims and duplicates are not.'+
   ' ACCEPT means only the exact cited source quote may be automatically'+
-  ' promoted; do NOT claim the paraphrase itself is verified or stored.'},
+  ' promoted; do NOT claim the paraphrase itself is verified or stored.'+
+  ' ATOMICITY: judge the COMPLETE exact source quote, not merely the proposed'+
+  ' normalized claim. A condition plus its direct consequence can be one rule;'+
+  ' a package version PLUS unrelated tool instructions are TWO predicates.'+
+  ' If a quote bundles independent facts, REVIEW with review_uncertain; the'+
+  ' discovery/complement lane can propose separate literal quotes.'+
+  ' Every ACCEPT must include atomicity:{independent_predicates:1,'+
+  ' rationale:"explain why the complete quote is ONE technical predicate'+
+  ' (at least twenty characters)"} in the JSON decision.'},
   {role:'user',content:JSON.stringify(data)}];
 }

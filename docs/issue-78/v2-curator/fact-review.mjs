@@ -211,7 +211,9 @@ export function factReviewPrompt(cluster,proposal,priorFacts=[]){
    content:JSON.stringify({scope:{group:cluster.group,project:cluster.project},
      candidates:items,prior_same_group_facts:neighbors})}];
 }
-export function validateFactReview(raw,proposal){
+export function validateFactReview(raw,proposal,{requireAtomicity=false}={}){
+ // A new explicit opt-in prevents non-atomic Graphiti writes without
+ // retroactively mutating the interpretation of historical model receipts.
  let p;
  try{p=typeof raw==='string'?JSON.parse(raw):raw;}catch{return {ok:false,reason:'invalid_json'};}
  if(!p||!Array.isArray(p.decisions)||p.decisions.length!==proposal?.facts?.length)
@@ -226,7 +228,23 @@ export function validateFactReview(raw,proposal){
    if(d.disposition==='ACCEPT'&&d.reason_code==='source_specific_durable'){
      if(!DURABLE.has(d.utility_class))
        return {ok:false,reason:'invalid_durable_utility'};
-     accepted.push({index:d.index,utility_class:d.utility_class});
+     if(requireAtomicity){
+       // Missing, multi-predicate, or unsupported atomicity attestations
+       // defer only that candidate, not its independently sourced siblings.
+       const a=d.atomicity;
+       if(a?.independent_predicates!==1||
+          typeof a.rationale!=='string'||a.rationale.trim().length<20||
+          a.rationale.length>350){
+         review.push({index:d.index,reason_code:'review_uncertain',
+           atomicity_reason:a?.independent_predicates>1?
+            'multiple_independent_predicates':'atomicity_not_proven'});
+         continue;
+       }
+       accepted.push({index:d.index,utility_class:d.utility_class,
+         atomicity_review:{independent_predicates:1,
+           rationale:a.rationale.trim(),
+           assertion_sha256:hash(proposal.facts[d.index].assertion)}});
+     }else accepted.push({index:d.index,utility_class:d.utility_class});
    }else review.push({index:d.index,reason_code:d.reason_code});
  }
  return {ok:true,accepted:accepted.sort((a,b)=>a.index-b.index),
@@ -240,7 +258,7 @@ export function filterFactProposal(proposal,screen){
  const notes=screen.review.map(x=>({
    index:x.index,source_ref:proposal.facts[x.index].source_refs[0],
    suggested:proposal.facts[x.index].assertion,status:'review_only_unverified',
-   screen_reason:x.reason_code
+   screen_reason:x.atomicity_reason||x.reason_code
  }));
  if(!keep.length)
    return {ok:false,decision:'DEFER',reason:'independent_fact_review_required',
@@ -252,6 +270,7 @@ export function filterFactProposal(proposal,screen){
  return {ok:true,decision:'EMIT',reason:'Independent source-specific fact review: '+
    clamp(proposal.reason).slice(0,210),utility_class:top,facts,
    fact_utilities:keep.map(item=>item.utility_class),
+   fact_atomicity_reviews:keep.map(item=>item.atomicity_review||null),
    review_only_claims:[...(proposal.review_only_claims||[]),...notes].slice(0,3)};
 }
 export async function reviewProposedFacts(cluster,proposal,{
