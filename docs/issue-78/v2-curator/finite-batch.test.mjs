@@ -1802,7 +1802,7 @@ test('V2 complement allows narrower sources only after an atomicity veto',()=>{
 });
 test('V2 recovers one atomic source claim after structural rejection of the combined quote',()=>
  fixture(async f=>{
-  const first='The local compatibility proxy forwards malformed API calls to the serving endpoint.';
+  const first='The local compatibility proxy uses routing rules to forward malformed API calls to the serving endpoint.';
   const combined=first+' The replacement client uses a different direct endpoint.';
   const stages=[];
   const curate=async(_,{promptMessages})=>{
@@ -1854,4 +1854,4 @@ test('V2 recovers one atomic source claim after structural rejection of the comb
   assert.ok(!f.graphiti.writes[0].episode_body.includes('replacement client'));
   assert.deepEqual(stages,['claim-discovery','support','claim-utility',
    'complement-discovery','complement-utility']);
- },['The local compatibility proxy forwards malformed API calls to the serving endpoint. The replacement client uses a different direct endpoint.']));
+ },['The local compatibility proxy uses routing rules to forward malformed API calls to the serving endpoint. The replacement client uses a different direct endpoint.']));
