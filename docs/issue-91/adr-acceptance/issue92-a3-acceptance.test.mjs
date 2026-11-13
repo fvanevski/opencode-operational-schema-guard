@@ -161,3 +161,34 @@ test('A3 scorer rejects synthetic staged session even if original locator hash s
  f.stage.events[0].session_id='shared_cluster_session';
  assert.throws(()=>run(f),/stage_native_locator_identity_mismatch/);
 });
+
+test('A3 original-source staging preserves split native fragment offsets and full message digest',()=>{
+ const f=fixture({persisted:0});
+ const native='The cache must reject stale writes.\r\n'+
+  '<openviking-context>remembered assistant analysis</openviking-context>\n'+
+  'The revision counter must be checked before a writer advances.';
+ f.manifest.cases[0].native_event=native;
+ f.roster.cases[0].native_event_text_sha256=sha(native);
+ const result=prepareProspectiveEvents(f.manifest,f.roster);
+ const rows=result.stageRows.filter(r=>r.case_id==='case-0');
+ const events=result.events.filter(e=>e.session_id==='session0');
+ assert.equal(rows.length,2);
+ assert.equal(events.length,2);
+ for(let i=0;i<rows.length;i++){
+  const start=Number(/:span:(\d+)$/.exec(rows[i].source_ref)?.[1]);
+  assert.equal(native.slice(start,start+events[i].excerpt.length),events[i].excerpt);
+  assert.equal(rows[i].native_event_text_sha256,sha(native));
+  assert.equal(rows[i].excerpt_sha256,sha(events[i].excerpt));
+  assert.equal(rows[i].source_ref,events[i].source_refs[0]);
+  assert.ok(!events[i].excerpt.includes('remembered assistant analysis'));
+ }
+});
+test('A3 source freeze fails closed on natural-language secrets despite long source staging',()=>{
+ const f=fixture({persisted:0});
+ const raw='The architecture requires authenticated source spans. '.repeat(25)+
+  'The Graphiti password is DEMO_VALUE_DO_NOT_USE';
+ f.manifest.cases[0].native_event=raw;
+ f.roster.cases[0].native_event_text_sha256=sha(raw);
+ assert.throws(()=>prepareProspectiveEvents(f.manifest,f.roster),
+  /capture_privacy_or_bounds_case-0/);
+});

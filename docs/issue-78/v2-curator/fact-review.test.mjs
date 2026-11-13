@@ -350,3 +350,17 @@ test('independent reviewer is explicitly asked to credit a specific source-state
  assert.match(system,/REVIEW with not_substantive only/);
  assert.match(system,/itself must support/);
 });
+
+test('atomic source review explicitly separates distinct claims while retaining conditional rules',()=>{
+ const c=selectClusters([source()])[0],p=proposal(c);
+ const messages=factReviewPrompt(c,p);
+ assert.match(messages[0].content,/ONE atomic technical predicate/);
+ assert.match(messages[0].content,/bundles separate installation/);
+ assert.match(messages[0].content,/condition and its direct consequence/);
+ const ambiguous=validateFactReview({decisions:[{index:0,
+  disposition:'REVIEW',reason_code:'review_uncertain'}]},p);
+ assert.equal(ambiguous.ok,true);
+ const deferred=filterFactProposal(p,ambiguous);
+ assert.equal(deferred.decision,'DEFER');
+ assert.equal(deferred.review_only_claims[0].screen_reason,'review_uncertain');
+});
