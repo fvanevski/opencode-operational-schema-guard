@@ -5,7 +5,7 @@ import path from 'node:path';
 const SAFE_ID = /^[A-Za-z0-9_.:-]{1,160}$/;
 const SAFE_SCOPE = /^[A-Za-z0-9_.-]{1,100}$/;
 const PRIVATE = /<private\b|<\/private>|BEGIN (?:[A-Z ]+ )?PRIVATE KEY|(?:(?:api[_-]?key|access[_-]?token|password|secret|client_secret)\s*[:=]|["'](?:api[_-]?key|access[_-]?token|password|secret|client_secret)["']\s*:)|authorization\s*:\s*bearer|gh[pousr]_[A-Za-z0-9]{18,}|sk-[A-Za-z0-9_-]{16,}|AKIA[0-9A-Z]{16}/i;
-const PRIVATE_VALUE = /\b(?:api[_ -]?key|api[_ -]?token|access[_ -]?token|client[_ -]?secret|bearer[_ -]?token|password|passwd|secret)\b(?:\s+for\s+[a-z0-9_.-]+)?\s*(?:(?::|=|=>)\s*|(?:is|was|were|are|equals|set\s+to)\s+)(?!["'\u0060]?(?:in|at|under|inside|on|stored|located|available|missing|unset|blank|redacted|configured|required|valid|invalid|needed|generated|included|found|specified)\b)["'\u0060]?[a-z0-9_./+=!@#$%^&*-]{4,}/i;
+const PRIVATE_VALUE = /\b(?:api[_ -]?key|api[_ -]?token|access[_ -]?token|client[_ -]?secret|bearer[_ -]?token|password|passwd|secret)\b(?:\s+for\s+[a-z0-9_.-]+)?\s*(?:(?::|=|=>)\s*|(?:is|was|were|are|equals|set\s+to)\s+)(?!["'\u0060]?(?:in|at|under|inside|on|stored|located|available|missing|unset|blank|redacted|configured|required|valid|invalid|needed|generated|included|found|specified|removed)\b)["'\u0060]?[a-z0-9_./+=!@#$%^&*-]{4,}/i;
 const containsPrivateValue = text => PRIVATE.test(text) || PRIVATE_VALUE.test(text);
 const SELF = /\[GHDEV_GRAPHITI_CONTEXT\]|\[\/GHDEV_GRAPHITI_CONTEXT\]|\[OPENVIKING_CONTEXT\]|Source reference:\s*opencode:/i;
 const CHATTER = /^(?:ok(?:ay)?|thanks|thank you|great|yes|no|continue|proceed|got it|hello|hi|done)[.! ]*$/i;
