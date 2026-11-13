@@ -850,6 +850,54 @@ export async function runAdmittedFiniteBatch({
     }
     break;
    }
+   // An independent critic can reject the generated NORMALIZED claim even
+   // when its original cited quotation states a different, useful predicate.
+   // Evaluate that SOURCE-EXACT quote independently for utility, never the
+   // rejected paraphrase. Existing exact-quote utility rejections stay final.
+   let quoteSalvageOutcome=null;
+   if(sourceQuoteSalvage&&approved.length<3){
+    const eligible=[...entries.values()].filter(e=>
+     /^claim_support_(?:missing_predicate|unsupported_inference|review_uncertain)$/
+      .test(e.review_reason??'')&&
+     Number.isSafeInteger(e.fact?.evidence_span?.start)).sort(byId)
+     .slice(0,3-approved.length);
+    quoteSalvageOutcome={proposed:eligible.length,approved:0,deferred:0};
+    if(eligible.length){
+     const proposal={ok:true,decision:'EMIT',
+      reason:'Independent source quote utility; normalized claim was rejected',
+      facts:eligible.map(e=>e.fact)};
+     const reply=await callOnce('utility',
+      cluster.id+':source-quote-salvage-v1',cluster,
+      finiteBatchSourceExactComplementUtilityPrompt(cluster,proposal));
+     const screen=validateFactReview(reply.content,proposal);
+     if(!screen.ok){
+      quoteSalvageOutcome.invalid_review=screen.reason;
+      quoteSalvageOutcome.deferred=eligible.length;
+     }else{
+      const passed=filterFactProposal(proposal,screen);
+      if(passed.ok)for(let k=0;k<passed.facts.length;k++){
+       const fact=passed.facts[k],utility=passed.fact_utilities[k];
+       const validated=validateModelDecision({decision:'EMIT',
+        reason:'Source-exact independent utility approval',
+        utility_class:utility,facts:[{...fact,utility_class:utility}]},cluster);
+       if(!validated.ok)throw Error('QUOTE_SALVAGE_SOURCE_INVALID');
+       const e=factEntry(cluster,validated.facts[0],utility);
+       const previous=entries.get(e.id);
+       if(!previous||!/^claim_support_(?:missing_predicate|unsupported_inference|review_uncertain)$/
+        .test(previous.review_reason??''))continue;
+       if(approved.length>=3)break;
+       entries.set(e.id,e);approved.push(e);quoteSalvageOutcome.approved++;
+      }
+      for(const item of screen.review){
+       const e=factEntry(cluster,proposal.facts[item.index],null,
+        'source_quote_utility_'+item.reason_code);
+       if(entries.has(e.id)&&!approved.some(x=>x.id===e.id))
+        entries.set(e.id,e);
+       quoteSalvageOutcome.deferred++;
+      }
+     }
+    }
+   }
    // Independent SOURCE-EXACT complement: a failed normalized-claim critic
    // never becomes a Graphiti authorization. Every new quote independently
    // passes deterministic source validation AND a separate utility reviewer.
@@ -918,7 +966,8 @@ export async function runAdmittedFiniteBatch({
      source_recovery_trigger:recoveryTrigger}:{}),
     ...(resilientDiscovery?{source_validation_failures:validationFailures}:{}),
     ...(claimEvidence?{claim_support_outcomes:supportOutcomes}:{}),
-    ...(sourceExactComplement?{source_exact_complement_outcome:complementOutcome}:{})});
+    ...(sourceExactComplement?{source_exact_complement_outcome:complementOutcome}:{}),
+     ...(sourceQuoteSalvage?{source_quote_salvage_outcome:quoteSalvageOutcome}:{})});
   }
   assert(accepted.length<=maxCandidates,'ACCEPTED_POOL_OVER_BOUND_NO_PROMOTION');
   const selected=new Set(),deferred=new Map(),families=[];
@@ -1105,7 +1154,8 @@ export async function runAdmittedFiniteBatch({
      source_recovery_trigger:x.source_recovery_trigger}:{}),
      ...(resilientDiscovery?{source_validation_failures:x.source_validation_failures}:{}),
      ...(claimEvidence?{claim_support_outcomes:x.claim_support_outcomes}:{}),
-     ...(sourceExactComplement?{source_exact_complement_outcome:x.source_exact_complement_outcome}:{})})),
+     ...(sourceExactComplement?{source_exact_complement_outcome:x.source_exact_complement_outcome}:{}),
+      ...(sourceQuoteSalvage?{source_quote_salvage_outcome:x.source_quote_salvage_outcome}:{})})),
    items:items.sort(byId),families,calls,
    policy:noveltyPolicy==='recall'?
     'issue92_recall_first_source_and_utility_v1':
