@@ -364,3 +364,31 @@ test('atomic source review explicitly separates distinct claims while retaining 
  assert.equal(deferred.decision,'DEFER');
  assert.equal(deferred.review_only_claims[0].screen_reason,'review_uncertain');
 });
+
+test('atomicity certification is explicit, quote-hash-bound and defers independent bundles',()=>{
+ const c=selectClusters([source()])[0],p=proposal(c);
+ const missing=validateFactReview(accepted,p,{requireAtomicity:true});
+ assert.equal(missing.ok,true);
+ assert.equal(filterFactProposal(p,missing).decision,'DEFER');
+ assert.equal(filterFactProposal(p,missing).review_only_claims[0].screen_reason,
+  'atomicity_not_proven');
+ const bundled=validateFactReview({decisions:[{index:0,disposition:'ACCEPT',
+  reason_code:'source_specific_durable',utility_class:'useful_negative',
+  atomicity:{independent_predicates:2,
+   rationale:'The version statement and separate tool advice are unrelated'}}]},p,
+  {requireAtomicity:true});
+ assert.equal(filterFactProposal(p,bundled).decision,'DEFER');
+ assert.equal(filterFactProposal(p,bundled).review_only_claims[0].screen_reason,
+  'multiple_independent_predicates');
+ const single=validateFactReview({decisions:[{index:0,disposition:'ACCEPT',
+  reason_code:'source_specific_durable',utility_class:'useful_negative',
+  atomicity:{independent_predicates:1,
+   rationale:'The complete statement reports one CLI compatibility constraint'}}]},p,
+  {requireAtomicity:true});
+ assert.equal(single.ok,true);
+ assert.equal(single.accepted.length,1);
+ const kept=filterFactProposal(p,single);
+ assert.equal(kept.decision,'EMIT');
+ assert.equal(kept.fact_atomicity_reviews.length,1);
+ assert.match(kept.fact_atomicity_reviews[0].assertion_sha256,/^[a-f0-9]{64}$/);
+});

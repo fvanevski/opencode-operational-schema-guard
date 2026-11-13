@@ -1405,7 +1405,7 @@ test('source-quote salvage retains independently useful exact quote after reject
    assert.equal(data.candidates[0].assertion,strong);
    assert.equal(JSON.stringify(data).includes(unsupported),false);
    return {content:JSON.stringify({decisions:[{index:0,disposition:'ACCEPT',
-    reason_code:'source_specific_durable',utility_class:'useful_negative'}]})};
+    reason_code:'source_specific_durable',utility_class:'useful_negative',atomicity:{independent_predicates:1,rationale:'This entire quotation expresses one specific technical condition'}}]})};
   }
   if(sys.includes('SOURCE-EXACT COMPLEMENT')){
    calls.complement++;
@@ -1511,7 +1511,7 @@ test('invalid claim-support response still allows independent utility of exact c
    assert.equal(data.candidates.length,1);
    assert.equal(data.candidates[0].assertion,config);
    return {content:JSON.stringify({decisions:[{index:0,disposition:'ACCEPT',
-    reason_code:'source_specific_durable',utility_class:'reusable_procedure'}]})};
+    reason_code:'source_specific_durable',utility_class:'reusable_procedure',atomicity:{independent_predicates:1,rationale:'This entire quotation expresses one specific technical condition'}}]})};
   }
   if(system.includes('SOURCE-EXACT COMPLEMENT'))
    return {content:JSON.stringify({reason:'No other distinct source facts',candidates:[]})};
@@ -1561,7 +1561,7 @@ test('dense command text with zero discovery candidates receives bounded exact-s
    assert.match(data.candidates[0].assertion,/opencode.db was recently pruned/);
    assert.match(data.candidates[0].assertion,/DELETE FROM session/);
    return {content:JSON.stringify({decisions:[{index:0,disposition:'ACCEPT',
-    reason_code:'source_specific_durable',utility_class:'reusable_procedure'}]})};
+    reason_code:'source_specific_durable',utility_class:'reusable_procedure',atomicity:{independent_predicates:1,rationale:'This entire quotation expresses one specific technical condition'}}]})};
   }
   if(system.includes('CLAIM/EVIDENCE SEPARATION')||
      system.includes('SOURCE-EXACT COMPLEMENT'))
@@ -1612,4 +1612,63 @@ test('original-source fallback retains operator chatter in review, not Graphiti'
   'issue92-finite-batches-v1',scope.group,active.batch_id,'plan.json'),'utf8'));
  assert.equal(plan.cluster_outcomes[0].source_only_outcome.approved,0);
 },[status]);
+});
+
+test('final source-quote salvage defers a multi-predicate assertion despite model ACCEPT',()=>{
+ const mixed='Tdarr server and node use version three, and consult Context7 and Firecrawl when researching external API changes.';
+ return fixture(async f=>{
+  let calls=0;
+  const curate=async(_,{promptMessages})=>{
+   const system=promptMessages[0].content;
+   const payload=JSON.parse(promptMessages[1].content);
+   if(system.includes('SOURCE-EXACT COMPLEMENT UTILITY')){
+    calls++;
+    assert.match(system,/ATOMICITY/);
+    assert.equal(payload.candidates[0].assertion,mixed);
+    return {content:JSON.stringify({decisions:[{index:0,
+     disposition:'ACCEPT',reason_code:'source_specific_durable',
+     utility_class:'reusable_procedure',
+     atomicity:{independent_predicates:2,
+      rationale:'Version configuration and external tool-use instructions are independent'}}]})};
+   }
+   if(system.includes('CLAIM/EVIDENCE SEPARATION')||
+      system.includes('SOURCE-EXACT COMPLEMENT'))
+    return {content:JSON.stringify({reason:'No normalized claim',candidates:[]})};
+   throw Error('UNEXPECTED_ATOMICITY_STAGE');
+  };
+  const result=await runAdmittedFiniteBatch(recallOpts({...f,curate,
+   sourceRecovery:true,resilientDiscovery:true,claimEvidence:true,
+   sourceExactComplement:true,sourceQuoteSalvage:true}));
+  assert.equal(calls,1);
+  assert.equal(result.persisted,0);
+  assert.equal(f.graphiti.writes.length,0);
+  const active=JSON.parse(await readFile(path.join(f.root,
+   'issue92-finite-batches-v1',scope.group,'_active.json'),'utf8'));
+  assert.equal(active.atomicity_review_v1,true);
+  const plan=JSON.parse(await readFile(path.join(f.root,
+   'issue92-finite-batches-v1',scope.group,active.batch_id,'plan.json'),'utf8'));
+  assert.equal(plan.atomicity_review_v1,true);
+  assert.ok(plan.items.some(x=>x.reason.includes('multiple_independent_predicates')));
+ },[mixed]);
+});
+test('missing atomicity attestation cannot write a Graphiti episode',()=>{
+ const sourceText='The compatibility constraint requires that stale writes be rejected by the revision gate.';
+ return fixture(async f=>{
+  const curate=async(_,{promptMessages})=>{
+   const system=promptMessages[0].content;
+   if(system.includes('SOURCE-EXACT COMPLEMENT UTILITY'))
+    return {content:JSON.stringify({decisions:[{index:0,
+     disposition:'ACCEPT',reason_code:'source_specific_durable',
+     utility_class:'stable_architecture'}]})};
+   if(system.includes('CLAIM/EVIDENCE SEPARATION')||
+      system.includes('SOURCE-EXACT COMPLEMENT'))
+    return {content:JSON.stringify({reason:'No normalized claim',candidates:[]})};
+   throw Error('UNEXPECTED_STAGE');
+  };
+  const result=await runAdmittedFiniteBatch(recallOpts({...f,curate,
+   sourceRecovery:true,resilientDiscovery:true,claimEvidence:true,
+   sourceExactComplement:true,sourceQuoteSalvage:true}));
+  assert.equal(result.persisted,0);
+  assert.equal(f.graphiti.writes.length,0);
+ },[sourceText]);
 });
