@@ -8,6 +8,7 @@ import {CandidateQueue} from '../v2-candidate/queue.mjs';
 import {selectClusters,validateModelDecision,ReviewStore} from './core.mjs';
 import {factDiscoveryPrompt,validateFactDiscovery,
  factReviewPrompt,validateFactReview,filterFactProposal,
+ sourceAtomicityStructuralRisk,
  reviewProposedFacts} from './fact-review.mjs';
 import {runAdmitted} from './worker.mjs';
 
@@ -391,4 +392,49 @@ test('atomicity certification is explicit, quote-hash-bound and defers independe
  assert.equal(kept.decision,'EMIT');
  assert.equal(kept.fact_atomicity_reviews.length,1);
  assert.match(kept.fact_atomicity_reviews[0].assertion_sha256,/^[a-f0-9]{64}$/);
+});
+
+test('structural atomicity veto rejects a model false-ONE on authentic two-predicate source',()=>{
+ const mixed='tdarr server/node are v3, use Context7 and Firecrawl MCP server tools for researching external APIs.';
+ const e=fromPrompt({sessionID:'ses-atomic-source',messageID:'msg-atomic-source',
+  prompt:{text:mixed},timestamp:'2026-11-13T19:00:00Z'},scope,{admitted:true});
+ assert.ok(e);
+ const cluster=selectClusters([e])[0],ref=e.source_refs[0];
+ const p=validateModelDecision({decision:'EMIT',utility_class:'reusable_procedure',
+  reason:'A possibly useful developer fact',
+  facts:[{kind:'observation',source_refs:[ref],temporal_status:'observed',
+   evidence_span:{source_ref:ref,start:0,end:e.excerpt.length}}]},cluster);
+ assert.equal(p.ok,true);
+ assert.equal(p.facts[0].assertion,mixed);
+ assert.equal(sourceAtomicityStructuralRisk(mixed),'independent_clause_boundary');
+ const apparentlyAcceptable={decisions:[{index:0,disposition:'ACCEPT',
+  reason_code:'source_specific_durable',utility_class:'reusable_procedure',
+  atomicity:{independent_predicates:1,
+   rationale:'The quoted source seems to express just one unified procedure'}}]};
+ const screen=validateFactReview(apparentlyAcceptable,p,{requireAtomicity:true});
+ assert.equal(screen.ok,true);
+ assert.equal(screen.accepted.length,0);
+ const rejected=filterFactProposal(p,screen);
+ assert.equal(rejected.decision,'DEFER');
+ assert.equal(rejected.review_only_claims[0].screen_reason,
+  'source_structural_independent_clause_boundary');
+ // Historical non-opt-in receipts remain readable under their original
+ // validator policy, but cannot be treated as structurally reviewed.
+ assert.equal(validateFactReview(apparentlyAcceptable,p).accepted.length,1);
+});
+test('structural review accepts coherent conditional and historical architecture statements',()=>{
+ const atomic=[
+  'When the commit gate shows queue_empty, operator commands may be run.',
+  'The installed dovi-tool and libdovi packages use the configured host versions.',
+  'The original state map lived in a states.json file and the transition function read it at startup.',
+  'The OpenViking API key was removed with pending sessions drained.'
+ ];
+ for(const quote of atomic)assert.equal(sourceAtomicityStructuralRisk(quote),null,quote);
+ const bundled=[
+  'Tdarr server and node use version three, and consult Context7 and Firecrawl for development research.',
+  'The Tdarr server is version three; the Graphiti database is on a separate host.',
+  'The API service is installed and the downstream proxy is configured for a new endpoint.'
+ ];
+ for(const quote of bundled)assert.equal(sourceAtomicityStructuralRisk(quote),
+  'independent_clause_boundary',quote);
 });

@@ -1441,6 +1441,7 @@ test('source-quote salvage retains independently useful exact quote after reject
  const plan=JSON.parse(await readFile(path.join(f.root,
   'issue92-finite-batches-v1',scope.group,active.batch_id,'plan.json'),'utf8'));
  assert.equal(plan.source_quote_salvage,true);
+ assert.equal(plan.atomicity_structural_v1,true);
  assert.equal(plan.cluster_outcomes[0].source_quote_salvage_outcome.approved,1);
  assert.equal(plan.items.filter(x=>x.utility_class).length,1);
 },[strong]));
@@ -1628,8 +1629,8 @@ test('final source-quote salvage defers a multi-predicate assertion despite mode
     return {content:JSON.stringify({decisions:[{index:0,
      disposition:'ACCEPT',reason_code:'source_specific_durable',
      utility_class:'reusable_procedure',
-     atomicity:{independent_predicates:2,
-      rationale:'Version configuration and external tool-use instructions are independent'}}]})};
+     atomicity:{independent_predicates:1,
+      rationale:'The source looks like one unified deployment and research convention'}}]})};
    }
    if(system.includes('CLAIM/EVIDENCE SEPARATION')||
       system.includes('SOURCE-EXACT COMPLEMENT'))
@@ -1648,7 +1649,9 @@ test('final source-quote salvage defers a multi-predicate assertion despite mode
   const plan=JSON.parse(await readFile(path.join(f.root,
    'issue92-finite-batches-v1',scope.group,active.batch_id,'plan.json'),'utf8'));
   assert.equal(plan.atomicity_review_v1,true);
-  assert.ok(plan.items.some(x=>x.reason.includes('multiple_independent_predicates')));
+  assert.equal(active.atomicity_structural_v1,true);
+  assert.equal(plan.atomicity_structural_v1,true);
+  assert.ok(plan.items.some(x=>x.reason.includes('source_structural_independent_clause_boundary')));
  },[mixed]);
 });
 test('missing atomicity attestation cannot write a Graphiti episode',()=>{
