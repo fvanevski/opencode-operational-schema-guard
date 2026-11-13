@@ -1,0 +1,142 @@
+[
+ {
+  "record_id": "0c517eb9f5bfbe0f533dedb4bed20baa4437b85cdd3025062b896c2894ab011f",
+  "remote_episode_uuid": "3cebcf20-67d0-4b67-a1cb-5c9ed7110513",
+  "source_case_id": "v5-v-09",
+  "source_excerpt_sha256": "1994488c72ddde72360703fc2f284be9f053f93783d09058299362fa3e9f5212",
+  "target_case_ids": [
+   "v5-v-09"
+  ],
+  "rationale": "Independent durable build-dependency fact: FFmpeg nv-codec-headers moved to a separate external repo (git.videolan.org / GitHub mirror), must be cloned+installed separately before --enable-nvidia. Grounded user-stated source; future dev utility for NVIDIA-accelerated FFmpeg builds.",
+  "adjudicator": "Hermes (independent operator fact-level adjudication; distinct from A3 model adjudicators)",
+  "grounded": true,
+  "useful": true,
+  "privacy_ok": true,
+  "authority_ok": true,
+  "temporal_ok": true,
+  "evidence_class_ok": true,
+  "correct_group": true,
+  "no_false_verified": true,
+  "duplicate_of": null
+ },
+ {
+  "record_id": "3fbc139d81efde87e9b05bd26260e1f0640c47cdf8f6c7596d1c845a1d1f930e",
+  "remote_episode_uuid": "83ad1352-9990-44a4-9262-ea7ab124217d",
+  "source_case_id": "v5-v-07",
+  "source_excerpt_sha256": "23afcec8e88ad8735c7b68957548ed0ddba01e15875f74c306d84bb31ec8563b",
+  "target_case_ids": [
+   "v5-v-07"
+  ],
+  "rationale": "Independent durable infra fact: OPENAI_API_URL=http://127.0.0.1:8008/v1 is a litellm proxy that reshapes responses calls before vLLM at :8002; new probe can bypass it and hit :8002 directly. Grounded; reusable network/config fact.",
+  "adjudicator": "Hermes (independent operator fact-level adjudication; distinct from A3 model adjudicators)",
+  "grounded": true,
+  "useful": true,
+  "privacy_ok": true,
+  "authority_ok": true,
+  "temporal_ok": true,
+  "evidence_class_ok": true,
+  "correct_group": true,
+  "no_false_verified": true,
+  "duplicate_of": null
+ },
+ {
+  "record_id": "4d41f32d66b42250159086d7f1ae29c9806d652a6f3c56e21ccdf22b711ff1d9",
+  "remote_episode_uuid": "b6ceb00c-bcc3-4c34-b465-d5b20fd17293",
+  "source_case_id": "v5-v-03",
+  "source_excerpt_sha256": "5232b183caaff66efc4ae47356fe991b8199d9e01ad2540aaa2b9a764cfe94cc",
+  "target_case_ids": [
+   "v5-v-03"
+  ],
+  "rationale": "Independent durable config decision: OPENVIKING_ROOT_API_KEY was purposely removed (it broke access to the existing DB store) and should not be reverted. Grounded; prevents a regression.",
+  "adjudicator": "Hermes (independent operator fact-level adjudication; distinct from A3 model adjudicators)",
+  "grounded": true,
+  "useful": true,
+  "privacy_ok": true,
+  "authority_ok": true,
+  "temporal_ok": true,
+  "evidence_class_ok": true,
+  "correct_group": true,
+  "no_false_verified": true,
+  "duplicate_of": null
+ },
+ {
+  "record_id": "673d17b3cd9ca8c7581e056701a68eb59da8a3653ffe10cd64a4baa458e9cd04",
+  "remote_episode_uuid": "e45e89de-23bb-4998-85a6-2f4a6dc2a718",
+  "source_case_id": "v5-v-02",
+  "source_excerpt_sha256": "85d21f7e88697458000b2afb0d8b479d2b4f210328747ae9b281b5aee5b007d1",
+  "target_case_ids": [
+   "v5-v-02"
+  ],
+  "rationale": "Independent durable dev fact: opencode.json is deterministically built from modular base files; to persist changes edit opencode.base.json (the underlying modular file). Grounded; reusable maintenance knowledge.",
+  "adjudicator": "Hermes (independent operator fact-level adjudication; distinct from A3 model adjudicators)",
+  "grounded": true,
+  "useful": true,
+  "privacy_ok": true,
+  "authority_ok": true,
+  "temporal_ok": true,
+  "evidence_class_ok": true,
+  "correct_group": true,
+  "no_false_verified": true,
+  "duplicate_of": null
+ },
+ {
+  "record_id": "b9ac48a70aac4410bb8b000e3db6cb8e3a7a3ee21cc1e7e4b99f9a1273b23b72",
+  "remote_episode_uuid": "147cfb87-b539-477e-96f3-998c23983b8f",
+  "source_case_id": "v5-v-01",
+  "source_excerpt_sha256": "d375eec04ce6291ee9b1471f50b47ea09a68398b3ea02a100ddab916e28f171d",
+  "target_case_ids": [
+   "v5-v-01"
+  ],
+  "rationale": "Independent durable config fact: SEARXNG_URL is set in ~/.zsecrets, manually updated to https://search.garion.us. Grounded; reusable environment/config fact.",
+  "adjudicator": "Hermes (independent operator fact-level adjudication; distinct from A3 model adjudicators)",
+  "grounded": true,
+  "useful": true,
+  "privacy_ok": true,
+  "authority_ok": true,
+  "temporal_ok": true,
+  "evidence_class_ok": true,
+  "correct_group": true,
+  "no_false_verified": true,
+  "duplicate_of": null
+ },
+ {
+  "record_id": "c862cea91f7eb50e13bc6c608a5c34fb80b20f63cdb335f880112e0f8fb505db",
+  "remote_episode_uuid": "b99c49a1-72c3-459e-a811-ac666223dad5",
+  "source_case_id": "v5-v-06",
+  "source_excerpt_sha256": "762473382d7020f8d728f58b99c463c94a967184e090857a837005ad9b0fac8e",
+  "target_case_ids": [
+   "v5-v-06"
+  ],
+  "rationale": "Independent durable tooling fact: when the rtk wrapper corrupts output, `rtk proxy` bypasses compression/rewriting. Grounded; reusable debugging technique.",
+  "adjudicator": "Hermes (independent operator fact-level adjudication; distinct from A3 model adjudicators)",
+  "grounded": true,
+  "useful": true,
+  "privacy_ok": true,
+  "authority_ok": true,
+  "temporal_ok": true,
+  "evidence_class_ok": true,
+  "correct_group": true,
+  "no_false_verified": true,
+  "duplicate_of": null
+ },
+ {
+  "record_id": "fdb7e82c4475bc9735e3a749beabdafadaa76d12ab17526bc3db3a190d22179d",
+  "remote_episode_uuid": "f6389714-4265-4486-8689-df731a9afacf",
+  "source_case_id": "v5-v-08",
+  "source_excerpt_sha256": "05aa5d27910d7c2edcdfdab49f370b0b30ffbf05638d6b8d555d9a842ee63586",
+  "target_case_ids": [
+   "v5-v-08"
+  ],
+  "rationale": "Independent durable fact: edited ~/.config/openviking/cli.env to remove OPENVIKING_ROOT_API_KEY (recently added), a candidate root cause for the issue. Distinct from v-03 (action+diagnosis vs. no-revert decision). Grounded; reusable.",
+  "adjudicator": "Hermes (independent operator fact-level adjudication; distinct from A3 model adjudicators)",
+  "grounded": true,
+  "useful": true,
+  "privacy_ok": true,
+  "authority_ok": true,
+  "temporal_ok": true,
+  "evidence_class_ok": true,
+  "correct_group": true,
+  "no_false_verified": true,
+  "duplicate_of": null
+ }
+]
