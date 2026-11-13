@@ -1049,7 +1049,10 @@ export async function runAdmittedFiniteBatch({
        if(wordEnd>=250)end=wordEnd;
       }
       return {source_ref:event.source_refs[0],start:0,end,
-       kind:'observation',temporal_status:'observed'};
+       // The fallback has no independently established temporal classification.
+       // The source is observed as TEXT, not necessarily a deployed/verified fact.
+       // Preserve the verbatim qualifiers; unknown fails closed on state.
+       kind:'observation',temporal_status:'unknown'};
      }).filter(c=>c.end-c.start>=25);
     const provisional=validateFactDiscovery({
      reason:'Original native quote awaiting independent utility; no model claim',

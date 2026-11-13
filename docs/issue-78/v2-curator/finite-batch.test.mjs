@@ -1728,6 +1728,8 @@ test('unrepresented same-session sibling can become a second atomic fact without
   assert.equal(new Set(f.graphiti.writes.map(x=>x.name)).size,2);
   assert.ok(f.graphiti.writes.some(x=>x.episode_body.includes(strong)));
   assert.ok(f.graphiti.writes.some(x=>x.episode_body.includes(different)));
+  assert.ok(f.graphiti.writes.some(x=>x.episode_body.includes(different)&&
+   x.episode_body.includes('Temporal: unknown')));
   assert.ok(f.graphiti.writes.every(x=>!x.episode_body.includes(weak)));
   const records=(await f.store.list({limit:20})).items.filter(x=>x.state==='persisted');
   assert.equal(records.length,2);
@@ -1743,3 +1745,44 @@ test('unrepresented same-session sibling can become a second atomic fact without
   assert.equal(plan.cluster_outcomes[0].source_only_outcome.deferred,1);
   assert.deepEqual(calls,{claim:1,complement:1,sibling:1});
  },[strong,different,weak],{sharedSession:true}));
+
+test('source-only recovery does not invent temporal certainty for proposed or hedged source',async()=>{
+ const sourceTexts=[
+  'The Tdarr Docker network should be named media-arr before deployment.',
+  'The pairing loop appears to fail after the host restarts.'
+ ];
+ for(const reported of sourceTexts){
+  await fixture(async f=>{
+   const curate=async(_,{promptMessages})=>{
+    const sys=promptMessages[0].content,data=JSON.parse(promptMessages[1].content);
+    if(sys.includes('SOURCE-EXACT COMPLEMENT UTILITY')){
+     assert.equal(data.candidates.length,1);
+     assert.equal(data.candidates[0].assertion,reported);
+     assert.equal(data.candidates[0].temporal_status,'unknown');
+     return {content:JSON.stringify({decisions:[{index:0,
+      disposition:'ACCEPT',reason_code:'source_specific_durable',
+      utility_class:'useful_negative',
+      atomicity:{independent_predicates:1,
+       rationale:'One quoted source report with no inferred verification status'}}]})};
+    }
+    if(sys.includes('CLAIM/EVIDENCE SEPARATION')||
+       sys.includes('SOURCE-EXACT COMPLEMENT'))
+     return {content:JSON.stringify({reason:'No separate normalized claim',
+      candidates:[]})};
+    throw Error('UNEXPECTED_TEMPORAL_SOURCE_MODEL_STAGE');
+   };
+   const result=await runAdmittedFiniteBatch(recallOpts({...f,curate,
+    sourceRecovery:true,resilientDiscovery:true,claimEvidence:true,
+    sourceExactComplement:true,sourceQuoteSalvage:true}));
+   assert.equal(result.persisted,1);
+   assert.equal(f.graphiti.writes.length,1);
+   assert.ok(f.graphiti.writes[0].episode_body.includes(reported));
+   assert.match(f.graphiti.writes[0].episode_body,/Temporal: unknown;/);
+   assert.doesNotMatch(f.graphiti.writes[0].episode_body,/Temporal: observed;/);
+   const persisted=(await f.store.list({limit:10})).items
+    .filter(x=>x.state==='persisted');
+   assert.equal(persisted.length,1);
+   assert.equal(persisted[0].facts[0].temporal_status,'unknown');
+  },[reported]);
+ }
+});
