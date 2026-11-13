@@ -10,7 +10,7 @@ import {runAdmittedFiniteBatch,representativePrompt,
   validateRepresentativeFamilies,specificityPrompt,validateSpecificityFamilies,
   finiteBatchDiscoveryPrompt,
   finiteBatchUtilityPrompt,finiteBatchSourceExactComplementUtilityPrompt,
-  finiteBatchSourceExactComplementPrompt} from './finite-batch.mjs';
+  finiteBatchSourceExactComplementPrompt,deferContainingSameSourceQuotes} from './finite-batch.mjs';
 import {selectClusters,validateModelDecision} from './core.mjs';
 import {validateFactReview,filterFactProposal} from './fact-review.mjs';
 
@@ -1855,3 +1855,58 @@ test('V2 recovers one atomic source claim after structural rejection of the comb
   assert.deepEqual(stages,['claim-discovery','support','claim-utility',
    'complement-discovery','complement-utility']);
  },['The local compatibility proxy uses routing rules to forward malformed API calls to the serving endpoint. The replacement client uses a different direct endpoint.']));
+
+test('V2 defers a containing quote but keeps independent same-source and other-source facts',()=>{
+ const ref='opencode:synthetic';
+ const make=(id,start,end,sourceRef=ref)=>({id,cluster_id:'same-cluster',
+  utility_class:'reusable_procedure',fact:{source_refs:[sourceRef],
+   evidence_span:{source_ref:sourceRef,start,end}}});
+ const outer=make('outer',0,80),inner=make('inner',20,60),
+  partial=make('partial',61,95),other=make('other',20,60,'other-source');
+ const entries=new Map([outer,inner,partial,other].map(x=>[x.id,x]));
+ const selected=deferContainingSameSourceQuotes(entries,[outer,inner,partial,other]);
+ assert.deepEqual(selected.map(x=>x.id),['inner','partial','other']);
+ assert.equal(entries.get('outer').utility_class,null);
+ assert.equal(entries.get('outer').review_reason,'strict_containing_source_quote_needs_review');
+ assert.equal(entries.get('other').utility_class,'reusable_procedure');
+});
+test('V2 overlapping quote container does not create two Graphiti episodes',()=>
+ fixture(async f=>{
+  const text='For this local tool, the CSV parser must reject malformed rows.';
+  const inner=text.slice(text.indexOf('the CSV parser'));
+  const curate=async(_,{promptMessages})=>{
+   const sys=promptMessages[0].content,data=JSON.parse(promptMessages[1].content);
+   if(sys.includes('SOURCE-EXACT COMPLEMENT UTILITY')){
+    assert.equal(data.candidates.length,2);
+    return {content:JSON.stringify({decisions:data.candidates.map(c=>({
+      index:c.index,disposition:'ACCEPT',reason_code:'source_specific_durable',
+      utility_class:'reusable_procedure',
+      atomicity:{independent_predicates:1,
+       rationale:'One independent requirement for malformed CSV row handling.'}}))})};
+   }
+   if(sys.includes('SOURCE-EXACT COMPLEMENT')){
+    const e=data.evidence[0];
+    return {content:JSON.stringify({reason:'Narrow source and its enclosing description',
+     candidates:[{kind:'blocker',source_ref:e.source,start:0,end:text.length,
+      temporal_status:'proposed'},{kind:'blocker',source_ref:e.source,
+      start:text.indexOf('the CSV parser'),end:text.length,temporal_status:'proposed'}]})};
+   }
+   if(sys.includes('CLAIM/EVIDENCE SEPARATION'))
+    return {content:JSON.stringify({reason:'No normalized claim',candidates:[]})};
+   throw Error('UNEXPECTED_NESTED_STAGE');
+  };
+  const result=await runAdmittedFiniteBatch(recallOpts({...f,curate,
+   sourceRecovery:true,resilientDiscovery:true,claimEvidence:true,
+   sourceExactComplement:true,sourceQuoteSalvage:true,quoteIntegrityV2:true}));
+  assert.equal(result.persisted,1);
+  assert.equal(result.approved,1);
+  assert.equal(result.deferred,1);
+  assert.equal(f.graphiti.writes.length,1);
+  assert.ok(f.graphiti.writes[0].episode_body.includes(inner));
+  const active=JSON.parse(await readFile(path.join(f.root,
+   'issue92-finite-batches-v1',scope.group,'_active.json'),'utf8'));
+  const plan=JSON.parse(await readFile(path.join(f.root,
+   'issue92-finite-batches-v1',scope.group,active.batch_id,'plan.json'),'utf8'));
+  assert.equal(plan.quote_integrity_v2,true);
+  assert.equal(plan.items.filter(x=>x.reason==='strict_containing_source_quote_needs_review').length,1);
+ },['For this local tool, the CSV parser must reject malformed rows.']));

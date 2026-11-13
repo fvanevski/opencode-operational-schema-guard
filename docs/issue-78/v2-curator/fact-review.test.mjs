@@ -438,3 +438,34 @@ test('structural review accepts coherent conditional and historical architecture
  for(const quote of bundled)assert.equal(sourceAtomicityStructuralRisk(quote),
   'independent_clause_boundary',quote);
 });
+
+test('V2 word-boundary repair uses only original source characters before model review',()=>{
+ const original='The adapter requires a compatible endpoint for future maintenance.';
+ const sourceEvent=fromPrompt({sessionID:'v2word1',messageID:'v2word2',
+  prompt:{text:original},timestamp:'2026-11-13T19:00:00Z'},scope,{admitted:true});
+ const cluster=selectClusters([sourceEvent])[0],ref=cluster.events[0].source_refs[0];
+ const start=original.indexOf('adapter')+2,end=original.indexOf('compatible')+4;
+ const input={reason:'One exact original source statement',candidates:[{
+  source_ref:ref,start,end,kind:'blocker',temporal_status:'observed'}]};
+ const old=validateFactDiscovery(input,cluster,{isolateCandidates:true});
+ const fixed=validateFactDiscovery(input,cluster,
+  {isolateCandidates:true,repairWordBoundaries:true});
+ assert.equal(old.facts[0].assertion,original.slice(start,end));
+ assert.equal(fixed.facts[0].assertion,
+  original.slice(original.indexOf('adapter'),
+   original.indexOf('compatible')+'compatible'.length));
+ assert.equal(fixed.source_span_adjustments.length,1);
+ assert.equal(fixed.source_span_adjustments[0].reason,'bounded_word_boundary_expansion');
+});
+test('V2 rejects a clipped source word requiring expansion beyond the fixed bound',()=>{
+ const original='A'.repeat(80)+' configured endpoint is required for compatibility.';
+ const event=fromPrompt({sessionID:'v2word3',messageID:'v2word4',
+  prompt:{text:original},timestamp:'2026-11-13T19:00:00Z'},scope,{admitted:true});
+ const cluster=selectClusters([event])[0];
+ const input={reason:'clipped source',candidates:[{
+  source_ref:cluster.events[0].source_refs[0],start:39,end:100,
+  kind:'blocker',temporal_status:'observed'}]};
+ const fixed=validateFactDiscovery(input,cluster,
+  {isolateCandidates:true,repairWordBoundaries:true});
+ assert.equal(fixed.ok,false);assert.deepEqual(fixed.facts,[]);
+});
