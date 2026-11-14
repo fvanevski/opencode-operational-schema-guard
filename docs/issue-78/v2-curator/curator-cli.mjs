@@ -36,6 +36,14 @@ if(replayOnlyArg&&replayOnlyArg!=='on')throw Error('REPLAY_ONLY_OPT_IN_INVALID')
 if(replayOnlyArg&&(!finiteBatch||command!=='drain'))
  throw Error('REPLAY_ONLY_FINITE_BATCH_DRAIN_REQUIRED');
 const replayOnly=replayOnlyArg==='on';
+// Surface the most specific V2 quote-integrity error before the generic
+// source-recovery prerequisite when multiple options are invalid. This is
+// diagnostics precedence only; neither error authorizes a non-drain command.
+const quoteIntegrityArg=arg('quote-integrity-v2');
+if(args.includes('--quote-integrity-v2')&&quoteIntegrityArg!=='on')
+ throw Error('QUOTE_INTEGRITY_V2_OPT_IN_INVALID');
+if(quoteIntegrityArg==='on'&&command!=='drain')
+ throw Error('QUOTE_INTEGRITY_V2_REQUIRES_SOURCE_QUOTE_SALVAGE_DRAIN');
 const recoveryArg=arg('source-recovery');
 if(recoveryArg&&recoveryArg!=='on')throw Error('SOURCE_RECOVERY_OPT_IN_INVALID');
 if(recoveryArg&&(!finiteBatch||command!=='drain'||noveltyPolicy!=='recall'))
@@ -68,9 +76,6 @@ if(salvageArg&&(!sourceExactComplement||!finiteBatch||command!=='drain'))
 const sourceQuoteSalvage=salvageArg==='on';
 // The new source-quote policy cannot be activated by an accidental
 // argument typo or silently enabled on existing frozen batches.
-const quoteIntegrityArg=arg('quote-integrity-v2');
-if(args.includes('--quote-integrity-v2')&&quoteIntegrityArg!=='on')
-  throw Error('QUOTE_INTEGRITY_V2_OPT_IN_INVALID');
 if(quoteIntegrityArg==='on'&&
   (!sourceQuoteSalvage||!finiteBatch||command!=='drain'))
   throw Error('QUOTE_INTEGRITY_V2_REQUIRES_SOURCE_QUOTE_SALVAGE_DRAIN');
