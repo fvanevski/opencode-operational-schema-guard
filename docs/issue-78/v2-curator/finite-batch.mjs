@@ -1424,7 +1424,8 @@ export async function runAdmittedFiniteBatch({
      ...(claimEvidence?{claim_support_outcomes:x.claim_support_outcomes}:{}),
      ...(sourceExactComplement?{source_exact_complement_outcome:x.source_exact_complement_outcome}:{}),
       ...(sourceQuoteSalvage?{source_quote_salvage_outcome:x.source_quote_salvage_outcome,
-      source_only_outcome:x.source_only_outcome}:{})})),
+      source_only_outcome:x.source_only_outcome}:{}),
+      ...(sourceWindowRecovery?{source_window_recovery_outcome:x.source_window_recovery_outcome}:{})})),
    items:items.sort(byId),families,calls,
    policy:noveltyPolicy==='recall'?
     'issue92_recall_first_source_and_utility_v1':
