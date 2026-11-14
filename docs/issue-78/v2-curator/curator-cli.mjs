@@ -66,6 +66,15 @@ if(salvageArg&&salvageArg!=='on')throw Error('SOURCE_QUOTE_SALVAGE_OPT_IN_INVALI
 if(salvageArg&&(!sourceExactComplement||!finiteBatch||command!=='drain'))
  throw Error('SOURCE_QUOTE_SALVAGE_REQUIRES_SOURCE_EXACT_COMPLEMENT');
 const sourceQuoteSalvage=salvageArg==='on';
+// The new source-quote policy cannot be activated by an accidental
+// argument typo or silently enabled on existing frozen batches.
+const quoteIntegrityArg=arg('quote-integrity-v2');
+if(args.includes('--quote-integrity-v2')&&quoteIntegrityArg!=='on')
+  throw Error('QUOTE_INTEGRITY_V2_OPT_IN_INVALID');
+if(quoteIntegrityArg==='on'&&
+  (!sourceQuoteSalvage||!finiteBatch||command!=='drain'))
+  throw Error('QUOTE_INTEGRITY_V2_REQUIRES_SOURCE_QUOTE_SALVAGE_DRAIN');
+const quoteIntegrityV2=quoteIntegrityArg==='on';
 if(tuningPath&&command!=='validate-tuning'&&(!finiteBatch||command!=='drain'))
  throw Error('FINITE_BATCH_TUNING_ONLY_ON_DRAIN');
 if(command==='validate-tuning'){
@@ -86,7 +95,8 @@ if(command==='validate-tuning'){
      '[--claim-evidence on (requires resilient-discovery)] '+
      '[--source-exact-complement on (requires claim-evidence)] '+
      '[--balanced-dedup on (recall mode, semantic duplicate review)] '+
-     '[--source-quote-salvage on (independent source-quote utility)]. '+
+     '[--source-quote-salvage on (independent source-quote utility)] '+
+     '[--quote-integrity-v2 on (requires source-quote-salvage; new frozen batch only)]. '+
     'For drain set LOCAL_CURATOR_URL, LOCAL_CURATOR_MODEL, LOCAL_CURATOR_API_KEY.');
   process.exitCode=2;
 }else{
@@ -154,7 +164,7 @@ if(command==='validate-tuning'){
     const data=finiteBatch?
       await runAdmittedFiniteBatch({...inputs,maxCandidates,noveltyPolicy,replayOnly,
        sourceRecovery,resilientDiscovery,claimEvidence,sourceExactComplement,
-        balancedDedup,sourceQuoteSalvage,
+        balancedDedup,sourceQuoteSalvage,quoteIntegrityV2,
        tuning:tuningPath?await loadFiniteBatchTuning(tuningPath):null}):
       await runAdmitted({...inputs,factReview});
     console.log(JSON.stringify(data));

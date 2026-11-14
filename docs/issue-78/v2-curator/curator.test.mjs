@@ -870,3 +870,36 @@ test('Issue 92 ADR recall policy evaluates atomic facts before cluster framing, 
    utility_class:'transient_result',reason:'No source-backed facts were identified',
    facts:valid.facts},c).ok,false);
 });
+
+test('V2 source-quote CLI cannot silently accept invalid or incomplete opt-in',()=>{
+ const cli=new URL('./curator-cli.mjs',import.meta.url).pathname;
+ const prereqs=[cli,'drain','--group','issue92cli',
+  '--state-dir','/tmp/issue92-cli-nomutate','--finite-batch','on',
+  '--source-recovery','on','--resilient-discovery','on',
+  '--claim-evidence','on','--source-exact-complement','on',
+  '--source-quote-salvage','on'];
+ const run=argv=>spawnSync(process.execPath,argv,
+  {encoding:'utf8',timeout:10000,env:{...process.env,GHDEV_MEMORY_POST_EXIT_LEASE:''}});
+ for(const argv of [
+  [...prereqs,'--quote-integrity-v2','off'],
+  [...prereqs,'--quote-integrity-v2'],
+  [...prereqs,'--quote-integrity-v2','']]){
+  const result=run(argv);
+  assert.notEqual(result.status,0);
+  assert.match(result.stderr,/QUOTE_INTEGRITY_V2_OPT_IN_INVALID/);
+ }
+ const noSalvage=run([cli,'drain','--group','issue92cli',
+  '--finite-batch','on','--quote-integrity-v2','on']);
+ assert.notEqual(noSalvage.status,0);
+ assert.match(noSalvage.stderr,/QUOTE_INTEGRITY_V2_REQUIRES_SOURCE_QUOTE_SALVAGE_DRAIN/);
+ const notDrain=run([cli,'status','--group','issue92cli','--finite-batch','on',
+  '--source-recovery','on','--resilient-discovery','on',
+  '--claim-evidence','on','--source-exact-complement','on',
+  '--source-quote-salvage','on','--quote-integrity-v2','on']);
+ assert.notEqual(notDrain.status,0);
+ assert.match(notDrain.stderr,/QUOTE_INTEGRITY_V2_REQUIRES_SOURCE_QUOTE_SALVAGE_DRAIN/);
+ const valid=run([...prereqs,'--quote-integrity-v2','on']);
+ assert.notEqual(valid.status,0);
+ assert.doesNotMatch(valid.stderr,/QUOTE_INTEGRITY_V2_(?:OPT_IN_INVALID|REQUIRES_)/);
+ assert.match(valid.stderr,/EX_POST_EXIT_ADMISSION_REQUIRED/);
+});
