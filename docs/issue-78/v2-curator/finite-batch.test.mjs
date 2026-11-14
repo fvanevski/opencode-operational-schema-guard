@@ -1910,3 +1910,104 @@ test('V2 overlapping quote container does not create two Graphiti episodes',()=>
   assert.equal(plan.quote_integrity_v2,true);
   assert.equal(plan.items.filter(x=>x.reason==='strict_containing_source_quote_needs_review').length,1);
  },['For this local tool, the CSV parser must reject malformed rows.']));
+
+
+test('V2 source-window recovery separately reviews an overlooked atomic fact',()=>fixture(async f=>{
+ const seen={window:0,utility:0};
+ const curate=async(_,{promptMessages})=>{
+  const sys=promptMessages[0].content;
+  const data=JSON.parse(promptMessages[1].content);
+  if(sys.includes('SOURCE-WINDOW RECOVERY V1')){
+   seen.window++;
+   assert.equal(data.evidence.length,1);
+   const e=data.evidence[0];
+   if(e.excerpt!==strong)
+    return {content:JSON.stringify({reason:'No new source fact',candidates:[]})};
+   return {content:JSON.stringify({reason:'Single source-reported defect',candidates:[{
+    kind:'blocker',source_ref:e.source,start:0,end:strong.length,
+    temporal_status:'unknown'}]})};
+  }
+  if(sys.includes('SOURCE-EXACT COMPLEMENT UTILITY')){
+   seen.utility++;
+   return {content:JSON.stringify({decisions:data.candidates.map(c=>
+    c.assertion===strong?{index:c.index,disposition:'ACCEPT',
+     reason_code:'source_specific_durable',utility_class:'useful_negative',
+     atomicity:{independent_predicates:1,
+      rationale:'One source-supported renderer defect with one specific consequence'}}:
+     {index:c.index,disposition:'REVIEW',reason_code:'not_substantive',
+      atomicity:{independent_predicates:1,rationale:'No independent technical predicate'}})})};
+  }
+  if(sys.includes('SOURCE-EXACT COMPLEMENT'))
+   return {content:JSON.stringify({reason:'No additional global quote',candidates:[]})};
+  if(sys.includes('independent SOURCE-SUPPORT critic'))
+   return {content:JSON.stringify({decisions:data.candidates.map(c=>({
+    index:c.index,disposition:'REVIEW',reason_code:'missing_predicate',
+    supporting_phrase:''}))})};
+  if(sys.includes('CLAIM/EVIDENCE SEPARATION')){
+   const e=data.evidence.find(x=>x.excerpt===weak);
+   assert.ok(e);
+   return {content:JSON.stringify({reason:'Unsupported normalized outcome',
+    candidates:[{kind:'blocker',source_ref:e.source,start:0,end:weak.length,
+     temporal_status:'unknown',
+     normalized_claim:'A deployed patch conclusively fixed all Sphinx rendering failures'}]})};
+  }
+  throw Error('UNEXPECTED_V2_WINDOW_STAGE');
+ };
+ const result=await runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true,resilientDiscovery:true,claimEvidence:true,
+  sourceExactComplement:true,sourceQuoteSalvage:true,
+  quoteIntegrityV2:true,sourceWindowRecovery:true}));
+ assert.equal(result.persisted,1);
+ assert.equal(f.graphiti.writes.length,1);
+ assert.match(f.graphiti.writes[0].episode_body,/Sphinx reStructuredText output drops/);
+ assert.doesNotMatch(f.graphiti.writes[0].episode_body,/conclusively fixed/);
+ assert.ok(seen.window>=1&&seen.window<=6&&seen.utility>=1);
+ const active=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,'_active.json'),'utf8'));
+ assert.equal(active.source_window_recovery_v1,true);
+ const plan=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,active.batch_id,'plan.json'),'utf8'));
+ assert.equal(plan.source_window_recovery_v1,true);
+ assert.equal(plan.cluster_outcomes[0].source_window_recovery_outcome.approved,1);
+ assert.ok(plan.items.some(x=>x.decision==='deferred'));
+},[strong,weak],{sharedSession:true}));
+
+test('V2 source-window mode does not promote an unhelpful exact source after REVIEW',()=>fixture(async f=>{
+ const curate=async(_,{promptMessages})=>{
+  const sys=promptMessages[0].content,data=JSON.parse(promptMessages[1].content);
+  if(sys.includes('SOURCE-EXACT COMPLEMENT UTILITY'))
+   return {content:JSON.stringify({decisions:data.candidates.map(x=>({
+    index:x.index,disposition:'REVIEW',reason_code:'not_substantive',
+    atomicity:{independent_predicates:1,rationale:'No durable technical predicate'}}))})};
+  if(sys.includes('SOURCE-WINDOW RECOVERY V1')){
+   const e=data.evidence[0];
+   return {content:JSON.stringify({reason:'A quote subject to utility',
+    candidates:[{kind:'observation',source_ref:e.source,start:0,
+     end:e.excerpt.length,temporal_status:'unknown'}]})};
+  }
+  return {content:JSON.stringify({reason:'No qualified global claim',candidates:[]})};
+ };
+ const result=await runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true,resilientDiscovery:true,claimEvidence:true,
+  sourceExactComplement:true,sourceQuoteSalvage:true,
+  quoteIntegrityV2:true,sourceWindowRecovery:true}));
+ assert.equal(result.persisted,0);
+ assert.equal(f.graphiti.writes.length,0);
+},[weak]));
+
+test('V2 source-window recovery is barred from an existing frozen batch',()=>fixture(async f=>{
+ const curate=async(_,{promptMessages})=>{
+  const sys=promptMessages[0].content,data=JSON.parse(promptMessages[1].content);
+  if(sys.includes('SOURCE-EXACT COMPLEMENT UTILITY'))
+   return {content:JSON.stringify({decisions:data.candidates.map(x=>({
+    index:x.index,disposition:'REVIEW',reason_code:'not_substantive'}))})};
+  return {content:JSON.stringify({reason:'No durable candidate',candidates:[]})};
+ };
+ const base=recallOpts({...f,curate,sourceRecovery:true,resilientDiscovery:true,
+  claimEvidence:true,sourceExactComplement:true,sourceQuoteSalvage:true,
+  quoteIntegrityV2:true});
+ await runAdmittedFiniteBatch(base);
+ await assert.rejects(()=>runAdmittedFiniteBatch({...base,sourceWindowRecovery:true}),
+  /SOURCE_WINDOW_RECOVERY_IDENTITY_CHANGED/);
+ assert.equal(f.graphiti.writes.length,0);
+},[weak]));
