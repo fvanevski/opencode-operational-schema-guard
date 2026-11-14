@@ -1068,6 +1068,81 @@ export async function runAdmittedFiniteBatch({
      decision='REVIEWED';reason='source_exact_complement_reviewed';
     }
    }
+   // Independent prospective V2 source-window lane. Global top-three
+   // discovery cannot certify that every native excerpt was inspected.
+   // Each window is authenticated separately and receives NEW source-exact
+   // discovery plus an independent utility/atomicity decision. No rerun of
+   // previously frozen model intent or override of a rejected exact quote.
+   let sourceWindowOutcome=null;
+   if(sourceWindowRecovery&&approved.length<3){
+    sourceWindowOutcome={attempted:0,valid:0,approved:0,deferred:0};
+    const windows=[...cluster.events].sort((a,b)=>{
+     const base=e=>(e.source_refs?.[0]||'').replace(/:span:\d+$/,'');
+     const offset=e=>Number(/:span:(\d+)$/.exec(e.source_refs?.[0]||'')?.[1]??0);
+     return base(a).localeCompare(base(b))||offset(a)-offset(b)||
+      a.event_id.localeCompare(b.event_id);
+    }).slice(0,6);
+    for(const event of windows){
+     if(approved.length>=3)break;
+     const narrow={...cluster,events:[event],source_event_ids:[event.event_id]};
+     const prior=[...entries.values()].filter(x=>
+      x.fact?.source_refs?.[0]===event.source_refs?.[0]&&
+      Number.isSafeInteger(x.fact?.evidence_span?.start)).map(x=>({
+       source_ref:x.fact.source_refs[0],
+       start:x.fact.evidence_span.start,end:x.fact.evidence_span.end,
+       reason_code:x.review_reason||'source_already_reviewed'}));
+     const identity=cluster.id+':source-window-v1:'+event.event_id;
+     const prompts=finiteBatchSourceExactComplementPrompt(narrow,prior,
+      {quoteIntegrityV2:true});
+     prompts[0].content+=' SOURCE-WINDOW RECOVERY V1: Review only this one'+
+      ' native excerpt. Choose at most ONE independent useful atomic quote'+
+      ' (reported configuration/version, defect, constraint or proposed'+
+      ' requirement). Do not repeat reviewed quotes or infer verification.'+
+      ' Return candidates:[] if no independently useful quotation exists.';
+     const discovery=await callOnce('discovery',identity,narrow,prompts);
+     sourceWindowOutcome.attempted++;
+     const found=validateFactDiscovery(discovery.content,narrow,
+      {isolateCandidates:true,repairWordBoundaries:true});
+     if(!found.ok||found.decision!=='EMIT')continue;
+     const novel=found.facts.filter(x=>!entries.has(childId(cluster,x)))
+      .slice(0,1);
+     if(!novel.length)continue;
+     sourceWindowOutcome.valid++;
+     const proposal={...found,facts:novel};
+     const reply=await callOnce('utility',identity,narrow,
+      finiteBatchSourceExactComplementUtilityPrompt(narrow,proposal));
+     const screen=validateFactReview(reply.content,proposal,
+      {requireAtomicity:atomicityReview});
+     if(!screen.ok){
+      const x=factEntry(cluster,novel[0],null,'source_window_utility_invalid');
+      if(!entries.has(x.id))entries.set(x.id,x);
+      sourceWindowOutcome.deferred++;continue;
+     }
+     const decision=filterFactProposal(proposal,screen);
+     if(decision.ok)for(let i=0;i<decision.facts.length;i++){
+      const fact=decision.facts[i],utility=decision.fact_utilities[i];
+      const verified=validateModelDecision({decision:'EMIT',
+       reason:'Independent source-window quotation utility',
+       utility_class:utility,
+       facts:[{...fact,utility_class:utility}]},cluster);
+      if(!verified.ok)throw Error('SOURCE_WINDOW_FACT_UNVERIFIED');
+      const x=factEntry(cluster,verified.facts[0],utility,null,
+       decision.fact_atomicity_reviews?.[i],fact.evidence_span);
+      if(entries.has(x.id))continue;
+      if(approved.length>=3)break;
+      entries.set(x.id,x);approved.push(x);sourceWindowOutcome.approved++;
+     }
+     for(const item of screen.review){
+      const x=factEntry(cluster,proposal.facts[item.index],null,
+       item.atomicity_reason||item.reason_code);
+      if(!entries.has(x.id))entries.set(x.id,x);
+      sourceWindowOutcome.deferred++;
+     }
+    }
+    if(sourceWindowOutcome.approved){
+     decision='REVIEWED';reason='independent_source_window_utility_complete';
+    }
+   }
    // A previously approved fact must not hide a separate valuable source.
    // Never retry a source that already received an independent review;
    // this path considers only unrepresented siblings, each under the existing
@@ -1155,7 +1230,8 @@ export async function runAdmittedFiniteBatch({
     ...(claimEvidence?{claim_support_outcomes:supportOutcomes}:{}),
     ...(sourceExactComplement?{source_exact_complement_outcome:complementOutcome}:{}),
      ...(sourceQuoteSalvage?{source_quote_salvage_outcome:quoteSalvageOutcome,
-      source_only_outcome:sourceOnlyOutcome}:{})});
+      source_only_outcome:sourceOnlyOutcome}:{}),
+      ...(sourceWindowRecovery?{source_window_recovery_outcome:sourceWindowOutcome}:{})});
   }
   assert(accepted.length<=maxCandidates,'ACCEPTED_POOL_OVER_BOUND_NO_PROMOTION');
   const selected=new Set(),deferred=new Map(),families=[];
