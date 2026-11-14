@@ -1,0 +1,14 @@
+{
+  "schema": "issue92-a3-staged-v2",
+  "group": "graphiti-adr92-a3-prospective-v5",
+  "events_staged": 20,
+  "manifest_sha256": "56f1dacc3c770e6650429d6cb37e4e7c61c13135ce9947ceb766cc7b7c75672a",
+  "label_freeze_sha256": "85b30fbde3a7cf43c1d16899c5820abdb6479529088304df2a809d9ff559cce4",
+  "natural_cluster_count": 19,
+  "cluster_bound": 24,
+  "distinct_native_sessions": 19,
+  "staging_receipt_sha256": "f355cefaf8ab522cc6f44192f4fb2bcde25312203f45b165342bac8963f4772e",
+  "empty_group_proof": "get_episodes -> No episodes found (0 episodes)",
+  "once_only_marker": false,
+  "state_root": "/home/filip/.local/state/ghdev-graphiti-issue92/state-v5-native-v2 (0700)"
+}

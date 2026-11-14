@@ -1,0 +1,217 @@
+{
+ "schema": "issue92-pr95-v22-prospective-pre-inference-freeze-v1",
+ "repo": "fvanevski/opencode-operational-schema-guard",
+ "pr": 95,
+ "branch": "issue/92-v7c-accepted",
+ "source_head": "285bc0e94c8cdd241be98481f698b3da224ec5ac",
+ "trusted_ci": {
+  "run_id": "43641734924",
+  "outcome": "success"
+ },
+ "group": "graphiti-adr92-a3-prospective-v22",
+ "private_freeze": {
+  "central_private_zip_sha256": "1ef0c3193750a30e66d3f55b1202d28944e6ff35b1ba928b633434e8496c2d6c",
+  "private_manifest_sha256": "1e9f0bb550b67f40413470fe69521f5eb2e457c5590413650978141ac89d54a0",
+  "label_freeze_sha256": "a13b52f539b561837ffa42ba430546967ab937b498e7fd8c31913d72a376e1ed",
+  "sha256_sums_records": 7
+ },
+ "central_ratification": {
+  "schema": "issue92-a3-ratification-v1",
+  "completed_at": "2026-11-14T22:13:56+00:00",
+  "independent_reviewer": "Central ChatGPT (independent semantic review of 28 uploaded original native texts; future curator model not yet invoked)",
+  "ratifies_all_cases": true
+ },
+ "roster": {
+  "case_count": 20,
+  "valuable": 10,
+  "nonvaluable_controls": 10,
+  "unique_source_text_digests": 20,
+  "unique_sessions": 20,
+  "unique_messages": 20,
+  "expected_deterministic_events": 44,
+  "expected_valuable_events": 34,
+  "expected_control_events": 10
+ },
+ "cases": [
+  {
+   "case_id": "v22-v-01",
+   "valuable": true,
+   "native_event_text_sha256": "613b13305b61848c4446308d9c0969b9aa3d5df2fdc2660d7488c72861268806",
+   "source_locator_sha256": "5a017122fc631b78627ef6a3ffd42791d0be1b9293cdc24fd20ad2fb50575f0f",
+   "observed_at": "2026-10-28T05:53:25.569+00:00"
+  },
+  {
+   "case_id": "v22-v-02",
+   "valuable": true,
+   "native_event_text_sha256": "0e0e18f07b8fac8a922b8034738ab61e31b023ae7f01974f57c45bc88642facc",
+   "source_locator_sha256": "0e68cdc20ee1316502244fcbd2b37970585501bc9fcc7c65500c4b97b549fe92",
+   "observed_at": "2026-09-22T17:16:25.327+00:00"
+  },
+  {
+   "case_id": "v22-v-03",
+   "valuable": true,
+   "native_event_text_sha256": "354a60f24e056c93a0ea8d2c19c6d4640ba218a6d392249906467158f9fa9dcd",
+   "source_locator_sha256": "fda090a796798fb166910c9c671d3d17a518f637aff783318a935aeb0a9928d6",
+   "observed_at": "2026-09-26T18:58:58.282+00:00"
+  },
+  {
+   "case_id": "v22-v-04",
+   "valuable": true,
+   "native_event_text_sha256": "ce39091993b4230489275d31f969e50040ca387009fb6c34c37b84a6f32c3c03",
+   "source_locator_sha256": "d9a0a76e68508dc7ea7bcd856af79e3c6cddd75450cbb3ff85360450f404251a",
+   "observed_at": "2026-10-14T16:15:28.309+00:00"
+  },
+  {
+   "case_id": "v22-v-05",
+   "valuable": true,
+   "native_event_text_sha256": "eb65ee56b661615fe5015a6e504d9a340f743a323e465b5b89cd3de177d5405f",
+   "source_locator_sha256": "8c97611e55d0bb0525f21384c19281b5579083ed3c22f3d2bc49a7812d2b114d",
+   "observed_at": "2026-09-10T16:07:02.916+00:00"
+  },
+  {
+   "case_id": "v22-v-06",
+   "valuable": true,
+   "native_event_text_sha256": "258bbf517c33e1b11332271af928190ccbd23121e445debb38e14e8015148fc6",
+   "source_locator_sha256": "c295ae93e13bb9470f616026a396a76ea7101477ee309ec989509ad8aef03dbc",
+   "observed_at": "2026-10-11T19:21:00.095+00:00"
+  },
+  {
+   "case_id": "v22-v-07",
+   "valuable": true,
+   "native_event_text_sha256": "a29bd6fa5cfa58fa4b43ba5a92f26777b5dbe7bf4456feedc633400c49de1bae",
+   "source_locator_sha256": "482eef6be12950defdeeb4b8c83e7c5b56f59884a3604e6aa84f39ab89fddffc",
+   "observed_at": "2026-10-25T05:00:16.549+00:00"
+  },
+  {
+   "case_id": "v22-v-08",
+   "valuable": true,
+   "native_event_text_sha256": "1920138f0bd8ae8b84ed0fb9137e11087d9b9d912f4d2f267b24277208fb0f1f",
+   "source_locator_sha256": "194520dbe615e3692ccabf5deefd8e8af22b612ca4e91fb7605ffad4efe5338b",
+   "observed_at": "2026-09-09T16:30:42.882+00:00"
+  },
+  {
+   "case_id": "v22-v-09",
+   "valuable": true,
+   "native_event_text_sha256": "178eabfe308817b93c2308fb17219dc88621670a6156972317b6d38f4ca06bce",
+   "source_locator_sha256": "06de7493c00d7bce559aa711c5e11b77cc696604383df4fd55e9e994d35d60fd",
+   "observed_at": "2026-11-10T02:08:11.614+00:00"
+  },
+  {
+   "case_id": "v22-v-10",
+   "valuable": true,
+   "native_event_text_sha256": "5eb9263a6e29436d62eb9c0f299442da8abc94e6ef001c59beed052a610c6603",
+   "source_locator_sha256": "ce1c98fe6cf0166b47b717e2177f1c1a443a8d87539bd28422c07f0511a402eb",
+   "observed_at": "2026-09-13T05:05:48.965+00:00"
+  },
+  {
+   "case_id": "v22-c-01",
+   "valuable": false,
+   "native_event_text_sha256": "6d03690c0b555bf36948bd87adf88896b3499ab9c672bb2b751863821d5b2fdf",
+   "source_locator_sha256": "a755c73ec646376121105407409f981c2302d11b62ee277d554e6f69799e373f",
+   "observed_at": "2026-09-08T23:25:00.119+00:00"
+  },
+  {
+   "case_id": "v22-c-02",
+   "valuable": false,
+   "native_event_text_sha256": "2f17feb9947bece601e0ccaf10a6a1955de8b718b6be823ce326c9dc08000f5e",
+   "source_locator_sha256": "e796dc5a740856cfea7817d412c0019b08bc926ca8ccc81cfed7ba34a46335b7",
+   "observed_at": "2026-09-08T17:01:29.973+00:00"
+  },
+  {
+   "case_id": "v22-c-03",
+   "valuable": false,
+   "native_event_text_sha256": "1d422bc3a544882b1b5742c3981a6264d0a84915cb128a1384da517d811f80f9",
+   "source_locator_sha256": "00a5a2007ea861c2088559afda3e4e67d22f9d47ab378785d6f543cd5363e3c0",
+   "observed_at": "2026-09-15T03:22:08.596+00:00"
+  },
+  {
+   "case_id": "v22-c-04",
+   "valuable": false,
+   "native_event_text_sha256": "8d2ddf27b7131403c395d4a31d92f974b19b6d5f4e0a642537409905951c3f53",
+   "source_locator_sha256": "13787bca86f0001bd9d885c9e296a9c64c3ce9cb25badb0bcb84b31408f19902",
+   "observed_at": "2026-10-10T01:43:21.448+00:00"
+  },
+  {
+   "case_id": "v22-c-05",
+   "valuable": false,
+   "native_event_text_sha256": "f7448179256a9c5e49773347fae0f2202c7ddde7dfd2e0dd28a6174c0a19d060",
+   "source_locator_sha256": "0fadcefef23edf493904e320e6f5307d23dd19c2ff2425baf80201781c4db9b9",
+   "observed_at": "2026-09-12T16:04:07.972+00:00"
+  },
+  {
+   "case_id": "v22-c-06",
+   "valuable": false,
+   "native_event_text_sha256": "3029702c8272978f72d114a16799711c34adce960cfb3c8598b87e3ad6b6809c",
+   "source_locator_sha256": "99514ef8897836017d3f66d82a13968690d448bf0131db384f7433acc6634013",
+   "observed_at": "2026-09-08T17:02:35.734+00:00"
+  },
+  {
+   "case_id": "v22-c-07",
+   "valuable": false,
+   "native_event_text_sha256": "cebf0bfabe8ccd0af0e19050390c7b7da6f8168fdc8d4bfccf6a1ece9b27bdb2",
+   "source_locator_sha256": "c8d160164eebde93cc7beb4e0db0f665346c642696e846963191b38f461b941b",
+   "observed_at": "2026-10-11T18:35:16.013+00:00"
+  },
+  {
+   "case_id": "v22-c-08",
+   "valuable": false,
+   "native_event_text_sha256": "0e4e3bc23509cef12db51d3e66c20334864913cc65662a848686736c152a1e17",
+   "source_locator_sha256": "d50dd1b25a16b32228152ab1d2d450cd2a944e47a531bba15673abdff3f4547a",
+   "observed_at": "2026-09-08T17:08:03.939+00:00"
+  },
+  {
+   "case_id": "v22-c-09",
+   "valuable": false,
+   "native_event_text_sha256": "69404633dcf947a80647ee69def0d7bdfafce626a1e9c7435074f40ca635eb62",
+   "source_locator_sha256": "2cd5eec0af251ce2c5c540c5ffd5c467b81a407cb5fcade0fc72b4183af7a6b1",
+   "observed_at": "2026-11-01T03:22:59.034+00:00"
+  },
+  {
+   "case_id": "v22-c-10",
+   "valuable": false,
+   "native_event_text_sha256": "bec0644e7d326a111cc0121630b30737042328ba0563cb69d6d33b294b67c684",
+   "source_locator_sha256": "7ec215cafc72efe4ea8bdec944e51285114a98e361cf622e9a9b539962852d37",
+   "observed_at": "2026-09-12T15:26:59.709+00:00"
+  }
+ ],
+ "staging": {
+  "receipt": "a3-v2-staged.json",
+  "receipt_sha256": null,
+  "events_staged": 44,
+  "case_count": 20,
+  "stage_source": "native_fromPromptCandidates_full_input_privacy_checked",
+  "staged_at_utc": "2026-11-14T22:27:30.234Z"
+ },
+ "prestage_remote": {
+  "group": "graphiti-adr92-a3-prospective-v22",
+  "episodes_before": 0,
+  "local_review_store_before": 0,
+  "prior_intents": 0
+ },
+ "authority": {
+  "model": {
+   "alias": "chat-fast",
+   "backend": "Qwen3.8-27B NVFP4",
+   "route": "http://127.0.0.1:8002/v1/chat/completions",
+   "temperature": 0,
+   "max_output_tokens": 1600,
+   "request_timeout_ms": 90000
+  },
+  "ex_gate": {
+   "lock": "/run/user/1000/openviking-agent.lock",
+   "quiet_grace_seconds": 30,
+   "scheduler_idle_required": true
+  },
+  "finite_batch_v2": {
+   "source_message_isolation": "on",
+   "source_subspan_recovery": "on"
+  },
+  "invariants": [
+   "single post-exit EX finite V2 drain; no replay",
+   "no source-code/gate/label/privacy/model-setting edits",
+   "V11-R1 predicates sv-01/cv-04/cv-08 not credited; distinct v22 targets",
+   "historical groups immutable; no V11-R1 rerun",
+   "first-intent marker logged privately only after this freeze is public"
+  ]
+ }
+}

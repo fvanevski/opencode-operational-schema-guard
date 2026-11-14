@@ -1,0 +1,53 @@
+{
+ "scorer": "docs/issue-91/adr-acceptance/issue92-a3-score.mjs",
+ "exit_codes": {
+  "0": "measured PASS",
+  "3": "measured FAIL"
+ },
+ "command": [
+  "node",
+  "docs/issue-91/adr-acceptance/issue92-a3-score.mjs",
+  "/tmp/opencode/issue92-a3/a3-v2-sanitized-roster.json",
+  "/tmp/opencode/issue92-a3/state/a3-v2-staged.json",
+  "/tmp/opencode/issue92-a3/state",
+  "graphiti-adr92-a3-prospective-v2",
+  "/home/filip/.local/state/ghdev-graphiti-issue92/private/issue92-a3-v2-remote-readback.json",
+  "/home/filip/.local/state/ghdev-graphiti-issue92/private/issue92-a3-v2-ratification.json",
+  "/home/filip/.local/state/ghdev-graphiti-issue92/private/issue92-a3-v2-fact-adjudications.json",
+  "/home/filip/.local/state/ghdev-graphiti-issue92/private/issue92-a3-v2-authority-audit.json"
+ ],
+ "inputs": {
+  "roster": {
+   "path": "/tmp/opencode/issue92-a3/a3-v2-sanitized-roster.json",
+   "status": "READY (frozen 20-case sanitized roster)"
+  },
+  "staged": {
+   "path": "/tmp/opencode/issue92-a3/state/a3-v2-staged.json",
+   "status": "READY (issue92-a3-staged-v2, 43 native spans from 20 cases)"
+  },
+  "state_root": {
+   "path": "/tmp/opencode/issue92-a3/state",
+   "status": "READY (fresh; curation-v1/<group>/ populated after inference)"
+  },
+  "group": {
+   "value": "graphiti-adr92-a3-prospective-v2",
+   "status": "READY (empty, 0 remote episodes)"
+  },
+  "ratification": {
+   "path": "/home/filip/.local/state/ghdev-graphiti-issue92/private/issue92-a3-v2-ratification.json",
+   "status": "READY (pre-inference, 0600, 20/20 flags)"
+  },
+  "remote_readback": {
+   "path": "/home/filip/.local/state/ghdev-graphiti-issue92/private/issue92-a3-v2-remote-readback.json",
+   "status": "TEMPLATE (filled AFTER inference; positive get_episodes + source index)"
+  },
+  "fact_adjudications": {
+   "path": "/home/filip/.local/state/ghdev-graphiti-issue92/private/issue92-a3-v2-fact-adjudications.json",
+   "status": "TEMPLATE (one independent verdict per persisted fact; missing = block to PASS)"
+  },
+  "authority_audit": {
+   "path": "/home/filip/.local/state/ghdev-graphiti-issue92/private/issue92-a3-v2-authority-audit.json",
+   "status": "TEMPLATE (EX/replay/write/privacy/group/verified + first_model_intent_at after ratification)"
+  }
+ }
+}

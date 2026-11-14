@@ -1,0 +1,6 @@
+{
+ "scorer": "issue92-a3-acceptance.mjs scoreProspective (8-arg fact-level)",
+ "pre_inference_result": "FAIL_CLOSED: A3_ACCEPTANCE_UNVERIFIED:insufficient_review_samples",
+ "note": "Passes frozen-roster/native-ratification/staging-identity/locator-binding checks, then fails closed on empty records (no persisted facts pre-inference). Post-inference per-fact adjudications + remote readback + authority first_model_intent_at are left as templates (not simulated).",
+ "verdict": "READY"
+}

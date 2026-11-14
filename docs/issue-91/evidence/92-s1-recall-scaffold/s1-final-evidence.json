@@ -1,0 +1,279 @@
+{
+ "schema": "issue92-s1-recall-scaffold-evidence-v1",
+ "kind": "sanitized, evidence-only, public",
+ "result": "FUNCTIONAL_SCAFFOLD",
+ "result_rationale": "The native, configurable, source-grounded, post-exit Graphiti pipeline and recovery behavior work end-to-end: recall-first persistence without semantic novelty vetoes; per-stage model/reasoning/temperature/budget/timeout/guidance controls bound to an immutable tuning-profile and model-request identity; fail-closed zero-inference --replay-only recovery that derives a new recall plan from 46 frozen discovery/utility responses with zero new model calls; per-stage token/latency/reasoning-token reporting; and positive terminal Graphiti write/readback across ReviewStore, episode-index, Graphiti MCP and raw FalkorDB. This does NOT assert the later >=85% prospective utility objective, zero duplicates, retrieval usefulness, or production readiness.",
+ "campaign": "issue92 S1 configurable recall-first development-memory scaffold qualification (host integration + native verification + one bounded EX-admitted host qualification)",
+ "repository": "fvanevski/opencode-operational-schema-guard",
+ "branch": "work/91-memory-utility-r1",
+ "github_starting_head": "26e6d25c3b8d56251eab55d58eae8aa838016778",
+ "implementation_blobs": {
+  "new": [
+   "docs/issue-78/v2-curator/finite-batch-tuning.mjs",
+   "docs/issue-78/v2-curator/finite-batch-tuning.test.mjs",
+   "docs/issue-91/adr-acceptance/ISSUE92_S1_RECALL_SCAFFOLD_QUALIFICATION.md",
+   "docs/issue-91/adr-acceptance/ISSUE92_RECALL_FIRST_POLICY_AND_FROZEN_RECOVERY.md",
+   "docs/issue-91/adr-acceptance/issue92-finite-batch-tuning-example.json"
+  ],
+  "modified": [
+   "docs/issue-78/v2-curator/finite-batch.mjs",
+   "docs/issue-78/v2-curator/curator-cli.mjs",
+   "docs/issue-78/v2-curator/model.mjs",
+   "docs/issue-78/v2-curator/finite-batch.test.mjs"
+  ],
+  "fast_forward": "4a2a0dc..26e6d25 (13 central-staged commits)"
+ },
+ "native_tests": {
+  "node_check": "6/6 OK (finite-batch-tuning, finite-batch, model, curator-cli, finite-batch-tuning.test, finite-batch.test)",
+  "focused_suites": {
+   "finite-batch-tuning.test.mjs": "5/5",
+   "finite-batch.test.mjs": "34/34",
+   "fact-review.test.mjs": "14/14",
+   "curator.test.mjs": "36/36",
+   "issue92-source-fact.test.mjs": "5/5",
+   "adr-causal-audit.test.mjs": "14/14"
+  },
+  "npm_run_check": "rc=0",
+  "npm_test": "524/524 (OPERATIONAL_PLUGIN_TEST_RESULT: PASS)",
+  "note": "Root npm test does not run all focused curator suites; all focused suites run explicitly and green on first run (no mechanical host/import/fixture repair was required)."
+ },
+ "tuning_profile_identity": {
+  "schema": "issue92-finite-batch-tuning-v1",
+  "profile_sha256": "7bd3a2d325ee968dbb286475727c78af1221e0d44fbfe3c4b829bea0203266e7",
+  "validate_tuning": "rc=0, prints only configuration metadata + prompt hashes (no inference)",
+  "stages": {
+   "discovery": {
+    "model": "chat-fast",
+    "temperature": 0,
+    "max_tokens": 1600,
+    "timeout_ms": 90000,
+    "prompt_guidance_sha256": "82aa2df82a43f53bdda8d16e35be42ba6fb6c9255c53f3d8dc9d38ed1b2e0a47"
+   },
+   "utility": {
+    "model": "chat-review",
+    "reasoning_effort": "medium",
+    "temperature": 0,
+    "max_tokens": 3072,
+    "timeout_ms": 120000,
+    "prompt_guidance_sha256": "fe2cb1c7678523a9fd753d91d9193b230299fad233d859e305c6a94ea6298f7b"
+   }
+  },
+  "fingerprint": "per-stage request_sha256 changes on any stage-parameter or prompt-guidance perturbation (verified); a mismatched frozen response cannot be silently reused.",
+  "old_default_preserved": "non-reasoning (reasoningEffort null), temperature 0, 1600 completion tokens, recall-first (noveltyPolicy=recall)"
+ },
+ "b3_frozen_recovery": {
+  "group": "graphiti-adr92-b3-specificity",
+  "preflight": "48/48 model intent/result pairs intact (24 disc / 22 util / 1 arb / 1 spec), prompt+reply SHA-256 valid, legacy (no request_sha256); no plan.json (no frozen promotion plan); 24/24 native source refs authenticated in opencode.db session_message; 24/24 excerpt bytes match native text (normalized); Graphiti group 0 episodes pre-run.",
+  "original_freeze_bytes": "UNAVAILABLE (historical freeze byte lost to host reboot; native source identity independently verified, not the historical SHA-256)",
+  "run": "original B3 disposable state/group, chat-fast identity, no tuning file, --novelty-policy recall --replay-only on",
+  "new_model_calls": 0,
+  "new_model_calls_proof": "recovery model_calls=0; all 48 model-call intent/result files unchanged (mtime 2026-11-10 18:07, pre-EX-window); no new intent/result created",
+  "status": "review_required",
+  "candidates": 25,
+  "approved": 18,
+  "deferred": 7,
+  "persisted": 18,
+  "plan_policy": "issue92_recall_first_source_and_utility_v1",
+  "obsolete_novelty_responses": "the 1 frozen arbitration + 1 frozen specificity responses are kept as forensic evidence (counted in model_metrics), NOT used as promotion gates under recall",
+  "model_metrics_frozen": {
+   "utility": {
+    "calls": 22,
+    "prompt_tokens": 18639,
+    "completion_tokens": 740,
+    "reasoning_tokens": 0,
+    "cached_prompt_tokens": 8514,
+    "latency_ms": 3524,
+    "latency_reports": 22,
+    "usage_field_reports": {
+     "prompt_tokens": 22,
+     "completion_tokens": 22,
+     "reasoning_tokens": 22,
+     "cached_prompt_tokens": 22
+    }
+   },
+   "discovery": {
+    "calls": 24,
+    "prompt_tokens": 21616,
+    "completion_tokens": 3135,
+    "reasoning_tokens": 0,
+    "cached_prompt_tokens": 11880,
+    "latency_ms": 12852,
+    "latency_reports": 24,
+    "usage_field_reports": {
+     "prompt_tokens": 24,
+     "completion_tokens": 24,
+     "reasoning_tokens": 24,
+     "cached_prompt_tokens": 24
+    }
+   },
+   "arbitration": {
+    "calls": 1,
+    "prompt_tokens": 2055,
+    "completion_tokens": 43,
+    "reasoning_tokens": 0,
+    "cached_prompt_tokens": 264,
+    "latency_ms": 223,
+    "latency_reports": 1,
+    "usage_field_reports": {
+     "prompt_tokens": 1,
+     "completion_tokens": 1,
+     "reasoning_tokens": 1,
+     "cached_prompt_tokens": 1
+    }
+   },
+   "specificity": {
+    "calls": 1,
+    "prompt_tokens": 2117,
+    "completion_tokens": 329,
+    "reasoning_tokens": 0,
+    "cached_prompt_tokens": 0,
+    "latency_ms": 1021,
+    "latency_reports": 1,
+    "usage_field_reports": {
+     "prompt_tokens": 1,
+     "completion_tokens": 1,
+     "reasoning_tokens": 1,
+     "cached_prompt_tokens": 1
+    }
+   }
+  },
+  "terminal_uuid_proof": {
+   "review_store_persisted": 18,
+   "episode_index_entries": 18,
+   "graphiti_mcp_get_episodes": 18,
+   "raw_falkordb_episodic": 18,
+   "uuids": "18 distinct Episodic UUIDs, identical across ReviewStore remote_episode_uuid, episode-index, Graphiti MCP get_episodes(group_ids=[...],max_episodes=1000) and raw FalkorDB GRAPH.QUERY"
+  }
+ },
+ "fresh_smoke": {
+  "group": "graphiti-adr92-s1-smoke",
+  "preregistered_sources": 3,
+  "source_roles": "2 Graphiti technical constraints + 1 ordinary source-supported finding (all previously exposed in B1/B2/B3)",
+  "tuning_profile": "staged example profile (chat-fast discovery / chat-review medium utility); chat-review+medium preflight HTTP 200 with 16 reasoning tokens",
+  "model_calls": {
+   "discovery": 3,
+   "utility": 2
+  },
+  "new_model_calls_total": 5,
+  "status": "review_required",
+  "candidates": 3,
+  "approved": 1,
+  "deferred": 2,
+  "persisted": 1,
+  "tuning_sha256": "7bd3a2d325ee968dbb286475727c78af1221e0d44fbfe3c4b829bea0203266e7",
+  "stage_request_identity": "discovery request_sha256 and utility request_sha256 in the frozen model-call intents match an independent recomputation from the stage model/options/endpoint/kind (proves the stage-specific parameters were sent)",
+  "model_metrics": {
+   "discovery": {
+    "calls": 3,
+    "prompt_tokens": 2837,
+    "completion_tokens": 423,
+    "reasoning_tokens": 0,
+    "cached_prompt_tokens": 1106,
+    "latency_ms": 1663,
+    "latency_reports": 3,
+    "usage_field_reports": {
+     "prompt_tokens": 3,
+     "completion_tokens": 3,
+     "reasoning_tokens": 3,
+     "cached_prompt_tokens": 3
+    }
+   },
+   "utility": {
+    "calls": 2,
+    "prompt_tokens": 2118,
+    "completion_tokens": 2423,
+    "reasoning_tokens": 2341,
+    "cached_prompt_tokens": 466,
+    "latency_ms": 8775,
+    "latency_reports": 2,
+    "usage_field_reports": {
+     "prompt_tokens": 2,
+     "completion_tokens": 2,
+     "reasoning_tokens": 2,
+     "cached_prompt_tokens": 2
+    }
+   }
+  },
+  "reasoning_tokens_reported": 2341,
+  "persisted_fact_quality": "the 1 persisted graphiti-mcp fact is a source-supported verbatim span (substring of the native source + staged excerpt) carrying a specific Graphiti decoding-preset constraint, but is a fragment (starts/ends mid-word at the excerpt window). Recorded as a low-value/fragmentary yield, not a scaffold defect; source validity, utility approval, persistence and UUID are all intact.",
+  "terminal_uuid_proof": {
+   "review_store_persisted": 1,
+   "episode_index_entries": 1,
+   "graphiti_mcp_get_episodes": 1,
+   "raw_falkordb_episodic": 1,
+   "uuid": "9d215098-c1a2-47cf-a7c8-dc5f6a143587"
+  }
+ },
+ "source_supported_vs_duplicate_yield": {
+  "generated_utc": "2026-11-11T03:24:08.863Z",
+  "recovery": {
+   "group": "graphiti-adr92-b3-specificity",
+   "persisted": 18,
+   "by_project": {
+    "swebench-django": 8,
+    "swebench-sphinx": 8,
+    "swebench-pylint": 2
+   }
+  },
+  "smoke": {
+   "group": "graphiti-adr92-s1-smoke",
+   "persisted": 1,
+   "by_project": {
+    "graphiti-mcp": 1
+   }
+  },
+  "duplicate_note": "Under --novelty-policy recall, sibling-cluster repetitions of the same defect are persisted (advisory de-dup, not a hard veto). Django add-filter/lazy-string defect spans 8 sibling clusters; sphinx dict(str,str) param rendering spans 7; pylint verbose spans 2. These include the 11 nonvaluable repetition controls now persisted.",
+  "sixteen_valuable_targets": {
+   "retained_families": [
+    "django_add_filter_lazy_string (dj1/dj1b/dj2)",
+    "sphinx_dict_str_str_param_render (sp1/sp2)",
+    "pylint_verbose_arg (py1; py2/py3 partial)"
+   ],
+   "still_lost": [
+    "graphiti_0312_py313_falkordb_smoke",
+    "graphiti_0312_mcp_tools_only",
+    "graphiti_llm_param_readonly_audit",
+    "graphiti_live_mcp_no_openviking",
+    "graphiti_temporal_memory_live_test",
+    "graphiti_temporal_validation_skill",
+    "sphinx_14182_rst_header_rows (sp8)",
+    "sphinx_ascii_rst_header_rows (sp9)"
+   ],
+   "note": "6 graphiti valuable targets and the 2 sphinx rst-header-row targets (sp8/sp9) produced 0 source-supported episodes in this cohort (consistent with the B3 graphiti_unresolved_losses). The django/sphinx-dictparam/pylint valuable families are now retained with recall-first duplication."
+  },
+  "eleven_nonvaluable_controls": {
+   "persisted": "the django lazy-string repetition controls (dj3-dj8) and sphinx repetition controls (sp6/sp7) are now persisted as sibling-cluster duplicates under recall-first; this is the expected, reported tradeoff (repetition inflation), not a scaffold defect.",
+   "note": "A duplicate is not a hard S1 FAIL; it is reported, not concealed."
+  }
+ },
+ "production_drain_separation": {
+  "production_group": "development-knowledge",
+  "production_episode_count": 355,
+  "production_latest_created_at": "2026-11-08T03:57:03Z (2 days before the S1 EX window; zero production drift)",
+  "s1_disposable_episodes": "all 19 (18 recovery + 1 smoke) created within the S1 EX window 2026-11-11T03:18:35Z..03:19:46Z; none in the production group"
+ },
+ "ex_admission": {
+  "gate": "openviking-commit-gate canonical EX flock",
+  "harness_exited": "2026-11-11T03:17:37Z",
+  "ex_flock_acquired": "2026-11-11T03:18:05Z",
+  "quiet_grace_seconds": 30,
+  "ex_admission_proven": "2026-11-11T03:18:35Z (harness-exit + quiet-grace + scheduler-idle + no-unresolved)",
+  "scheduler_idle": "ninfer_requests_running=0, ninfer_requests_waiting=0",
+  "recovery_attempts": "rc 3 -> 3 -> 0 (positive reconcile of queued Graphiti writes; no model replay)",
+  "smoke_attempts": "rc 3 -> 0 (positive reconcile; no model replay)",
+  "settled": "2026-11-11T03:19:46Z",
+  "new_marker": "/tmp/opencode/issue92-s1/.s1-ran (the original B3 launcher marker was NOT re-armed)"
+ },
+ "crash_no_replay": {
+  "private_snapshots_preserved": true,
+  "model_call_intents_frozen": true,
+  "model_call_results_frozen": true,
+  "recovery_zero_new_inference": true,
+  "smoke_exact_call_identity": "5 model-call intents carry per-stage request_sha256 + prompt_sha256; no ambiguous-submission replay",
+  "no_graphiti_replay": "Graphiti writes reconciled positively (rc 3 -> 0); no blind re-submission"
+ },
+ "production_mutation": "none (disposable groups only; development-knowledge unchanged at 355)",
+ "blockers": "none blocking the scaffold milestone",
+ "central_remediation_required": false,
+ "next_concrete_action": "Incremental refinements to discovery and utility prompts for the g1-g4 / sp8 / sp9 high-recall false negatives (source-candidate stage), plus later read/retrieval evaluation. No new novelty hard-veto campaign."
+}

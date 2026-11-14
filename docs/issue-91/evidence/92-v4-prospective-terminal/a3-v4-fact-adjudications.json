@@ -1,0 +1,164 @@
+{
+ "facts": [
+  {
+   "record_id": "05d5eb7962f08497dc68aaffde2b1494a07aefd3b5611dc9532a32f0c3412d87",
+   "remote_episode_uuid": "8216c57b-2605-4e88-bf30-d57eecc423b1",
+   "source_case_id": "i92-v4-05-6a594b8a",
+   "source_excerpt_sha256": "80007850c42d5ff267efa3491a6e62a5d9bf336347dfaf303773bcafaec7900d",
+   "target_case_ids": [
+    "i92-v4-05-6a594b8a"
+   ],
+   "adjudicator": "Hermes independent source adjudication (from original authenticated native source)",
+   "rationale": "v4-05 FFmpeg SSA/ASS constraint, second record - same technical predicate as 1f1e3d5f (duplicate)",
+   "grounded": true,
+   "useful": false,
+   "duplicate_of": "1f1e3d5f1e59becff898c8e368bfd98d73461fc21ab532fda02462c1bbf702cc",
+   "privacy_ok": true,
+   "authority_ok": true,
+   "temporal_ok": true,
+   "evidence_class_ok": true,
+   "correct_group": true,
+   "no_false_verified": true
+  },
+  {
+   "record_id": "13cc88f0148bd393c861c3f47ed76556541561abe592afe495fc170a2439ee91",
+   "remote_episode_uuid": "20512ad7-aea7-4e86-9eb5-928c9745f028",
+   "source_case_id": "i92-v4-02-f1746cb1",
+   "source_excerpt_sha256": "0573b83dcf9971ce24b78846edcb33cc37275fb88a23571a4c099329b8e4ec0a",
+   "target_case_ids": [
+    "i92-v4-02-f1746cb1"
+   ],
+   "adjudicator": "Hermes independent source adjudication (from original authenticated native source)",
+   "rationale": "v4-02 React Flow for backlog dependency visualization; operative architecture decision, source-stated",
+   "grounded": true,
+   "useful": true,
+   "duplicate_of": null,
+   "privacy_ok": true,
+   "authority_ok": true,
+   "temporal_ok": true,
+   "evidence_class_ok": true,
+   "correct_group": true,
+   "no_false_verified": true
+  },
+  {
+   "record_id": "1f1e3d5f1e59becff898c8e368bfd98d73461fc21ab532fda02462c1bbf702cc",
+   "remote_episode_uuid": "87bc7a63-613a-45a9-a364-db5d02eeed42",
+   "source_case_id": "i92-v4-05-6a594b8a",
+   "source_excerpt_sha256": "f0bdc7fff2fc270fc64992bb07add963aa27b2ab72cc71f91b15d74abdcdf21c",
+   "target_case_ids": [
+    "i92-v4-05-6a594b8a"
+   ],
+   "adjudicator": "Hermes independent source adjudication (from original authenticated native source)",
+   "rationale": "v4-05 FFmpeg SSA/ASS representation constraint + -disposition syntax; source-stated technical constraint (primary)",
+   "grounded": true,
+   "useful": true,
+   "duplicate_of": null,
+   "privacy_ok": true,
+   "authority_ok": true,
+   "temporal_ok": true,
+   "evidence_class_ok": true,
+   "correct_group": true,
+   "no_false_verified": true
+  },
+  {
+   "record_id": "8e56cc9ddc7266788ab0aff497f3ae37997f87b741c6f9906210b972df9974d1",
+   "remote_episode_uuid": "1ca3a733-d657-4e48-be66-555e8ff435d8",
+   "source_case_id": "i92-v4-09-a07bfd74",
+   "source_excerpt_sha256": "3e307c9c62f7dec0f0b736f472b3ee2e204205254f5e4528a6600b98fb05e10b",
+   "target_case_ids": [
+    "i92-v4-09-a07bfd74"
+   ],
+   "adjudicator": "Hermes independent source adjudication (from original authenticated native source)",
+   "rationale": "v4-09 HEVC video-density threshold ~19-21 MiB/min derived from Plex-library observation; source-stated finding",
+   "grounded": true,
+   "useful": true,
+   "duplicate_of": null,
+   "privacy_ok": true,
+   "authority_ok": true,
+   "temporal_ok": true,
+   "evidence_class_ok": true,
+   "correct_group": true,
+   "no_false_verified": true
+  },
+  {
+   "record_id": "97df210e095191269105731bc4dfdaa4e184879cafe6c1a41ccd33dbacc7c5e8",
+   "remote_episode_uuid": "3248fedc-529d-4b34-97db-8aa52e60fe37",
+   "source_case_id": "i92-v4-07-f61c4f87",
+   "source_excerpt_sha256": "83c715ad01b5e5c168bc54d1ab7d08ffe7cbb1e174ac729b389916e3675d536f",
+   "target_case_ids": [
+    "i92-v4-07-f61c4f87"
+   ],
+   "adjudicator": "Hermes independent source adjudication (from original authenticated native source)",
+   "rationale": "v4-07 fsm81 log-format design decision; source-stated",
+   "grounded": true,
+   "useful": true,
+   "duplicate_of": null,
+   "privacy_ok": true,
+   "authority_ok": true,
+   "temporal_ok": true,
+   "evidence_class_ok": true,
+   "correct_group": true,
+   "no_false_verified": true
+  },
+  {
+   "record_id": "a2103414f3abe8becf0fdcf0a37316260373f313844cbb3b05477befbb0e090d",
+   "remote_episode_uuid": "f312e890-effe-4028-b656-06ce297a2aa9",
+   "source_case_id": "i92-v4-08-b060d3fc",
+   "source_excerpt_sha256": "48c64706f5f7b5d0cc2bccc742b7b97970bafe72b448ffc0a3eef5434f64e61e",
+   "target_case_ids": [
+    "i92-v4-08-b060d3fc"
+   ],
+   "adjudicator": "Hermes independent source adjudication (from original authenticated native source)",
+   "rationale": "v4-08 fsm81 transition must throw on unknown events + terminal state entries; source-stated design constraint",
+   "grounded": true,
+   "useful": true,
+   "duplicate_of": null,
+   "privacy_ok": true,
+   "authority_ok": true,
+   "temporal_ok": true,
+   "evidence_class_ok": true,
+   "correct_group": true,
+   "no_false_verified": true
+  },
+  {
+   "record_id": "c4151914801ae9739f48aadf585dca55db15f834fbef7397c89a55ff6416615c",
+   "remote_episode_uuid": "b1b31866-11db-40ce-aae4-5a59369208b7",
+   "source_case_id": "i92-v4-03-ecfd3f19",
+   "source_excerpt_sha256": "98df0159f5f5e3cc356fe6ea9c59584c117495346e615c2c54c64f70b0e6ae4a",
+   "target_case_ids": [
+    "i92-v4-03-ecfd3f19"
+   ],
+   "adjudicator": "Hermes independent source adjudication (from original authenticated native source)",
+   "rationale": "v4-03 single shared fixture directory for integration tests; durable repo-convention decision, source-stated",
+   "grounded": true,
+   "useful": true,
+   "duplicate_of": null,
+   "privacy_ok": true,
+   "authority_ok": true,
+   "temporal_ok": true,
+   "evidence_class_ok": true,
+   "correct_group": true,
+   "no_false_verified": true
+  },
+  {
+   "record_id": "cdc3eca4011c7f4dbbf1a13a7aaa6a2c757e227a9d19112366e215de2942dc6f",
+   "remote_episode_uuid": "6ad72a8c-4a79-4cf0-9f00-1a0893f21661",
+   "source_case_id": "i92-v4-01-0195ea38",
+   "source_excerpt_sha256": "3d1b218fa85043a6da9dbe06d69534357d80c251a7303257b22dad565a4f838c",
+   "target_case_ids": [
+    "i92-v4-01-0195ea38"
+   ],
+   "adjudicator": "Hermes independent source adjudication (from original authenticated native source)",
+   "rationale": "v4-01 rtk exclude-list constraint (git status must be added to the rtk exclude list); source-stated",
+   "grounded": true,
+   "useful": true,
+   "duplicate_of": null,
+   "privacy_ok": true,
+   "authority_ok": true,
+   "temporal_ok": true,
+   "evidence_class_ok": true,
+   "correct_group": true,
+   "no_false_verified": true
+  }
+ ]
+}

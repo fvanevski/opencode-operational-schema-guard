@@ -1,0 +1,3378 @@
+### node --check docs/issue-78/v2-candidate/events.mjs 
+### rc=0 for: node --check docs/issue-78/v2-candidate/events.mjs
+-----
+### node --check docs/issue-78/v2-candidate/long-prompt.test.mjs 
+### rc=0 for: node --check docs/issue-78/v2-candidate/long-prompt.test.mjs
+-----
+### node --check docs/issue-78/v2-curator/core.mjs 
+### rc=0 for: node --check docs/issue-78/v2-curator/core.mjs
+-----
+### node --check docs/issue-78/v2-curator/finite-batch.test.mjs 
+### rc=0 for: node --check docs/issue-78/v2-curator/finite-batch.test.mjs
+-----
+### node --check docs/issue-91/adr-acceptance/issue92-a3-native-source.mjs 
+### rc=0 for: node --check docs/issue-91/adr-acceptance/issue92-a3-native-source.mjs
+-----
+### node --check docs/issue-91/adr-acceptance/issue92-a3-acceptance.mjs 
+### rc=0 for: node --check docs/issue-91/adr-acceptance/issue92-a3-acceptance.mjs
+-----
+### node --check docs/issue-91/adr-acceptance/issue92-a3-acceptance.test.mjs 
+### rc=0 for: node --check docs/issue-91/adr-acceptance/issue92-a3-acceptance.test.mjs
+-----
+### node --test docs/issue-78/v2-candidate/long-prompt.test.mjs 
+✔ long native message becomes at most six distinct, bounded, deterministic source spans (13.254037ms)
+✔ whole-message privacy, SELF, control, oversized payload and weak-ID gates precede segmentation (1.522882ms)
+✔ native multi-line quoted prompt recovers exact text under bounded whole-source controls (1.06375ms)
+✔ narrative spans survive surrounding code without storing code segments as user decisions (0.310958ms)
+✔ long source span is a real native source handle and cannot become a model-invented statement (35.490612ms)
+✔ native plugin stages all admitted long spans but no speculative or missing-result shell facts (25.554768ms)
+✔ injected OpenViking context is not new user evidence; authored technical tail survives (0.428192ms)
+✔ OpenViking blocks in middle preserve both authored statements (0.212896ms)
+✔ OpenViking memory-only or malformed tags have no source authority (0.157865ms)
+✔ original-input secret scan is not bypassed by a removable context block (0.251697ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 10
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 136.912911
+### rc=0 for: node --test docs/issue-78/v2-candidate/long-prompt.test.mjs
+-----
+### node --test docs/issue-78/v2-candidate/candidate.test.mjs 
+✔ captures implicit request and distinct native message occurrences, not assertion identity (2.931421ms)
+✔ same-session missing-native-ID fallback dedups, labels weak, and group fences identity (0.272438ms)
+✔ tool failures and successful tests are separate source events, not verified facts (1.08909ms)
+✔ native edit/write/apply_patch receipts are scoped, content-free and tool-reported (0.671209ms)
+✔ read-only file access is safely captured without asserting file modification (0.231276ms)
+✔ long assistant text uses bounded whole-message privacy scan before truncation (0.257627ms)
+✔ completed assistant event is adapter-ready but never upgrades itself to verified (0.180485ms)
+✔ durable queue dedup, restart, CAS, readback, list beyond legacy 500 and capacity overflow (1661.47894ms)
+✔ concurrent repeated delivery remains single-record and queue state unchanged by compaction (9.39997ms)
+✔ durable decline counters survive reopening; source identity and kind cannot be forged (8.330241ms)
+✔ queue rejects forged authority labels and ungrounded source handles (0.672858ms)
+✔ capture opt-out preserves baseline registration without staging events (20.21966ms)
+✔ stock-V2 wrapper keeps legacy recall, stages only in admitted context, no Graphiti add_memory (11.872559ms)
+✔ finished-turn: completed assistant turns bind through the authenticated context surface, deduped by native message ID (4.258038ms)
+✔ admitted user prompts link later tool and assistant events without upgrading authority (11.260512ms)
+✔ finished-turn: ID-less, short, and secret-bearing assistant messages are not staged (0.782892ms)
+✔ safe JSON, braces, long mixed technical prompts and non-keyword tools remain eligible (0.469753ms)
+ℹ tests 17
+ℹ suites 0
+ℹ pass 17
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2088.827585
+### rc=0 for: node --test docs/issue-78/v2-candidate/candidate.test.mjs
+-----
+### node --test docs/issue-78/v2-curator/finite-batch.test.mjs 
+✔ representative input and resolution are invariant to candidate order (8.808624ms)
+✔ batch picks substantive representative and preserves the weaker review record in both arrival orders (199.659444ms)
+✔ uncertain equivalence defers both source facts without remote writes (62.188631ms)
+✔ distinct technical predicates are not collapsed merely because both are bug reports (91.453519ms)
+✔ invalid family partition blocks all review and Graphiti mutations (43.519893ms)
+✔ independent utility REJECT retains source for review rather than Graphiti persistence (52.354799ms)
+✔ crash after frozen plan resumes without any additional model calls (84.418675ms)
+✔ ambiguous model call intent remains non-replayable after interruption (17.856844ms)
+✔ interactive harness cannot invoke the finite-batch worker (7.674942ms)
+✔ remote ACK loss is reconciled by positive episode identity without a second write (52.094341ms)
+✔ snapshot resumes only if native source bytes match authenticated queue events (15.024165ms)
+✔ finite-batch discovery prefers actual technical predicates over task boilerplate (0.275397ms)
+✔ independent batch utility does not inherit earlier same-group duplication anchors (0.254137ms)
+✔ a corrupted frozen model receipt blocks recovery before any Graphiti write (55.221947ms)
+✔ cross-workspace Sphinx siblings share one project arbitration pool and preserve their original native scopes (167.590695ms)
+✔ cross-workspace uncertain-equivalence families defer both instead of promoting first arrival (61.232033ms)
+✔ same group but different authenticated projects cannot be compared as one family (108.134611ms)
+✔ arbitration rejects cross-project candidate data, but accepts separate workspaces of one project (0.35235ms)
+✔ nineteen same-project, cross-workspace candidates form real semantic-family choices instead of nineteen singleton calls (0.544415ms)
+✔ independent specificity counter-review splits supported distinct technical variants (97.560099ms)
+✔ specificity quote and per-alternate equivalence checks are mandatory and source-authenticated (0.538925ms)
+✔ invalid optional specificity model output defers only that family, not the source or the batch (66.844419ms)
+✔ unknown result for independent specificity cannot be replayed after restart (48.573773ms)
+✔ first-pass uncertain equivalence remains deferred without specificity call (69.099971ms)
+✔ multi-variant source-specificity review preserves distinct conditions while deferring true repetitions (0.565006ms)
+✔ recall-first default promotes both independently useful, source-validated facts without a semantic veto (83.446938ms)
+✔ recall-first default is not defeated by previously uncertain model equivalence (74.034777ms)
+✔ frozen discovery/utility replies can be reused without model replay when novelty is no longer a gate (78.645045ms)
+✔ already frozen recall plans cannot switch back to restrictive policy on restart (82.80278ms)
+✔ specificity response shape alias and exact long quote do not become safety vetoes (0.334539ms)
+✔ recall-first finite batch applies separate discovery/utility model knobs without novelty calls (84.701622ms)
+✔ a frozen batch cannot change its stage profile after the first model result (84.556568ms)
+✔ replay-only refuses to infer when even one frozen model-call intent is missing (14.885421ms)
+✔ replay-only recovers completed model responses with per-stage metrics and no inference (83.625402ms)
+✔ S2 recovers a source-supported technical quote after weak-header utility rejection (69.896432ms)
+✔ S2 default is unchanged and cannot adopt rescue after a plan is frozen (26.220064ms)
+✔ S2 fabricated source reference in recovery cannot reach Graphiti (32.960332ms)
+✔ S2 ambiguous second-pass model outcome is not replayed (21.089273ms)
+✔ S2 unsupported inference is deferred without a recovery retry (30.774611ms)
+✔ S2 source recovery can recover an authenticated empty first discovery (52.534862ms)
+✔ S2 conflicting verdict on the same exact quote cannot silently upgrade it (44.755337ms)
+✔ S3 retries one invalid discovery once and persists only corrected sourced fact (53.710925ms)
+✔ S3 independently validates mixed discovery and preserves two distinct facts (73.153173ms)
+✔ S3 does not retry a forged source reference (24.489087ms)
+✔ S3 opt-in cannot change existing S2 active identity (30.580295ms)
+✔ S3 ambiguous correction request is not retried after frozen intent (19.634813ms)
+✔ S3 partial recovery cannot reverse a rejected identical source quote (42.834894ms)
+✔ S4 three-stage claim critic and utility persist ONLY the exact original quote (53.662624ms)
+✔ S4 low-overlap unsupported claim reaches support but never utility/Graphiti (39.306617ms)
+✔ S4 opt-in identity cannot retrofit frozen S3 state (31.702986ms)
+✔ S4 unknown support-call result is never replayed (21.70636ms)
+✔ S4 direct real-client call cannot use ambient admitted marker without flock (0.314749ms)
+✔ S6 exact complement rescues a source-stated fact without any normalized claim (57.89325ms)
+✔ S6 exact complement cannot promote forged source reference or call utility (36.53608ms)
+✔ S6 cannot retrofit complement into frozen S5 claim batch (30.518833ms)
+✔ S6 never promotes a rejected normalized claim through a different exact quote (61.939182ms)
+✔ Issue92 balanced opt-in suppresses only source-quoted duplicates (79.026405ms)
+✔ Issue92 balanced opt-in retains uncertain source facts (86.187202ms)
+✔ Issue92 balanced opt-in retains sourced facts after invalid arbitration (87.444877ms)
+✔ Issue92 balanced opt-in retains sourced facts after invalid quote review (92.643361ms)
+✔ Issue92 balanced opt-in cannot retrofit frozen recall batches (81.447771ms)
+✔ source-quote salvage retains independently useful exact quote after rejecting normalized inference (63.368972ms)
+✔ source-quote salvage never overrides independent exact quote utility REJECT (43.475361ms)
+✔ source-quote salvage cannot be retrofitted into an older frozen batch (38.386601ms)
+✔ source-quote salvage requires an already admitted source-exact complement mode (3.863567ms)
+ℹ tests 65
+ℹ suites 0
+ℹ pass 65
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3401.870907
+### rc=0 for: node --test docs/issue-78/v2-curator/finite-batch.test.mjs
+-----
+### node --test docs/issue-78/v2-curator/claim-evidence.test.mjs 
+✔ S4 discovery keeps normalized proposal distinct from authenticated exact quote (4.418302ms)
+✔ S4 malformed source attribution, span and claim fields cannot become facts (0.533804ms)
+✔ S4 lexical near miss reaches independent support and remains rejectable (0.500893ms)
+✔ S4 lexical zero overlap remains a diagnostic, not semantic authorization (0.287788ms)
+✔ S4 independent source critic must return exact support quote and preserve source class (0.614967ms)
+✔ S4 unsupported/ambiguous claims remain deferred before utility or remote writes (0.265227ms)
+✔ S4 support recovery prompt carries rejected exact-source span and reason (0.34169ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 64.904133
+### rc=0 for: node --test docs/issue-78/v2-curator/claim-evidence.test.mjs
+-----
+### node --test docs/issue-91/adr-acceptance/issue92-a3-stage.test.mjs 
+✔ frozen v4 sources stage into v4, never previously populated v2 identity (141.902421ms)
+✔ historical v2 label remains a valid fresh, isolated group (101.545756ms)
+✔ arbitrary groups and path traversal cannot be staged (61.748396ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 364.80034
+### rc=0 for: node --test docs/issue-91/adr-acceptance/issue92-a3-stage.test.mjs
+-----
+### node --test docs/issue-91/adr-acceptance/issue92-a3-acceptance.test.mjs 
+✔ native source identity and all 20 labels are preserved (4.525676ms)
+✔ long native text keeps later source opportunities, not only first 1090 chars (0.801682ms)
+✔ privacy marker in omitted tail vetoes entire native source before staging (1.041498ms)
+✔ 9 of 10 truly useful grounded facts pass even with grounded nonvaluable control (1.919013ms)
+✔ session-matched but source-mismatched facts never earn target credit (0.971627ms)
+✔ operator-pending source labels cannot produce prospective PASS (0.7101ms)
+✔ ratification cannot occur after first model intent (0.881574ms)
+✔ missing independent fact judgments cannot silently become precision (0.653098ms)
+✔ false unsupported grounding prevents pass despite persistence (0.70737ms)
+✔ remote membership and original quote must be positively authenticated (1.561553ms)
+✔ authority breach is a hard failure independently of numeric targets (1.233374ms)
+✔ duplicate episodes do not inflate independently useful-fact floor (0.617308ms)
+✔ native freeze refuses relabeling an original message into a shared synthetic session (0.470563ms)
+✔ A3 scorer rejects synthetic staged session even if original locator hash survives (0.495763ms)
+ℹ tests 14
+ℹ suites 0
+ℹ pass 14
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 73.975113
+### rc=0 for: node --test docs/issue-91/adr-acceptance/issue92-a3-acceptance.test.mjs
+-----
+### python3 docs/issue-78/v2-curator/test_ex_admitted_node_bridge.py 
+.
+----------------------------------------------------------------------
+Ran 1 test in 0.001s
+
+OK
+### rc=0 for: python3 docs/issue-78/v2-curator/test_ex_admitted_node_bridge.py
+-----
+### npm run check
+npm notice run opencode-operational-schema-guard@5.23.2 check
+npm notice run node --check index.mjs && node --check lib/policy-spec.mjs && node --check lib/context-policy.mjs && node --check lib/operation-guard.mjs && node --check lib/operation-guard-core.mjs && node --check lib/todo-ledger.mjs && node --check lib/config-contract.mjs && node --check lib/repo-pr-assessment.mjs && node --check lib/owner-base-reconciliation.mjs && node --check lib/session-trace-assessment.mjs && node --check lib/actions-evidence.mjs && node --check lib/runner-readiness.mjs && node --check scripts/test-plugin.mjs && node --check scripts/session-trace-assessment.mjs && node --check scripts/validate-config.mjs && node --check scripts/verify-disposable.mjs && node --check scripts/verify-manifest.mjs && node --check scripts/local-agent-assessment.mjs && node --check scripts/reconcile-owner-base.mjs && node --check scripts/repo-pr-assessment.mjs && node --check scripts/workspace-identity.mjs && node --check scripts/install-live-config.mjs && node --check scripts/migrate-v511-config.mjs && node --check scripts/migrate-v512-config.mjs && node --check scripts/migrate-v513-config.mjs && node --check scripts/migrate-v514-config.mjs && node --check scripts/migrate-v515-config.mjs && node --check scripts/migrate-v516-config.mjs && node --check scripts/migrate-v517-config.mjs && node --check scripts/migrate-v518-config.mjs && node --check scripts/migrate-v519-config.mjs && node --check scripts/migrate-v520-config.mjs && node --check scripts/migrate-v521-config.mjs && node --check scripts/export-session-safe.mjs && node --check scripts/ghdev-actions-controller.mjs && node --check scripts/ghdev-actions-executor.mjs && node --check scripts/ghdev-actions-publisher.mjs && node --check scripts/ghdev-runner-readiness.mjs
+### rc=0 for: npm run check
+-----
+### npm test
+npm notice run opencode-operational-schema-guard@5.23.2 test
+npm notice run node scripts/test-plugin.mjs
+TAP version 13
+# Subtest: persistent hardened listener fixture is admitted
+ok 1 - persistent hardened listener fixture is admitted
+  ---
+  duration_ms: 12.894266
+  type: 'test'
+  ...
+# Subtest: credential-like static environment and effective host binds fail closed
+ok 2 - credential-like static environment and effective host binds fail closed
+  ---
+  duration_ms: 1.82325
+  type: 'test'
+  ...
+# Subtest: named volumes encoded through HostConfig.Binds are admitted from effective Mounts
+ok 3 - named volumes encoded through HostConfig.Binds are admitted from effective Mounts
+  ---
+  duration_ms: 0.504904
+  type: 'test'
+  ...
+# Subtest: privilege, every numeric UID-zero spelling, image, restart, resource, and health drift fail closed
+ok 4 - privilege, every numeric UID-zero spelling, image, restart, resource, and health drift fail closed
+  ---
+  duration_ms: 2.844238
+  type: 'test'
+  ...
+# Subtest: effective systempaths, namespaces, devices, named volumes, and tmpfs contracts are enforced
+ok 5 - effective systempaths, namespaces, devices, named volumes, and tmpfs contracts are enforced
+  ---
+  duration_ms: 7.070315
+  type: 'test'
+  ...
+# Subtest: Docker-persisted security options require NNP plus the exact custom seccomp semantics
+ok 6 - Docker-persisted security options require NNP plus the exact custom seccomp semantics
+  ---
+  duration_ms: 2.341285
+  type: 'test'
+  ...
+# Subtest: seccomp comparison preserves 64-bit JSON integer distinctions
+ok 7 - seccomp comparison preserves 64-bit JSON integer distinctions
+  ---
+  duration_ms: 15.5771
+  type: 'test'
+  ...
+# Subtest: named volumes reject local-driver bind backing, non-local driver/scope, and missing writable runner-state coverage
+ok 8 - named volumes reject local-driver bind backing, non-local driver/scope, and missing writable runner-state coverage
+  ---
+  duration_ms: 1.012308
+  type: 'test'
+  ...
+# Subtest: frozen seccomp proof requires hash-bound object JSON
+ok 9 - frozen seccomp proof requires hash-bound object JSON
+  ---
+  duration_ms: 3.940449
+  type: 'test'
+  ...
+# Subtest: seccomp bytes must be unchanged since before container creation
+ok 10 - seccomp bytes must be unchanged since before container creation
+  ---
+  duration_ms: 1.06725
+  type: 'test'
+  ...
+# Subtest: config requires exact GitHub routing labels, isolated network mode, normalized paths, and explicit tmpfs writability
+ok 11 - config requires exact GitHub routing labels, isolated network mode, normalized paths, and explicit tmpfs writability
+  ---
+  duration_ms: 0.994568
+  type: 'test'
+  ...
+# Subtest: runner registration settings prove persistent update-disabled repository binding
+ok 12 - runner registration settings prove persistent update-disabled repository binding
+  ---
+  duration_ms: 0.900225
+  type: 'test'
+  ...
+# Subtest: GitHub runner registration proves server-side identity, labels, and online idle state
+ok 13 - GitHub runner registration proves server-side identity, labels, and online idle state
+  ---
+  duration_ms: 0.614767
+  type: 'test'
+  ...
+# Subtest: evidence workflow is dispatch-only and never uses pull_request_target
+ok 14 - evidence workflow is dispatch-only and never uses pull_request_target
+  ---
+  duration_ms: 0.227576
+  type: 'test'
+  ...
+# Subtest: self-hosted routing is same-repo-controller-gated and exact-head checkout is explicit
+ok 15 - self-hosted routing is same-repo-controller-gated and exact-head checkout is explicit
+  ---
+  duration_ms: 0.133094
+  type: 'test'
+  ...
+# Subtest: candidate executor cannot publish statuses and publisher is a separate job
+ok 16 - candidate executor cannot publish statuses and publisher is a separate job
+  ---
+  duration_ms: 0.189195
+  type: 'test'
+  ...
+# Subtest: candidate sandbox clears environment, unshares namespaces, and mounts source read-only
+ok 17 - candidate sandbox clears environment, unshares namespaces, and mounts source read-only
+  ---
+  duration_ms: 0.106863
+  type: 'test'
+  ...
+# Subtest: self-certification census is derived from immutable expected-base and expected-head Git trees
+ok 18 - self-certification census is derived from immutable expected-base and expected-head Git trees
+  ---
+  duration_ms: 0.101733
+  type: 'test'
+  ...
+# Subtest: candidate checkout happens only after the self-hosted remote recheck
+ok 19 - candidate checkout happens only after the self-hosted remote recheck
+  ---
+  duration_ms: 0.142714
+  type: 'test'
+  ...
+# Subtest: immutable receipt artifact is published before the final exact-head status
+ok 20 - immutable receipt artifact is published before the final exact-head status
+  ---
+  duration_ms: 0.105963
+  type: 'test'
+  ...
+# Subtest: executor resets the dedicated workspace parent and removes it after the job
+ok 21 - executor resets the dedicated workspace parent and removes it after the job
+  ---
+  duration_ms: 0.083022
+  type: 'test'
+  ...
+# Subtest: runner-scoped temp path is used only where runner context is available
+ok 22 - runner-scoped temp path is used only where runner context is available
+  ---
+  duration_ms: 0.189125
+  type: 'test'
+  ...
+# Subtest: all reusable third-party Actions are pinned to full commit SHAs
+ok 23 - all reusable third-party Actions are pinned to full commit SHAs
+  ---
+  duration_ms: 0.293158
+  type: 'test'
+  ...
+# Subtest: trusted workflow uses current Node-24-native action pins and keeps repository Node 22
+ok 24 - trusted workflow uses current Node-24-native action pins and keeps repository Node 22
+  ---
+  duration_ms: 0.38048
+  type: 'test'
+  ...
+# Subtest: ordinary CI uses the same Node-24-native checkout/setup-node pins without implicit cache
+ok 25 - ordinary CI uses the same Node-24-native checkout/setup-node pins without implicit cache
+  ---
+  duration_ms: 1.010508
+  type: 'test'
+  ...
+# Subtest: executor receipts bind to live persistent runner registration state rather than marker declarations
+ok 26 - executor receipts bind to live persistent runner registration state rather than marker declarations
+  ---
+  duration_ms: 0.156654
+  type: 'test'
+  ...
+# Subtest: executor preflights and attests Python and Git before any profile command
+ok 27 - executor preflights and attests Python and Git before any profile command
+  ---
+  duration_ms: 0.160964
+  type: 'test'
+  ...
+# Subtest: dispatch strings enter shell commands only through environment variables
+ok 28 - dispatch strings enter shell commands only through environment variables
+  ---
+  duration_ms: 0.240847
+  type: 'test'
+  ...
+# Subtest: controller freshness is revalidated before execution and again by the publisher
+ok 29 - controller freshness is revalidated before execution and again by the publisher
+  ---
+  duration_ms: 0.208606
+  type: 'test'
+  ...
+# Subtest: candidate command output is file-backed and bounded independently of spawn buffers
+ok 30 - candidate command output is file-backed and bounded independently of spawn buffers
+  ---
+  duration_ms: 0.154014
+  type: 'test'
+  ...
+# Subtest: Bubblewrap child-start handshake precedes command accounting and isolation claims
+ok 31 - Bubblewrap child-start handshake precedes command accounting and isolation claims
+  ---
+  duration_ms: 0.175365
+  type: 'test'
+  ...
+# Subtest: publisher prioritizes final source movement as STALE over a simultaneous PR closure
+ok 32 - publisher prioritizes final source movement as STALE over a simultaneous PR closure
+  ---
+  duration_ms: 0.203966
+  type: 'test'
+  ...
+# Subtest: publisher binds status response through the exact-head status URL instead of a nonexistent sha field
+ok 33 - publisher binds status response through the exact-head status URL instead of a nonexistent sha field
+  ---
+  duration_ms: 0.126584
+  type: 'test'
+  ...
+# Subtest: dispatch input fails closed on malformed PR/SHA/profile/controller values
+ok 34 - dispatch input fails closed on malformed PR/SHA/profile/controller values
+  ---
+  duration_ms: 1.477841
+  type: 'test'
+  ...
+# Subtest: repository-final profile requires the current runner image schema
+ok 35 - repository-final profile requires the current runner image schema
+  ---
+  duration_ms: 0.385861
+  type: 'test'
+  ...
+# Subtest: same-repository exact PR identity is required and fork/head movement is rejected
+ok 36 - same-repository exact PR identity is required and fork/head movement is rejected
+  ---
+  duration_ms: 0.505124
+  type: 'test'
+  ...
+# Subtest: candidate cannot self-certify trusted control-plane changes
+ok 37 - candidate cannot self-certify trusted control-plane changes
+  ---
+  duration_ms: 0.73667
+  type: 'test'
+  ...
+# Subtest: candidate fingerprints reject symlinks instead of dereferencing host paths
+ok 38 - candidate fingerprints reject symlinks instead of dereferencing host paths
+  ---
+  duration_ms: 6.564911
+  type: 'test'
+  ...
+# Subtest: node TAP totals are parsed deterministically
+ok 39 - node TAP totals are parsed deterministically
+  ---
+  duration_ms: 0.489464
+  type: 'test'
+  ...
+# Subtest: execution record rejects duplicate/missing/conflicting command evidence
+ok 40 - execution record rejects duplicate/missing/conflicting command evidence
+  ---
+  duration_ms: 2.593301
+  type: 'test'
+  ...
+# Subtest: started execution requires complete Git and Python provenance
+ok 41 - started execution requires complete Git and Python provenance
+  ---
+  duration_ms: 1.811139
+  type: 'test'
+  ...
+# Subtest: signal termination is BLOCKED without fabricating a numeric exit
+ok 42 - signal termination is BLOCKED without fabricating a numeric exit
+  ---
+  duration_ms: 0.577766
+  type: 'test'
+  ...
+# Subtest: setup failures can produce a typed BLOCKED execution without fabricating environment provenance
+ok 43 - setup failures can produce a typed BLOCKED execution without fabricating environment provenance
+  ---
+  duration_ms: 1.683946
+  type: 'test'
+  ...
+# Subtest: final non-stale PR identity denial cannot preserve executor PASS
+ok 44 - final non-stale PR identity denial cannot preserve executor PASS
+  ---
+  duration_ms: 1.577654
+  type: 'test'
+  ...
+# Subtest: final source movement forces STALE and never PASS on the old receipt
+ok 45 - final source movement forces STALE and never PASS on the old receipt
+  ---
+  duration_ms: 0.38114
+  type: 'test'
+  ...
+# Subtest: trusted controller movement forces STALE even when the candidate head is unchanged
+ok 46 - trusted controller movement forces STALE even when the candidate head is unchanged
+  ---
+  duration_ms: 0.660498
+  type: 'test'
+  ...
+# Subtest: receipt digest/provenance is deterministic and malformed/conflicting receipt is rejected
+ok 47 - receipt digest/provenance is deterministic and malformed/conflicting receipt is rejected
+  ---
+  duration_ms: 1.351218
+  type: 'test'
+  ...
+# Subtest: Actions receipt adapter excludes immutable run identity from producer equivalence while retaining it on each entry
+ok 48 - Actions receipt adapter excludes immutable run identity from producer equivalence while retaining it on each entry
+  ---
+  duration_ms: 2.508319
+  type: 'test'
+  ...
+# Subtest: new head cannot reuse an old receipt and evidence classes remain distinct
+ok 49 - new head cannot reuse an old receipt and evidence classes remain distinct
+  ---
+  duration_ms: 0.656018
+  type: 'test'
+  ...
+# Subtest: installer script is syntactically valid
+ok 50 - installer script is syntactically valid
+  ---
+  duration_ms: 34.380788
+  type: 'test'
+  ...
+# Subtest: prepare and promote exact merged source with typed receipt and rollback material
+ok 51 - prepare and promote exact merged source with typed receipt and rollback material
+  ---
+  duration_ms: 681.864011
+  type: 'test'
+  ...
+# Subtest: prepare rejects non-canonical live paths outside explicit test mode
+ok 52 - prepare rejects non-canonical live paths outside explicit test mode
+  ---
+  duration_ms: 112.525592
+  type: 'test'
+  ...
+# Subtest: prepare rejects an ephemeral production installer checkout
+ok 53 - prepare rejects an ephemeral production installer checkout
+  ---
+  duration_ms: 105.879278
+  type: 'test'
+  ...
+# Subtest: prepare rejects an installer runtime outside the deployment-target checkout
+ok 54 - prepare rejects an installer runtime outside the deployment-target checkout
+  ---
+  duration_ms: 109.205351
+  type: 'test'
+  ...
+# Subtest: prepare rejects a dirty deployment-target checkout
+ok 55 - prepare rejects a dirty deployment-target checkout
+  ---
+  duration_ms: 105.93156
+  type: 'test'
+  ...
+# Subtest: prepare rejects reviewed and merged commits with different trees
+ok 56 - prepare rejects reviewed and merged commits with different trees
+  ---
+  duration_ms: 118.747354
+  type: 'test'
+  ...
+# Subtest: prepare rejects unauthenticated prior live tree
+ok 57 - prepare rejects unauthenticated prior live tree
+  ---
+  duration_ms: 183.351404
+  type: 'test'
+  ...
+# Subtest: prepare rejects a control root that overlaps the live-plugin parent
+ok 58 - prepare rejects a control root that overlaps the live-plugin parent
+  ---
+  duration_ms: 125.51489
+  type: 'test'
+  ...
+# Subtest: prepare rejects a plan path outside the control root
+ok 59 - prepare rejects a plan path outside the control root
+  ---
+  duration_ms: 118.568989
+  type: 'test'
+  ...
+# Subtest: prepare rejects symlinked plan destination ancestors
+ok 60 - prepare rejects symlinked plan destination ancestors
+  ---
+  duration_ms: 129.297293
+  type: 'test'
+  ...
+# Subtest: plan destination collision is exclusive and non-mutating
+ok 61 - plan destination collision is exclusive and non-mutating
+  ---
+  duration_ms: 182.708204
+  type: 'test'
+  ...
+# Subtest: promote rejects plan digest tampering before live mutation
+ok 62 - promote rejects plan digest tampering before live mutation
+  ---
+  duration_ms: 232.949909
+  type: 'test'
+  ...
+# Subtest: promote rejects prepared-stage drift before live mutation
+ok 63 - promote rejects prepared-stage drift before live mutation
+  ---
+  duration_ms: 305.026985
+  type: 'test'
+  ...
+# Subtest: promote rejects live-tree drift between prepare and promote
+ok 64 - promote rejects live-tree drift between prepare and promote
+  ---
+  duration_ms: 345.304893
+  type: 'test'
+  ...
+# Subtest: promote rejects live-config drift between prepare and promote
+ok 65 - promote rejects live-config drift between prepare and promote
+  ---
+  duration_ms: 333.378373
+  type: 'test'
+  ...
+# Subtest: promote rejects a receipt path outside the prepared control root
+ok 66 - promote rejects a receipt path outside the prepared control root
+  ---
+  duration_ms: 252.384992
+  type: 'test'
+  ...
+# Subtest: promote rejects symlinked receipt destination ancestors
+ok 67 - promote rejects symlinked receipt destination ancestors
+  ---
+  duration_ms: 258.85777
+  type: 'test'
+  ...
+# Subtest: receipt destination collision blocks before lock or live mutation
+ok 68 - receipt destination collision blocks before lock or live mutation
+  ---
+  duration_ms: 302.640073
+  type: 'test'
+  ...
+# Subtest: installation lock collision blocks and removes the reserved receipt
+ok 69 - installation lock collision blocks and removes the reserved receipt
+  ---
+  duration_ms: 280.35486
+  type: 'test'
+  ...
+# Subtest: recover restores a missing canonical live root from an armed crash journal
+ok 70 - recover restores a missing canonical live root from an armed crash journal
+  ---
+  duration_ms: 349.728789
+  type: 'test'
+  ...
+# Subtest: post-promotion installed-tree validation failure restores prior live source
+ok 71 - post-promotion installed-tree validation failure restores prior live source
+  ---
+  duration_ms: 621.537339
+  type: 'test'
+  ...
+# Subtest: the live-config contract accepts the intended permission and model invariants
+ok 72 - the live-config contract accepts the intended permission and model invariants
+  ---
+  duration_ms: 1.248455
+  type: 'test'
+  ...
+# Subtest: later providers do not shadow the reviewed primary model aliases
+ok 73 - later providers do not shadow the reviewed primary model aliases
+  ---
+  duration_ms: 0.244097
+  type: 'test'
+  ...
+# Subtest: the compatibility coalescer plugin must be the final configured plugin
+ok 74 - the compatibility coalescer plugin must be the final configured plugin
+  ---
+  duration_ms: 0.495193
+  type: 'test'
+  ...
+# Subtest: user-authored Build, Verify, and Explore prompts are accepted and preserved
+ok 75 - user-authored Build, Verify, and Explore prompts are accepted and preserved
+  ---
+  duration_ms: 0.262227
+  type: 'test'
+  ...
+# Subtest: validate-config CLI accepts user-authored prompt text
+ok 76 - validate-config CLI accepts user-authored prompt text
+  ---
+  duration_ms: 35.733584
+  type: 'test'
+  ...
+# Subtest: configured Build, Verify, and Explore prompts must remain usable non-empty strings
+ok 77 - configured Build, Verify, and Explore prompts must remain usable non-empty strings
+  ---
+  duration_ms: 1.382738
+  type: 'test'
+  ...
+# Subtest: custom prompt text does not weaken unrelated live-config safety checks
+ok 78 - custom prompt text does not weaken unrelated live-config safety checks
+  ---
+  duration_ms: 0.145594
+  type: 'test'
+  ...
+# Subtest: the live-config contract rejects syntax, incoherent budgets, and unsafe Verify path ordering
+ok 79 - the live-config contract rejects syntax, incoherent budgets, and unsafe Verify path ordering
+  ---
+  duration_ms: 0.863254
+  type: 'test'
+  ...
+# Subtest: the live-config core does not require a project-specific Explore gateway
+ok 80 - the live-config core does not require a project-specific Explore gateway
+  ---
+  duration_ms: 0.259237
+  type: 'test'
+  ...
+# Subtest: the live-config contract requires generic repository-local Verify tools and fail-closed autofix ordering
+ok 81 - the live-config contract requires generic repository-local Verify tools and fail-closed autofix ordering
+  ---
+  duration_ms: 0.34899
+  type: 'test'
+  ...
+# Subtest: the live-config contract requires the typed local assessment gateway
+ok 82 - the live-config contract requires the typed local assessment gateway
+  ---
+  duration_ms: 0.268008
+  type: 'test'
+  ...
+# Subtest: last-match ordering is enforced for every new Verify and Explore evidence allow
+ok 83 - last-match ordering is enforced for every new Verify and Explore evidence allow
+  ---
+  duration_ms: 1.015238
+  type: 'test'
+  ...
+# Subtest: README generated policy block is exactly sourced from policy-spec
+ok 84 - README generated policy block is exactly sourced from policy-spec
+  ---
+  duration_ms: 1.607704
+  type: 'test'
+  ...
+# Subtest: an invalid candidate cannot alter the target or create a backup
+ok 85 - an invalid candidate cannot alter the target or create a backup
+  ---
+  duration_ms: 0.72551
+  type: 'test'
+  ...
+# Subtest: a valid candidate is backed up and atomically replaces the target
+ok 86 - a valid candidate is backed up and atomically replaces the target
+  ---
+  duration_ms: 9.867702
+  type: 'test'
+  ...
+# Subtest: the v5.19 migration is idempotent and produces a contract-valid candidate
+ok 87 - the v5.19 migration is idempotent and produces a contract-valid candidate
+  ---
+  duration_ms: 48.855894
+  type: 'test'
+  ...
+# Subtest: the v5.20 migration is idempotent and produces a contract-valid candidate
+ok 88 - the v5.20 migration is idempotent and produces a contract-valid candidate
+  ---
+  duration_ms: 46.637903
+  type: 'test'
+  ...
+# Subtest: the v5.21 migration removes project-specific assessment permissions and is idempotent
+ok 89 - the v5.21 migration removes project-specific assessment permissions and is idempotent
+  ---
+  duration_ms: 51.970471
+  type: 'test'
+  ...
+# Subtest: lexical floor rejects unrelated facts but admits direct multi-term evidence
+ok 90 - lexical floor rejects unrelated facts but admits direct multi-term evidence
+  ---
+  duration_ms: 2.19394
+  type: 'test'
+  ...
+# Subtest: reranker admits semantic paraphrase but rejects top-k unrelated material
+ok 91 - reranker admits semantic paraphrase but rejects top-k unrelated material
+  ---
+  duration_ms: 4.017921
+  type: 'test'
+  ...
+# Subtest: unavailable reranker fails closed to conservative CPU filter, not all top-k
+ok 92 - unavailable reranker fails closed to conservative CPU filter, not all top-k
+  ---
+  duration_ms: 0.469383
+  type: 'test'
+  ...
+# Subtest: generic historical vs current-choice evidence wins without project-specific names
+ok 93 - generic historical vs current-choice evidence wins without project-specific names
+  ---
+  duration_ms: 0.807342
+  type: 'test'
+  ...
+# Subtest: without an independent reranker, semantic-only choice retrieval abstains
+ok 94 - without an independent reranker, semantic-only choice retrieval abstains
+  ---
+  duration_ms: 0.436372
+  type: 'test'
+  ...
+# Subtest: fresh Issue 75 closure question admits sourced closure fact but not another numbered issue
+ok 95 - fresh Issue 75 closure question admits sourced closure fact but not another numbered issue
+  ---
+  duration_ms: 0.985597
+  type: 'test'
+  ...
+# Subtest: same-issue wrong-topic fact is not relevant just because issue and number match
+ok 96 - same-issue wrong-topic fact is not relevant just because issue and number match
+  ---
+  duration_ms: 1.674916
+  type: 'test'
+  ...
+# Subtest: numeric issue references cannot be satisfied by unrelated pass counts
+ok 97 - numeric issue references cannot be satisfied by unrelated pass counts
+  ---
+  duration_ms: 0.761181
+  type: 'test'
+  ...
+# Subtest: single-digit issue numbers retain exact issue-qualified scope
+ok 98 - single-digit issue numbers retain exact issue-qualified scope
+  ---
+  duration_ms: 0.533525
+  type: 'test'
+  ...
+# Subtest: hyphenated issue references preserve exact scope and independent topic evidence
+ok 99 - hyphenated issue references preserve exact scope and independent topic evidence
+  ---
+  duration_ms: 0.862344
+  type: 'test'
+  ...
+# Subtest: reranker uses loopback only, validates bounded score and request
+ok 100 - reranker uses loopback only, validates bounded score and request
+  ---
+  duration_ms: 1.039129
+  type: 'test'
+  ...
+# Subtest: fresh native recall: later-sentence question word is not a mandatory proper name
+ok 101 - fresh native recall: later-sentence question word is not a mandatory proper name
+  ---
+  duration_ms: 0.71978
+  type: 'test'
+  ...
+# Subtest: fresh native recall: true named entities remain hard qualifiers after punctuation
+ok 102 - fresh native recall: true named entities remain hard qualifiers after punctuation
+  ---
+  duration_ms: 0.232227
+  type: 'test'
+  ...
+# Subtest: structured DB-name alias retains source topical and identity gates
+ok 103 - structured DB-name alias retains source topical and identity gates
+  ---
+  duration_ms: 0.441973
+  type: 'test'
+  ...
+# Subtest: contextual acronyms require two opaque query identifiers and topical support
+ok 104 - contextual acronyms require two opaque query identifiers and topical support
+  ---
+  duration_ms: 0.36624
+  type: 'test'
+  ...
+# Subtest: 24-candidate selector admits a sourced relevant fact beyond the original top twelve
+ok 105 - 24-candidate selector admits a sourced relevant fact beyond the original top twelve
+  ---
+  duration_ms: 2.308363
+  type: 'test'
+  ...
+# Subtest: qualified shortlist ranks eligibility before a 24-record bound and excludes unsafe aliases
+ok 106 - qualified shortlist ranks eligibility before a 24-record bound and excludes unsafe aliases
+  ---
+  duration_ms: 1.195663
+  type: 'test'
+  ...
+# Subtest: qualified shortlist resolves equal direct overlap using original source-context evidence only as a tie
+ok 107 - qualified shortlist resolves equal direct overlap using original source-context evidence only as a tie
+  ---
+  duration_ms: 1.179092
+  type: 'test'
+  ...
+# Subtest: diagnostic proves 0.34 admitFact floor is not an automatic-recall selector gate
+ok 108 - diagnostic proves 0.34 admitFact floor is not an automatic-recall selector gate
+  ---
+  duration_ms: 0.766061
+  type: 'test'
+  ...
+# Subtest: diagnostic exposes named/issue/numeric failure without emitting source content
+ok 109 - diagnostic exposes named/issue/numeric failure without emitting source content
+  ---
+  duration_ms: 0.410941
+  type: 'test'
+  ...
+# Subtest: diagnostic labels linked source-context gating without changing production recall
+ok 110 - diagnostic labels linked source-context gating without changing production recall
+  ---
+  duration_ms: 1.161232
+  type: 'test'
+  ...
+# Subtest: commit-effect questions prefer source-described changes over incidental worktree commands
+ok 111 - commit-effect questions prefer source-described changes over incidental worktree commands
+  ---
+  duration_ms: 0.799572
+  type: 'test'
+  ...
+# Subtest: commit-effect preference cannot waive wrong entity, Issue or numeric scope
+ok 112 - commit-effect preference cannot waive wrong entity, Issue or numeric scope
+  ---
+  duration_ms: 1.1133
+  type: 'test'
+  ...
+# Subtest: commit-effect preference does not mistake worktree commands with incidental change words for commit effects
+ok 113 - commit-effect preference does not mistake worktree commands with incidental change words for commit effects
+  ---
+  duration_ms: 0.273197
+  type: 'test'
+  ...
+# Subtest: commit subject impact beats git -C worktree setup even if output echoes the subject
+ok 114 - commit subject impact beats git -C worktree setup even if output echoes the subject
+  ---
+  duration_ms: 0.816712
+  type: 'test'
+  ...
+# Subtest: git -C option and quoted-path procedure variants never gain commit-effect bonus
+ok 115 - git -C option and quoted-path procedure variants never gain commit-effect bonus
+  ---
+  duration_ms: 0.183125
+  type: 'test'
+  ...
+# Subtest: generic conventional commit-subject formats score without a fixed change-verb dictionary
+ok 116 - generic conventional commit-subject formats score without a fixed change-verb dictionary
+  ---
+  duration_ms: 0.115053
+  type: 'test'
+  ...
+# Subtest: commit subject preference does not waive named product, issue, numeric or unrelated-topic fences
+ok 117 - commit subject preference does not waive named product, issue, numeric or unrelated-topic fences
+  ---
+  duration_ms: 0.608097
+  type: 'test'
+  ...
+# Subtest: tool-origin diagnostic question echo is excluded from both automatic selector stages
+ok 118 - tool-origin diagnostic question echo is excluded from both automatic selector stages
+  ---
+  duration_ms: 1.45711
+  type: 'test'
+  ...
+# Subtest: tool question-echo rule is provenance-bound, non-ID-specific and conservative
+ok 119 - tool question-echo rule is provenance-bound, non-ID-specific and conservative
+  ---
+  duration_ms: 0.186195
+  type: 'test'
+  ...
+# Subtest: excluded tool-question echoes cannot poison semantic-choice background or cached reranker admission
+ok 120 - excluded tool-question echoes cannot poison semantic-choice background or cached reranker admission
+  ---
+  duration_ms: 0.7124
+  type: 'test'
+  ...
+# Subtest: context policy is derived per primary agent and frozen at initialization values
+ok 121 - context policy is derived per primary agent and frozen at initialization values
+  ---
+  duration_ms: 0.742871
+  type: 'test'
+  ...
+# Subtest: different live model and reserve values produce different derived thresholds
+ok 122 - different live model and reserve values produce different derived thresholds
+  ---
+  duration_ms: 0.187955
+  type: 'test'
+  ...
+# Subtest: context budget validation rejects incoherent limits and reserve
+ok 123 - context budget validation rejects incoherent limits and reserve
+  ---
+  duration_ms: 0.286168
+  type: 'test'
+  ...
+# Subtest: context policy rejects missing or unresolved primary model authority
+ok 124 - context policy rejects missing or unresolved primary model authority
+  ---
+  duration_ms: 0.34526
+  type: 'test'
+  ...
+# Subtest: plugin initialization snapshots live configuration and fallback client.config.get exactly once
+ok 125 - plugin initialization snapshots live configuration and fallback client.config.get exactly once
+  ---
+  duration_ms: 23.60606
+  type: 'test'
+  ...
+# Subtest: plugin initialization remains active and fails closed when live config authority is unavailable or malformed
+ok 126 - plugin initialization remains active and fails closed when live config authority is unavailable or malformed
+  ---
+  duration_ms: 3.031743
+  type: 'test'
+  ...
+# Subtest: a never-resolving legacy client.config.get cannot deadlock factory construction (boot regression)
+ok 127 - a never-resolving legacy client.config.get cannot deadlock factory construction (boot regression)
+  ---
+  duration_ms: 0.558005
+  type: 'test'
+  ...
+# Subtest: the native config hook captures a real snapshot; a post-hook source mutation is ignored
+ok 128 - the native config hook captures a real snapshot; a post-hook source mutation is ignored
+  ---
+  duration_ms: 5.502031
+  type: 'test'
+  ...
+# Subtest: the message.updated event path shares the single lazy resolution and never consumes an unresolved policy
+ok 129 - the message.updated event path shares the single lazy resolution and never consumes an unresolved policy
+  ---
+  duration_ms: 3.769573
+  type: 'test'
+  ...
+# Subtest: plugin routes resource identity and exact-target admission through the authoritative session directory
+ok 130 - plugin routes resource identity and exact-target admission through the authoritative session directory
+  ---
+  duration_ms: 806.24616
+  type: 'test'
+  ...
+# Subtest: authoritative session-directory aliases share one canonical guard and authority namespace
+ok 131 - authoritative session-directory aliases share one canonical guard and authority namespace
+  ---
+  duration_ms: 87.162142
+  type: 'test'
+  ...
+# Subtest: different session directories isolate workspace authority and a directory change creates an explicit boundary
+ok 132 - different session directories isolate workspace authority and a directory change creates an explicit boundary
+  ---
+  duration_ms: 33.330718
+  type: 'test'
+  ...
+# Subtest: safe export entrypoint is directly executable
+ok 133 - safe export entrypoint is directly executable
+  ---
+  duration_ms: 6.941441
+  type: 'test'
+  ...
+# Subtest: safe export uses file-backed stdout and validates a large session
+ok 134 - safe export uses file-backed stdout and validates a large session
+  ---
+  duration_ms: 94.812794
+  type: 'test'
+  ...
+# Subtest: safe export rejects invalid JSON and leaves no target
+ok 135 - safe export rejects invalid JSON and leaves no target
+  ---
+  duration_ms: 67.8186
+  type: 'test'
+  ...
+# Subtest: local assessment entrypoint accepts only one concrete typed-spec path
+ok 136 - local assessment entrypoint accepts only one concrete typed-spec path
+  ---
+  duration_ms: 1.512522
+  type: 'test'
+  ...
+# Subtest: public assessment marker hashes the exact persisted summary serialization
+ok 137 - public assessment marker hashes the exact persisted summary serialization
+  ---
+  duration_ms: 0.851613
+  type: 'test'
+  ...
+# Subtest: repo-pr assessment schema is project-neutral and authority-bound
+ok 138 - repo-pr assessment schema is project-neutral and authority-bound
+  ---
+  duration_ms: 1.370818
+  type: 'test'
+  ...
+# Subtest: assessment spec loader rejects symlinked specs before parsing
+ok 139 - assessment spec loader rejects symlinked specs before parsing
+  ---
+  duration_ms: 5.45209
+  type: 'test'
+  ...
+# Subtest: Issue 15 planner and replay CLI entrypoints are executable through the trusted test graph
+ok 140 - Issue 15 planner and replay CLI entrypoints are executable through the trusted test graph
+  ---
+  duration_ms: 172.413824
+  type: 'test'
+  ...
+# Subtest: semantic review authority is exact, typed, and conflict rejecting
+ok 141 - semantic review authority is exact, typed, and conflict rejecting
+  ---
+  duration_ms: 1.182522
+  type: 'test'
+  ...
+# Subtest: Central-owned mode deterministically elides Fresh-review without minting CLEAN
+ok 142 - Central-owned mode deterministically elides Fresh-review without minting CLEAN
+  ---
+  duration_ms: 0.676268
+  type: 'test'
+  ...
+# Subtest: Actions-covered repository-final Verify is elided and receipt is reused
+ok 143 - Actions-covered repository-final Verify is elided and receipt is reused
+  ---
+  duration_ms: 1.647676
+  type: 'test'
+  ...
+# Subtest: evidence ledger is exact-head and provenance sensitive
+ok 144 - evidence ledger is exact-head and provenance sensitive
+  ---
+  duration_ms: 0.398771
+  type: 'test'
+  ...
+# Subtest: planner output is deterministic and partitions a representative large review with complete unique coverage
+ok 145 - planner output is deterministic and partitions a representative large review with complete unique coverage
+  ---
+  duration_ms: 1.055659
+  type: 'test'
+  ...
+# Subtest: unbound-workspace planning is Explore-only, non-evidence, and partitions thirteen targets without a fake SHA
+ok 146 - unbound-workspace planning is Explore-only, non-evidence, and partitions thirteen targets without a fake SHA
+  ---
+  duration_ms: 0.470203
+  type: 'test'
+  ...
+# Subtest: unbound Explore planner fails closed when one bounded packet cannot fit
+ok 147 - unbound Explore planner fails closed when one bounded packet cannot fit
+  ---
+  duration_ms: 0.191085
+  type: 'test'
+  ...
+# Subtest: planner returns UNREPRESENTABLE instead of silently dropping excess questions
+ok 148 - planner returns UNREPRESENTABLE instead of silently dropping excess questions
+  ---
+  duration_ms: 0.170415
+  type: 'test'
+  ...
+# Subtest: planner fails closed when one target exceeds the role complexity limit
+ok 149 - planner fails closed when one target exceeds the role complexity limit
+  ---
+  duration_ms: 0.210196
+  type: 'test'
+  ...
+# Subtest: planner target ordering is deterministic without locale-sensitive collation
+ok 150 - planner target ordering is deterministic without locale-sensitive collation
+  ---
+  duration_ms: 0.217226
+  type: 'test'
+  ...
+# Subtest: terminal parser accepts semicolon, multiline, whitespace, and field-order normalization
+ok 151 - terminal parser accepts semicolon, multiline, whitespace, and field-order normalization
+  ---
+  duration_ms: 0.71937
+  type: 'test'
+  ...
+# Subtest: terminal parser rejects conflicts, missing fields, incidental marker prose, and incomplete counts
+ok 152 - terminal parser rejects conflicts, missing fields, incidental marker prose, and incomplete counts
+  ---
+  duration_ms: 0.428302
+  type: 'test'
+  ...
+# Subtest: retry semantics preserve orthogonal completed evidence for correction-only defects
+ok 153 - retry semantics preserve orthogonal completed evidence for correction-only defects
+  ---
+  duration_ms: 0.142724
+  type: 'test'
+  ...
+# Subtest: cleanliness policy keeps repository-owned strict, admits proven detached preservation, and forbids Slice-K canonical owner authority
+ok 154 - cleanliness policy keeps repository-owned strict, admits proven detached preservation, and forbids Slice-K canonical owner authority
+  ---
+  duration_ms: 0.156995
+  type: 'test'
+  ...
+# Subtest: role-limit tuning is evidence-based and preserves existing limits when optimized runs do not exhaust
+ok 155 - role-limit tuning is evidence-based and preserves existing limits when optimized runs do not exhaust
+  ---
+  duration_ms: 0.144654
+  type: 'test'
+  ...
+# Subtest: friction replay proves Central-led zero local Fresh-review/Verify and preserved local-Fresh-review control path
+ok 156 - friction replay proves Central-led zero local Fresh-review/Verify and preserved local-Fresh-review control path
+  ---
+  duration_ms: 1.07876
+  type: 'test'
+  ...
+# Subtest: public helper exposes the exact typed PASS/BLOCKED contract
+ok 157 - public helper exposes the exact typed PASS/BLOCKED contract
+  ---
+  duration_ms: 125.586252
+  type: 'test'
+  ...
+# Subtest: descriptor capture root is disjoint even when the preferred operation root is inside the workspace
+ok 158 - descriptor capture root is disjoint even when the preferred operation root is inside the workspace
+  ---
+  duration_ms: 53.616738
+  type: 'test'
+  ...
+# Subtest: typed quarantine removes only two exact untracked paths and restore reproduces them byte-for-byte
+ok 159 - typed quarantine removes only two exact untracked paths and restore reproduces them byte-for-byte
+  ---
+  duration_ms: 265.524001
+  type: 'test'
+  ...
+# Subtest: supported symlink material round-trips without dereferencing the link target
+ok 160 - supported symlink material round-trips without dereferencing the link target
+  ---
+  duration_ms: 172.600289
+  type: 'test'
+  ...
+# Subtest: tracked, staged, conflicted, ignored-only, escaping, overlapping, and special paths block before source removal
+ok 161 - tracked, staged, conflicted, ignored-only, escaping, overlapping, and special paths block before source removal
+  ---
+  duration_ms: 197.913705
+  type: 'test'
+  ...
+# Subtest: non-UTF-8 and backslash descendant paths fail closed before preservation can become unreadable
+ok 162 - non-UTF-8 and backslash descendant paths fail closed before preservation can become unreadable
+  ---
+  duration_ms: 61.968658
+  type: 'test'
+  ...
+# Subtest: receipt serialization limit blocks before any workspace source is captured
+ok 163 - receipt serialization limit blocks before any workspace source is captured
+  ---
+  duration_ms: 1445.482335
+  type: 'test'
+  ...
+# Subtest: dirty-state fingerprint drift and pre-existing mismatched quarantine data block with originals intact
+ok 164 - dirty-state fingerprint drift and pre-existing mismatched quarantine data block with originals intact
+  ---
+  duration_ms: 197.390949
+  type: 'test'
+  ...
+# Subtest: interrupted removal resumes from the verified receipt and remaining source subset
+ok 165 - interrupted removal resumes from the verified receipt and remaining source subset
+  ---
+  duration_ms: 274.386538
+  type: 'test'
+  ...
+# Subtest: receipt-backed resume rejects a caller-controlled capture root before moving remaining source
+ok 166 - receipt-backed resume rejects a caller-controlled capture root before moving remaining source
+  ---
+  duration_ms: 201.469849
+  type: 'test'
+  ...
+# Subtest: restore preserves unrelated intervening dirty state while reproducing the quarantined path exactly
+ok 167 - restore preserves unrelated intervening dirty state while reproducing the quarantined path exactly
+  ---
+  duration_ms: 225.147161
+  type: 'test'
+  ...
+# Subtest: restore rejects substituted workspace ancestors without escaped writes
+ok 168 - restore rejects substituted workspace ancestors without escaped writes
+  ---
+  duration_ms: 168.07999
+  type: 'test'
+  ...
+# Subtest: fallback restore recovers authenticated incomplete staging but preserves unattributed collisions
+ok 169 - fallback restore recovers authenticated incomplete staging but preserves unattributed collisions
+  ---
+  duration_ms: 398.075253
+  type: 'test'
+  ...
+# Subtest: receipt mismatch and restore overwrite both fail closed while quarantine evidence is retained
+ok 170 - receipt mismatch and restore overwrite both fail closed while quarantine evidence is retained
+  ---
+  duration_ms: 178.085544
+  type: 'test'
+  ...
+# Subtest: pending exact-head guard admits typed quarantine and read-only outward staging while preserving authority/review/Verify generations
+ok 171 - pending exact-head guard admits typed quarantine and read-only outward staging while preserving authority/review/Verify generations
+  ---
+  duration_ms: 440.948282
+  type: 'test'
+  ...
+# Subtest: strict-start same-SHA reauthorization invalidates in-flight quarantine authentication across guard instances
+ok 172 - strict-start same-SHA reauthorization invalidates in-flight quarantine authentication across guard instances
+  ---
+  duration_ms: 124.972551
+  type: 'test'
+  ...
+# Subtest: strict-start pending and mismatch admit inspection, while verified authority rejects it
+ok 173 - strict-start pending and mismatch admit inspection, while verified authority rejects it
+  ---
+  duration_ms: 102.866011
+  type: 'test'
+  ...
+# Subtest: corrupt persisted quarantine ledger fails closed across a fresh guard process
+ok 174 - corrupt persisted quarantine ledger fails closed across a fresh guard process
+  ---
+  duration_ms: 75.802837
+  type: 'test'
+  ...
+# Subtest: deterministic Task planner partitions complexity before child launch
+ok 175 - deterministic Task planner partitions complexity before child launch
+  ---
+  duration_ms: 5.217433
+  type: 'test'
+  ...
+# Subtest: deterministic Task planner refuses excess questions without deferring them in unbound Explore
+ok 176 - deterministic Task planner refuses excess questions without deferring them in unbound Explore
+  ---
+  duration_ms: 4.515744
+  type: 'test'
+  ...
+# Subtest: unbound Explore partitions thirteen finite targets before target-limit rejection and admits its canonical packets
+ok 177 - unbound Explore partitions thirteen finite targets before target-limit rejection and admits its canonical packets
+  ---
+  duration_ms: 16.546425
+  type: 'test'
+  ...
+# Subtest: live Issue 29 packet partitions root-relative and nested targets before generic rejection
+ok 178 - live Issue 29 packet partitions root-relative and nested targets before generic rejection
+  ---
+  duration_ms: 8.331479
+  type: 'test'
+  ...
+# Subtest: explicit target counting stays independent of unrelated host-root entries
+ok 179 - explicit target counting stays independent of unrelated host-root entries
+  ---
+  duration_ms: 0.327249
+  type: 'test'
+  ...
+# Subtest: explicit root-target planning does not reinterpret dot traversal tokens as bounded filesystem targets
+ok 180 - explicit root-target planning does not reinterpret dot traversal tokens as bounded filesystem targets
+  ---
+  duration_ms: 0.796662
+  type: 'test'
+  ...
+# Subtest: unbound Explore rejects root-level multi-path target bullets rather than undercounting them
+ok 181 - unbound Explore rejects root-level multi-path target bullets rather than undercounting them
+  ---
+  duration_ms: 3.825475
+  type: 'test'
+  ...
+# Subtest: exact Fresh-review and Verify fail closed on multiple existing extensionless root targets
+ok 182 - exact Fresh-review and Verify fail closed on multiple existing extensionless root targets
+  ---
+  duration_ms: 1.388988
+  type: 'test'
+  ...
+# Subtest: unbound Explore rejects multi-path target bullets instead of falling back with an undercounted target ceiling
+ok 183 - unbound Explore rejects multi-path target bullets instead of falling back with an undercounted target ceiling
+  ---
+  duration_ms: 2.032236
+  type: 'test'
+  ...
+# Subtest: canonical Explore partitions preserve CRLF bytes outside the replaced Targets bullets
+ok 184 - canonical Explore partitions preserve CRLF bytes outside the replaced Targets bullets
+  ---
+  duration_ms: 7.310871
+  type: 'test'
+  ...
+# Subtest: unbound Explore rejects open-ended and partial envelopes rather than manufacturing boundedness
+ok 185 - unbound Explore rejects open-ended and partial envelopes rather than manufacturing boundedness
+  ---
+  duration_ms: 0.869264
+  type: 'test'
+  ...
+# Subtest: Explore injection prefers built-in discovery and runtime find rejection returns the machine-readable correction
+ok 186 - Explore injection prefers built-in discovery and runtime find rejection returns the machine-readable correction
+  ---
+  duration_ms: 1.344907
+  type: 'test'
+  ...
+# Subtest: bounded Task records deterministic planning provenance when exact authority is declared
+ok 187 - bounded Task records deterministic planning provenance when exact authority is declared
+  ---
+  duration_ms: 265.407806
+  type: 'test'
+  ...
+# Subtest: live Verify planning consumes a user-pinned trusted Actions receipt and elides the duplicate child
+ok 188 - live Verify planning consumes a user-pinned trusted Actions receipt and elides the duplicate child
+  ---
+  duration_ms: 3.554158
+  type: 'test'
+  ...
+# Subtest: trusted-actions Verify authority removes only the pre-publication local repository-final gate
+ok 189 - trusted-actions Verify authority removes only the pre-publication local repository-final gate
+  ---
+  duration_ms: 1.044099
+  type: 'test'
+  ...
+# Subtest: same packet uses conservative structure while unbound and exact diff/hunk complexity once authority exists
+ok 190 - same packet uses conservative structure while unbound and exact diff/hunk complexity once authority exists
+  ---
+  duration_ms: 56.528646
+  type: 'test'
+  ...
+# Subtest: canonical Explore partitions returned by preflight are admitted on exact retry
+ok 191 - canonical Explore partitions returned by preflight are admitted on exact retry
+  ---
+  duration_ms: 283.981007
+  type: 'test'
+  ...
+# Subtest: canonical partitions preserve bounded supporting context and target annotations
+ok 192 - canonical partitions preserve bounded supporting context and target annotations
+  ---
+  duration_ms: 51.596751
+  type: 'test'
+  ...
+# Subtest: partitioned Fresh-review and Verify advance their generations only after every canonical partition succeeds
+ok 193 - partitioned Fresh-review and Verify advance their generations only after every canonical partition succeeds
+  ---
+  duration_ms: 620.963108
+  type: 'test'
+  ...
+# Subtest: gate partition obligations survive plugin restart and preserve canonical membership
+ok 194 - gate partition obligations survive plugin restart and preserve canonical membership
+  ---
+  duration_ms: 258.237286
+  type: 'test'
+  ...
+# Subtest: outstanding Verify partitions reject trusted receipt elision until canonical completion
+ok 195 - outstanding Verify partitions reject trusted receipt elision until canonical completion
+  ---
+  duration_ms: 4.456862
+  type: 'test'
+  ...
+# Subtest: central-owned semantic review deterministically elides local Fresh-review
+ok 196 - central-owned semantic review deterministically elides local Fresh-review
+  ---
+  duration_ms: 0.811632
+  type: 'test'
+  ...
+# Subtest: central-owned mode removes only the local review publish gate and preserves Verify
+ok 197 - central-owned mode removes only the local review publish gate and preserves Verify
+  ---
+  duration_ms: 1.309596
+  type: 'test'
+  ...
+# Subtest: local-fresh-review mode preserves the strict Fresh-review publish gate
+ok 198 - local-fresh-review mode preserves the strict Fresh-review publish gate
+  ---
+  duration_ms: 0.871644
+  type: 'test'
+  ...
+# Subtest: semantic-review authority is included in compaction continuity without fabricating local CLEAN
+ok 199 - semantic-review authority is included in compaction continuity without fabricating local CLEAN
+  ---
+  duration_ms: 0.169355
+  type: 'test'
+  ...
+# Subtest: bounded Explore packet is accepted
+ok 200 - bounded Explore packet is accepted
+  ---
+  duration_ms: 0.117573
+  type: 'test'
+  ...
+# Subtest: omnibus Explore packet is rejected by character and section limits
+ok 201 - omnibus Explore packet is rejected by character and section limits
+  ---
+  duration_ms: 0.151585
+  type: 'test'
+  ...
+# Subtest: Task packet requires the structured envelope and no more than three questions
+ok 202 - Task packet requires the structured envelope and no more than three questions
+  ---
+  duration_ms: 0.165515
+  type: 'test'
+  ...
+# Subtest: format-only Task packet defects are normalized without dropping semantic requirements
+ok 203 - format-only Task packet defects are normalized without dropping semantic requirements
+  ---
+  duration_ms: 0.387601
+  type: 'test'
+  ...
+# Subtest: a bounded non-envelope Task prompt is normalized into the Turn-1 contract
+ok 204 - a bounded non-envelope Task prompt is normalized into the Turn-1 contract
+  ---
+  duration_ms: 0.182876
+  type: 'test'
+  ...
+# Subtest: Fresh-review normalizes bounded envelope-less prompts beyond the legacy 1200-character cliff
+ok 205 - Fresh-review normalizes bounded envelope-less prompts beyond the legacy 1200-character cliff
+  ---
+  duration_ms: 3.98215
+  type: 'test'
+  ...
+# Subtest: Explore and Verify do not broaden long envelope-less prompts without boundedness proof
+ok 206 - Explore and Verify do not broaden long envelope-less prompts without boundedness proof
+  ---
+  duration_ms: 0.161845
+  type: 'test'
+  ...
+# Subtest: Fresh-review envelope-less target proof rejects wildcard selectors
+ok 207 - Fresh-review envelope-less target proof rejects wildcard selectors
+  ---
+  duration_ms: 0.170095
+  type: 'test'
+  ...
+# Subtest: Fresh-review preserves the 10-target ceiling for explicit and envelope-less packets
+ok 208 - Fresh-review preserves the 10-target ceiling for explicit and envelope-less packets
+  ---
+  duration_ms: 0.556196
+  type: 'test'
+  ...
+# Subtest: Task normalization injects a compact type-specific execution and result contract
+ok 209 - Task normalization injects a compact type-specific execution and result contract
+  ---
+  duration_ms: 0.265698
+  type: 'test'
+  ...
+# Subtest: Verify accepts a bounded 24-target packet and rejects a 25th target
+ok 210 - Verify accepts a bounded 24-target packet and rejects a 25th target
+  ---
+  duration_ms: 0.298218
+  type: 'test'
+  ...
+# Subtest: path extraction strips prose punctuation and ignores slash-separated non-path labels
+ok 211 - path extraction strips prose punctuation and ignores slash-separated non-path labels
+  ---
+  duration_ms: 0.244257
+  type: 'test'
+  ...
+# Subtest: Verify preflight rejects equivalent commands and redundant owner cleanup
+ok 212 - Verify preflight rejects equivalent commands and redundant owner cleanup
+  ---
+  duration_ms: 1.733108
+  type: 'test'
+  ...
+# Subtest: Verify preflight inspects only an explicitly referenced typed manifest
+ok 213 - Verify preflight inspects only an explicitly referenced typed manifest
+  ---
+  duration_ms: 2.971642
+  type: 'test'
+  ...
+# Subtest: Verify ignores ordinary staged material and prose that resembles commands
+ok 214 - Verify ignores ordinary staged material and prose that resembles commands
+  ---
+  duration_ms: 0.494194
+  type: 'test'
+  ...
+# Subtest: explicit Targets isolate target accounting from prose paths and aliases
+ok 215 - explicit Targets isolate target accounting from prose paths and aliases
+  ---
+  duration_ms: 0.248906
+  type: 'test'
+  ...
+# Subtest: explicit multi-path bullets fail closed for Fresh-review and Verify instead of undercounting coverage
+ok 216 - explicit multi-path bullets fail closed for Fresh-review and Verify instead of undercounting coverage
+  ---
+  duration_ms: 0.426322
+  type: 'test'
+  ...
+# Subtest: explicit target accounting excludes complete URL spans from local filesystem targets
+ok 217 - explicit target accounting excludes complete URL spans from local filesystem targets
+  ---
+  duration_ms: 0.192666
+  type: 'test'
+  ...
+# Subtest: Verify manifest preflight rejects wrapper-managed env prefixes
+ok 218 - Verify manifest preflight rejects wrapper-managed env prefixes
+  ---
+  duration_ms: 0.817963
+  type: 'test'
+  ...
+# Subtest: Verify manifest preflight rejects non-allowlisted argv before child launch
+ok 219 - Verify manifest preflight rejects non-allowlisted argv before child launch
+  ---
+  duration_ms: 0.784082
+  type: 'test'
+  ...
+# Subtest: Verify child blocks wrapper-managed env prefixes before permission execution
+ok 220 - Verify child blocks wrapper-managed env prefixes before permission execution
+  ---
+  duration_ms: 0.310648
+  type: 'test'
+  ...
+# Subtest: child capability preflight accepts supported read-only authority and review roots
+ok 221 - child capability preflight accepts supported read-only authority and review roots
+  ---
+  duration_ms: 0.271207
+  type: 'test'
+  ...
+# Subtest: an absolute review path in packet prose is not misclassified as a shell command
+ok 222 - an absolute review path in packet prose is not misclassified as a shell command
+  ---
+  duration_ms: 0.195025
+  type: 'test'
+  ...
+# Subtest: Fresh-review preflight and runtime keep validation, discovery, mutation, and compound shell calls out
+ok 223 - Fresh-review preflight and runtime keep validation, discovery, mutation, and compound shell calls out
+  ---
+  duration_ms: 0.672919
+  type: 'test'
+  ...
+# Subtest: child capability preflight rejects git -C and primary-owned remote refresh
+ok 224 - child capability preflight rejects git -C and primary-owned remote refresh
+  ---
+  duration_ms: 0.276647
+  type: 'test'
+  ...
+# Subtest: Verify capability preflight rejects denial-prone discovery and direct Python forms
+ok 225 - Verify capability preflight rejects denial-prone discovery and direct Python forms
+  ---
+  duration_ms: 0.330019
+  type: 'test'
+  ...
+# Subtest: Verify capability preflight accepts one tracked-path derivation and wrapper-mediated external Python
+ok 226 - Verify capability preflight accepts one tracked-path derivation and wrapper-mediated external Python
+  ---
+  duration_ms: 0.216326
+  type: 'test'
+  ...
+# Subtest: Verify capability preflight accepts only the bounded typed local assessment shape
+ok 227 - Verify capability preflight accepts only the bounded typed local assessment shape
+  ---
+  duration_ms: 1.856671
+  type: 'test'
+  ...
+# Subtest: Verify child runtime admits exact LF and CRLF local-assessment continuations
+ok 228 - Verify child runtime admits exact LF and CRLF local-assessment continuations
+  ---
+  duration_ms: 1.285056
+  type: 'test'
+  ...
+# Subtest: Verify duplicate-success identity canonicalizes exact assessment continuation formatting
+ok 229 - Verify duplicate-success identity canonicalizes exact assessment continuation formatting
+  ---
+  duration_ms: 0.72021
+  type: 'test'
+  ...
+# Subtest: Verify and Explore admit only the exact session-trace assessment shape
+ok 230 - Verify and Explore admit only the exact session-trace assessment shape
+  ---
+  duration_ms: 0.624497
+  type: 'test'
+  ...
+# Subtest: child capability mismatch is rejected before a Task becomes pending
+ok 231 - child capability mismatch is rejected before a Task becomes pending
+  ---
+  duration_ms: 0.450573
+  type: 'test'
+  ...
+# Subtest: an improvised child capability mismatch is structured and child budgets remain advisory
+ok 232 - an improvised child capability mismatch is structured and child budgets remain advisory
+  ---
+  duration_ms: 0.593787
+  type: 'test'
+  ...
+# Subtest: a repeated improvised capability mismatch rejects only that invocation
+ok 233 - a repeated improvised capability mismatch rejects only that invocation
+  ---
+  duration_ms: 0.394721
+  type: 'test'
+  ...
+# Subtest: child external-path enforcement permits only harness-owned roots
+ok 234 - child external-path enforcement permits only harness-owned roots
+  ---
+  duration_ms: 0.275927
+  type: 'test'
+  ...
+# Subtest: known exact small-file lookups are not delegated to Explore
+ok 235 - known exact small-file lookups are not delegated to Explore
+  ---
+  duration_ms: 0.174385
+  type: 'test'
+  ...
+# Subtest: Explore warns after 32 individual tool calls but permits necessary continuation
+ok 236 - Explore warns after 32 individual tool calls but permits necessary continuation
+  ---
+  duration_ms: 0.931516
+  type: 'test'
+  ...
+# Subtest: repeated child budget advisories coalesce into one bounded telemetry record
+ok 237 - repeated child budget advisories coalesce into one bounded telemetry record
+  ---
+  duration_ms: 0.732081
+  type: 'test'
+  ...
+# Subtest: failed duplicate child invocations are advisory while proven success remains blocked
+ok 238 - failed duplicate child invocations are advisory while proven success remains blocked
+  ---
+  duration_ms: 0.415502
+  type: 'test'
+  ...
+# Subtest: duplicate fingerprints canonicalize RTK and native shell spellings
+ok 239 - duplicate fingerprints canonicalize RTK and native shell spellings
+  ---
+  duration_ms: 0.198005
+  type: 'test'
+  ...
+# Subtest: successful empty child shell output is explicit and cannot be retried as ambiguous
+ok 240 - successful empty child shell output is explicit and cannot be retried as ambiguous
+  ---
+  duration_ms: 0.227006
+  type: 'test'
+  ...
+# Subtest: a proven-success duplicate non-shell child invocation remains blocked
+ok 241 - a proven-success duplicate non-shell child invocation remains blocked
+  ---
+  duration_ms: 0.214406
+  type: 'test'
+  ...
+# Subtest: compound child shell calls reject each malformed invocation without terminalizing the child
+ok 242 - compound child shell calls reject each malformed invocation without terminalizing the child
+  ---
+  duration_ms: 0.390341
+  type: 'test'
+  ...
+# Subtest: quoted shell punctuation is not mistaken for a compound child command
+ok 243 - quoted shell punctuation is not mistaken for a compound child command
+  ---
+  duration_ms: 0.174765
+  type: 'test'
+  ...
+# Subtest: standalone exit-status probes are blocked before shell permission handling
+ok 244 - standalone exit-status probes are blocked before shell permission handling
+  ---
+  duration_ms: 0.283208
+  type: 'test'
+  ...
+# Subtest: distinct pre-execution shell-shape rejections do not consume the tool-call budget
+ok 245 - distinct pre-execution shell-shape rejections do not consume the tool-call budget
+  ---
+  duration_ms: 0.895735
+  type: 'test'
+  ...
+# Subtest: child response token caps are enforced
+ok 246 - child response token caps are enforced
+  ---
+  duration_ms: 0.132474
+  type: 'test'
+  ...
+# Subtest: primary receives routing advisories without a read hard stop
+ok 247 - primary receives routing advisories without a read hard stop
+  ---
+  duration_ms: 0.412842
+  type: 'test'
+  ...
+# Subtest: truncated or max-step child output is marked incomplete
+ok 248 - truncated or max-step child output is marked incomplete
+  ---
+  duration_ms: 0.254767
+  type: 'test'
+  ...
+# Subtest: a child result without a correlatable session ID is fail-closed
+ok 249 - a child result without a correlatable session ID is fail-closed
+  ---
+  duration_ms: 0.231756
+  type: 'test'
+  ...
+# Subtest: transient Task failure admits one provenance-bound resume
+ok 250 - transient Task failure admits one provenance-bound resume
+  ---
+  duration_ms: 1.42694
+  type: 'test'
+  ...
+# Subtest: unknown, deterministic, and missing-ID Task failures fail closed
+ok 251 - unknown, deterministic, and missing-ID Task failures fail closed
+  ---
+  duration_ms: 1.057789
+  type: 'test'
+  ...
+# Subtest: undefined Task after-hook result preserves the original failure path
+ok 252 - undefined Task after-hook result preserves the original failure path
+  ---
+  duration_ms: 0.291438
+  type: 'test'
+  ...
+# Subtest: resumed Task detects OpenCode silent fresh-session fallback
+ok 253 - resumed Task detects OpenCode silent fresh-session fallback
+  ---
+  duration_ms: 0.452532
+  type: 'test'
+  ...
+# Subtest: child finish unknown may recover to stop before result evaluation
+ok 254 - child finish unknown may recover to stop before result evaluation
+  ---
+  duration_ms: 0.318188
+  type: 'test'
+  ...
+# Subtest: a resumed Task failure cannot create a second resume chain
+ok 255 - a resumed Task failure cannot create a second resume chain
+  ---
+  duration_ms: 0.470603
+  type: 'test'
+  ...
+# Subtest: OpenCode finish:length and an empty task result are independently incomplete
+ok 256 - OpenCode finish:length and an empty task result are independently incomplete
+  ---
+  duration_ms: 0.252697
+  type: 'test'
+  ...
+# Subtest: short max-step wording and unknown child finish cannot satisfy a gate
+ok 257 - short max-step wording and unknown child finish cannot satisfy a gate
+  ---
+  duration_ms: 0.226666
+  type: 'test'
+  ...
+# Subtest: max-step wording nested inside a Task wrapper is transport-incomplete
+ok 258 - max-step wording nested inside a Task wrapper is transport-incomplete
+  ---
+  duration_ms: 0.238176
+  type: 'test'
+  ...
+# Subtest: health detector does not mistake quoted detector examples for transport failure
+ok 259 - health detector does not mistake quoted detector examples for transport failure
+  ---
+  duration_ms: 0.278307
+  type: 'test'
+  ...
+# Subtest: oversized child results are clipped before returning to the parent
+ok 260 - oversized child results are clipped before returning to the parent
+  ---
+  duration_ms: 0.234227
+  type: 'test'
+  ...
+# Subtest: parent reopen limits are advisory after five child-covered paths
+ok 261 - parent reopen limits are advisory after five child-covered paths
+  ---
+  duration_ms: 0.462363
+  type: 'test'
+  ...
+# Subtest: an exact Explore follow-up is allowed after delegated-path reopening is exhausted
+ok 262 - an exact Explore follow-up is allowed after delegated-path reopening is exhausted
+  ---
+  duration_ms: 0.492654
+  type: 'test'
+  ...
+# Subtest: actual child grep and Serena paths count even when omitted from the handoff
+ok 263 - actual child grep and Serena paths count even when omitted from the handoff
+  ---
+  duration_ms: 0.388051
+  type: 'test'
+  ...
+# Subtest: delegated provenance is workspace-local and capped
+ok 264 - delegated provenance is workspace-local and capped
+  ---
+  duration_ms: 0.582726
+  type: 'test'
+  ...
+# Subtest: primary receives an operation-boundary warning before long direct work drifts
+ok 265 - primary receives an operation-boundary warning before long direct work drifts
+  ---
+  duration_ms: 0.303068
+  type: 'test'
+  ...
+# Subtest: primary direct work receives an advisory after thirty calls and still permits a boundary
+ok 266 - primary direct work receives an advisory after thirty calls and still permits a boundary
+  ---
+  duration_ms: 0.423231
+  type: 'test'
+  ...
+# Subtest: a normalized Task packet remains an allowed routing boundary at the hard stop
+ok 267 - a normalized Task packet remains an allowed routing boundary at the hard stop
+  ---
+  duration_ms: 0.447612
+  type: 'test'
+  ...
+# Subtest: failed or blocked Task outcomes do not discharge the parent hard stop
+ok 268 - failed or blocked Task outcomes do not discharge the parent hard stop
+  ---
+  duration_ms: 0.449862
+  type: 'test'
+  ...
+# Subtest: terminal Task error events do not discharge the parent hard stop
+ok 269 - terminal Task error events do not discharge the parent hard stop
+  ---
+  duration_ms: 0.616507
+  type: 'test'
+  ...
+# Subtest: temporary manifest writes do not masquerade as implementation boundaries
+ok 270 - temporary manifest writes do not masquerade as implementation boundaries
+  ---
+  duration_ms: 0.347009
+  type: 'test'
+  ...
+# Subtest: rejected Task packets produce a compact preflight reminder
+ok 271 - rejected Task packets produce a compact preflight reminder
+  ---
+  duration_ms: 0.584626
+  type: 'test'
+  ...
+# Subtest: Task preflight rejects excess questions instead of fabricating a normalized child result
+ok 272 - Task preflight rejects excess questions instead of fabricating a normalized child result
+  ---
+  duration_ms: 0.244266
+  type: 'test'
+  ...
+# Subtest: Verify transport completion does not imply verification success or path coverage
+ok 273 - Verify transport completion does not imply verification success or path coverage
+  ---
+  duration_ms: 0.308028
+  type: 'test'
+  ...
+# Subtest: Verify requires an explicit PASS marker with matching nonzero command counts
+ok 274 - Verify requires an explicit PASS marker with matching nonzero command counts
+  ---
+  duration_ms: 0.460422
+  type: 'test'
+  ...
+# Subtest: Fresh-review requires CLEAN with complete target counts before advancing the gate
+ok 275 - Fresh-review requires CLEAN with complete target counts before advancing the gate
+  ---
+  duration_ms: 0.849783
+  type: 'test'
+  ...
+# Subtest: budget exhaustion is advisory and does not fabricate an incomplete Explore result
+ok 276 - budget exhaustion is advisory and does not fabricate an incomplete Explore result
+  ---
+  duration_ms: 0.838633
+  type: 'test'
+  ...
+# Subtest: read-only shell reconnaissance participates in the primary routing ceiling
+ok 277 - read-only shell reconnaissance participates in the primary routing ceiling
+  ---
+  duration_ms: 0.73033
+  type: 'test'
+  ...
+# Subtest: fourth direct validation command is advisory
+ok 278 - fourth direct validation command is advisory
+  ---
+  duration_ms: 0.35402
+  type: 'test'
+  ...
+# Subtest: newline, env, venv-python, and xargs validation forms cannot bypass routing
+ok 279 - newline, env, venv-python, and xargs validation forms cannot bypass routing
+  ---
+  duration_ms: 0.396731
+  type: 'test'
+  ...
+# Subtest: repository venv executables and assignment-prefixed commands count as validation
+ok 280 - repository venv executables and assignment-prefixed commands count as validation
+  ---
+  duration_ms: 0.453912
+  type: 'test'
+  ...
+# Subtest: primary compound shell packet limits are advisory
+ok 281 - primary compound shell packet limits are advisory
+  ---
+  duration_ms: 0.315428
+  type: 'test'
+  ...
+# Subtest: literal output labels do not inflate the primary shell segment count
+ok 282 - literal output labels do not inflate the primary shell segment count
+  ---
+  duration_ms: 0.284618
+  type: 'test'
+  ...
+# Subtest: large primary shell packets are admitted with advisories
+ok 283 - large primary shell packets are admitted with advisories
+  ---
+  duration_ms: 4.74188
+  type: 'test'
+  ...
+# Subtest: npm run check is classified as a validation gate
+ok 284 - npm run check is classified as a validation gate
+  ---
+  duration_ms: 0.420352
+  type: 'test'
+  ...
+# Subtest: ruff mutation is not misclassified as a validation gate
+ok 285 - ruff mutation is not misclassified as a validation gate
+  ---
+  duration_ms: 0.516574
+  type: 'test'
+  ...
+# Subtest: commit after multi-file production edits requires fresh-review and Verify
+ok 286 - commit after multi-file production edits requires fresh-review and Verify
+  ---
+  duration_ms: 1.398788
+  type: 'test'
+  ...
+# Subtest: staging and commit in one publish packet is allowed after current review and Verify gates
+ok 287 - staging and commit in one publish packet is allowed after current review and Verify gates
+  ---
+  duration_ms: 1.604214
+  type: 'test'
+  ...
+# Subtest: shell mutations are high-risk edit generations and gate both commit and push
+ok 288 - shell mutations are high-risk edit generations and gate both commit and push
+  ---
+  duration_ms: 3.223658
+  type: 'test'
+  ...
+# Subtest: file redirects are mutations but descriptor-only redirects are not
+ok 289 - file redirects are mutations but descriptor-only redirects are not
+  ---
+  duration_ms: 0.647958
+  type: 'test'
+  ...
+# Subtest: primary context pressure uses the active agent's initialization-derived model budget
+ok 290 - primary context pressure uses the active agent's initialization-derived model budget
+  ---
+  duration_ms: 0.849164
+  type: 'test'
+  ...
+# Subtest: compaction hook preserves operational generations and forces auto-continue
+ok 291 - compaction hook preserves operational generations and forces auto-continue
+  ---
+  duration_ms: 0.394951
+  type: 'test'
+  ...
+# Subtest: workspace safety generations survive a fresh primary session and plugin restart
+ok 292 - workspace safety generations survive a fresh primary session and plugin restart
+  ---
+  duration_ms: 15.947489
+  type: 'test'
+  ...
+# Subtest: external workdir publish and identity calls cannot close the local campaign
+ok 293 - external workdir publish and identity calls cannot close the local campaign
+  ---
+  duration_ms: 0.519615
+  type: 'test'
+  ...
+# Subtest: campaign closure requires publish at the latest edit and an exact clean local identity proof
+ok 294 - campaign closure requires publish at the latest edit and an exact clean local identity proof
+  ---
+  duration_ms: 0.970827
+  type: 'test'
+  ...
+# Subtest: workspace identity ownership rejects execution-altering environment prefixes
+ok 295 - workspace identity ownership rejects execution-altering environment prefixes
+  ---
+  duration_ms: 0.37912
+  type: 'test'
+  ...
+# Subtest: workspace identity ownership rejects shell operators in helper arguments
+ok 296 - workspace identity ownership rejects shell operators in helper arguments
+  ---
+  duration_ms: 0.514765
+  type: 'test'
+  ...
+# Subtest: destination-aware shell ownership admits read-only workspace sources while preserving write-side blocks
+ok 297 - destination-aware shell ownership admits read-only workspace sources while preserving write-side blocks
+  ---
+  duration_ms: 7.474736
+  type: 'test'
+  ...
+# Subtest: pending authority fails closed on symlinked shell and direct-edit destinations that can alias the workspace
+ok 298 - pending authority fails closed on symlinked shell and direct-edit destinations that can alias the workspace
+  ---
+  duration_ms: 5.890912
+  type: 'test'
+  ...
+# Subtest: redirection ownership distinguishes descriptor duplication from combined file redirection
+ok 299 - redirection ownership distinguishes descriptor duplication from combined file redirection
+  ---
+  duration_ms: 1.596604
+  type: 'test'
+  ...
+# Subtest: Session-4-style pending-authority replay admits disposable functional harness staging only outside the workspace
+ok 300 - Session-4-style pending-authority replay admits disposable functional harness staging only outside the workspace
+  ---
+  duration_ms: 1.653135
+  type: 'test'
+  ...
+# Subtest: destination-aware shell ownership keeps direct workspace mutators and protected recovery state fail-closed
+ok 301 - destination-aware shell ownership keeps direct workspace mutators and protected recovery state fail-closed
+  ---
+  duration_ms: 11.181998
+  type: 'test'
+  ...
+# Subtest: mutating Git global path options classify their actual workspace write targets
+ok 302 - mutating Git global path options classify their actual workspace write targets
+  ---
+  duration_ms: 1.275945
+  type: 'test'
+  ...
+# Subtest: admitted workspace-source copy leaves workspace bytes, git status, and publication generations unchanged
+ok 303 - admitted workspace-source copy leaves workspace bytes, git status, and publication generations unchanged
+  ---
+  duration_ms: 41.740188
+  type: 'test'
+  ...
+# Subtest: pending authority permits merge-base while retaining exact mutation blocks
+ok 304 - pending authority permits merge-base while retaining exact mutation blocks
+  ---
+  duration_ms: 2.556631
+  type: 'test'
+  ...
+# Subtest: failed and alternate HEAD mutators invalidate provenance before execution
+ok 305 - failed and alternate HEAD mutators invalidate provenance before execution
+  ---
+  duration_ms: 6.017766
+  type: 'test'
+  ...
+# Subtest: unbound bare HEAD proof establishes current Task provenance without admission history
+ok 306 - unbound bare HEAD proof establishes current Task provenance without admission history
+  ---
+  duration_ms: 0.439582
+  type: 'test'
+  ...
+# Subtest: Task provenance separates historical admission from the currently proven workspace HEAD
+ok 307 - Task provenance separates historical admission from the currently proven workspace HEAD
+  ---
+  duration_ms: 1.010848
+  type: 'test'
+  ...
+# Subtest: strict starting-head admission blocks reconciliation after a proved mismatch
+ok 308 - strict starting-head admission blocks reconciliation after a proved mismatch
+  ---
+  duration_ms: 1.308716
+  type: 'test'
+  ...
+# Subtest: fresh same-SHA strict-start declaration after mismatch opens a new authority epoch
+ok 309 - fresh same-SHA strict-start declaration after mismatch opens a new authority epoch
+  ---
+  duration_ms: 0.570915
+  type: 'test'
+  ...
+# Subtest: different-SHA strict-start declaration after mismatch still opens fresh pending authority
+ok 310 - different-SHA strict-start declaration after mismatch still opens fresh pending authority
+  ---
+  duration_ms: 0.448932
+  type: 'test'
+  ...
+# Subtest: same-SHA strict-start reauthorization records a fresh mismatch from the new proof
+ok 311 - same-SHA strict-start reauthorization records a fresh mismatch from the new proof
+  ---
+  duration_ms: 0.541955
+  type: 'test'
+  ...
+# Subtest: duplicate same-SHA strict-start declaration preserves already-verified admission
+ok 312 - duplicate same-SHA strict-start declaration preserves already-verified admission
+  ---
+  duration_ms: 1.632215
+  type: 'test'
+  ...
+# Subtest: strict starting-head SHA aliases bind exact 40-hex tokens and tolerate trailing punctuation
+ok 313 - strict starting-head SHA aliases bind exact 40-hex tokens and tolerate trailing punctuation
+  ---
+  duration_ms: 1.494751
+  type: 'test'
+  ...
+# Subtest: authority metadata and prose collisions leave binding and authority epoch unchanged
+ok 314 - authority metadata and prose collisions leave binding and authority epoch unchanged
+  ---
+  duration_ms: 3.375133
+  type: 'test'
+  ...
+# Subtest: authority metadata suffix collisions remain inert regardless of declaration order
+ok 315 - authority metadata suffix collisions remain inert regardless of declaration order
+  ---
+  duration_ms: 0.536785
+  type: 'test'
+  ...
+# Subtest: all intentional authority aliases retain their strict-start or target semantics
+ok 316 - all intentional authority aliases retain their strict-start or target semantics
+  ---
+  duration_ms: 1603.709878
+  type: 'test'
+  ...
+# Subtest: conflicting explicit authority declarations fail closed without binding state
+ok 317 - conflicting explicit authority declarations fail closed without binding state
+  ---
+  duration_ms: 138.454177
+  type: 'test'
+  ...
+# Subtest: pending authority compound HEAD proofs fail closed with deterministic correction paths and no state transition
+ok 318 - pending authority compound HEAD proofs fail closed with deterministic correction paths and no state transition
+  ---
+  duration_ms: 2.493978
+  type: 'test'
+  ...
+# Subtest: strict-start and target current-workspace bare proofs admit work without rewriting authority mode
+ok 319 - strict-start and target current-workspace bare proofs admit work without rewriting authority mode
+  ---
+  duration_ms: 196.888814
+  type: 'test'
+  ...
+# Subtest: pending mutations return mode-specific machine correction codes
+ok 320 - pending mutations return mode-specific machine correction codes
+  ---
+  duration_ms: 1.285255
+  type: 'test'
+  ...
+# Subtest: authority proof admission binds workdir and completion to the exact authority epoch
+ok 321 - authority proof admission binds workdir and completion to the exact authority epoch
+  ---
+  duration_ms: 387.433481
+  type: 'test'
+  ...
+# Subtest: exact-head target admission permits only an exact detached transition before proof
+ok 322 - exact-head target admission permits only an exact detached transition before proof
+  ---
+  duration_ms: 182.783724
+  type: 'test'
+  ...
+# Subtest: target mismatch recovery stays out of a fresh primary system prompt
+ok 323 - target mismatch recovery stays out of a fresh primary system prompt
+  ---
+  duration_ms: 14.55864
+  type: 'test'
+  ...
+# Subtest: target mismatch proof and rejected mutation provide one-step recovery feedback
+ok 324 - target mismatch proof and rejected mutation provide one-step recovery feedback
+  ---
+  duration_ms: 1.039939
+  type: 'test'
+  ...
+# Subtest: target-mode compound worktree setup is rejected with the safe two-step sequence while the corrected sequence is admitted
+ok 325 - target-mode compound worktree setup is rejected with the safe two-step sequence while the corrected sequence is admitted
+  ---
+  duration_ms: 212.443399
+  type: 'test'
+  ...
+# Subtest: explicit strict-start authority supersedes prior target publication gates only after the new declaration
+ok 326 - explicit strict-start authority supersedes prior target publication gates only after the new declaration
+  ---
+  duration_ms: 549.677017
+  type: 'test'
+  ...
+# Subtest: new binding after terminal target release starts a fresh authority epoch
+ok 327 - new binding after terminal target release starts a fresh authority epoch
+  ---
+  duration_ms: 617.93078
+  type: 'test'
+  ...
+# Subtest: same-SHA strict-start to target mode transition starts a fresh delegation authority epoch
+ok 328 - same-SHA strict-start to target mode transition starts a fresh delegation authority epoch
+  ---
+  duration_ms: 1.584454
+  type: 'test'
+  ...
+# Subtest: explicit authority change invalidates in-flight old-head child results before they can re-establish gates
+ok 329 - explicit authority change invalidates in-flight old-head child results before they can re-establish gates
+  ---
+  duration_ms: 473.684173
+  type: 'test'
+  ...
+# Subtest: authority change in another primary session invalidates old-head pending and resumable delegation workspace-wide
+ok 330 - authority change in another primary session invalidates old-head pending and resumable delegation workspace-wide
+  ---
+  duration_ms: 539.314075
+  type: 'test'
+  ...
+# Subtest: STALE target assessment admits only typed owner reconciliation and successful reconciliation releases target authority
+ok 331 - STALE target assessment admits only typed owner reconciliation and successful reconciliation releases target authority
+  ---
+  duration_ms: 2.760696
+  type: 'test'
+  ...
+# Subtest: recognized non-STALE assessment terminal releases target while interrupted execution remains fail-closed
+ok 332 - recognized non-STALE assessment terminal releases target while interrupted execution remains fail-closed
+  ---
+  duration_ms: 1.321286
+  type: 'test'
+  ...
+# Subtest: strict-start mismatch cannot use owner-base reconciliation as an escape hatch
+ok 333 - strict-start mismatch cannot use owner-base reconciliation as an escape hatch
+  ---
+  duration_ms: 0.457753
+  type: 'test'
+  ...
+# Subtest: system augmentation is always coalesced into one leading message
+ok 334 - system augmentation is always coalesced into one leading message
+  ---
+  duration_ms: 0.226626
+  type: 'test'
+  ...
+# Subtest: reasoning-only primary length exhaustion receives a bounded recovery turn
+ok 335 - reasoning-only primary length exhaustion receives a bounded recovery turn
+  ---
+  duration_ms: 0.438362
+  type: 'test'
+  ...
+# Subtest: visible text or tool output does not trigger reasoning-only length recovery
+ok 336 - visible text or tool output does not trigger reasoning-only length recovery
+  ---
+  duration_ms: 0.34412
+  type: 'test'
+  ...
+# Subtest: strict admission mismatch survives a plugin restart until a fresh explicit declaration
+ok 337 - strict admission mismatch survives a plugin restart until a fresh explicit declaration
+  ---
+  duration_ms: 24.500133
+  type: 'test'
+  ...
+# Subtest: corrupt persisted workspace state fails closed instead of disabling the harness
+ok 338 - corrupt persisted workspace state fails closed instead of disabling the harness
+  ---
+  duration_ms: 1.422029
+  type: 'test'
+  ...
+# Subtest: an exact-head authority change supersedes prior review and verification gates
+ok 339 - an exact-head authority change supersedes prior review and verification gates
+  ---
+  duration_ms: 773.761928
+  type: 'test'
+  ...
+# Subtest: interactive tools (question, ask_question) are permitted past the 30-call hard stop
+ok 340 - interactive tools (question, ask_question) are permitted past the 30-call hard stop
+  ---
+  duration_ms: 0.894184
+  type: 'test'
+  ...
+# Subtest: empty or malformed interactive prompts are narrowly rejected while valid questions pass unchanged
+ok 341 - empty or malformed interactive prompts are narrowly rejected while valid questions pass unchanged
+  ---
+  duration_ms: 0.980097
+  type: 'test'
+  ...
+# Subtest: prerequisite staging commands under /tmp/opencode are permitted past the 30-call hard stop
+ok 342 - prerequisite staging commands under /tmp/opencode are permitted past the 30-call hard stop
+  ---
+  duration_ms: 2.213281
+  type: 'test'
+  ...
+# Subtest: primary shell pipelines with output limiters do not inflate substantive command count
+ok 343 - primary shell pipelines with output limiters do not inflate substantive command count
+  ---
+  duration_ms: 1.11307
+  type: 'test'
+  ...
+# Subtest: fresh-review and verify subagents can access both review and verify staging roots without capability mismatch
+ok 344 - fresh-review and verify subagents can access both review and verify staging roots without capability mismatch
+  ---
+  duration_ms: 0.228516
+  type: 'test'
+  ...
+# Subtest: reasoning length exhaustion recovery turn clears lengthRecoveryPending on subsequent turns
+ok 345 - reasoning length exhaustion recovery turn clears lengthRecoveryPending on subsequent turns
+  ---
+  duration_ms: 0.278808
+  type: 'test'
+  ...
+# Subtest: turn-1 proactive explore delegation cleanly establishes child boundary without parent pre-read debt
+ok 346 - turn-1 proactive explore delegation cleanly establishes child boundary without parent pre-read debt
+  ---
+  duration_ms: 0.323068
+  type: 'test'
+  ...
+# Subtest: proactive upfront manifest staging does not consume direct validation budget
+ok 347 - proactive upfront manifest staging does not consume direct validation budget
+  ---
+  duration_ms: 1.571253
+  type: 'test'
+  ...
+# Subtest: v5.23.2 advisory policy limits and schema version are correctly exposed
+ok 348 - v5.23.2 advisory policy limits and schema version are correctly exposed
+  ---
+  duration_ms: 0.115243
+  type: 'test'
+  ...
+# Subtest: command-shape resources canonicalize GitHub SSH and HTTPS remotes to one repository identity
+ok 349 - command-shape resources canonicalize GitHub SSH and HTTPS remotes to one repository identity
+  ---
+  duration_ms: 92.969913
+  type: 'test'
+  ...
+# Subtest: mapped command-shape correction preserves payload and emits the Firecrawl resource pointer
+ok 350 - mapped command-shape correction preserves payload and emits the Firecrawl resource pointer
+  ---
+  duration_ms: 21.524041
+  type: 'test'
+  ...
+# Subtest: command-shape routing prefers canonical origin and falls back safely when repository identity is unavailable
+ok 351 - command-shape routing prefers canonical origin and falls back safely when repository identity is unavailable
+  ---
+  duration_ms: 119.596114
+  type: 'test'
+  ...
+# Subtest: command-shape routing uses global-only mappings and leaves unmapped corrections unchanged
+ok 352 - command-shape routing uses global-only mappings and leaves unmapped corrections unchanged
+  ---
+  duration_ms: 29.632103
+  type: 'test'
+  ...
+# Subtest: missing or malformed command-shape index data never changes correction handling
+ok 353 - missing or malformed command-shape index data never changes correction handling
+  ---
+  duration_ms: 13.061379
+  type: 'test'
+  ...
+# Subtest: command-shape repository resource failures fall back globally while traversal and stale sections are rejected
+ok 354 - command-shape repository resource failures fall back globally while traversal and stale sections are rejected
+  ---
+  duration_ms: 30.363093
+  type: 'test'
+  ...
+# Subtest: command-shape resource paths remain valid after plugin-root relocation
+ok 355 - command-shape resource paths remain valid after plugin-root relocation
+  ---
+  duration_ms: 21.1119
+  type: 'test'
+  ...
+# Subtest: Firecrawl command-shape cookbook contains placeholders and no live/session-specific identities
+ok 356 - Firecrawl command-shape cookbook contains placeholders and no live/session-specific identities
+  ---
+  duration_ms: 0.801452
+  type: 'test'
+  ...
+# Subtest: Issue-368 command-shape replay exposes readable canonical target setup guidance without guard-source inspection
+ok 357 - Issue-368 command-shape replay exposes readable canonical target setup guidance without guard-source inspection
+  ---
+  duration_ms: 17.627494
+  type: 'test'
+  ...
+# Subtest: registered literal command fidelity rejects agent-authored rewrites before execution and leaves unrelated commands unchanged
+ok 358 - registered literal command fidelity rejects agent-authored rewrites before execution and leaves unrelated commands unchanged
+  ---
+  duration_ms: 4.466132
+  type: 'test'
+  ...
+# Subtest: registered literal command fidelity rejects generic same-family mutations without token-distance escapes
+ok 359 - registered literal command fidelity rejects generic same-family mutations without token-distance escapes
+  ---
+  duration_ms: 0.489804
+  type: 'test'
+  ...
+# Subtest: registered literal command fidelity refreshes streamed ToolPart input through pre-execution admission
+ok 360 - registered literal command fidelity refreshes streamed ToolPart input through pre-execution admission
+  ---
+  duration_ms: 0.316979
+  type: 'test'
+  ...
+# Subtest: registered literal command fidelity attributes only captured exact-request RTK mutation as trusted harness rewrite
+ok 361 - registered literal command fidelity attributes only captured exact-request RTK mutation as trusted harness rewrite
+  ---
+  duration_ms: 0.493153
+  type: 'test'
+  ...
+# Subtest: literal command registrations are bounded and invalidated by authority/session boundaries
+ok 362 - literal command registrations are bounded and invalidated by authority/session boundaries
+  ---
+  duration_ms: 0.908725
+  type: 'test'
+  ...
+# Subtest: public reconciliation argv is exact, identity-bound, and destination-free
+ok 363 - public reconciliation argv is exact, identity-bound, and destination-free
+  ---
+  duration_ms: 1.79051
+  type: 'test'
+  ...
+# Subtest: trusted-base reconciliation advances exact clean old main and admits the repository-owned gateway
+ok 364 - trusted-base reconciliation advances exact clean old main and admits the repository-owned gateway
+  ---
+  duration_ms: 928.846739
+  type: 'test'
+  ...
+# Subtest: dirty owner, wrong branch, and wrong expected identities fail before reconciliation
+ok 365 - dirty owner, wrong branch, and wrong expected identities fail before reconciliation
+  ---
+  duration_ms: 188.144866
+  type: 'test'
+  ...
+# Subtest: moved remote base fails stale without owner mutation
+ok 366 - moved remote base fails stale without owner mutation
+  ---
+  duration_ms: 214.188533
+  type: 'test'
+  ...
+# Subtest: moved canonical PR head fails stale without owner mutation
+ok 367 - moved canonical PR head fails stale without owner mutation
+  ---
+  duration_ms: 212.102776
+  type: 'test'
+  ...
+# Subtest: non-fast-forward pinned base and non-base authority are rejected
+ok 368 - non-fast-forward pinned base and non-base authority are rejected
+  ---
+  duration_ms: 210.639426
+  type: 'test'
+  ...
+# Subtest: stale same-name local PR branch is irrelevant to isolated exact-head assessment
+ok 369 - stale same-name local PR branch is irrelevant to isolated exact-head assessment
+  ---
+  duration_ms: 729.687369
+  type: 'test'
+  ...
+# Subtest: remote authority mismatch fails STALE before worktree or runner execution
+ok 370 - remote authority mismatch fails STALE before worktree or runner execution
+  ---
+  duration_ms: 205.577947
+  type: 'test'
+  ...
+# Subtest: dirty owner workspace is preserved with an exact content fingerprint
+ok 371 - dirty owner workspace is preserved with an exact content fingerprint
+  ---
+  duration_ms: 650.361236
+  type: 'test'
+  ...
+# Subtest: dirty owner byte mutation is detected even when porcelain status is unchanged
+ok 372 - dirty owner byte mutation is detected even when porcelain status is unchanged
+  ---
+  duration_ms: 607.692487
+  type: 'test'
+  ...
+# Subtest: dirty owner mutation is detected for a filename containing invalid UTF-8 bytes
+ok 373 - dirty owner mutation is detected for a filename containing invalid UTF-8 bytes
+  ---
+  duration_ms: 628.444645
+  type: 'test'
+  ...
+# Subtest: assessment branch and worktree collisions fail closed and are never reclaimed
+ok 374 - assessment branch and worktree collisions fail closed and are never reclaimed
+  ---
+  duration_ms: 186.079836
+  type: 'test'
+  ...
+# Subtest: missing canonical venv is INFRA_ERROR and is never created or repaired
+ok 375 - missing canonical venv is INFRA_ERROR and is never created or repaired
+  ---
+  duration_ms: 223.28713
+  type: 'test'
+  ...
+# Subtest: runner plan failure prevents run phase
+ok 376 - runner plan failure prevents run phase
+  ---
+  duration_ms: 375.474382
+  type: 'test'
+  ...
+# Subtest: successful runner evidence is preserved and SHA-256 bound
+ok 377 - successful runner evidence is preserved and SHA-256 bound
+  ---
+  duration_ms: 636.21772
+  type: 'test'
+  ...
+# Subtest: gateway-owned integrity blob pins are enforced at the assessed head
+ok 378 - gateway-owned integrity blob pins are enforced at the assessed head
+  ---
+  duration_ms: 232.669216
+  type: 'test'
+  ...
+# Subtest: gateway-owned post-plan revalidation catches hidden pinned-input mutation
+ok 379 - gateway-owned post-plan revalidation catches hidden pinned-input mutation
+  ---
+  duration_ms: 415.044657
+  type: 'test'
+  ...
+# Subtest: gateway-owned runner exits cannot collide with supervisor status codes
+ok 380 - gateway-owned runner exits cannot collide with supervisor status codes
+  ---
+  duration_ms: 1532.996251
+  type: 'test'
+  ...
+# Subtest: gateway-owned run exit 241 remains a runner failure after evidence creation
+ok 381 - gateway-owned run exit 241 remains a runner failure after evidence creation
+  ---
+  duration_ms: 547.876714
+  type: 'test'
+  ...
+# Subtest: gateway-owned plan descendants cannot survive into the run boundary
+ok 382 - gateway-owned plan descendants cannot survive into the run boundary
+  ---
+  duration_ms: 447.401757
+  type: 'test'
+  ...
+# Subtest: gateway-owned run descendants terminalize before evidence acceptance
+ok 383 - gateway-owned run descendants terminalize before evidence acceptance
+  ---
+  duration_ms: 630.056688
+  type: 'test'
+  ...
+# Subtest: gateway-owned evidence-root replacement is an isolation breach
+ok 384 - gateway-owned evidence-root replacement is an isolation breach
+  ---
+  duration_ms: 556.276766
+  type: 'test'
+  ...
+# Subtest: gateway-owned mode returns INFRA_ERROR when the outer summary cannot be written
+ok 385 - gateway-owned mode returns INFRA_ERROR when the outer summary cannot be written
+  ---
+  duration_ms: 593.336501
+  type: 'test'
+  ...
+# Subtest: cleanup never touches unrelated local branches
+ok 386 - cleanup never touches unrelated local branches
+  ---
+  duration_ms: 575.311844
+  type: 'test'
+  ...
+# [opencode-assess/repo-pr20-8f92057cf3ab-pr20-4a95823b 
+# 5784732] runner mutation
+# Subtest: assessment runner identity mutation is detected and preserved for investigation
+ok 387 - assessment runner identity mutation is detected and preserved for investigation
+  ---
+  duration_ms: 542.372544
+  type: 'test'
+  ...
+# Subtest: assessment runner uncommitted mutation is detected and preserved for investigation
+ok 388 - assessment runner uncommitted mutation is detected and preserved for investigation
+  ---
+  duration_ms: 546.291011
+  type: 'test'
+  ...
+# Subtest: runner plan mutation blocks run and preserves the isolated checkout
+ok 389 - runner plan mutation blocks run and preserves the isolated checkout
+  ---
+  duration_ms: 378.058195
+  type: 'test'
+  ...
+# Subtest: canonical venv path is passed to the repository runner
+ok 390 - canonical venv path is passed to the repository runner
+  ---
+  duration_ms: 579.008135
+  type: 'test'
+  ...
+# Subtest: repository-owned supervisor deterministically reaps an ordinary long-lived descendant
+ok 391 - repository-owned supervisor deterministically reaps an ordinary long-lived descendant
+  ---
+  duration_ms: 843.764934
+  type: 'test'
+  ...
+# Subtest: repository-owned supervisor reaps an adopted double-fork daemon via the procfs parent graph
+ok 392 - repository-owned supervisor reaps an adopted double-fork daemon via the procfs parent graph
+  ---
+  duration_ms: 249.762925
+  type: 'test'
+  ...
+# Subtest: repository-owned supervisor stays bound to admitted control descriptors across pathname substitution
+ok 393 - repository-owned supervisor stays bound to admitted control descriptors across pathname substitution
+  ---
+  duration_ms: 175.672183
+  type: 'test'
+  ...
+# Subtest: repository-owned supervisor binds Landlock write authority to inherited descriptors across pathname substitution
+ok 394 - repository-owned supervisor binds Landlock write authority to inherited descriptors across pathname substitution
+  ---
+  duration_ms: 167.354273
+  type: 'test'
+  ...
+# Subtest: repository-owned Landlock write-fd setup performs no pathname lookup or repository bytecode write
+ok 395 - repository-owned Landlock write-fd setup performs no pathname lookup or repository bytecode write
+  ---
+  duration_ms: 40.741873
+  type: 'test'
+  ...
+# Subtest: repository-owned descriptor execution preserves Python sibling imports
+ok 396 - repository-owned descriptor execution preserves Python sibling imports
+  ---
+  duration_ms: 709.08307
+  type: 'test'
+  ...
+# Subtest: repository-owned mode preserves a pre-existing control snapshot collision
+ok 397 - repository-owned mode preserves a pre-existing control snapshot collision
+  ---
+  duration_ms: 179.006383
+  type: 'test'
+  ...
+# Subtest: repository-owned mode admits canonical PR refs without creating a gateway worktree
+ok 398 - repository-owned mode admits canonical PR refs without creating a gateway worktree
+  ---
+  duration_ms: 704.082238
+  type: 'test'
+  ...
+# Subtest: repository-owned base-authority mismatch emits the reconcilable STALE cause only for an owner behind the pinned base
+ok 399 - repository-owned base-authority mismatch emits the reconcilable STALE cause only for an owner behind the pinned base
+  ---
+  duration_ms: 312.275281
+  type: 'test'
+  ...
+# Subtest: repository-owned sandbox denies control and owner-Git writes while preserving native Git worktree lifecycle
+ok 400 - repository-owned sandbox denies control and owner-Git writes while preserving native Git worktree lifecycle
+  ---
+  duration_ms: 699.160555
+  type: 'test'
+  ...
+# Subtest: repository-owned Landlock grant cannot write another assessment runtime or canonical evidence
+ok 401 - repository-owned Landlock grant cannot write another assessment runtime or canonical evidence
+  ---
+  duration_ms: 1246.99184
+  type: 'test'
+  ...
+# Subtest: repository-owned mode preserves native host-result semantics
+ok 402 - repository-owned mode preserves native host-result semantics
+  ---
+  duration_ms: 2771.475949
+  type: 'test'
+  ...
+# Subtest: repository-owned mode rejects mismatched native evidence identity and gate semantics
+ok 403 - repository-owned mode rejects mismatched native evidence identity and gate semantics
+  ---
+  duration_ms: 1127.255782
+  type: 'test'
+  ...
+# Subtest: repository-owned PASS requires complete native cleanup proof
+ok 404 - repository-owned PASS requires complete native cleanup proof
+  ---
+  duration_ms: 589.974286
+  type: 'test'
+  ...
+# Subtest: repository-owned execution enforces pinned runner and control-plane hashes before invocation
+ok 405 - repository-owned execution enforces pinned runner and control-plane hashes before invocation
+  ---
+  duration_ms: 201.98343
+  type: 'test'
+  ...
+# Subtest: repository-owned mode fails closed on missing, malformed, symlinked, oversized, or exit-inconsistent evidence
+ok 406 - repository-owned mode fails closed on missing, malformed, symlinked, oversized, or exit-inconsistent evidence
+  ---
+  duration_ms: 2607.379002
+  type: 'test'
+  ...
+# Subtest: repository-owned mode preserves a pre-existing per-assessment runtime collision
+ok 407 - repository-owned mode preserves a pre-existing per-assessment runtime collision
+  ---
+  duration_ms: 148.313632
+  type: 'test'
+  ...
+# Subtest: repository-owned mode atomically refuses an already reserved assessment identity
+ok 408 - repository-owned mode atomically refuses an already reserved assessment identity
+  ---
+  duration_ms: 144.338642
+  type: 'test'
+  ...
+# Subtest: repository-owned runner cannot delete the gateway-only reservation token
+ok 409 - repository-owned runner cannot delete the gateway-only reservation token
+  ---
+  duration_ms: 603.096106
+  type: 'test'
+  ...
+# Subtest: repository-owned kernel reservation prevents duplicate identity across reservation-root replacement
+ok 410 - repository-owned kernel reservation prevents duplicate identity across reservation-root replacement
+  ---
+  duration_ms: 629.64693
+  type: 'test'
+  ...
+# Subtest: repository-owned mode requires the reservation identity through evidence admission
+ok 411 - repository-owned mode requires the reservation identity through evidence admission
+  ---
+  duration_ms: 594.101673
+  type: 'test'
+  ...
+# Subtest: repository-owned uncertain supervisor reaping preserves reservation and control forensic state
+ok 412 - repository-owned uncertain supervisor reaping preserves reservation and control forensic state
+  ---
+  duration_ms: 283.151758
+  type: 'test'
+  ...
+# Subtest: repository-owned mode never follows a substituted assessment-id directory
+ok 413 - repository-owned mode never follows a substituted assessment-id directory
+  ---
+  duration_ms: 587.081944
+  type: 'test'
+  ...
+# Subtest: repository-owned plan descendants cannot survive into the run boundary
+ok 414 - repository-owned plan descendants cannot survive into the run boundary
+  ---
+  duration_ms: 435.132194
+  type: 'test'
+  ...
+# Subtest: repository-owned run descendants terminalize before native evidence acceptance
+ok 415 - repository-owned run descendants terminalize before native evidence acceptance
+  ---
+  duration_ms: 651.532507
+  type: 'test'
+  ...
+# Subtest: repository-owned head authority supports an explicitly pinned reviewed bootstrap checkout
+ok 416 - repository-owned head authority supports an explicitly pinned reviewed bootstrap checkout
+  ---
+  duration_ms: 623.439411
+  type: 'test'
+  ...
+# Subtest: repository-owned evidence-root replacement by an external writer is an isolation breach with recoverable summary
+ok 417 - repository-owned evidence-root replacement by an external writer is an isolation breach with recoverable summary
+  ---
+  duration_ms: 601.087626
+  type: 'test'
+  ...
+# Subtest: repository-owned external control mutation is detected even when bytes are restored
+ok 418 - repository-owned external control mutation is detected even when bytes are restored
+  ---
+  duration_ms: 607.577171
+  type: 'test'
+  ...
+# Subtest: repository-owned cleanup never deletes a substituted control-snapshot pathname
+ok 419 - repository-owned cleanup never deletes a substituted control-snapshot pathname
+  ---
+  duration_ms: 585.688227
+  type: 'test'
+  ...
+# Subtest: repository-owned final owner-proof failure is INFRA_ERROR
+ok 420 - repository-owned final owner-proof failure is INFRA_ERROR
+  ---
+  duration_ms: 574.224661
+  type: 'test'
+  ...
+# Subtest: repository-owned external owner mutation is an isolation breach even with native PASS evidence
+ok 421 - repository-owned external owner mutation is an isolation breach even with native PASS evidence
+  ---
+  duration_ms: 609.310427
+  type: 'test'
+  ...
+# Subtest: repository-owned owner-root replacement cannot substitute the final proof
+ok 422 - repository-owned owner-root replacement cannot substitute the final proof
+  ---
+  duration_ms: 607.394323
+  type: 'test'
+  ...
+# Subtest: repository-owned mode detects external canonical PR-head movement at the final authority boundary
+ok 423 - repository-owned mode detects external canonical PR-head movement at the final authority boundary
+  ---
+  duration_ms: 609.922799
+  type: 'test'
+  ...
+# Subtest: repository-owned schema does not require a venv, base-sha argv, or evidence-path argv
+ok 424 - repository-owned schema does not require a venv, base-sha argv, or evidence-path argv
+  ---
+  duration_ms: 95.993148
+  type: 'test'
+  ...
+# Subtest: session trace assessment entrypoint is directly executable
+ok 425 - session trace assessment entrypoint is directly executable
+  ---
+  duration_ms: 5.018598
+  type: 'test'
+  ...
+# Subtest: assesses synthetic guard friction without executing shell-like trace data
+ok 426 - assesses synthetic guard friction without executing shell-like trace data
+  ---
+  duration_ms: 55.262344
+  type: 'test'
+  ...
+# Subtest: builds a redacted structured remediation audit from operational metadata
+ok 427 - builds a redacted structured remediation audit from operational metadata
+  ---
+  duration_ms: 56.346034
+  type: 'test'
+  ...
+# Subtest: uses tool errors only as medium-confidence fallback and ignores quoted prompt text
+ok 428 - uses tool errors only as medium-confidence fallback and ignores quoted prompt text
+  ---
+  duration_ms: 42.446831
+  type: 'test'
+  ...
+# Subtest: classifies both publish-gate word orders and structured incomplete gate results
+ok 429 - classifies both publish-gate word orders and structured incomplete gate results
+  ---
+  duration_ms: 43.87133
+  type: 'test'
+  ...
+# Subtest: legacy metrics use structured occurrence counts and incomplete-result reasons
+ok 430 - legacy metrics use structured occurrence counts and incomplete-result reasons
+  ---
+  duration_ms: 45.859485
+  type: 'test'
+  ...
+# Subtest: legacy friction metrics expose child launches, planner provenance, elisions, and terminal normalization
+ok 431 - legacy friction metrics expose child launches, planner provenance, elisions, and terminal normalization
+  ---
+  duration_ms: 41.497624
+  type: 'test'
+  ...
+# Subtest: remediation audit classifies deterministic role elision and planner partition boundaries
+ok 432 - remediation audit classifies deterministic role elision and planner partition boundaries
+  ---
+  duration_ms: 42.79585
+  type: 'test'
+  ...
+# Subtest: detects an empty interactive call and its premature finalization sequence without exposing text
+ok 433 - detects an empty interactive call and its premature finalization sequence without exposing text
+  ---
+  duration_ms: 42.258645
+  type: 'test'
+  ...
+# Subtest: legacy friction metrics ignore quoted guard prose and count authoritative tool errors
+ok 434 - legacy friction metrics ignore quoted guard prose and count authoritative tool errors
+  ---
+  duration_ms: 41.677009
+  type: 'test'
+  ...
+# Subtest: does not infer premature termination across assistant recovery or post-tool final text
+ok 435 - does not infer premature termination across assistant recovery or post-tool final text
+  ---
+  duration_ms: 41.045562
+  type: 'test'
+  ...
+# Subtest: classifies the plugin's real structured guard rule vocabulary
+ok 436 - classifies the plugin's real structured guard rule vocabulary
+  ---
+  duration_ms: 42.07342
+  type: 'test'
+  ...
+# Subtest: preserves coalesced advisory occurrence counts without duplicating evidence
+ok 437 - preserves coalesced advisory occurrence counts without duplicating evidence
+  ---
+  duration_ms: 40.297421
+  type: 'test'
+  ...
+# Subtest: reports completed nonzero exits as diagnostics without fabricating guard friction
+ok 438 - reports completed nonzero exits as diagnostics without fabricating guard friction
+  ---
+  duration_ms: 36.96532
+  type: 'test'
+  ...
+# Subtest: reports format drift without reproducing unknown part payloads
+ok 439 - reports format drift without reproducing unknown part payloads
+  ---
+  duration_ms: 38.616464
+  type: 'test'
+  ...
+# Subtest: rejects unsupported remediation profile spellings
+ok 440 - rejects unsupported remediation profile spellings
+  ---
+  duration_ms: 32.551758
+  type: 'test'
+  ...
+# Subtest: rejects wrong identity, malformed JSON, and extra flags
+ok 441 - rejects wrong identity, malformed JSON, and extra flags
+  ---
+  duration_ms: 98.27781
+  type: 'test'
+  ...
+# Subtest: rejects symlink inputs and material-root escapes
+ok 442 - rejects symlink inputs and material-root escapes
+  ---
+  duration_ms: 64.544049
+  type: 'test'
+  ...
+# Subtest: rejects spoofed identity and primitive roots and isolates metrics to the requested export messages
+ok 443 - rejects spoofed identity and primitive roots and isolates metrics to the requested export messages
+  ---
+  duration_ms: 107.643257
+  type: 'test'
+  ...
+# Subtest: assessment after-event without matching admitted before-state cannot release target authority
+ok 444 - assessment after-event without matching admitted before-state cannot release target authority
+  ---
+  duration_ms: 39.775737
+  type: 'test'
+  ...
+# Subtest: reconciliation after-event without matching admitted before-state cannot consume lifecycle or release target
+ok 445 - reconciliation after-event without matching admitted before-state cannot consume lifecycle or release target
+  ---
+  duration_ms: 34.652926
+  type: 'test'
+  ...
+# Subtest: assessment summary pathname substitution cannot change an authenticated terminal cause
+ok 446 - assessment summary pathname substitution cannot change an authenticated terminal cause
+  ---
+  duration_ms: 15.812086
+  type: 'test'
+  ...
+# Subtest: LF and CRLF backslash continuations are accepted identically by exact assessment and reconciliation layers
+ok 447 - LF and CRLF backslash continuations are accepted identically by exact assessment and reconciliation layers
+  ---
+  duration_ms: 108.80348
+  type: 'test'
+  ...
+# Subtest: malformed multiline assessment cannot mint lifecycle and malformed reconciliation cannot consume it
+ok 448 - malformed multiline assessment cannot mint lifecycle and malformed reconciliation cannot consume it
+  ---
+  duration_ms: 33.746621
+  type: 'test'
+  ...
+# Subtest: cross-target assessment spec is rejected before execution
+ok 449 - cross-target assessment spec is rejected before execution
+  ---
+  duration_ms: 10.606622
+  type: 'test'
+  ...
+# Subtest: generic target mismatch cannot invoke owner reconciliation before authenticated owner-base STALE
+ok 450 - generic target mismatch cannot invoke owner reconciliation before authenticated owner-base STALE
+  ---
+  duration_ms: 9.618755
+  type: 'test'
+  ...
+# Subtest: real gateway result schema admits owner-base STALE from authenticated summary without pre-seeded core observedHead
+ok 451 - real gateway result schema admits owner-base STALE from authenticated summary without pre-seeded core observedHead
+  ---
+  duration_ms: 16.228098
+  type: 'test'
+  ...
+# Subtest: input-spec schema in a public assessment result marker is rejected as unauthenticated terminal evidence
+ok 452 - input-spec schema in a public assessment result marker is rejected as unauthenticated terminal evidence
+  ---
+  duration_ms: 11.056555
+  type: 'test'
+  ...
+# Subtest: summary owner identity must agree with a separately proven core observedHead when one exists
+ok 453 - summary owner identity must agree with a separately proven core observedHead when one exists
+  ---
+  duration_ms: 14.116119
+  type: 'test'
+  ...
+# Subtest: missing or changed owner-final identity prevents a STALE terminal from minting reconciliation authority
+ok 454 - missing or changed owner-final identity prevents a STALE terminal from minting reconciliation authority
+  ---
+  duration_ms: 58.888683
+  type: 'test'
+  ...
+# Subtest: same-SHA strict-start declaration cannot escape persisted target owner-reconciliation lifecycle
+ok 455 - same-SHA strict-start declaration cannot escape persisted target owner-reconciliation lifecycle
+  ---
+  duration_ms: 22.781978
+  type: 'test'
+  ...
+# Subtest: explicit strict-start authority declaration supersedes an incompatible persisted owner-reconciliation lifecycle
+ok 456 - explicit strict-start authority declaration supersedes an incompatible persisted owner-reconciliation lifecycle
+  ---
+  duration_ms: 21.77103
+  type: 'test'
+  ...
+# Subtest: authority away-and-back invalidates an in-flight assessment admission from the prior epoch
+ok 457 - authority away-and-back invalidates an in-flight assessment admission from the prior epoch
+  ---
+  duration_ms: 22.343876
+  type: 'test'
+  ...
+# Subtest: authority away-and-back invalidates an old reconciliation admission even if the same lifecycle identity is recreated
+ok 458 - authority away-and-back invalidates an old reconciliation admission even if the same lifecycle identity is recreated
+  ---
+  duration_ms: 38.376519
+  type: 'test'
+  ...
+# Subtest: authenticated owner-base STALE persists exact reconciliation identity across plugin restart and blocks alternate HEAD movement
+ok 459 - authenticated owner-base STALE persists exact reconciliation identity across plugin restart and blocks alternate HEAD movement
+  ---
+  duration_ms: 21.03533
+  type: 'test'
+  ...
+# Subtest: forged or cross-identity assessment terminal evidence never releases target or admits reconciliation
+ok 460 - forged or cross-identity assessment terminal evidence never releases target or admits reconciliation
+  ---
+  duration_ms: 67.592304
+  type: 'test'
+  ...
+# Subtest: missing terminal evidence remains fail-closed and does not admit reconciliation
+ok 461 - missing terminal evidence remains fail-closed and does not admit reconciliation
+  ---
+  duration_ms: 11.61505
+  type: 'test'
+  ...
+# Subtest: remote-authority and non-base STALE results remain target-bound without minting owner reconciliation authority
+ok 462 - remote-authority and non-base STALE results remain target-bound without minting owner reconciliation authority
+  ---
+  duration_ms: 28.637299
+  type: 'test'
+  ...
+# Subtest: divergent clean-owner STALE remains target-bound and permits corrected same-target reassessment
+ok 463 - divergent clean-owner STALE remains target-bound and permits corrected same-target reassessment
+  ---
+  duration_ms: 10.550731
+  type: 'test'
+  ...
+# Subtest: reconciliation release requires exact stale spec hash and old/base/target/branch result identity
+ok 464 - reconciliation release requires exact stale spec hash and old/base/target/branch result identity
+  ---
+  duration_ms: 106.64337
+  type: 'test'
+  ...
+# Subtest: exact authenticated reconciliation consumes stale capability and releases target
+ok 465 - exact authenticated reconciliation consumes stale capability and releases target
+  ---
+  duration_ms: 25.03537
+  type: 'test'
+  ...
+# Subtest: authenticated non-STALE terminal summary releases only its exact target
+ok 466 - authenticated non-STALE terminal summary releases only its exact target
+  ---
+  duration_ms: 15.353663
+  type: 'test'
+  ...
+# Subtest: persisted verified target without a valid lease requires canonical readmission after upgrade
+ok 467 - persisted verified target without a valid lease requires canonical readmission after upgrade
+  ---
+  duration_ms: 180.716291
+  type: 'test'
+  ...
+# Subtest: persisted valid lease for a different target cannot preserve verified authority
+ok 468 - persisted valid lease for a different target cannot preserve verified authority
+  ---
+  duration_ms: 96.478589
+  type: 'test'
+  ...
+# Subtest: malformed persisted lease cannot preserve verified target authority
+ok 469 - malformed persisted lease cannot preserve verified target authority
+  ---
+  duration_ms: 90.050232
+  type: 'test'
+  ...
+# Subtest: canonical target proof fails closed when lease issuance invariants cannot be established
+ok 470 - canonical target proof fails closed when lease issuance invariants cannot be established
+  ---
+  duration_ms: 66.991287
+  type: 'test'
+  ...
+# Subtest: new target authority invalidates the old lease but admits only canonical replacement setup and proof
+ok 471 - new target authority invalidates the old lease but admits only canonical replacement setup and proof
+  ---
+  duration_ms: 201.190405
+  type: 'test'
+  ...
+# Subtest: replacement current checkout remains proof-only until its new exact-head lease is issued
+ok 472 - replacement current checkout remains proof-only until its new exact-head lease is issued
+  ---
+  duration_ms: 262.720101
+  type: 'test'
+  ...
+# Subtest: replacement linked worktree remains proof-only until its new exact-head lease is issued
+ok 473 - replacement linked worktree remains proof-only until its new exact-head lease is issued
+  ---
+  duration_ms: 264.137209
+  type: 'test'
+  ...
+# Subtest: evidence primary receives exact-head lease and a new candidate SHA requires fresh admission
+ok 474 - evidence primary receives exact-head lease and a new candidate SHA requires fresh admission
+  ---
+  duration_ms: 204.088893
+  type: 'test'
+  ...
+# Subtest: verified target lease keeps malformed proof rejection while redundant bare proof remains valid
+ok 475 - verified target lease keeps malformed proof rejection while redundant bare proof remains valid
+  ---
+  duration_ms: 1360.622694
+  type: 'test'
+  ...
+# Subtest: task-scoped exact-head lease survives harmless epoch churn and invalidates before execution after target HEAD movement
+ok 476 - task-scoped exact-head lease survives harmless epoch churn and invalidates before execution after target HEAD movement
+  ---
+  duration_ms: 263.417956
+  type: 'test'
+  ...
+# Subtest: valid lease rejects a target HEAD-changing shell packet before any packet command executes
+ok 477 - valid lease rejects a target HEAD-changing shell packet before any packet command executes
+  ---
+  duration_ms: 213.025296
+  type: 'test'
+  ...
+# Subtest: standalone target HEAD transition invalidates the old lease before any later governed execution
+ok 478 - standalone target HEAD transition invalidates the old lease before any later governed execution
+  ---
+  duration_ms: 166.070082
+  type: 'test'
+  ...
+# Subtest: valid lease rejects nested-shell target HEAD mutation before execution
+ok 479 - valid lease rejects nested-shell target HEAD mutation before execution
+  ---
+  duration_ms: 124.302302
+  type: 'test'
+  ...
+# Subtest: delegated child revalidates exact-head lease between governed tool calls
+ok 480 - delegated child revalidates exact-head lease between governed tool calls
+  ---
+  duration_ms: 181.072406
+  type: 'test'
+  ...
+# Subtest: bounded Task resume cannot cross exact-head lease replacement
+ok 481 - bounded Task resume cannot cross exact-head lease replacement
+  ---
+  duration_ms: 267.726732
+  type: 'test'
+  ...
+# Subtest: completed child cannot attach its lease binding to a later delegation
+ok 482 - completed child cannot attach its lease binding to a later delegation
+  ---
+  duration_ms: 286.97354
+  type: 'test'
+  ...
+# Subtest: delegated task completion is stale when exact-head lease invariants drift during the child run
+ok 483 - delegated task completion is stale when exact-head lease invariants drift during the child run
+  ---
+  duration_ms: 172.893369
+  type: 'test'
+  ...
+# Subtest: persisted lease policy or guard-version drift invalidates target authority on reload
+ok 484 - persisted lease policy or guard-version drift invalidates target authority on reload
+  ---
+  duration_ms: 93.991168
+  type: 'test'
+  ...
+# Subtest: exact-head lease binds linked worktree, owner protection, and explicit task rebind
+ok 485 - exact-head lease binds linked worktree, owner protection, and explicit task rebind
+  ---
+  duration_ms: 288.778069
+  type: 'test'
+  ...
+# Subtest: task rebind refuses to absorb owner checkout movement into a renewed lease
+ok 486 - task rebind refuses to absorb owner checkout movement into a renewed lease
+  ---
+  duration_ms: 179.154661
+  type: 'test'
+  ...
+# Subtest: lease validation resolves symlink workdir aliases before governed execution
+ok 487 - lease validation resolves symlink workdir aliases before governed execution
+  ---
+  duration_ms: 114.538722
+  type: 'test'
+  ...
+# Subtest: lease validation also blocks a governed edit tool before execution after target HEAD movement
+ok 488 - lease validation also blocks a governed edit tool before execution after target HEAD movement
+  ---
+  duration_ms: 166.585234
+  type: 'test'
+  ...
+# Subtest: replacing an admitted linked worktree invalidates its lease before further governed execution
+ok 489 - replacing an admitted linked worktree invalidates its lease before further governed execution
+  ---
+  duration_ms: 174.884213
+  type: 'test'
+  ...
+# Subtest: duplicate same-target declarations preserve truthful pending and mismatch state without epoch churn
+ok 490 - duplicate same-target declarations preserve truthful pending and mismatch state without epoch churn
+  ---
+  duration_ms: 80.998859
+  type: 'test'
+  ...
+# Subtest: verified strict-start authority also keeps one-bare-command HEAD proof enforcement
+ok 491 - verified strict-start authority also keeps one-bare-command HEAD proof enforcement
+  ---
+  duration_ms: 36.630128
+  type: 'test'
+  ...
+# Subtest: public gateway PASS exit 0 authenticates terminal target release
+ok 492 - public gateway PASS exit 0 authenticates terminal target release
+  ---
+  duration_ms: 49.352911
+  type: 'test'
+  ...
+# Subtest: public gateway FAIL exit 1 authenticates terminal target release
+ok 493 - public gateway FAIL exit 1 authenticates terminal target release
+  ---
+  duration_ms: 20.823685
+  type: 'test'
+  ...
+# Subtest: public gateway BLOCKED exit 2 authenticates terminal target release
+ok 494 - public gateway BLOCKED exit 2 authenticates terminal target release
+  ---
+  duration_ms: 23.460417
+  type: 'test'
+  ...
+# Subtest: public gateway INFRA_ERROR exit 2 authenticates terminal target release
+ok 495 - public gateway INFRA_ERROR exit 2 authenticates terminal target release
+  ---
+  duration_ms: 18.358387
+  type: 'test'
+  ...
+# Subtest: public gateway ISOLATION_BREACH exit 4 authenticates terminal target release
+ok 496 - public gateway ISOLATION_BREACH exit 4 authenticates terminal target release
+  ---
+  duration_ms: 16.281749
+  type: 'test'
+  ...
+# Subtest: normalizeTodos drops non-objects and defaults priority
+ok 497 - normalizeTodos drops non-objects and defaults priority
+  ---
+  duration_ms: 1.734488
+  type: 'test'
+  ...
+# Subtest: isTerminalStatus classifies terminal, nonterminal, and unknown statuses
+ok 498 - isTerminalStatus classifies terminal, nonterminal, and unknown statuses
+  ---
+  duration_ms: 0.501994
+  type: 'test'
+  ...
+# Subtest: nonterminal counting and filtering respect terminal boundary
+ok 499 - nonterminal counting and filtering respect terminal boundary
+  ---
+  duration_ms: 0.602107
+  type: 'test'
+  ...
+# Subtest: fingerprintTodos is order-insensitive, stable, and change-sensitive
+ok 500 - fingerprintTodos is order-insensitive, stable, and change-sensitive
+  ---
+  duration_ms: 0.259567
+  type: 'test'
+  ...
+# Subtest: renderReminder returns undefined for an empty or fully-terminal ledger
+ok 501 - renderReminder returns undefined for an empty or fully-terminal ledger
+  ---
+  duration_ms: 0.165714
+  type: 'test'
+  ...
+# Subtest: renderReminder bounds the list to six items and reports overflow
+ok 502 - renderReminder bounds the list to six items and reports overflow
+  ---
+  duration_ms: 0.524914
+  type: 'test'
+  ...
+# Subtest: renderReminder truncates long content to 96 characters
+ok 503 - renderReminder truncates long content to 96 characters
+  ---
+  duration_ms: 0.282578
+  type: 'test'
+  ...
+# Subtest: renderReminder collapses multi-line content into a single line
+ok 504 - renderReminder collapses multi-line content into a single line
+  ---
+  duration_ms: 0.36226
+  type: 'test'
+  ...
+# Subtest: tool.definition appends the ledger contract idempotently
+ok 505 - tool.definition appends the ledger contract idempotently
+  ---
+  duration_ms: 2.487299
+  type: 'test'
+  ...
+# Subtest: a successful todowrite seeds the ledger and the reminder is injected without adding an element
+ok 506 - a successful todowrite seeds the ledger and the reminder is injected without adding an element
+  ---
+  duration_ms: 4.623448
+  type: 'test'
+  ...
+# Subtest: the reminder is not injected for an empty or fully-terminal ledger
+ok 507 - the reminder is not injected for an empty or fully-terminal ledger
+  ---
+  duration_ms: 0.755831
+  type: 'test'
+  ...
+# Subtest: todo.updated reconciles the per-session cache independently of a todowrite
+ok 508 - todo.updated reconciles the per-session cache independently of a todowrite
+  ---
+  duration_ms: 0.574635
+  type: 'test'
+  ...
+# Subtest: session.idle warns once for a stale nonterminal primary ledger and dedupes repeats
+ok 509 - session.idle warns once for a stale nonterminal primary ledger and dedupes repeats
+  ---
+  duration_ms: 0.936016
+  type: 'test'
+  ...
+# Subtest: session.idle does not warn for child sessions or when the ledger is terminal
+ok 510 - session.idle does not warn for child sessions or when the ledger is terminal
+  ---
+  duration_ms: 0.553815
+  type: 'test'
+  ...
+# Subtest: hydrate failures and missing clients fail open without blocking the turn
+ok 511 - hydrate failures and missing clients fail open without blocking the turn
+  ---
+  duration_ms: 0.484104
+  type: 'test'
+  ...
+# Subtest: a synchronous showToast throw is swallowed and never blocks the idle path
+ok 512 - a synchronous showToast throw is swallowed and never blocks the idle path
+  ---
+  duration_ms: 0.469833
+  type: 'test'
+  ...
+# Subtest: dispose clears the per-session cache so a later idle can warn again
+ok 513 - dispose clears the per-session cache so a later idle can warn again
+  ---
+  duration_ms: 0.570096
+  type: 'test'
+  ...
+# Subtest: wrapper parses exports without eval, runs the allowlisted gate, and cleans up
+ok 514 - wrapper parses exports without eval, runs the allowlisted gate, and cleans up
+  ---
+  duration_ms: 72.019706
+  type: 'test'
+  ...
+# Subtest: attach mode reads an existing lifecycle environment without starting or stopping it
+ok 515 - attach mode reads an existing lifecycle environment without starting or stopping it
+  ---
+  duration_ms: 42.06396
+  type: 'test'
+  ...
+# Subtest: wrapper cleans up after a failing gate and propagates its status
+ok 516 - wrapper cleans up after a failing gate and propagates its status
+  ---
+  duration_ms: 46.966495
+  type: 'test'
+  ...
+# Subtest: wrapper rejects unexpected helper exports and arbitrary commands
+ok 517 - wrapper rejects unexpected helper exports and arbitrary commands
+  ---
+  duration_ms: 78.233627
+  type: 'test'
+  ...
+# Subtest: wrapper explains that managed environment prefixes belong outside the delegated command
+ok 518 - wrapper explains that managed environment prefixes belong outside the delegated command
+  ---
+  duration_ms: 2.032966
+  type: 'test'
+  ...
+# Subtest: wrapper cannot reset or tear down services it did not start
+ok 519 - wrapper cannot reset or tear down services it did not start
+  ---
+  duration_ms: 63.83191
+  type: 'test'
+  ...
+# Subtest: typed manifest runner executes argv without a shell and reports integrity
+ok 520 - typed manifest runner executes argv without a shell and reports integrity
+  ---
+  duration_ms: 80.214742
+  type: 'test'
+  ...
+# Subtest: typed manifest runner rejects writes, shell payloads, and root escapes
+ok 521 - typed manifest runner rejects writes, shell payloads, and root escapes
+  ---
+  duration_ms: 233.019555
+  type: 'test'
+  ...
+# Subtest: workspace identity parses a strict shell-free argument surface
+ok 522 - workspace identity parses a strict shell-free argument surface
+  ---
+  duration_ms: 3.012403
+  type: 'test'
+  ...
+# Subtest: workspace identity reports exact Git state without a shell
+ok 523 - workspace identity reports exact Git state without a shell
+  ---
+  duration_ms: 70.01379
+  type: 'test'
+  ...
+# Subtest: workspace identity implementation contains no execSync shell-string path
+ok 524 - workspace identity implementation contains no execSync shell-string path
+  ---
+  duration_ms: 1.688057
+  type: 'test'
+  ...
+1..524
+# tests 524
+# suites 0
+# pass 524
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 21712.920397
+OPERATIONAL_PLUGIN_TEST_RESULT: PASS
+### rc=0 for: npm test
+-----

@@ -1,0 +1,439 @@
+{
+ "schema": "issue92-s3-scorecard-v1",
+ "kind": "sanitized, evidence-only, publication-safe (no raw model replies)",
+ "generated_utc": "2026-11-12T00:57:06Z",
+ "campaign": "issue92-adr S3 resilient-discovery terminal evaluation",
+ "attribution": {
+  "original_execution_head": "626df9eace9e9b1b141466a5d69c20df06d0995e",
+  "corrective_verification_head": "9b98e0e40f60c4fad964182510664e703dc6f44d",
+  "batch": "003aa99faaa944cd81e83a6d7fd314815857cb0dafbd69d359244b6cfd28db1c",
+  "group": "graphiti-adr92-s3-resilient-discovery"
+ },
+ "denominators": {
+  "note": "scoring denominator is 16 valuable targets + 11 nonvaluable controls (frozen B3 denominators), not model-fact count; scorer definitions and denominators unchanged",
+  "valuable_targets": 16,
+  "nonvaluable_controls": 11
+ },
+ "valuable_targets": [
+  {
+   "target_id": "graphiti_0312_py313_falkordb_smoke",
+   "case_id": "adr92-g1",
+   "cluster": "g1",
+   "s1_state": "lost",
+   "s2_state": "lost",
+   "s3_state": "lost",
+   "s3_first_loss_stage": "utility/local deferral (not_substantive)",
+   "s3_uuids": []
+  },
+  {
+   "target_id": "graphiti_0312_mcp_tools_only",
+   "case_id": "adr92-g1",
+   "cluster": "g1",
+   "s1_state": "lost",
+   "s2_state": "lost",
+   "s3_state": "lost",
+   "s3_first_loss_stage": "utility/local deferral (not_substantive)",
+   "s3_uuids": []
+  },
+  {
+   "target_id": "graphiti_llm_param_readonly_audit",
+   "case_id": "adr92-g2",
+   "cluster": "g2",
+   "s1_state": "lost",
+   "s2_state": "lost",
+   "s3_state": "lost",
+   "s3_first_loss_stage": "utility/local deferral (not_substantive)",
+   "s3_uuids": []
+  },
+  {
+   "target_id": "graphiti_live_mcp_no_openviking",
+   "case_id": "adr92-g3",
+   "cluster": "g3",
+   "s1_state": "lost",
+   "s2_state": "lost",
+   "s3_state": "lost",
+   "s3_first_loss_stage": "discovery SKIP (no attributable source candidate)",
+   "s3_uuids": []
+  },
+  {
+   "target_id": "graphiti_temporal_memory_live_test",
+   "case_id": "adr92-g3",
+   "cluster": "g3",
+   "s1_state": "lost",
+   "s2_state": "lost",
+   "s3_state": "lost",
+   "s3_first_loss_stage": "discovery SKIP (no attributable source candidate)",
+   "s3_uuids": []
+  },
+  {
+   "target_id": "graphiti_temporal_validation_skill",
+   "case_id": "adr92-g4",
+   "cluster": "g4",
+   "s1_state": "lost",
+   "s2_state": "lost",
+   "s3_state": "lost",
+   "s3_first_loss_stage": "utility/local deferral (not_substantive)",
+   "s3_uuids": []
+  },
+  {
+   "target_id": "sphinx_dict_str_str_param_render_defect",
+   "case_id": "adr92-sp1",
+   "cluster": "sp1",
+   "s1_state": "retained",
+   "s2_state": "retained",
+   "s3_state": "retained",
+   "s3_first_loss_stage": null,
+   "s3_uuids": [
+    "28588d46-bff9-466f-80b1-8cb4b10ea4f7"
+   ]
+  },
+  {
+   "target_id": "sphinx_9230_dict_param_render_variant",
+   "case_id": "adr92-sp2",
+   "cluster": "sp2",
+   "s1_state": "retained",
+   "s2_state": "retained",
+   "s3_state": "retained",
+   "s3_first_loss_stage": null,
+   "s3_uuids": [
+    "02e4cfe2-4276-4952-a29e-03c7caaa0f52"
+   ]
+  },
+  {
+   "target_id": "sphinx_14182_rst_header_rows",
+   "case_id": "adr92-sp8",
+   "cluster": "sp8",
+   "s1_state": "lost",
+   "s2_state": "retained_recovered",
+   "s3_state": "retained",
+   "s3_first_loss_stage": null,
+   "s3_uuids": [
+    "58738448-6340-4fa4-8af7-a80be26ecc7c"
+   ]
+  },
+  {
+   "target_id": "sphinx_ascii_rst_header_rows",
+   "case_id": "adr92-sp9",
+   "cluster": "sp9",
+   "s1_state": "lost",
+   "s2_state": "lost",
+   "s3_state": "lost",
+   "s3_first_loss_stage": "discovery field validation (invalid_fact_fields; diagnostic fields: assertion) after S3 correction pass",
+   "s3_uuids": []
+  },
+  {
+   "target_id": "django_add_filter_lazy_string_typeerror",
+   "case_id": "adr92-dj1",
+   "cluster": "dj1",
+   "s1_state": "retained",
+   "s2_state": "retained",
+   "s3_state": "retained",
+   "s3_first_loss_stage": null,
+   "s3_uuids": [
+    "7acd797b-b74d-4b75-b32c-3f2f121450e1"
+   ]
+  },
+  {
+   "target_id": "django_lazy_proxy_string_concat",
+   "case_id": "adr92-dj1",
+   "cluster": "dj1",
+   "s1_state": "retained",
+   "s2_state": "retained",
+   "s3_state": "retained",
+   "s3_first_loss_stage": null,
+   "s3_uuids": [
+    "7acd797b-b74d-4b75-b32c-3f2f121450e1"
+   ]
+  },
+  {
+   "target_id": "django_add_filter_lazy_string_variant",
+   "case_id": "adr92-dj2",
+   "cluster": "dj2",
+   "s1_state": "retained",
+   "s2_state": "retained",
+   "s3_state": "retained",
+   "s3_first_loss_stage": null,
+   "s3_uuids": [
+    "c01dc2f6-b71c-479a-9ecf-278c3284ae8d"
+   ]
+  },
+  {
+   "target_id": "pylint_short_verbose_expects_arg",
+   "case_id": "adr92-py1",
+   "cluster": "py1",
+   "s1_state": "retained",
+   "s2_state": "retained",
+   "s3_state": "retained",
+   "s3_first_loss_stage": null,
+   "s3_uuids": [
+    "d655a2e3-4de6-4f4c-8c89-e520c3be36ee"
+   ]
+  },
+  {
+   "target_id": "pylint_6386_verbose_flag_negative",
+   "case_id": "adr92-py2",
+   "cluster": "py2",
+   "s1_state": "retained",
+   "s2_state": "retained",
+   "s3_state": "retained",
+   "s3_first_loss_stage": null,
+   "s3_uuids": [
+    "85f01455-00e9-456b-9279-190737880ef0"
+   ]
+  },
+  {
+   "target_id": "pylint_verbose_v_arg_expected",
+   "case_id": "adr92-py3",
+   "cluster": "py3",
+   "s1_state": "lost (S1 pylint persisted count 2 = py1+py2; py3 not persisted)",
+   "s2_state": "retained_recovered",
+   "s3_state": "retained",
+   "s3_first_loss_stage": null,
+   "s3_uuids": [
+    "7e074380-5a8b-46b6-8c23-8d52bca8279d"
+   ]
+  }
+ ],
+ "nonvaluable_controls": [
+  {
+   "cluster": "sp3",
+   "s1_state": "persisted_sibling_duplicate",
+   "s2_state": "retained_as_duplicate",
+   "s3_state": "retained_as_duplicate",
+   "s3_uuids": [
+    "3f4ca4c4-1fe0-46ea-8ce9-c8e81093fc27"
+   ],
+   "note": "91e7d4933344 (queued -> persisted after reconcile)"
+  },
+  {
+   "cluster": "sp4",
+   "s1_state": "persisted_sibling_duplicate",
+   "s2_state": "retained_as_duplicate",
+   "s3_state": "retained_as_duplicate",
+   "s3_uuids": [
+    "2e89f097-1c62-4eeb-9414-7268853cedc6"
+   ],
+   "note": "e3cd392afad4 (queued -> persisted after reconcile)"
+  },
+  {
+   "cluster": "sp5",
+   "s1_state": "persisted_sibling_duplicate",
+   "s2_state": "retained_as_duplicate",
+   "s3_state": "retained_as_duplicate",
+   "s3_uuids": [
+    "6fd39b5c-644a-4762-a429-6f47a88aaa76"
+   ],
+   "note": "632421f86cd8 (persisted)"
+  },
+  {
+   "cluster": "sp6",
+   "s1_state": "persisted_sibling_duplicate",
+   "s2_state": "retained_as_duplicate",
+   "s3_state": "retained_as_duplicate",
+   "s3_uuids": [
+    "4da427af-a7e1-474f-96c1-f481fb7bb5a7"
+   ],
+   "note": "16ed4560fd03 (persisted)"
+  },
+  {
+   "cluster": "sp7",
+   "s1_state": "persisted_sibling_duplicate",
+   "s2_state": "retained_as_duplicate",
+   "s3_state": "lost",
+   "s3_uuids": [],
+   "note": "dbefdaed06e3 (queued -> persisted after reconcile)"
+  },
+  {
+   "cluster": "dj3",
+   "s1_state": "persisted_sibling_duplicate",
+   "s2_state": "retained_as_duplicate",
+   "s3_state": "retained_as_duplicate",
+   "s3_uuids": [
+    "b6b287d7-4ab7-4b60-abb8-cde0125f23a6"
+   ],
+   "note": "9f1ed618222a (queued -> persisted after reconcile)"
+  },
+  {
+   "cluster": "dj4",
+   "s1_state": "persisted_sibling_duplicate",
+   "s2_state": "retained_as_duplicate",
+   "s3_state": "retained_as_duplicate",
+   "s3_uuids": [
+    "3d7685dd-954f-4430-8ee2-d50997f4bde9"
+   ],
+   "note": "a59eb737a95c (queued -> persisted after reconcile)"
+  },
+  {
+   "cluster": "dj5",
+   "s1_state": "persisted_sibling_duplicate",
+   "s2_state": "retained_as_duplicate",
+   "s3_state": "retained_as_duplicate",
+   "s3_uuids": [
+    "929d64ec-f996-4e8d-8d62-e25357834cb5"
+   ],
+   "note": "73dd715d7856 (queued -> persisted after reconcile)"
+  },
+  {
+   "cluster": "dj6",
+   "s1_state": "persisted_sibling_duplicate",
+   "s2_state": "retained_as_duplicate",
+   "s3_state": "retained_as_duplicate",
+   "s3_uuids": [
+    "fe7ffa7c-63e1-4c6c-9ddb-ca2abad307b0"
+   ],
+   "note": "3da3a73d3cf3 (persisted)"
+  },
+  {
+   "cluster": "dj7",
+   "s1_state": "persisted_sibling_duplicate",
+   "s2_state": "retained_as_duplicate",
+   "s3_state": "retained_as_duplicate",
+   "s3_uuids": [
+    "f9eba2d0-3a8f-48e8-9eab-1b1e64d8e058"
+   ],
+   "note": "fc99927d3a80 (queued -> persisted after reconcile)"
+  },
+  {
+   "cluster": "dj8",
+   "s1_state": "persisted_sibling_duplicate",
+   "s2_state": "retained_as_duplicate",
+   "s3_state": "retained_as_duplicate",
+   "s3_uuids": [
+    "02be1e62-7d6a-487d-804c-ca595994218c"
+   ],
+   "note": "4ade8c448432 (persisted)"
+  }
+ ],
+ "summary": {
+  "valuable_retained_s3": "9/16",
+  "valuable_retained_s2": "9/16",
+  "valuable_retained_s1": "7/16",
+  "controls_retained_s3": "10/11",
+  "controls_retained_s2": "11/11"
+ },
+ "s2_missed_targets_detail": [
+  {
+   "target_id": "graphiti_0312_py313_falkordb_smoke",
+   "cluster": "g1",
+   "s2_state": "lost",
+   "s3_state": "lost",
+   "s3_first_loss_stage": "utility/local deferral (not_substantive)",
+   "s3_uuids": []
+  },
+  {
+   "target_id": "graphiti_0312_mcp_tools_only",
+   "cluster": "g1",
+   "s2_state": "lost",
+   "s3_state": "lost",
+   "s3_first_loss_stage": "utility/local deferral (not_substantive)",
+   "s3_uuids": []
+  },
+  {
+   "target_id": "graphiti_llm_param_readonly_audit",
+   "cluster": "g2",
+   "s2_state": "lost",
+   "s3_state": "lost",
+   "s3_first_loss_stage": "utility/local deferral (not_substantive)",
+   "s3_uuids": []
+  },
+  {
+   "target_id": "graphiti_live_mcp_no_openviking",
+   "cluster": "g3",
+   "s2_state": "lost",
+   "s3_state": "lost",
+   "s3_first_loss_stage": "discovery SKIP (no attributable source candidate)",
+   "s3_uuids": []
+  },
+  {
+   "target_id": "graphiti_temporal_memory_live_test",
+   "cluster": "g3",
+   "s2_state": "lost",
+   "s3_state": "lost",
+   "s3_first_loss_stage": "discovery SKIP (no attributable source candidate)",
+   "s3_uuids": []
+  },
+  {
+   "target_id": "graphiti_temporal_validation_skill",
+   "cluster": "g4",
+   "s2_state": "lost",
+   "s3_state": "lost",
+   "s3_first_loss_stage": "utility/local deferral (not_substantive)",
+   "s3_uuids": []
+  },
+  {
+   "target_id": "sphinx_ascii_rst_header_rows",
+   "cluster": "sp9",
+   "s2_state": "lost",
+   "s3_state": "lost",
+   "s3_first_loss_stage": "discovery field validation (invalid_fact_fields; diagnostic fields: assertion) after S3 correction pass",
+   "s3_uuids": []
+  }
+ ],
+ "remote": {
+  "episodes": 18,
+  "group_integrity": "ok",
+  "entity_nodes_total": 45,
+  "extracted_fact_edges_total": 12,
+  "edge_label_distribution": {
+   "HAS_ISSUE_IN": 4,
+   "GENERATES_EXCEPTION": 3,
+   "IS_PART_OF": 3,
+   "HAS_ISSUE": 2
+  },
+  "episodes_with_substantive_extraction": 9,
+  "episodes_trivial_membership_only": 9,
+  "note": "episode existence is NOT credited as extracted knowledge; substantive extraction requires >=1 extracted fact edge",
+  "retrieval_usefulness": "unverified (no retrieval test run in this campaign)"
+ },
+ "model_usage": {
+  "calls": 55,
+  "errors": 0,
+  "prompt_tokens": 54811,
+  "completion_tokens": 4768,
+  "stage_metrics": {
+   "discovery": {
+    "calls": 29,
+    "prompt_tokens": 30701,
+    "completion_tokens": 3824,
+    "reasoning_tokens": 0,
+    "cached_prompt_tokens": 14428,
+    "latency_ms": 15049,
+    "latency_reports": 29,
+    "usage_field_reports": {
+     "prompt_tokens": 29,
+     "completion_tokens": 29,
+     "reasoning_tokens": 29,
+     "cached_prompt_tokens": 29
+    }
+   },
+   "utility": {
+    "calls": 26,
+    "prompt_tokens": 24110,
+    "completion_tokens": 944,
+    "reasoning_tokens": 0,
+    "cached_prompt_tokens": 8265,
+    "latency_ms": 4246,
+    "latency_reports": 26,
+    "usage_field_reports": {
+     "prompt_tokens": 26,
+     "completion_tokens": 26,
+     "reasoning_tokens": 26,
+     "cached_prompt_tokens": 26
+    }
+   }
+  }
+ },
+ "quality_flags": {
+  "duplicate_yield_local": [
+   "e4fe14a39469624307cc6e307a9c4e007e63d0d21755ea9589ef880ce0e57530"
+  ],
+  "deferred_operator_review_records": 12,
+  "fragmentary_or_boilerplate": [
+   "Source discovery or utility unavailable",
+   "not_substantive"
+  ],
+  "temporal_qualification": "observed_at preserved per original source event (staged events carry source observed_at)",
+  "privacy_group_integrity": "no privacy source in corpus; all remote episodes group-scoped to graphiti-adr92-s3-resilient-discovery",
+  "forged_source_limitation": "original run (626df9ea) diagnosed forged source_refs as invalid_fact_fields (diagnostic 'assertion') instead of unattributed_or_weak_source; observed as one spurious recovery call in the frozen run. Corrected at 9b98e0e (9-line isolate-branch fix); regression-verified. Recorded as an experimental limitation of the original run, not a persisted-fact defect (forged refs were never persisted as facts)."
+ }
+}

@@ -1,0 +1,39 @@
+{
+ "schema": "issue92-s2-native-test-results-v1",
+ "kind": "sanitized, evidence-only, public",
+ "source_head": "c4a804b8fbcec722b007a55aa64af2c808f343a0",
+ "source_branch": "work/91-memory-utility-r1",
+ "note": "Producer exits captured directly (no PIPESTATUS masking). The single failing suite is the S2 source-recovery regression, which fails at source head due to a real source defect (evidence_span stripped by the validateDecision normalizer); it passes with the proposed additive patch.",
+ "node_check": {
+  "finite-batch.mjs": "rc=0",
+  "curator-cli.mjs": "rc=0",
+  "finite-batch.test.mjs": "rc=0",
+  "all": "3/3 OK"
+ },
+ "focused_suites_at_head": {
+  "finite-batch.test.mjs": "39 pass / 2 fail (rc=1) - S2 source defect",
+  "finite-batch-tuning.test.mjs": "5/5 (rc=0)",
+  "fact-review.test.mjs": "14/14 (rc=0)",
+  "curator.test.mjs": "36/36 (rc=0)",
+  "issue92-source-fact.test.mjs": "5/5 (rc=0)",
+  "adr-causal-audit.test.mjs": "14/14 (rc=0)"
+ },
+ "failing_tests_at_head": [
+  "S2 recovers a source-supported technical quote after weak-header utility rejection (utility_non_substantive trigger)",
+  "S2 conflicting verdict on the same exact quote cannot silently upgrade it (utility_non_substantive trigger)"
+ ],
+ "failure_cause": "TypeError: Cannot read properties of undefined (reading 'start') at finite-batch.mjs:656 (proposal.facts[i].evidence_span is undefined because validateDecision in core.mjs freezes facts to a fixed field set that omits evidence_span).",
+ "with_proposed_patch": {
+  "finite-batch.test.mjs": "41/41 (rc=0)",
+  "finite-batch-tuning.test.mjs": "5/5 (rc=0)",
+  "fact-review.test.mjs": "14/14 (rc=0)",
+  "curator.test.mjs": "36/36 (rc=0)",
+  "issue92-source-fact.test.mjs": "5/5 (rc=0)",
+  "adr-causal-audit.test.mjs": "14/14 (rc=0)",
+  "npm_test": "524/524 PASS (rc=0)",
+  "note": "Additive patch re-attaches evidence_span to validateFactDiscovery output facts post-validation (provenance, not a new validation input). No assertion weakened; no other suite regressed."
+ },
+ "npm_run_check": "rc=0",
+ "npm_test_at_head": "524/524 PASS (rc=0) - root npm test does not run the focused curator suites; the S2 defect is in the focused finite-batch suite, not the root plugin suite",
+ "patch_file": "s2-proposed-source-patch.diff"
+}

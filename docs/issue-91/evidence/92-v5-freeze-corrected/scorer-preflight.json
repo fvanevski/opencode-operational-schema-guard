@@ -1,0 +1,7 @@
+{
+ "scorer": "issue92-a3-acceptance.mjs scoreProspective (8-arg fact-level)",
+ "pre_inference_result": "FAIL_CLOSED: A3_ACCEPTANCE_UNVERIFIED:insufficient_review_samples",
+ "manifest": "56f1dacc3c770e6650429d6cb37e4e7c61c13135ce9947ceb766cc7b7c75672a",
+ "note": "Passes frozen-roster/native-ratification/staging-identity/locator-binding checks on the v2 corrected manifest, then fails closed on empty records (no persisted facts pre-inference). Post-inference inputs left as templates.",
+ "verdict": "READY"
+}

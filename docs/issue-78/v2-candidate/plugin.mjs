@@ -128,7 +128,7 @@ export default {
         for (const observed of list) {
           lastAdmittedPrompt.delete(sessionID);
           const sources = fromPromptCandidates(observed, scope, { admitted: true });
-          if (!sources.length) continue;
+          if (!sources.length) { noteDrop('prompt_admission_filtered'); continue; }
           // Current tool outcomes may cite this admitted original source span.
           lastAdmittedPrompt.set(sessionID, sources[0].event_id);
           if (lastAdmittedPrompt.size > MAX_SESSIONS)
@@ -160,6 +160,7 @@ export default {
       registrations.push(await ctx.tool.hook('execute.after', event => {
         if (stopped) return;
         const outcome = fromTool(event, scope);
+        if (!outcome) noteDrop('tool_admission_filtered');
         const anchor = lastAdmittedPrompt.get(event?.sessionID);
         enqueue(outcome && anchor ? { ...outcome, related_event_ids:
           [...outcome.related_event_ids, anchor].slice(0, 8) } : outcome);

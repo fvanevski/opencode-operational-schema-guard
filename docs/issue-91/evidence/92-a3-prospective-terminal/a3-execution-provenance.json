@@ -1,0 +1,134 @@
+{
+ "status": "unresolved",
+ "batch_id": "6287a0eec9a47d1692a2ef3db9148c59c72c40d92118ae657f13ad930ad221a8",
+ "snapshot_sha256": "d13ffbf6fe640d5cba3703b4a72202241c8768fcf17766bfa718c22727932cdb",
+ "candidates": 23,
+ "approved": 13,
+ "deferred": 10,
+ "model_calls": 66,
+ "model_errors": 0,
+ "prompt_tokens": 66661,
+ "completion_tokens": 6573,
+ "model_metrics": {
+  "discovery": {
+   "calls": 46,
+   "prompt_tokens": 48308,
+   "completion_tokens": 5041,
+   "reasoning_tokens": 0,
+   "cached_prompt_tokens": 30788,
+   "latency_ms": 21003,
+   "latency_reports": 46,
+   "usage_field_reports": {
+    "prompt_tokens": 46,
+    "completion_tokens": 46,
+    "reasoning_tokens": 46,
+    "cached_prompt_tokens": 46
+   }
+  },
+  "utility": {
+   "calls": 11,
+   "prompt_tokens": 12509,
+   "completion_tokens": 556,
+   "reasoning_tokens": 0,
+   "cached_prompt_tokens": 3492,
+   "latency_ms": 17913,
+   "latency_reports": 11,
+   "usage_field_reports": {
+    "prompt_tokens": 11,
+    "completion_tokens": 11,
+    "reasoning_tokens": 11,
+    "cached_prompt_tokens": 11
+   }
+  },
+  "support": {
+   "calls": 9,
+   "prompt_tokens": 5844,
+   "completion_tokens": 976,
+   "reasoning_tokens": 0,
+   "cached_prompt_tokens": 1584,
+   "latency_ms": 3043,
+   "latency_reports": 9,
+   "usage_field_reports": {
+    "prompt_tokens": 9,
+    "completion_tokens": 9,
+    "reasoning_tokens": 9,
+    "cached_prompt_tokens": 9
+   }
+  }
+ },
+ "tuning_sha256": "8d671d06a550b0f85d187cac4e181973bea748f71986487e2a6b0765385bc8e7",
+ "replay_only": false,
+ "source_recovery": true,
+ "source_exact_complement": true,
+ "persisted": 0,
+ "unresolved": 13,
+ "write_outcomes": [
+  {
+   "id": "11b4b283fb651003979c34cd467d9035c70633555ba4a832bbc18efb8b24dfd3",
+   "status": "queued"
+  },
+  {
+   "id": "324c38aa0322acbed25ff7b759b0211e0c243eb6d61e1f0d1e3cadff8e63a855",
+   "status": "queued"
+  },
+  {
+   "id": "442f74480fc07ae5ec6b781022e9a06f748d44d53a2fcc551ede843855af6d97",
+   "status": "queued"
+  },
+  {
+   "id": "831ce4a21b3abe29c7060dd2d05cf0264c5883c34c3b97312ad70c5b26d8be67",
+   "status": "queued"
+  },
+  {
+   "id": "93212751f7d695ac9911631eee246602bce50c671008fcbeb0d38a17a54a083f",
+   "status": "queued"
+  },
+  {
+   "id": "994bc4f7e68bb3370c6beec638b456347824cec5960e3780ef85f924b9359c4e",
+   "status": "queued"
+  },
+  {
+   "id": "a9715a76c52f6669bd5ed9202cee08314d719790bcccef4d46e17523bec421f4",
+   "status": "queued"
+  },
+  {
+   "id": "b5096e965a9f2f3add58d26eadc4b01d8ba15901de6033b2f6f5bf8b3530b722",
+   "status": "queued"
+  },
+  {
+   "id": "ba72220000db1fda982d7af358d82c8adb2a9cc5b9d0a10cfd16ee92c4e8b74f",
+   "status": "queued"
+  },
+  {
+   "id": "cc3d3b1f1ec607c30bb2a8f79a95dad9eaaf63bd627a87ab63cde3c33a5fb356",
+   "status": "queued"
+  },
+  {
+   "id": "d9b908f8f61e54e254e1b8dd90bcfe5d264956bde4eb0962c525f04f56c0df97",
+   "status": "queued"
+  },
+  {
+   "id": "e77b6ba3074d4cf9e8d2cf0d037381acebadad86d1089dd1e8c45ddb145be78a",
+   "status": "queued"
+  },
+  {
+   "id": "fca3565cfff132274260aae1c36eefdd11c87d441e398e3649abf1e5e7f2d9f4",
+   "status": "queued"
+  }
+ ],
+ "driver": "a3-host-prospective",
+ "driver_elapsed_ms": 42636,
+ "source_binding": {
+  "repo_head": "50fd675bf9d86a7505c18bbba510eae8f41544cd",
+  "blobs": {
+   "finite-batch.mjs": "90c3a8c272a4e81fccb26a6343a090660936860b",
+   "claim-evidence.mjs": "104544605f467ca102b46da148b2512857db683e",
+   "fact-review.mjs": "20da07bcb99010c4c9ab5d4b8c7f9d3c8cb62ba9",
+   "curator-cli.mjs": "7062de108f34576865c8a1009356090e1ccbe037",
+   "ex-admission-proof.mjs": "e63b8a36b51627a6211bf4367c62a5c76461fa76",
+   "queue.mjs": "b4e2df18e3741917e8f3f2513b54cb6aef874e98",
+   "events.mjs": "aae7e9e4e8d0ddea34326853967f233f3efe503b",
+   "ex_admitted_node_bridge.py": "004188b1cdcd3a99956f20e581621eadc63c4663"
+  }
+ }
+}

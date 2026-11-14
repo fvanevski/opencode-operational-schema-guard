@@ -1,0 +1,106 @@
+{
+  "group": "graphiti-adr92-a3-prospective-v7",
+  "manifest_sha256": "d111717b26e4024698325bfdc23df7790b299a1597d21714989a3dce1c8047f1",
+  "label_freeze_sha256": "7cbea619ff650850a71b22fa071ff31723aeba0ededd7a10b89f0bd98310b121",
+  "case_count": 20,
+  "valuable": 10,
+  "controls": 10,
+  "cluster_count_staged": 18,
+  "group_episodes": 0,
+  "once_only_marker": "absent",
+  "executed": false,
+  "valuable_cases": [
+    {
+      "id": "v7-v-01",
+      "predicate": "the tdarr docker network should be media-arr",
+      "safe_quote": "tdarr docker network should be media-arr"
+    },
+    {
+      "id": "v7-v-02",
+      "predicate": "rtk proxy is used to bypass wrapper transformation",
+      "safe_quote": "use `rtk proxy` to bypass wrapper transformation"
+    },
+    {
+      "id": "v7-v-03",
+      "predicate": "the currently loaded model is the NInfer artifact at /workspace/models/Qwen3.8-27B-swift15-nvfp4full-dflash2-NInfer-v3",
+      "safe_quote": "currently loaded model is an ninfer artifact located at: /workspace/models/Qwen3.8-27B-swift15-nvfp4full-dflash2-NInfer-v3"
+    },
+    {
+      "id": "v7-v-04",
+      "predicate": "qbittorrent is configured to not download .exe files (fake tv-sonarr torrents kept active)",
+      "safe_quote": "debug an apparent disconnect between cleanuparr and qbittorrent. qbittorrent currently has 5 fake tv-sonarr torrents containing .exe files instead of the actual episode video files. qbittorrent is configured to not download the .exe files, which is correct, but the fake torrents are being kept active in qbittorrent with completed status instead of being deleted from disk to allow for real torrents for these episodes to be pulled."
+    },
+    {
+      "id": "v7-v-05",
+      "predicate": "the mcp-mux-2.0-dev config lives at /workspace/mcp_servers/mcp-mux-2.0-dev/mcp_router/config.yaml",
+      "safe_quote": "check mcp-mux-2.0-dev config: /workspace/mcp_servers/mcp-mux-2.0-dev/mcp_router/config.yaml"
+    },
+    {
+      "id": "v7-v-06",
+      "predicate": "production data physically lives in the development-knowledge graph while the MCP config points at graphiti_live",
+      "safe_quote": "Why does the production data physically live in the development-knowledge graph even though the MCP config points at graphiti_live?"
+    },
+    {
+      "id": "v7-v-07",
+      "predicate": "the FalkorDB layout is per-group graphs (development-knowledge, ghdev_gh_mcp, and an empty graphiti_live)",
+      "safe_quote": "\"What FalkorDB layout is **per-group graphs**: `development-knowledge`, `ghdev_gh_mcp`, and an empty `graphiti_live` (0 nodes). The script queries `graphiti_live` filtered by `group_id='development-knowledge'` \u2014 but the data lives in the `development-knowledge` graph.?\""
+    },
+    {
+      "id": "v7-v-08",
+      "predicate": "the litellm success_callback belongs under a specific litellm settings key",
+      "safe_quote": "Under which litellm settings key does the success_callback belong?"
+    },
+    {
+      "id": "v7-v-09",
+      "predicate": "the openviking MCP server fails auth (HTTP 403); config at ~/.openviking/ovcli.conf or OPENVIKING_API_KEY",
+      "safe_quote": "Investigate why this OpenCode component failed in the current project.\n\nMCP server: openviking\nStatus: failed\nConfiguration: mcp.servers.openviking\nError: OpenViking MCP authentication failed (HTTP 403). Check ~/.openviking/ovcli.conf or OPENVIKING_API_KEY, and verify the configured account/user for trusted mode.\n\nInspect the relevant project and global OpenCode configuration, startup or loading behavior, required environment variables or"
+    },
+    {
+      "id": "v7-v-10",
+      "predicate": "the P5M44R integration handoff is at /opt/containers/tdarr/integration/P5M44R-central-remediation/INTEGRATION-HANDOFF.md",
+      "safe_quote": "carry out integration of P5M44R using the handoff at /opt/containers/tdarr/integration/P5M44R-central-remediation/INTEGRATION-HANDOFF.md and associated files stored in /opt/containers/tdarr/integration/P5M44R-central-remediation"
+    }
+  ],
+  "control_cases": [
+    {
+      "id": "v7-c-01",
+      "reason": "task-only instruction (run git rev-parse HEAD); no durable technical predicate"
+    },
+    {
+      "id": "v7-c-02",
+      "reason": "task-only instruction (run git rev-parse + status); no durable predicate"
+    },
+    {
+      "id": "v7-c-03",
+      "reason": "one-off task instruction (create a file); not a durable fact"
+    },
+    {
+      "id": "v7-c-04",
+      "reason": "task-only instruction (read+quote a file); no durable predicate"
+    },
+    {
+      "id": "v7-c-05",
+      "reason": "task-only instruction (create synthetic todos); no durable fact"
+    },
+    {
+      "id": "v7-c-06",
+      "reason": "task-only instruction (push evidence to handoff); no durable fact"
+    },
+    {
+      "id": "v7-c-07",
+      "reason": "recollection question; not a source-stated durable predicate"
+    },
+    {
+      "id": "v7-c-08",
+      "reason": "one-off transient maintenance action (deleted docker containers); low future-maintenance value"
+    },
+    {
+      "id": "v7-c-09",
+      "reason": "one-off command sequence (transient operator activity); no reusable predicate"
+    },
+    {
+      "id": "v7-c-10",
+      "reason": "task-only instruction (read+quote a file); no durable fact"
+    }
+  ]
+}

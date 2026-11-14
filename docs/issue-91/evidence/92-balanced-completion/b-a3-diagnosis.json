@@ -1,0 +1,81 @@
+{
+ "schema": "issue92-balanced-completion-B-v1",
+ "section": "diagnose_failed_a3_cohort",
+ "no_inference": true,
+ "three_missed_valuable_targets": [
+  {
+   "case": "v3-02 b75-journal decision",
+   "msg": "msg_199b9ca48001",
+   "first_loss_stage": "source-support / non-substantive classification",
+   "evidence": "item.decision=deferred, item.reason=not_substantive; cluster 884a0f3f decision=SKIP reason=\"No attributable source claim\". The span was DISCOVERED (in plan items, source_refs present) but the claim-support critic deemed it not substantive -> SKIP."
+  },
+  {
+   "case": "v3-05 release quality-gate prerequisite",
+   "msg": "msg_1993e6e9b001",
+   "first_loss_stage": "source-support denial (missing predicate)",
+   "evidence": "item.decision=deferred, item.reason=claim_support_missing_predicate; cluster 64b8d031 decision=DEFER reason=\"independent_claim_support_required\". The claim lacked an independently-verifiable supporting predicate."
+  },
+  {
+   "case": "v3-07 fsm81 log-rotation decision",
+   "msg": "msg_1a8014ca7001",
+   "first_loss_stage": "source-support denial (missing predicate)",
+   "evidence": "item.decision=deferred, item.reason=claim_support_missing_predicate; cluster 0f828695 decision=REVIEWED reason=\"independent_utility_review_complete\" (item still deferred for missing predicate)."
+  }
+ ],
+ "three_targets_classification": "All 3 were DISCOVERED (surfaced into plan items with correct source_refs) but DEFERRED at the claim-support gate (not_substantive / claim_support_missing_predicate). These are model-selection / source-support false negatives, NOT discovery omissions and NOT source-invalid. The balanced-dedup option does NOT recover them (they were lost at the source-support gate, before the dedup stage).",
+ "five_duplicate_episodes": [
+  {
+   "dup": "69c45869",
+   "primary": "e5f37ecc",
+   "case": "v3-04 Issue-75 recall",
+   "predicate": "same",
+   "balanced_review": "can confirm equivalence -> suppressible"
+  },
+  {
+   "dup": "89f00ba5",
+   "primary": "0f8c4294",
+   "case": "v3-10 fsm81 export",
+   "predicate": "same",
+   "balanced_review": "can confirm equivalence -> suppressible"
+  },
+  {
+   "dup": "d528788b",
+   "primary": "b782eaeb",
+   "case": "v3-03 FFmpeg",
+   "predicate": "same",
+   "balanced_review": "can confirm equivalence -> suppressible"
+  },
+  {
+   "dup": "f79b88d6",
+   "primary": "b782eaeb",
+   "case": "v3-03 FFmpeg",
+   "predicate": "same",
+   "balanced_review": "can confirm equivalence -> suppressible"
+  },
+  {
+   "dup": "ad9bc7a7",
+   "primary": "c351357c",
+   "case": "v3-09 fsm81 terminal",
+   "predicate": "same",
+   "balanced_review": "can confirm equivalence -> suppressible"
+  }
+ ],
+ "distinct_preserved": "v3-08 has 2 DISTINCT facts (61993f7d pure-function + cc2bb466 unhandled-event/no-caching, different predicates) -> distinct families, both retained by balanced-dedup",
+ "a1_population_reconciliation": {
+  "full_native_user_turns": 1423,
+  "genuinely_new_nonoverlapping_subset": 1113,
+  "admission_counters": {
+   "size": 44,
+   "privacy": 279,
+   "chatter": 67,
+   "admitted": 1033,
+   "sum": 1423
+  },
+  "finding": "a3-v3-raw-opportunity.json labeled 1,113 as the denominator while the admission counters sum to 1,423 (full population). Both are correct in their own definitions: 1,423 = full native user-turn population; 1,113 = genuinely-new (nonoverlapping with B3/gh_mcp/v2) subset. The file conflated the two labels. Comparable admit_rate 0.726 = 1033/1423 (full-population)."
+ },
+ "a3_batch_identity_reconciliation": {
+  "immutable_batch_id": "6287a0eec9a47d1692a2ef3db9148c59c72c40d92118ae657f13ad930ad221a8",
+  "source": "_active.json == driver result (a3-host-result.json) == a3-execution-provenance.json (all agree on 6287a0ee)",
+  "finding": "a3-handback.md (terminal) recorded 226621f6... \u2014 a transcription error. The authoritative immutable batch is 6287a0ee. No historical scorecard was rewritten."
+ }
+}

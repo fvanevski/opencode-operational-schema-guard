@@ -1,0 +1,101 @@
+{
+  "schema": "issue92-adr-d1-receipt-v1",
+  "kind": "sanitized, evidence-only, public",
+  "campaign": "issue92-adr-d1 matched exposed development comparison (one run, exactly-once)",
+  "repository": "fvanevski/opencode-operational-schema-guard",
+  "branch": "work/91-memory-utility-r1",
+  "branch_head_at_publication": "self-referential: the evidence commit containing this file; exact SHA recorded in the remote readback of the typed handback",
+  "identities": {
+    "previous_candidate_sha": "a684667a6eefa2dc19f29755bed0c3048874721d",
+    "corrected_candidate_sha": "e303a67786fd96491cbdab36790b81442c4340c6",
+    "historical_baseline_sha": "c8eb5260f2b10832346234b1b5d0cf28302ffba8",
+    "original_freeze_sha256": "96cfef46ab642aeb1d05cf246478da92f34547daf6575ea2d756d192afbdbb5f",
+    "trace_wrapper_sha256": "f95efda123e5952d395888e67de145b2d1f79b5033c8b38d8232afdb712975d5",
+    "diagnostic_head_sha": "389e81c"
+  },
+  "ex_admission": {
+    "gate": "canonical openviking-commit-gate EX lock (flock) + harness-exit + quiet-grace + scheduler-idle observation",
+    "wrapper": "docs/issue-75/v2-candidate/post-exit-drain.py (installed plugin)",
+    "previous_wrapper_exit": 0,
+    "corrected_wrapper_exit": 0,
+    "admission_evidence": "EX admission proven; invoking candidate drain with lock retained (per arm); LATE_RECONCILIATION_LOCAL_WORK resumes under retained EX; final reconcile-only settled (wrapper exit 0)",
+    "no_inference_from_interactive_harness": true,
+    "campaign_window_utc": "2026-11-10T00:14:57Z harness exit -> 00:18:26Z completed"
+  },
+  "model": {
+    "profile": "chat-fast (temperature 0, max_tokens 1600, response_format json_object, timeout 90000)",
+    "previous": {
+      "drain_resumes": 4,
+      "final_status": "review_required",
+      "final_curated": 6,
+      "final_persisted": 2,
+      "totals": {
+        "model_calls": 24,
+        "model_errors": 0,
+        "model_ms": 9709,
+        "prompt_tokens": 42008,
+        "completion_tokens": 2191
+      }
+    },
+    "corrected": {
+      "drain_resumes": 4,
+      "final_status": "settled",
+      "final_curated": 6,
+      "final_persisted": 2,
+      "totals": {
+        "model_calls": 24,
+        "model_errors": 0,
+        "model_ms": 16157,
+        "prompt_tokens": 48314,
+        "completion_tokens": 4370
+      }
+    },
+    "exactly_once_traces": {
+      "previous": 24,
+      "corrected": 24,
+      "unfinished_call_intents": 0,
+      "mode_0600": true
+    },
+    "nondeterminism": "single run per arm; decisions are not reproducible across runs (g3/g4 EMIT in previous arm, SKIP in corrected arm)"
+  },
+  "final_state": {
+    "previous": {
+      "review": {
+        "persisted": 2,
+        "skipped": 22,
+        "deferred": 1
+      },
+      "queue": {
+        "skipped": 22,
+        "deferred": 1,
+        "approved": 1,
+        "new": 0
+      },
+      "episodes": 2
+    },
+    "corrected": {
+      "review": {
+        "persisted": 15,
+        "skipped": 9
+      },
+      "queue": {
+        "skipped": 9,
+        "approved": 15,
+        "new": 0
+      },
+      "episodes": 15
+    }
+  },
+  "controls": {
+    "production_group_unchanged": "development-knowledge: 0 episodes created in D1 window (newest episode 2026-11-08)",
+    "historical_groups_unchanged": [
+      "t1-base:10",
+      "t1-cand:2",
+      "t2-base:9",
+      "t2-cand:3 — 0 episodes created in D1 window"
+    ],
+    "privacy_control": "ineligible :ctrl source not staged -> not model-visible in either arm",
+    "no_replay": "call-intent preflight (wx) + exactly-once 0600 trace files; no second model call per cluster",
+    "fresh_state": "two fresh empty ReviewStore state roots + two fresh empty Graphiti groups"
+  }
+}

@@ -1,0 +1,94 @@
+{
+ "schema": "issue92-s2-source-recovery-freeze-v1",
+ "kind": "sanitized, private, pre-inference freeze",
+ "generated_utc": "2026-11-11T17:55:23.220Z",
+ "group": "graphiti-adr92-s2-source-recovery",
+ "state_root": "/tmp/opencode/issue92-s2/state/s2",
+ "state_root_mode": "0700",
+ "staged_files_mode": "0600",
+ "source_branch": "work/91-memory-utility-r1",
+ "source_head": "c4a804b8fbcec722b007a55aa64af2c808f343a0",
+ "source_blobs": {
+  "finite-batch.mjs": "3ec9dab0263d34fb42b87f9a6c5cd93f34cd1c430706f11f0cb843b5948d0aeb",
+  "fact-review.mjs": "f17d2c479a75c296d0a95e7eaa2d14d89856ad99c8692e1f753da3ebba2b8345",
+  "curator-cli.mjs": "170b11b18fbb28feb1bf3fc710ad55c54f8809a6d9b32f9b18ca4710161ba4c1"
+ },
+ "corpus": {
+  "file": "/tmp/opencode/b2-sources.json",
+  "sha256": "ebac7052065766eb8d1ef464142ea63dc3052d52deb36424492ebc477fdd3508",
+  "records": 24,
+  "distinct_sessions": 24,
+  "projects": {
+   "swebench-sphinx": 9,
+   "swebench-django": 8,
+   "swebench-pylint": 3,
+   "graphiti-mcp": 4
+  }
+ },
+ "staged_events": {
+  "file": "/tmp/opencode/issue92-s2/state/s2/s2-staged-events.json",
+  "sha256": "141ecb94f212a8529f8bd16907b51c0b5bb9ac205359454d3f5e567aab91674c",
+  "count": 24,
+  "queue_status": "24 new / 0 drops / 0 deferred"
+ },
+ "roster": {
+  "clusters": 24,
+  "valuable_target_labels_16": [
+   "django_add_filter_lazy_string (dj1/dj1b/dj2)",
+   "sphinx_dict_str_str_param_render (sp1/sp2)",
+   "pylint_verbose_arg (py1; py2/py3 partial)",
+   "graphiti_0312_py313_falkordb_smoke",
+   "graphiti_0312_mcp_tools_only",
+   "graphiti_llm_param_readonly_audit",
+   "graphiti_live_mcp_no_openviking",
+   "graphiti_temporal_memory_live_test",
+   "graphiti_temporal_validation_skill",
+   "sphinx_14182_rst_header_rows (sp8)",
+   "sphinx_ascii_rst_header_rows (sp9)"
+  ],
+  "nonvaluable_control_labels_11": "django lazy-string repetition (dj3-dj8) + sphinx repetition (sp6/sp7) + pylint repetition controls (all EXPOSED development data)",
+  "privacy_control": "capture-ineligible privacy control retained as dropped (never staged into the disposable group)"
+ },
+ "cli_bounds": {
+  "command": "drain",
+  "flags": [
+   "--finite-batch",
+   "on",
+   "--novelty-policy",
+   "recall",
+   "--source-recovery",
+   "on",
+   "--max-clusters",
+   "24",
+   "--max-candidates",
+   "72",
+   "--max-seconds",
+   "3600",
+   "--group",
+   "graphiti-adr92-s2-source-recovery",
+   "--state-dir",
+   "/tmp/opencode/issue92-s2/state/s2"
+  ],
+  "endpoint": "http://127.0.0.1:8766/mcp",
+  "max_candidates_note": "72 = at most three independently reviewed discovered facts per cluster (24 x 3), not authorization to persist everything"
+ },
+ "model": {
+  "discovery": "chat-fast",
+  "utility": "chat-fast",
+  "note": "previously qualified chat-fast default for discovery+utility; no tuning file; no prompt/temperature/model sweep",
+  "model_endpoint": "http://127.0.0.1:8002/v1/chat/completions",
+  "aliases_supported": [
+   "chat",
+   "chat-fast",
+   "chat-review",
+   "chat-audit",
+   "graphiti-extract"
+  ]
+ },
+ "s2_source_defect": {
+  "present": true,
+  "summary": "validateFactDiscovery output facts are normalized by validateDecision (core.mjs) to a fixed field set that omits evidence_span; the new S2 recovery code (finite-batch.mjs:656) reads proposal.facts[i].evidence_span.start and throws TypeError on the utility_non_substantive recovery trigger. 2 S2 regression tests fail at source head c4a804b8; both pass with the proposed additive patch (validated 41/41 finite-batch + 524/524 npm test).",
+  "proposed_patch_file": "s2-proposed-source-patch.diff",
+  "disposition": "REMEDIATION_REQUIRED - patch retained for Central adjudication; not committed to source"
+ }
+}

@@ -1,0 +1,20 @@
+{
+  "schema": "issue92-finite-batch-tuning-v1",
+  "stages": {
+    "discovery": {
+      "model": "chat-fast",
+      "temperature": 0,
+      "max_tokens": 1600,
+      "timeout_ms": 90000,
+      "prompt_guidance": "Prefer specific source-stated technical predicates, defects, interface constraints and useful negative findings over task headers; preserve each source's reported-versus-verified status."
+    },
+    "utility": {
+      "model": "chat-review",
+      "reasoning_effort": "medium",
+      "temperature": 0,
+      "max_tokens": 3072,
+      "timeout_ms": 120000,
+      "prompt_guidance": "Optimize useful development-knowledge recall. Accept a cited, source-supported technical constraint or reported defect even when it is not yet fixed. Do not classify the whole cluster as transient. Do not treat possible semantic duplication as a reason to reject an independently useful fact."
+    }
+  }
+}

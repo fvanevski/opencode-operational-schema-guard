@@ -1,0 +1,60 @@
+{
+ "schema": "issue92-s4-reconcile-receipt-v1",
+ "kind": "terminal reconciliation-only corrective completion (no inference, no add_memory, no replay)",
+ "at_utc": "2026-11-12T02:00:17Z",
+ "source_head": "37601461b21a9d5d5634ca5683db25479937f627",
+ "batch": "e9fc47c22f26e1808126c9e6cdee7e1a315a94fab973991584d87cd9279b1739",
+ "group": "graphiti-adr92-s4-claim-evidence",
+ "ex_admission": {
+  "authority": "canonical openviking commit gate (s4-ex-launcher.py mechanism)",
+  "lock_file": "/run/user/1000/openviking-agent.lock",
+  "checks": [
+   "harness-exit",
+   "quiet-grace",
+   "scheduler-idle",
+   "no-canonical-unresolved"
+  ],
+  "lease_env": "GHDEV_MEMORY_POST_EXIT_LEASE=admitted"
+ },
+ "command": [
+  "node",
+  "/workspace/opencode-operational-schema-guard/docs/issue-78/v2-curator/curator-cli.mjs",
+  "reconcile-only",
+  "--group",
+  "graphiti-adr92-s4-claim-evidence",
+  "--state-dir",
+  "/tmp/opencode/issue92-s4/state/s4",
+  "--endpoint",
+  "http://127.0.0.1:8766/mcp"
+ ],
+ "cli_result": {
+  "mode": "reconcile-only",
+  "group": "graphiti-adr92-s4-claim-evidence",
+  "reconciled_persisted": 6,
+  "unresolved": 0,
+  "review_count": 28,
+  "queue_new": 0,
+  "queue_reserved": 0,
+  "pending_review": false,
+  "status": "settled"
+ },
+ "queued_before": 6,
+ "terminal_state": {
+  "persisted": 6,
+  "deferred": 22
+ },
+ "persisted_uuids_distinct": true,
+ "post_reconcile_remote": {
+  "episodes_present": 6,
+  "absent": 0
+ },
+ "scorecard_rc": 0,
+ "historical_marker": {
+  "path": "/tmp/opencode/issue92-s4/.s4-ran",
+  "preserved": true,
+  "written_by_this_helper": false
+ },
+ "once_only_marker": "/tmp/opencode/issue92-s4/.s4-reconciled",
+ "no_inference": true,
+ "no_add_memory": true
+}

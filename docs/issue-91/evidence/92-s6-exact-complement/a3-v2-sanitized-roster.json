@@ -1,0 +1,304 @@
+{
+ "schema_version": 1,
+ "kind": "issue92-a3-v2-sanitized-roster",
+ "family": "gh_mcp-development-v2",
+ "group": "graphiti-adr92-a3-prospective-v2",
+ "case_count": 20,
+ "valuable": 10,
+ "nonvaluable_controls": 10,
+ "private_manifest_sha256": "a85941839f1f9dc7e04081829016aa3c38ef05e9a6f3c29ca58de8b53abbf5ca",
+ "cases": [
+  {
+   "id": "i92-v2-01-0589c35f",
+   "event_id_sha256_prefix": "0589c35ff0d6a710",
+   "source_locator_sha256": "1090279b63610704e5037e3f779d728af546d05cb750da010d59eb632ee606d2",
+   "native_event_text_sha256": "2be300179e60a35f01cad99b8e9f37c84bbae485d524980a94e48b356bd877b1",
+   "observed_at": "2026-11-06T02:29:46.100000Z",
+   "evidence_class": "user-stated",
+   "label": {
+    "valuable": true,
+    "prospective": true,
+    "ratification": "operator-pending",
+    "predicate": "falkordb_per_group_graph_layout"
+   }
+  },
+  {
+   "id": "i92-v2-02-b25eaab5",
+   "event_id_sha256_prefix": "b25eaab510a07593",
+   "source_locator_sha256": "75a7d0fb9559efe91c640cbe4e621e1c1824fb4307266961040e2e1ab136971b",
+   "native_event_text_sha256": "8651f98a5cce27379cf6e82917048e5e88d9be450b972260ece435dd8c349b12",
+   "observed_at": "2026-11-02T00:47:33.094000Z",
+   "evidence_class": "user-stated",
+   "label": {
+    "valuable": true,
+    "prospective": true,
+    "ratification": "operator-pending",
+    "predicate": "qualification_state_disposable_b75_journal_decision"
+   }
+  },
+  {
+   "id": "i92-v2-03-7e5dd082",
+   "event_id_sha256_prefix": "7e5dd08282ea01d5",
+   "source_locator_sha256": "1a61a5e2267a9792275f89c6f48b8619954cab2b82f97e2cc151dc18192224bb",
+   "native_event_text_sha256": "605bdcc6cfea353bef0b66bbbe275cc773f6c241e392309a7d8d8c8300ab6a32",
+   "observed_at": "2026-11-07T19:46:02.983000Z",
+   "evidence_class": "user-stated",
+   "label": {
+    "valuable": true,
+    "prospective": true,
+    "ratification": "operator-pending",
+    "predicate": "rust_caching_layer_vs_redis_architecture_decision"
+   }
+  },
+  {
+   "id": "i92-v2-04-79348562",
+   "event_id_sha256_prefix": "79348562a0a1de33",
+   "source_locator_sha256": "12e0733ddd4541367b190cc6b3e375f50bf0efafb42b6f5cec6e545a98a45ca2",
+   "native_event_text_sha256": "76bbf87c5a9a27b161a50eb6cfa1f6d2092972db05c2a9135fb2fac433f5c353",
+   "observed_at": "2026-11-08T17:40:02.577000Z",
+   "evidence_class": "user-stated",
+   "label": {
+    "valuable": true,
+    "prospective": true,
+    "ratification": "operator-pending",
+    "predicate": "ghdev_curator_prod_service_exit_state"
+   }
+  },
+  {
+   "id": "i92-v2-05-07f3c815",
+   "event_id_sha256_prefix": "07f3c815c67225c0",
+   "source_locator_sha256": "3c7085a765e8d2c142c207b26436abec0e9633cbc39bd828b316864fe19320e6",
+   "native_event_text_sha256": "beca15e35f60c0c085be2f5c9567412ca23476f39493c970dfb6651f56740a19",
+   "observed_at": "2026-09-14T04:31:41.816000Z",
+   "evidence_class": "user-stated",
+   "label": {
+    "valuable": true,
+    "prospective": true,
+    "ratification": "operator-pending",
+    "predicate": "pr376_budget_action_resolution"
+   }
+  },
+  {
+   "id": "i92-v2-06-8ebc4aed",
+   "event_id_sha256_prefix": "8ebc4aed8cbcfa3b",
+   "source_locator_sha256": "0e98abba9bb6cab6b0112dc007d093162595b5dd68b43c8deffe523ce494cb37",
+   "native_event_text_sha256": "6742dc727f9ce6f26f130e5472fe17af9d2ece0ad80332df2598abaf7e9109fa",
+   "observed_at": "2026-09-12T21:48:55.700000Z",
+   "evidence_class": "user-stated",
+   "label": {
+    "valuable": true,
+    "prospective": true,
+    "ratification": "operator-pending",
+    "predicate": "issue55_fresh_process_live_acceptance"
+   }
+  },
+  {
+   "id": "i92-v2-07-02cb0038",
+   "event_id_sha256_prefix": "02cb00380c6873d1",
+   "source_locator_sha256": "e9347c0b240701281c969d8aeba3d984a5e4786ece8c4ec23398e0ace9d00547",
+   "native_event_text_sha256": "1a4a165d7a10111e1dbdf87b9fb4c3d5077b88287f24d392690485977db81062",
+   "observed_at": "2026-10-14T00:48:42.728000Z",
+   "evidence_class": "user-stated",
+   "label": {
+    "valuable": true,
+    "prospective": true,
+    "ratification": "operator-pending",
+    "predicate": "abi_incompatibility_assumption_analysis"
+   }
+  },
+  {
+   "id": "i92-v2-08-d3be2815",
+   "event_id_sha256_prefix": "d3be28154bc4e5d3",
+   "source_locator_sha256": "0eaeb4968724427187950dcdf31214c163d1adf51cc57a96b8ecec7268699b6b",
+   "native_event_text_sha256": "06453edcc50c40b08cec53ac153b401c8ae43183c79fa5aa0dbef5fa48e7ab14",
+   "observed_at": "2026-10-29T03:01:35.069000Z",
+   "evidence_class": "user-stated",
+   "label": {
+    "valuable": true,
+    "prospective": true,
+    "ratification": "operator-pending",
+    "predicate": "issue168_ingress_ownership_root_reservation"
+   }
+  },
+  {
+   "id": "i92-v2-09-2e6fcbfb",
+   "event_id_sha256_prefix": "2e6fcbfb3859890c",
+   "source_locator_sha256": "5f5642378219c593d297d487b61eedcdbaf1fe52d309022ce5f8ed981137be17",
+   "native_event_text_sha256": "b0d8ceeb83339f71d3ec2a2b31a490405fca0d25e3f269fe421dc4fa454dcd89",
+   "observed_at": "2026-10-24T15:50:17.658000Z",
+   "evidence_class": "user-stated",
+   "label": {
+    "valuable": true,
+    "prospective": true,
+    "ratification": "operator-pending",
+    "predicate": "issue134_native_interface_selection"
+   }
+  },
+  {
+   "id": "i92-v2-10-660f005a",
+   "event_id_sha256_prefix": "660f005ab9304fa9",
+   "source_locator_sha256": "57c9324947f8f8f4ad039f1aa9c359160138bb5c0c3106a1bcdc2a51aaf91d79",
+   "native_event_text_sha256": "b46d89078e1a72ab9a89c8cb094bd0ad0185829463ea5cd24f9900100578469d",
+   "observed_at": "2026-09-11T02:41:35.305000Z",
+   "evidence_class": "user-stated",
+   "label": {
+    "valuable": true,
+    "prospective": true,
+    "ratification": "operator-pending",
+    "predicate": "issue368_exact_head_host_revalidation"
+   }
+  },
+  {
+   "id": "i92-v2-11-d7c36a6d",
+   "event_id_sha256_prefix": "d7c36a6d53d705b5",
+   "source_locator_sha256": "f8f3e90ba61fbbd1a240c01ca0b47903be226d079e257bbf0ff86a01ffaaaee5",
+   "native_event_text_sha256": "bd2b6867b41d7fb31be2e0798faab0fe7e80ff6e997b604cd14ac74bb74cbf62",
+   "observed_at": "2026-10-24T23:53:19.779000Z",
+   "evidence_class": "user-stated",
+   "label": {
+    "valuable": false,
+    "prospective": true,
+    "ratification": "operator-pending",
+    "predicate": "routine_shell_echo_command"
+   }
+  },
+  {
+   "id": "i92-v2-12-4c97cf21",
+   "event_id_sha256_prefix": "4c97cf21ef59cfec",
+   "source_locator_sha256": "ddf0fe369c78052af013476a79c38c8c35b76ec0eb7e842aea30c30f39ef6b87",
+   "native_event_text_sha256": "b9781acc4cd2ac4bb499702ac1a22a70eb535da818051f13ae3e31f472504329",
+   "observed_at": "2026-09-08T19:58:03.503000Z",
+   "evidence_class": "user-stated",
+   "label": {
+    "valuable": false,
+    "prospective": true,
+    "ratification": "operator-pending",
+    "predicate": "routine_touch_bash_command"
+   }
+  },
+  {
+   "id": "i92-v2-13-227db738",
+   "event_id_sha256_prefix": "227db7383f9eaac2",
+   "source_locator_sha256": "70ef375651a3dcf87bfe0e52d3a9d77bdb3ce6bf380cfbe1b16870191d7148e0",
+   "native_event_text_sha256": "af0e03653b0607d627c7782829309841fc29f48f6ba100d789dc7785d7581eea",
+   "observed_at": "2026-10-26T23:46:06.477000Z",
+   "evidence_class": "user-stated",
+   "label": {
+    "valuable": false,
+    "prospective": true,
+    "ratification": "operator-pending",
+    "predicate": "routine_execution_time_query"
+   }
+  },
+  {
+   "id": "i92-v2-14-dbacc46d",
+   "event_id_sha256_prefix": "dbacc46dc62672e0",
+   "source_locator_sha256": "ca054dd23d48f787bd935b923332458bd68ab3073728bb108f4e2af7c8ef748d",
+   "native_event_text_sha256": "23aa754a59a983e265784933a7d6f1a9feec8860128fceca2f843ea835dce20c",
+   "observed_at": "2026-11-09T15:59:35.410000Z",
+   "evidence_class": "user-stated",
+   "label": {
+    "valuable": false,
+    "prospective": true,
+    "ratification": "operator-pending",
+    "predicate": "routine_post_exit_tui_confirmation"
+   }
+  },
+  {
+   "id": "i92-v2-15-16c5aab1",
+   "event_id_sha256_prefix": "16c5aab19bff8c9d",
+   "source_locator_sha256": "96ed48b1fd47c5d11bc4928f421f6e762592c37edd4688bfd24b1e5f3e452e19",
+   "native_event_text_sha256": "f3a9bb0adf8ff60881331b5eaf6dadd2e22af636e78d329fc55422e7adcaff70",
+   "observed_at": "2026-09-25T15:12:51.840000Z",
+   "evidence_class": "user-stated",
+   "label": {
+    "valuable": false,
+    "prospective": true,
+    "ratification": "operator-pending",
+    "predicate": "routine_media_deletion_state"
+   }
+  },
+  {
+   "id": "i92-v2-16-bc222379",
+   "event_id_sha256_prefix": "bc222379616fa124",
+   "source_locator_sha256": "6e1fac87251ee0a9f39ccceda066cc3427d465d1a5fc14bcd029badbd2a26e6d",
+   "native_event_text_sha256": "c35cddd6372691c9c00185feb9a2b987bcc0ae6c202749f5ca61c60a92eaa4cc",
+   "observed_at": "2026-11-07T19:41:08.975000Z",
+   "evidence_class": "user-stated",
+   "label": {
+    "valuable": false,
+    "prospective": true,
+    "ratification": "operator-pending",
+    "predicate": "routine_query_generation_task"
+   }
+  },
+  {
+   "id": "i92-v2-17-5dac2b5d",
+   "event_id_sha256_prefix": "5dac2b5d87acc41f",
+   "source_locator_sha256": "a921d51922e291f38f08e1d9550d0cd8e8cde8af37cb86489acf9e4240a14389",
+   "native_event_text_sha256": "7a351ef99d8a0afcec0756a3d7d42024b587f8bd2110791b066de4d8f1a9d8fd",
+   "observed_at": "2026-10-29T19:39:05.324000Z",
+   "evidence_class": "user-stated",
+   "label": {
+    "valuable": false,
+    "prospective": true,
+    "ratification": "operator-pending",
+    "predicate": "routine_dependency_bump_request"
+   }
+  },
+  {
+   "id": "i92-v2-18-9b5e99f3",
+   "event_id_sha256_prefix": "9b5e99f310ee8107",
+   "source_locator_sha256": "cb1db6d46b49f1c5410b9e4c8a5ab97d540fcec0583ec780fdabe31eab9ba52a",
+   "native_event_text_sha256": "9fc4425cc836a712966addcb16c1ecb0c1a7df5a912382ada51054961331c3c9",
+   "observed_at": "2026-11-06T18:14:16.298000Z",
+   "evidence_class": "user-stated",
+   "label": {
+    "valuable": false,
+    "prospective": true,
+    "ratification": "operator-pending",
+    "predicate": "meta_process_evidence_question"
+   }
+  },
+  {
+   "id": "i92-v2-19-17581937",
+   "event_id_sha256_prefix": "175819378a77ffe8",
+   "source_locator_sha256": "1fb26fad2355a39c62d795ccff8dd9dd047fc446c46f9b3fb78cf7895c2d2c56",
+   "native_event_text_sha256": "a83b51138e51f6ad55b7af32d72e4f28ba00263a9238f2dcf9e225fcb50010ea",
+   "observed_at": "2026-11-06T01:31:36.664000Z",
+   "evidence_class": "user-stated",
+   "label": {
+    "valuable": false,
+    "prospective": true,
+    "ratification": "operator-pending",
+    "predicate": "speculative_ninfer_log_hypothesis"
+   }
+  },
+  {
+   "id": "i92-v2-20-dda3a3f7",
+   "event_id_sha256_prefix": "dda3a3f74c4e6fd9",
+   "source_locator_sha256": "3e83a74f42749d83edb08f28ebb7d4b5733a1025a264e33a7931e4dbfffca0cc",
+   "native_event_text_sha256": "7cf8f189c313a7dadb95a8eb6b2eaae607616001c59ef86974a5893d31749451",
+   "observed_at": "2026-10-16T19:02:24.222000Z",
+   "evidence_class": "user-stated",
+   "label": {
+    "valuable": false,
+    "prospective": true,
+    "ratification": "operator-pending",
+    "predicate": "routine_session_continuation"
+   }
+  }
+ ],
+ "label_freeze_sha256": "bdfb7c6c7c025c572ba899094b94d1388c425e59189e395b38f5469968da3a58",
+ "nonoverlap": {
+  "vs_b3_24cluster": {
+   "session_overlap": [],
+   "message_overlap": []
+  },
+  "vs_ghmcp_20case": {
+   "session_overlap": [],
+   "message_overlap": []
+  },
+  "cohort_internal_distinct_messages": true
+ }
+}

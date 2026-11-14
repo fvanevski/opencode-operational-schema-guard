@@ -1,0 +1,195 @@
+{
+ "schema_version": 1,
+ "kind": "issue92-paired-scorecard-v1",
+ "campaign": "92-a1-a3-first-campaign",
+ "base_sha": "c8eb5260f2b10832346234b1b5d0cf28302ffba8",
+ "candidate_sha": "270848aa108df22b9d12738cc6f4903ec45da9c1",
+ "frozen_splits": {
+  "development": {
+   "origin": "#81 exposed material (reused as development only)",
+   "families": [
+    "cronparse",
+    "webvtt"
+   ],
+   "counts": {
+    "cron": 24,
+    "webvtt": 20,
+    "sealed_57case": 57
+   }
+  },
+  "holdout": {
+   "origin": "new independent gh_mcp family",
+   "family": "gh_mcp",
+   "cases": 20,
+   "valuable": 10,
+   "nonvaluable": 10,
+   "corpus_sha256": "b81d446201545142d69691fc20c87312986f648ba2cc1691e0de0c4f26657d54"
+  }
+ },
+ "a1_holdout_frozen": "yes",
+ "freeze_before_output_proven": "yes",
+ "split_denominators": {
+  "development": 44,
+  "holdout": 20,
+  "task_families": 3
+ },
+ "a2_utility_policy": {
+  "result": "pass",
+  "focused_tests": "curator.test.mjs 38/38 + candidate.test.mjs 16/16 + model-policy.test.mjs (in 38) all pass, exit 0",
+  "cpu_validator_matrix": {
+   "emit_no_utility": {
+    "baseline": "EMIT(ok)",
+    "candidate": "DEFER utility_class_required"
+   },
+   "emit_durable": {
+    "baseline": "EMIT(ok)",
+    "candidate": "EMIT(ok) utility_class=durable_decision"
+   },
+   "emit_transient": {
+    "baseline": "EMIT(ok)",
+    "candidate": "DEFER utility_class_not_durable"
+   },
+   "skip_repetition": {
+    "baseline": "SKIP(ok)",
+    "candidate": "SKIP(ok) utility_class=repetition"
+   }
+  },
+  "note": "Utility is an additional model-only persistence gate; operator CAS approvals and legacy records unchanged (utility_class:null on operator actions)."
+ },
+ "capture_control_14of14": {
+  "result": "14/14 (tp=14 fn=0 recall=1.0)",
+  "corpus": "issue81 cronparse holdout (re-run, candidate worktree)",
+  "baseline": "0/14",
+  "unverified": false
+ },
+ "paired_cpu": {
+  "capture_identical_across_arms": "yes (code-identical capture path)",
+  "cron": {
+   "broad_capture": {
+    "tp": 14,
+    "fp": 8,
+    "tn": 2,
+    "fn": 0,
+    "precision": 0.6364,
+    "recall": 1,
+    "precision_wilson95": {
+     "lo": 0.4295134934371804,
+     "hi": 0.8026702722739211
+    },
+    "recall_wilson95": {
+     "lo": 0.7846829880728186,
+     "hi": 1
+    }
+   },
+   "baseline": "0/14"
+  },
+  "webvtt": {
+   "broad_capture": {
+    "tp": 10,
+    "fp": 9,
+    "tn": 1,
+    "fn": 0,
+    "precision": 0.5263,
+    "recall": 1,
+    "precision_wilson95": {
+     "lo": 0.31707482511825114,
+     "hi": 0.7267049451255145
+    },
+    "recall_wilson95": {
+     "lo": 0.7224598312333834,
+     "hi": 1
+    }
+   },
+   "baseline": "0/10"
+  },
+  "ghmcp_holdout": {
+   "broad_capture": {
+    "tp": 10,
+    "fp": 10,
+    "tn": 0,
+    "fn": 0,
+    "precision": 0.5,
+    "recall": 1,
+    "precision_wilson95": {
+     "lo": 0.2992949144298199,
+     "hi": 0.70070508557018
+    },
+    "recall_wilson95": {
+     "lo": 0.7224598312333834,
+     "hi": 1
+    }
+   },
+   "baseline": "0/10"
+  }
+ },
+ "a3_post_exit": {
+  "status": "prepared_not_run",
+  "reason": "Model-backed drain must not run inside the active interactive harness (shared EX lease owned by harness). Two-arm config + single bounded sequential operator action prepared using the existing post-exit drain wrapper + EX/quiet-grace gate.",
+  "arms": [
+   {
+    "arm": "base-dev",
+    "group": "graphiti-curator-utility-development-r01",
+    "code": "baseline-main",
+    "seeded": 24
+   },
+   {
+    "arm": "cand-dev",
+    "group": "graphiti-curator-utility-development-r02",
+    "code": "candidate-utility",
+    "seeded": 24
+   },
+   {
+    "arm": "base-holdout",
+    "group": "graphiti-curator-utility-holdout-r03",
+    "code": "baseline-main",
+    "seeded": 20
+   },
+   {
+    "arm": "cand-holdout",
+    "group": "graphiti-curator-utility-holdout-r04",
+    "code": "candidate-utility",
+    "seeded": 20
+   }
+  ],
+  "operator_action": "bash docs/issue-91/evidence/92-a1-a3-first-campaign/a3-post-exit-run.sh (post-exit only)",
+  "model_policy": {
+   "alias": "chat-fast",
+   "endpoint": "http://127.0.0.1:8002/v1/chat/completions",
+   "temperature": 0,
+   "max_tokens": 1600,
+   "reasoning_effort": null
+  },
+  "model_tokens_time": "pending (post-exit run)",
+  "persisted_facts": {
+   "baseline": "pending",
+   "candidate": "pending"
+  }
+ },
+ "gates": {
+  "utility": "pass",
+  "groundedness": "unverified (requires post-exit model run + operator fact adjudication)",
+  "privacy_group_authority": "pass (no privacy/wrong-group capture in CPU path; valid named fixture groups; no production development-knowledge writes; no historical episode overwrite)"
+ },
+ "scorecard_metrics": {
+  "candidate_selection": {
+   "cron_capture": 22,
+   "webvtt_capture": 19,
+   "ghmcp_capture": 20
+  },
+  "proposed_emit": "pending (post-exit)",
+  "approved_review": "pending (post-exit)",
+  "persisted_facts": "pending (post-exit)",
+  "missed_useful_facts": "pending (post-exit)",
+  "duplicates": "pending (post-exit)",
+  "deferred_cases": "pending (post-exit)",
+  "redundant_lowvalue_persisted": "pending (post-exit)",
+  "grounded_precision": "pending (post-exit)",
+  "utility_among_grounded_persisted": "pending (post-exit)",
+  "source_group_secret_authority_failures": 0,
+  "operator_labor": "roster curation + freeze (this campaign); post-exit run + fact adjudication pending"
+ },
+ "sample_flag": {
+  "status": "INSUFFICIENT_SAMPLE",
+  "reason": "The >=8 independently-judged, receipt-backed, grounded candidate-facts floor is unattained in-harness by design (model run is post-exit). CPU-only capture/validator results are complete and descriptive; the >=75% usefulness-among-grounded-persisted estimate is reported as INSUFFICIENT_SAMPLE until the post-exit run yields >=8 grounded persisted facts. No zero denominator is relabeled PASS."
+ }
+}

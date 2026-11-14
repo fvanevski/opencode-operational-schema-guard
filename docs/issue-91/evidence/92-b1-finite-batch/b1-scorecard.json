@@ -1,0 +1,102 @@
+{
+  "schema": "issue92-b1-scorecard-v1",
+  "result": "REMEDIATION_REQUIRED",
+  "frozen_corpus_sha256": "96cfef46ab642aeb1d05cf246478da92f34547daf6575ea2d756d192afbdbb5f",
+  "corpus": "24 clusters / 16 valuable targets / 11 nonvaluable controls / 1 capture-ineligible privacy control (opencode:ses_e767fc4cbffe9zB9WHpLF4PLBe:message:ctrl)",
+  "treatments": {
+    "b1_previous": {"sha": "a19e82c7ab68e710339dfd8b4f1381c75b37e8a5", "group": "graphiti-adr92-b1-previous", "mode": "incremental runAdmitted factReview=true, max-clusters 6 per drain round"},
+    "b1_finite_batch": {"sha": "8a112799a7a42b47c5a044d21aa11ef8ebe21b59", "group": "graphiti-adr92-b1-finite-batch", "mode": "runAdmittedFiniteBatch via drain --finite-batch on --max-clusters 24 --max-candidates 48"}
+  },
+  "ex_admission": {
+    "wrapper": "canonical post-exit-drain.py (flock /run/user/1000/openviking-agent.lock, harness process classifier, 15s quiet grace, production-drain serialization, scheduler-idle)",
+    "harness_exit_utc": "2026-11-10T17:27:34Z",
+    "production_drain": "active at arming window; exited 2026-11-10T17:28:19Z before campaign start",
+    "lease": "GHDEV_MEMORY_POST_EXIT_LEASE=admitted retained through terminal reconciliation of both arms",
+    "exactly_once": "marker .b1-ran created 2026-11-10T17:28:19Z; each arm wrapper exited 0 exactly once"
+  },
+  "campaign": {
+    "previous": {
+      "drain_rounds": 4,
+      "persisted": 4,
+      "deferred": 20,
+      "deferred_breakdown": {"independent_fact_review_required": 19, "invalid_fact_fields": 1},
+      "persisted_cases": {"valuable": ["sp9", "py2"], "nonvaluable": ["sp3", "dj5"]},
+      "model": {"calls": 47, "errors": 0, "model_ms": 15535, "prompt_tokens": 49026, "completion_tokens": 3607}
+    },
+    "finite_batch": {
+      "batch_id": "d4c22a736af6f4716eee34b09ef34290c2c2b3df4ffb13a0879f681df9c4a8a9",
+      "snapshot_sha256": "9f5021ac8776070bde719d9108d2f2edc9ef248253b39d9b1a3ecf50da09097a",
+      "candidates": 24,
+      "approved": 19,
+      "deferred": 5,
+      "deferred_breakdown": {"not_substantive": 5},
+      "reconcile_only_runs": [11, 8, 0],
+      "persisted": 19,
+      "persisted_cases": {
+        "valuable": ["sp2", "sp8", "sp9", "py1", "py2", "py3", "dj1", "dj2"],
+        "nonvaluable": ["sp3", "sp4", "sp5", "sp6", "sp7", "dj3", "dj4", "dj5", "dj6", "dj7", "dj8"]
+      },
+      "model": {"calls": 67, "by_stage": {"discovery": 24, "utility": 24, "arbitration": 19}, "errors": 0, "prompt_tokens": 49335, "completion_tokens": 4002},
+      "model_calls_paired": "67 intents + 67 results, zero unpaired"
+    },
+    "totals": {"model_calls": 114, "model_errors": 0, "prompt_tokens": 98361, "completion_tokens": 7609}
+  },
+  "target_table": {
+    "note": "previous arm: 'deferred-review' = deferred, independent_fact_review_required (operator review backlog, not a terminal loss). finite-batch: loss stage per first meaningful loss.",
+    "rows": [
+      {"target": "graphiti_0312_py313_falkordb_smoke", "case": "g1", "previous": "deferred-review", "finite_batch": "lost@source_discovery (proposed span = PostgreSQL example body; smoke-protocol claim not proposed)"},
+      {"target": "graphiti_0312_mcp_tools_only", "case": "g1", "previous": "deferred-review", "finite_batch": "lost@utility (uuid-omission constraint not in proposed span; proposed span not_substantive)"},
+      {"target": "graphiti_llm_param_readonly_audit", "case": "g2", "previous": "deferred-review", "finite_batch": "lost@utility (not_substantive; span 437-787 = objective + Graphiti-native config prioritization)"},
+      {"target": "graphiti_live_mcp_no_openviking", "case": "g3", "previous": "deferred-review", "finite_batch": "lost@utility (not_substantive; span 437-530 = MCP-tools-only constraint)"},
+      {"target": "graphiti_temporal_memory_live_test", "case": "g3", "previous": "deferred-review", "finite_batch": "lost@source_discovery (not proposed)"},
+      {"target": "graphiti_temporal_validation_skill", "case": "g4", "previous": "deferred-review", "finite_batch": "lost@utility (not_substantive; span 197-437 = validation protocol constraints)"},
+      {"target": "sphinx_dict_str_str_param_render_defect", "case": "sp1", "previous": "deferred-review", "finite_batch": "lost@discovery+utility (proposed span 427-620 = instruction boilerplate, not the dict-param defect; not_substantive)"},
+      {"target": "sphinx_9230_dict_param_render_variant", "case": "sp2", "previous": "deferred-review", "finite_batch": "PERSISTED (56e30bf4 -> 66441e90-0ada-4a6c-bfef-0517dc6f9cb6)"},
+      {"target": "sphinx_14182_rst_header_rows", "case": "sp8", "previous": "deferred-review", "finite_batch": "PERSISTED (0a2f7d38 -> e46240c4-4dc5-437c-b1d5-d64d6c93283c)"},
+      {"target": "sphinx_ascii_rst_header_rows", "case": "sp9", "previous": "PERSISTED (48b14165 -> 8562de35-0448-487a-a08b-5581351ce2b9)", "finite_batch": "PERSISTED (79922d65 -> 06775002-66da-4357-874f-4b2730879857)"},
+      {"target": "django_add_filter_lazy_string_typeerror", "case": "dj1", "previous": "deferred-review", "finite_batch": "PERSISTED (9181f7c0 -> a97d0718-fa61-4aef-9691-a790ac21b34a)"},
+      {"target": "django_lazy_proxy_string_concat", "case": "dj1", "previous": "deferred-review", "finite_batch": "covered-by-dj1-representative (persisted dj1 fact contains the __proxy__ lazy-string TypeError content; no separate episode)"},
+      {"target": "django_add_filter_lazy_string_variant", "case": "dj2", "previous": "deferred-review", "finite_batch": "PERSISTED (ea79356d -> 0d2074c8-5b6b-41e8-bcb9-0dd117023c1b)"},
+      {"target": "pylint_short_verbose_expects_arg", "case": "py1", "previous": "deferred-review", "finite_batch": "PERSISTED (f8eb1ab8 -> 1982d5df-1f70-44c2-860e-154837b4951e)"},
+      {"target": "pylint_6386_verbose_flag_negative", "case": "py2", "previous": "PERSISTED (c37dd2d2 -> 64730ec1-688c-4396-baac-34c99af7559e)", "finite_batch": "PERSISTED (81a51b07 -> eca38e65-3c1d-4663-8e9c-c2e161327c59)"},
+      {"target": "pylint_verbose_v_arg_expected", "case": "py3", "previous": "deferred-review", "finite_batch": "PERSISTED (84ce9a66 -> 2985a949-e871-4340-ab53-a6be0d1cccec)"}
+    ]
+  },
+  "nonvaluable": {
+    "previous_persisted": {"count": 2, "cases": ["sp3", "dj5"]},
+    "finite_batch_persisted": {"count": 11, "cases": ["sp3", "sp4", "sp5", "sp6", "sp7", "dj3", "dj4", "dj5", "dj6", "dj7", "dj8"]},
+    "finding": "all 11 duplicate-family repetition controls persisted in the finite-batch arm; joint representative arbitration never compared them because partitionKey(group,project,workspace) places each swebench run directory in its own scope (19 single-member families of 19)"
+  },
+  "retention": {
+    "valuable": {"previous": "2/16", "finite_batch": "8/16 (strict target-level; dj1#2 additionally covered by the dj1 representative episode)"},
+    "nonvaluable_persisted": {"previous": "2/11", "finite_batch": "11/11"}
+  },
+  "order_invariance": {
+    "proof": "candidate ids = hash(issue92-finite-fact-v1 | cluster_id | source_ref[0] | assertion); pools sorted by id before arbitration; family id = hash(scope + sorted pool); representative selection is order-neutral within a scope",
+    "limitation": "cross-scope duplicates (every nonvaluable control spans distinct per-run workspace paths) are never jointly compared; single-member families make in-scope order-invariance vacuous and cross-scope dedup absent by scope granularity"
+  },
+  "four_surface": {
+    "review_store": {"previous": 4, "finite_batch": 19, "uuids_match_remote": true},
+    "graphiti_mcp_get_episodes": {"arg": "group_ids ARRAY + max_episodes=50", "previous": 4, "finite_batch": 19, "uuids_identical_to_falkordb_and_reviewstore": true},
+    "falkordb_episodic_raw": {"previous": 4, "finite_batch": 19, "uuids_identical": true},
+    "source_index": "0 Source nodes in both b1 groups AND in production development-knowledge (deployment-level characteristic; episode e.source_name empty there too); source identity carried by ReviewStore source_refs/source_event_ids and episode content"
+  },
+  "privacy": {
+    "control_ref": "opencode:ses_e767fc4cbffe9zB9WHpLF4PLBe:message:ctrl",
+    "absent_from": ["queue inputs (both arms)", "finite-batch model-calls (67 intents+results)", "previous discovery/review traces (24+23)", "snapshot.json", "plan.json", "persisted episode content (FalkorDB scan)"],
+    "g1_cluster_events": "carry only the eligible msg_189803b36001 source ref"
+  },
+  "production": {
+    "before": {"development-knowledge": 355, "d1_previous": 2, "d1_corrected": 15, "d2_previous": 14, "d2_two_stage": 0, "d3_previous": 0, "d3_corrected": 4, "b1_previous": 0, "b1_finite_batch": 0},
+    "after": {"development-knowledge": 355, "d1_previous": 2, "d1_corrected": 15, "d2_previous": 14, "d2_two_stage": 0, "d3_previous": 0, "d3_corrected": 4, "b1_previous": 4, "b1_finite_batch": 19},
+    "mutation": "none outside the two disposable b1 groups"
+  },
+  "crash_no_replay": {
+    "model_call_intents": "67/67 paired with results; zero unresolved",
+    "writes": "19 queued -> reconcile-only 11+8+0 -> settled with positive remote readback; no submission_unknown remains; no blind replay",
+    "campaign": "exactly-once via .b1-ran marker; no favorable-output reruns"
+  },
+  "model_costs": {"total_calls": 114, "errors": 0, "prompt_tokens": 98361, "completion_tokens": 7609, "latency": "previous arm 15535 ms across 4 drains; finite-batch arm latency not tracked in batch output"},
+  "operator_review_backlog": {"previous": 20, "finite_batch": 5},
+  "remediation": "coarsen finite-batch partitionKey from [group,project,workspace] to [group,project] (or add a project-level cross-scope arbitration pass) so cross-session duplicate families are jointly compared and a single source-substantive representative wins with alternatives deferred; secondary: tighten discovery span selection so boilerplate instruction spans are not proposed in place of the source-stated technical claim"
+}

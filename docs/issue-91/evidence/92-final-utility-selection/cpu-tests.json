@@ -1,0 +1,12 @@
+{
+  "node_check_finite_batch_mjs": 0,
+  "node_check_finite_batch_test_mjs": 0,
+  "node_test_finite_batch": "rc=0 (68 pass/0 fail; 2 disclosed Central test-literal fixes: /never->/not automatic approvals/, /DO NOT->/Do NOT/)",
+  "node_test_claim_evidence": 0,
+  "node_test_long_prompt": 0,
+  "node_test_stage": 0,
+  "node_test_acceptance": 0,
+  "python_ex_bridge": 0,
+  "npm_run_check": 0,
+  "npm_test": "524 pass / 0 fail"
+}

@@ -1,0 +1,509 @@
+{
+ "schema": "issue92-s4-scorecard-v1",
+ "kind": "sanitized, evidence-only, publication-safe (no raw model replies)",
+ "generated_utc": "2026-11-12T02:01:03Z",
+ "campaign": "issue92-adr S4 claim/evidence terminal evaluation",
+ "attribution": {
+  "execution_head": "37601461b21a9d5d5634ca5683db25479937f627",
+  "batch": "e9fc47c22f26e1808126c9e6cdee7e1a315a94fab973991584d87cd9279b1739",
+  "group": "graphiti-adr92-s4-claim-evidence",
+  "model": "chat-fast (default settings, no tuning sweep)"
+ },
+ "denominators": {
+  "note": "scoring denominator is 16 valuable targets + 11 nonvaluable controls (frozen B3 denominators), not model-fact count; scorer definitions and denominators unchanged",
+  "valuable_targets": 16,
+  "nonvaluable_controls": 11
+ },
+ "valuable_targets": [
+  {
+   "target_id": "graphiti_0312_py313_falkordb_smoke",
+   "case_id": "adr92-g1",
+   "cluster": "g1",
+   "s1_state": "lost",
+   "s2_state": "lost",
+   "s4_state": "lost",
+   "s4_first_loss_stage": "exact-span validation / claim discovery DEFER (claim_source_vocabulary_weak)",
+   "s4_uuids": []
+  },
+  {
+   "target_id": "graphiti_0312_mcp_tools_only",
+   "case_id": "adr92-g1",
+   "cluster": "g1",
+   "s1_state": "lost",
+   "s2_state": "lost",
+   "s4_state": "lost",
+   "s4_first_loss_stage": "exact-span validation / claim discovery DEFER (claim_source_vocabulary_weak)",
+   "s4_uuids": []
+  },
+  {
+   "target_id": "graphiti_llm_param_readonly_audit",
+   "case_id": "adr92-g2",
+   "cluster": "g2",
+   "s1_state": "lost",
+   "s2_state": "lost",
+   "s4_state": "lost",
+   "s4_first_loss_stage": "exact-span validation / claim discovery DEFER (claim_source_vocabulary_weak)",
+   "s4_uuids": []
+  },
+  {
+   "target_id": "graphiti_live_mcp_no_openviking",
+   "case_id": "adr92-g3",
+   "cluster": "g3",
+   "s1_state": "lost",
+   "s2_state": "lost",
+   "s4_state": "retained",
+   "s4_first_loss_stage": null,
+   "s4_uuids": [
+    "b253363c-4c4e-4a5b-98be-97259788c018"
+   ]
+  },
+  {
+   "target_id": "graphiti_temporal_memory_live_test",
+   "case_id": "adr92-g3",
+   "cluster": "g3",
+   "s1_state": "lost",
+   "s2_state": "lost",
+   "s4_state": "retained",
+   "s4_first_loss_stage": null,
+   "s4_uuids": [
+    "b253363c-4c4e-4a5b-98be-97259788c018"
+   ]
+  },
+  {
+   "target_id": "graphiti_temporal_validation_skill",
+   "case_id": "adr92-g4",
+   "cluster": "g4",
+   "s1_state": "lost",
+   "s2_state": "lost",
+   "s4_state": "lost",
+   "s4_first_loss_stage": "independent semantic support deferred (claim_support_missing_predicate)",
+   "s4_uuids": []
+  },
+  {
+   "target_id": "sphinx_dict_str_str_param_render_defect",
+   "case_id": "adr92-sp1",
+   "cluster": "sp1",
+   "s1_state": "retained",
+   "s2_state": "retained",
+   "s4_state": "lost",
+   "s4_first_loss_stage": "exact-span validation / claim discovery DEFER (claim_source_vocabulary_weak)",
+   "s4_uuids": []
+  },
+  {
+   "target_id": "sphinx_9230_dict_param_render_variant",
+   "case_id": "adr92-sp2",
+   "cluster": "sp2",
+   "s1_state": "retained",
+   "s2_state": "retained",
+   "s4_state": "lost",
+   "s4_first_loss_stage": "exact-span validation / claim discovery DEFER (claim_source_vocabulary_weak)",
+   "s4_uuids": []
+  },
+  {
+   "target_id": "sphinx_14182_rst_header_rows",
+   "case_id": "adr92-sp8",
+   "cluster": "sp8",
+   "s1_state": "lost",
+   "s2_state": "retained_recovered",
+   "s4_state": "lost",
+   "s4_first_loss_stage": "exact-span validation / claim discovery DEFER (claim_source_vocabulary_weak)",
+   "s4_uuids": []
+  },
+  {
+   "target_id": "sphinx_ascii_rst_header_rows",
+   "case_id": "adr92-sp9",
+   "cluster": "sp9",
+   "s1_state": "lost",
+   "s2_state": "lost",
+   "s4_state": "lost",
+   "s4_first_loss_stage": "independent semantic support deferred (claim_support_missing_predicate)",
+   "s4_uuids": []
+  },
+  {
+   "target_id": "django_add_filter_lazy_string_typeerror",
+   "case_id": "adr92-dj1",
+   "cluster": "dj1",
+   "s1_state": "retained",
+   "s2_state": "retained",
+   "s4_state": "lost",
+   "s4_first_loss_stage": "exact-span validation / claim discovery DEFER (claim_source_vocabulary_weak)",
+   "s4_uuids": []
+  },
+  {
+   "target_id": "django_lazy_proxy_string_concat",
+   "case_id": "adr92-dj1",
+   "cluster": "dj1",
+   "s1_state": "retained",
+   "s2_state": "retained",
+   "s4_state": "lost",
+   "s4_first_loss_stage": "exact-span validation / claim discovery DEFER (claim_source_vocabulary_weak)",
+   "s4_uuids": []
+  },
+  {
+   "target_id": "django_add_filter_lazy_string_variant",
+   "case_id": "adr92-dj2",
+   "cluster": "dj2",
+   "s1_state": "retained",
+   "s2_state": "retained",
+   "s4_state": "retained",
+   "s4_first_loss_stage": null,
+   "s4_uuids": [
+    "b0d5799a-f7a7-4e5e-921b-99f5a3bb394b"
+   ]
+  },
+  {
+   "target_id": "pylint_short_verbose_expects_arg",
+   "case_id": "adr92-py1",
+   "cluster": "py1",
+   "s1_state": "retained",
+   "s2_state": "retained",
+   "s4_state": "retained",
+   "s4_first_loss_stage": null,
+   "s4_uuids": [
+    "0614ae92-b64e-40d7-9f1f-95d6435b22b9"
+   ]
+  },
+  {
+   "target_id": "pylint_6386_verbose_flag_negative",
+   "case_id": "adr92-py2",
+   "cluster": "py2",
+   "s1_state": "retained",
+   "s2_state": "retained",
+   "s4_state": "lost",
+   "s4_first_loss_stage": "exact-span validation / claim discovery DEFER (claim_source_vocabulary_weak)",
+   "s4_uuids": []
+  },
+  {
+   "target_id": "pylint_verbose_v_arg_expected",
+   "case_id": "adr92-py3",
+   "cluster": "py3",
+   "s1_state": "lost (S1 pylint persisted count 2 = py1+py2; py3 not persisted)",
+   "s2_state": "retained_recovered",
+   "s4_state": "lost",
+   "s4_first_loss_stage": "exact-span validation / claim discovery DEFER (claim_source_vocabulary_weak)",
+   "s4_uuids": []
+  }
+ ],
+ "nonvaluable_controls": [
+  {
+   "cluster": "sp3",
+   "s1_state": "persisted_sibling_duplicate",
+   "s2_state": "retained_as_duplicate",
+   "s4_state": "lost",
+   "s4_uuids": [],
+   "note": "91e7d4933344 (queued -> persisted after reconcile)"
+  },
+  {
+   "cluster": "sp4",
+   "s1_state": "persisted_sibling_duplicate",
+   "s2_state": "retained_as_duplicate",
+   "s4_state": "lost",
+   "s4_uuids": [],
+   "note": "e3cd392afad4 (queued -> persisted after reconcile)"
+  },
+  {
+   "cluster": "sp5",
+   "s1_state": "persisted_sibling_duplicate",
+   "s2_state": "retained_as_duplicate",
+   "s4_state": "lost",
+   "s4_uuids": [],
+   "note": "632421f86cd8 (persisted)"
+  },
+  {
+   "cluster": "sp6",
+   "s1_state": "persisted_sibling_duplicate",
+   "s2_state": "retained_as_duplicate",
+   "s4_state": "lost",
+   "s4_uuids": [],
+   "note": "16ed4560fd03 (persisted)"
+  },
+  {
+   "cluster": "sp7",
+   "s1_state": "persisted_sibling_duplicate",
+   "s2_state": "retained_as_duplicate",
+   "s4_state": "lost",
+   "s4_uuids": [],
+   "note": "dbefdaed06e3 (queued -> persisted after reconcile)"
+  },
+  {
+   "cluster": "dj3",
+   "s1_state": "persisted_sibling_duplicate",
+   "s2_state": "retained_as_duplicate",
+   "s4_state": "lost",
+   "s4_uuids": [],
+   "note": "9f1ed618222a (queued -> persisted after reconcile)"
+  },
+  {
+   "cluster": "dj4",
+   "s1_state": "persisted_sibling_duplicate",
+   "s2_state": "retained_as_duplicate",
+   "s4_state": "lost",
+   "s4_uuids": [],
+   "note": "a59eb737a95c (queued -> persisted after reconcile)"
+  },
+  {
+   "cluster": "dj5",
+   "s1_state": "persisted_sibling_duplicate",
+   "s2_state": "retained_as_duplicate",
+   "s4_state": "retained_as_duplicate",
+   "s4_uuids": [
+    "9684efcc-6af7-42d9-8dff-a939753f404d"
+   ],
+   "note": "73dd715d7856 (queued -> persisted after reconcile)"
+  },
+  {
+   "cluster": "dj6",
+   "s1_state": "persisted_sibling_duplicate",
+   "s2_state": "retained_as_duplicate",
+   "s4_state": "lost",
+   "s4_uuids": [],
+   "note": "3da3a73d3cf3 (persisted)"
+  },
+  {
+   "cluster": "dj7",
+   "s1_state": "persisted_sibling_duplicate",
+   "s2_state": "retained_as_duplicate",
+   "s4_state": "retained_as_duplicate",
+   "s4_uuids": [
+    "1c685684-a11f-4bba-854b-b01861d6d035"
+   ],
+   "note": "fc99927d3a80 (queued -> persisted after reconcile)"
+  },
+  {
+   "cluster": "dj8",
+   "s1_state": "persisted_sibling_duplicate",
+   "s2_state": "retained_as_duplicate",
+   "s4_state": "retained_as_duplicate",
+   "s4_uuids": [
+    "b6712cd5-7a6f-43f4-969b-d60334e7a5c7"
+   ],
+   "note": "4ade8c448432 (persisted)"
+  }
+ ],
+ "summary": {
+  "valuable_retained_s4": "4/16",
+  "valuable_retained_s3": "9/16 (historical)",
+  "valuable_retained_s2": "9/16 (historical)",
+  "valuable_retained_s1": "7/16 (historical)",
+  "controls_retained_s4": "3/11",
+  "controls_retained_s3": "10/11 (historical)"
+ },
+ "s2_missed_targets_detail": [
+  {
+   "target_id": "graphiti_0312_py313_falkordb_smoke",
+   "cluster": "g1",
+   "s2_state": "lost",
+   "s4_state": "lost",
+   "s4_first_loss_stage": "exact-span validation / claim discovery DEFER (claim_source_vocabulary_weak)",
+   "s4_uuids": []
+  },
+  {
+   "target_id": "graphiti_0312_mcp_tools_only",
+   "cluster": "g1",
+   "s2_state": "lost",
+   "s4_state": "lost",
+   "s4_first_loss_stage": "exact-span validation / claim discovery DEFER (claim_source_vocabulary_weak)",
+   "s4_uuids": []
+  },
+  {
+   "target_id": "graphiti_llm_param_readonly_audit",
+   "cluster": "g2",
+   "s2_state": "lost",
+   "s4_state": "lost",
+   "s4_first_loss_stage": "exact-span validation / claim discovery DEFER (claim_source_vocabulary_weak)",
+   "s4_uuids": []
+  },
+  {
+   "target_id": "graphiti_live_mcp_no_openviking",
+   "cluster": "g3",
+   "s2_state": "lost",
+   "s4_state": "retained",
+   "s4_first_loss_stage": null,
+   "s4_uuids": [
+    "b253363c-4c4e-4a5b-98be-97259788c018"
+   ]
+  },
+  {
+   "target_id": "graphiti_temporal_memory_live_test",
+   "cluster": "g3",
+   "s2_state": "lost",
+   "s4_state": "retained",
+   "s4_first_loss_stage": null,
+   "s4_uuids": [
+    "b253363c-4c4e-4a5b-98be-97259788c018"
+   ]
+  },
+  {
+   "target_id": "graphiti_temporal_validation_skill",
+   "cluster": "g4",
+   "s2_state": "lost",
+   "s4_state": "lost",
+   "s4_first_loss_stage": "independent semantic support deferred (claim_support_missing_predicate)",
+   "s4_uuids": []
+  },
+  {
+   "target_id": "sphinx_ascii_rst_header_rows",
+   "cluster": "sp9",
+   "s2_state": "lost",
+   "s4_state": "lost",
+   "s4_first_loss_stage": "independent semantic support deferred (claim_support_missing_predicate)",
+   "s4_uuids": []
+  }
+ ],
+ "seven_missed_targets": [
+  {
+   "target_id": "graphiti_0312_py313_falkordb_smoke",
+   "cluster": "g1",
+   "s4_state": "lost",
+   "s4_first_loss_stage": "exact-span validation / claim discovery DEFER (claim_source_vocabulary_weak)",
+   "s4_uuids": []
+  },
+  {
+   "target_id": "graphiti_0312_mcp_tools_only",
+   "cluster": "g1",
+   "s4_state": "lost",
+   "s4_first_loss_stage": "exact-span validation / claim discovery DEFER (claim_source_vocabulary_weak)",
+   "s4_uuids": []
+  },
+  {
+   "target_id": "graphiti_llm_param_readonly_audit",
+   "cluster": "g2",
+   "s4_state": "lost",
+   "s4_first_loss_stage": "exact-span validation / claim discovery DEFER (claim_source_vocabulary_weak)",
+   "s4_uuids": []
+  },
+  {
+   "target_id": "graphiti_live_mcp_no_openviking",
+   "cluster": "g3",
+   "s4_state": "retained",
+   "s4_first_loss_stage": null,
+   "s4_uuids": [
+    "b253363c-4c4e-4a5b-98be-97259788c018"
+   ]
+  },
+  {
+   "target_id": "graphiti_temporal_memory_live_test",
+   "cluster": "g3",
+   "s4_state": "retained",
+   "s4_first_loss_stage": null,
+   "s4_uuids": [
+    "b253363c-4c4e-4a5b-98be-97259788c018"
+   ]
+  },
+  {
+   "target_id": "graphiti_temporal_validation_skill",
+   "cluster": "g4",
+   "s4_state": "lost",
+   "s4_first_loss_stage": "independent semantic support deferred (claim_support_missing_predicate)",
+   "s4_uuids": []
+  },
+  {
+   "target_id": "sphinx_ascii_rst_header_rows",
+   "cluster": "sp9",
+   "s4_state": "lost",
+   "s4_first_loss_stage": "independent semantic support deferred (claim_support_missing_predicate)",
+   "s4_uuids": []
+  }
+ ],
+ "stage_call_metrics": {
+  "plan_stage_calls": {
+   "discovery": 27,
+   "utility": 7,
+   "support": 9
+  },
+  "model_metrics": {
+   "discovery": {
+    "calls": 27,
+    "prompt_tokens": 28623,
+    "completion_tokens": 5587,
+    "reasoning_tokens": 0,
+    "cached_prompt_tokens": 15369,
+    "latency_ms": 20462,
+    "latency_reports": 27,
+    "usage_field_reports": {
+     "prompt_tokens": 27,
+     "completion_tokens": 27,
+     "reasoning_tokens": 27,
+     "cached_prompt_tokens": 27
+    }
+   },
+   "utility": {
+    "calls": 7,
+    "prompt_tokens": 9347,
+    "completion_tokens": 280,
+    "reasoning_tokens": 0,
+    "cached_prompt_tokens": 3015,
+    "latency_ms": 1388,
+    "latency_reports": 7,
+    "usage_field_reports": {
+     "prompt_tokens": 7,
+     "completion_tokens": 7,
+     "reasoning_tokens": 7,
+     "cached_prompt_tokens": 7
+    }
+   },
+   "support": {
+    "calls": 9,
+    "prompt_tokens": 4865,
+    "completion_tokens": 677,
+    "reasoning_tokens": 0,
+    "cached_prompt_tokens": 792,
+    "latency_ms": 2510,
+    "latency_reports": 9,
+    "usage_field_reports": {
+     "prompt_tokens": 9,
+     "completion_tokens": 9,
+     "reasoning_tokens": 9,
+     "cached_prompt_tokens": 9
+    }
+   }
+  }
+ },
+ "remote": {
+  "episodes": 6,
+  "group_integrity": "ok",
+  "entity_nodes_total": 23,
+  "extracted_fact_edges_total": 11,
+  "edge_label_distribution": {
+   "ANALYZES_FILE_WITH_COMMAND": 1,
+   "GENERATES_EXCEPTION": 1,
+   "INVOLVES_TYPE": 2,
+   "GENERATES_EXCEPTION_WHEN_CONCATENATED_WITH": 1,
+   "ASSOCIATED_LABEL": 1,
+   "ASSOCIATED_ISSUE": 1,
+   "CONTAINS_ISSUE": 1,
+   "HAS_KNOWN_ISSUE": 2,
+   "HAS_DECODING_PRESETS_FOR": 1
+  },
+  "episodes_with_substantive_extraction": 6,
+  "episodes_trivial_membership_only": 0,
+  "note": "episode existence is NOT credited as extracted knowledge; substantive extraction requires >=1 extracted fact edge",
+  "retrieval_probe": {
+   "status": "run",
+   "probe_episode": "0614ae92-b64",
+   "probe_fact_preview": "The command `pylint mytest.py -v` was used to run pylint on the file mytest.py, ",
+   "question": "The command `pylint mytest.py -v` was used to run pylint on the file mytest.py, ",
+   "hits": 0,
+   "top_previews": [],
+   "note": "read-only relevance probe; group-scoped; episode existence is NOT credited as retrieval"
+  }
+ },
+ "prospective_criteria_non_prospective": {
+  "grounding_90pct": "NON-PROSPECTIVE comparison only (S4 is an exposed dev iteration, not A3 qualification)",
+  "usefulness_75pct": "NON-PROSPECTIVE comparison only",
+  "valuable_retention": "4/16"
+ },
+ "quality_flags": {
+  "duplicate_yield_local": [],
+  "deferred_operator_review_records": 22,
+  "fragmentary_or_boilerplate": [
+   "Source discovery or utility unavailable",
+   "claim_support_missing_predicate",
+   "transient_execution"
+  ],
+  "temporal_qualification": "observed_at preserved per original source event (staged events carry source observed_at)",
+  "privacy_group_integrity": "no privacy source in corpus; all remote episodes group-scoped to graphiti-adr92-s4-claim-evidence",
+  "claim_evidence_boundary": "only the source-exact authenticated quote is persisted; the normalized claim is advisory evidence, never a graph assertion"
+ },
+ "batch_frozen": true
+}

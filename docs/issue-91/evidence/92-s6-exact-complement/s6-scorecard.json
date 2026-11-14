@@ -1,0 +1,95 @@
+{
+ "schema": "issue92-s6-scorecard-v1",
+ "kind": "sanitized, evidence-only, public",
+ "generated_utc": "2026-11-12T06:00:00Z",
+ "campaign": "issue92-adr S6 source-exact-complement EX-kernel exposed-case evaluation",
+ "s6_group": "graphiti-adr92-s6-exact-complement",
+ "s6_source_head": "9cf811ef875efbf97b78d9d500aac1b31be88567",
+ "corpus": {
+  "sha256": "ebac7052065766eb8d1ef464142ea63dc3052d52deb36424492ebc477fdd3508",
+  "clusters": 24,
+  "families": {"swebench-sphinx": 9, "swebench-django": 8, "swebench-pylint": 3, "graphiti-mcp": 4}
+ },
+ "denominators": {"valuable_targets": 16, "nonvaluable_controls": 11, "note": "frozen B3 denominators unchanged; S1-S5 not replayed"},
+ "treatment": {
+  "flags": ["finite-batch on","novelty-policy recall","source-recovery on","resilient-discovery on","claim-evidence on","source-exact-complement on","max-clusters 24","max-candidates 72","max-seconds 3600"],
+  "status": "settled (terminal review_required)",
+  "batch_id": "598d07029de5fde83a012286bc20d92025dc73e7a9472743d67a05197f7efda7",
+  "candidates": 50, "approved": 19, "deferred": 31,
+  "model_calls": 123,
+  "model_calls_by_stage": {"discovery": 61, "support": 36, "utility": 26},
+  "model_calls_note": "complement discovery/utility calls counted under discovery/utility stages with :source-exact-complement-v1 identity; 123 = all stages incl. complement",
+  "model_errors": 0,
+  "lane_split": {"claim_lane_persisted": 10, "complement_lane_persisted": 9, "note": "of the 19 persisted, 9 are source-exact complement facts (independent exact-source quotes, not normalized paraphrase); 10 are normalized-claim facts that passed independent source-support"},
+  "persisted": 19, "unresolved": 0,
+  "reconcile": "terminal read-only reconcile-only settled; 19 store UUIDs == 19 remote episodes, uuid_exact_match=true, 0 unresolved"
+ },
+ "persisted_uuids_count": 19,
+ "four_surface": {
+  "reviewstore_persisted": 19,
+  "graphiti_mcp_get_episodes": 19,
+  "uuid_exact_match": true,
+  "remote_missing_from_store": 0,
+  "store_missing_from_remote": 0,
+  "distinct_valid_uuids": 19,
+  "source_index_intact": true
+ },
+ "valuable_targets_16": [
+  {"target": "graphiti_0312_py313_falkordb_smoke", "cluster": "g1", "s6_state": "lost", "loss_stage": "discovery/surface loss - corpus graphiti record is the LLM-param objective; falkordb smoke sub-predicate not independently surfaced"},
+  {"target": "graphiti_0312_mcp_tools_only", "cluster": "g1", "s6_state": "lost", "loss_stage": "discovery/surface loss - mcp-tools-only sub-predicate not independently surfaced"},
+  {"target": "graphiti_llm_param_readonly_audit", "cluster": "g2", "s6_state": "covered", "basis": "graphiti-mcp msg_189dcade exact-source fact: existing Python 3.13 / graphiti-core 0.31.2 install, Qwen3.8-27B inference context for native LLM config params (complement lane, stable_architecture)"},
+  {"target": "graphiti_live_mcp_no_openviking", "cluster": "g3", "s6_state": "lost", "loss_stage": "discovery/surface loss"},
+  {"target": "graphiti_temporal_memory_live_test", "cluster": "g3", "s6_state": "lost", "loss_stage": "discovery/surface loss"},
+  {"target": "graphiti_temporal_validation_skill", "cluster": "g4", "s6_state": "lost", "loss_stage": "discovery/surface loss"},
+  {"target": "sphinx_dict_str_str_param_render_defect", "cluster": "sp1", "s6_state": "covered", "basis": "sphinx msg_16a7d425 + msg_170e24bb exact-source 'doc rendering incorrect when :param has datatype dict(str,str)'"},
+  {"target": "sphinx_9230_dict_param_render_variant", "cluster": "sp2", "s6_state": "covered", "basis": "sphinx msg_16aa0759 + msg_16a8b080 exact-source ':param dict(str, str) opc_meta' docstring variant"},
+  {"target": "sphinx_14182_rst_header_rows", "cluster": "sp8", "s6_state": "covered", "basis": "sphinx msg_16b1b282 exact-source 'Please support header rows in RST output' (complement lane) - RECOVERED S5 regression sp8"},
+  {"target": "sphinx_ascii_rst_header_rows", "cluster": "sp9", "s6_state": "lost", "loss_stage": "discovery/surface loss - only one rst_header_rows corpus record (msg_16b1b282) surfaced; the ascii variant is a distinct sub-predicate not independently surfaced"},
+  {"target": "django_add_filter_lazy_string_typeerror", "cluster": "dj1", "s6_state": "covered", "basis": "django msg_169f2a74/msg_169e3b56/msg_16a210f3 exact-source 'add filter TypeError: can only concatenate str (not __proxy__) to str -> empty string'"},
+  {"target": "django_lazy_proxy_string_concat", "cluster": "dj1", "s6_state": "covered", "basis": "django msg_1748508b/msg_16a210f3 exact-source 'concatenate a string with a lazy string with the add template filter -> empty string'"},
+  {"target": "django_add_filter_lazy_string_variant", "cluster": "dj2", "s6_state": "covered", "basis": "django msg_169bee75/msg_16a210f3 exact-source lazy-string variant fact"},
+  {"target": "pylint_short_verbose_expects_arg", "cluster": "py1", "s6_state": "covered", "basis": "pylint msg_16aec452 exact-source 'short option of the verbose option expects an argument; help suggests VERBOSE value'"},
+  {"target": "pylint_6386_verbose_flag_negative", "cluster": "py2", "s6_state": "lost", "loss_stage": "discovery/surface loss - all 3 pylint corpus records describe the same 'short verbose option' issue; the 6386 flag-negative sub-predicate is not independently surfaced (NOT recovered vs S5)"},
+  {"target": "pylint_verbose_v_arg_expected", "cluster": "py3", "s6_state": "lost", "loss_stage": "claim_support_missing_predicate - v-arg sub-predicate not independently supported (NOT recovered vs S5)"}
+ ],
+ "valuable_coverage": {
+  "s6_covered": 8, "of_16": 16,
+  "s5_covered": 6, "s2_s3_baseline": 9,
+  "delta_vs_s5": 2, "delta_vs_baseline": -1,
+  "recovered_s5_regressions": ["sphinx_14182_rst_header_rows (sp8) - RECOVERED"],
+  "not_recovered_s5_regressions": ["pylint_6386_verbose_flag_negative (py2)", "pylint_verbose_v_arg_expected (py3)"],
+  "new_vs_baseline": ["graphiti_llm_param_readonly_audit (g2) - S2/S3 baseline had 0 graphiti targets; S6 surfaces 1"],
+  "first_loss_mechanisms": [
+    "py2 (6386 flag-negative): discovery/surface loss - single-issue pylint corpus, sub-predicate not independently surfaced",
+    "py3 (v-arg expected): claim_support_missing_predicate - surfaced candidate not independently supported",
+    "5 graphiti targets (g1 x2, g3 x2, g4): discovery/surface loss - corpus has 4 graphiti records (LLM-param objective); falkordb-smoke/mcp-tools-only/live-mcp/temporal sub-predicates not independently surfaced",
+    "sp9 (ascii rst): discovery/surface loss - only one rst_header_rows corpus record surfaced"
+  ]
+ },
+ "nonvaluable_controls_11": {
+  "persisted_false_positive": 2,
+  "false_positive_detail": [
+    "1 astropy QTable units fact (swebench-sphinx msg_16b25662) - carried-over S5 false positive, useful_negative",
+    "1 django task-boilerplate fact (swebench-django msg_16a39c256001) - 'environment, report that accurately, without inventing success' task template text persisted as root_cause_fix (nonvaluable)"
+  ],
+  "retained_as_deferred": 9,
+  "note": "2 nonvaluable facts persisted (mild graph pollution); 9 of 11 controls correctly not persisted"
+ },
+ "distinct_durable_facts": {
+  "persisted_episodes": 19,
+  "distinct_useful_valuable_facts": 8,
+  "nonvaluable_persisted": 2,
+  "duplicate_episodes": 9,
+  "note": "19 episodes = 8 distinct useful valuable predicates + 2 nonvaluable + 9 duplicate episodes (same predicate re-surfaced across sibling messages). Episode count NOT substituted for useful knowledge."
+ },
+ "retrieval_usefulness": {
+  "search_memory_facts": "USEFUL - query 'django add filter lazy string typeerror' returns the grounded fact 'add template filter in swebench-django generates a TypeError when concatenating a string with a lazy string ... __proxy__' with source/target node UUIDs + episode eccda78c",
+  "search_nodes": "USEFUL - query 'sphinx dict param render' returns swebench-sphinx node with content summary (dict(str,str) param defect + RST header rows request)",
+  "get_episode_entities": "SPARSE/zero-hit (0 nodes + 0 edges for persisted episodes eccda78c, 9b21d501) - per-episode entity extraction is membership-level, not rich",
+  "substantive_graph_extraction": "fact edges DO exist (HAS_BUG_IN django -> TypeError with source/target node UUIDs); project-level node summaries present",
+  "verdict": "retrieval is useful at the fact/project level for substantive technical predicates; per-episode entity graphs are thin. 19 episodes overstate useful knowledge (8 distinct useful facts)."
+ },
+ "result": "FUNCTIONAL_REMEDIATION_REQUIRED",
+ "result_rationale": "S6 source-exact-complement EX-kernel integration works end-to-end (EX admission proven, 123 model calls across discovery/support/utility incl. complement, 19 persisted, terminal 4-surface reconcile clean: 19 store UUIDs == 19 remote episodes, 0 unresolved). S6 valuable coverage is 8/16: a meaningful improvement over S5 (6/16) - it RECOVERS the S5 regression sp8 (rst_header_rows) and surfaces 1 graphiti target (g2 llm-param) the baseline lacked, via 9 independent source-exact complement facts. But 8/16 is 1 BELOW the S2/S3 9/16 baseline: py2 (6386 flag-negative) and py3 (v-arg) are NOT recovered, and 5 graphiti + 1 rst sub-predicates remain unsurfaced. Two nonvaluable facts persisted (astropy control + django boilerplate) = mild pollution. Per contract: below baseline => return the exact first-loss mechanisms; no automatic second exposed campaign.",
+ "nonmutation_proof": "S1-S5 groups untouched; no reset/deletion; S5 group graphiti-adr92-s5-claim-ex-proof and historical scorecards unchanged; S6 used a fresh group + fresh 0700 state (/tmp/opencode/issue92-s6/state/s6) + original 24-cluster corpus (ebac7052) + original 16/11 denominators"
+}

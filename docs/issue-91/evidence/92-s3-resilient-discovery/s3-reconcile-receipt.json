@@ -1,0 +1,78 @@
+{
+ "schema": "issue92-s3-reconcile-receipt-v1",
+ "kind": "terminal reconciliation-only corrective completion (no inference, no add_memory)",
+ "at_utc": "2026-11-11T19:48:07Z",
+ "original_execution_head": "626df9eace9e9b1b141466a5d69c20df06d0995e",
+ "corrective_source_head": "9b98e0e40f60c4fad964182510664e703dc6f44d",
+ "cross_commit_compatibility": {
+  "reconcile_path_bytes_identical": [
+   "acknowledged-retry.mjs",
+   "core.mjs",
+   "curator-cli.mjs",
+   "finite-batch-tuning.mjs",
+   "finite-batch.mjs",
+   "graph-evidence.mjs",
+   "worker.mjs"
+  ],
+  "fact_review_delta": "9-line S3 isolate branch only (never called by reconcile-only)",
+  "corrective_fact_review_blob": "20da07bcb99010c4c9ab5d4b8c7f9d3c8cb62ba9"
+ },
+ "batch": "003aa99faaa944cd81e83a6d7fd314815857cb0dafbd69d359244b6cfd28db1c",
+ "group": "graphiti-adr92-s3-resilient-discovery",
+ "ex_admission": {
+  "authority": "canonical openviking commit gate (s3-ex-launcher.py mechanism)",
+  "lock_file": "/run/user/1000/openviking-agent.lock",
+  "checks": [
+   "harness-exit",
+   "quiet-grace",
+   "scheduler-idle",
+   "no-canonical-unresolved"
+  ],
+  "lease_env": "GHDEV_MEMORY_POST_EXIT_LEASE=admitted"
+ },
+ "command": [
+  "node",
+  "/workspace/opencode-operational-schema-guard/docs/issue-78/v2-curator/curator-cli.mjs",
+  "reconcile-only",
+  "--group",
+  "graphiti-adr92-s3-resilient-discovery",
+  "--state-dir",
+  "/tmp/opencode/issue92-s3/state/s3",
+  "--endpoint",
+  "http://127.0.0.1:8766/mcp"
+ ],
+ "cli_result": {
+  "mode": "reconcile-only",
+  "group": "graphiti-adr92-s3-resilient-discovery",
+  "reconciled_persisted": 18,
+  "unresolved": 0,
+  "review_count": 30,
+  "queue_new": 0,
+  "queue_reserved": 0,
+  "pending_review": false,
+  "status": "settled"
+ },
+ "pre_state": {
+  "queued": 18,
+  "deferred": 12
+ },
+ "terminal_state": {
+  "deferred": 12,
+  "persisted": 18
+ },
+ "persisted_uuids_distinct": true,
+ "uuid_continuity": "terminal UUIDs equal positively audited pre-reconcile UUIDs",
+ "post_reconcile_remote": {
+  "episodes": 18,
+  "absent": 0
+ },
+ "scorecard_rc": 1,
+ "historical_marker": {
+  "path": "/tmp/opencode/issue92-s3/.s3-ran",
+  "preserved": true,
+  "written_by_this_helper": false
+ },
+ "once_only_marker": "/tmp/opencode/issue92-s3/.s3-reconciled",
+ "no_inference": true,
+ "no_add_memory": true
+}

@@ -1,0 +1,90 @@
+{
+  "schema": "issue92-pr95-source-integrity-receipt-v1",
+  "repo": "fvanevski/opencode-operational-schema-guard",
+  "pr": 95,
+  "branch": "issue/92-v7c-accepted",
+  "result": "SOURCE_REMEDIATION_REQUIRED",
+  "source_head": "5ce36d93b615d3c3b1adda32600e1fad6be05133",
+  "remote_head_verified": true,
+  "remote_head_drift": false,
+  "source_blobs": {
+    "docs/issue-78/v2-candidate/events.mjs": "4ffa5a9849a480da1fee4fb8c81a4fee1d8a7e5c",
+    "docs/issue-78/v2-curator/fact-review.mjs": "4059560d872d4fa279399096e34233d1730d895a",
+    "docs/issue-78/v2-candidate/long-prompt.test.mjs": "f1c039eee9f0f780feb0f2c0187f0f39bcb6c7f8",
+    "docs/issue-91/adr-acceptance/issue92-a3-acceptance.test.mjs": "e2632774fa4d552cac34035e5519ca669e3f4e60",
+    "docs/issue-91/adr-acceptance/issue92-a3-native-source.mjs": "7d8dedddb618d3d6840475f8123f01dc380a3a96",
+    "docs/issue-91/adr-acceptance/issue92-a3-stage.test.mjs": "75e7012ab6407e69ce17951d867ddb3c25c619ff",
+    "docs/issue-78/v2-curator/finite-batch.test.mjs": "82b5955bdb7241a019f85b770f2ccad8756d2dc2"
+  },
+  "focused_tests": [
+    {"command": "node --check docs/issue-78/v2-candidate/events.mjs docs/issue-78/v2-curator/fact-review.mjs docs/issue-78/v2-candidate/long-prompt.test.mjs docs/issue-91/adr-acceptance/issue92-a3-acceptance.test.mjs", "files": 4, "pass": 4, "fail": 0, "rc": 0},
+    {"command": "node --test docs/issue-78/v2-candidate/candidate.test.mjs docs/issue-78/v2-candidate/long-prompt.test.mjs", "tests": 31, "pass": 31, "fail": 0, "rc": 0},
+    {"command": "node --test docs/issue-78/v2-curator/fact-review.test.mjs docs/issue-78/v2-curator/claim-evidence.test.mjs docs/issue-78/v2-curator/finite-batch.test.mjs", "tests": 94, "pass": 93, "fail": 1, "rc": 1},
+    {"command": "node --test docs/issue-91/adr-acceptance/issue92-a3-stage.test.mjs docs/issue-91/adr-acceptance/issue92-a3-acceptance.test.mjs", "tests": 19, "pass": 19, "fail": 0, "rc": 0}
+  ],
+  "focused_totals": {"tests": 144, "pass": 143, "fail": 1},
+  "source_defect": {
+    "test": "source-exact utility rubric covers durable facts without confusing them with setup chatter",
+    "location": "docs/issue-78/v2-curator/finite-batch.test.mjs:292 (loop case index 4)",
+    "actual": "AssertionError [ERR_ASSERTION]: native source must stage",
+    "root_cause": "events.mjs:8 PRIVATE_VALUE vetoes 'API key was removed' as a credential value; 'removed' is missing from the location-word negative-lookahead allow-list, under-capturing a credential-store LOCATION / post-change-state fact",
+    "minimal_proposed_correction": "add 'removed' to the PRIVATE_VALUE allow-list (…|found|specified|removed)\\b in events.mjs:8",
+    "verified": "with the one-word addition, all 94 curator tests pass and candidate(31)/A3(19) suites remain green",
+    "owner": "Central (semantic production change; not applied by Build)"
+  },
+  "trusted_ci": {"run_id": "43476420695", "check": "node-contract root profile", "outcome": "pass", "covers_docs_suites": false},
+  "v7c_equivalence": {
+    "verdict": "PASS",
+    "private_manifest_sha256": "9356e663092df3a82b6b549e5d2c6208ff19a429205502388ba7d41b207af691",
+    "expected_manifest_sha256": "9356e663092df3a82b6b549e5d2c6208ff19a429205502388ba7d41b207af691",
+    "label_freeze_sha256": "401e57abae879653b2c37dff9173e3ba43a8f8b02e052ee87cbf319b954ecfc0",
+    "expected_label_freeze_sha256": "401e57abae879653b2c37dff9173e3ba43a8f8b02e052ee87cbf319b954ecfc0",
+    "cases_total": 20,
+    "cases_identical_all_fields": 15,
+    "cases_excerpt_sha256_only_diff": ["v7-c-01", "v7-c-02", "v7-c-03", "v7-c-09", "v7-v-09"],
+    "diff_classification": "whitespace-only: sha256(whitespace-collapsed current excerpt) == historical excerpt_sha256 for all 5; authored wording unchanged",
+    "source_opportunities_changed": false,
+    "new_false_positives": 0,
+    "undercapture": 0,
+    "source_count_change": 0,
+    "case_event_counts": "all 1"
+  },
+  "native_contiguity": "PASS",
+  "privacy_boundary": "PASS",
+  "atomic_fact": {
+    "verdict": "FAIL",
+    "case_id": "v7-v-08",
+    "native_message_id": "msg_160509336001zc8AM5tccpDCaM",
+    "remote_episode_uuid": "f699fd62-c952-49aa-a79c-4ff5428402d5",
+    "facts_in_episode": 1,
+    "assertion_sha256": "2c03af01093b4e136aee70b5e396a85bcb72b8d3231ec7b9b8dfe7ee10804c60",
+    "evidence_class": "user-stated",
+    "source_strength": "native-id",
+    "description": "single user-stated fact bundles two independent, non-entailing, unrelated-domain predicates: (1) Tdarr server/node v3 version fact; (2) Context7/Firecrawl MCP tool-use instruction. Defect-#3 class; substantive review blocker for Central."
+  },
+  "historical_state": "unchanged (v7c corpus, label freeze, staged receipt, scorecard and acceptance history read read-only; no re-run, no Graphiti writes)",
+  "source_changes": "none committed (scratch one-word PRIVATE_VALUE experiment applied, verified, fully reverted; worktree clean at exact SHA)",
+  "command_shape_friction": {
+    "encountered": true,
+    "kind": "path/naming only; no source-semantics change",
+    "events": [
+      {
+        "requested": "/tmp/opencode/issue92-a3/{private/issue92-a3-v7c-native-corpus.json, a3-v7c-scorer-roster.json, state-v7c/a3-v2-staged.json}",
+        "effective": "~/.local/state/ghdev-graphiti-issue92/{private/issue92-a3-v7c-native-corpus.json, private/issue92-a3-v7c-native-roster(reconstructed), state-v7c/a3-v2-staged.json}",
+        "rewrite_provenance": "contract-named /tmp paths were stale; actual frozen state lives under ~/.local/state/ghdev-graphiti-issue92",
+        "execution_effect": "none on source semantics; read-only comparison ran and matched"
+      },
+      {
+        "requested": "a3-v7c-scorer-roster.json (standalone roster with private_manifest_sha256 + label_freeze_sha256)",
+        "effective": "roster reconstructed in-memory from the corpus (per-case fields + label_digest_sha256 + manifest byte-hash), consumed read-only by prepareProspectiveEvents",
+        "rewrite_provenance": "no standalone v7c roster file present; corpus carries all roster case fields + label_digest_sha256",
+        "execution_effect": "none on source semantics"
+      }
+    ]
+  },
+  "limitations": [
+    "v7c roster reconstruction is host-side and read-only; frozen corpus/label/staged bytes untouched",
+    "the one focused source defect and ATOMIC_FACT=FAIL are left to Central for substantive correction and independent rereview",
+    "no merge, new PR, model inference, Graphiti write, or #92 closure performed"
+  ]
+}

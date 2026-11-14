@@ -1,0 +1,76 @@
+{
+  "schema": "issue92-v10-prospective-terminal-result-evidence-v1",
+  "generated_at": "2026-11-14T02:07:52Z",
+  "group": "graphiti-adr92-a3-prospective-v20",
+  "source_head": "0d82e39d244d0560c2b55eaee10c9314ef147cb3",
+  "frozen_evidence_head": "9ed54666c7d96dab15286df1b2598939a4cbbaf1",
+  "result": "FAIL",
+  "pass": false,
+  "frozen_manifest_sha256": "8789a56088ec3d498b4fbb807bfe5f91d760ffbfe43659d0fda65e9d1fc832ad",
+  "label_freeze_sha256": "c58ee47a159ca90e6e141283f5b59c53f2a73007723f3b3dc40bb7666a408c62",
+  "scorecard": {
+    "stats": {
+      "valuable_hits": 7,
+      "valuable_of": 10,
+      "nonvaluable_persisted_cases": 0,
+      "persisted_episodes": 16,
+      "grounded_facts": 16,
+      "independent_useful_facts": 15,
+      "duplicate_episodes": 1,
+      "authority_breaches": 0
+    },
+    "intervals95": {
+      "valuable_coverage": {
+        "point": 0.7,
+        "lower": 0.39677321997956516,
+        "upper": 0.892210712513788,
+        "n": 10
+      },
+      "grounded_precision": {
+        "point": 1,
+        "lower": 0.8063865817272802,
+        "upper": 1,
+        "n": 16
+      },
+      "useful_among_grounded": {
+        "point": 0.9375,
+        "lower": 0.7167073163197013,
+        "upper": 0.9888809426916687,
+        "n": 16
+      }
+    },
+    "gates": {
+      "valuable_coverage": false,
+      "zero_control_fact_persistence": true,
+      "grounded_precision": true,
+      "useful_among_grounded": true,
+      "zero_authority_breaches": true,
+      "terminal_source_integrity": true,
+      "independently_ratified_labels": true
+    },
+    "covered_target_ids": [
+      "v10-av-01",
+      "v10-v-04",
+      "v10-v-06",
+      "v10-v-07",
+      "v10-v-08",
+      "v10-v-09",
+      "v10-v-10"
+    ],
+    "note": "Fact-level independent source adjudication; session/episode existence never earns target credit"
+  },
+  "failed_gate": "valuable_coverage (point 0.7 < 0.85): 7/10 valuable targets covered; v10-v-03, v10-v-05, v10-av-02 had no persisted fact",
+  "execution": {
+    "batch_id": "b6d6a7eb1d2926ac05c29c747509dc8573ebb9b26d52f796539751661f67856e",
+    "model_calls": 100,
+    "model_errors": 0,
+    "candidates": 63,
+    "approved": 16,
+    "persisted_facts": 16,
+    "reconcile_only_settled": true,
+    "model_replay": false,
+    "ex_admission": "canonical shared fcntl EX lock; lock FD inherited by Node child; bounded scheduler admission-wait; 30s quiet grace"
+  },
+  "redaction": "no raw native message text, no private model replies, no credentials, no absolute host paths, no leaked data; only SHA256 digests, native case IDs, and score statistics are published",
+  "self_sha256": "5b8a387df772ecf7edf5c20108df3dc5a8a4988d40cd7b391f946ddef99f9e8d"
+}

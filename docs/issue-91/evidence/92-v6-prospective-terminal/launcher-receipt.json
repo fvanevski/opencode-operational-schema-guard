@@ -1,0 +1,15 @@
+{
+ "jobs": {
+  "v6-prospective": {
+   "rc": 0,
+   "inference_calls": 1,
+   "batch_id": "17a72b9223e9ee765aa6a83208480ca8aa02ad595666d2b57183a86dee1cc749",
+   "corrective_path": "reconcile-only (no re-inference)"
+  }
+ },
+ "completed_utc": "2026-11-13T03:05:33Z",
+ "bridge_blob": "004188b1cdcd3a99956f20e581621eadc63c4663",
+ "group": "graphiti-adr92-a3-prospective-v6",
+ "state": "/home/filip/.local/state/ghdev-graphiti-issue92/state-v6",
+ "source_head": "cc6461de40cb63ce536ec88fbf00fe2744c93a55"
+}

@@ -1,0 +1,29 @@
+2026-11-12T05:45:59Z WAIT_FOR_HARNESS_EXIT: polling active harness processes
+2026-11-12T05:45:59Z HARNESS_EXITED: no interactive harness process
+2026-11-12T05:45:59Z EX_FLOCK_ACQUIRED: /run/user/1000/openviking-agent.lock fd=3
+2026-11-12T05:45:59Z QUIET_GRACE: 30s
+2026-11-12T05:46:29Z EX_ADMISSION_PROVEN: harness-exit + quiet-grace + scheduler-idle + no-unresolved
+2026-11-12T05:46:29Z JOB_START: source-exact-complement-proof
+2026-11-12T05:46:29Z JOB_SOURCE-EXACT-COMPLEMENT-PROOF attempt=1 rc=0 tail=(inherited-stdout; see s6-exact-complement-result.json)
+2026-11-12T05:46:29Z S6_SETTLED: job complete; marker + attempt receipt written
+2026-11-12T05:47:17Z WAIT_FOR_HARNESS_EXIT: polling active harness processes
+2026-11-12T05:47:17Z HARNESS_EXITED: no interactive harness process
+2026-11-12T05:47:17Z EX_FLOCK_ACQUIRED: /run/user/1000/openviking-agent.lock fd=3
+2026-11-12T05:47:17Z ADMISSION_WAIT: scheduler busy (running/waiting nonzero); bounded retry in 5s
+2026-11-12T05:47:22Z QUIET_GRACE: 30s
+2026-11-12T05:47:52Z EX_ADMISSION_PROVEN: harness-exit + quiet-grace + scheduler-idle + no-unresolved
+2026-11-12T05:47:52Z JOB_START: source-exact-complement-proof
+2026-11-12T05:48:45Z JOB_SOURCE-EXACT-COMPLEMENT-PROOF attempt=1 rc=3 tail=(inherited-stdout; see s6-exact-complement-result.json)
+2026-11-12T05:48:45Z RECONCILE_ONLY attempt=1 rc=3 tail=(inherited-stdout)
+2026-11-12T05:48:45Z RECONCILE_RC3_UNRESOLVED: remote visibility pending; bounded retry
+2026-11-12T05:49:05Z JOB_SOURCE-EXACT-COMPLEMENT-PROOF attempt=2 rc=3 tail=(inherited-stdout; see s6-exact-complement-result.json)
+2026-11-12T05:49:05Z RECONCILE_ONLY attempt=2 rc=3 tail=(inherited-stdout)
+2026-11-12T05:49:05Z RECONCILE_RC3_UNRESOLVED: remote visibility pending; bounded retry
+2026-11-12T05:49:25Z JOB_SOURCE-EXACT-COMPLEMENT-PROOF attempt=3 rc=3 tail=(inherited-stdout; see s6-exact-complement-result.json)
+2026-11-12T05:49:25Z RECONCILE_ONLY attempt=3 rc=3 tail=(inherited-stdout)
+2026-11-12T05:49:25Z RECONCILE_RC3_UNRESOLVED: remote visibility pending; bounded retry
+2026-11-12T05:49:46Z JOB_SOURCE-EXACT-COMPLEMENT-PROOF attempt=4 rc=3 tail=(inherited-stdout; see s6-exact-complement-result.json)
+2026-11-12T05:49:46Z RECONCILE_ONLY attempt=4 rc=3 tail=(inherited-stdout)
+2026-11-12T05:49:46Z RECONCILE_RC3_UNRESOLVED: remote visibility pending; bounded retry
+2026-11-12T05:50:06Z JOB_SOURCE-EXACT-COMPLEMENT-PROOF attempt=5 rc=0 tail=(inherited-stdout; see s6-exact-complement-result.json)
+2026-11-12T05:50:06Z S6_SETTLED: job complete; marker + attempt receipt written

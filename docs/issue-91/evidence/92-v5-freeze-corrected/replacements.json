@@ -1,0 +1,62 @@
+[
+  {
+    "slot": "v5-v-05",
+    "kind": "VALUABLE new",
+    "message_id": "msg_1bd6887cb001jAMF85rVHjVIOq",
+    "session_id": "ses_e42a0feb7ffe90FRSWNGErCIS0",
+    "source_locator": "opencode:ses_e42a0feb7ffe90FRSWNGErCIS0:message:msg_1bd6887cb001jAMF85rVHjVIOq",
+    "source_locator_sha256": "b3ebf23d50519ecd506743bae4bdcf6ecd0f3a5f0159dacfbf42f77129bbca84",
+    "native_event_text_sha256": "037dd9ada805adcaa1a184908585dd4fad018ba821ef04dedd7ef506ebe1d073",
+    "project": "bf309ff466f7bcd6b1ca4751d16d42627dbac2ee",
+    "workspace": "/workspace",
+    "observed_at": "2026-11-08T23:05:07.373000+00:00",
+    "predicate": "LITELLM_MASTER_KEY must be uncommented in the litellm config for litellm to start",
+    "rationale": "Explicit durable litellm startup fact: LITELLM_MASTER_KEY must be uncommented for litellm to start. Replaces the confirmation-request v-05.",
+    "safe_quote": "i had to uncomment LITELLM_MASTER_KEY for litellm to be able to start"
+  },
+  {
+    "slot": "v5-v-10",
+    "kind": "VALUABLE new",
+    "message_id": "msg_1cbbe9804001A5xjZhjijK6uXR",
+    "session_id": "ses_e3448adb5ffeA6IqqiDFUWxsd4",
+    "source_locator": "opencode:ses_e3448adb5ffeA6IqqiDFUWxsd4:message:msg_1cbbe9804001A5xjZhjijK6uXR",
+    "source_locator_sha256": "fe0d5fbfac4a4aed038d7eaedfbab36d2d5c22f5ad0fcff7e51d0822f4f5756f",
+    "native_event_text_sha256": "939ca3530e3a27a4db0c94fca497fd179896fabcf8619a25d657568946844df6",
+    "project": "0f5d6bf45db635bc9c239ddd5c1329d651ed13fa",
+    "workspace": "/workspace/opencode-operational-schema-guard",
+    "observed_at": "2026-11-11T17:53:49.731000+00:00",
+    "predicate": "opencode.db is pruned by deleting sessions archived or not updated in 7+ days, then cascading message/part/event deletes and VACUUM",
+    "rationale": "Explicit durable DB-maintenance fact: opencode.db prunes sessions archived / not updated in 7+ days, cascades deletes, VACUUM. Replaces the speculative-location v-10.",
+    "safe_quote": "opencode.db was recently pruned using 'sqlite3 ~/.local/share/opencode/opencode.db \"DELETE FROM session WHERE time_archived IS NOT NULL OR time_updated < (CAST(strftime('\\''%s'\\'', '\\''now'\\'', '\\''-7 days'\\'') AS INTEGER) * 1000); DELETE FROM message WHERE session_id NOT IN (SELECT id FROM session); DELETE FROM part WHERE session_id NOT IN (SELECT id FROM session); DELETE FROM event WHERE aggregate_id NOT IN (SELECT id FROM..."
+  },
+  {
+    "slot": "v5-c-03",
+    "kind": "CONTROL new",
+    "message_id": "msg_1c8a07cec0011cZH84v83wtc3H",
+    "session_id": "ses_e376b3091ffeJGVfUjNgLXM650",
+    "source_locator": "opencode:ses_e376b3091ffeJGVfUjNgLXM650:message:msg_1c8a07cec0011cZH84v83wtc3H",
+    "source_locator_sha256": "2795f1517c1d13115f4cee1e2507088ac6d01a73d5d66a9bca1cae7ff8b5c6f8",
+    "native_event_text_sha256": "0b868c4a9d1cad2e027678f8a7feaab99cb2f23c407d2d7c7f97ce784f0d64c1",
+    "project": "0f5d6bf45db635bc9c239ddd5c1329d651ed13fa",
+    "workspace": "/workspace/opencode-operational-schema-guard",
+    "observed_at": "2026-11-11T03:22:03.412000+00:00",
+    "predicate": "operator status chatter announcing the post-exit sequence appears completed (no technical requirement)",
+    "rationale": "Pure operator status chatter (post-exit sequence completed); no technical requirement. Replaces the v2/v3-reused control.",
+    "safe_quote": "it appears the post-exit sequence has completed"
+  },
+  {
+    "slot": "v5-c-10",
+    "kind": "CONTROL new",
+    "message_id": "msg_1b212b838001SQWceh3vixeBba",
+    "session_id": "ses_e4ded47d5ffeT0SIqMxaXgP1pH",
+    "source_locator": "opencode:ses_e4ded47d5ffeT0SIqMxaXgP1pH:message:msg_1b212b838001SQWceh3vixeBba",
+    "source_locator_sha256": "b824e28a5733e12355a6a1483a232bd198640565c7843a68b100050f35699ae5",
+    "native_event_text_sha256": "83aeb39aa2652cade712335d1027a8485586bc21240773739176b14b86b4868d",
+    "project": "7d7a2e305630bc45e21a2e34258e5583879cccdb",
+    "workspace": "/tmp/opencode/issue81-fresh-native-acceptance/fresh-native-v1",
+    "observed_at": "2026-11-06T18:15:34.299000+00:00",
+    "predicate": "nonvaluable control question asking for the current weather in Tokyo (no technical requirement)",
+    "rationale": "Nonvaluable weather question; no technical requirement, not a prior valuable predicate. Replaces the v4-text-duplicate control.",
+    "safe_quote": "\"What is the weather in Tokyo right now?\""
+  }
+]

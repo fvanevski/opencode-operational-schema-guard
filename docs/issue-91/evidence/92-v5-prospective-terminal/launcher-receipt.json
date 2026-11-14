@@ -1,0 +1,17 @@
+{
+ "jobs": {
+  "v5-native-authority-prospective": {
+   "rc": 0,
+   "attempts": 3,
+   "inference_calls": 1,
+   "corrective_path": "reconcile-only (no re-inference)"
+  }
+ },
+ "completed_utc": "2026-11-13T02:11:24Z",
+ "bridge_blob": "004188b1cdcd3a99956f20e581621eadc63c4663",
+ "group": "graphiti-adr92-a3-prospective-v5",
+ "state": "/home/filip/.local/state/ghdev-graphiti-issue92/state-v5-native-v2",
+ "marker": "/home/filip/.local/state/ghdev-graphiti-issue92/state-v5-native-v2/.v5-native-v2-ran",
+ "graphiti_endpoint": "http://127.0.0.1:8766/mcp",
+ "source_head": "5d8fdcf3aea63193a8b5b8f88148848944987c0d"
+}

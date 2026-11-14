@@ -1,0 +1,231 @@
+{
+  "schema": "issue92-b3-scorecard-v1",
+  "kind": "sanitized, evidence-only, public",
+  "result": "BLOCKED",
+  "typed_blocker": "B3_SPECIFICITY_SHAPE_MISMATCH",
+  "blocker_detail": "b3:specificity arm failed closed at ISSUE92_BATCH_SPECIFICITY_UNVERIFIED_NO_GRAPH_WRITES: the first (django 8-member) independent specificity counter-review returned a flat single-family JSON shape ({\"family\":[0..7],representative,...}) instead of the required {\"families\":[{...}]} array (validator reason specificity_invalid_arbitration_shape; secondary: representative_quote 234 chars exceeds the 220 cap). The batch halted before any ReviewStore materialization or Graphiti write. This is the B3 source's designed fail-closed safety behavior reacting to a model-output shape mismatch, not an EX/no-replay/terminal-ambiguity defect.",
+  "campaign": "issue92-adr-b3 specificity-aware semantic-family consolidated qualification (one matched two-arm run)",
+  "repository": "fvanevski/opencode-operational-schema-guard",
+  "branch": "work/91-memory-utility-r1",
+  "identities": {
+    "required_starting_head": "53ec4607aea0fadbeba5488fd2ebc3d5c7882673",
+    "previous_source_sha": "f51ca861c05f03bac2d86051a7bb339fe2fb5d05",
+    "specificity_source_sha": "672cd08fd05db092ff919ec7b247339d094b62b1",
+    "finite_batch_blob_previous": "2f87ed5efa828e0eb389f5f7c8e42653d9a2c46b",
+    "finite_batch_blob_specificity": "bcd1d0a2d6f96a7bccbe8cd5947d53e4b0f1fad3",
+    "finite_batch_blob_at_head": "bcd1d0a2d6f96a7bccbe8cd5947d53e4b0f1fad3",
+    "original_freeze_sha256": "96cfef46ab642aeb1d05cf246478da92f34547daf6575ea2d756d192afbdbb5f",
+    "freeze_note": "ORIGINAL_FREEZE_BYTES_UNAVAILABLE: the original private freeze byte was lost across a host reboot before B2 (historical SHA-256 recorded, not re-claimed). The 24-source cohort was reconstructed from /tmp/opencode/b2-sources.json (SHA-256 ebac7052065766eb8d1ef464142ea63dc3052d52deb36424492ebc477fdd3508); 24/24 message texts byte-match the native opencode.db session_message records (identity + timestamp + exact text verified read-only).",
+    "reconstructed_cohort_sha256": "ebac7052065766eb8d1ef464142ea63dc3052d52deb36424492ebc477fdd3508"
+  },
+  "invariant_check": {
+    "only_finite_batch_semantics_changed": true,
+    "unchanged_blobs": {
+      "core.mjs": "5b1d33efedc62b5ba0ad5f74ed68cddbee6afb0e",
+      "worker.mjs": "503bf766ca7b61c574edfc2b73aecd6d082ef629",
+      "fact-review.mjs": "0131c5f03b3d524517a7ee7d488c4754839f175f",
+      "model.mjs": "99cb39a77822d11ff982dfd618ca9689bc66757b",
+      "model-policy.mjs": "866b369b6b041761bb5187f2088808e131c13207",
+      "queue.mjs": "b4e2df18e3741917e8f3f2513b54cb6aef874e98",
+      "curator-cli.mjs": "3b1bcd7a4cb7ba1caa0e7cc34e98aac1d2aec3bb"
+    },
+    "note": "vs the B2-corrected pin f51ca86, only docs/issue-78/v2-curator/finite-batch.mjs (and its test + B2/B3 docs/evidence) changed through 53ec460. The B3 production-path change is the independent specificity counter-review (specificityPrompt / validateSpecificityFamilies + per-multi-member-family call in runAdmittedFiniteBatch). opt-in via --finite-batch on; installed production and the one-pass default curator unchanged."
+  },
+  "native_gate": {
+    "note": "CPU-only, at 53ec460, all producer exits 0",
+    "node_check": ["finite-batch.mjs", "finite-batch.test.mjs", "curator-cli.mjs", "fact-review.mjs", "worker.mjs"],
+    "focused_suites": {
+      "finite-batch": "25/25 pass",
+      "fact-review": "14/14 pass",
+      "curator": "36/36 pass",
+      "issue92-source-fact": "5/5 pass",
+      "adr-causal-audit": "14/14 pass"
+    },
+    "npm_run_check": "rc=0",
+    "npm_test": "rc=0 (524 pass)"
+  },
+  "frozen_corpus": {
+    "sha256_historical": "96cfef46ab642aeb1d05cf246478da92f34547daf6575ea2d756d192afbdbb5f",
+    "clusters": 24,
+    "eligible_sources": 24,
+    "valuable_targets": 16,
+    "nonvaluable_controls": 11,
+    "capture_ineligible_privacy_control": "opencode:ses_e767fc4cbffe9zB9WHpLF4PLBe:message:ctrl",
+    "families": { "swebench-sphinx": 9, "swebench-django": 8, "swebench-pylint": 3, "graphiti-mcp": 4 },
+    "workspace_distinctness": {
+      "swebench-sphinx": "9 sources / 8 distinct workspaces",
+      "swebench-django": "8 sources / 8 distinct workspaces",
+      "swebench-pylint": "3 sources / 3 distinct workspaces",
+      "graphiti-mcp": "4 sources / 1 distinct workspace"
+    }
+  },
+  "ex_admission": {
+    "gate": "canonical openviking-commit-gate EX flock (/run/user/1000/openviking-agent.lock) + real harness-exit + 30s quiet-grace + scheduler-idle + canonical-Graphiti-unresolved check + production-drain serialization",
+    "launcher": "b3-ex-launcher.py (detached setsid, exactly-once marker guard)",
+    "run1": {
+      "harness_exit_utc": "2026-11-11T02:05:43Z",
+      "ex_flock_acquired_utc": "2026-11-11T02:06:14Z",
+      "quiet_grace_seconds": 30,
+      "ex_admission_proven_utc": "2026-11-11T02:06:44Z",
+      "previous": "rc 3 -> rc 0 (positive reconcile, no model replay)",
+      "specificity": "rc=1 terminal halt (pre-patch: unclassified FAIL_CLOSED)"
+    },
+    "run2_no_replay_rerun": {
+      "harness_exit_utc": "2026-11-11T02:15:04Z",
+      "ex_flock_acquired_utc": "2026-11-11T02:15:32Z",
+      "ex_admission_proven_utc": "2026-11-11T02:16:02Z",
+      "previous": "rc=0 reconcile-only (0 model calls, 0 writes)",
+      "specificity": "rc=1 deterministic re-derivation from 48 frozen pairs (0 new model calls, 0 writes); terminal record write crashed on a launcher write_text(mode=...) bug, fixed; .b3-terminal recorded post-hoc with provenance"
+    },
+    "note": "Run 2 was a bounded no-replay reconcile/re-derivation, not a favorable-output rerun: 51/51 and 48/48 frozen model-call intent/result pairs intact, zero unpaired, zero new calls (no model-call file newer than 2026-11-11T02:07:40Z), zero new graph writes."
+  },
+  "treatments": {
+    "b3_previous": {
+      "sha": "f51ca861c05f03bac2d86051a7bb339fe2fb5d05",
+      "worktree": "disposable fresh worktree pinned at f51ca861",
+      "group": "graphiti-adr92-b3-previous",
+      "batch_id": "528379aab58c58d6f4dda66bcb7036be03de2e55d44e22e667d10dcbefd0f7b5",
+      "snapshot_sha256": "15ce9ec4a77495e3a29bcc96ddcf65038884a2e9116883b5310e4314c92d2c59",
+      "partition": "[group,project]",
+      "status": "review_required (settled)",
+      "candidates": 30,
+      "approved": 4,
+      "deferred": 26,
+      "persisted": 4,
+      "families": 3,
+      "pool_size_dist": { "8": 1, "9": 1, "3": 1 },
+      "singleton_pools": 0,
+      "deferred_reasons": { "alternative_equivalent_fact": 14, "not_substantive": 10, "uncertain_representative": 2 },
+      "model_calls": 51,
+      "model_call_stages": { "discovery": 24, "utility": 24, "arbitration": 3 },
+      "model_errors": 0,
+      "prompt_tokens": 48266,
+      "completion_tokens": 4258,
+      "persisted_uuids": [
+        "ff97aeb9-d6d0-4844-94a1-7a4ed2b09dd1",
+        "4274be76-e75e-4e3f-ae33-f5ff351bc570",
+        "b001f8ef-5e58-4225-85ef-78be7082f376",
+        "8e95af52-c2a5-4233-a2f9-ceb0b53f2c38"
+      ],
+      "reconcile": "rc 3 -> rc 0 (positive reconcile under retained EX; no model replay)"
+    },
+    "b3_specificity": {
+      "sha": "672cd08fd05db092ff919ec7b247339d094b62b1",
+      "worktree": "disposable fresh worktree pinned at 672cd08",
+      "group": "graphiti-adr92-b3-specificity",
+      "batch_id": "a3a93ee7a80f10e825a610208b6dfb15e7932f5d7ecadc6dbb60b60890cba522",
+      "snapshot_sha256": "cbf2834d5994f94367cc7cfece768fdb162f94084b51a9ddc90f86ff117a2da2",
+      "partition": "[group,project]",
+      "status": "terminal halt (SPECIFICITY_UNVERIFIED_NO_GRAPH_WRITES), no plan materialized",
+      "candidates_accepted_to_arbitration": 22,
+      "persisted": 0,
+      "families_provisional_completed": 1,
+      "families_refined": 0,
+      "provisional_family": {
+        "project": "swebench-django",
+        "members": 8,
+        "certainty": "high",
+        "reason_code": "same_technical_predicate",
+        "arbitration_reply_sha256": "f5eecfb72fa5bd81eb572911e99a94e25a267f416ae3b1aa79ac3dc5c63b1852",
+        "specificity_reply_sha256": "see model-call-digests-specificity.json (stage=specificity)"
+      },
+      "failure": {
+        "code": "ISSUE92_BATCH_SPECIFICITY_UNVERIFIED_NO_GRAPH_WRITES",
+        "validator_reason": "specificity_invalid_arbitration_shape",
+        "mechanism": "model returned a flat single-family object (top-level 'family' array + sibling fields) instead of the required 'families' array of family objects; representative_quote also exceeded the 220-char bound (234). validateSpecificityFamilies rejected it before any ReviewStore/Graphiti write.",
+        "secondary_quote_length": "234 chars (allowed 15..220)"
+      },
+      "model_calls": 48,
+      "model_call_stages": { "discovery": 24, "utility": 22, "arbitration": 1, "specificity": 1 },
+      "model_errors": 0,
+      "prompt_tokens": 44427,
+      "completion_tokens": 4247,
+      "model_call_pairs": "48 intents + 48 results, zero unpaired, zero unknown outcomes (no-replay state)"
+    }
+  },
+  "model_profile": {
+    "model": "chat-fast",
+    "temperature": 0,
+    "max_tokens": 1600,
+    "response_format": "json_object",
+    "timeout_ms": 90000,
+    "endpoint": "http://127.0.0.1:8002/v1/chat/completions",
+    "graphiti_mcp": "http://127.0.0.1:8766/mcp",
+    "falkordb": "redis://127.0.0.1:6382"
+  },
+  "four_surface_proof": {
+    "b3_previous": { "review_store": 4, "graphiti_mcp": 4, "falkordb_episodic": 4, "uuid_sets_identical": true, "source_binding_intact": true },
+    "b3_specificity": { "review_store": 0, "graphiti_mcp": 0, "falkordb_episodic": 0, "uuid_sets_identical": true, "source_binding_intact": true },
+    "uuids": {
+      "ff97aeb9-d6d0-4844-94a1-7a4ed2b09dd1": "sp2 sphinx_9230_dict_param_render_variant (sphinx-doc__sphinx-9230, quasar workspace)",
+      "4274be76-e75e-4e3f-ae33-f5ff351bc570": "py1 pylint_short_verbose_expects_arg (pylint-dev__pylint-6386, quasar workspace)",
+      "b001f8ef-5e58-4225-85ef-78be7082f376": "dj1 django_add_filter_lazy_string_typeerror (django__django-13794, swift15-ninferdev-k7 workspace)",
+      "8e95af52-c2a5-4233-a2f9-ceb0b53f2c38": "sp8 sphinx_14182_rst_header_rows (astropy__astropy-14182, muse-w4a4 workspace)"
+    },
+    "note": "every persisted fact verified across ReviewStore remote_episode_uuid, Graphiti MCP get_episodes, raw FalkorDB Episodic node, and the ReviewStore/episode-index source binding (positive reconcile audit trail: submission_unknown -> queued -> persisted). No Source graph nodes invented (source index lives in local ReviewStore)."
+  },
+  "valuable_targets": {
+    "total": 16,
+    "b3_previous_retained": 5,
+    "b3_previous_retained_ids": ["sphinx_9230_dict_param_render_variant (sp2, persisted)", "sphinx_dict_str_str_param_render_defect (sp1, covered by sp2 representative)", "sphinx_14182_rst_header_rows (sp8, persisted)", "django_add_filter_lazy_string_typeerror (dj1, persisted; dj1b django_lazy_proxy_string_concat covered)", "pylint_short_verbose_expects_arg (py1, persisted)"],
+    "b3_specificity_retained": "undetermined (arm failed closed before family materialization; 0 persisted)",
+    "regressed_b2_variants_in_b3_previous": [
+      "sphinx_ascii_rst_header_rows (sp9): deferred (alternative_equivalent_fact / uncertain_representative class)",
+      "django_add_filter_lazy_string_variant (dj2): deferred (alternative_equivalent_fact class)",
+      "pylint_6386_verbose_flag_negative (py2): deferred alternative_equivalent_fact (item 005b82d9, into py1 representative 8aa6921e)",
+      "pylint_verbose_v_arg_expected (py3): deferred alternative_equivalent_fact (item 85422304, into py1 representative 8aa6921e)"
+    ],
+    "regression_note": "the four B2-regressed valuable variants remain lost in the b3:previous (B2) arm; the b3:specificity arm, which was designed to recover them via the independent specificity counter-review, failed closed on a model-output shape mismatch before producing a refined partition. B3 therefore did NOT demonstrate the retention recovery this correction targets.",
+    "graphiti_unresolved_losses": ["graphiti_0312_py313_falkordb_smoke", "graphiti_0312_mcp_tools_only", "graphiti_llm_param_readonly_audit", "graphiti_live_mcp_no_openviking", "graphiti_temporal_memory_live_test", "graphiti_temporal_validation_skill"],
+    "graphiti_note": "all 6 graphiti valuable targets (g1-g4) from the single-workspace graphiti-mcp project produced 0 approvals in BOTH arms (8 graphiti candidates, all deferred not_substantive); these are the pre-existing discovery/utility losses outside this correction's objective."
+  },
+  "nonvaluable": {
+    "total_controls": 11,
+    "b3_previous_persisted": 0,
+    "b3_specificity_persisted": 0,
+    "assessment": "B2 duplicate-reduction benefit preserved: 0 nonvaluable persisted in the settled b3:previous arm (all 4 persisted episodes are valuable representatives); 11 nonvaluable controls retained as reviewable deferrals (alternative_equivalent_fact / not_substantive / uncertain_representative), not persisted."
+  },
+  "privacy": {
+    "control_ref": "opencode:ses_e767fc4cbffe9zB9WHpLF4PLBe:message:ctrl",
+    "absent_from_staged_events": true,
+    "absent_from_model_inputs": true,
+    "absent_from_review_store": true,
+    "scan": "0 occurrences of ':message:ctrl' in all 99 frozen model-call intent/result files (51 previous + 48 specificity); the ctrl session is present only via its eligible regular sibling msg_189803b36001zxJWhWTzuYbfhZ (staged as a normal graphiti-mcp source)."
+  },
+  "scope_authority": {
+    "per_fact_authorization_unchanged": true,
+    "note": "per-fact authorization still uses full native group/project/workspace/source_ref/evidence_class/observed_at/temporal_status; the [group,project] partition governs only the semantic-comparison pool; the specificity counter-review adds source-quoted discrimination but no cross-project/cross-workspace provenance transfer."
+  },
+  "production_unchanged": {
+    "historical_campaign_groups": {
+      "graphiti-adr92-d1-previous": 2, "graphiti-adr92-d1-corrected": 15,
+      "graphiti-adr92-d2-previous": 14, "graphiti-adr92-d2-two-stage": 0,
+      "graphiti-adr92-d3-previous": 0, "graphiti-adr92-d3-corrected": 4,
+      "graphiti-adr92-b1-previous": 4, "graphiti-adr92-b1-finite-batch": 19,
+      "graphiti-adr92-prospective-t1-base": 10, "graphiti-adr92-prospective-t1-cand": 2,
+      "graphiti-adr92-prospective-t2-base": 9, "graphiti-adr92-prospective-t2-cand": 3,
+      "graphiti-adr92-b2-previous": 18, "graphiti-adr92-b2-corrected": 4
+    },
+    "all_unchanged_vs_baseline": true,
+    "development_knowledge": "355 -> 355 (no production-drain drift in the campaign window; baseline and post-campaign counts identical)",
+    "note": "B3 wrote only to graphiti-adr92-b3-previous (4 episodes); graphiti-adr92-b3-specificity stayed at 0. Attribution by group/UUID: all 4 new episode UUIDs belong to the b3:previous group."
+  },
+  "crash_no_replay": {
+    "private_snapshots_preserved": true,
+    "file_modes": "0700 dirs / 0600 files",
+    "model_call_intents_frozen": true,
+    "model_call_results_frozen": true,
+    "frozen_plan_per_arm": "b3:previous plan.json + snapshot.json frozen; b3:specificity snapshot.json frozen (no plan.json: halt preceded plan materialization)",
+    "no_model_replay_on_rerun": true,
+    "note": "run 2 (no-replay reconcile/re-derivation) made 0 new model calls and 0 graph writes: 51/51 and 48/48 frozen pairs intact, no model-call file newer than 2026-11-11T02:07:40Z, group counts unchanged (4 / 0)."
+  },
+  "assessment": {
+    "duplicate_reduction_preserved": "YES — b3:previous (B2 source) settles with 3 genuine cross-workspace pools (8+9+3), 0 singletons, 0 nonvaluable persisted (B2's core benefit intact).",
+    "valuable_retention_recovered": "NO — the b3:specificity arm (the mechanism meant to recover the 4 regressed variants) failed closed on a model-output shape mismatch before producing any refined family partition; 0 persisted.",
+    "safety_invariants": "INTACT — no spurious writes (specificity arm 0 episodes on all surfaces), no-replay (99/99 paired intents/results, zero unknown), privacy (ctrl absent), scope/authorization unchanged, production/historical groups unchanged, EX admission canonical (harness-exit + flock + quiet-grace + scheduler-idle).",
+    "disposition": "BLOCKED (typed: B3_SPECIFICITY_SHAPE_MISMATCH)",
+    "disposition_rationale": "The accepted B3 safety check (specificity verdict validation) failed on a model-output shape mismatch, so this campaign did not produce a valid, adjudicable B3 refined-family result. The halt is a clean fail-closed (not an EX/no-replay/terminal-ambiguity defect), and all hard safety invariants hold; the minimal next Central correction is a source-level shape-robustness fix, after which the B3 arm must be re-executed."
+  },
+  "minimal_central_correction": "Make the B3 specificity counter-review robust to the model's single-family output shape: (a) normalize a flat single-family object ({\"family\":[...], representative, certainty, ...}) into the required {\"families\":[{...}]} partition before validation, and/or (b) tighten the specificity prompt so the model reliably emits the array shape within the 15..220-char representative_quote bound; on a failed/shape-mismatched specificity verdict, consider degrading the multi-member family to an operator-reviewable uncertain deferral (preserving B2's duplicate suppression) instead of aborting the whole batch before any write. Re-run the b3:specificity arm once under the canonical post-exit EX and adjudicate the refined families against the 16 valuable / 11 nonvaluable targets.",
+  "candidate_count_note": "b3:previous materialized 30 candidates (vs 26 in the historical B2-corrected run) from the identical 24-source cohort: temperature-0 model discovery/utility non-determinism (the contract notes temperature 0 is not deterministic). The extra candidates are utility-stage variance (e.g., multi-fact graphiti clusters); no cohort label or denominator changed."
+}

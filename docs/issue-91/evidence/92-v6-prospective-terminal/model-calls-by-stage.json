@@ -1,0 +1,19 @@
+{
+  "total_model_calls": 84,
+  "by_stage": {
+    "discovery": 54,
+    "utility": 20,
+    "support": 10
+  },
+  "model_errors": 0,
+  "batch_id": "17a72b9223e9ee765aa6a83208480ca8aa02ad595666d2b57183a86dee1cc749",
+  "candidates": 22,
+  "approved": 3,
+  "deferred": 19,
+  "persisted_episodes": 3,
+  "graphiti_uuids": [
+    "651447b9-3e19-40a6-a105-b14e9e315e2a",
+    "61991ec8-f3fe-4f15-b725-07feee3b310e",
+    "b20cfe84-5517-4536-93d2-dbdd0fcfaa60"
+  ]
+}

@@ -1,0 +1,122 @@
+{
+  "schema": "issue92-adr-d3-terminal-evidence-v1",
+  "kind": "sanitized, evidence-only, public",
+  "collected_at": "2026-11-10T02:42:09.960Z",
+  "surfaces": [
+    "review_store",
+    "graphiti_mcp",
+    "falkordb",
+    "source_index"
+  ],
+  "arms": {
+    "previous": {
+      "group": "graphiti-adr92-d3-previous",
+      "review_record_count": 24,
+      "review_state_counts": {
+        "deferred": 24
+      },
+      "episode_count": 0,
+      "uuid_count": 0,
+      "all_four_surface": null,
+      "uuids": []
+    },
+    "corrected": {
+      "group": "graphiti-adr92-d3-corrected",
+      "review_record_count": 24,
+      "review_state_counts": {
+        "deferred": 20,
+        "persisted": 4
+      },
+      "episode_count": 4,
+      "uuid_count": 4,
+      "all_four_surface": true,
+      "uuids": [
+        {
+          "uuid": "793d2ac9-34ec-46d5-8d8f-509f636011ca",
+          "group": "graphiti-adr92-d3-corrected",
+          "review_store": true,
+          "graphiti_mcp": true,
+          "falkordb": true,
+          "source_index": true,
+          "state": "persisted"
+        },
+        {
+          "uuid": "880e3102-af52-48da-8a46-0c54f60c3260",
+          "group": "graphiti-adr92-d3-corrected",
+          "review_store": true,
+          "graphiti_mcp": true,
+          "falkordb": true,
+          "source_index": true,
+          "state": "persisted"
+        },
+        {
+          "uuid": "3d931557-6d5c-492a-bc36-a956d080c5a1",
+          "group": "graphiti-adr92-d3-corrected",
+          "review_store": true,
+          "graphiti_mcp": true,
+          "falkordb": true,
+          "source_index": true,
+          "state": "persisted"
+        },
+        {
+          "uuid": "c0ed4542-43bc-434b-b42f-d24d0c17b8f4",
+          "group": "graphiti-adr92-d3-corrected",
+          "review_store": true,
+          "graphiti_mcp": true,
+          "falkordb": true,
+          "source_index": true,
+          "state": "persisted"
+        }
+      ]
+    }
+  },
+  "model_costs": {
+    "previous": {
+      "model_calls": 47,
+      "model_errors": 0,
+      "model_ms": 17795,
+      "prompt_tokens": 34222,
+      "completion_tokens": 3752,
+      "usage_reported_calls": 47,
+      "drain_resumes": 4,
+      "final_status": "review_required",
+      "curated": 6,
+      "persisted": 0,
+      "deferred": 6,
+      "approved": 0
+    },
+    "corrected": {
+      "model_calls": 45,
+      "model_errors": 0,
+      "model_ms": 16673,
+      "prompt_tokens": 47457,
+      "completion_tokens": 3919,
+      "usage_reported_calls": 45,
+      "drain_resumes": 4,
+      "final_status": "review_required",
+      "curated": 6,
+      "persisted": 0,
+      "deferred": 6,
+      "approved": 0
+    }
+  },
+  "exactly_once_traces": {
+    "previous_discovery": {
+      "trace_files": 24,
+      "call_intents": 24
+    },
+    "previous_review": {
+      "trace_files": 23,
+      "call_intents": 23
+    },
+    "corrected_discovery": {
+      "trace_files": 24,
+      "call_intents": 24
+    },
+    "corrected_review": {
+      "trace_files": 21,
+      "call_intents": 21
+    },
+    "unfinished_call_intents": 0
+  }
+}

@@ -91,7 +91,8 @@ export class CandidateQueue {
   // and bounded interactive buffers). This is diagnostic, not a replay queue.
   async recordDrop(reason) {
     if (!['pending_prompt_overflow', 'pending_session_overflow',
-      'assistant_context_truncated', 'capture_backpressure'].includes(reason))
+      'assistant_context_truncated', 'capture_backpressure',
+      'prompt_admission_filtered', 'tool_admission_filtered'].includes(reason))
       throw Error('Invalid candidate drop reason');
     return this._locked(async () => { await this._bump(reason); });
   }
@@ -114,6 +115,7 @@ export class CandidateQueue {
       user_turn: { cls: 'user-stated', types: ['message', 'prompt'] },
       tool_outcome: { cls: 'tool-reported', types: ['tool'] },
       file_change: { cls: 'tool-reported', types: ['tool'] },
+      file_access: { cls: 'tool-reported', types: ['tool'] },
       assistant_turn: { cls: 'assistant-reported', types: ['message'] },
     }[event.kind];
     if (!allowed || event.evidence_class !== allowed.cls) return { status: 'invalid' };

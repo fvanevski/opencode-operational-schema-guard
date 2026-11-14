@@ -1,0 +1,21 @@
+{
+  "status": "unresolved",
+  "batch_id": "fcb55f58d173a90d17ebf55f9ade4953f02a33af9244098ff2072acd81a0cbce",
+  "candidates": 10,
+  "approved": 3,
+  "deferred": 7,
+  "model_calls": 41,
+  "model_errors": 0,
+  "model_calls_by_stage": {
+    "discovery": 26,
+    "utility": 10,
+    "support": 4,
+    "arbitration": 1
+  },
+  "inference_calls": 1,
+  "corrective_path": "reconcile-only",
+  "source_binding": {
+    "repo_head": "5a0d2ddb0cb2284439740b036a587016a42a50b7",
+    "finite_batch_blob": "358aa2150a49c33eda80138091d6d6f702d79851"
+  }
+}

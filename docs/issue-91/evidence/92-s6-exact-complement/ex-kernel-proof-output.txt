@@ -1,0 +1,16 @@
+ADMITTED
+{
+ "positive": {
+  "rc": 0,
+  "out": "(inherited-stdout; ADMITTED printed to console)"
+ },
+ "neg_marker_only": {
+  "rc": 1,
+  "out": "DENIED:EX_KERNEL_ADMISSION_REQUIRED:missing_lock_fd"
+ },
+ "neg_noninherited_fd": {
+  "rc": 1,
+  "out": "DENIED:EX_KERNEL_ADMISSION_REQUIRED:wrong_inode"
+ }
+}
+EX_KERNEL_PROOF: PASS

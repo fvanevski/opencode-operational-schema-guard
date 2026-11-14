@@ -1,0 +1,74 @@
+{
+  "group": "graphiti-adr92-exposed-utility-final-r1",
+  "persisted_valuable": 3,
+  "persisted_controls": 0,
+  "duplicates": 0,
+  "control_pollution": 0,
+  "privacy_breach": false,
+  "source_integrity": "all 3 persisted verbatim from native source",
+  "decisions": [
+    {
+      "case": "v6-v-03",
+      "valuable": true,
+      "outcome": "PERSISTED",
+      "uuid": "6cc0c871",
+      "utility_class": "stable_architecture",
+      "type": "local-repo-clone-location"
+    },
+    {
+      "case": "v6-v-04",
+      "valuable": true,
+      "outcome": "PERSISTED",
+      "uuid": "29c51bc3",
+      "utility_class": "stable_architecture",
+      "type": "post-change-gate-state"
+    },
+    {
+      "case": "v6-v-07",
+      "valuable": true,
+      "outcome": "DEFERRED",
+      "reason": "transient_execution",
+      "type": "package-install"
+    },
+    {
+      "case": "v6-v-08",
+      "valuable": true,
+      "outcome": "PERSISTED",
+      "uuid": "5cbff296",
+      "utility_class": "stable_architecture",
+      "type": "credential-store-location (no values)"
+    },
+    {
+      "case": "v6-v-09",
+      "valuable": true,
+      "outcome": "DEFERRED",
+      "reason": "review_uncertain",
+      "type": "config-endpoint-mapping"
+    },
+    {
+      "case": "v6-v-10",
+      "valuable": true,
+      "outcome": "DEFERRED",
+      "reason": "source_quote_utility_transient_execution",
+      "type": "conditional-operator-rule"
+    },
+    {
+      "case": "v6-c-01",
+      "valuable": false,
+      "outcome": "DEFERRED",
+      "reason": "source_only_utility_not_substantive"
+    },
+    {
+      "case": "v6-c-02",
+      "valuable": false,
+      "outcome": "DEFERRED",
+      "reason": "not_substantive"
+    },
+    {
+      "case": "v6-c-03",
+      "valuable": false,
+      "outcome": "DEFERRED",
+      "reason": "source_only_utility_transient_execution"
+    }
+  ]
+}

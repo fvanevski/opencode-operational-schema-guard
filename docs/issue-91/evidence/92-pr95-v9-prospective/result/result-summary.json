@@ -1,0 +1,20 @@
+{
+  "schema": "issue92-pr95-v9-terminal-result-v1",
+  "group": "graphiti-adr92-a3-prospective-v9",
+  "result": "V9_FAIL",
+  "source_head": "05470be563a703b75a6f8c7a5b393871293c0c40",
+  "batch_id": "b1f6c1fc14e2ad2883779db27811cb050daea6bf77e29c03aaed52a83f0d8327",
+  "model_calls": 83,
+  "model_errors": 0,
+  "persisted_episodes": 5,
+  "valuable_coverage": "2/10 (20%)",
+  "zero_control_persistence": false,
+  "grounded_precision": "5/5 (100%)",
+  "useful_among_grounded": "2/5 (40%)",
+  "independent_useful_facts": 2,
+  "gates_passed": ["grounded_precision", "zero_authority_breaches", "terminal_source_integrity", "independently_ratified_labels"],
+  "gates_failed": ["valuable_coverage", "zero_control_fact_persistence", "useful_among_grounded"],
+  "ex_admission": "kernel flock + harness exit + scheduler idle + 30s quiet grace + once-only marker",
+  "reconcile": "rc=3 initial, reconciled on attempt 1",
+  "timestamp_utc": "2026-11-13T23:55:00Z"
+}

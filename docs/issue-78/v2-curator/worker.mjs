@@ -3,6 +3,8 @@ import { CandidateQueue } from '../v2-candidate/queue.mjs';
 import { GraphitiMcp, EXTRACTION_INSTRUCTIONS } from '../../issue-75/v2-candidate/memory-core.mjs';
 import { ReviewStore, selectClusters, validateDecision, validateModelDecision, normalizedAssertion } from './core.mjs';
 import { curateCluster } from './model.mjs';
+import { reviewProposedFacts, factDiscoveryPrompt,
+  validateFactDiscovery } from './fact-review.mjs';
 const validUUID=s=>typeof s==='string'&&/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i.test(s);
 const nameOf=r=>'curated-v1:'+r.id;
 async function allRecords(store){
@@ -169,8 +171,13 @@ export function tallyModelUsage(stats,reply){
 }
 export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='local',
   graphitiEndpoint,queue,store,graphiti,curate=curateCluster,
-  modelOptions={},maxClusters=6,maxSeconds=600}={}){
+  modelOptions={},maxClusters=6,maxSeconds=600,
+  // Optional only for ADR exposed qualification until independent acceptance.
+  factReview=false,factReviewModelCall=null}={}){
   admitted();
+  if(typeof factReview!=='boolean'||
+    (factReviewModelCall!==null&&typeof factReviewModelCall!=='function'))
+    throw Error('Invalid optional fact review setting');
   if(!Number.isInteger(maxClusters)||maxClusters<1||maxClusters>12)throw Error('Invalid cluster bound');
   const deadline=Date.now()+maxSeconds*1000;
   queue??=new CandidateQueue(root,group);
@@ -181,7 +188,9 @@ export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='loca
     model_errors:0,model_ms:0,prompt_tokens:0,completion_tokens:0,
     usage_reported_calls:0,reasoning_tokens:0,reasoning_reported_calls:0,
     length_limited_responses:0};
-  // Resolve any old ambiguous/queued write before accepting more work.
+  // Recover any crash-interrupted fact bundle from its durable local plan
+  // before source ownership and remote identity reconciliation.
+  if(typeof store.restoreBundles==='function')await store.restoreBundles();
   let result=await reconcile(store,graphiti);
   stats.persisted+=result.persisted;stats.unresolved=result.unresolved;
   if(result.unresolved)return {...stats,status:'unresolved'};
@@ -216,35 +225,50 @@ export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='loca
   const ownedSources=new Map();
   for(const prior of await allRecords(store)){
     for(const id of prior.source_event_ids||[]){
-      if(ownedSources.has(id)&&ownedSources.get(id)!==prior.id)
+      const owner=prior.origin_cluster_id||prior.id;
+      const current=ownedSources.get(id);
+      if(current&&current.owner!==owner)
         throw Error('SOURCE_EVENT_IN_MULTIPLE_REVIEWS');
-      ownedSources.set(id,prior.id);
-      const row=await queue.get(id);
-      if(!row)continue; // An older review may predate this queue instance.
-      if(prior.state==='deferred'||prior.state==='skipped'){
-        const terminal=prior.state;
-        if(row.state==='new'||row.state==='reserved')
-          await queue.transition(id,row.state,terminal);
-      }else if(['approved','submission_unknown','queued','persisted',
-        'failed_extraction','retry_authorized'].includes(prior.state)){
-        if(row.state==='new')await queue.transition(id,'new','reserved');
-        else if(row.state==='deferred')
-          await queue.transition(id,'deferred','reserved');
+      if(current)current.records.push(prior);
+      else ownedSources.set(id,{owner,records:[prior]});
+    }
+  }
+  // Several single-fact children can share the same native source evidence.
+  // Reconcile the queue once per parent, prioritizing a live/persisted sibling
+  // over another sibling's local SKIP/DEFER decision.
+  for(const [id,entry] of ownedSources){
+    const row=await queue.get(id);
+    if(!row)continue;
+    const active=entry.records.some(r=>['approved','submission_unknown',
+      'queued','persisted','failed_extraction','retry_authorized'].includes(r.state));
+    const deferred=entry.records.some(r=>r.state==='deferred');
+    if(active){
+      if(row.state==='new')await queue.transition(id,'new','reserved');
+      else if(row.state==='deferred')await queue.transition(id,'deferred','reserved');
+      if((await queue.get(id))?.state==='reserved')
         await queue.transition(id,'reserved','approved');
-      }
+    }else if(deferred){
+      if(row.state==='new'||row.state==='reserved')
+        await queue.transition(id,row.state,'deferred');
+    }else if(row.state==='new'||row.state==='reserved'){
+      await queue.transition(id,row.state,'skipped');
     }
   }
   const list=await queue.list({limit:500,states:['new']});
   const clusters=selectClusters(list.items,{maxClusters});
   for(const cluster of clusters){
     if(Date.now()>deadline-5000)break;
-    const existing=await store.get(cluster.id);
+    const existing=(await store.get(cluster.id))||
+      (typeof store.restoreBundle==='function'&&await store.restoreBundle(cluster.id));
     if(existing){
       // Crash after durable review creation but before all source transitions:
       // converge the source queue without recalling the model or replaying writes.
       for(const e of cluster.events){
-        const state=existing.state==='skipped'?'skipped':
-          existing.state==='deferred'?'deferred':'reserved';
+        const parentState=existing.records?
+          (existing.records.some(r=>['approved','queued','persisted','submission_unknown'].includes(r.state))?
+            'approved':'deferred'):existing.state;
+        const state=parentState==='skipped'?'skipped':
+          parentState==='deferred'?'deferred':'reserved';
         if(state==='reserved'){
           if(await queue.transition(e.event_id,'new','reserved'))
             await queue.transition(e.event_id,'reserved','approved');
@@ -256,25 +280,48 @@ export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='loca
     stats.model_attempts++;
     try{
       const reply=await curate(cluster,{endpoint:modelEndpoint,model:modelId,apiKey,
-        ...modelOptions});
-      proposal=validateModelDecision(reply.content,cluster);
+        ...modelOptions,
+        ...(factReview?{promptMessages:factDiscoveryPrompt(cluster)}:{})});
+      proposal=factReview?
+        validateFactDiscovery(reply.content,cluster):
+        validateModelDecision(reply.content,cluster);
       tallyModelUsage(stats,reply);
     }catch(e){
       stats.model_errors++;
       proposal={ok:false,decision:'DEFER',facts:[],
         reason:'curator_unavailable_or_invalid'};
     }
-    const stored=await store.create(cluster,proposal);
+    if(factReview&&proposal.ok&&proposal.decision==='EMIT'){
+      try{
+        const reviewed=await reviewProposedFacts(cluster,proposal,{
+          store,modelEndpoint,modelId,apiKey,modelOptions,
+          ...(factReviewModelCall?{modelCall:factReviewModelCall}:{})
+        });
+        tallyModelUsage(stats,reviewed.reply);
+        proposal=reviewed.proposal;
+      }catch{
+        // Preserve a reviewable source record on verifier/novelty failure.
+        // Do NOT silently drop the potentially useful native evidence.
+        stats.model_errors++;
+        proposal={ok:false,decision:'DEFER',
+          reason:'independent_fact_review_unavailable',facts:[]};
+      }
+    }
+    const isBundle=proposal.ok&&proposal.decision==='EMIT'&&proposal.facts.length>1;
+    const stored=isBundle?await store.createBundle(cluster,proposal):
+      await store.create(cluster,proposal);
     if(!stored.created)continue;
+    const records=stored.records||[stored.record];
     stats.curated++;
-    if(stored.record.state==='deferred')stats.deferred++;
-    if(stored.record.state==='skipped')stats.skipped++;
-    if(stored.record.state==='approved')stats.approved++;
+    stats.deferred+=records.filter(r=>r.state==='deferred').length;
+    stats.skipped+=records.filter(r=>r.state==='skipped').length;
+    stats.approved+=records.filter(r=>r.state==='approved').length;
     // Every candidate event is still available with immutable source ID.
-    // Reservation happens only after the durable review entry exists.
+    // Reservation happens only after durable, recoverable per-fact reviews exist.
     for(const e of cluster.events){
-      const to=stored.record.state==='skipped'?'skipped':
-        stored.record.state==='deferred'?'deferred':'reserved';
+      const anyApproved=records.some(r=>r.state==='approved');
+      const to=records.every(r=>r.state==='skipped')?'skipped':
+        !anyApproved?'deferred':'reserved';
       if(to==='reserved'){
         if(await queue.transition(e.event_id,'new','reserved'))
           await queue.transition(e.event_id,'reserved','approved');

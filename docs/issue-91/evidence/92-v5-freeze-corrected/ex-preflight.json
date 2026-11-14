@@ -1,0 +1,16 @@
+{
+ "positive": {
+  "rc": 0,
+  "out": "(inherited-stdout; ADMITTED)"
+ },
+ "neg_marker_only": {
+  "rc": 1,
+  "out": "DENIED:EX_KERNEL_ADMISSION_REQUIRED:missing_lock_fd"
+ },
+ "neg_noninherited_fd": {
+  "rc": 1,
+  "out": "DENIED:EX_KERNEL_ADMISSION_REQUIRED:wrong_inode"
+ },
+ "proof": "marker-only launch fails closed (missing_lock_fd) -> no model/Graphiti call without admitted inherited EX fd",
+ "verdict": "PASS"
+}

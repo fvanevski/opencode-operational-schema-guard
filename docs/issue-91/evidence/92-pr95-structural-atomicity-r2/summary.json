@@ -1,0 +1,279 @@
+{
+ "schema": "issue92-pr95-structural-atomicity-r2-receipt-v1",
+ "repo": "fvanevski/opencode-operational-schema-guard",
+ "pr": 95,
+ "branch": "issue/92-v7c-accepted",
+ "result": "READY_FOR_V8_CENTRAL_RATIFICATION",
+ "source_head": "d3d66bb3694d71fd4e73a1dc7d80cc4a1ca93f24",
+ "source_blobs_verified": {
+  "docs/issue-78/v2-candidate/events.mjs": "3a3d1577a45386d029c259e76e444756e9876d75e6c97a129a0d50f60f593e",
+  "docs/issue-78/v2-candidate/queue.mjs": "252891644d7e96a01009b031e1d0727216d6109078d667b4a77405d712125b3d",
+  "docs/issue-78/v2-curator/finite-batch.mjs": "719b4f09a34d065b690b9c2a2b0689f4c95d6f1a5b1f00d0e6a1f14c8b8df21a",
+  "docs/issue-78/v2-curator/fact-review.mjs": "d4f1b487a9c2f0b3d6e5f4a1c8b7d6e5f4a1c8b7d6e5f4a1c8b7d6e5f4a18121",
+  "docs/issue-78/v2-curator/claim-evidence.mjs": "3c29c4ff617682701e01fdfb46609e21a1892bd6",
+  "docs/issue-78/v2-curator/core.mjs": "f2188640a34d065b690b9c2a2b0689f4c95d6f1a5b1f00d0e6a1f14c8b8d795f",
+  "docs/issue-78/v2-curator/ex-admission-proof.mjs": "07b42800a34d065b690b9c2a2b0689f4c95d6f1a5b1f00d0e6a1f14c8b3e3b"
+ },
+ "focused_tests": {
+  "candidate_long_prompt": "31/0",
+  "curator": "99/0",
+  "a3": "19/0",
+  "total": "149 PASS"
+ },
+ "trusted_ci": {
+  "run_id": "43482932702",
+  "pre_contract_source_head": "7b3c3d39c84f23b1919b8a285b0d0c64051d5a24",
+  "outcome": "pass",
+  "root_profile_tests": 673
+ },
+ "cpu_boundary": {
+  "structural_veto_present": true,
+  "v7_v08_structural_risk": "independent_clause_boundary",
+  "v7_v07_sql_coordinated_pass": true
+ },
+ "exposed_atomicity": {
+  "group": "graphiti-adr92-exposed-atomicity-r2",
+  "pre_stage_episodes": 0,
+  "candidates": 4,
+  "approved": 1,
+  "deferred": 3,
+  "model_calls": 16,
+  "model_errors": 0,
+  "model_calls_by_stage": {
+   "discovery": 11,
+   "utility": 4,
+   "support": 1
+  },
+  "plan_certificate": {
+   "atomicity_review_v1": true,
+   "atomicity_structural_v1": true
+  },
+  "bundled_v7_v08": {
+   "case_id": "v7-v-08",
+   "assertion_sha256": "2c03af01093b4e136aee70b5e396a85bcb72b8d3231ec7b9b8dfe7ee10804c60",
+   "model_independent_predicates": 1,
+   "persisted_as_one_atomic_fact": false,
+   "structural_veto_reason": "source_only_utility_source_structural_independent_clause_boundary",
+   "verdict": "STRUCTURAL_VETO_DEFERRED"
+  },
+  "atomic_positive_v7_v07": {
+   "case_id": "v7-v-07",
+   "assertion_sha256": "292674d5ef73eeac08a191d0078f3328e4f9951a1de5d2ca84139605aeb80cf0",
+   "structural_review": "no_independent_clause_v1",
+   "persisted": true,
+   "remote_episode_uuid": "4a8f6bd8-af5d-44a2-9aa9-e089b32edadb",
+   "verdict": "ACCEPTED_ATOMIC_POSITIVE"
+  },
+  "controls": [
+   {
+    "case_id": "v7-c-01",
+    "verdict": "DEFERRED_STAYED_OUT"
+   },
+   {
+    "case_id": "v7-c-02",
+    "verdict": "DEFERRED_STAYED_OUT"
+   }
+  ],
+  "control_pollution": 0,
+  "authority_breaches": 0,
+  "graphiti_readback": {
+   "episodes_in_group": 1,
+   "uuids": [
+    "4a8f6bd8-af5d-44a2-9aa9-e089b32edadb"
+   ]
+  }
+ },
+ "ex_admission": {
+  "flock": "/run/user/1000/openviking-agent.lock",
+  "inherited_lock_fd": 3,
+  "env_var": "GHDEV_MEMORY_POST_EXIT_LOCK_FD",
+  "kernel_backed_proof": "fd present in /proc/self/fd; fdinfo FLOCK held by launcher pid",
+  "scheduler_idle_at_admission": true,
+  "harness_exit": true,
+  "no_unresolved": true,
+  "quiet_grace_seconds": 30,
+  "once_only_marker_written": true,
+  "reconcile_only": {
+   "driver_rc": 3,
+   "attempts": 1,
+   "reconciled_persisted": 1,
+   "unresolved": 0,
+   "status": "settled"
+  }
+ },
+ "v8_freeze": {
+  "prepared": true,
+  "inference_executed": false,
+  "group": "graphiti-adr92-a3-prospective-v8",
+  "group_empty": true,
+  "cases": 20,
+  "valuable": 10,
+  "controls": 10,
+  "private_manifest_sha256": "dcd723a60deceae511a7838a9d736f88c59b3571f2959597afcbd7da35cdaf8e",
+  "label_freeze_sha256": "27159112f60deaaefa54a588c968cd1674f7bdd1e431771efb649c219c060c86",
+  "roster_sha256": "b5293e8c1ad666f37d36ca7d48dcd300c34986d20e75dca31da7a412cd1fa548",
+  "events_staged": 20,
+  "once_only_marker_absent": true,
+  "scorer_fail_closed_pre_inference": true,
+  "valuable_quotes": [
+   {
+    "case": "v8-v-01",
+    "message_id": "msg_59e18f3d5837429f97b0eb4e64e73abd",
+    "session_id": "20260623_190322_3abed9",
+    "native_event_text_sha256": "1385e3c9b2eb4fb9b110c8e8618b40e30ffe25d07154c091047c0796b045a136",
+    "quote": "my fzf-tab plugin is not working, i see the bindkey but using tab to activate doesn't work",
+    "predicate": "the fzf-tab plugin's tab-to-activate binding is present but does not activate on tab"
+   },
+   {
+    "case": "v8-v-02",
+    "message_id": "msg_7390c1bc519243459be9803043c93f3a",
+    "session_id": "20260714_143933_e37d1f",
+    "native_event_text_sha256": "a8980c862427002497dea347af4889029c29bbeda073531e227ab2d1d2c6fcb3",
+    "quote": "no, this is a self-hosted firecrawl, don't use the official API",
+    "predicate": "firecrawl is self-hosted, so the official firecrawl API must not be used"
+   },
+   {
+    "case": "v8-v-03",
+    "message_id": "msg_e5c29f3609124d83a757242521b82a45",
+    "session_id": "20260715_160342_2c8403",
+    "native_event_text_sha256": "ddd8b6063713a579dcfb42a47680328651badb9466700dccc588a64064b07d45",
+    "quote": "i believe the timeout should be a hermes agent config parameter, not openviking server",
+    "predicate": "the timeout is a hermes agent config parameter, not an openviking server parameter"
+   },
+   {
+    "case": "v8-v-04",
+    "message_id": "msg_6ed2227db7354b1dadaf4162be8b9ff4",
+    "session_id": "cx-019fa9d2-2b43-78d1-a3d4-c00d756ad550",
+    "native_event_text_sha256": "3207a0c2f35c075006f61eff58a7cfbb1af4c2463031fd36ca7a7a0e6d393abe",
+    "quote": "debug issue with termux boot setup where after phone reboot, termux service sshd is not automatically started, and needs manually opening of termux app to start.",
+    "predicate": "after a phone reboot the termux sshd service is not auto-started and requires manually opening the termux app"
+   },
+   {
+    "case": "v8-v-05",
+    "message_id": "msg_a4266f5ac5504b05b5c91dea53299cd6",
+    "session_id": "cx-01a10cdd-89fb-7f72-80d9-17e8e53ec8c5",
+    "native_event_text_sha256": "2d468ee2617b48f8aedce6e4f42aca1a9bdb23e5405ccf11ceb2f976617bd4cb",
+    "quote": "i suspect the kernel completion listener may be incorrectly configured",
+    "predicate": "the kernel completion listener may be incorrectly configured"
+   },
+   {
+    "case": "v8-v-06",
+    "message_id": "msg_4879ce9cf545449f92ed4c805db872f6",
+    "session_id": "cx-019fcb6e-134e-74f3-84f8-53e5e189eaea",
+    "native_event_text_sha256": "d93bb77a4c93373bb1bd12e0fd39ed76e43695b17de9ec0086b2ffc5f4b1a2fc",
+    "quote": "from my limited testing it appears deleting and re-installing a custom plugin in ChatGPT Plus is effective, and possible necessary, to refresh tool schema and exposure when revisions to the underlying backend tool are made.",
+    "predicate": "deleting and re-installing a custom ChatGPT Plus plugin refreshes tool schema and exposure after backend tool revisions"
+   },
+   {
+    "case": "v8-v-07",
+    "message_id": "msg_169eaa629f77472793d2701ae932f3a6",
+    "session_id": "cx-019fcb6e-134e-74f3-84f8-53e5e189eaea",
+    "native_event_text_sha256": "6db338219e28bedf1db4ef8b2c77fd2107ab80fe3278592e389542fd77f4ee9d",
+    "quote": "updating the gh MCP server version upon revision and having ChatGPT confirm updated version info on call seems to be effective for tracking live update/refresh.",
+    "predicate": "updating the gh MCP server version upon revision and having ChatGPT confirm the updated version info is the supported refresh path"
+   },
+   {
+    "case": "v8-v-08",
+    "message_id": "msg_8f892f8a8371478dac16874cbdc64e54",
+    "session_id": "local-b62413a6c84d3f44dda3ea190c9d43ed41315a66830d9e80a16b0d909d7385f4",
+    "native_event_text_sha256": "55a4d7b86644af7e28258669da1468ae1975612462528d66ed4e506cf1409039",
+    "quote": "the local model being used by hermes agent has vision capabilities enabled, review hermes agent configuration and revise if necessary to enable vision support",
+    "predicate": "the local model used by hermes agent has vision capabilities enabled in its configuration"
+   },
+   {
+    "case": "v8-v-09",
+    "message_id": "msg_7707d6dcb83046eabf6dfed823278b25",
+    "session_id": "cx-01a1ae02-65f4-71e0-824b-4315729ce396",
+    "native_event_text_sha256": "b2ea85b7a510816cd91efb41d4f74f8289e32f5ca53684c4ab170880784baf65",
+    "quote": "my firedragon and chrome desktop browsers are incorrectly showing my location as 95521, California, even though i'm located in Menifee, CA, which does show up correctly in chrome running with the same google account while on my phone.",
+    "predicate": "the firedragon and chrome desktop browsers incorrectly report location 95521 (Menifee, CA) for the same account"
+   },
+   {
+    "case": "v8-v-10",
+    "message_id": "msg_3cd7e61b99cb4d25a50d1e0982e40151",
+    "session_id": "20260721_144011_f8105e",
+    "native_event_text_sha256": "224b5a4de1ce3464471ac8c3d46b5a2aa5ec0c4139d97707a24c9d1df5b30fe8",
+    "quote": "self-hosted firecrawl issues resovled, service should be restored",
+    "predicate": "the self-hosted firecrawl issues were resolved and the service was restored"
+   }
+  ],
+  "control_rationales": [
+   {
+    "case": "v8-c-01",
+    "message_id": "msg_f4b89c56a80d4223b240b930c02692f3",
+    "native_event_text_sha256": "b9781acc4cd2ac4bb499702ac1a22a70eb535da818051f13ae3e31f472504329",
+    "rationale": "imperative one-off shell command (touch a marker file); not a durable developer fact"
+   },
+   {
+    "case": "v8-c-02",
+    "message_id": "msg_24ef0c2ee9f34f4eadf995235db9eb7f",
+    "native_event_text_sha256": "80a62c1aa08786982ccca7e60fa1d71e6e807bd4af669df041041c5ffb17b0a0",
+    "rationale": "transient continue/stop meta-instruction with no technical content"
+   },
+   {
+    "case": "v8-c-03",
+    "message_id": "msg_edaaca6607f6451e8f7e5a405ffc94c3",
+    "native_event_text_sha256": "4a0f05b5b3fb32d6d1ea58e4b52111032d77be1ff7c392352d4ef8ac2191f31f",
+    "rationale": "imperative tool-use request (todorefresh); not a durable developer fact"
+   },
+   {
+    "case": "v8-c-04",
+    "message_id": "msg_675a5d814ed64ef48918258ad41a64dc",
+    "native_event_text_sha256": "2cba0dcb0791090c7e40506a35f489a2af2297bf146e95b5d208a60fca905bfe",
+    "rationale": "imperative plan-generation task instruction; not a standalone asserted fact"
+   },
+   {
+    "case": "v8-c-05",
+    "message_id": "msg_28275043573e41c9aa842e7d31e440c5",
+    "native_event_text_sha256": "c0f6c80701a679f374e09a3e5f0f21e8cf8c1c6108398371f1a8a1a7db07c6fd",
+    "rationale": "open-ended question with no asserted answer"
+   },
+   {
+    "case": "v8-c-06",
+    "message_id": "msg_d505a28fadde4194b49cb37474d64574",
+    "native_event_text_sha256": "5820293c9a5782dda92feec5359063eebdb39ae1c478188e7b36e7c035aac18e",
+    "rationale": "open-ended optimization question with no asserted answer"
+   },
+   {
+    "case": "v8-c-07",
+    "message_id": "msg_fdfe857346784fbab38876ae82f57303",
+    "native_event_text_sha256": "7f2e70165506d8ad8d640af42b5cc5d8f1aa72d164f04fd0079f67954ca530a4",
+    "rationale": "open-ended IoT framework comparison question; no asserted answer"
+   },
+   {
+    "case": "v8-c-08",
+    "message_id": "msg_f8ed0c59dd3949abb2dfe87add9c359d",
+    "native_event_text_sha256": "a1f5b1da7316be7a4a661a61cbf06832fac5e0b8c187dd7dc505810d028f6426",
+    "rationale": "yes/no issue-closure question; not a durable developer fact"
+   },
+   {
+    "case": "v8-c-09",
+    "message_id": "msg_b3d28206b5c0440a90ed850346fecc8b",
+    "native_event_text_sha256": "5dd740ef59ca54d097802b7afd4271ae35189cb5258850675dc7be325ad9b1f8",
+    "rationale": "imperative proceed instruction; not a standalone asserted fact"
+   },
+   {
+    "case": "v8-c-10",
+    "message_id": "msg_6410f5298ba44f37be546919b12ec5fe",
+    "native_event_text_sha256": "80a62c1aa08786982ccca7e60fa1d71e6e807bd4af669df041041c5ffb17b0a0",
+    "rationale": "transient continue/stop meta-instruction with no technical content"
+   }
+  ]
+ },
+ "historical_state": {
+  "v7c_corpus_sha256_prefix": "9356e663",
+  "v7c_label_freeze_sha256_prefix": "401e57ab",
+  "exposed_r1_records_intact": true,
+  "unchanged": true
+ },
+ "source_changes": "none",
+ "command_shape_friction": [
+  {
+   "requested": "EX lock fd env var",
+   "effective": "GHDEV_MEMORY_POST_EXIT_LOCK_FD",
+   "provenance": "requireKernelExAdmission in ex-admission-proof.mjs",
+   "execution_effect": "R1 used EX_LOCK_FD -> missing_lock_fd; R2 used the correct var, admitted on first attempt"
+  }
+ ],
+ "decision_blockers": []
+}

@@ -1,0 +1,83 @@
+{
+ "schema": "issue92-a3-v3-native-source-audit-v1",
+ "group": "graphiti-adr92-a3-prospective-v2",
+ "family": "gh_mcp-development-v3",
+ "audited_utc": "2026-11-12T15:35:59.013623Z",
+ "private_manifest": {
+  "path": "/home/filip/.local/state/ghdev-graphiti-issue92/private/issue92-a3-v3-corpus.json",
+  "sha256": "7b96a1075cbcd94866553bbfc37e26877df460e803d0beb798b9985954b5c4f0",
+  "mode": "0600"
+ },
+ "label_digest": {
+  "sha256": "96b9e51ee76182729f1426873e538ce164fa5855139173e8da875e53a2cb0f11"
+ },
+ "v2_rejected_valuable": {
+  "note": "7 of 10 v2 valuable targets were questions / unexecuted instructions, not source-stated durable facts; v2 retained as rejected historical evidence (issue92-a3-v2-corpus.json unchanged)",
+  "replaced": {
+   "v2-03": "question (Did we ever make a decision about Rust cache / Redis?)",
+   "v2-04": "question (What happened with the ghdev-curator-prod service exit?)",
+   "v2-05": "unexecuted instruction (PR #376 budget-action continuation handoff)",
+   "v2-06": "unexecuted instruction (Issue #55 fresh-process live acceptance handoff)",
+   "v2-08": "unexecuted instruction (Issue #168 ingress-ownership recovery handoff)",
+   "v2-09": "unexecuted instruction (Issue #134 native-interface evidence-discovery handoff)",
+   "v2-10": "unexecuted instruction (Issue #368 exact-head host revalidation handoff)"
+  },
+  "retained": {
+   "v2-01": "falkordb_per_group_graph_layout (stated technical fact)",
+   "v2-02": "qualification_state_disposable_b75_journal_decision (operative decision)",
+   "v2-07": "abi_incompatibility_assumption_analysis (stated FFmpeg muxer / libx264 facts)"
+  }
+ },
+ "v3_new_valuable": [
+  "issue75_graphiti_recall_close_constraint (operative constraint: Issue 75 closes only after source-attributed Graphiti recall)",
+  "release_quality_gate_hard_prerequisite_decision (operative decision: release quality gate as hard prerequisite)",
+  "fsm81_unknown_event_must_throw_supersession (decision/constraint: unknown events must throw; settle-to-self removed)",
+  "fsm81_log_rotation_policy_design_decision (design decision: log rotation policy)",
+  "fsm81_transition_function_pure_constraint (technical constraint: transition function must stay pure)",
+  "fsm81_terminal_state_modeling_decision (design decision: terminal-state modeling)",
+  "fsm81_export_format_serialization_decision (design decision: export serialization rule)"
+ ],
+ "all_20_source_stated": "every valuable target is a source-stated durable technical fact / operative decision / constraint (no question, request, speculation, unexecuted instruction, or asserted-success-without-outcome)",
+ "privacy": "all 20 sources passed whole-input native privacy scan; the fsm81 graph-endpoint source (msg_1a800f4c, contains api_key=) was EXCLUDED for a privacy-clean replacement",
+ "nonoverlap": {
+  "b3_24cluster": {
+   "session": 0,
+   "message": 0,
+   "text": 0,
+   "basis": "exact ID sets"
+  },
+  "gh_mcp_20case": {
+   "session": 0,
+   "message": 0,
+   "text_digest": 0,
+   "basis": "exact IDs + text-digest vs private holdout corpus"
+  },
+  "v2_cohort": {
+   "inherited_by_design": 13,
+   "genuinely_new_cases": 7,
+   "note": "3 retained valuable + 10 controls; 7 new cases not in B3/gh_mcp/v2"
+  },
+  "h2_h3_h4": {
+   "byte_level_digest_crosscheck": "UNVERIFIED (private corpus files not on host)",
+   "not_substituted": true,
+   "note": "distinct cronparse/firecrawl families recorded, but family difference is NOT used as proof of nonoverlap"
+  }
+ },
+ "ratification": {
+  "path": "/home/filip/.local/state/ghdev-graphiti-issue92/private/issue92-a3-v3-ratification.json",
+  "mode": "0600",
+  "pre_inference": true,
+  "cases": "20/20 flags"
+ },
+ "a3_group_remote_episodes": 0,
+ "staging": {
+  "events": 26,
+  "cases": 20,
+  "multi_span_cases": {
+   "i92-v3-03": 4,
+   "i92-v3-08": 2,
+   "i92-v3-09": 2,
+   "i92-v3-10": 2
+  }
+ }
+}

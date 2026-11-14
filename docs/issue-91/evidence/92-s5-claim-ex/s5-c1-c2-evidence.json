@@ -1,0 +1,62 @@
+{
+ "schema": "issue92-s5-c1-c2-evidence-v1",
+ "kind": "sanitized, evidence-only, public",
+ "generated_utc": "2026-11-12T05:35:00Z",
+ "c1_capture_control_14of14": {
+  "result": "14/14 (tp=14 fn=0 recall=1.0)",
+  "status": "re-affirmed from frozen verified scorecard",
+  "source_of_truth": "docs/issue-91/evidence/92-a1-a3-first-campaign/scorecard.json -> capture_control_14of14 (unverified=false, baseline 0/14)",
+  "corpus": "issue81 cronparse holdout (broad capture)",
+  "corpus_state_on_host": "/home/filip/.local/state/ghdev-graphiti-issue81/holdout81-64d32eb7/state/ghdev-graphiti/candidate-events-v1/",
+  "corpus_present": true,
+  "note": "CPU broad-capture path is code-identical across arms (capture_identical_across_arms=yes). The 14/14 recall=1.0 control is re-affirmed; the private 57-case sealed development corpus (22ae11e6) and cronparse holdout corpus (524de3ff) are the frozen denominators."
+ },
+ "c1_raw_native_measurements": {
+  "source": "docs/issue-91/evidence/92-a1-a3-first-campaign/a3-post-exit-reconciliation.md (four-arm post-exit run)",
+  "post_exit_run": {
+    "arms": 4,
+    "curation_records": 40,
+    "all_deferred": 40,
+    "model_attempts": 40,
+    "model_calls_success": 0,
+    "model_errors": 40,
+    "queued": 0, "approved": 0, "persisted": 0, "unresolved": 0,
+    "terminal_status": "review_required (all arms)",
+    "ex_admission": "each arm under its own genuine EX admission ('EX admission proven; invoking candidate drain with lock retained'), exit=0"
+  },
+  "root_cause_of_40_errors": "litellm proxy (8002) restarted minutes before the drain window; /v1/models returned HTTP 500; curator fail-closed per contract (curator_unavailable_or_invalid DEFER, no forced EMIT). Host availability fault, not a source-semantic defect.",
+  "post_exit_review_coverage": "40/40 candidates remain deferred (operator adjudication + model re-attempt pending); 0 unresolved remote Graphiti work",
+  "typed_hard_drops": "broad capture: cron fp=8 tn=2 (precision 0.6364, Wilson95 0.4295-0.8027); webvtt fp=9 tn=1 (precision 0.5263, Wilson95 0.3171-0.7267); fn=0 in both (recall 1.0)",
+  "admissions": "EX admission proven per arm under the canonical flock; scheduler-idle + quiet-grace + no-unresolved checks enforced"
+ },
+ "c2_a3_prospective_cohort_freeze": {
+  "status": "PREPARED (frozen, no inference run - awaiting Central review of S5 exposed outcome + prospective freeze approval)",
+  "kind": "issue92-prospective-freeze-v2",
+  "nonoverlap_proof": "new development family distinct from S5 24-cluster B3 roster (swebench-sphinx/django/pylint/graphiti-mcp) and from the A1/A3 gh_mcp 20-case holdout; no session_id/message_id shared with the frozen S5 corpus (ebac7052)",
+  "cohort": {
+   "family": "gh_mcp-development-v2 (genuinely new native development events, nonoverlapping)",
+   "group": "graphiti-adr92-a3-prospective-v2",
+   "group_state": "unused (0 episodes)",
+   "case_count_target": 20,
+   "valuable_target_count": 10,
+   "nonvaluable_control_count": 10,
+   "raw_opportunity_denominator": "frozen at freeze time from authenticated native development events (count of distinct capture opportunities)"
+  },
+  "scoring_rules": {
+   "prospective_independent_valuable_coverage": ">= 0.85",
+   "grounded_precision": ">= 0.90",
+   "useful_among_grounded": ">= 0.75 over >= 8 independent persisted facts",
+   "unauthorized_events": 0,
+   "reporting": "uncertainty via Wilson 95% intervals on coverage/precision/usefulness"
+  },
+  "frozen_at_freeze": {
+   "source_identities": "frozen (session_id + message_id + created_iso + project/workspace) before any model output",
+   "independent_useful_target_labels": "prospective pre-output operator judgments, ratification pending",
+   "negative_controls": "10 nonvaluable controls frozen",
+   "privacy_evidence": "capture_ineligible privacy control excluded from denominators",
+   "temporal_evidence": "freeze_before_output=true (frozen before candidate model output revealed to adjudicators)",
+   "unused_graphiti_group": "graphiti-adr92-a3-prospective-v2 (verified empty)"
+  },
+  "inference_gate": "no prospective model inference executed; the S5 exposed outcome (6/16 valuable, below S2/S3 9/16 baseline) is returned to Central with loss-stage analysis; prospective A3 inference runs only after Central approves the prospective freeze"
+ }
+}

@@ -1,0 +1,6 @@
+# Single prospective run (NOT started). Gated, EX-admitted, once-only, no replay.
+V5_HOST_APPROVED=1 python3 /tmp/opencode/issue92-a3/a3-v5-native-ex-launcher.py
+# driver: /tmp/opencode/issue92-a3/a3-v5-native-driver.mjs (bound to 5d8fdcf; maxClusters 24 / maxCandidates 72 / maxSeconds 3600; model chat-fast @ 127.0.0.1:8002)
+# state:  /home/filip/.local/state/ghdev-graphiti-issue92/state-v5-native (0700)
+# group:  graphiti-adr92-a3-prospective-v5 (0 episodes)
+# marker: /home/filip/.local/state/ghdev-graphiti-issue92/state-v5-native/.v5-native-ran (state-scoped, once-only)

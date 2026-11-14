@@ -1,0 +1,84 @@
+{
+ "status": "unresolved",
+ "batch_id": "17a72b9223e9ee765aa6a83208480ca8aa02ad595666d2b57183a86dee1cc749",
+ "snapshot_sha256": "ffdc997d0e978de7b4b914a6cbbc0f851290500e3ac5de7158526bb3f37fd1ae",
+ "candidates": 22,
+ "approved": 3,
+ "deferred": 19,
+ "model_calls": 84,
+ "model_errors": 0,
+ "prompt_tokens": 72924,
+ "completion_tokens": 5295,
+ "model_metrics": {
+  "discovery": {
+   "calls": 54,
+   "prompt_tokens": 51293,
+   "completion_tokens": 3867,
+   "reasoning_tokens": 0,
+   "cached_prompt_tokens": 36554,
+   "latency_ms": 19799,
+   "latency_reports": 54,
+   "usage_field_reports": {
+    "prompt_tokens": 54,
+    "completion_tokens": 54,
+    "reasoning_tokens": 54,
+    "cached_prompt_tokens": 54
+   }
+  },
+  "utility": {
+   "calls": 20,
+   "prompt_tokens": 16571,
+   "completion_tokens": 693,
+   "reasoning_tokens": 0,
+   "cached_prompt_tokens": 8991,
+   "latency_ms": 3340,
+   "latency_reports": 20,
+   "usage_field_reports": {
+    "prompt_tokens": 20,
+    "completion_tokens": 20,
+    "reasoning_tokens": 20,
+    "cached_prompt_tokens": 20
+   }
+  },
+  "support": {
+   "calls": 10,
+   "prompt_tokens": 5060,
+   "completion_tokens": 735,
+   "reasoning_tokens": 0,
+   "cached_prompt_tokens": 1848,
+   "latency_ms": 2627,
+   "latency_reports": 10,
+   "usage_field_reports": {
+    "prompt_tokens": 10,
+    "completion_tokens": 10,
+    "reasoning_tokens": 10,
+    "cached_prompt_tokens": 10
+   }
+  }
+ },
+ "tuning_sha256": "8d671d06a550b0f85d187cac4e181973bea748f71986487e2a6b0765385bc8e7",
+ "replay_only": false,
+ "source_recovery": true,
+ "source_exact_complement": true,
+ "persisted": 0,
+ "unresolved": 3,
+ "write_outcomes": [
+  {
+   "id": "678744b834b8cc387e8e4928b2ba6f1165f7705e727f8e6499b12694193d62f0",
+   "status": "queued"
+  },
+  {
+   "id": "8434919325b235355c1815d6a04f4dbf53a3dd3c3f9f3e1cd85d564d351bf536",
+   "status": "queued"
+  },
+  {
+   "id": "feed50984252c113d66626b625358d18bb2244a10217f4714dfbdff22df2a907",
+   "status": "queued"
+  }
+ ],
+ "driver": "v6-prospective",
+ "driver_elapsed_ms": 27010,
+ "source_binding": {
+  "repo_head": "cc6461de40cb63ce536ec88fbf00fe2744c93a55"
+ }
+}

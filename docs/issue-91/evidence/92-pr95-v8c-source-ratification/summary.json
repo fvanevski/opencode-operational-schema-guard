@@ -1,0 +1,131 @@
+{
+  "schema": "issue92-pr95-v8c-source-ratification-receipt-v1",
+  "repo": "fvanevski/opencode-operational-schema-guard",
+  "pr": 95,
+  "branch": "issue/92-v7c-accepted",
+  "result": "V8C_SOURCE_RATIFIED",
+  "source_head": "163b9d8ee62fba3f6e633d9f64c343a758a8a679",
+  "r2_provenance_erratum": {
+    "note": "Additive erratum. The R2 receipt (daa5b7c) listed 6 of 7 execution-source blob hashes that did not match the immutable tree at ORIGINAL_R2_SOURCE_HEAD d3d66bb. This erratum corrects them without modifying the R2 receipt.",
+    "original_r2_source_head": "d3d66bb3694d71fd4e73a1dc7d80cc4a1ca93f24",
+    "authoritative_7_git_blobs_at_d3d66bb": {
+      "docs/issue-78/v2-candidate/events.mjs": "041aab302264d080362c1039439a34f1f3fbf80c",
+      "docs/issue-78/v2-candidate/queue.mjs": "b4e2df18e3741917e8f3f2513b54cb6aef874e98",
+      "docs/issue-78/v2-curator/finite-batch.mjs": "6d735b0e0e6d018af6956c02412fd67f275f97e8",
+      "docs/issue-78/v2-curator/fact-review.mjs": "ee5350d5db81bcd94ff7306b69ad0801723e1f65",
+      "docs/issue-78/v2-curator/claim-evidence.mjs": "3c29c4ff617682701e01fdfb46609e21a1892bd6",
+      "docs/issue-78/v2-curator/core.mjs": "5b1d33efedc62b5ba0ad5f74ed68cddbee6afb0e",
+      "docs/issue-78/v2-curator/ex-admission-proof.mjs": "e63b8a36b51627a6211bf4367c62a5c76461fa76"
+    },
+    "r2_receipt_listed_blobs": {
+      "docs/issue-78/v2-candidate/events.mjs": "3a3d1577a45386d029c259e76e444756e9876d75e6c97a129a0d50f60f593e (WRONG)",
+      "docs/issue-78/v2-candidate/queue.mjs": "252891644d7e96a01009b031e1d0727216d6109078d667b4a77405d712125b3d (WRONG)",
+      "docs/issue-78/v2-curator/finite-batch.mjs": "719b4f09a34d065b690b9c2a2b0689f4c95d6f1a5b1f00d0e6a1f14c8b8df21a (WRONG)",
+      "docs/issue-78/v2-curator/fact-review.mjs": "d4f1b487a9c2f0b3d6e5f4a1c8b7d6e5f4a1c8b7d6e5f4a18121 (WRONG)",
+      "docs/issue-78/v2-curator/claim-evidence.mjs": "3c29c4ff617682701e01fdfb46609e21a1892bd6 (CORRECT)",
+      "docs/issue-78/v2-curator/core.mjs": "f2188640a34d065b690b9c2a2b0689f4c95d6f1a5b1f00d0e6a1f14c8b8d795f (WRONG)",
+      "docs/issue-78/v2-curator/ex-admission-proof.mjs": "07b42800a34d065b690b9c2a2b0689f4c95d6f1a5b1f00d0e6a1f14c8b3e3b (WRONG)"
+    },
+    "eighth_input_host_only_not_a_git_blob": {
+      "description": "The R2 receipt asserted 8 inputs but listed 7 Git paths. The 8th is the host-only EX admission gate (the kernel-flock commit-gate bridge), a host artifact, not a Git blob. Reconciled to its host origin + content hash; no Git blob was invented for it.",
+      "openviking_commit_gate.py_sha256": "c5d7f3f38a75c2dfb9a8e4366ae27b89015f4016d4cc8bbcaaca85401031d928",
+      "commit_gate_toml_sha256": "06923f0d84d7cc4c84fe79265234ee0556212658f7e43833d74be02e6061edef",
+      "lock_file": "/run/user/1000/openviking-agent.lock (transient, no stable hash)"
+    },
+    "trusted_ci": {
+      "r2_receipt_claimed_run": "43482932702 (GitHub HTTP 404; NOT a source-head verification)",
+      "verified_run_at_d3d66bb": {"run_id": "43486835871", "head_sha": "d3d66bb3694d71fd4e73a1dc7d80cc4a1ca93f24", "conclusion": "success", "root_profile_tests": 673},
+      "verified_run_at_daa5b7c": {"run_id": "43489965011", "head_sha": "daa5b7c12632497f74665218f02dc0505d158162", "conclusion": "success"}
+    },
+    "execution_identity": "The 7 authoritative Git blobs at d3d66bb prove the R2 host execution matched the committed source (the R2 driver ran from a d3d66bb worktree). The 8th input is a host-only bridge. Model-invocation source-matching is therefore PROVEN (7 Git blobs + host bridge), not UNVERIFIED."
+  },
+  "focused_ci": {"run_id": "43486835871", "head": "d3d66bb3694d71fd4e73a1dc7d80cc4a1ca93f24", "result": "success (673/0)", "note": "trusted CI; host ran 149-test focused suites only, no full-profile repeat"},
+  "case_revisions": {
+    "note": "Original v8 sources were OpenViking-archive IDs (msg_<32hex>) NOT present in the canonical native store; the whole v8c cohort was re-sourced from the canonical opencode.db.session_message store (native msg_.../ses_... IDs). Central dispositions honored by kind.",
+    "dispositions_applied": [
+      {"v8_case": "v8-v-01", "disposition": "retain (user-reported fzf-tab Tab-activation failure, no root cause)", "v8c_source": "re-sourced to canonical store"},
+      {"v8_case": "v8-v-02", "disposition": "retain (source-stated self-hosted Firecrawl constraint)", "v8c_source": "re-sourced to canonical store"},
+      {"v8_case": "v8-v-03", "disposition": "requalify (PROPOSED Hermes-owned timeout config, not implemented)", "v8c_source": "re-sourced to canonical store"},
+      {"v8_case": "v8-v-04", "disposition": "retain (operator-reported Termux sshd restart symptom, not verified causal)", "v8c_source": "re-sourced to canonical store"},
+      {"v8_case": "v8-v-05", "disposition": "REPLACE (generic suspected kernel-completion misconfig, no observed defect)", "v8c_source": "replaced by v8c-v-05 (tdarr docker network name)"},
+      {"v8_case": "v8-v-06", "disposition": "requalify (LIMITED-TESTING plugin-reinstall report, not proven necessary)", "v8c_source": "re-sourced to canonical store"},
+      {"v8_case": "v8-v-07", "disposition": "requalify (user-reported GH MCP bump+readback, not officially supported)", "v8c_source": "re-sourced to canonical store"},
+      {"v8_case": "v8-v-08", "disposition": "REPLACE (model-side vision vs Hermes config conflation; source asks to enable, does not prove config)", "v8c_source": "replaced by v8c-v-08 (system reboot purged /tmp)"},
+      {"v8_case": "v8-v-09", "disposition": "REPLACE (geolocation conflates incorrect reading with actual location; PII)", "v8c_source": "replaced by v8c-v-09 (imposed hook -> rtk exclude list); PII NOT copied"},
+      {"v8_case": "v8-v-10", "disposition": "REPLACE ('service SHOULD be restored' is not verification; overlaps v-02)", "v8c_source": "replaced by v8c-v-10 (sudo authorized for reading files)"},
+      {"v8_case": "v8-c-02 / v8-c-10", "disposition": "REPLACE one (identical text SHA256 80a62c1a...); keep 10 distinct controls", "v8c_source": "v8c controls are 10 distinct native sources (no dupes)"}
+    ]
+  },
+  "native_origin_proof": {
+    "store": "opencode.db.session_message (canonical native OpenCode store; 61649 rows)",
+    "schema": "id, session_id, type, seq, time_created, time_updated, data(JSON .text)",
+    "classification": "All 20 v8c cases: type=user, native msg_/ses_ IDs, original message bytes re-read read-only, UTF-8 SHA256 + raw-data SHA256 recorded. 0 cases are OpenViking-archive/echo; 0 fabricated IDs.",
+    "all_20_present_in_canonical_store": true
+  },
+  "new_v8c_freeze": {
+    "group": "graphiti-adr92-a3-prospective-v8 (reused, freshly shown empty; staged to NEW state root)",
+    "state_root": "/tmp/opencode/issue92-a3-v8c/state (0700)",
+    "private_manifest_sha256": "6534894637e74b87f5221c62fa8477128b53750a2100e20bad1a709d45502a0b",
+    "label_freeze_sha256": "e0c9c9b1f59b3b89d47103d16bb781009493cda3d6a03612c72ad9afe8fc7195",
+    "roster_sha256": "d657cc55534837d51582ab26301b2eb4b5ab6927a70094526d0ae0079f5cec88",
+    "events_staged": 20,
+    "case_mapping": {
+      "valuable": ["v8c-v-01","v8c-v-02","v8c-v-03","v8c-v-04","v8c-v-05","v8c-v-06","v8c-v-07","v8c-v-08","v8c-v-09","v8c-v-10"],
+      "controls": ["v8c-c-01","v8c-c-02","v8c-c-03","v8c-c-04","v8c-c-05","v8c-c-06","v8c-c-07","v8c-c-08","v8c-c-09","v8c-c-10"]
+    },
+    "valuable_quotes": [
+      {"case":"v8c-v-01","message_id":"msg_089998671001noRpcz4cvLKAIe","text_sha256":"5fc85e73c9ea","quote":"plex media server is located on local host at `/opt/plex/Plex Media Server`","predicate":"the Plex Media Server is located on the local host at /opt/plex/Plex Media Server"},
+      {"case":"v8c-v-02","message_id":"msg_0d9205c80001xUiqKn5IB3sxJq","text_sha256":"f3a9bb0adf8f","quote":"i'm done deleting plex library media, you can assume current media state will not change","predicate":"Plex library media deletion is complete and the current media state is assumed stable"},
+      {"case":"v8c-v-03","message_id":"msg_126767afe001cCKNF19FVBu3VX","text_sha256":"390779420a4c","quote":"the commit gate is showing \"queue_empty\", not harness active, so you can run any necessary operator commands","predicate":"the commit gate is reporting queue_empty (not harness-active), permitting operator commands"},
+      {"case":"v8c-v-04","message_id":"msg_19a3db7f5001vSSQrkFbVb0HaP","text_sha256":"e2391bac4326","quote":"currently loaded model is an ninfer artifact located at: /workspace/models/...","predicate":"the currently loaded model is an ninfer artifact located under /workspace/models/"},
+      {"case":"v8c-v-05","message_id":"msg_0b4ffd686001HhapbFYMEqSYYL","text_sha256":"241aa02c8e77","quote":"tdarr docker network should be media-arr","predicate":"the tdarr docker network should be named media-arr"},
+      {"case":"v8c-v-06","message_id":"msg_0c5c7398c001693rdOCFjjieMg","text_sha256":"762473382d70","quote":"note that when rtk wrapper corrupts output, you can use `rtk proxy` to bypass compressions and rewriting.","predicate":"the rtk proxy command bypasses output compression and rewriting when the rtk wrapper corrupts output"},
+      {"case":"v8c-v-07","message_id":"msg_18921e13f001rJm8Ew9sW0OV0p","text_sha256":"2451067c7deb","quote":"i restarted opencode and graphiti mcp server is still failing","predicate":"after restarting opencode, the graphiti mcp server was still failing"},
+      {"case":"v8c-v-08","message_id":"msg_1c7cdf64300111JgMfZXQzs52X","text_sha256":"b95f31842c80","quote":"the system was recently rebooted, which would have purged /tmp","predicate":"a recent system reboot purged /tmp"},
+      {"case":"v8c-v-09","message_id":"msg_0a66db535001ZZ6a1CMkEIAIcR","text_sha256":"3d1b218fa850","quote":"this must be from an imposed hook, i can add git status to the rtk exclude list","predicate":"an imposed hook interferes, so git status is added to the rtk exclude list"},
+      {"case":"v8c-v-10","message_id":"msg_0887c3c47001HYGnM4uL6FfMSD","text_sha256":"dc826e57b445","quote":"you are authorized to use sudo for reading files","predicate":"sudo is authorized for reading files"}
+    ],
+    "control_rationales": [
+      {"case":"v8c-c-01","message_id":"msg_088aa03220016h077vNs1DMoWy","rationale":"transient resume meta-instruction; no technical content"},
+      {"case":"v8c-c-02","message_id":"msg_107a76988001vUlwGnobwhAR5b","rationale":"transient one-word smoke probe; no technical content"},
+      {"case":"v8c-c-03","message_id":"msg_12c4888bf001ch3EHSZ94Vti3m","rationale":"one-off shell marker command; not a durable fact"},
+      {"case":"v8c-c-04","message_id":"msg_12c49d4180013dABoIx2lSuyEJ","rationale":"one-off shell marker command; not a durable fact"},
+      {"case":"v8c-c-05","message_id":"msg_1896122ac001T1nzz8zNIJLm1O","rationale":"imperative tool-listing request; not a durable developer fact"},
+      {"case":"v8c-c-06","message_id":"msg_12c45f607001ngWhGDcRiTxtac","rationale":"imperative tool-listing request; not a durable developer fact"},
+      {"case":"v8c-c-07","message_id":"msg_082f3a485001ryzHIcWcWOCn1C","rationale":"task-specific bash invocation with a functional-test path; not a durable fact"},
+      {"case":"v8c-c-08","message_id":"msg_1930ceb60001sgwyA5vgHpJAg4","rationale":"fresh-process acceptance smoke reply; not a durable fact"},
+      {"case":"v8c-c-09","message_id":"msg_1c1f3ffea001QWqbfu3Uwxa2t3","rationale":"transient TUI exit-sequence status; not a durable fact"},
+      {"case":"v8c-c-10","message_id":"msg_1b933f067001qikdwjFbpe5wpC","rationale":"imperative list-request; not a durable developer fact"}
+    ]
+  },
+  "empty_group": {
+    "group": "graphiti-adr92-a3-prospective-v8",
+    "episodes": 0,
+    "outstanding_model_write_intents": 0,
+    "once_only_marker_absent": true,
+    "staged_events": 20
+  },
+  "ex_precheck": {
+    "kernel_lock_fd_inherited": "GHDEV_MEMORY_POST_EXIT_LOCK_FD (driver reads /proc/self/fd/<fd>; fdinfo FLOCK held by launcher pid)",
+    "scheduler_idle": true,
+    "harness_exit": true,
+    "no_inference_executed": true,
+    "scorer_fail_closed_pre_inference": true
+  },
+  "ready_launch": {
+    "command": "python3 /tmp/opencode/issue92-a3-v8c/ex-launcher.py",
+    "status": "PREPARED_NOT_EXECUTED",
+    "note": "one-shot EX-gated launcher for the untouched v8c prospective run; Central authorizes execution after ratification"
+  },
+  "historical_state": {
+    "original_v8_freeze": {"manifest": "dcd723a6...", "label_freeze": "27159112...", "roster": "b5293e8c...", "unchanged": true, "no_inference": true},
+    "v7c_corpus_sha256_prefix": "9356e663",
+    "r2_evidence_files_unchanged": true,
+    "r1_records_intact": true
+  },
+  "source_changes": "none (additive v8c evidence + private v8c freeze only)",
+  "command_shape_friction": [
+    {"requested": "v8c group name for A3 stage", "effective": "graphiti-adr92-a3-prospective-v8", "provenance": "issue92-a3-stage.mjs group regex /^graphiti-adr92-a3-prospective-v[2-9][0-9]*$/ rejects a literal 'v8c'", "execution_effect": "reused the empty v8 group name (freshly shown 0 episodes) with a NEW state-v8c root; no source edit"}
+  ],
+  "decision_blockers": []
+}

@@ -1,0 +1,23 @@
+{
+ "schema": "issue92-a3-remote-readback-v1",
+ "group": "graphiti-adr92-a3-prospective-v2",
+ "source_index_intact": true,
+ "readback_after_persistence": true,
+ "remote_episode_uuids": [
+  "61993f7d-b850-4f8e-87e3-35999d5deb8d",
+  "0f8c4294-fac6-4957-91e5-59c79bff880c",
+  "b782eaeb-d51a-48f8-8847-4259e6052f5c",
+  "c351357c-9269-416e-8359-ce0baf494550",
+  "e5f37ecc-8a27-49f2-8e69-90776c5dfdeb",
+  "69c45869-5b83-47e1-8f64-6faaddae4566",
+  "89f00ba5-a100-4fe8-b869-4a11936060e7",
+  "d528788b-661a-4547-a79d-039c19bd5779",
+  "f79b88d6-9797-4836-95cf-613355ae8a4a",
+  "d95bc30a-3032-4dd6-a661-bc3f60dae5d1",
+  "f7849433-2e18-4262-984c-251086f7a9d7",
+  "ad9bc7a7-cc9b-4e42-9d1c-ad37a10075b7",
+  "cc2bb466-fff6-4a83-ba51-d7d8e29c5478"
+ ],
+ "write_outcome_count": 13,
+ "note": "positive get_episodes readback after the single A3 inference; all 13 write-outcome content-hashes present as episode names (source index intact)"
+}

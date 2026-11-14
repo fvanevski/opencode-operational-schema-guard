@@ -1,0 +1,16 @@
+{
+ "jobs": {
+  "a3-host-prospective": {
+   "rc": 0,
+   "attempts": 5,
+   "inference_calls": 1,
+   "corrective_path": "reconcile-only (no re-inference)"
+  }
+ },
+ "completed_utc": "2026-11-12T19:48:18Z",
+ "bridge_blob": "004188b1cdcd3a99956f20e581621eadc63c4663",
+ "group": "graphiti-adr92-a3-prospective-v4",
+ "state": "/tmp/opencode/issue92-a3/state-v4",
+ "graphiti_endpoint": "http://127.0.0.1:8766/mcp",
+ "source_head": "50fd675bf9d86a7505c18bbba510eae8f41544cd"
+}

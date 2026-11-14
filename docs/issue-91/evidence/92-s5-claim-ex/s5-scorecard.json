@@ -1,0 +1,81 @@
+{
+ "schema": "issue92-s5-scorecard-v1",
+ "kind": "sanitized, evidence-only, public",
+ "generated_utc": "2026-11-12T05:30:00Z",
+ "campaign": "issue92-adr S5 claim/evidence EX-kernel exposed-case evaluation",
+ "s5_group": "graphiti-adr92-s5-claim-ex-proof",
+ "s5_source_head": "640f4a9a40b33d3efd230ff2c228bb4c5470f14e",
+ "corpus": {
+  "sha256": "ebac7052065766eb8d1ef464142ea63dc3052d52deb36424492ebc477fdd3508",
+  "clusters": 24,
+  "families": {"swebench-sphinx": 9, "swebench-django": 8, "swebench-pylint": 3, "graphiti-mcp": 4}
+ },
+ "denominators": {"valuable_targets": 16, "nonvaluable_controls": 11, "note": "frozen B3 denominators unchanged; S1-S4 not replayed"},
+ "treatment": {
+  "status": "settled",
+  "candidates": 29, "approved": 9, "deferred": 20,
+  "model_calls": 79, "model_calls_by_stage": {"discovery": 35, "support": 34, "utility": 10},
+  "model_errors": 0,
+  "persisted": 9, "unresolved": 0,
+  "reconcile": "terminal read-only reconcile-only settled 9 queued -> persisted, 0 unresolved, 9 distinct valid UUIDs"
+ },
+ "persisted_uuids": [
+  "6fcb4c5c-2e33-4eee-bfd2-47498d118e8c",
+  "b2ab8807-607e-4a11-a32f-a12e1f7894bd",
+  "6abaf676-00f5-4668-96c4-fe809b48cf32",
+  "0278c0fc-bb7d-4598-9b26-cc879f8db1c6",
+  "3839cf37-ef2e-480a-8b2c-3fc3b776edcf",
+  "e798899c-c65e-420c-af51-2560da7a312d",
+  "21198079-bc38-41b5-a073-b2dd6fdb0878",
+  "d1491e96-2ed8-4d90-8b78-ed219c03a9f6",
+  "0b9dfd2d-af19-4e34-ba1a-b113a163a672"
+ ],
+ "four_surface": {
+  "reviewstore_persisted": 9,
+  "graphiti_mcp_get_episodes": 9,
+  "uuid_exact_match": true,
+  "remote_missing_from_store": 0,
+  "store_missing_from_remote": 0,
+  "distinct_valid_uuids": 9,
+  "source_index_intact": true
+ },
+ "valuable_targets_16": [
+  {"target": "graphiti_0312_py313_falkordb_smoke", "cluster": "g1", "s5_state": "lost", "loss_stage": "claim_support_missing_predicate (graphiti contract text lacks a substantive fact predicate)"},
+  {"target": "graphiti_0312_mcp_tools_only", "cluster": "g1", "s5_state": "lost", "loss_stage": "claim_support_missing_predicate"},
+  {"target": "graphiti_llm_param_readonly_audit", "cluster": "g2", "s5_state": "lost", "loss_stage": "claim_support_unsupported_inference"},
+  {"target": "graphiti_live_mcp_no_openviking", "cluster": "g3", "s5_state": "lost", "loss_stage": "claim_support_missing_predicate"},
+  {"target": "graphiti_temporal_memory_live_test", "cluster": "g3", "s5_state": "lost", "loss_stage": "claim_support_missing_predicate"},
+  {"target": "graphiti_temporal_validation_skill", "cluster": "g4", "s5_state": "lost", "loss_stage": "claim_support_missing_predicate"},
+  {"target": "sphinx_dict_str_str_param_render_defect", "cluster": "sp1", "s5_state": "covered", "basis": "sphinx dict(str,str) param persisted facts"},
+  {"target": "sphinx_9230_dict_param_render_variant", "cluster": "sp2", "s5_state": "covered", "basis": "sphinx dict param variant persisted facts"},
+  {"target": "sphinx_14182_rst_header_rows", "cluster": "sp8", "s5_state": "lost", "loss_stage": "discovery/surface loss - rst_header_rows source not surfaced as a supported claim (dict-param dominated sphinx candidates)"},
+  {"target": "sphinx_ascii_rst_header_rows", "cluster": "sp9", "s5_state": "lost", "loss_stage": "discovery/surface loss"},
+  {"target": "django_add_filter_lazy_string_typeerror", "cluster": "dj1", "s5_state": "covered", "basis": "django lazy-string add-filter persisted facts"},
+  {"target": "django_lazy_proxy_string_concat", "cluster": "dj1", "s5_state": "covered", "basis": "django lazy-string concat persisted facts"},
+  {"target": "django_add_filter_lazy_string_variant", "cluster": "dj2", "s5_state": "covered", "basis": "django lazy-string variant persisted fact"},
+  {"target": "pylint_short_verbose_expects_arg", "cluster": "py1", "s5_state": "covered", "basis": "pylint verbose-expects-arg persisted fact"},
+  {"target": "pylint_6386_verbose_flag_negative", "cluster": "py2", "s5_state": "lost", "loss_stage": "discovery/surface loss - 6386 flag-negative source not surfaced (0 candidates)"},
+  {"target": "pylint_verbose_v_arg_expected", "cluster": "py3", "s5_state": "lost", "loss_stage": "claim_support_missing_predicate (surfaced candidate deferred: predicate not independently supported)"}
+ ],
+ "valuable_coverage": {"s5_covered": 6, "of_16": 16, "s2_s3_baseline": 9, "delta": -3, "lost_vs_baseline": ["sphinx_14182_rst_header_rows (sp8)", "pylint_6386_verbose_flag_negative (py2)", "pylint_verbose_v_arg_expected (py3)"]},
+ "nonvaluable_controls_11": {
+  "persisted_false_positive": 1,
+  "false_positive_detail": "1 astropy QTable units fact (swebench-sphinx source) persisted as useful_negative; not one of the 16 valuable targets",
+  "retained_as_deferred": 10,
+  "note": "duplicate-reduction benefit: 10 of 11 controls correctly not persisted"
+ },
+ "distinct_durable_facts": {
+  "persisted_episodes": 9,
+  "distinct_supported_valuable_targets": 6,
+  "note": "episode count (9) NOT substituted for useful knowledge: 4 django + 1 pylint + 3 sphinx-dict = 8 facts map to 6 valuable targets; 1 astropy fact is a nonvaluable false positive"
+ },
+ "retrieval_usefulness": {
+  "search_memory_facts": "useful (returns real grounded facts, e.g. 'django__django-13794 is part of swebench-django project' with source/target node UUIDs)",
+  "search_nodes": "useful (returns project entities with content summaries, e.g. swebench-sphinx dict-param bug summary)",
+  "get_episode_entities": "sparse/zero-hit (empty nodes+edges for the specific persisted episodes queried) - per-episode entity extraction is membership-level, not rich",
+  "verdict": "retrieval is useful at the fact/project level; per-episode entity graphs are thin. 9 episodes overstates useful knowledge."
+ },
+ "result": "FUNCTIONAL_REMEDIATION_REQUIRED",
+ "result_rationale": "S5 claim/evidence EX-kernel integration works end-to-end (EX admission proven, 79 model calls, 9 persisted, terminal 4-surface reconcile clean). But S5 valuable coverage is 6/16, SUBSTANTIVELY BELOW the S2/S3 9/16 baseline: S5 lost sp8 (rst_header_rows), py2 (6386 flag negative), py3 (v_arg expected). Loss stages: py3 = claim_support_missing_predicate (surfaced, deferred); py2 & sp8 = discovery/surface loss (not surfaced). Per contract, do NOT run arbitrary prompt sweeps; return this loss-stage analysis. The claim-evidence support pipeline is more conservative than the S2/S3 source-recovery arm and defers the 3 variant targets.",
+ "nonmutation_proof": "S1-S4 groups untouched; no reset/deletion; historical scorecards unchanged; S5 uses fresh group + fresh 0700 state + original 24-cluster corpus + original 16/11 denominators"
+}

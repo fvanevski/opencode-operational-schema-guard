@@ -28,7 +28,7 @@ test('EX-only probe never calls Graphiti, and validates source-backed result',as
   let calls=0;
   const out=await runProbe({...args,curate:async(_r,p)=>{
     calls++;assert.equal(p.reasoningEffort,null);assert.equal(p.maxTokens,768);
-    return {content:JSON.stringify({decision:'EMIT',reason:'grounded',
+    return {content:JSON.stringify({decision:'EMIT',utility_class:'root_cause_fix',reason:'grounded',
       facts:[{assertion:fact,kind:'implementation',
         source_refs:event.source_refs,temporal_status:'observed'}]}),
       duration_ms:9,finish_reason:'stop',

@@ -1,0 +1,81 @@
+{
+ "schema": "issue92-v11r1-prospective-result-v1",
+ "result": "FAIL",
+ "result_code": "V11R1_TERMINAL_FAIL",
+ "group": "graphiti-adr92-a3-prospective-v21",
+ "source_head": "9744e87542d027b182eb917afce648c6fc198da5",
+ "freeze_public_head": "8b491d96f800c3976435043c46cdb741293d71ab",
+ "label_freeze_sha256": "0feabf0c49bcdd5b91f8012f8023593a5c5060ec97400069360b6b36e10011d7",
+ "private_manifest_sha256": "f44a7d13d53f6197c87e68c85dd79d317b94768712500f76f38a0b3634bcff48",
+ "batch_id": "cfd6bde4c5626e2844ef0a3df88ac35c4c19d1f4f459fe9930d8f38efade7ff3",
+ "model": {
+  "alias": "chat-fast",
+  "backend": "Qwen3.8-27B-swift15-uncensored-ajgazin-nvfp4full-dflash2-NInfer-v3 (NInfer 8001)",
+  "temperature": 0,
+  "max_tokens": 1600,
+  "timeout_ms": 90000
+ },
+ "drain": {
+  "candidates": 50,
+  "approved": 15,
+  "deferred": 35,
+  "model_calls": 116,
+  "model_errors": 0,
+  "ex_lock_valid": true,
+  "no_model_replay": true,
+  "writes_only_group": "graphiti-adr92-a3-prospective-v21"
+ },
+ "scorecard": {
+  "pass": false,
+  "stats": {
+   "valuable_hits": 7,
+   "valuable_of": 10,
+   "nonvaluable_persisted_cases": 0,
+   "persisted_episodes": 15,
+   "grounded_facts": 15,
+   "independent_useful_facts": 15,
+   "duplicate_episodes": 0,
+   "authority_breaches": 0
+  },
+  "gates": {
+   "valuable_coverage": false,
+   "zero_control_fact_persistence": true,
+   "grounded_precision": true,
+   "useful_among_grounded": true,
+   "zero_authority_breaches": true,
+   "terminal_source_integrity": true,
+   "independently_ratified_labels": true
+  },
+  "covered_target_ids": [
+   "crv-02",
+   "crv-03",
+   "cv-01",
+   "cv-02",
+   "cv-04",
+   "cv-08",
+   "cv-09"
+  ],
+  "intervals95": {
+   "valuable_coverage": {
+    "point": 0.7,
+    "lower": 0.3968
+   },
+   "grounded_precision": {
+    "point": 1,
+    "lower": 0.7961
+   },
+   "useful_among_grounded": {
+    "point": 1,
+    "lower": 0.7961
+   }
+  }
+ },
+ "failure_reason": "valuable_coverage gate not met: 7/10 valuable source targets independently covered (point 0.70 < 0.85); uncovered valuable cases cv-03, sv-01, sv-02 (no persisted fact). All other gates pass (0 control-origin persistence, 15/15 grounded, 15/15 useful, 0 authority/privacy/EX/false-verified breaches). Preserved as a terminal prospective result.",
+ "control_persistence": 0,
+ "authority_privacy_ex_breaches": 0,
+ "historical_mutations": 0,
+ "v10_replay": "NO",
+ "source_code_edits": 0,
+ "redaction": "sanitized result: case/episode/batch identities, aggregate metrics, gate verdicts and model identity only; no raw source text, private model replies, host file paths, or secret material",
+ "self_sha256": "36b53be109f66446097c4363cd6612ade0703603cf45430f626baa2c33883cef"
+}

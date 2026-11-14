@@ -1,0 +1,215 @@
+{
+ "arm": "previous",
+ "count": 51,
+ "by_stage": {
+  "utility": 24,
+  "discovery": 24,
+  "arbitration": 3
+ },
+ "reply_sha256": [
+  {
+   "stage": "utility",
+   "reply_sha256": "103d1a4251716d8786db625989464f549386b4c891435c7a48385524f488d017"
+  },
+  {
+   "stage": "discovery",
+   "reply_sha256": "f046505cae01a6cb95118ccc9aae033e4be2a9659a37a323e263883a8a1b7bcc"
+  },
+  {
+   "stage": "discovery",
+   "reply_sha256": "bf585a476aee515b016d42f5837d74d4aea439018c2422442e06da9787733d3d"
+  },
+  {
+   "stage": "utility",
+   "reply_sha256": "103d1a4251716d8786db625989464f549386b4c891435c7a48385524f488d017"
+  },
+  {
+   "stage": "discovery",
+   "reply_sha256": "002f373f5a358c0bff0b6cb27002a8ad54b053eea72d7e2fc4c231a04410555e"
+  },
+  {
+   "stage": "discovery",
+   "reply_sha256": "6d503bdf7f24e0327a32b8a5c25500f3c7b09e6a54c5b7fa7bc676e97aaa103b"
+  },
+  {
+   "stage": "utility",
+   "reply_sha256": "62aae6db75331e1cc52f539b796548e7793add6f47b0f5ca2c184a3d7dafcaf2"
+  },
+  {
+   "stage": "arbitration",
+   "reply_sha256": "07819883a1dfdb00fd69f05833b5761458a22b4b42e7a4d6cfb4d7b5416d4c5e"
+  },
+  {
+   "stage": "discovery",
+   "reply_sha256": "127329f5a29fde248ceaa35f11f7d185bd64307e10ce1af11d07688275927634"
+  },
+  {
+   "stage": "discovery",
+   "reply_sha256": "2a635834494732cc3a67c8b74a30f2f3d8f39b0bf0c6c23dca28c68ee83998e0"
+  },
+  {
+   "stage": "discovery",
+   "reply_sha256": "3a1d6af87643672501ba05d33e2db93eb16506a0d2cb0025f01e59fabd46afe6"
+  },
+  {
+   "stage": "arbitration",
+   "reply_sha256": "82342176d9a94746a01e990045612233f3e278c8188f03f7204c3855734ba4c9"
+  },
+  {
+   "stage": "discovery",
+   "reply_sha256": "390b164c23fc7db829e84d576ad17f36f3ba21e23f7093ba2afdd7ef565b6a19"
+  },
+  {
+   "stage": "utility",
+   "reply_sha256": "103d1a4251716d8786db625989464f549386b4c891435c7a48385524f488d017"
+  },
+  {
+   "stage": "utility",
+   "reply_sha256": "103d1a4251716d8786db625989464f549386b4c891435c7a48385524f488d017"
+  },
+  {
+   "stage": "utility",
+   "reply_sha256": "103d1a4251716d8786db625989464f549386b4c891435c7a48385524f488d017"
+  },
+  {
+   "stage": "utility",
+   "reply_sha256": "103d1a4251716d8786db625989464f549386b4c891435c7a48385524f488d017"
+  },
+  {
+   "stage": "utility",
+   "reply_sha256": "0b9ec7e9dc29d42293effae92f78f6a0095af6cc1376f833a3f0b804f9034487"
+  },
+  {
+   "stage": "utility",
+   "reply_sha256": "103d1a4251716d8786db625989464f549386b4c891435c7a48385524f488d017"
+  },
+  {
+   "stage": "discovery",
+   "reply_sha256": "192492c393f8a4ccb7ade62796c7a38e795d33a5a70fc15b50806ba5a4fdfae7"
+  },
+  {
+   "stage": "utility",
+   "reply_sha256": "f441843c2257ce7fe7962fad3672c9afa38353c30702a4e797a69f4f3edcbf4c"
+  },
+  {
+   "stage": "discovery",
+   "reply_sha256": "309d4356031792f00583eda82b6251a59d879307eefb323f3111249f7b2f480d"
+  },
+  {
+   "stage": "utility",
+   "reply_sha256": "0b9ec7e9dc29d42293effae92f78f6a0095af6cc1376f833a3f0b804f9034487"
+  },
+  {
+   "stage": "utility",
+   "reply_sha256": "62aae6db75331e1cc52f539b796548e7793add6f47b0f5ca2c184a3d7dafcaf2"
+  },
+  {
+   "stage": "discovery",
+   "reply_sha256": "12240a4f4e0692f3bb61d32a54f63b10598c1f9c7d61bfb3c6c6969f9078229c"
+  },
+  {
+   "stage": "utility",
+   "reply_sha256": "103d1a4251716d8786db625989464f549386b4c891435c7a48385524f488d017"
+  },
+  {
+   "stage": "discovery",
+   "reply_sha256": "59808a585130405d2f980ffe469d19bd189fd524e0ed19265cf5e6830673ca24"
+  },
+  {
+   "stage": "utility",
+   "reply_sha256": "0b9ec7e9dc29d42293effae92f78f6a0095af6cc1376f833a3f0b804f9034487"
+  },
+  {
+   "stage": "discovery",
+   "reply_sha256": "e9fbf96c172073aab5be3e768e8d1504ca91598c68a7a38bca072adec3e3b221"
+  },
+  {
+   "stage": "utility",
+   "reply_sha256": "f441843c2257ce7fe7962fad3672c9afa38353c30702a4e797a69f4f3edcbf4c"
+  },
+  {
+   "stage": "discovery",
+   "reply_sha256": "11212325beeb8df37281f014a7f19c26025d433314fad1851469bfb022ba4733"
+  },
+  {
+   "stage": "utility",
+   "reply_sha256": "103d1a4251716d8786db625989464f549386b4c891435c7a48385524f488d017"
+  },
+  {
+   "stage": "utility",
+   "reply_sha256": "103d1a4251716d8786db625989464f549386b4c891435c7a48385524f488d017"
+  },
+  {
+   "stage": "discovery",
+   "reply_sha256": "f34f5b94375da8a74e4c3ff17e5d18db2cce0a6cedfd52f9d1fc00082122f7f5"
+  },
+  {
+   "stage": "discovery",
+   "reply_sha256": "9207ae8e3c22a059c3f4ba8750568d83886567efbb82156f9984f6648819ce4b"
+  },
+  {
+   "stage": "discovery",
+   "reply_sha256": "d69fe581c437f7d0c296e261266cefab10fa072b33ba2b1096677974a1e5df03"
+  },
+  {
+   "stage": "utility",
+   "reply_sha256": "0b9ec7e9dc29d42293effae92f78f6a0095af6cc1376f833a3f0b804f9034487"
+  },
+  {
+   "stage": "utility",
+   "reply_sha256": "103d1a4251716d8786db625989464f549386b4c891435c7a48385524f488d017"
+  },
+  {
+   "stage": "discovery",
+   "reply_sha256": "24a144fd70c4f685d4c5f5bf6208b4cef4ee1fed8b390eb689e6c9e51054e254"
+  },
+  {
+   "stage": "discovery",
+   "reply_sha256": "aac86a0ceecba810b9dc3d227c4725d8866c17d3baf2dce69a6aedd715500f70"
+  },
+  {
+   "stage": "arbitration",
+   "reply_sha256": "067648038291e2b5251b7558ad167d63dc016f9ad99c6b7ba3c02b938440812b"
+  },
+  {
+   "stage": "discovery",
+   "reply_sha256": "08fdb1a42426ca6eda1c2175bf3ad43f3f45bb8a7f064810aa240012f412e8e8"
+  },
+  {
+   "stage": "discovery",
+   "reply_sha256": "22cf990a5989182ee9a99e20a1739b0127a8aced8197d0d0509e35274cfc369b"
+  },
+  {
+   "stage": "utility",
+   "reply_sha256": "62aae6db75331e1cc52f539b796548e7793add6f47b0f5ca2c184a3d7dafcaf2"
+  },
+  {
+   "stage": "discovery",
+   "reply_sha256": "947cb7814bb444d46c9ac881be3fbb59d9d38349c81ca8fb49495130815bb447"
+  },
+  {
+   "stage": "utility",
+   "reply_sha256": "103d1a4251716d8786db625989464f549386b4c891435c7a48385524f488d017"
+  },
+  {
+   "stage": "utility",
+   "reply_sha256": "103d1a4251716d8786db625989464f549386b4c891435c7a48385524f488d017"
+  },
+  {
+   "stage": "discovery",
+   "reply_sha256": "f6838ae216f0aa5d806999ca9647338ccbb6bdce3ff3b73b72b5d05af6eb7152"
+  },
+  {
+   "stage": "discovery",
+   "reply_sha256": "99294198f19b91737277a3dc1e7b077d26edcec3e62afebc97da165f33321fc1"
+  },
+  {
+   "stage": "utility",
+   "reply_sha256": "103d1a4251716d8786db625989464f549386b4c891435c7a48385524f488d017"
+  },
+  {
+   "stage": "utility",
+   "reply_sha256": "103d1a4251716d8786db625989464f549386b4c891435c7a48385524f488d017"
+  }
+ ]
+}

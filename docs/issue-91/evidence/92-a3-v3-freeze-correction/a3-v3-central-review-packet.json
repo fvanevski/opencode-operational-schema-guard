@@ -1,0 +1,329 @@
+{
+ "schema": "issue92-a3-v3-central-review-packet-v1",
+ "group": "graphiti-adr92-a3-prospective-v2",
+ "family": "gh_mcp-development-v3",
+ "private_manifest_sha256": "7b96a1075cbcd94866553bbfc37e26877df460e803d0beb798b9985954b5c4f0",
+ "label_freeze_sha256": "96b9e51ee76182729f1426873e538ce164fa5855139173e8da875e53a2cb0f11",
+ "supersedes_v2": "7 unsupported v2 valuable targets (v2-03 question, v2-04 question, v2-05/06/08/09/10 unexecuted instructions) replaced with source-stated durable facts/decisions/constraints; v2-01/02/07 retained; v2 10 controls retained. v2 preserved as rejected historical evidence.",
+ "valuable": [
+  {
+   "case_id": "i92-v3-01-6a2d4401",
+   "predicate": "falkordb_per_group_graph_layout",
+   "valuable": true,
+   "scope": {
+    "project": "f6e7bce8c4c55e2b6d837cfe4eb5af30617dae00",
+    "workspace": "/tmp/opencode/issue81-qual/fresh-session/work"
+   },
+   "source_digest_sha256": "2be300179e60a35f01cad99b8e9f37c84bbae485d524980a94e48b356bd877b1",
+   "source_locator": "opencode:ses_e514f306cffe3F3Hy1nkJgjujC:message:msg_1aeb0cfa4001WmFltu732cZHal",
+   "observed_at": "2026-11-06T02:29:46.100000Z",
+   "evidence_class": "user-stated",
+   "bounded_source_quote": "What FalkorDB layout is per-group graphs: `development-knowledge`, `ghdev_gh_mcp`, and an empty `graphiti_live` (0 nodes). The script queries `graphiti_live` filtered by `group_id='development-knowledge'` \u2014 but the data lives in the `development-knowledge` graph.",
+   "quote_chars": 263,
+   "rationale": "source-stated durable technical fact / operative decision / constraint"
+  },
+  {
+   "case_id": "i92-v3-02-cff2ba70",
+   "predicate": "qualification_state_disposable_b75_journal_decision",
+   "valuable": true,
+   "scope": {
+    "project": "08cca5d3f5e9af4f7be35ad55aa846f2b88207b2",
+    "workspace": "/tmp/opencode/issue75-final-qual/v2demo"
+   },
+   "source_digest_sha256": "8651f98a5cce27379cf6e82917048e5e88d9be450b972260ece435dd8c349b12",
+   "source_locator": "opencode:ses_e664635c4ffeUVVxkN88PvHUY8:message:msg_199b9ca48001KKf3ulXBY8LBuT",
+   "observed_at": "2026-11-02T00:47:33.094000Z",
+   "evidence_class": "user-stated",
+   "bounded_source_quote": "Decision: For this repo, we will keep the qualification state in the disposable b75 journal; run python3 -m pytest /tmp/opencode/issue75-final-qual/v2demo/test_smoke.py -q and report the result",
+   "quote_chars": 193,
+   "rationale": "source-stated durable technical fact / operative decision / constraint"
+  },
+  {
+   "case_id": "i92-v3-03-c07f27c9",
+   "predicate": "abi_incompatibility_assumption_analysis",
+   "valuable": true,
+   "scope": {
+    "project": "53f15a255e83bbb3064cea4cb862ec78fe90138f",
+    "workspace": "/opt/containers/tdarr"
+   },
+   "source_digest_sha256": "1a4a165d7a10111e1dbdf87b9fb4c3d5077b88287f24d392690485977db81062",
+   "source_locator": "opencode:ses_ec824370dffesoGG5AHPb3HiLt:message:msg_137e208c4001nkrW0Q1lnIXDCL",
+   "observed_at": "2026-10-14T00:48:42.728000Z",
+   "evidence_class": "user-stated",
+   "bounded_source_quote": "The agent is making two incorrect assumptions, although the errors shown do not establish an ABI incompatibility. 1. `-f mkv` is not a valid FFmpeg muxer name. The correct muxer is `-f matroska`, or simply omit `-f` when writing a file ending in `.mkv`.",
+   "quote_chars": 253,
+   "rationale": "source-stated durable technical fact / operative decision / constraint"
+  },
+  {
+   "case_id": "i92-v3-04-0d1013a5",
+   "predicate": "issue75_graphiti_recall_close_constraint",
+   "valuable": true,
+   "scope": {
+    "project": "0f5d6bf45db635bc9c239ddd5c1329d651ed13fa",
+    "workspace": "/home/filip/.local/share/ghdev/issue75-postmerge-f11ceaf4"
+   },
+   "source_digest_sha256": "9db30cf552594c65c745e0689e9b7bbe9efe56e0240cbe29cb20e6773d8b75b9",
+   "source_locator": "opencode:ses_e6112a17affe5tNrux6b1gvuy4:message:msg_19ef275dd001xFwxUDDqjHZaPJ",
+   "observed_at": "2026-11-03T01:07:32.472000Z",
+   "evidence_class": "user-stated",
+   "bounded_source_quote": "For this workflow, we decided that Issue 75 closes only after a fresh OpenCode session demonstrates source-attributed Graphiti persistence and recall.",
+   "quote_chars": 150,
+   "rationale": "source-stated durable technical fact / operative decision / constraint"
+  },
+  {
+   "case_id": "i92-v3-05-4814d284",
+   "predicate": "release_quality_gate_hard_prerequisite_decision",
+   "valuable": true,
+   "scope": {
+    "project": "8754d4814566ec907f077d26e41c166be499026e",
+    "workspace": "/tmp/opencode/issue75-evidence/v2proj"
+   },
+   "source_digest_sha256": "9abbeddc3a8e5f69f417f73de8173034f33c9898604c9b0b69aedbb2132759bd",
+   "source_locator": "opencode:ses_e66c19314ffemnBawIwPoeA42O:message:msg_1993e6e9b001eWiRa0zuhvEodc",
+   "observed_at": "2026-11-01T22:32:48.137000Z",
+   "evidence_class": "user-stated",
+   "bounded_source_quote": "We decided to keep the release quality gate as a hard prerequisite in this workflow. Run the test suite for this project with: python3 -m pytest test_fixture.py in this directory and confirm the tests pass.",
+   "quote_chars": 206,
+   "rationale": "source-stated durable technical fact / operative decision / constraint"
+  },
+  {
+   "case_id": "i92-v3-06-7486f6e4",
+   "predicate": "fsm81_unknown_event_must_throw_supersession",
+   "valuable": true,
+   "scope": {
+    "project": "0be245d66e24443694590a9715098eb65bdfb716",
+    "workspace": "/tmp/opencode/issue81-qual/terminal81-a1f3c9/native-ws/fsm81"
+   },
+   "source_digest_sha256": "fc01d5b4105c976785e439182f2729856e74862f92f0c365e124d772fae96d9c",
+   "source_locator": "opencode:ses_e5811b72dffeHsBS4pVp98BgX7:message:msg_1a7f37606001D5VpId7oG7R1M0",
+   "observed_at": "2026-11-04T19:05:13.612000Z",
+   "evidence_class": "user-stated",
+   "bounded_source_quote": "Supersession: the earlier settle-to-self fallback decision is now superseded. Unknown events must throw again in the transition function, and the settle-to-self rule must be removed. The terminal done state from the option-C decision still stands.",
+   "quote_chars": 247,
+   "rationale": "source-stated durable technical fact / operative decision / constraint"
+  },
+  {
+   "case_id": "i92-v3-07-29751d99",
+   "predicate": "fsm81_log_rotation_policy_design_decision",
+   "valuable": true,
+   "scope": {
+    "project": "5469ec53485ab619c9ffbf7dd5384d9884e16013",
+    "workspace": "/tmp/opencode/issue81-qual/terminal81-a1f3c9/native-ws-holdout/fsm81"
+   },
+   "source_digest_sha256": "3511d650a3eeb9651f7e289e4fbef4bb6a0dae75d9119d82caa3c6f58749ec9f",
+   "source_locator": "opencode:ses_e58011dbcffe6BQFG72bafKK8c:message:msg_1a8014ca70017ZovguTE4Kvnsd",
+   "observed_at": "2026-11-04T19:20:20.578000Z",
+   "evidence_class": "user-stated",
+   "bounded_source_quote": "Design decision for the fsm81 log rotation policy. The evidence tooling will keep the fsm81 log file for post-exit inspection, and the team must decide when a log line is retained versus dropped. Option A was time-based rotation with a fixed window, which mixes retention with wall-clock time and makes replay non-deterministic.",
+   "quote_chars": 328,
+   "rationale": "source-stated durable technical fact / operative decision / constraint"
+  },
+  {
+   "case_id": "i92-v3-08-76a0a3a7",
+   "predicate": "fsm81_transition_function_pure_constraint",
+   "valuable": true,
+   "scope": {
+    "project": "0be245d66e24443694590a9715098eb65bdfb716",
+    "workspace": "/tmp/opencode/issue81-qual/terminal81-a1f3c9/native-ws/fsm81"
+   },
+   "source_digest_sha256": "51d44a32075681db69203ac506e90920335a734dc7343d2cc76f3df29f47db5a",
+   "source_locator": "opencode:ses_e580da4c6ffeTf37kcEYgWxW0z:message:msg_1a7f25b45001zF2zfbzULz4VKJ",
+   "observed_at": "2026-11-04T19:04:01.213000Z",
+   "evidence_class": "user-stated",
+   "bounded_source_quote": "The fsm81 fixture models a tiny state machine. The core transition function is below, and it must remain a pure function of its two arguments.",
+   "quote_chars": 142,
+   "rationale": "source-stated durable technical fact / operative decision / constraint"
+  },
+  {
+   "case_id": "i92-v3-09-630b1bd1",
+   "predicate": "fsm81_terminal_state_modeling_decision",
+   "valuable": true,
+   "scope": {
+    "project": "0be245d66e24443694590a9715098eb65bdfb716",
+    "workspace": "/tmp/opencode/issue81-qual/terminal81-a1f3c9/native-ws/fsm81"
+   },
+   "source_digest_sha256": "2fba85a3c4fa80c299d64c0fa0c424ea445ae585983ebdc2a74f7226efd3952d",
+   "source_locator": "opencode:ses_e5811b72dffeHsBS4pVp98BgX7:message:msg_1a7ef3f9a001beyxKc4ab4f5N0",
+   "observed_at": "2026-11-04T19:00:37.555000Z",
+   "evidence_class": "user-stated",
+   "bounded_source_quote": "Design decision for the fsm81 state machine project. The team evaluated three approaches for modeling terminal states. Option A was to fold the done state into the failed state with a flag, but the flag would leak into every transition lookup and make the state map dense with conditional branches.",
+   "quote_chars": 298,
+   "rationale": "source-stated durable technical fact / operative decision / constraint"
+  },
+  {
+   "case_id": "i92-v3-10-f68e2d7a",
+   "predicate": "fsm81_export_format_serialization_decision",
+   "valuable": true,
+   "scope": {
+    "project": "5469ec53485ab619c9ffbf7dd5384d9884e16013",
+    "workspace": "/tmp/opencode/issue81-qual/terminal81-a1f3c9/native-ws-holdout/fsm81"
+   },
+   "source_digest_sha256": "f6e58cbe4c97164563a4719ebde218c5da8c76fdbe87cd6aa6a77d8dadf165aa",
+   "source_locator": "opencode:ses_e58011dbcffe6BQFG72bafKK8c:message:msg_1a801a7230012rXaFbfcCw5dUc",
+   "observed_at": "2026-11-04T19:20:43.700000Z",
+   "evidence_class": "user-stated",
+   "bounded_source_quote": "Design decision for the fsm81 export format. The evidence tooling needs to carry the final fixture state into a reviewable bundle, and the team must choose a serialization rule that stays stable across tooling versions.",
+   "quote_chars": 219,
+   "rationale": "source-stated durable technical fact / operative decision / constraint"
+  }
+ ],
+ "controls": [
+  {
+   "case_id": "i92-v3-11-c5f544d4",
+   "predicate": "routine_shell_echo_command",
+   "valuable": false,
+   "scope": {
+    "project": "2cfa05e81c79265ab99a7ab992d9bf8f4ac2699b",
+    "workspace": "/home/filip"
+   },
+   "source_digest_sha256": "bd2b6867b41d7fb31be2e0798faab0fe7e80ff6e997b604cd14ac74bb74cbf62",
+   "source_locator": "opencode:ses_e8fac88f1ffepVGCrIwNsjPP5D:message:msg_170554897001gP1mHe1a1hHgog",
+   "observed_at": "2026-10-24T23:53:19.779000Z",
+   "evidence_class": "user-stated",
+   "control_reason": "routine one-shot `echo prefix_stability_verified` shell command (test marker); non-durable",
+   "control_text_hash": "bd2b6867b41d7fb31be2e0798faab0fe7e80ff6e997b604cd14ac74bb74cbf62"
+  },
+  {
+   "case_id": "i92-v3-12-3a1ea0ff",
+   "predicate": "routine_touch_bash_command",
+   "valuable": false,
+   "scope": {
+    "project": "0f5d6bf45db635bc9c239ddd5c1329d651ed13fa",
+    "workspace": "/workspace/opencode-operational-schema-guard"
+   },
+   "source_digest_sha256": "b9781acc4cd2ac4bb499702ac1a22a70eb535da818051f13ae3e31f472504329",
+   "source_locator": "opencode:ses_f7d66ea60ffeEhEigc34ATSQ66:message:msg_082995aef001DvZ5jI3TOLz4cy",
+   "observed_at": "2026-09-08T19:58:03.503000Z",
+   "evidence_class": "user-stated",
+   "control_reason": "routine `touch /tmp/.../marker` bash command (filesystem marker); non-durable",
+   "control_text_hash": "b9781acc4cd2ac4bb499702ac1a22a70eb535da818051f13ae3e31f472504329"
+  },
+  {
+   "case_id": "i92-v3-13-7f365366",
+   "predicate": "routine_execution_time_query",
+   "valuable": false,
+   "scope": {
+    "project": "53f15a255e83bbb3064cea4cb862ec78fe90138f",
+    "workspace": "/opt/containers/tdarr"
+   },
+   "source_digest_sha256": "af0e03653b0607d627c7782829309841fc29f48f6ba100d789dc7785d7581eea",
+   "source_locator": "opencode:ses_e86f787f2ffe3Gv3G1Ry024aX3:message:msg_17a9b63a5001B3TDRkWXyv4lnq",
+   "observed_at": "2026-10-26T23:46:06.477000Z",
+   "evidence_class": "user-stated",
+   "control_reason": "routine execution-time query about the last agent turn (process metric); non-durable",
+   "control_text_hash": "af0e03653b0607d627c7782829309841fc29f48f6ba100d789dc7785d7581eea"
+  },
+  {
+   "case_id": "i92-v3-14-0f588618",
+   "predicate": "routine_post_exit_tui_confirmation",
+   "valuable": false,
+   "scope": {
+    "project": "0f5d6bf45db635bc9c239ddd5c1329d651ed13fa",
+    "workspace": "/workspace/opencode-operational-schema-guard"
+   },
+   "source_digest_sha256": "23aa754a59a983e265784933a7d6f1a9feec8860128fceca2f843ea835dce20c",
+   "source_locator": "opencode:ses_e41524c4affeA2maKfppOzjB5Z:message:msg_1c1094fbe001Y0MxqVt91F5ZzD",
+   "observed_at": "2026-11-09T15:59:35.410000Z",
+   "evidence_class": "user-stated",
+   "control_reason": "routine post-exit TUI completion confirmation (process state check); non-durable",
+   "control_text_hash": "23aa754a59a983e265784933a7d6f1a9feec8860128fceca2f843ea835dce20c"
+  },
+  {
+   "case_id": "i92-v3-15-3f44a8e8",
+   "predicate": "routine_media_deletion_state",
+   "valuable": false,
+   "scope": {
+    "project": "global",
+    "workspace": "/home/filip"
+   },
+   "source_digest_sha256": "f3a9bb0adf8ff60881331b5eaf6dadd2e22af636e78d329fc55422e7adcaff70",
+   "source_locator": "opencode:ses_f2706ab22ffeamEgcuGNjMizOy:message:msg_0d9205c80001xUiqKn5IB3sxJq",
+   "observed_at": "2026-09-25T15:12:51.840000Z",
+   "evidence_class": "user-stated",
+   "control_reason": "routine plex media-deletion status statement (user preference); non-technical",
+   "control_text_hash": "f3a9bb0adf8ff60881331b5eaf6dadd2e22af636e78d329fc55422e7adcaff70"
+  },
+  {
+   "case_id": "i92-v3-16-355fdc53",
+   "predicate": "routine_query_generation_task",
+   "valuable": false,
+   "scope": {
+    "project": "6e1d1f14113b8296790eb58270fae14c20edf5be",
+    "workspace": "/workspace/mcp_servers/gh_mcp"
+   },
+   "source_digest_sha256": "c35cddd6372691c9c00185feb9a2b987bcc0ae6c202749f5ca61c60a92eaa4cc",
+   "source_locator": "opencode:ses_e48972b74ffelp1G0HWJE6vNsS:message:msg_1b7876fd4001cgITBIs5d1Mnet",
+   "observed_at": "2026-11-07T19:41:08.975000Z",
+   "evidence_class": "user-stated",
+   "control_reason": "routine query-generation task across categories A/B/C (task request); non-durable",
+   "control_text_hash": "c35cddd6372691c9c00185feb9a2b987bcc0ae6c202749f5ca61c60a92eaa4cc"
+  },
+  {
+   "case_id": "i92-v3-17-dfec8bbf",
+   "predicate": "routine_dependency_bump_request",
+   "valuable": false,
+   "scope": {
+    "project": "2d5b82f298ebae09c6670dfbbf361dc7246493a3",
+    "workspace": "/opt/containers/graphiti"
+   },
+   "source_digest_sha256": "7a351ef99d8a0afcec0756a3d7d42024b587f8bd2110791b066de4d8f1a9d8fd",
+   "source_locator": "opencode:ses_e76e885afffe5nDb1ch2WTfrNh:message:msg_1892c50bf001UtjsNNRuCvx0Rp",
+   "observed_at": "2026-10-29T19:39:05.324000Z",
+   "evidence_class": "user-stated",
+   "control_reason": "routine dependency-bump request for a PR (routine task); non-durable",
+   "control_text_hash": "7a351ef99d8a0afcec0756a3d7d42024b587f8bd2110791b066de4d8f1a9d8fd"
+  },
+  {
+   "case_id": "i92-v3-18-9f360bff",
+   "predicate": "meta_process_evidence_question",
+   "valuable": false,
+   "scope": {
+    "project": "7d7a2e305630bc45e21a2e34258e5583879cccdb",
+    "workspace": "/tmp/opencode/issue81-fresh-native-acceptance/fresh-native-v1"
+   },
+   "source_digest_sha256": "9fc4425cc836a712966addcb16c1ecb0c1a7df5a912382ada51054961331c3c9",
+   "source_locator": "opencode:ses_e4dee78f4ffePuP7ykc2KHnsve:message:msg_1b211871f001xONjgGL2NXxMRH",
+   "observed_at": "2026-11-06T18:14:16.298000Z",
+   "evidence_class": "user-stated",
+   "control_reason": "meta-process question about fresh-native-session recall evidence (meta, not a durable fact)",
+   "control_text_hash": "9fc4425cc836a712966addcb16c1ecb0c1a7df5a912382ada51054961331c3c9"
+  },
+  {
+   "case_id": "i92-v3-19-93bb3b1f",
+   "predicate": "speculative_ninfer_log_hypothesis",
+   "valuable": false,
+   "scope": {
+    "project": "0f5d6bf45db635bc9c239ddd5c1329d651ed13fa",
+    "workspace": "/workspace/opencode-issue81-merged-deploy"
+   },
+   "source_digest_sha256": "a83b51138e51f6ad55b7af32d72e4f28ba00263a9238f2dcf9e225fcb50010ea",
+   "source_locator": "opencode:ses_e518d2926ffe4iAujvBdg4SxaG:message:msg_1ae7b897c0012q0rSotb46Vs7O",
+   "observed_at": "2026-11-06T01:31:36.664000Z",
+   "evidence_class": "user-stated",
+   "control_reason": "speculative ninfer log-detail hypothesis (unconfirmed); not a durable fact",
+   "control_text_hash": "a83b51138e51f6ad55b7af32d72e4f28ba00263a9238f2dcf9e225fcb50010ea"
+  },
+  {
+   "case_id": "i92-v3-20-ad9d6169",
+   "predicate": "routine_session_continuation",
+   "valuable": false,
+   "scope": {
+    "project": "53f15a255e83bbb3064cea4cb862ec78fe90138f",
+    "workspace": "/opt/containers/tdarr"
+   },
+   "source_digest_sha256": "7cf8f189c313a7dadb95a8eb6b2eaae607616001c59ef86974a5893d31749451",
+   "source_locator": "opencode:ses_eb9e900eeffeS25PK7OdoE7OVt:message:msg_146180ec3001h1kCgA1SAR8zRy",
+   "observed_at": "2026-10-16T19:02:24.222000Z",
+   "evidence_class": "user-stated",
+   "control_reason": "routine interrupted-session continuation request (process); non-durable",
+   "control_text_hash": "7cf8f189c313a7dadb95a8eb6b2eaae607616001c59ef86974a5893d31749451"
+  }
+ ],
+ "nonoverlap": {
+  "b3_24cluster": "0 session / 0 message (exact ID sets)",
+  "gh_mcp_20case": "0 session / 0 message / 0 text-digest (private holdout corpus)",
+  "v2_cohort": "13 inherited (3 retained valuable + 10 controls) by design; 7 new cases genuinely new (not in B3/gh_mcp/v2)",
+  "h2_h3_h4": "byte-level digest crosscheck UNVERIFIED (private corpus files not on host); distinct cronparse/firecrawl families; not substituted for proof"
+ },
+ "sanitization": "bounded 25-450-char quotes only; no credentials, no entire messages, no raw logs, no source-private file contents"
+}

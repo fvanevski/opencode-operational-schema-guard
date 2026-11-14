@@ -1,0 +1,95 @@
+{
+  "packet": "92-adr-integration",
+  "kind": "adr_integration_readiness",
+  "repository": "fvanevski/opencode-operational-schema-guard",
+  "branch": "work/91-memory-utility-r1",
+  "identities": {
+    "required_starting_head": "76ff0e80af58cddb841c88b3c14ffe6f8ab379d0",
+    "remote_head_at_auth": "76ff0e80af58cddb841c88b3c14ffe6f8ab379d0",
+    "baseline_sha": "c8eb5260f2b10832346234b1b5d0cf28302ffba8",
+    "architecture_commit": "84a1f0881249484d4b953cebe90bb0e4e80ddcd1"
+  },
+  "adr_implementation_blobs_at_76ff0e8": {
+    "docs/issue-78/v2-candidate/events.mjs": "aae7e9e4e8d0ddea34326853967f233f3efe503b",
+    "docs/issue-78/v2-candidate/queue.mjs": "b4e2df18e3741917e8f3f2513b54cb6aef874e98",
+    "docs/issue-78/v2-candidate/plugin.mjs": "00c964399a6b220fa3fa7f3847787d54f2439df5",
+    "docs/issue-78/v2-curator/core.mjs": "09dbe8990eba5539a7182958cf2e74a2ac004f14",
+    "docs/issue-78/v2-curator/worker.mjs": "47191c0bb95efe8df1ef4fa673ea5b4f5f449eee",
+    "docs/issue-78/v2-curator/issue92-source-fact.test.mjs": "392661c0acaa6e623add04b7be90b2878d903174"
+  },
+  "local_tests": {
+    "focused": {
+      "candidate.test.mjs": "17/17 PASS",
+      "curator.test.mjs": "35/35 PASS",
+      "issue92-source-fact.test.mjs": "3/3 PASS",
+      "total": "55/55 PASS"
+    },
+    "full_npm_test": "524/524 PASS (OPERATIONAL_PLUGIN_TEST_RESULT: PASS)",
+    "npm_run_check": "exit 0",
+    "node_check_events_core_worker": "clean",
+    "focused_on_trim_fixed_copy": "55/55 PASS (no regression)"
+  },
+  "source_range_validation": {
+    "phase3_contract_checks": "20/20 PASS",
+    "invariant": "source range is the sole authority for the auto-persisted statement; model paraphrase quarantined as review_only_unverified"
+  },
+  "capture_opportunities": {
+    "positive_admitted": ["P1_readonly_file_access", "P2_nonmarker_tool_output", "P3_json_braces_prompt", "P4_long_mixed_prompt", "P5_apply_patch_tool", "P6_assistant_turn"],
+    "safety_rejected": ["S1_secret_json_key", "S2_credential_tail", "S3_sensitive_path", "S4_injected_memory", "S5_wrong_scope", "S6a_long_no_nativeid"],
+    "fallback_admitted": ["S6b_short_no_nativeid (session-scoped-fallback, not native-strength)"]
+  },
+  "drain_executions": {
+    "model": "chat-fast @ 127.0.0.1:8002 (litellm), temperature 0, non-thinking",
+    "ex_admission": "GHDEV_MEMORY_POST_EXIT_LEASE=admitted (wrapper token; canonical EX flock held by active harness)",
+    "corpus": "10 events / 7 clusters (s1-s7) + 3 capture-reject controls (n1-n3)",
+    "runs": [
+      {"run": "r05", "source": "original_76ff0e8", "group": "graphiti-adr92-exposed-development-r05", "persisted": 2, "deferred": 4, "skipped": 1, "approved": 2, "model_calls": 7, "model_errors": 0},
+      {"run": "r06", "source": "trim_fixed_copy", "group": "graphiti-adr92-exposed-development-r06", "persisted": 4, "deferred": 2, "skipped": 1, "approved": 4, "model_calls": 7, "model_errors": 0},
+      {"run": "r07", "source": "trim_fixed_copy", "group": "graphiti-adr92-exposed-development-r07", "persisted": 5, "deferred": 2, "skipped": 1, "approved": 5, "model_calls": 7, "model_errors": 0},
+      {"run": "r08", "source": "original_76ff0e8", "group": "graphiti-adr92-exposed-development-r08", "persisted": 3, "deferred": 4, "skipped": 1, "approved": 3, "model_calls": 7, "model_errors": 0}
+    ],
+    "model_non_determinism": "persisted-fact count varies 2->5 across runs in BOTH original and trim-fixed source; per-run output not reproducible"
+  },
+  "trim_defect_and_repair": {
+    "site": "docs/issue-78/v2-curator/core.mjs:197",
+    "defect": "verbatim=source.excerpt.slice(p.start,p.end) is not trimmed; spans with leading/trailing whitespace fail validText s===s.trim() -> invalid_fact_fields:assertion",
+    "repair": "append .trim() -> verbatim=source.excerpt.slice(p.start,p.end).trim()",
+    "mechanical": true,
+    "semantics_preserving": true,
+    "range_checks_unchanged": true,
+    "safe_evidence": "55/55 focused suites pass on trim-fixed copy; s4 embedded tool-output now EMITs; s5 off-by-one (end=128>len=127) still correctly rejected",
+    "committed_in_this_packet": false,
+    "disposition": "recommended mechanical remediation for Central"
+  },
+  "exposed_case_recall": {
+    "s1_graphql_pin_durable_decision": "persisted r05/r06/r07/r08",
+    "s2_cronparse_root_cause_fix": "persisted r06/r07; deferred (unverified) r08",
+    "s3_hermes_litellm_stable_architecture": "persisted r05; deferred invalid_fact_fields r06/r07/r08 (model variance; defers in original too)",
+    "s4_falkordb_episodic_label_useful_negative": "persisted r06/r07/r08; deferred only r05 (trim-fix target)",
+    "s5_cli_median_deprecation_durable_decision": "persisted r06/r07; deferred r05/r08",
+    "s6_repetition_transient_result": "SKIP all runs",
+    "s7_unverified_assistant_uncertain_unattributed": "DEFER all runs",
+    "n1_n2_n3_capture_reject": "rejected at capture all runs"
+  },
+  "durable_precision": {
+    "grounding": "every persisted fact grounded in a cited authenticated source excerpt (verbatim span)",
+    "privacy_source_authority": "0 privacy / 0 authority / 0 fabrication regressions observed; secrets/injected-memory/sensitive-path/cross-scope capture-rejected",
+    "redundancy": "s6 repetition SKIP; no within-arm duplicates persisted"
+  },
+  "graphiti_terminal": {
+    "three_surface_verification": "review-store record -> remote_episode_uuid -> raw FalkorDB Episodic node -> Graphiti MCP get_episodes",
+    "falkordb_episodic_counts": {"r06": 4, "r07": 5, "r08": 3},
+    "graphiti_mcp_get_episodes_counts": {"r06": 4, "r07": 5, "r08": 3},
+    "episode_name_binding": "curated-v1:<review-record-id>",
+    "distinct_uuids": true
+  },
+  "crash_recovery": "covered by phase3 contract checks C1-C6 (manifest heal, sibling-defer independence, independent persisted sibling, ambiguous submission no-replay, dedup, stale-CAS clean-false); all PASS",
+  "production_mutation": "none; development-knowledge=355 Episodic nodes unchanged; graphiti_live/ghdev_gh_mcp=0; historical H2-H4/curator-utility groups intact",
+  "evidence_remote_update": "allowed; single evidence-only non-force commit to work/91-memory-utility-r1",
+  "readiness": "READY for integration",
+  "central_remediation_required": [
+    "incorporate .trim() at core.mjs:197 (mechanical, semantics-preserving)",
+    "address model non-determinism for reproducible per-fact output (deterministic model/seed)"
+  ],
+  "next_concrete_action": "Central incorporates the .trim() repair into the ADR implementation and re-qualifies on a pre-registered holdout with a deterministic model; no PR/merge from this packet"
+}

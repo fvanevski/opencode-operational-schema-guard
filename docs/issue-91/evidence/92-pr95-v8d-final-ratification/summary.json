@@ -1,0 +1,260 @@
+{
+ "schema": "issue92-pr95-v8d-final-ratification-receipt-v1",
+ "repo": "fvanevski/opencode-operational-schema-guard",
+ "pr": 95,
+ "branch": "issue/92-v7c-accepted",
+ "result": "V8D_SOURCE_RATIFIED",
+ "source_head": "ef557da733118fd13be88ca4b1dec87a34b3b37e",
+ "production_source_commit": "d3d66bb3694d71fd4e73a1dc7d80cc4a1ca93f24",
+ "native_source_audit": {
+  "store": "opencode.db.session_message (canonical native OpenCode store)",
+  "schema": "id,session_id,type,seq,time_created,time_updated,data(JSON .text)",
+  "classification": "All 20 v8d cases: type=user, native msg_/ses_ IDs, original bytes re-read read-only, UTF-8 + raw-data SHA256 recorded, 0 OpenViking echoes, 0 fabricated IDs",
+  "valuable": [
+   {
+    "case": "v8d-v-01",
+    "message_id": "msg_089998671001noRpcz4cvLKAIe",
+    "session_id": "ses_f778e7103ffeQpw0IzHBwX37Fb",
+    "text_sha256": "5fc85e73c9eaa734",
+    "raw_data_sha256": "fff2cf7be728f0b1",
+    "observed_at": 1789014935153,
+    "quote": "plex media server is located on local host at `/opt/plex/Plex Media Server`",
+    "predicate": "user-reported host path at observed time (Plex Media Server at /opt/plex/Plex Media Server); not independently re-verified as current"
+   },
+   {
+    "case": "v8d-v-02",
+    "message_id": "msg_0d9205c80001xUiqKn5IB3sxJq",
+    "session_id": "ses_f2706ab22ffeamEgcuGNjMizOy",
+    "text_sha256": "f3a9bb0adf8ff608",
+    "raw_data_sha256": "239286b558034607",
+    "observed_at": 1790349171840,
+    "quote": "i'm done deleting plex library media, you can assume current media state will not change",
+    "predicate": "observed operator task-state assumption that Plex media state was stable at that time; not a guarantee of future stability"
+   },
+   {
+    "case": "v8d-v-03",
+    "message_id": "msg_19a3db7f5001vSSQrkFbVb0HaP",
+    "session_id": "ses_e65c4e095ffeycUDo0IpP5wLwV",
+    "text_sha256": "e2391bac432657e3",
+    "raw_data_sha256": "47a4f7c659df03d1",
+    "observed_at": 1793589132206,
+    "quote": "currently loaded model is an ninfer artifact located at: /workspace/models/Qwen3.8-27B-swift15-nvfp4full-dflash2-NInfer-v3",
+    "predicate": "versioned/historical model-artifact predicate: the loaded model at that time was the NInfer artifact at /workspace/models/Qwen3.8-27B-swift15-nvfp4full-dflash2-NInfer-v3"
+   },
+   {
+    "case": "v8d-v-04",
+    "message_id": "msg_0b4ffd686001HhapbFYMEqSYYL",
+    "session_id": "ses_f4b0775c4ffeJGCH6uEknPdB23",
+    "text_sha256": "241aa02c8e77dc40",
+    "raw_data_sha256": "3743f84522f6cd9c",
+    "observed_at": 1789743060614,
+    "quote": "tdarr docker network should be media-arr",
+    "predicate": "source-proposed DESIRED Tdarr Docker network name (media-arr); a naming requirement, not deployment proof"
+   },
+   {
+    "case": "v8d-v-05",
+    "message_id": "msg_0c5c7398c001693rdOCFjjieMg",
+    "session_id": "ses_f3e666e86ffeugw9WQzDV8nudu",
+    "text_sha256": "762473382d7020f8",
+    "raw_data_sha256": "53ebae7f88a3eda8",
+    "observed_at": 1790024563084,
+    "quote": "note that when rtk wrapper corrupts output, you can use `rtk proxy` to bypass compressions and rewriting.",
+    "predicate": "rtk proxy bypasses the rtk wrapper's compression/output rewriting when the wrapper corrupts output"
+   },
+   {
+    "case": "v8d-v-06",
+    "message_id": "msg_18921e13f001rJm8Ew9sW0OV0p",
+    "session_id": "ses_e76e885afffe5nDb1ch2WTfrNh",
+    "text_sha256": "2451067c7deb6f33",
+    "raw_data_sha256": "88b671e6c387936c",
+    "observed_at": 1793302061401,
+    "quote": "i restarted opencode and graphiti mcp server is still failing",
+    "predicate": "source-REPORTED failure: after restarting opencode, the graphiti mcp server was still failing; not a proven persistent root cause"
+   },
+   {
+    "case": "v8d-v-07",
+    "message_id": "msg_08928b18b001FxOeRgsYo3fhsi",
+    "session_id": "ses_f778e7103ffeQpw0IzHBwX37Fb",
+    "text_sha256": "a46168053d091356",
+    "raw_data_sha256": "1dd985c0b9e5e7ae",
+    "observed_at": 1789007540619,
+    "quote": "i added nekoBT (Prowlarr) manually while waiting",
+    "predicate": "operator manually added nekoBT (a Prowlarr instance) to the media stack"
+   },
+   {
+    "case": "v8d-v-08",
+    "message_id": "msg_1278dcd2c001R3ihg6Q7J9SEmA",
+    "session_id": "ses_ed901f0bcffey4W4qkLlY0J2Iq",
+    "text_sha256": "7bf6d33973e0c1ed",
+    "raw_data_sha256": "5df47d7db482b5c4",
+    "observed_at": 1791664966956,
+    "quote": "the pairing loop appears to have been implemented poorly, resulting in an inescapable loop on repeat, remediate before re-attempting",
+    "predicate": "the pairing loop is implemented such that it produces an inescapable repeat loop"
+   },
+   {
+    "case": "v8d-v-09",
+    "message_id": "msg_0e6b4273c001xCD4c24mOPJ5jf",
+    "session_id": "ses_f199fa926ffeCpaWbjMIeIyW5A",
+    "text_sha256": "6888695eb8ad49d1",
+    "raw_data_sha256": "df6cdb8b3467b3de",
+    "observed_at": 1790576961340,
+    "quote": "`/opt/containers/tdarr/integration/P5M49-central-one-title-policy-20260928` has been materialzied",
+    "predicate": "the P5M49 central-one-title-policy integration handoff is materialized at /opt/containers/tdarr/integration/P5M49-central-one-title-policy-20260928"
+   },
+   {
+    "case": "v8d-v-10",
+    "message_id": "msg_0e52a4572001qZ0YwwsHxCYXI3",
+    "session_id": "ses_f1b31d3e1ffePryWbANyxIk6vX",
+    "text_sha256": "88fbf143fb51dec2",
+    "raw_data_sha256": "cf52c4a85d06f3e0",
+    "observed_at": 1790551147890,
+    "quote": "follow integration handoff located at `/opt/containers/tdarr/integration/P5M45C-central-paired-nr-shadow-20260927/docs/INTEGRATION-HANDOFF.md`",
+    "predicate": "the P5M45C central-paired-nr-shadow integration handoff is located at /opt/containers/tdarr/integration/P5M45C-central-paired-nr-shadow-20260927/docs/"
+   }
+  ],
+  "controls": [
+   {
+    "case": "v8d-c-01",
+    "message_id": "msg_088aa03220016h077vNs1DMoWy",
+    "session_id": "ses_f778e7103ffeQpw0IzHBwX37Fb",
+    "text_sha256": "0b2fe341e069ba16",
+    "quote": "continue from interruption",
+    "rationale": "transient resume meta-instruction; no technical content"
+   },
+   {
+    "case": "v8d-c-02",
+    "message_id": "msg_107a76988001vUlwGnobwhAR5b",
+    "session_id": "ses_ef85896bbffeTqPElQ8a2BM3jP",
+    "text_sha256": "3bafdba12607b256",
+    "quote": "\"Say hi in 1 word. No tools.\"",
+    "rationale": "transient one-word smoke probe; no technical content"
+   },
+   {
+    "case": "v8d-c-03",
+    "message_id": "msg_1af9ef25b001tmNfeT34m7Ynvy",
+    "session_id": "ses_81f_n01",
+    "text_sha256": "83aeb39aa2652cad",
+    "quote": "\"What is the weather in Tokyo right now?\"",
+    "rationale": "non-technical open question (weather in Tokyo); no asserted answer"
+   },
+   {
+    "case": "v8d-c-04",
+    "message_id": "msg_1a9e99b2200113bd6qQWyFeYg4",
+    "session_id": "ses_e5616650dffec2NhuWCOH91aO3",
+    "text_sha256": "1b997d5ad21df831",
+    "quote": "\"What is the capital of France?\"",
+    "rationale": "non-technical open question (capital of France); no asserted answer"
+   },
+   {
+    "case": "v8d-c-05",
+    "message_id": "msg_1af9e5e06001okwimJN0VjvIZy",
+    "session_id": "ses_81f_s16",
+    "text_sha256": "e4eac92a2a876d4e",
+    "quote": "\"What caused the v2smoke4 test failures?\"",
+    "rationale": "diagnostic question (cause of v2smoke4 test failures); no asserted answer"
+   },
+   {
+    "case": "v8d-c-06",
+    "message_id": "msg_1c85f4c4b001PuXzlpg4Zbw9Er",
+    "session_id": "ses_e37aa8517ffeg7n4zGhE4vBuVL",
+    "text_sha256": "0b868c4a9d1cad2e",
+    "quote": "it appears the post-exit sequence has completed",
+    "rationale": "transient post-exit status chatter; no durable requirement"
+   },
+   {
+    "case": "v8d-c-07",
+    "message_id": "msg_1b7844d2c0012Jd14ARiYdsuJa",
+    "session_id": "ses_e48972b74ffelp1G0HWJE6vNsS",
+    "text_sha256": "af82e19f91d3f2cb",
+    "quote": "process 1425568 has been killed and opencode restarted",
+    "rationale": "transient process-kill/restart status note; no durable requirement"
+   },
+   {
+    "case": "v8d-c-08",
+    "message_id": "msg_1930ceb60001sgwyA5vgHpJAg4",
+    "session_id": "ses_e6cf314a9ffeekS46yXudumO6Y",
+    "text_sha256": "ed148998995ffc5f",
+    "quote": "\"Fresh-process acceptance smoke. Reply with exactly: ACK\"",
+    "rationale": "fresh-process acceptance smoke reply; not a durable fact"
+   },
+   {
+    "case": "v8d-c-09",
+    "message_id": "msg_12c49d4180013dABoIx2lSuyEJ",
+    "session_id": "ses_ed3b62c09ffenmurHOnBlEpp90",
+    "text_sha256": "c5a3b72bb293c82e",
+    "quote": "Run: touch denied-stock-marker",
+    "rationale": "one-off shell marker command; not a durable fact"
+   },
+   {
+    "case": "v8d-c-10",
+    "message_id": "msg_1b933f067001qikdwjFbpe5wpC",
+    "session_id": "ses_e46dca21affe0O2STRU2ne8aZb",
+    "text_sha256": "3e3127e0fadafd58",
+    "quote": "provide the list of questions to enter precisely as user turns.",
+    "rationale": "imperative list-request; not a durable developer fact"
+   }
+  ]
+ },
+ "overlap_proof": {
+  "method": "Each v8d technical proposition compared against ALL prior v2-v7/B/exposed/v8/v8c predicate families (129 recorded)",
+  "zero_unapproved_overlaps": true,
+  "notes": "v8c-v-03 queue_empty == v6-v-10 (exposed/accepted) -> replaced; v8c-v-09 rtk-exclude overlaps v8c-v-06 rtk family -> replaced; v8d replacements (nekoBT-Prowlarr, pairing-loop defect, P5M49 handoff, P5M45C handoff) are new predicate families not in any prior cohort; P5M49 and P5M45C are distinct integration projects (distinct paths/content), not a single reused rule"
+ },
+ "v8c_disposition": {
+  "v8c-v-01": "KEEP (user-reported host path at observed time) -> v8d-v-01",
+  "v8c-v-02": "CONDITIONAL KEEP as observed task-state assumption -> v8d-v-02",
+  "v8c-v-03": "REPLACE (queue_empty == v6-v-10 dup) -> v8d-v-07 (nekoBT)",
+  "v8c-v-04": "KEEP with FULL contiguous quote (no ellipsis) -> v8d-v-03",
+  "v8c-v-05": "KEEP as DESIRED network-name policy -> v8d-v-04",
+  "v8c-v-06": "KEEP (rtk proxy) -> v8d-v-05",
+  "v8c-v-07": "KEEP as source-REPORTED failure -> v8d-v-06",
+  "v8c-v-08": "REPLACE (reboot/'would have purged /tmp' conditional, not verified) -> v8d-v-08 (pairing-loop defect)",
+  "v8c-v-09": "REPLACE (imposed-hook speculation + contemplated RTK exclusion, overlaps v8c-v-06) -> v8d-v-09 (P5M49 handoff)",
+  "v8c-v-10": "REPLACE (task-bound sudo authorization, not general persistent permission) -> v8d-v-10 (P5M45C handoff)",
+  "lineage_correction": "v8c 'RETAIN' lineage was FALSE (technical predicates changed, not just IDs); v8d cases tracked as fresh v8d-canonical identities, not 'retained v8'"
+ },
+ "final_v8d_freeze": {
+  "group": "graphiti-adr92-a3-prospective-v8 (reused, freshly shown empty; staged to NEW state root)",
+  "state_root": "/tmp/opencode/issue92-a3-v8d/state (0700)",
+  "manifest_sha256": "aa42941a2b040f941435021ddac6dcce911b838bf4f2f42238100b89abd05440",
+  "label_freeze_sha256": "c9befd79c59e91bc48f0e1441766f79ad94bbb39dffb12ce33d176c02bb599c7",
+  "roster_sha256": "3414d767c713c49425bff292820f21182b0a40e116850dc72f4d6e0e5ac2d809",
+  "events_staged": 20,
+  "staging_receipt": "/tmp/opencode/issue92-a3-v8d/state/a3-v2-staged.json"
+ },
+ "empty_group": {
+  "group": "graphiti-adr92-a3-prospective-v8",
+  "episodes": 0,
+  "outstanding_model_write_intents": 0,
+  "once_only_marker_absent": true,
+  "staged_events": 20
+ },
+ "ex_preflight": {
+  "kernel_lock_fd_inherited": "GHDEV_MEMORY_POST_EXIT_LOCK_FD (driver reads /proc/self/fd/<fd>; fdinfo FLOCK held by launcher pid)",
+  "scheduler_idle": true,
+  "harness_exit": true,
+  "no_inference_executed": true,
+  "scorer_fail_closed_pre_inference": true,
+  "source_host_bridge_binding": "EX commit-gate bridge is host-only (openviking_commit_gate.py + commit-gate.toml), not a Git blob"
+ },
+ "ready_launch": {
+  "command": "python3 /tmp/opencode/issue92-a3-v8d/ex-launcher.py",
+  "status": "PREPARED_NOT_EXECUTED",
+  "note": "one-shot EX-gated launcher for the untouched v8d prospective run; Central authorizes exactly one execution after ratification"
+ },
+ "historical_integrity": {
+  "v8": true,
+  "v8c": true,
+  "v7c": true,
+  "r1": true,
+  "r2": true,
+  "v8_manifest": "dcd723a6...",
+  "v8c_manifest": "65348946...",
+  "v7c_corpus": "9356e663...",
+  "no_inference_replay": true,
+  "no_graphiti_writes": true
+ },
+ "source_changes": "none (additive v8d evidence + private v8d freeze only)",
+ "command_shape_friction": [],
+ "decision_blockers": []
+}

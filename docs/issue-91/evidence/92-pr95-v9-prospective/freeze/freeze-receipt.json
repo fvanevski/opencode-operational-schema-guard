@@ -1,0 +1,21 @@
+{
+  "schema": "issue92-pr95-v9-pre-inference-freeze-v1",
+  "group": "graphiti-adr92-a3-prospective-v9",
+  "manifest_sha256": "8aec51579455a519d1f4cf4bec1e3469e87bef91f0a41b31d67ff985019ce77f",
+  "label_freeze_sha256": "d1d3ba84e00e0b9bd0d4334c4dae7d7cdf3d51c8461e49d4e14a95a2f44e62e6",
+  "case_count": 20,
+  "valuable_count": 10,
+  "control_count": 10,
+  "distinct_sessions": 20,
+  "distinct_workspaces": 15,
+  "task_families": ["opencode-operational-schema-guard", "firecrawl", "tdarr", "swebench-mini", "ghdev-infrastructure", "openviking", "fileflows", "opencode-config"],
+  "nonoverlap_proof": {
+    "identity_check": "PASS (0 locator/text-SHA/session overlap with all prior V2-V8d cohorts)",
+    "semantic_predicate_check": "PASS (no shared substantive technical predicate family)"
+  },
+  "staging_receipt": "a3-v2-staged.json (20 events staged, CPU-only)",
+  "graphiti_group_status": "zero episodes confirmed (read-only get_episodes)",
+  "ratification": "independent pre-inference reviewer (Hermes Build, separate from curator inference)",
+  "timestamp_utc": "2026-11-13T23:30:00Z",
+  "source_head": "05470be563a703b75a6f8c7a5b393871293c0c40"
+}

@@ -1,0 +1,43 @@
+{
+ "schema": "issue92-s3-remote-membership-audit-v1",
+ "kind": "read-only pre-reconciliation audit (get_episodes, group_ids array, max_episodes 500; 3 consecutive reads)",
+ "audited_utc": "2026-11-11T19:37:59Z",
+ "group": "graphiti-adr92-s3-resilient-discovery",
+ "query": {
+  "group_ids": [
+   "graphiti-adr92-s3-resilient-discovery"
+  ],
+  "max_episodes": 500
+ },
+ "reads": 3,
+ "reads_consistent": true,
+ "remote_episodes": 18,
+ "queued_records": 18,
+ "matched": 18,
+ "absent": 0,
+ "absent_ids": [],
+ "invalid_uuid": 0,
+ "duplicated_names": 0,
+ "extra_episodes": 0,
+ "matched_uuids": {
+  "0526530f555f88385811a0aec7d1e385e1771da0797137ef044e75443fa2cb26": "3d7685dd-954f-4430-8ee2-d50997f4bde9",
+  "0a0ef3942a64dc9240731e3b8f0b6acd85e73a4e393feb97baf2dfb920a87125": "28588d46-bff9-466f-80b1-8cb4b10ea4f7",
+  "203cf168f0ebe24f6ffacae26efd64e073e5b0d47efcfa5c7888a76e4e94cd2f": "fe7ffa7c-63e1-4c6c-9ddb-ca2abad307b0",
+  "31415df30bacfb2ab23fadf5d6ac7b09d7eede0f612debb86155e6f4627939f8": "3f4ca4c4-1fe0-46ea-8ce9-c8e81093fc27",
+  "316859e6b730a38b5c877a6ced540b38643f91c4283e7aaa32b9d1015c2bbfce": "929d64ec-f996-4e8d-8d62-e25357834cb5",
+  "4f1faa1a759eb90a480201ebc7943da5cec495e962135e82f2f2686cc09cdcb0": "b6b287d7-4ab7-4b60-abb8-cde0125f23a6",
+  "6b4445a18809e829d95111e20abc5f3c2b98d67337bbe8034f72020af84232c7": "d655a2e3-4de6-4f4c-8c89-e520c3be36ee",
+  "6c3689616934144bece293eb42c7047ced793a919256bba3713494245366549b": "4da427af-a7e1-474f-96c1-f481fb7bb5a7",
+  "6e7fe33f549fb8a87d1de8c421ea09526d6a99c13c41fd45965c893969b695f3": "7acd797b-b74d-4b75-b32c-3f2f121450e1",
+  "7b3b3822278e14c5f413fe84595ed5a5fe90638369b396d6ba33cba5374278b4": "2e89f097-1c62-4eeb-9414-7268853cedc6",
+  "809a5e48deabf88ac98f4324eb705b5592bab3a98685b78587da3d094c64efe4": "7e074380-5a8b-46b6-8c23-8d52bca8279d",
+  "974d8452686014d4da8dd8a91f3fb3936de008e63767e7a3bec47098a679b122": "02be1e62-7d6a-487d-804c-ca595994218c",
+  "9d489f7c57d5c76e9a52eda580a6743f52ce2cc97953ccdb6c8a9c768352993a": "f9eba2d0-3a8f-48e8-9eab-1b1e64d8e058",
+  "a32014a8dc6552a985e874f15eace994bb25b80e2f105b2e0ca971fe58d6e304": "c01dc2f6-b71c-479a-9ecf-278c3284ae8d",
+  "a4e4a7f52da39f3e9e5c9c41de8aa617ae040edb62bdf179175c33fd44cb7908": "58738448-6340-4fa4-8af7-a80be26ecc7c",
+  "a66d3e3f961ae2200c414fd39e76153a6184ce9a5294f004907c6cd29d16118e": "02e4cfe2-4276-4952-a29e-03c7caaa0f52",
+  "d0310126a4c373cd7fb53cde76ffd0a14326bc46893694d3ad4837a5d2f23619": "85f01455-00e9-456b-9279-190737880ef0",
+  "e51cb8604cf50b02337e1fde27b6b79d346ab116782fef6142a0f70317d0abdb": "6fd39b5c-644a-4762-a429-6f47a88aaa76"
+ },
+ "conclusion": "all 18 queued ReviewStore identities positively present remotely with unique valid UUIDs"
+}

@@ -1,0 +1,39 @@
+{
+  "schema": "issue92-b1-native-results-v1",
+  "head": "4322fd8f94bc9300133437527f45647a6eb11449",
+  "branch": "work/91-memory-utility-r1",
+  "ran_at_utc": "2026-11-10T18:00Z",
+  "environment": "CPU-only",
+  "commands": [
+    {"cmd": "node --check docs/issue-78/v2-curator/finite-batch.mjs", "exit": 0},
+    {"cmd": "node --check docs/issue-78/v2-curator/finite-batch.test.mjs", "exit": 0},
+    {"cmd": "node --check docs/issue-78/v2-curator/curator-cli.mjs", "exit": 0},
+    {"cmd": "node --check docs/issue-78/v2-curator/fact-review.mjs", "exit": 0},
+    {"cmd": "node --check docs/issue-78/v2-curator/worker.mjs", "exit": 0},
+    {"cmd": "node --test docs/issue-78/v2-curator/finite-batch.test.mjs", "exit": 0, "tests": 14, "pass": 14, "fail": 0},
+    {"cmd": "node --test docs/issue-78/v2-curator/fact-review.test.mjs", "exit": 0, "tests": 14, "pass": 14, "fail": 0},
+    {"cmd": "node --test docs/issue-78/v2-curator/curator.test.mjs", "exit": 0, "tests": 36, "pass": 36, "fail": 0},
+    {"cmd": "node --test docs/issue-78/v2-curator/issue92-source-fact.test.mjs", "exit": 0, "tests": 5, "pass": 5, "fail": 0},
+    {"cmd": "node --test docs/issue-91/adr-acceptance/adr-causal-audit.test.mjs", "exit": 0, "tests": 14, "pass": 14, "fail": 0},
+    {"cmd": "npm run check", "exit": 0},
+    {"cmd": "npm test", "exit": 0, "tests": 524, "pass": 524, "fail": 0, "result": "OPERATIONAL_PLUGIN_TEST_RESULT: PASS"}
+  ],
+  "blob_verification": {
+    "previous_treatment_sha": "a19e82c7ab68e710339dfd8b4f1381c75b37e8a5",
+    "finite_batch_treatment_sha": "8a112799a7a42b47c5a044d21aa11ef8ebe21b59",
+    "unchanged_between_treatments": {
+      "core.mjs": "5b1d33efedc62b5ba0ad5f74ed68cddbee6afb0e",
+      "worker.mjs": "503bf766ca7b61c574edfc2b73aecd6d082ef629",
+      "fact-review.mjs": "0131c5f03b3d524517a7ee7d488c4754839f175f",
+      "model.mjs": "99cb39a77822d11ff982dfd618ca9689bc66757b",
+      "model-policy.mjs": "866b369b6b041761bb5187f2088808e131c13207"
+    },
+    "finite_batch_additions": {
+      "finite-batch.mjs": "new module (579 lines), blob identical at 8a11279 and HEAD",
+      "finite-batch.test.mjs": "new tests (259 lines), blob identical at 8a11279 and HEAD",
+      "curator-cli.mjs": "explicit --finite-batch on / --max-candidates opt-in",
+      "fact-review.test.mjs": "single mechanical /i regex-flag fix"
+    },
+    "head_blobs_match_finite_batch_sha": true
+  }
+}

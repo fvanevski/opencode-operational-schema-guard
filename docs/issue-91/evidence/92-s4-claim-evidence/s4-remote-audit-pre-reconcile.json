@@ -1,0 +1,22 @@
+{
+ "schema": "issue92-s4-remote-audit-pre-reconcile-v1",
+ "kind": "positive read-only remote membership audit (identity continuity) for the S4 terminal reconciliation",
+ "group": "graphiti-adr92-s4-claim-evidence",
+ "batch": "e9fc47c22f26e1808126c9e6cdee7e1a315a94fab973991584d87cd9279b1739",
+ "queued_records": 6,
+ "matched": 6,
+ "absent": 0,
+ "invalid_uuid": 0,
+ "duplicated_names": 0,
+ "extra_episodes": 0,
+ "conclusion": "all 6 submitted episodes positively present remotely; local 6 queued -> 6 persisted with distinct valid UUIDs",
+ "matched_uuids": {
+  "ff3c3cbb73e9c8ae2135c7da22081b808ffe4e36c4ce763c0ce66541b8a6119f": "1c685684-a11f-4bba-854b-b01861d6d035",
+  "945af59520cee662f61c9934480f43e540f4814b19788c4c3922ca23ff562a4b": "b6712cd5-7a6f-43f4-969b-d60334e7a5c7",
+  "899c925742250364b22d4ea19bbcb361876444fef18c83e7a534dd5f29423021": "b0d5799a-f7a7-4e5e-921b-99f5a3bb394b",
+  "501b9f73614a88004346f53dadf93b34b9071f0f8ca3ba3de048a59c1007dcaa": "0614ae92-b64e-40d7-9f1f-95d6435b22b9",
+  "3a0289bc7777479377c21a12f02836eac802591d850a7b7ab266111b23a75438": "b253363c-4c4e-4a5b-98be-97259788c018",
+  "14689b92b76c29ebfe9876d448c154c94317937e7eecc46fe6938ea795f25b68": "9684efcc-6af7-42d9-8dff-a939753f404d"
+ },
+ "recorded_utc": "2026-11-12T02:01:03Z"
+}
