@@ -587,7 +587,7 @@ export async function runAdmittedFiniteBatch({
  noveltyPolicy='recall',tuning=null,replayOnly=false,sourceRecovery=false,
   resilientDiscovery=false,claimEvidence=false,sourceExactComplement=false,
    balancedDedup=false,sourceQuoteSalvage=false,quoteIntegrityV2=false,
-   sourceWindowRecovery=false,
+   sourceWindowRecovery=false,sourceMessageIsolation=false,
   onCheckpoint=null
 }={}){
  // Preserve mock-only Node test fixtures; live claim/evidence clients must
@@ -613,6 +613,7 @@ export async function runAdmittedFiniteBatch({
    typeof sourceQuoteSalvage==='boolean'&&(!sourceQuoteSalvage||sourceExactComplement)&&
     typeof quoteIntegrityV2==='boolean'&&(!quoteIntegrityV2||sourceQuoteSalvage)&&
      typeof sourceWindowRecovery==='boolean'&&(!sourceWindowRecovery||quoteIntegrityV2)&&
+      typeof sourceMessageIsolation==='boolean'&&(!sourceMessageIsolation||sourceWindowRecovery)&&
    typeof balancedDedup==='boolean'&&(!balancedDedup||noveltyPolicy==='recall')&&
   (!sourceRecovery||noveltyPolicy==='recall'),'INVALID_BOUNDS');
  // The final source-quote treatment activates frozen, independent atomicity
@@ -647,7 +648,8 @@ export async function runAdmittedFiniteBatch({
   assert(Array.isArray(episodes?.episodes)&&episodes.episodes.length===0,
    'DEVELOPMENT_REMOTE_GROUP_MUST_START_EMPTY');
   const rows=await newEvents(queue);
-  const candidates=selectClusters(rows,{maxClusters:maxClusters+1});
+  const candidates=selectClusters(rows,{maxClusters:maxClusters+1,
+    sourceMessageIsolation});
   // Never use first-arrival order to choose which related siblings are
   // considered for semantic arbitration. A partial cohort must be separately
   // scoped by the caller, not silently truncated by a scheduler limit.
@@ -674,6 +676,7 @@ export async function runAdmittedFiniteBatch({
    ...(sourceQuoteSalvage?{source_quote_salvage:true}:{}),
     ...(quoteIntegrityV2?{quote_integrity_v2:true}:{}),
      ...(sourceWindowRecovery?{source_window_recovery_v1:true}:{}),
+      ...(sourceMessageIsolation?{source_message_isolation_v1:true}:{}),
    ...(atomicityReview?{atomicity_review_v1:true}:{}),
    ...(structuralAtomicityReview?{atomicity_structural_v1:true}:{})};
   try{await writeOnce(activePath,active);}
@@ -705,6 +708,8 @@ export async function runAdmittedFiniteBatch({
    'ATOMICITY_STRUCTURAL_IDENTITY_CHANGED');
   assert(Boolean(active.source_window_recovery_v1)===sourceWindowRecovery,
     'SOURCE_WINDOW_RECOVERY_IDENTITY_CHANGED');
+  assert(Boolean(active.source_message_isolation_v1)===sourceMessageIsolation,
+    'SOURCE_MESSAGE_ISOLATION_IDENTITY_CHANGED');
    if(active.tuning_sha256!==undefined)
    assert(active.tuning_sha256===tuningSha,'TUNING_IDENTITY_CHANGED');
   else assert(legacyIdentity,'LEGACY_TUNING_IDENTITY_UNVERIFIED');
@@ -1412,6 +1417,7 @@ export async function runAdmittedFiniteBatch({
     ...(sourceQuoteSalvage?{source_quote_salvage:true}:{}),
     ...(quoteIntegrityV2?{quote_integrity_v2:true}:{}),
      ...(sourceWindowRecovery?{source_window_recovery_v1:true}:{}),
+      ...(sourceMessageIsolation?{source_message_isolation_v1:true}:{}),
     ...(atomicityReview?{atomicity_review_v1:true}:{}),
     ...(structuralAtomicityReview?{atomicity_structural_v1:true}:{}),
     created_at:new Date().toISOString(),
@@ -1454,6 +1460,8 @@ export async function runAdmittedFiniteBatch({
    'PLAN_QUOTE_INTEGRITY_IDENTITY_CHANGED');
   assert(Boolean(plan.source_window_recovery_v1)===sourceWindowRecovery,
    'PLAN_SOURCE_WINDOW_RECOVERY_IDENTITY_CHANGED');
+  assert(Boolean(plan.source_message_isolation_v1)===sourceMessageIsolation,
+   'PLAN_SOURCE_MESSAGE_ISOLATION_IDENTITY_CHANGED');
  assert(Boolean(plan.atomicity_review_v1)===atomicityReview,
   'PLAN_ATOMICITY_REVIEW_IDENTITY_CHANGED');
  assert(Boolean(plan.atomicity_structural_v1)===structuralAtomicityReview,

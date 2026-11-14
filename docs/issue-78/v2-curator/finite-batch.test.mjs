@@ -2011,3 +2011,15 @@ test('V2 source-window recovery is barred from an existing frozen batch',()=>fix
   /SOURCE_WINDOW_RECOVERY_IDENTITY_CHANGED/);
  assert.equal(f.graphiti.writes.length,0);
 },[weak]));
+
+
+test('source-message isolation cannot retrofit a frozen V2 finite batch',()=>fixture(async f=>{
+ const curate=async()=>({content:JSON.stringify({reason:'No atomic fact',candidates:[]})});
+ const opts=recallOpts({...f,curate,sourceRecovery:true,resilientDiscovery:true,
+  claimEvidence:true,sourceExactComplement:true,sourceQuoteSalvage:true,
+  quoteIntegrityV2:true,sourceWindowRecovery:true});
+ await runAdmittedFiniteBatch(opts);
+ await assert.rejects(()=>runAdmittedFiniteBatch({...opts,sourceMessageIsolation:true}),
+  /SOURCE_MESSAGE_ISOLATION_IDENTITY_CHANGED/);
+ assert.equal(f.graphiti.writes.length,0);
+},[weak]));

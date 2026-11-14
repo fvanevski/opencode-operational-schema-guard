@@ -226,3 +226,10 @@ class PostExitAdmissionTests(TestCase):
                                side_effect=RuntimeError("scheduler busy (running/waiting nonzero)")):
             with self.assertRaisesRegex(RuntimeError, "scheduler busy"):
                 runner.wait_for_scheduler_idle(FakeGate, CFG, 0)
+
+
+    def test_finite_v2_command_preserves_source_message_isolation(self):
+        args = runner.finite_v2_drain_args(True)
+        i = args.index("--source-message-isolation")
+        self.assertEqual(args[i + 1], "on")
+        self.assertEqual(runner.finite_v2_drain_args(False), [])
