@@ -8,7 +8,7 @@ import {CandidateQueue} from '../v2-candidate/queue.mjs';
 import {selectClusters,validateModelDecision,ReviewStore} from './core.mjs';
 import {factDiscoveryPrompt,validateFactDiscovery,
  factReviewPrompt,validateFactReview,filterFactProposal,
- sourceAtomicityStructuralRisk,
+ sourceAtomicityStructuralRisk,sourceAtomicSubspanCandidates,
  reviewProposedFacts} from './fact-review.mjs';
 import {runAdmitted} from './worker.mjs';
 
@@ -468,4 +468,44 @@ test('V2 rejects a clipped source word requiring expansion beyond the fixed boun
  const fixed=validateFactDiscovery(input,cluster,
   {isolateCandidates:true,repairWordBoundaries:true});
  assert.equal(fixed.ok,false);assert.deepEqual(fixed.facts,[]);
+});
+
+
+test('source subspan opportunities preserve the exact proposed premise without task wrapper',()=>{
+ const q='Explain why a queued acceptance receipt proves admission but does not establish completed backend extraction. No tools or files changed.';
+ const e=fromPrompt({sessionID:'ses92screen',messageID:'msg_premise',
+  prompt:{text:q},timestamp:'2026-11-09T19:00:00Z'},scope,{admitted:true});
+ assert.ok(e);
+ const cluster=selectClusters([e])[0];
+ const spans=sourceAtomicSubspanCandidates(cluster);
+ assert.equal(spans.length,1);
+ assert.equal(spans[0].temporal_status,'proposed');
+ assert.match(e.excerpt.slice(spans[0].start,spans[0].end),/queued acceptance receipt proves admission/);
+ assert.doesNotMatch(e.excerpt.slice(spans[0].start,spans[0].end),/No tools/);
+ assert.equal(validateFactDiscovery({reason:'Exact subordinate premise',candidates:spans},
+   cluster).ok,true);
+ const control=fromPrompt({sessionID:'ses92screen',messageID:'msg_control',
+  prompt:{text:'What port does FalkorDB run on this host?'},
+  timestamp:'2026-11-09T19:00:00Z'},scope,{admitted:true});
+ assert.deepEqual(sourceAtomicSubspanCandidates(selectClusters([control])[0]),[]);
+});
+
+test('structurally rejected multi-paragraph quote offers only its narrower atomic directive',()=>{
+ const q='Candidate toolchain gate.\n\nThe candidate build is intended for encoding.\n\nDo not consider qualification complete merely because a binary runs manually.\n\nRun a disposable test.';
+ const e=fromPrompt({sessionID:'ses92screen',messageID:'msg_gate',
+  prompt:{text:q},timestamp:'2026-11-09T19:00:00Z'},scope,{admitted:true});
+ const cluster=selectClusters([e])[0],ref=e.source_refs[0];
+ const rejected=[{review_reason:'source_structural_independent_clause_boundary',
+  fact:{evidence_span:{source_ref:ref,start:0,end:q.length}}}];
+ assert.deepEqual(sourceAtomicSubspanCandidates(cluster),[]);
+ const spans=sourceAtomicSubspanCandidates(cluster,rejected);
+ assert.equal(spans.length,1);
+ const exact=e.excerpt.slice(spans[0].start,spans[0].end);
+ assert.match(exact,/Do not consider qualification complete/);
+ assert.doesNotMatch(exact,/Run a disposable/);
+ assert.equal(sourceAtomicityStructuralRisk(exact),null);
+ assert.equal(validateFactDiscovery({reason:'Original atomic subspan',candidates:spans},
+  cluster).ok,true);
+ assert.deepEqual(sourceAtomicSubspanCandidates(cluster,[{...rejected[0],
+  review_reason:'not_substantive'}]),[]);
 });

@@ -54,6 +54,54 @@ export function sourceAtomicityStructuralRisk(quote){
 }
 
 /**
+ * Prospective-only, deterministic exact-source subspan opportunities. A
+ * question's explicitly stated premise is merely proposed, never verified.
+ * Structurally vetoed full quotes can yield narrower original clauses, but
+ * this helper never authorizes persistence: source + utility + atomicity apply.
+ */
+export function sourceAtomicSubspanCandidates(cluster,reviewed=[],limit=3){
+ if(!Number.isInteger(limit)||limit<0||limit>3)return [];
+ const found=[];
+ const add=(e,start,end,kind)=>{
+  const text=e.excerpt;
+  while(start<end&&/\s/.test(text[start]))start++;
+  while(end>start&&/\s/.test(text[end-1]))end--;
+  if(end-start<25||end-start>450||
+     sourceAtomicityStructuralRisk(text.slice(start,end)))return;
+  found.push({source_ref:e.source_refs[0],start,end,kind,
+   temporal_status:'proposed'});
+ };
+ for(const e of cluster?.events??[]){
+  if(e.source_strength!=='native-id'||e.source_refs?.length!==1)continue;
+  const text=e.excerpt;
+  for(const m of text.matchAll(/\b(?:explain|clarify|describe|outline)\s+why\s+/gi)){
+   const start=m.index+m[0].length,tail=text.slice(start);
+   const terminal=/[.?!](?:\s|$)/.exec(tail);
+   const end=terminal?start+terminal.index+1:text.length;
+   if(/\b(?:must|should|cannot|does\s+not|do\s+not|proves?|requires?|fails?|prevents?)\b/i
+      .test(text.slice(start,end)))add(e,start,end,'observation');
+  }
+  const rejected=reviewed.filter(item=>
+   /source_structural_independent_clause_boundary/.test(item.review_reason||'')&&
+   item.fact?.evidence_span?.source_ref===e.source_refs[0]);
+  if(!rejected.length)continue;
+  const para=/[^\r\n]+(?:\r?\n(?!\r?\n)[^\r\n]+)*/g;
+  for(const match of text.matchAll(para)){
+   const start=match.index,end=start+match[0].length;
+   if(!/^\s*(?:do not|never|must|should|only if)\b/i.test(match[0]))continue;
+   if(rejected.some(item=>start<item.fact.evidence_span.end&&
+      end>item.fact.evidence_span.start))add(e,start,end,'procedure');
+  }
+ }
+ const seen=new Set();
+ return found.sort((a,b)=>a.source_ref.localeCompare(b.source_ref)||
+    a.start-b.start).filter(x=>{
+      const key=x.source_ref+':'+x.start+':'+x.end;
+      if(seen.has(key))return false;seen.add(key);return true;
+    }).slice(0,limit);
+}
+
+/**
  * V2: bounded lexical repair of a clipped word in one authenticated excerpt.
  * Do not join sentences or alter meaning; reject unrepairable source pointers.
  */
