@@ -233,3 +233,9 @@ class PostExitAdmissionTests(TestCase):
         i = args.index("--source-message-isolation")
         self.assertEqual(args[i + 1], "on")
         self.assertEqual(runner.finite_v2_drain_args(False), [])
+
+
+    def test_finite_v2_command_enables_independently_reviewed_atomic_subspans(self):
+        args = runner.finite_v2_drain_args(True)
+        i = args.index("--source-subspan-recovery")
+        self.assertEqual(args[i + 1], "on")

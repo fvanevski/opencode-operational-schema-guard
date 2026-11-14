@@ -2023,3 +2023,60 @@ test('source-message isolation cannot retrofit a frozen V2 finite batch',()=>fix
   /SOURCE_MESSAGE_ISOLATION_IDENTITY_CHANGED/);
  assert.equal(f.graphiti.writes.length,0);
 },[weak]));
+
+
+test('prospective exact-premise subspan receives independent utility and remains only proposed',()=>fixture(async f=>{
+ const ask='Explain why two independent archives should use different physical identifiers when their processing is deferred. No tools or file changes.';
+ const curate=async(_,{promptMessages})=>{
+  const sys=promptMessages[0].content;
+  const data=JSON.parse(promptMessages[1].content);
+  if(sys.includes('SOURCE-EXACT COMPLEMENT UTILITY')){
+   return {content:JSON.stringify({decisions:data.candidates.map(x=>
+    x.assertion.startsWith('two independent archives should')?{
+     index:x.index,disposition:'ACCEPT',reason_code:'source_specific_durable',
+     utility_class:'reusable_procedure',atomicity:{independent_predicates:1,
+      rationale:'One provisional user-stated uniqueness requirement, not a completed implementation'}}:{
+     index:x.index,disposition:'REVIEW',reason_code:'not_substantive',
+     atomicity:{independent_predicates:1,rationale:'A generic explanation task alone is not a durable fact'}})})};
+  }
+  if(sys.includes('CLAIM/EVIDENCE SEPARATION')||
+     sys.includes('SOURCE-EXACT COMPLEMENT')||
+     sys.includes('SOURCE-WINDOW RECOVERY V1'))
+   return {content:JSON.stringify({reason:'No standalone claim in global discovery',candidates:[]})};
+  throw Error('UNEXPECTED_PROVISIONAL_SUBSPAN_STAGE');
+ };
+ const result=await runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true,resilientDiscovery:true,claimEvidence:true,
+  sourceExactComplement:true,sourceQuoteSalvage:true,quoteIntegrityV2:true,
+  sourceWindowRecovery:true,sourceMessageIsolation:true,sourceSubspanRecovery:true}));
+ assert.equal(result.persisted,1);
+ assert.equal(f.graphiti.writes.length,1);
+ assert.match(f.graphiti.writes[0].episode_body,/two independent archives should/);
+ assert.doesNotMatch(f.graphiti.writes[0].episode_body,/No tools or file changes/);
+ assert.match(f.graphiti.writes[0].episode_body,/Temporal: proposed/);
+ const active=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,'_active.json'),'utf8'));
+ assert.equal(active.source_subspan_recovery_v1,true);
+ const plan=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,active.batch_id,'plan.json'),'utf8'));
+ assert.equal(plan.cluster_outcomes[0].source_subspan_recovery_outcome.approved,1);
+},['Explain why two independent archives should use different physical identifiers when their processing is deferred. No tools or file changes.']));
+
+test('source-subspan recovery does not promote generic questions or bypass frozen identity',()=>fixture(async f=>{
+ const curate=async(_,{promptMessages})=>{
+  const system=promptMessages[0].content;
+  const data=JSON.parse(promptMessages[1].content);
+  if(system.includes('SOURCE-EXACT COMPLEMENT UTILITY'))
+   return {content:JSON.stringify({decisions:data.candidates.map(x=>({
+    index:x.index,disposition:'REVIEW',reason_code:'not_substantive'}))})};
+  return {content:JSON.stringify({reason:'No durable explicit claim',candidates:[]})};
+ };
+ const opts=recallOpts({...f,curate,sourceRecovery:true,
+  resilientDiscovery:true,claimEvidence:true,sourceExactComplement:true,
+  sourceQuoteSalvage:true,quoteIntegrityV2:true,sourceWindowRecovery:true,
+  sourceMessageIsolation:true});
+ await runAdmittedFiniteBatch(opts);
+ await assert.rejects(()=>runAdmittedFiniteBatch({...opts,sourceSubspanRecovery:true}),
+  /SOURCE_SUBSPAN_RECOVERY_IDENTITY_CHANGED/);
+ assert.equal(f.graphiti.writes.length,0);
+},['What port does FalkorDB run on this host?']));
