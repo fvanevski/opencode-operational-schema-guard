@@ -95,8 +95,34 @@ def acquire_gate_lock(handle, timeout_seconds):
             time.sleep(min(0.25, remaining))
 
 
+def finite_v2_drain_args(enabled):
+    if not enabled:
+        return []
+    return [
+        "--finite-batch", "on", "--novelty-policy", "recall",
+        "--source-recovery", "on", "--resilient-discovery", "on",
+        "--claim-evidence", "on", "--source-exact-complement", "on",
+        "--source-quote-salvage", "on", "--quote-integrity-v2", "on",
+        "--source-window-recovery", "on",
+        "--max-clusters", "24", "--max-candidates", "72",
+    ]
+
+
+def wait_for_scheduler_idle(gate, cfg, max_seconds):
+    """Only transient scheduler busy may wait; all other admission failures stop."""
+    deadline = time.monotonic() + max_seconds
+    while True:
+        try:
+            observation(gate, cfg)
+            return
+        except RuntimeError as exc:
+            if "scheduler busy" not in str(exc) or time.monotonic() >= deadline:
+                raise
+            time.sleep(min(5, max(0, deadline - time.monotonic())))
+
+
 def reconcile_late(cli, group, state_dir, endpoint, env, interval_seconds=15,
-                   max_seconds=600):
+                   max_seconds=600, lock_fd=None, finite_batch_v2=False):
     """Retain EX while ambiguous remote work resolves, then resume local work.
 
     Child exit 3 means remote submission outcome still unknown; never replay.
@@ -109,10 +135,13 @@ def reconcile_late(cli, group, state_dir, endpoint, env, interval_seconds=15,
     common = ["--group", group, "--state-dir", state_dir, "--endpoint", endpoint]
     reconcile_cmd = ["node", script, "reconcile-only", *common]
     drain_cmd = ["node", script, "drain", *common,
+                 *finite_v2_drain_args(finite_batch_v2),
                  "--max-seconds", str(max_seconds)]
+    pass_fds = (lock_fd,) if lock_fd is not None else ()
     while True:
         try:
-            result = subprocess.run(reconcile_cmd, env=env, check=False, timeout=45)
+            result = subprocess.run(reconcile_cmd, env=env, check=False,
+                                    pass_fds=pass_fds, timeout=45)
             if result.returncode == 0:
                 print("LATE_RECONCILIATION_SETTLED: verified terminal remote readback",
                       flush=True)
@@ -122,6 +151,7 @@ def reconcile_late(cli, group, state_dir, endpoint, env, interval_seconds=15,
                       "under retained EX", flush=True)
                 try:
                     resumed = subprocess.run(drain_cmd, env=env, check=False,
+                                             pass_fds=pass_fds,
                                              timeout=max_seconds + 45)
                     if resumed.returncode == 0:
                         return 0
@@ -153,11 +183,17 @@ def main():
     p.add_argument("--endpoint", required=True)
     p.add_argument("--max-seconds", type=int, default=600)
     p.add_argument("--lock-timeout", type=float, default=120)
+    p.add_argument("--scheduler-wait", type=int, default=0,
+                   help="bounded busy-scheduler wait before quiet grace (0..180s)")
+    p.add_argument("--finite-batch-v2", action="store_true",
+                   help="opt in to the fresh V2 finite-batch/source-window policy")
     args = p.parse_args()
     if not 5 <= args.max_seconds <= 3600:
         p.error("max-seconds must be between 5 and 3600")
     if not 0 <= args.lock_timeout <= 600:
         p.error("lock-timeout must be between 0 and 600 seconds")
+    if not 0 <= args.scheduler_wait <= 180:
+        p.error("scheduler-wait must be between 0 and 180 seconds")
     gate = load_gate(args.gate_source)
     cfg = gate.Config.load(args.gate_config)
     if not cfg.lock_file or not cfg.metrics_url or not cfg.process_names:
@@ -166,21 +202,26 @@ def main():
     lock.parent.mkdir(parents=True, exist_ok=True)
     with lock.open("a+") as handle:
         acquire_gate_lock(handle, args.lock_timeout)
-        observation(gate, cfg)
+        wait_for_scheduler_idle(gate, cfg, args.scheduler_wait)
         grace = max(0, cfg.quiet_grace_seconds)
         time.sleep(grace)
         observation(gate, cfg)
         env = os.environ.copy()
         env["GHDEV_MEMORY_POST_EXIT_LEASE"] = "admitted"
+        lock_fd = handle.fileno()
+        env["GHDEV_MEMORY_POST_EXIT_LOCK_FD"] = str(lock_fd)
         cmd = [
             "node", str(Path(args.cli).resolve(strict=True)), "drain",
             "--group", args.group, "--state-dir", args.state_dir,
-            "--endpoint", args.endpoint, "--max-seconds", str(args.max_seconds)
+            "--endpoint", args.endpoint,
+            *finite_v2_drain_args(args.finite_batch_v2),
+            "--max-seconds", str(args.max_seconds)
         ]
         print("EX admission proven; invoking candidate drain with lock retained",
               flush=True)
         try:
             result = subprocess.run(cmd, env=env, check=False,
+                                    pass_fds=(lock_fd,),
                                     timeout=args.max_seconds + 45)
             exit_code = result.returncode
         except subprocess.TimeoutExpired:
@@ -208,7 +249,8 @@ def main():
               "Graphiti reconciliation; shared MCP worker remains running.",
               file=sys.stderr, flush=True)
         return reconcile_late(args.cli, args.group, args.state_dir,
-                              args.endpoint, env, max_seconds=args.max_seconds)
+                              args.endpoint, env, max_seconds=args.max_seconds,
+                              lock_fd=lock_fd, finite_batch_v2=args.finite_batch_v2)
 
 if __name__ == "__main__":
     try:

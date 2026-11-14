@@ -189,3 +189,40 @@ class PostExitAdmissionTests(TestCase):
         urlopen.side_effect = OSError("metrics unavailable")
         with self.assertRaisesRegex(RuntimeError, "not verified"):
             runner.observation(FakeGate, CFG)
+
+
+    def test_v2_reconcile_continuation_preserves_flags_and_lock_fd(self):
+        with mock.patch.object(runner.subprocess, "run") as run:
+            run.side_effect = [SimpleNamespace(returncode=4),
+                               SimpleNamespace(returncode=0)]
+            result = runner.reconcile_late("/tmp/curator-cli.mjs",
+                "prospective_v2", "/tmp/staged", "http://127.0.0.1:8766/mcp",
+                {"GHDEV_MEMORY_POST_EXIT_LEASE": "admitted",
+                 "GHDEV_MEMORY_POST_EXIT_LOCK_FD": "9"},
+                lock_fd=9, finite_batch_v2=True)
+        self.assertEqual(result, 0)
+        self.assertEqual(run.call_count, 2)
+        for call in run.call_args_list:
+            self.assertEqual(call.kwargs["pass_fds"], (9,))
+        self.assertIn("reconcile-only", run.call_args_list[0].args[0])
+        resumed = run.call_args_list[1].args[0]
+        for option in ("drain", "--finite-batch", "--quote-integrity-v2",
+                       "--source-window-recovery", "--max-clusters"):
+            self.assertIn(option, resumed)
+
+    def test_scheduler_wait_retries_busy_only_and_remains_fail_closed(self):
+        with mock.patch.object(runner, "observation",
+                               side_effect=[RuntimeError("scheduler busy (running/waiting nonzero)"),
+                                            None]) as observed:
+            with mock.patch.object(runner.time, "sleep") as slept:
+                runner.wait_for_scheduler_idle(FakeGate, CFG, 180)
+            self.assertEqual(observed.call_count, 2)
+            slept.assert_called_once()
+        with mock.patch.object(runner, "observation",
+                               side_effect=RuntimeError("interactive harness active/unknown")):
+            with self.assertRaisesRegex(RuntimeError, "harness active"):
+                runner.wait_for_scheduler_idle(FakeGate, CFG, 180)
+        with mock.patch.object(runner, "observation",
+                               side_effect=RuntimeError("scheduler busy (running/waiting nonzero)")):
+            with self.assertRaisesRegex(RuntimeError, "scheduler busy"):
+                runner.wait_for_scheduler_idle(FakeGate, CFG, 0)
