@@ -11,7 +11,7 @@ import {ReviewStore,selectClusters,validateModelDecision,validateDecision} from 
 import {curateCluster} from './model.mjs';
 import {factDiscoveryPrompt,validateFactDiscovery,factReviewPrompt,
   validateFactReview,filterFactProposal,
-  sourceAtomicityStructuralRisk} from './fact-review.mjs';
+  sourceAtomicityStructuralRisk,sourceAtomicSubspanCandidates} from './fact-review.mjs';
 import {promoteOne,reconcile} from './worker.mjs';
 import {claimEvidenceDiscoveryPrompt,validateClaimEvidenceDiscovery,
  claimSupportPrompt,validateClaimSupport,supportedClaimProposal,
@@ -588,6 +588,7 @@ export async function runAdmittedFiniteBatch({
   resilientDiscovery=false,claimEvidence=false,sourceExactComplement=false,
    balancedDedup=false,sourceQuoteSalvage=false,quoteIntegrityV2=false,
    sourceWindowRecovery=false,sourceMessageIsolation=false,
+   sourceSubspanRecovery=false,
   onCheckpoint=null
 }={}){
  // Preserve mock-only Node test fixtures; live claim/evidence clients must
@@ -614,6 +615,7 @@ export async function runAdmittedFiniteBatch({
     typeof quoteIntegrityV2==='boolean'&&(!quoteIntegrityV2||sourceQuoteSalvage)&&
      typeof sourceWindowRecovery==='boolean'&&(!sourceWindowRecovery||quoteIntegrityV2)&&
       typeof sourceMessageIsolation==='boolean'&&(!sourceMessageIsolation||sourceWindowRecovery)&&
+      typeof sourceSubspanRecovery==='boolean'&&(!sourceSubspanRecovery||sourceMessageIsolation)&&
    typeof balancedDedup==='boolean'&&(!balancedDedup||noveltyPolicy==='recall')&&
   (!sourceRecovery||noveltyPolicy==='recall'),'INVALID_BOUNDS');
  // The final source-quote treatment activates frozen, independent atomicity
@@ -677,6 +679,7 @@ export async function runAdmittedFiniteBatch({
     ...(quoteIntegrityV2?{quote_integrity_v2:true}:{}),
      ...(sourceWindowRecovery?{source_window_recovery_v1:true}:{}),
       ...(sourceMessageIsolation?{source_message_isolation_v1:true}:{}),
+      ...(sourceSubspanRecovery?{source_subspan_recovery_v1:true}:{}),
    ...(atomicityReview?{atomicity_review_v1:true}:{}),
    ...(structuralAtomicityReview?{atomicity_structural_v1:true}:{})};
   try{await writeOnce(activePath,active);}
@@ -710,6 +713,8 @@ export async function runAdmittedFiniteBatch({
     'SOURCE_WINDOW_RECOVERY_IDENTITY_CHANGED');
   assert(Boolean(active.source_message_isolation_v1)===sourceMessageIsolation,
     'SOURCE_MESSAGE_ISOLATION_IDENTITY_CHANGED');
+  assert(Boolean(active.source_subspan_recovery_v1)===sourceSubspanRecovery,
+    'SOURCE_SUBSPAN_RECOVERY_IDENTITY_CHANGED');
    if(active.tuning_sha256!==undefined)
    assert(active.tuning_sha256===tuningSha,'TUNING_IDENTITY_CHANGED');
   else assert(legacyIdentity,'LEGACY_TUNING_IDENTITY_UNVERIFIED');
@@ -1222,6 +1227,62 @@ export async function runAdmittedFiniteBatch({
      decision='REVIEWED';reason='original_source_independent_utility_complete';
     }
    }
+   // Review NEW, smaller original-source clauses after a structural veto or
+   // an explicit technical premise inside an explanatory request. The host
+   // never assigns utility: every exact subspan receives a fresh independent
+   // model utility/atomicity review. Previous rejected spans stay rejected.
+   let subspanOutcome=null;
+   if(sourceSubspanRecovery&&approved.length<3){
+    const candidates=sourceAtomicSubspanCandidates(cluster,
+     [...entries.values()],3-approved.length);
+    const found=validateFactDiscovery({
+     reason:'Original source-exact atomic subspan, no inferred claim',
+     candidates},cluster,{isolateCandidates:true,
+       repairWordBoundaries:quoteIntegrityV2});
+    const fresh=found.ok&&found.decision==='EMIT'?
+     found.facts.filter(x=>!entries.has(childId(cluster,x))):[];
+    subspanOutcome={proposed:candidates.length,source_valid:fresh.length,
+     approved:0,deferred:0,invalid_source:found.invalid_candidates??[]};
+    if(fresh.length){
+     const proposal={...found,facts:fresh};
+     const response=await callOnce('utility',
+      cluster.id+':atomic-source-subspan-v1',cluster,
+      finiteBatchSourceExactComplementUtilityPrompt(cluster,proposal));
+     const screen=validateFactReview(response.content,proposal,
+      {requireAtomicity:atomicityReview});
+     if(!screen.ok){
+      subspanOutcome.invalid_utility=screen.reason;
+      for(const fact of fresh){
+       const e=factEntry(cluster,fact,null,'source_subspan_utility_invalid');
+       if(!entries.has(e.id))entries.set(e.id,e);
+       subspanOutcome.deferred++;
+      }
+     }else{
+      const review=filterFactProposal(proposal,screen);
+      if(review.ok)for(let i=0;i<review.facts.length;i++){
+       const fact=review.facts[i],utility=review.fact_utilities[i];
+       const valid=validateModelDecision({decision:'EMIT',
+        reason:'Independent source-subspan utility and atomicity',
+        utility_class:utility,facts:[{...fact,utility_class:utility}]},cluster);
+       if(!valid.ok)throw Error('SOURCE_SUBSPAN_FACT_UNVERIFIED');
+       const e=factEntry(cluster,valid.facts[0],utility,null,
+        review.fact_atomicity_reviews?.[i],fact.evidence_span);
+       if(entries.has(e.id))continue;
+       if(approved.length>=3)break;
+       entries.set(e.id,e);approved.push(e);subspanOutcome.approved++;
+      }
+      for(const item of screen.review){
+       const e=factEntry(cluster,proposal.facts[item.index],null,
+        'source_subspan_utility_'+(item.atomicity_reason||item.reason_code));
+       if(!entries.has(e.id))entries.set(e.id,e);
+       subspanOutcome.deferred++;
+      }
+     }
+    }
+    if(subspanOutcome.approved>0){
+     decision='REVIEWED';reason='independent_source_subspan_utility_complete';
+    }
+   }
    if(quoteIntegrityV2){
     const keep=deferContainingSameSourceQuotes(entries,approved);
     approved.length=0;approved.push(...keep);
@@ -1236,7 +1297,8 @@ export async function runAdmittedFiniteBatch({
     ...(sourceExactComplement?{source_exact_complement_outcome:complementOutcome}:{}),
      ...(sourceQuoteSalvage?{source_quote_salvage_outcome:quoteSalvageOutcome,
       source_only_outcome:sourceOnlyOutcome}:{}),
-      ...(sourceWindowRecovery?{source_window_recovery_outcome:sourceWindowOutcome}:{})});
+      ...(sourceWindowRecovery?{source_window_recovery_outcome:sourceWindowOutcome}:{}),
+      ...(sourceSubspanRecovery?{source_subspan_recovery_outcome:subspanOutcome}:{})});
   }
   assert(accepted.length<=maxCandidates,'ACCEPTED_POOL_OVER_BOUND_NO_PROMOTION');
   const selected=new Set(),deferred=new Map(),families=[];
@@ -1418,6 +1480,7 @@ export async function runAdmittedFiniteBatch({
     ...(quoteIntegrityV2?{quote_integrity_v2:true}:{}),
      ...(sourceWindowRecovery?{source_window_recovery_v1:true}:{}),
       ...(sourceMessageIsolation?{source_message_isolation_v1:true}:{}),
+      ...(sourceSubspanRecovery?{source_subspan_recovery_v1:true}:{}),
     ...(atomicityReview?{atomicity_review_v1:true}:{}),
     ...(structuralAtomicityReview?{atomicity_structural_v1:true}:{}),
     created_at:new Date().toISOString(),
@@ -1431,7 +1494,8 @@ export async function runAdmittedFiniteBatch({
      ...(sourceExactComplement?{source_exact_complement_outcome:x.source_exact_complement_outcome}:{}),
       ...(sourceQuoteSalvage?{source_quote_salvage_outcome:x.source_quote_salvage_outcome,
       source_only_outcome:x.source_only_outcome}:{}),
-      ...(sourceWindowRecovery?{source_window_recovery_outcome:x.source_window_recovery_outcome}:{})})),
+      ...(sourceWindowRecovery?{source_window_recovery_outcome:x.source_window_recovery_outcome}:{}),
+       ...(sourceSubspanRecovery?{source_subspan_recovery_outcome:x.source_subspan_recovery_outcome}:{})})),
    items:items.sort(byId),families,calls,
    policy:noveltyPolicy==='recall'?
     'issue92_recall_first_source_and_utility_v1':
@@ -1462,6 +1526,8 @@ export async function runAdmittedFiniteBatch({
    'PLAN_SOURCE_WINDOW_RECOVERY_IDENTITY_CHANGED');
   assert(Boolean(plan.source_message_isolation_v1)===sourceMessageIsolation,
    'PLAN_SOURCE_MESSAGE_ISOLATION_IDENTITY_CHANGED');
+  assert(Boolean(plan.source_subspan_recovery_v1)===sourceSubspanRecovery,
+   'PLAN_SOURCE_SUBSPAN_RECOVERY_IDENTITY_CHANGED');
  assert(Boolean(plan.atomicity_review_v1)===atomicityReview,
   'PLAN_ATOMICITY_REVIEW_IDENTITY_CHANGED');
  assert(Boolean(plan.atomicity_structural_v1)===structuralAtomicityReview,
