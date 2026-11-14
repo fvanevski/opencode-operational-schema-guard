@@ -1,0 +1,32 @@
+{
+ "schema": "issue92-s4-source-digest-roster-v1",
+ "kind": "frozen S4 execution source binding + 24-roster corpus identity (40-char blob SHAs)",
+ "execution_head": "37601461b21a9d5d5634ca5683db25479937f627",
+ "source_blobs_at_head": {
+  "finite-batch.mjs": "66e7f343181fdf21353f0cf81293431fd706e33b",
+  "claim-evidence.mjs": "21db194bbaf926b93413f1eef573768fadf7695e",
+  "fact-review.mjs": "20da07bcb99010c4c9ab5d4b8c7f9d3c8cb62ba9",
+  "curator-cli.mjs": "9e77394b9833ae2a9b4f67d789ea50ab215df312",
+  "core.mjs": "5b1d33efedc62b5ba0ad5f74ed68cddbee6afb0e",
+  "worker.mjs": "503bf766ca7b61c574edfc2b73aecd6d082ef629",
+  "finite-batch-tuning.mjs": "ed525173db4eaeaa7e758d0e47dc8cfeaed7e8dd"
+ },
+ "worktree_drift": "none (git hash-object == git rev-parse HEAD: for all 7 blobs)",
+ "corpus": {
+  "path": "/tmp/opencode/b2-sources.json",
+  "sha256": "ebac7052065766eb8d1ef464142ea63dc3052d52deb36424492ebc477fdd3508",
+  "records": 24,
+  "distinct_project_workspace": 20,
+  "identity": "original B3 24 native source records; corpus SHA identical to S2/S3 staging (roster unchanged)"
+ },
+ "labels": {
+  "valuable_targets": 16,
+  "nonvaluable_controls": 11,
+  "historical_comparison": {"S1": "7/16", "S2": "9/16", "S3": "9/16", "S4": "independently scored"},
+  "s2_missed_seven": ["g1", "g1", "g2", "g3", "g3", "g4", "sp9"]
+ },
+ "group": "graphiti-adr92-s4-claim-evidence",
+ "group_pre_state": "empty (0 episodes) before the S4 run; S2=19 and S3=18 episodes preserved immutable",
+ "model": {"endpoint": "http://127.0.0.1:8002/v1/chat/completions", "id": "chat-fast", "options": {}},
+ "graphiti": {"endpoint": "http://127.0.0.1:8766/mcp"}
+}

@@ -1,0 +1,629 @@
+{
+ "schema": "issue92-h3-remote-receipts-v1",
+ "method": "Independent dual-route terminal readback: (a) Graphiti MCP get_episodes per group (falkordb backend); (b) raw FalkorDB GRAPH.QUERY per-group graphs (redis://127.0.0.1:6382); (c) local _episode-index cross-check. All routes agree (h3-reconcile ALL_OK=true, 0 problems across 23 records). Episode UUIDs are identifiers, not private source text; fact content digests only (no raw excerpts).",
+ "graphs": {
+  "graphiti-curator-utility-development-r11": {
+   "episodic_nodes": 8,
+   "source_index_registration": "source=text; source_description=source-grounded curator | <record_id>"
+  },
+  "graphiti-curator-utility-development-r12": {
+   "episodic_nodes": 3,
+   "source_index_registration": "source=text; source_description=source-grounded curator | <record_id>"
+  },
+  "graphiti-curator-utility-holdout-r13": {
+   "episodic_nodes": 10,
+   "source_index_registration": "source=text; source_description=source-grounded curator | <record_id>"
+  },
+  "graphiti-curator-utility-holdout-r14": {
+   "episodic_nodes": 2,
+   "source_index_registration": "source=text; source_description=source-grounded curator | <record_id>"
+  }
+ },
+ "records": [
+  {
+   "arm": "baseline",
+   "purpose": "development",
+   "group": "graphiti-curator-utility-development-r11",
+   "remote_episode_uuid": "20c4c313-7157-4105-9af4-a73527c5c673",
+   "record_id": "58ac4d256ee4f407922f0f83424b8c3fbf3ff4642ffd3769b0fbbe62fbbcc6e8",
+   "curation_record_sha256": "4298b1158ec037008365bb9caeac741b7d2267f0f9c176ef7a37cf3313069d48",
+   "content_sha256": "4f5b6644d29fc708ac96307957336833900c8d8b7cf65865b441c0051a9f8a86",
+   "cited_source_refs": [
+    "opencode:ses_e577a8c27ffeixiiSob1B8tbFo:message:msg_1a887d2b10016I0RJj0jWNMRCV",
+    "opencode:ses_e577a8c27ffeixiiSob1B8tbFo:message:msg_1a88816d4001ur5PTEjc3Ibq3w",
+    "opencode:ses_e577a8c27ffeixiiSob1B8tbFo:message:msg_1a888376a001XNTcFNDd0lOwT3",
+    "opencode:ses_e577a8c27ffeixiiSob1B8tbFo:message:msg_1a88916e0001viR62zIGx23TC4",
+    "opencode:ses_e577a8c27ffeixiiSob1B8tbFo:tool:call_196594ddb89d586d",
+    "opencode:ses_e577a8c27ffeixiiSob1B8tbFo:tool:call_58107e7c7477c01a",
+    "opencode:ses_e577a8c27ffeixiiSob1B8tbFo:tool:call_895a08f218846fc5",
+    "opencode:ses_e577a8c27ffeixiiSob1B8tbFo:tool:call_fd1e929437288db4"
+   ],
+   "case_ids": null,
+   "remote_proof": {
+    "episode": true,
+    "group": true,
+    "source_index": true,
+    "content": true
+   },
+   "local_state": "persisted",
+   "local_decision": "EMIT"
+  },
+  {
+   "arm": "baseline",
+   "purpose": "development",
+   "group": "graphiti-curator-utility-development-r11",
+   "remote_episode_uuid": "4543358d-16fd-4b9b-9858-64766548ea9c",
+   "record_id": "8e4a706b98f377a9314132be5f336faad663819662ea94a20a50180dcd1a5b9a",
+   "curation_record_sha256": "021b89638eecf3f274dd79b7d28898446acc778d5db8c12c0a191b442033075d",
+   "content_sha256": "9ed4e65ac9f69aac0baaf2d59d7fcb3a07bc7867f96c68ff9106b58f2207b6fb",
+   "cited_source_refs": [
+    "opencode:ses_f54c13020ffe9lX3mpZ2ZRFWK8:message:msg_0ab462de20015Xr5s9eSDzXv6U",
+    "opencode:ses_f54c13020ffe9lX3mpZ2ZRFWK8:message:msg_0ab54ab5c001IEl2kOiOPR9xvc"
+   ],
+   "case_ids": null,
+   "remote_proof": {
+    "episode": true,
+    "group": true,
+    "source_index": true,
+    "content": true
+   },
+   "local_state": "persisted",
+   "local_decision": "EMIT"
+  },
+  {
+   "arm": "baseline",
+   "purpose": "development",
+   "group": "graphiti-curator-utility-development-r11",
+   "remote_episode_uuid": "2951689f-a53c-44d1-b7aa-002c3f219499",
+   "record_id": "9d5da6c321f589434c2677613c7e2886cae0c8510228d4e08494d59b591cdb2a",
+   "curation_record_sha256": "f63a0d5ae7795f43d50e6a5c68f0f228ed0f57096b20ecdc15188c2accc95f96",
+   "content_sha256": "91964720d962d52c6aa8023f58df5a942dec9d81b1ed7f300371fb2f6018440b",
+   "cited_source_refs": [
+    "opencode:ses_f53a01fc4ffeDQX54kskF3WBTQ:message:msg_0ac630c64001P5BkZC7ZTSpb0p",
+    "opencode:ses_f53a01fc4ffeDQX54kskF3WBTQ:message:msg_0ac7926da001scFhtAXyxh7ehY",
+    "opencode:ses_f53a01fc4ffeDQX54kskF3WBTQ:message:msg_0ac7fa04e00133LaHYqzZ9yL1z"
+   ],
+   "case_ids": null,
+   "remote_proof": {
+    "episode": true,
+    "group": true,
+    "source_index": true,
+    "content": true
+   },
+   "local_state": "persisted",
+   "local_decision": "EMIT"
+  },
+  {
+   "arm": "baseline",
+   "purpose": "development",
+   "group": "graphiti-curator-utility-development-r11",
+   "remote_episode_uuid": "6855aeb2-4c14-4c9a-b41e-43ef2cc4bc26",
+   "record_id": "a87005d5f345215c690233e2a82bc0adf01a436be1f82e4402c808b074f8e50f",
+   "curation_record_sha256": "3ac651803768fcd7e5daa3ef7dc891f35c149b02ddf0d3bea5062981e7e4b147",
+   "content_sha256": "19c652e3f23cc3389fbee6119c961dc6fd970f5a8d79920166ff656af0c9048e",
+   "cited_source_refs": [
+    "opencode:ses_f5c50ea5fffePb6qMWLR2MAfOq:message:msg_0a3af3bb20013YeE63iThNTwMs",
+    "opencode:ses_f5c50ea5fffePb6qMWLR2MAfOq:message:msg_0a3b01e44001IjZu1dFKaGkOos"
+   ],
+   "case_ids": null,
+   "remote_proof": {
+    "episode": true,
+    "group": true,
+    "source_index": true,
+    "content": true
+   },
+   "local_state": "persisted",
+   "local_decision": "EMIT"
+  },
+  {
+   "arm": "baseline",
+   "purpose": "development",
+   "group": "graphiti-curator-utility-development-r11",
+   "remote_episode_uuid": "12bc17a0-8b65-49ed-ae1e-6788aa9f4e49",
+   "record_id": "b43602f3f017c48ee6b4a1f8f48a1f96cefc1b0db5526deff046430dd97d5ea3",
+   "curation_record_sha256": "9a603b4c4cda02b05cbb5b2b4dc526d8a29671ed3513272f599872b666c4ba39",
+   "content_sha256": "24bdf85a42c5a3a9f69a6babc76ac524409f2e1b9599b963fc46b4cd51988079",
+   "cited_source_refs": [
+    "opencode:ses_f547987e5ffexKUtoNsESLmfAy:message:msg_0ab97480e001FqBqqawk62Kwjr"
+   ],
+   "case_ids": null,
+   "remote_proof": {
+    "episode": true,
+    "group": true,
+    "source_index": true,
+    "content": true
+   },
+   "local_state": "persisted",
+   "local_decision": "EMIT"
+  },
+  {
+   "arm": "baseline",
+   "purpose": "development",
+   "group": "graphiti-curator-utility-development-r11",
+   "remote_episode_uuid": "3ed10db6-223e-4c9f-bada-0e9458ba2b4c",
+   "record_id": "bfd5cb57ed06aa8bd7c437d444760567921122927bfec4b94ccf2f5a9b9503b7",
+   "curation_record_sha256": "180a492daab9329dee54ea2219fa616b5c325dd59b80bd9bc2f4a8dc3d6ce049",
+   "content_sha256": "09bdcecf6cfeecb3af73e702d966ffc69f56f43d9715d2c06aec2ab37fc333b8",
+   "cited_source_refs": [
+    "opencode:ses_e577a8c27ffeixiiSob1B8tbFo:message:msg_1a8857409001xAdtnQXp1ZedEC",
+    "opencode:ses_e577a8c27ffeixiiSob1B8tbFo:message:msg_1a88613c70012HBX5MdhBLP7Ti",
+    "opencode:ses_e577a8c27ffeixiiSob1B8tbFo:message:msg_1a886a074001JUZ0rDj3DiF79t",
+    "opencode:ses_e577a8c27ffeixiiSob1B8tbFo:tool:call_098bbc044bd9c2c1",
+    "opencode:ses_e577a8c27ffeixiiSob1B8tbFo:tool:call_3312da8b95d44000",
+    "opencode:ses_e577a8c27ffeixiiSob1B8tbFo:tool:call_33b74e2a4cd8f0e9",
+    "opencode:ses_e577a8c27ffeixiiSob1B8tbFo:tool:call_65fb90d3952b50de",
+    "opencode:ses_e577a8c27ffeixiiSob1B8tbFo:tool:call_fb131aeb829e2400"
+   ],
+   "case_ids": null,
+   "remote_proof": {
+    "episode": true,
+    "group": true,
+    "source_index": true,
+    "content": true
+   },
+   "local_state": "persisted",
+   "local_decision": "EMIT"
+  },
+  {
+   "arm": "baseline",
+   "purpose": "development",
+   "group": "graphiti-curator-utility-development-r11",
+   "remote_episode_uuid": "2caea81e-31db-4d29-856e-3553a5038013",
+   "record_id": "d9f6e6e008dd9879a2699ff1c57402563b57f5ea4d1a14fd9886db04b7495180",
+   "curation_record_sha256": "d6ab920b6e62e7b70b1a28635272b6d6aea4892e5cfd7e324037bccb43aa46e7",
+   "content_sha256": "4bfd39b2cc815903d1a7ebdadd5e2512488ae2e33b54af844ed3be98efe96b1e",
+   "cited_source_refs": [
+    "opencode:ses_f5c633bbcffeKIQsLHsCaoD8Kv:message:msg_0a39d111800141KUNqLc0pC2Vq"
+   ],
+   "case_ids": null,
+   "remote_proof": {
+    "episode": true,
+    "group": true,
+    "source_index": true,
+    "content": true
+   },
+   "local_state": "persisted",
+   "local_decision": "EMIT"
+  },
+  {
+   "arm": "baseline",
+   "purpose": "development",
+   "group": "graphiti-curator-utility-development-r11",
+   "remote_episode_uuid": "3471701e-0cb1-4f0f-b133-8d5e3c9d07c0",
+   "record_id": "fad0741d1bc26382910579ec71de12e0a3e358cd295e43184b77eb4d8a61b748",
+   "curation_record_sha256": "8f66206eb37098ca31332af0ff0514c7e63b1ad97e000070adba9a5e2f497d9f",
+   "content_sha256": "56c8c991c73468fa108f1dffeed110dfaefe30d14a28577887805a4644f76515",
+   "cited_source_refs": [
+    "opencode:ses_e577a8c27ffeixiiSob1B8tbFo:message:msg_1a886ebd00014T7ZcwcLscaCXe",
+    "opencode:ses_e577a8c27ffeixiiSob1B8tbFo:message:msg_1a886f5fe0019eJPOV72584jMI",
+    "opencode:ses_e577a8c27ffeixiiSob1B8tbFo:message:msg_1a886fef5001msO9U2zVXNLq7c",
+    "opencode:ses_e577a8c27ffeixiiSob1B8tbFo:message:msg_1a887ac4b0016cNTrMpgEmVgvP",
+    "opencode:ses_e577a8c27ffeixiiSob1B8tbFo:message:msg_1a887bf73001vdljsbBh16k0UW",
+    "opencode:ses_e577a8c27ffeixiiSob1B8tbFo:tool:call_4eac4d5c3fab4659",
+    "opencode:ses_e577a8c27ffeixiiSob1B8tbFo:tool:call_aecbc156094ac72a",
+    "opencode:ses_e577a8c27ffeixiiSob1B8tbFo:tool:call_f53beaaa43e6938c"
+   ],
+   "case_ids": null,
+   "remote_proof": {
+    "episode": true,
+    "group": true,
+    "source_index": true,
+    "content": true
+   },
+   "local_state": "persisted",
+   "local_decision": "EMIT"
+  },
+  {
+   "arm": "candidate",
+   "purpose": "development",
+   "group": "graphiti-curator-utility-development-r12",
+   "remote_episode_uuid": "e2bddf4e-2c59-4319-ad88-0c3a76ed15d8",
+   "record_id": "29a04fc40ad58f62b7e69090cac710144cb180269df668b3bb818fe7cc46b38e",
+   "curation_record_sha256": "2745433b7af0f6b98ebfcf68625b858980dafc5bfcd5386fc94b4fd3aaad59f3",
+   "content_sha256": "ca564ef56cfdfc67840d413e18b6006394dda67f34dac82a7f9454ade5bfe82a",
+   "cited_source_refs": [
+    "opencode:ses_e577a8c27ffeixiiSob1B8tbFo:message:msg_1a8857409001xAdtnQXp1ZedEC",
+    "opencode:ses_e577a8c27ffeixiiSob1B8tbFo:message:msg_1a88613c70012HBX5MdhBLP7Ti",
+    "opencode:ses_e577a8c27ffeixiiSob1B8tbFo:message:msg_1a886a074001JUZ0rDj3DiF79t",
+    "opencode:ses_e577a8c27ffeixiiSob1B8tbFo:tool:call_098bbc044bd9c2c1",
+    "opencode:ses_e577a8c27ffeixiiSob1B8tbFo:tool:call_3312da8b95d44000",
+    "opencode:ses_e577a8c27ffeixiiSob1B8tbFo:tool:call_33b74e2a4cd8f0e9",
+    "opencode:ses_e577a8c27ffeixiiSob1B8tbFo:tool:call_65fb90d3952b50de",
+    "opencode:ses_e577a8c27ffeixiiSob1B8tbFo:tool:call_fb131aeb829e2400"
+   ],
+   "case_ids": null,
+   "remote_proof": {
+    "episode": true,
+    "group": true,
+    "source_index": true,
+    "content": true
+   },
+   "local_state": "persisted",
+   "local_decision": "EMIT"
+  },
+  {
+   "arm": "candidate",
+   "purpose": "development",
+   "group": "graphiti-curator-utility-development-r12",
+   "remote_episode_uuid": "0d307289-9c63-4d77-9e08-fc23e091b2d4",
+   "record_id": "69ba4061ed8ec238c3daeaacd9c78457e387e3d4101b4fdf6b4addfd529b238c",
+   "curation_record_sha256": "4217dc91156a4edff6f3e255e58da735fa5c7c2237ee31185eeaef78db115b1e",
+   "content_sha256": "c17aa6df55e42ea240ca74ce7193a419ed5a92040b29b142ec2ed2368de37046",
+   "cited_source_refs": [
+    "opencode:ses_e577a8c27ffeixiiSob1B8tbFo:message:msg_1a886ebd00014T7ZcwcLscaCXe",
+    "opencode:ses_e577a8c27ffeixiiSob1B8tbFo:message:msg_1a886f5fe0019eJPOV72584jMI",
+    "opencode:ses_e577a8c27ffeixiiSob1B8tbFo:message:msg_1a886fef5001msO9U2zVXNLq7c",
+    "opencode:ses_e577a8c27ffeixiiSob1B8tbFo:message:msg_1a887ac4b0016cNTrMpgEmVgvP",
+    "opencode:ses_e577a8c27ffeixiiSob1B8tbFo:message:msg_1a887bf73001vdljsbBh16k0UW",
+    "opencode:ses_e577a8c27ffeixiiSob1B8tbFo:tool:call_4eac4d5c3fab4659",
+    "opencode:ses_e577a8c27ffeixiiSob1B8tbFo:tool:call_aecbc156094ac72a",
+    "opencode:ses_e577a8c27ffeixiiSob1B8tbFo:tool:call_f53beaaa43e6938c"
+   ],
+   "case_ids": null,
+   "remote_proof": {
+    "episode": true,
+    "group": true,
+    "source_index": true,
+    "content": true
+   },
+   "local_state": "persisted",
+   "local_decision": "EMIT"
+  },
+  {
+   "arm": "candidate",
+   "purpose": "development",
+   "group": "graphiti-curator-utility-development-r12",
+   "remote_episode_uuid": "4c4ff9e8-8df3-45de-bd93-3aee6361d1ad",
+   "record_id": "b4e8e5deb0aea0f8e4457a4bbd7819c04a4150525975bfcf1475a6030828230d",
+   "curation_record_sha256": "65ad759ada74af6ac712664cf746e9d2edf52f0e0cba48c461ab5d840e4fe02b",
+   "content_sha256": "8e6d3c09383e4690120e7888b8eeb45456d18f20b31575c047a3d88d056b2f63",
+   "cited_source_refs": [
+    "opencode:ses_f5c633bbcffeKIQsLHsCaoD8Kv:message:msg_0a39d111800141KUNqLc0pC2Vq"
+   ],
+   "case_ids": null,
+   "remote_proof": {
+    "episode": true,
+    "group": true,
+    "source_index": true,
+    "content": true
+   },
+   "local_state": "persisted",
+   "local_decision": "EMIT"
+  },
+  {
+   "arm": "baseline",
+   "purpose": "holdout",
+   "group": "graphiti-curator-utility-holdout-r13",
+   "remote_episode_uuid": "48192d02-0927-4e3d-8836-d8b4bfc9a6f9",
+   "record_id": "125fe5b50ea8ef7a43f239d590929582db240d7fe677155975bb0c33c7c30b82",
+   "curation_record_sha256": "6e1074368d7ad7e438163963a9102c7d3d491351a832d84f8c4c9adfb899e0ff",
+   "content_sha256": "d786f5e2424bc806c480fa0e43764e89d487bc624ac92a03ea2e7755f3e71a76",
+   "cited_source_refs": [
+    "opencode:ses_e426c2782ffenbsKyPDNxBGNk4:message:msg_1bd946e75001fUvgmo43FqVcOJ"
+   ],
+   "case_ids": [
+    "i92h3-11-3f023200"
+   ],
+   "remote_proof": {
+    "episode": true,
+    "group": true,
+    "source_index": true,
+    "content": true
+   },
+   "local_state": "persisted",
+   "local_decision": "EMIT"
+  },
+  {
+   "arm": "baseline",
+   "purpose": "holdout",
+   "group": "graphiti-curator-utility-holdout-r13",
+   "remote_episode_uuid": "8116f79d-938a-4cc5-8543-b484181d2fd1",
+   "record_id": "705155fbb7dd60c1daf94459d554bb76e49d51497428cd55df20926e046108eb",
+   "curation_record_sha256": "bb6098f2c3139c75c57eb27a09a45efe4278210401a66b59e2532f1abc9e024e",
+   "content_sha256": "d2b5f1f615f730f339108e46a9e795a438fbaced007c02f9877149f81984ec30",
+   "cited_source_refs": [
+    "opencode:ses_e43251a6cffeipMnX858PK5z2u:message:msg_1bcdcab76001Ps7xKtzXDE8Xja"
+   ],
+   "case_ids": [
+    "i92h3-12-4048303f"
+   ],
+   "remote_proof": {
+    "episode": true,
+    "group": true,
+    "source_index": true,
+    "content": true
+   },
+   "local_state": "persisted",
+   "local_decision": "EMIT"
+  },
+  {
+   "arm": "baseline",
+   "purpose": "holdout",
+   "group": "graphiti-curator-utility-holdout-r13",
+   "remote_episode_uuid": "c809a1f2-bc34-4b0a-a651-9b14713b61e4",
+   "record_id": "7f7fc5d168248970ba8a6b35c7ed4447ea6d4e3c261116f43d45e737cfc86c2b",
+   "curation_record_sha256": "aea23abb4441cfe28b8d3e0c52b227cd189eb41b2ed6e08280fb61baed1cdc53",
+   "content_sha256": "c3a556b2399ab4e986b45b9e86cdf7e47ba5d0ff0758892db545555107d0e69a",
+   "cited_source_refs": [
+    "opencode:ses_e4363de46ffeq1CPP04uLvJlnt:message:msg_1bc9c7795001P6hiwinOgFP24Q",
+    "opencode:ses_e4363de46ffeq1CPP04uLvJlnt:message:msg_1bc9cd6f8001wKKzS4IHSUcN3P"
+   ],
+   "case_ids": [
+    "i92h3-13-9d8e062f",
+    "i92h3-14-f3fcbff2"
+   ],
+   "remote_proof": {
+    "episode": true,
+    "group": true,
+    "source_index": true,
+    "content": true
+   },
+   "local_state": "persisted",
+   "local_decision": "EMIT"
+  },
+  {
+   "arm": "baseline",
+   "purpose": "holdout",
+   "group": "graphiti-curator-utility-holdout-r13",
+   "remote_episode_uuid": "9072497c-75c8-434d-bfaf-68dbd25cb520",
+   "record_id": "9ec83a337e222a28fe0646c2e9f46273dac78aac68935cb1a249a939b0d9a8ba",
+   "curation_record_sha256": "57b389c1ac942366d283964689f5cc6bbd9eb237ef3ec55ea8053e0bf47aa95f",
+   "content_sha256": "3913a3b013e9cd8664b664d9e814ab3b7aee10d09dc199b48513614cd1e898c7",
+   "cited_source_refs": [
+    "opencode:ses_f7371c9c4ffeawOh5zHsi7WEa0:message:msg_08c8e8de1001f73A7mEZFMkG64",
+    "opencode:ses_f7371c9c4ffeawOh5zHsi7WEa0:message:msg_08c8fd7dc001NgKRlXYptdBy4J"
+   ],
+   "case_ids": [
+    "i92h3-29-6089a360",
+    "i92h3-30-2a7d8d26"
+   ],
+   "remote_proof": {
+    "episode": true,
+    "group": true,
+    "source_index": true,
+    "content": true
+   },
+   "local_state": "persisted",
+   "local_decision": "EMIT"
+  },
+  {
+   "arm": "baseline",
+   "purpose": "holdout",
+   "group": "graphiti-curator-utility-holdout-r13",
+   "remote_episode_uuid": "ce601dce-2c7c-46ee-9da0-1b7a3cdbd0ee",
+   "record_id": "b0578465a9ef6b02a52dbc66e64c363e0cfb1a35efd43ffe44c383ed9ae2b1f1",
+   "curation_record_sha256": "d9c48667e0d9fa38575a14e9d2029281a38da42902720bb700358f940734ce6d",
+   "content_sha256": "1b12cd9e8f7d107a599cbf60af82e31d92d9ddea9d17f57d1f7fbc585a8c7c7d",
+   "cited_source_refs": [
+    "opencode:ses_e420ce16bffeP2tpV1B3gPiKLN:message:msg_1bdf33970001wQ0lAJysr6Lp3G",
+    "opencode:ses_e420ce16bffeP2tpV1B3gPiKLN:message:msg_1bdf3871a0011nY9cmdywdThOS",
+    "opencode:ses_e420ce16bffeP2tpV1B3gPiKLN:message:msg_1bdf6b767001yBF0Ilg64Vi84z",
+    "opencode:ses_e420ce16bffeP2tpV1B3gPiKLN:message:msg_1bdf792ce001Uu5al1QdYG0ybH",
+    "opencode:ses_e420ce16bffeP2tpV1B3gPiKLN:message:msg_1bdf7b5f6001yOCr6CpK4M40KW",
+    "opencode:ses_e420ce16bffeP2tpV1B3gPiKLN:message:msg_1bdf95a1f0013o0warnTh4Tena"
+   ],
+   "case_ids": [
+    "i92h3-05-199df467",
+    "i92h3-06-829aeb30",
+    "i92h3-07-2c356b8b",
+    "i92h3-08-4e1273e1",
+    "i92h3-09-f1e8dcb8",
+    "i92h3-10-66aa943d"
+   ],
+   "remote_proof": {
+    "episode": true,
+    "group": true,
+    "source_index": true,
+    "content": true
+   },
+   "local_state": "persisted",
+   "local_decision": "EMIT"
+  },
+  {
+   "arm": "baseline",
+   "purpose": "holdout",
+   "group": "graphiti-curator-utility-holdout-r13",
+   "remote_episode_uuid": "beb59562-218e-4fe1-8e5f-63baada7b2a3",
+   "record_id": "b074cc738ee88fbf9bd0fdffc8de173d7ca44492059fd8402c87e32e2b153038",
+   "curation_record_sha256": "17bd7c24b01aae64ed0768d76e9ee0894bfe12db71e17e408ff2146b7c27c269",
+   "content_sha256": "0c474f3e0e43c1cffa8227313b9279f97b060169f301388930a8b32257165172",
+   "cited_source_refs": [
+    "opencode:ses_f736ce327ffeQn3LI3aQf7tMpl:message:msg_08c939972001OwK2c4Uw6Mn25M",
+    "opencode:ses_f736ce327ffeQn3LI3aQf7tMpl:message:msg_08c952e4a001m1QbPPUJsJUH8I",
+    "opencode:ses_f736ce327ffeQn3LI3aQf7tMpl:message:msg_08c963726001pCutffQFe9COaV",
+    "opencode:ses_f736ce327ffeQn3LI3aQf7tMpl:message:msg_08c96f47a001frQCSmY5eF3whP"
+   ],
+   "case_ids": [
+    "i92h3-25-59ad201a",
+    "i92h3-26-a4ef01cc",
+    "i92h3-27-4022db68",
+    "i92h3-28-9f40943d"
+   ],
+   "remote_proof": {
+    "episode": true,
+    "group": true,
+    "source_index": true,
+    "content": true
+   },
+   "local_state": "persisted",
+   "local_decision": "EMIT"
+  },
+  {
+   "arm": "baseline",
+   "purpose": "holdout",
+   "group": "graphiti-curator-utility-holdout-r13",
+   "remote_episode_uuid": "e974e503-7736-4ce7-bbf6-ba73bcbf8e34",
+   "record_id": "b0be1e90b93fd2de9954a3dd472415616bbf9ae9ea738f395bb392ff52e2b1cf",
+   "curation_record_sha256": "1b82d4ab33d0199ee0ad4768498273eb17b2285b9dddb116d3c6f4e44fa82022",
+   "content_sha256": "caa9de6de34284be7b2442f8fa37cc59960b38cf3441a02c8498c3f3ed2dc685",
+   "cited_source_refs": [
+    "opencode:ses_e42c78d09ffeWQSj9EZN5KdL84:message:msg_1bd3ad2d8001XvdGm8bRif0RCK",
+    "opencode:ses_e42c78d09ffeWQSj9EZN5KdL84:message:msg_1bd3b6f43001avIZnoGCxs6Wzl",
+    "opencode:ses_e42c78d09ffeWQSj9EZN5KdL84:message:msg_1bd3d1d18001281uXYXxiWLFzU",
+    "opencode:ses_e42c78d09ffeWQSj9EZN5KdL84:message:msg_1bd3d6859001lT19LgNce6m2PB",
+    "opencode:ses_e42c78d09ffeWQSj9EZN5KdL84:message:msg_1bd3fb7c0001lxS6rLmVXTjTUL"
+   ],
+   "case_ids": [
+    "i92h3-15-f8c5fba0",
+    "i92h3-16-820ab56b",
+    "i92h3-17-a57b0425",
+    "i92h3-18-3da24a46",
+    "i92h3-19-d57fc69b"
+   ],
+   "remote_proof": {
+    "episode": true,
+    "group": true,
+    "source_index": true,
+    "content": true
+   },
+   "local_state": "persisted",
+   "local_decision": "EMIT"
+  },
+  {
+   "arm": "baseline",
+   "purpose": "holdout",
+   "group": "graphiti-curator-utility-holdout-r13",
+   "remote_episode_uuid": "491c435b-46b4-4ebe-8a09-ba3b7e9442f0",
+   "record_id": "f8a17f2c13c1ff0ec57d6c32e20598576d88100f4050e0adf974556b8cf7e64c",
+   "curation_record_sha256": "5ab1711974dc858e207f60d8ff457c34124becedfd999364adda334276ccc74a",
+   "content_sha256": "d78a7176e55f0130f27bd510a56bdef18187f4b27e4a71db9e6dde5ae51f7420",
+   "cited_source_refs": [
+    "opencode:ses_e43048bd4ffepR3ro6TPuQCDFB:message:msg_1bcfbe1ed001jcO86XLsEOuq9L",
+    "opencode:ses_e43048bd4ffepR3ro6TPuQCDFB:message:msg_1bcfbff660010VXbftqZSoy7Sg"
+   ],
+   "case_ids": [
+    "i92h3-23-d96fa55a",
+    "i92h3-24-332ee2ed"
+   ],
+   "remote_proof": {
+    "episode": true,
+    "group": true,
+    "source_index": true,
+    "content": true
+   },
+   "local_state": "persisted",
+   "local_decision": "EMIT"
+  },
+  {
+   "arm": "baseline",
+   "purpose": "holdout",
+   "group": "graphiti-curator-utility-holdout-r13",
+   "remote_episode_uuid": "f2b89ebe-70fb-4e64-958b-a2e59978681e",
+   "record_id": "f8b5e9be49e0fa46530a86810626fb16c95446a6e4ff550cf4bd007818d35d31",
+   "curation_record_sha256": "e69295d304141094f7bb7a0cb3756c4b283560da1a5f99e53571a1a00c900708",
+   "content_sha256": "c85defdaaf19eb63cdb976b6c2e16f008a7e196f2a43c772e37a88e8a12895b6",
+   "cited_source_refs": [
+    "opencode:ses_f778e7103ffeQpw0IzHBwX37Fb:message:msg_08871fddc001Cjv6V3EYwu5eht",
+    "opencode:ses_f778e7103ffeQpw0IzHBwX37Fb:message:msg_08872550b001lDun6qhYOhyf4S",
+    "opencode:ses_f778e7103ffeQpw0IzHBwX37Fb:message:msg_088734dfb0016DOtMcx41F1aDl"
+   ],
+   "case_ids": [
+    "i92h3-31-2682b51c",
+    "i92h3-32-c77a8975",
+    "i92h3-33-9e8fdb87"
+   ],
+   "remote_proof": {
+    "episode": true,
+    "group": true,
+    "source_index": true,
+    "content": true
+   },
+   "local_state": "persisted",
+   "local_decision": "EMIT"
+  },
+  {
+   "arm": "baseline",
+   "purpose": "holdout",
+   "group": "graphiti-curator-utility-holdout-r13",
+   "remote_episode_uuid": "50e5d242-473b-410f-b944-9cc217fda1de",
+   "record_id": "fc03330564c7fd9bd829b2dca653b89ed7203d57e3563526698e5b6acd94b1dc",
+   "curation_record_sha256": "38dab8c0b5f356c269be94e679c8d946fe93c4246c984142fe673a569cd007f3",
+   "content_sha256": "47f9e832c4e8a9beb4bb35718bbeada0098b99f88fda8b1d0b1d045bc5f2e1dc",
+   "cited_source_refs": [
+    "opencode:ses_e42ea34fdffeZ1ccwkfWSPR4TV:message:msg_1bd16321a001JscfiIIylBDO4q",
+    "opencode:ses_e42ea34fdffeZ1ccwkfWSPR4TV:message:msg_1bd1697cf0010NynlaUWHvYUkq",
+    "opencode:ses_e42ea34fdffeZ1ccwkfWSPR4TV:message:msg_1bd16da52001TWNMLGHLh7S34z"
+   ],
+   "case_ids": [
+    "i92h3-20-a7ad00eb",
+    "i92h3-21-7f60f29a",
+    "i92h3-22-3543dbc0"
+   ],
+   "remote_proof": {
+    "episode": true,
+    "group": true,
+    "source_index": true,
+    "content": true
+   },
+   "local_state": "persisted",
+   "local_decision": "EMIT"
+  },
+  {
+   "arm": "candidate",
+   "purpose": "holdout",
+   "group": "graphiti-curator-utility-holdout-r14",
+   "remote_episode_uuid": "75ae4546-7f99-4914-881f-5241dc6ae31c",
+   "record_id": "8c274a0c6bbdf3d64adc898b7d2c3440826c16da41590d6a2357d1ffe28fce60",
+   "curation_record_sha256": "8f456607762962894d7e51f7bf0dc5b9834abbbb2184d4c04923d2f8690e5fab",
+   "content_sha256": "62803610a0b36b342cae921d595a93ed963f512144adeefb6b1be9b10c94846f",
+   "cited_source_refs": [
+    "opencode:ses_e42ea34fdffeZ1ccwkfWSPR4TV:message:msg_1bd16321a001JscfiIIylBDO4q",
+    "opencode:ses_e42ea34fdffeZ1ccwkfWSPR4TV:message:msg_1bd1697cf0010NynlaUWHvYUkq",
+    "opencode:ses_e42ea34fdffeZ1ccwkfWSPR4TV:message:msg_1bd16da52001TWNMLGHLh7S34z"
+   ],
+   "case_ids": [
+    "i92h3-20-a7ad00eb",
+    "i92h3-21-7f60f29a",
+    "i92h3-22-3543dbc0"
+   ],
+   "remote_proof": {
+    "episode": true,
+    "group": true,
+    "source_index": true,
+    "content": true
+   },
+   "local_state": "persisted",
+   "local_decision": "EMIT"
+  },
+  {
+   "arm": "candidate",
+   "purpose": "holdout",
+   "group": "graphiti-curator-utility-holdout-r14",
+   "remote_episode_uuid": "c2722e9f-b160-4802-9649-74fcc8ff2e75",
+   "record_id": "f6f7b1eae33e6a332c2a77025780f1070fe9a77cc855fefb1eb0aba4e7a44754",
+   "curation_record_sha256": "4fe43469bca2ddfd9dc23d2d6d3db0f29e585993be74e897870a7e028a54074c",
+   "content_sha256": "7c2de430f287bfbbe025f9a6c2b2c191b04eb8562212efe12324dbde518674a2",
+   "cited_source_refs": [
+    "opencode:ses_f778e7103ffeQpw0IzHBwX37Fb:message:msg_08871fddc001Cjv6V3EYwu5eht",
+    "opencode:ses_f778e7103ffeQpw0IzHBwX37Fb:message:msg_08872550b001lDun6qhYOhyf4S",
+    "opencode:ses_f778e7103ffeQpw0IzHBwX37Fb:message:msg_088734dfb0016DOtMcx41F1aDl"
+   ],
+   "case_ids": [
+    "i92h3-31-2682b51c",
+    "i92h3-32-c77a8975",
+    "i92h3-33-9e8fdb87"
+   ],
+   "remote_proof": {
+    "episode": true,
+    "group": true,
+    "source_index": true,
+    "content": true
+   },
+   "local_state": "persisted",
+   "local_decision": "EMIT"
+  }
+ ],
+ "summary": {
+  "persisted_total": 23,
+  "by_arm": {
+   "baseline-development-r11": 8,
+   "candidate-development-r12": 3,
+   "baseline-holdout-r13": 10,
+   "candidate-holdout-r14": 2
+  },
+  "cross_group_uuid_collisions": 0,
+  "duplicate_curation_names": 0,
+  "extra_remote_episodes": 0,
+  "production_development_knowledge": "unchanged: 355 episodic nodes, 0 episodes created after 2026-11-08T18:00Z (pre-campaign baseline identical)"
+ }
+}

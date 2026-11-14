@@ -1,0 +1,57 @@
+{
+ "schema": "issue92-a3-v2-native-source-audit-v1",
+ "group": "graphiti-adr92-a3-prospective-v2",
+ "audited_utc": "2026-11-12T06:21:33.579198Z",
+ "private_manifest": {
+  "path": "/home/filip/.local/state/ghdev-graphiti-issue92/private/issue92-a3-v2-corpus.json",
+  "sha256": "a85941839f1f9dc7e04081829016aa3c38ef05e9a6f3c29ca58de8b53abbf5ca",
+  "matches_frozen": true,
+  "mode": "0600"
+ },
+ "label_digest": {
+  "sha256": "bdfb7c6c7c025c572ba899094b94d1388c425e59189e395b38f5469968da3a58",
+  "matches_published": true
+ },
+ "native_db_identity": {
+  "source": "/home/filip/.local/share/opencode/opencode.db (v2: session_v2+session_message)",
+  "cases_full_identity_match": "20/20 (session_id, message_id, text sha256, source_locator, project, workspace, observed_at all match live DB)"
+ },
+ "roster_match": {
+  "text": "20/20",
+  "locator": "20/20",
+  "label": "20/20"
+ },
+ "nonoverlap": {
+  "b3_24cluster": {
+   "session_overlap": 0,
+   "message_overlap": 0,
+   "basis": "exact session/message ID sets (a3_exclusion_sets.json)"
+  },
+  "gh_mcp_20case": {
+   "session_overlap": 0,
+   "message_overlap": 0,
+   "text_digest_overlap": 0,
+   "basis": "exact IDs + text-digest vs private holdout corpus (issue92-holdout-corpus.json)"
+  },
+  "h2_h3_h4": {
+   "byte_level_digest_crosscheck": "UNVERIFIED (private H2/H3/H4 corpus files not on host)",
+   "established_by": [
+    "distinct cronparse/firecrawl families vs gh_mcp-development-native",
+    "H2 freeze receipt records session_message_overlap_with_h2=0 vs gh_mcp",
+    "A3 v2 cases are genuinely-new native turns not in B3/gh_mcp"
+   ]
+  },
+  "raw_opportunity_denominator": {
+   "genuinely_new_user_turns": 1113,
+   "distinct_sessions": 619
+  }
+ },
+ "ratification": {
+  "path": "/home/filip/.local/state/ghdev-graphiti-issue92/private/issue92-a3-v2-ratification.json",
+  "mode": "0600",
+  "pre_inference": true,
+  "cases_ratified": "20/20 (original_source/temporal/privacy/label_confirmed all true)"
+ },
+ "a3_group_remote_episodes": 0,
+ "privacy_eligibility": "all 20 sources passed whole-input native privacy scan (fromPromptCandidates); no credential/secret spans; 43 bounded spans emitted (<=6/case)"
+}

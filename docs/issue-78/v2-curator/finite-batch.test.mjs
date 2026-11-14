@@ -1,0 +1,2013 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {mkdtemp,rm,readFile} from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import {fromPrompt} from '../v2-candidate/events.mjs';
+import {CandidateQueue} from '../v2-candidate/queue.mjs';
+import {ReviewStore} from './core.mjs';
+import {runAdmittedFiniteBatch,representativePrompt,
+  validateRepresentativeFamilies,specificityPrompt,validateSpecificityFamilies,
+  finiteBatchDiscoveryPrompt,
+  finiteBatchUtilityPrompt,finiteBatchSourceExactComplementUtilityPrompt,
+  finiteBatchSourceExactComplementPrompt,deferContainingSameSourceQuotes} from './finite-batch.mjs';
+import {selectClusters,validateModelDecision} from './core.mjs';
+import {validateFactReview,filterFactProposal} from './fact-review.mjs';
+
+const scope={group:'issue92batch',project:'repo92',workspace:'/workspace/repo92'};
+const strong='Sphinx reStructuredText output drops dictionary parameter header rows, causing expected table columns to disappear in rendered API documentation.';
+const weak='The Sphinx reStructuredText output has an issue with dictionary parameter header rows in rendered API documentation.';
+const different='Pylint --verbose fails when the required argument is omitted, even though the short -v flag is accepted by its command-line parser.';
+const source=(id,body,eventScope=scope,session='sess-'+id)=>fromPrompt({sessionID:session,
+  messageID:'msg-'+id,prompt:{text:body},
+  timestamp:'2026-11-09T19:00:00Z'},eventScope,{admitted:true});
+function graph(){
+ return {episodes:[],writes:[],
+  async call(method,args){
+   if(method==='get_episodes')return {episodes:[...this.episodes]};
+   if(method==='search_memory_facts')return {facts:[]};
+   if(method==='add_memory'){
+    this.writes.push(args);
+    this.episodes.push({name:args.name,group_id:args.group_id,
+     uuid:'00000000-0000-4000-8000-'+
+       String(this.episodes.length+1).padStart(12,'0')});
+    return {queued:true};
+   }
+   throw Error('unexpected Graphiti method');
+  }};
+}
+function model({uncertain=false,distinct=false,invalid=false,reject=false,
+ specificity='same',counter=null}={}){
+ return async(_cluster,{promptMessages})=>{
+  if(counter)counter.n++;
+  const system=promptMessages[0].content;
+  const data=JSON.parse(promptMessages[1].content);
+  let content;
+  if(system.includes('SOURCE-FIRST candidate discovery')){
+   const e=data.evidence[0];
+   content=JSON.stringify({reason:'Potential technical observation',
+    candidates:[{kind:'blocker',source_ref:e.source,start:0,
+     end:e.excerpt.length,temporal_status:'observed'}]});
+  }else if(system.includes('independently REVIEW developer-memory')){
+   content=JSON.stringify({decisions:data.candidates.map(c=>({
+    index:c.index,disposition:reject?'REVIEW':'ACCEPT',
+    reason_code:reject?'not_substantive':'source_specific_durable',
+    ...(reject?{}:{utility_class:'useful_negative'})
+   }))});
+  }else if(system.includes('FINAL JOINT REVIEW')){
+   const cs=data.candidates;
+   let families;
+   if(invalid)families=[{members:[0,0],representative:0,
+    certainty:'high',reason_code:'same_technical_predicate'}];
+   else if(distinct)families=cs.map(c=>({members:[c.index],
+    representative:c.index,certainty:'high',reason_code:'distinct_predicate'}));
+   else families=[{members:cs.map(c=>c.index),
+    representative:cs.find(c=>c.assertion===strong)?.index??0,
+    certainty:uncertain?'uncertain':'high',
+    reason_code:uncertain?'uncertain':'same_technical_predicate'}];
+   content=JSON.stringify({families});
+  }else if(system.includes('INDEPENDENT COUNTER-REVIEW')){
+   const cs=data.candidates;
+   let families;
+   if(specificity==='invalid'){
+    families=[{members:cs.map(c=>c.index),representative:0,
+      certainty:'high',reason_code:'same_technical_predicate',
+      representative_quote:'fabricated quote not in source',
+      equivalence_checks:cs.slice(1).map(c=>({index:c.index,
+       shared_behavior:'Same underlying technical behavior as representative'}))}];
+   }else if(specificity==='split'){
+    families=cs.map(c=>({members:[c.index],representative:c.index,
+     certainty:'high',reason_code:'distinct_predicate',
+     representative_quote:c.assertion.slice(0,200),equivalence_checks:[]}));
+   }else{
+    const rep=cs.find(c=>c.assertion===strong)?.index??0;
+    families=[{members:cs.map(c=>c.index),representative:rep,
+     certainty:'high',reason_code:'same_technical_predicate',
+     representative_quote:cs[rep].assertion.slice(0,200),
+     equivalence_checks:cs.filter(c=>c.index!==rep).map(c=>({
+      index:c.index,
+      shared_behavior:'This statement describes the identical missing-row behavior'
+     }))}];
+   }
+   content=JSON.stringify({families});
+  }else throw Error('unknown model stage');
+  return {content,duration_ms:1,
+   usage:{prompt_tokens:10,completion_tokens:15}};
+ };
+}
+async function fixture(fn,order=[strong,weak],{scopeFor=null,sharedSession=false}={}){
+ const root=await mkdtemp(path.join(os.tmpdir(),'issue92-finite-'));
+ const previous=process.env.GHDEV_MEMORY_POST_EXIT_LEASE;
+ process.env.GHDEV_MEMORY_POST_EXIT_LEASE='admitted';
+ try{
+  const queue=new CandidateQueue(root,scope.group);
+  const store=new ReviewStore(root,scope.group);
+  for(const body of order){
+   const id=body===strong?'strong':body===weak?'weak':'different';
+   const e=source(id,body,scopeFor?scopeFor(id):scope,
+     sharedSession?'sess-shared':undefined);
+   assert.ok(e);
+   assert.equal((await queue.stage(e)).status,'staged');
+  }
+  return await fn({root,queue,store,graphiti:graph()});
+ }finally{
+  if(previous===undefined)delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;
+  else process.env.GHDEV_MEMORY_POST_EXIT_LEASE=previous;
+  await rm(root,{recursive:true,force:true});
+ }
+}
+// Existing finite-batch tests retain the explicit conservative policy to
+// verify legacy recovery behavior, while the new tests below exercise the
+// production-facing development default: recall, not model-gated novelty.
+const opts=f=>({...f,group:scope.group,
+ modelEndpoint:'http://127.0.0.1:8002/v1/chat/completions',
+ modelId:'chat-fast',maxClusters:24,maxSeconds:180,
+ noveltyPolicy:'conservative'});
+const recallOpts=f=>({...opts(f),noveltyPolicy:undefined});
+
+test('representative input and resolution are invariant to candidate order',()=>{
+ const make=(id,assertion)=>({id,group:scope.group,project:scope.project,
+  workspace:scope.workspace,utility_class:'useful_negative',
+  fact:{assertion,evidence_class:'user-stated',temporal_status:'observed',
+   kind:'blocker',source_refs:['opencode:session:message:'+id]}});
+ const rows=[make('b'.repeat(64),strong),make('a'.repeat(64),weak)];
+ assert.deepEqual(representativePrompt(rows),
+  representativePrompt([...rows].reverse()));
+ const verdict={families:[{members:[0,1],representative:1,
+  certainty:'high',reason_code:'same_technical_predicate'}]};
+ assert.deepEqual(validateRepresentativeFamilies(verdict,rows),
+  validateRepresentativeFamilies(verdict,[...rows].reverse()));
+ assert.equal(validateRepresentativeFamilies({families:[{members:[0,0],
+  representative:0,certainty:'high',
+  reason_code:'same_technical_predicate'}]},rows).ok,false);
+});
+test('batch picks substantive representative and preserves the weaker review record in both arrival orders',async()=>{
+ const run=order=>fixture(async f=>{
+  const result=await runAdmittedFiniteBatch(opts({...f,curate:model()}));
+  assert.equal(result.persisted,1);
+  assert.equal(result.approved,1);
+  assert.equal(result.deferred,1);
+  assert.equal(result.model_calls,6);
+  assert.equal(f.graphiti.writes.length,1);
+  assert.ok(f.graphiti.writes[0].episode_body.includes(strong));
+  const records=(await f.store.list({limit:20})).items;
+  assert.equal(records.filter(r=>r.state==='persisted').length,1);
+  assert.equal(records.filter(r=>r.state==='deferred').length,1);
+  const active=JSON.parse(await readFile(path.join(f.root,
+   'issue92-finite-batches-v1',scope.group,'_active.json'),'utf8'));
+  const plan=JSON.parse(await readFile(path.join(f.root,
+   'issue92-finite-batches-v1',scope.group,active.batch_id,'plan.json'),'utf8'));
+  return {batch_id:result.batch_id,items:plan.items,families:plan.families};
+ },order);
+ assert.deepEqual(await run([weak,strong]),await run([strong,weak]));
+});
+test('uncertain equivalence defers both source facts without remote writes',()=>fixture(async f=>{
+ const out=await runAdmittedFiniteBatch(opts({...f,curate:model({uncertain:true})}));
+ assert.equal(out.persisted,0);
+ assert.equal(out.deferred,2);
+ assert.equal(f.graphiti.writes.length,0);
+}));
+test('distinct technical predicates are not collapsed merely because both are bug reports',()=>fixture(async f=>{
+ const out=await runAdmittedFiniteBatch(opts({...f,curate:model({distinct:true})}));
+ assert.equal(out.persisted,2);
+ assert.equal(f.graphiti.writes.length,2);
+},[strong,different]));
+test('invalid family partition blocks all review and Graphiti mutations',()=>fixture(async f=>{
+ await assert.rejects(runAdmittedFiniteBatch(opts({...f,
+  curate:model({invalid:true})})),/ARBITRATION_UNVERIFIED_NO_GRAPH_WRITES/);
+ assert.equal((await f.store.list({limit:20})).total,0);
+ assert.equal(f.graphiti.writes.length,0);
+}));
+test('independent utility REJECT retains source for review rather than Graphiti persistence',()=>fixture(async f=>{
+ const out=await runAdmittedFiniteBatch(opts({...f,curate:model({reject:true})}));
+ assert.equal(out.persisted,0);
+ assert.equal(out.deferred,2);
+ const records=(await f.store.list({limit:20})).items;
+ assert.ok(records.every(r=>r.review_only_claims?.[0]?.screen_reason==='not_substantive'));
+}));
+test('crash after frozen plan resumes without any additional model calls',()=>fixture(async f=>{
+ const count={n:0},curate=model({counter:count});
+ await assert.rejects(runAdmittedFiniteBatch(opts({...f,curate,
+  onCheckpoint:s=>{if(s==='plan_frozen')throw Error('INJECTED_CRASH');}
+ })),/INJECTED_CRASH/);
+ assert.equal(count.n,6);
+ assert.equal(f.graphiti.writes.length,0);
+ const out=await runAdmittedFiniteBatch(opts({...f,curate}));
+ assert.equal(out.persisted,1);
+ assert.equal(out.model_calls,0);
+ assert.equal(count.n,6);
+}));
+test('ambiguous model call intent remains non-replayable after interruption',()=>fixture(async f=>{
+ let calls=0;
+ const fail=async()=>{calls++;throw Error('network outage');};
+ await assert.rejects(runAdmittedFiniteBatch(opts({...f,curate:fail})),
+  /MODEL_CALL_OUTCOME_UNKNOWN_NO_REPLAY/);
+ await assert.rejects(runAdmittedFiniteBatch(opts({...f,curate:fail})),
+  /MODEL_CALL_AMBIGUOUS_NO_REPLAY/);
+ assert.equal(calls,1);
+ assert.equal(f.graphiti.writes.length,0);
+}));
+test('interactive harness cannot invoke the finite-batch worker',()=>fixture(async f=>{
+ delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;
+ await assert.rejects(runAdmittedFiniteBatch(opts({...f,curate:model()})),
+  /EX_POST_EXIT_ADMISSION_REQUIRED/);
+ assert.equal(f.graphiti.writes.length,0);
+}));
+
+test('remote ACK loss is reconciled by positive episode identity without a second write',()=>fixture(async f=>{
+ const original=f.graphiti.call.bind(f.graphiti);
+ let submitted=0;
+ f.graphiti.call=async(method,args)=>{
+  if(method==='add_memory'){submitted++;await original(method,args);
+   throw Error('remote ACK lost after committed episode');}
+  return original(method,args);
+ };
+ const counter={n:0},curate=model({distinct:true,counter});
+ const first=await runAdmittedFiniteBatch(opts({...f,curate}));
+ assert.equal(first.status,'unresolved');
+ assert.equal(submitted,1);
+ assert.equal(f.graphiti.episodes.length,1);
+ const resumed=await runAdmittedFiniteBatch(opts({...f,curate}));
+ assert.equal(resumed.model_calls,0);
+ assert.equal(resumed.persisted,1);
+ assert.equal(submitted,1);
+ assert.equal(counter.n,3);
+},[strong]));
+test('snapshot resumes only if native source bytes match authenticated queue events',()=>fixture(async f=>{
+ await assert.rejects(runAdmittedFiniteBatch(opts({...f,curate:model(),
+  onCheckpoint:s=>{if(s==='snapshot_frozen')throw Error('INJECTED_SNAPSHOT_STOP');}
+ })),/INJECTED_SNAPSHOT_STOP/);
+ const queued=(await f.queue.list({limit:20,states:['new']})).items;
+ const event=queued[0];
+ const file=f.queue.filename(event.event_id);
+ const actual=JSON.parse(await readFile(file,'utf8'));
+ const altered={...actual,excerpt:actual.excerpt+' modified'};
+ const {writeFile}=await import('node:fs/promises');
+ await writeFile(file,JSON.stringify(altered));
+ await assert.rejects(runAdmittedFiniteBatch(opts({...f,curate:model()})),
+  /SNAPSHOT_QUEUE_SOURCE_DRIFT/);
+ assert.equal(f.graphiti.writes.length,0);
+}));
+
+test('finite-batch discovery prefers actual technical predicates over task boilerplate',()=>{
+ const c=selectClusters([source('probe',strong)])[0];
+ const msgs=finiteBatchDiscoveryPrompt(c);
+ assert.match(msgs[0].content,/technical predicate/);
+ assert.match(msgs[0].content,/NOT the generic task header/);
+ const data=JSON.parse(msgs[1].content);
+ assert.equal(data.evidence[0].excerpt,strong);
+ assert.equal(data.evidence[0].source,c.events[0].source_refs[0]);
+});
+test('independent batch utility does not inherit earlier same-group duplication anchors',()=>{
+ const c=selectClusters([source('probe2',strong)])[0],e=c.events[0];
+ const p=validateModelDecision({decision:'EMIT',reason:'Exact supported excerpt',
+  utility_class:'useful_negative',facts:[{kind:'blocker',
+   utility_class:'useful_negative',source_refs:[e.source_refs[0]],
+   temporal_status:'observed',evidence_span:{
+    source_ref:e.source_refs[0],start:0,end:e.excerpt.length}}]},c);
+ assert.equal(p.ok,true);
+ const msgs=finiteBatchUtilityPrompt(c,p);
+ assert.match(msgs[0].content,/FIRST independent utility judgment/);
+ assert.match(msgs[0].content,/There are NO earlier same-batch facts/);
+ assert.match(msgs[0].content,/REPORTED defect/);
+ assert.equal(JSON.parse(msgs[1].content).prior_same_group_facts.length,0);
+});
+
+test('source-exact utility rubric covers durable facts without confusing them with setup chatter',()=>{
+ const cases=[
+  'The /workspace/mcp_servers/mcp-mux-2.0-dev directory is a local clone of the repository.',
+  'dovi-tool version 2.3.3-1 and libdovi 3.4.0-1 were installed on the host.',
+  'The probe MCP configuration in opencode.json points to the vLLM endpoint at port 8002.',
+  'When the commit gate reports queue_empty instead of harness active, operator commands are permitted.',
+  'After the root API key was removed, the commit gate operated and drained its pending queue.',
+  'The subtitle service credentials are stored in a local configuration path, with no secret values quoted.',
+  'I manually deleted an obsolete scratch directory; please do not investigate it again.',
+  'The last task is completed; please produce a status summary.'
+ ];
+ const expected=[
+  /local repository\/source/,/package\/version installation/,/endpoint or port mapping/,
+  /conditional rule/,/post-change system state/,/credential-store LOCATION/,
+  /one-off deletion or cleanup/,/generic task header/
+ ];
+ for(let i=0;i<cases.length;i++){
+  const c=selectClusters([source('utility-rubric-'+i,cases[i])])[0];
+  assert.ok(c, 'native source must stage');
+  const event=c.events[0];
+  const p=validateModelDecision({decision:'EMIT',reason:'Source-exact quotation',
+   utility_class:'useful_negative',facts:[{kind:'observation',
+    source_refs:[event.source_refs[0]],temporal_status:'observed',
+    evidence_span:{source_ref:event.source_refs[0],start:0,end:event.excerpt.length}}]},c);
+  assert.equal(p.ok,true);
+  const first=finiteBatchUtilityPrompt(c,p);
+  const exact=finiteBatchSourceExactComplementUtilityPrompt(c,p);
+  for(const prompt of [first,exact]){
+   assert.match(prompt[0].content,expected[i]);
+   assert.match(prompt[0].content,/not automatic approvals/i);
+   const payload=JSON.parse(prompt[1].content);
+   assert.equal(payload.candidates[0].assertion,event.excerpt);
+   assert.equal(payload.candidates[0].source_ref,event.source_refs[0]);
+   assert.equal(payload.candidates[0].evidence_class,'user-stated');
+  }
+ }
+});
+test('utility rubric still expressly defers unsupported, transient and privacy-risk sources',()=>{
+ const c=selectClusters([source('utility-negative',
+  'The last task is complete; please produce an operator status summary.')])[0];
+ const e=c.events[0];
+ const p=validateModelDecision({decision:'EMIT',reason:'Provisional original quotation',
+  utility_class:'useful_negative',facts:[{kind:'observation',
+   source_refs:[e.source_refs[0]],temporal_status:'observed',
+   evidence_span:{source_ref:e.source_refs[0],start:0,end:e.excerpt.length}}]},c);
+ assert.equal(p.ok,true);
+ const prompt=finiteBatchSourceExactComplementUtilityPrompt(c,p);
+ assert.match(prompt[0].content,/Use transient_execution for a one-off command/);
+ assert.match(prompt[0].content,/existing full-source privacy/i);
+ assert.match(prompt[0].content,/not_substantive/);
+ assert.match(prompt[0].content,/review_uncertain/);
+ assert.match(prompt[0].content,/Do NOT/);
+ const rejection={decisions:[{index:0,disposition:'REVIEW',
+  reason_code:'not_substantive'}]};
+ // Source evidence and a strong prompt cannot turn an explicit utility
+ // rejection into an automatic Graphiti authorization.
+ const review=validateFactReview(JSON.stringify(rejection),p);
+ assert.equal(review.ok,true);
+ const filtered=filterFactProposal(p,review);
+ assert.equal(filtered.ok,false);
+ assert.equal(filtered.decision,'DEFER');
+ assert.equal(filtered.review_only_claims[0].screen_reason,'not_substantive');
+});
+
+test('a corrupted frozen model receipt blocks recovery before any Graphiti write',()=>fixture(async f=>{
+ await assert.rejects(runAdmittedFiniteBatch(opts({...f,curate:model(),
+  onCheckpoint:s=>{if(s==='plan_frozen')throw Error('INJECTED_POST_PLAN');}
+ })),/INJECTED_POST_PLAN/);
+ const {readdir,writeFile}=await import('node:fs/promises');
+ const active=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,'_active.json'),'utf8'));
+ const dir=path.join(f.root,'issue92-finite-batches-v1',scope.group,
+  active.batch_id,'model-calls');
+ const name=(await readdir(dir)).find(x=>x.endsWith('.result.json'));
+ assert.ok(name);
+ const file=path.join(dir,name),item=JSON.parse(await readFile(file,'utf8'));
+ await writeFile(file,JSON.stringify({...item,reply_sha256:'0'.repeat(64)}));
+ await assert.rejects(runAdmittedFiniteBatch(opts({...f,curate:model()})),
+  /PLAN_MODEL_RECEIPT_MISMATCH/);
+ assert.equal(f.graphiti.writes.length,0);
+ assert.equal((await f.store.list({limit:20})).total,0);
+}));
+
+test('cross-workspace Sphinx siblings share one project arbitration pool and preserve their original native scopes',async()=>{
+ const scopes=id=>({...scope,workspace:'/workspace/swebench/'+id});
+ const run=order=>fixture(async f=>{
+  const out=await runAdmittedFiniteBatch(opts({...f,curate:model()}));
+  assert.equal(out.model_calls,6); // two discoveries, two utility calls, joint review + specificity
+  assert.equal(out.persisted,1);
+  assert.equal(out.deferred,1);
+  assert.equal(f.graphiti.writes.length,1);
+  assert.ok(f.graphiti.writes[0].episode_body.includes(strong));
+  const rows=(await f.store.list({limit:20})).items;
+  assert.equal(rows.length,2);
+  const kept=rows.find(r=>r.state==='persisted'),alternate=rows.find(r=>r.state==='deferred');
+  assert.ok(kept&&alternate);
+  assert.equal(kept.workspace,scopes('strong').workspace);
+  assert.equal(alternate.workspace,scopes('weak').workspace);
+  const active=JSON.parse(await readFile(path.join(f.root,
+   'issue92-finite-batches-v1',scope.group,'_active.json'),'utf8'));
+  const plan=JSON.parse(await readFile(path.join(f.root,
+   'issue92-finite-batches-v1',scope.group,active.batch_id,'plan.json'),'utf8'));
+  assert.equal(plan.families.length,1);
+  assert.equal(plan.families[0].pool.length,2);
+  assert.equal(plan.families[0].selected.length,1);
+  return {families:plan.families,items:plan.items};
+ },order,{scopeFor:scopes});
+ assert.deepEqual(await run([weak,strong]),await run([strong,weak]));
+});
+test('cross-workspace uncertain-equivalence families defer both instead of promoting first arrival',()=>fixture(async f=>{
+ const out=await runAdmittedFiniteBatch(opts({...f,curate:model({uncertain:true})}));
+ assert.equal(out.model_calls,5);
+ assert.equal(out.approved,0);
+ assert.equal(out.deferred,2);
+ assert.equal(f.graphiti.writes.length,0);
+},[strong,weak],{scopeFor:id=>({...scope,workspace:'/workspace/swebench/'+id})}));
+test('same group but different authenticated projects cannot be compared as one family',()=>fixture(async f=>{
+ const out=await runAdmittedFiniteBatch(opts({...f,curate:model({distinct:true})}));
+ assert.equal(out.model_calls,6); // two discoveries, two utilities, two singleton arbitration calls
+ assert.equal(out.approved,2);
+ assert.equal(out.persisted,2);
+ const active=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,'_active.json'),'utf8'));
+ const plan=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,active.batch_id,'plan.json'),'utf8'));
+ assert.equal(plan.families.length,2);
+ for(const family of plan.families)assert.equal(family.pool.length,1);
+},[strong,weak],{scopeFor:id=>({
+ ...scope,project:id==='strong'?'repo92':'repo93',
+ workspace:'/workspace/swebench/'+id
+})}));
+test('arbitration rejects cross-project candidate data, but accepts separate workspaces of one project',()=>{
+ const make=(id,project,workspace)=>({id,group:scope.group,project,workspace,
+  utility_class:'useful_negative',fact:{assertion:strong,kind:'blocker',
+   evidence_class:'user-stated',temporal_status:'observed',
+   source_refs:['opencode:session:message:'+id]}});
+ const a=make('a'.repeat(64),'repo92','/repo-a');
+ const b=make('b'.repeat(64),'repo92','/repo-b');
+ const prompt=representativePrompt([a,b]);
+ const data=JSON.parse(prompt[1].content);
+ assert.equal(data.scope.comparison_scope,'project');
+ assert.equal(data.scope.native_workspace_scopes,'retained_individually');
+ assert.equal(data.candidates.length,2);
+ assert.notEqual(data.candidates[0].workspace_sha256,data.candidates[1].workspace_sha256);
+ assert.throws(()=>representativePrompt([a,{...b,project:'repo93'}]),
+  /ARBITRATION_CROSS_PROJECT_OR_INVALID_WORKSPACE/);
+});
+
+test('nineteen same-project, cross-workspace candidates form real semantic-family choices instead of nineteen singleton calls',()=>{
+ const make=(name,assertion,i)=>({
+  id:(i+1).toString(16).padStart(64,'0'),group:scope.group,
+  project:scope.project,workspace:'/workspace/swebench/'+name,
+  utility_class:'useful_negative',fact:{
+   assertion,evidence_class:'user-stated',temporal_status:'observed',
+   kind:'blocker',source_refs:['opencode:sess-'+name+':message:m'+i]
+  }
+ });
+ const entries=[
+  ...Array.from({length:5},(_,i)=>make('sphinx-'+i,
+   'Sphinx dictionary parameter table header row missing in rendering variant '+i,i)),
+  ...Array.from({length:6},(_,i)=>make('django-'+i,
+   'Django lazy string proxy raises TypeError in filter variant '+i,i+5)),
+  ...Array.from({length:8},(_,i)=>make('distinct-'+i,
+   'Unique independent technical constraint number '+i+' uses another interface',i+11))
+ ];
+ const input=representativePrompt([...entries].reverse());
+ const parsed=JSON.parse(input[1].content);
+ assert.equal(parsed.candidates.length,19);
+ assert.equal(new Set(parsed.candidates.map(x=>x.workspace_sha256)).size,19);
+ assert.equal(parsed.scope.comparison_scope,'project');
+ const families=[
+  {members:[0,1,2,3,4],representative:0,certainty:'high',
+   reason_code:'same_technical_predicate'},
+  {members:[5,6,7,8,9,10],representative:5,certainty:'high',
+   reason_code:'same_technical_predicate'},
+  ...Array.from({length:8},(_,j)=>({members:[11+j],representative:11+j,
+   certainty:'high',reason_code:'distinct_predicate'}))
+ ];
+ const solution=validateRepresentativeFamilies({families},entries);
+ assert.equal(solution.ok,true);
+ assert.equal(solution.selected.length,10); // 2 meaningful family reps + 8 distinct
+ assert.equal(solution.deferred.length,9); // all 9 repeated variants remain reviewable
+ assert.deepEqual(solution,validateRepresentativeFamilies({families},[...entries].reverse()));
+ assert.deepEqual(input,representativePrompt(entries));
+});
+
+test('independent specificity counter-review splits supported distinct technical variants',()=>fixture(async f=>{
+ const out=await runAdmittedFiniteBatch(opts({...f,curate:model({specificity:'split'})}));
+ assert.equal(out.model_calls,6);
+ assert.equal(out.approved,2);
+ assert.equal(out.persisted,2);
+ assert.equal(out.deferred,0);
+ assert.equal(f.graphiti.writes.length,2);
+ const active=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,'_active.json'),'utf8'));
+ const plan=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,active.batch_id,'plan.json'),'utf8'));
+ assert.equal(plan.families.length,1);
+ assert.equal(plan.families[0].provisional.length,1);
+ assert.equal(plan.families[0].provisional[0].members.length,2);
+ assert.equal(plan.families[0].refinements.length,1);
+ assert.equal(plan.families[0].refinements[0].selected.length,2);
+ assert.equal(plan.families[0].refinements[0].source_proof.length,2);
+},[strong,different],{scopeFor:id=>({...scope,
+ workspace:'/workspace/swebench/'+id})}));
+test('specificity quote and per-alternate equivalence checks are mandatory and source-authenticated',()=>{
+ const make=(id,text)=>({id,group:scope.group,project:scope.project,
+  workspace:'/workspace/swebench/'+id,utility_class:'useful_negative',
+  fact:{assertion:text,kind:'blocker',temporal_status:'observed',
+   evidence_class:'user-stated',source_refs:['opencode:source:'+id]}});
+ const entries=[make('a'.repeat(64),strong),make('b'.repeat(64),weak)];
+ const prompt=specificityPrompt([...entries].reverse());
+ assert.deepEqual(prompt,specificityPrompt(entries));
+ assert.match(prompt[0].content,/additional independently useful constraint/);
+ const accepted={families:[{members:[0,1],representative:0,certainty:'high',
+  reason_code:'same_technical_predicate',
+  representative_quote:strong.slice(0,90),
+  equivalence_checks:[{index:1,
+   shared_behavior:'Both passages report the same Sphinx header-row defect'}]}]};
+ assert.equal(validateSpecificityFamilies(accepted,entries).ok,true);
+ const missing={families:[{...accepted.families[0],equivalence_checks:[]}]};
+ assert.equal(validateSpecificityFamilies(missing,entries).ok,false);
+ assert.equal(validateSpecificityFamilies({families:[{
+  ...accepted.families[0],representative_quote:'a fabricated assertion that is absent'
+ }]},entries).ok,false);
+ const refined={families:entries.map((c,index)=>({
+  members:[index],representative:index,certainty:'high',
+  reason_code:'distinct_predicate',representative_quote:c.fact.assertion.slice(0,95),
+  equivalence_checks:[]}))};
+ assert.equal(validateSpecificityFamilies(refined,entries).selected.length,2);
+});
+test('invalid optional specificity model output defers only that family, not the source or the batch',()=>fixture(async f=>{
+ const out=await runAdmittedFiniteBatch(opts({...f,
+  curate:model({specificity:'invalid'})}));
+ assert.equal(out.model_calls,6);
+ assert.equal(out.persisted,0);
+ assert.equal(out.approved,0);
+ assert.equal(out.deferred,2);
+ assert.equal(f.graphiti.writes.length,0);
+ assert.equal((await f.store.list({limit:20})).items.filter(x=>x.state==='deferred').length,2);
+ const active=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,'_active.json'),'utf8'));
+ const plan=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,active.batch_id,'plan.json'),'utf8'));
+ assert.equal(plan.families[0].refinements[0].result,'review_required_invalid_specificity');
+ assert.ok(plan.families[0].refinements[0].validation_reason.includes('quote_not_from_selected_fact'));
+}));
+test('unknown result for independent specificity cannot be replayed after restart',()=>fixture(async f=>{
+ let attempts=0;
+ const otherwise=model();
+ const unstable=async(cluster,opts)=>{
+  if(opts.promptMessages[0].content.includes('INDEPENDENT COUNTER-REVIEW')){
+   attempts++;throw Error('unknown model outcome at specificity');
+  }
+  return otherwise(cluster,opts);
+ };
+ await assert.rejects(runAdmittedFiniteBatch(opts({...f,curate:unstable})),
+  /MODEL_CALL_OUTCOME_UNKNOWN_NO_REPLAY/);
+ await assert.rejects(runAdmittedFiniteBatch(opts({...f,curate:unstable})),
+  /MODEL_CALL_AMBIGUOUS_NO_REPLAY/);
+ assert.equal(attempts,1);
+ assert.equal(f.graphiti.writes.length,0);
+}));
+test('first-pass uncertain equivalence remains deferred without specificity call',()=>fixture(async f=>{
+ const calls={n:0};
+ const out=await runAdmittedFiniteBatch(opts({...f,
+  curate:model({uncertain:true,counter:calls})}));
+ assert.equal(out.approved,0);
+ assert.equal(out.persisted,0);
+ assert.equal(out.deferred,2);
+ assert.equal(out.model_calls,5);
+ assert.equal(calls.n,5);
+}));
+
+test('multi-variant source-specificity review preserves distinct conditions while deferring true repetitions',()=>{
+ const subjects=[
+  'Sphinx output drops dictionary parameter headers from the rendered table.',
+  'Sphinx rendering has missing dictionary parameter header columns in its table.',
+  'Sphinx table headings disappear for dictionary parameter documentation.',
+  'Sphinx documentation lacks required dictionary parameter header rows.',
+  'Sphinx ASCII-only formatting omits required output key/value labels.',
+  'The Sphinx plain-ASCII formatter drops its output key/value labels.',
+  'Sphinx RST export escapes a literal backslash in a parameter name.',
+  'Sphinx nested-list output duplicates indentation of wrapped descriptions.'
+ ];
+ const rows=subjects.map((assertion,i)=>({
+  id:(i+1).toString(16).padStart(64,'0'),group:scope.group,
+  project:scope.project,workspace:'/workspace/swebench/run-'+i,
+  utility_class:'useful_negative',fact:{
+   assertion,kind:'blocker',evidence_class:'user-stated',
+   temporal_status:'observed',source_refs:['opencode:session:message:'+i]
+  }
+ }));
+ const family=(members,rep)=>({members,representative:rep,
+  certainty:'high',reason_code:members.length>1?
+  'same_technical_predicate':'distinct_predicate',
+  representative_quote:subjects[rep].slice(0,100),
+  equivalence_checks:members.filter(i=>i!==rep).map(i=>({
+   index:i,shared_behavior:'Both descriptions identify the same documented output failure'
+  }))
+ });
+ const outcome=validateSpecificityFamilies({families:[
+  family([0,1,2,3],0),family([4,5],4),family([6],6),family([7],7)
+ ]},rows);
+ assert.equal(outcome.ok,true);
+ assert.equal(outcome.selected.length,4);
+ assert.equal(outcome.deferred.length,4);
+ assert.equal(outcome.proof.length,4);
+ assert.deepEqual(outcome,validateSpecificityFamilies({families:[
+  family([0,1,2,3],0),family([4,5],4),family([6],6),family([7],7)
+ ]},[...rows].reverse()));
+ assert.throws(()=>specificityPrompt([rows[0],{...rows[4],project:'other-project'}]),
+  /SPECIFICITY_SCOPE/);
+});
+
+
+test('recall-first default promotes both independently useful, source-validated facts without a semantic veto',()=>fixture(async f=>{
+ const count={n:0};
+ const result=await runAdmittedFiniteBatch(recallOpts({...f,curate:model({invalid:true,counter:count})}));
+ assert.equal(result.status,'settled');
+ assert.equal(result.model_calls,4); // discovery + independent utility only
+ assert.equal(count.n,4); // no arbitration or specificity inference
+ assert.equal(result.approved,2);
+ assert.equal(result.deferred,0);
+ assert.equal(result.persisted,2);
+ assert.equal(f.graphiti.writes.length,2);
+ const active=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,'_active.json'),'utf8'));
+ const plan=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,active.batch_id,'plan.json'),'utf8'));
+ assert.equal(plan.policy,'issue92_recall_first_source_and_utility_v1');
+ assert.equal(plan.families.length,1);
+ assert.equal(plan.families[0].novelty_status,
+  'semantic_equivalence_advisory_not_promotion_gate');
+ assert.equal(plan.families[0].selected.length,2);
+ assert.equal(plan.calls.length,4);
+ assert.ok(plan.calls.every(c=>['discovery','utility'].includes(c.stage)));
+}));
+test('recall-first default is not defeated by previously uncertain model equivalence',()=>fixture(async f=>{
+ const count={n:0};
+ const result=await runAdmittedFiniteBatch(recallOpts({...f,
+  curate:model({uncertain:true,counter:count})}));
+ assert.equal(count.n,4);
+ assert.equal(result.persisted,2);
+ assert.equal(result.deferred,0);
+ assert.equal(f.graphiti.writes.length,2);
+},[strong,weak],{scopeFor:id=>({...scope,
+ workspace:'/workspace/swebench/'+id})}));
+test('frozen discovery/utility replies can be reused without model replay when novelty is no longer a gate',()=>fixture(async f=>{
+ const count={n:0},curate=model({counter:count});
+ await assert.rejects(runAdmittedFiniteBatch(opts({...f,curate,
+  onCheckpoint:stage=>{
+   if(stage==='model_result_frozen'&&count.n===4)
+    throw Error('STOP_AFTER_UTILITY_BEFORE_NOVELTY');
+  }
+ })),/STOP_AFTER_UTILITY_BEFORE_NOVELTY/);
+ assert.equal(count.n,4);
+ assert.equal(f.graphiti.writes.length,0);
+ const noInference=async()=>{throw Error('NO_REPLAY_OF_FROZEN_INFERENCE_ALLOWED');};
+ const result=await runAdmittedFiniteBatch(recallOpts({...f,curate:noInference}));
+ assert.equal(result.model_calls,0);
+ assert.equal(result.persisted,2);
+ assert.equal(result.approved,2);
+ assert.equal(f.graphiti.writes.length,2);
+ assert.equal(count.n,4);
+}));
+test('already frozen recall plans cannot switch back to restrictive policy on restart',()=>fixture(async f=>{
+ const count={n:0},curate=model({counter:count});
+ await assert.rejects(runAdmittedFiniteBatch(recallOpts({...f,curate,
+  onCheckpoint:stage=>{
+   if(stage==='plan_frozen')throw Error('STOP_AT_RECALL_PLAN');
+  }
+ })),/STOP_AT_RECALL_PLAN/);
+ assert.equal(count.n,4);
+ assert.equal(f.graphiti.writes.length,0);
+ await assert.rejects(runAdmittedFiniteBatch(opts({...f,curate})),
+  /ISSUE92_BATCH_PLAN_IDENTITY/);
+ assert.equal(count.n,4);
+ assert.equal(f.graphiti.writes.length,0);
+ const recovered=await runAdmittedFiniteBatch(recallOpts({...f,curate}));
+ assert.equal(recovered.model_calls,0);
+ assert.equal(recovered.persisted,2);
+ assert.equal(count.n,4);
+}));
+
+test('specificity response shape alias and exact long quote do not become safety vetoes',()=>{
+ const rep='Sphinx output drops dictionary parameter header rows in rendered documentation and affects the table-column layout for text-based output, including a reproducible exception when the output contains a nested rendering mode or additional versioned parameters.';
+ const other='Sphinx documentation output suppresses the same table header rows for dictionary parameters in the generated API page.';
+ const mk=(id,assertion)=>({id,group:scope.group,project:scope.project,
+  workspace:'/workspace/swebench/'+id,utility_class:'useful_negative',
+  fact:{assertion,kind:'blocker',source_refs:['opencode:source:'+id],
+   evidence_class:'user-stated',temporal_status:'observed'}});
+ const rows=[mk('a'.repeat(64),rep),mk('b'.repeat(64),other)];
+ const raw={family:[0,1],representative:0,certainty:'high',
+  reason_code:'same_technical_predicate',
+  representative_quote:rep,
+  equivalence_checks:[{index:1,
+   shared_behavior:'Both statements describe missing Sphinx dictionary table headers'}]};
+ assert.ok(rep.length>220&&rep.length<=450);
+ const v=validateSpecificityFamilies(raw,rows);
+ assert.equal(v.ok,true);
+ assert.equal(v.normalization,'flat_single_family');
+ assert.equal(v.selected.length,1);
+ assert.equal(v.deferred.length,1);
+ assert.equal(validateSpecificityFamilies({family:[0,1],representative:0},rows).ok,false);
+ assert.equal(validateSpecificityFamilies({...raw,representative_quote:'fabricated quote'},rows).ok,false);
+ assert.equal(validateSpecificityFamilies({...raw,family:[0]},rows).ok,false);
+});
+
+
+test('recall-first finite batch applies separate discovery/utility model knobs without novelty calls',()=>fixture(async f=>{
+ const tuning={schema:'issue92-finite-batch-tuning-v1',stages:{
+  discovery:{model:'chat-fast',temperature:0.1,max_tokens:1024,
+   prompt_guidance:'Identify actual source-stated technical constraints.'},
+  utility:{model:'chat-review',reasoning_effort:'low',temperature:0,
+   max_tokens:3072,prompt_guidance:'Accept potentially useful reported defects.'}
+ }};
+ const calls=[],base=model();
+ const mocked=async(cluster,opts)=>{
+  calls.push({model:opts.model,temperature:opts.temperature,
+   reasoningEffort:opts.reasoningEffort,maxTokens:opts.maxTokens,
+   promptMessages:opts.promptMessages});
+  return base(cluster,opts);
+ };
+ const result=await runAdmittedFiniteBatch(recallOpts({...f,curate:mocked,tuning}));
+ assert.equal(result.model_calls,4);
+ assert.equal(result.approved,2);
+ assert.equal(result.persisted,2);
+ assert.equal(calls.length,4);
+ assert.equal(calls.filter(x=>x.model==='chat-fast').length,2);
+ assert.equal(calls.filter(x=>x.model==='chat-review').length,2);
+ for(const x of calls){
+  if(x.model==='chat-fast'){
+   assert.equal(x.maxTokens,1024);
+   assert.equal(x.temperature,0.1);
+   assert.ok(x.promptMessages[0].content.includes('Identify actual source-stated'));
+  }else{
+   assert.equal(x.maxTokens,3072);
+   assert.equal(x.reasoningEffort,'low');
+   assert.ok(x.promptMessages[0].content.includes('Accept potentially useful'));
+  }
+ }
+ const active=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,'_active.json'),'utf8'));
+ const baseDir=path.join(f.root,'issue92-finite-batches-v1',
+  scope.group,active.batch_id);
+ const plan=JSON.parse(await readFile(path.join(baseDir,'plan.json'),'utf8'));
+ assert.match(plan.tuning_sha256,/^[0-9a-f]{64}$/);
+ assert.equal(plan.tuning_sha256,active.tuning_sha256);
+ const {readdir}=await import('node:fs/promises');
+ const intents=(await readdir(path.join(baseDir,'model-calls')))
+   .filter(n=>n.endsWith('.intent.json'));
+ assert.equal(intents.length,4);
+ for(const n of intents){
+  const intent=JSON.parse(await readFile(path.join(baseDir,'model-calls',n),'utf8'));
+  assert.match(intent.request_sha256,/^[0-9a-f]{64}$/);
+ }
+}));
+test('a frozen batch cannot change its stage profile after the first model result',()=>fixture(async f=>{
+ const count={n:0},curate=model({counter:count});
+ const tuning={schema:'issue92-finite-batch-tuning-v1',stages:{
+  utility:{model:'chat-review',reasoning_effort:'medium',max_tokens:2048}
+ }};
+ await assert.rejects(runAdmittedFiniteBatch(recallOpts({...f,curate,tuning,
+  onCheckpoint:stage=>{
+   if(stage==='model_result_frozen'&&count.n===1)
+    throw Error('STOP_AFTER_FIRST_TUNED_RESPONSE');
+  }
+ })),/STOP_AFTER_FIRST_TUNED_RESPONSE/);
+ assert.equal(count.n,1);
+ await assert.rejects(runAdmittedFiniteBatch(recallOpts({...f,curate,
+  tuning:{...tuning,stages:{utility:{
+   ...tuning.stages.utility,reasoning_effort:'high'}}}
+ })),/ISSUE92_BATCH_TUNING_IDENTITY_CHANGED/);
+ assert.equal(count.n,1);
+ const recovered=await runAdmittedFiniteBatch(recallOpts({...f,curate,tuning}));
+ assert.equal(recovered.persisted,2);
+ assert.equal(recovered.model_calls,3);
+ assert.equal(count.n,4);
+}));
+
+
+test('replay-only refuses to infer when even one frozen model-call intent is missing',()=>fixture(async f=>{
+ let calls=0;
+ await assert.rejects(runAdmittedFiniteBatch(recallOpts({...f,replayOnly:true,
+  curate:async()=>{calls++;throw Error('NEVER_CALL_MODEL');}
+ })),/REPLAY_ONLY_MISSING_FROZEN_CALL/);
+ assert.equal(calls,0);
+ assert.equal(f.graphiti.writes.length,0);
+ assert.equal((await f.store.list({limit:20})).total,0);
+}));
+test('replay-only recovers completed model responses with per-stage metrics and no inference',()=>fixture(async f=>{
+ const count={n:0},curate=model({counter:count});
+ await assert.rejects(runAdmittedFiniteBatch(recallOpts({...f,curate,
+  onCheckpoint:s=>{if(s==='plan_frozen')throw Error('STOP_AFTER_FREEZE');}
+ })),/STOP_AFTER_FREEZE/);
+ assert.equal(count.n,4);
+ assert.equal(f.graphiti.writes.length,0);
+ let unexpected=0;
+ const result=await runAdmittedFiniteBatch(recallOpts({...f,replayOnly:true,
+  curate:async()=>{unexpected++;throw Error('UNAUTHORIZED_MODEL_CALL');}
+ }));
+ assert.equal(unexpected,0);
+ assert.equal(result.model_calls,0);
+ assert.equal(result.replay_only,true);
+ assert.equal(result.persisted,2);
+ assert.equal(result.model_metrics.discovery.calls,2);
+ assert.equal(result.model_metrics.utility.calls,2);
+ assert.equal(result.model_metrics.discovery.prompt_tokens,20);
+ assert.equal(result.model_metrics.utility.completion_tokens,30);
+ assert.equal(result.model_metrics.discovery.latency_ms,2);
+ assert.equal(f.graphiti.writes.length,2);
+}));
+
+test('S2 recovers a source-supported technical quote after weak-header utility rejection',()=>fixture(async f=>{
+ const stages=[];
+ const curate=async(_,{promptMessages})=>{
+  const system=promptMessages[0].content,data=JSON.parse(promptMessages[1].content);
+  const recoveryDiscovery=system.includes('SECOND-PASS SOURCE RECOVERY');
+  const recoveryUtility=system.includes('SECOND-PASS UTILITY REVIEW');
+  const discovery=system.includes('SOURCE-FIRST candidate discovery');
+  stages.push(recoveryDiscovery?'recovery-discovery':recoveryUtility?
+   'recovery-utility':discovery?'discovery':'utility');
+  if(discovery){
+   const e=data.evidence[0],start=e.excerpt.indexOf(strong);
+   assert.ok(start>25);
+   return {content:JSON.stringify({reason:'source technical passage',candidates:[{
+    kind:'blocker',source_ref:e.source,start:recoveryDiscovery?start:0,
+    end:recoveryDiscovery?start+strong.length:start-1,temporal_status:'observed'
+   }]})};
+  }
+  return {content:JSON.stringify({decisions:data.candidates.map(x=>({
+   index:x.index,disposition:recoveryUtility?'ACCEPT':'REVIEW',
+   reason_code:recoveryUtility?'source_specific_durable':'not_substantive',
+   ...(recoveryUtility?{utility_class:'useful_negative'}:{})
+  }))})};
+ };
+ const result=await runAdmittedFiniteBatch(recallOpts({...f,curate,sourceRecovery:true}));
+ assert.deepEqual(stages,['discovery','utility','recovery-discovery','recovery-utility']);
+ assert.equal(result.persisted,1);assert.equal(result.approved,1);
+ assert.equal(result.deferred,1);assert.equal(f.graphiti.writes.length,1);
+ const active=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,'_active.json'),'utf8'));
+ assert.equal(active.source_recovery,true);
+ const plan=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,active.batch_id,'plan.json'),'utf8'));
+ assert.equal(plan.cluster_outcomes[0].source_recovery_trigger,'utility_non_substantive');
+ assert.equal(plan.cluster_outcomes[0].source_recovery_attempted,true);
+ assert.equal(plan.calls.length,4);
+ assert.ok(plan.calls.some(x=>x.identity.endsWith(':source-recovery-v1')));
+},['Please investigate this issue and send a progress update. '+strong]));
+
+test('S2 default is unchanged and cannot adopt rescue after a plan is frozen',()=>fixture(async f=>{
+ let calls=0;
+ const curate=async()=>{calls++;return {content:JSON.stringify({
+  reason:'No source candidates',candidates:[]})};};
+ const result=await runAdmittedFiniteBatch(recallOpts({...f,curate}));
+ assert.equal(result.persisted,0);assert.equal(calls,1);
+ const active=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,'_active.json'),'utf8'));
+ assert.equal(active.source_recovery,undefined);
+ await assert.rejects(runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true})),/SOURCE_RECOVERY_IDENTITY_CHANGED/);
+ assert.equal(calls,1);assert.equal(f.graphiti.writes.length,0);
+},[strong]));
+
+test('S2 fabricated source reference in recovery cannot reach Graphiti',()=>fixture(async f=>{
+ const curate=async(_,{promptMessages})=>({content:JSON.stringify(
+  promptMessages[0].content.includes('SECOND-PASS SOURCE RECOVERY')?
+  {reason:'unattributed',candidates:[{kind:'blocker',source_ref:'forged',
+   start:0,end:strong.length,temporal_status:'observed'}]}:
+  {reason:'no initial source candidates',candidates:[]})});
+ const result=await runAdmittedFiniteBatch(recallOpts({...f,curate,sourceRecovery:true}));
+ assert.equal(result.approved,0);assert.equal(result.persisted,0);
+ assert.equal(f.graphiti.writes.length,0);
+},[strong]));
+
+test('S2 ambiguous second-pass model outcome is not replayed',()=>fixture(async f=>{
+ let attempts=0;
+ const curate=async(_,{promptMessages})=>{
+  if(promptMessages[0].content.includes('SECOND-PASS SOURCE RECOVERY')){
+   attempts++;throw Error('network outcome unknown');
+  }
+  return {content:JSON.stringify({reason:'No source candidates',candidates:[]})};
+ };
+ await assert.rejects(runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true})),/MODEL_CALL_OUTCOME_UNKNOWN_NO_REPLAY/);
+ await assert.rejects(runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true})),/MODEL_CALL_AMBIGUOUS_NO_REPLAY/);
+ assert.equal(attempts,1);assert.equal(f.graphiti.writes.length,0);
+},[strong]));
+
+test('S2 unsupported inference is deferred without a recovery retry',()=>fixture(async f=>{
+ let calls=0;
+ const curate=async(_,{promptMessages})=>{
+  calls++;
+  if(promptMessages[0].content.includes('SOURCE-FIRST candidate discovery')){
+   const e=JSON.parse(promptMessages[1].content).evidence[0];
+   return {content:JSON.stringify({reason:'proposed exact quote',candidates:[{
+    kind:'blocker',source_ref:e.source,start:0,end:e.excerpt.length,
+    temporal_status:'observed'}]})};
+  }
+  return {content:JSON.stringify({decisions:[{index:0,disposition:'REVIEW',
+   reason_code:'unsupported_inference'}]})};
+ };
+ const result=await runAdmittedFiniteBatch(recallOpts({...f,curate,sourceRecovery:true}));
+ assert.equal(calls,2);assert.equal(result.persisted,0);
+ assert.equal(f.graphiti.writes.length,0);
+},[strong]));
+
+test('S2 source recovery can recover an authenticated empty first discovery',()=>fixture(async f=>{
+ const stages=[];
+ const curate=async(_,{promptMessages})=>{
+  const system=promptMessages[0].content;
+  const rescue=system.includes('SECOND-PASS SOURCE RECOVERY');
+  const discovery=system.includes('SOURCE-FIRST candidate discovery');
+  stages.push(rescue?'rescue':discovery?'discovery':'utility');
+  if(rescue){
+   const e=JSON.parse(promptMessages[1].content).evidence[0];
+   return {content:JSON.stringify({reason:'specific original source',candidates:[{
+    kind:'blocker',source_ref:e.source,start:0,end:e.excerpt.length,
+    temporal_status:'observed'}]})};
+  }
+  if(discovery)return {content:JSON.stringify({reason:'initial empty',candidates:[]})};
+  return {content:JSON.stringify({decisions:[{index:0,disposition:'ACCEPT',
+   reason_code:'source_specific_durable',utility_class:'useful_negative'}]})};
+ };
+ const out=await runAdmittedFiniteBatch(recallOpts({...f,curate,sourceRecovery:true}));
+ assert.deepEqual(stages,['discovery','rescue','utility']);
+ assert.equal(out.model_calls,3);
+ assert.equal(out.persisted,1);assert.equal(f.graphiti.writes.length,1);
+ const active=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,'_active.json'),'utf8'));
+ const plan=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,active.batch_id,'plan.json'),'utf8'));
+ assert.equal(plan.cluster_outcomes[0].source_recovery_trigger,'discovery_skip');
+},[strong]));
+
+test('S2 conflicting verdict on the same exact quote cannot silently upgrade it',()=>fixture(async f=>{
+ let utility=0;
+ const curate=async(_,{promptMessages})=>{
+  const system=promptMessages[0].content;
+  if(system.includes('SOURCE-FIRST candidate discovery')){
+   const e=JSON.parse(promptMessages[1].content).evidence[0];
+   return {content:JSON.stringify({reason:'exact same quote',candidates:[{
+    kind:'blocker',source_ref:e.source,start:0,end:e.excerpt.length,
+    temporal_status:'observed'}]})};
+  }
+  utility++;
+  return {content:JSON.stringify({decisions:[{index:0,
+   disposition:utility===1?'REVIEW':'ACCEPT',
+   reason_code:utility===1?'not_substantive':'source_specific_durable',
+   ...(utility===1?{}:{utility_class:'useful_negative'})}]})};
+ };
+ const out=await runAdmittedFiniteBatch(recallOpts({...f,curate,sourceRecovery:true}));
+ assert.equal(utility,2);assert.equal(out.model_calls,4);
+ assert.equal(out.approved,0);assert.equal(out.persisted,0);assert.equal(out.deferred,1);
+ assert.equal(f.graphiti.writes.length,0);
+},[strong]));
+
+
+test('S3 retries one invalid discovery once and persists only corrected sourced fact',()=>fixture(async f=>{
+ const stages=[];
+ const curate=async(_,{promptMessages})=>{
+  const system=promptMessages[0].content,data=JSON.parse(promptMessages[1].content);
+  const discovery=system.includes('SOURCE-FIRST candidate discovery');
+  const recovery=system.includes('SECOND-PASS SOURCE RECOVERY');
+  stages.push(discovery?(recovery?'recovery':'first'):'utility');
+  if(discovery){
+   const e=data.evidence[0];
+   if(recovery){
+    assert.deepEqual(data.previous_validation_failures.map(x=>x.reason),
+     ['invalid_fact_fields']);
+    return {content:JSON.stringify({reason:'correct source fields',
+     candidates:[{kind:'blocker',source_ref:e.source,start:0,
+      end:e.excerpt.length,temporal_status:'observed'}]})};
+   }
+   return {content:JSON.stringify({reason:'unsupported kind',
+    candidates:[{kind:'bad_kind',source_ref:e.source,start:0,
+     end:e.excerpt.length,temporal_status:'observed'}]})};
+  }
+  return {content:JSON.stringify({decisions:[{index:0,
+   disposition:'ACCEPT',reason_code:'source_specific_durable',
+   utility_class:'useful_negative'}]})};
+ };
+ const out=await runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true,resilientDiscovery:true}));
+ assert.deepEqual(stages,['first','recovery','utility']);
+ assert.equal(out.model_calls,3);
+ assert.equal(out.approved,1);assert.equal(out.persisted,1);
+ assert.equal(f.graphiti.writes.length,1);
+ const active=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,'_active.json'),'utf8'));
+ assert.equal(active.resilient_discovery,true);
+ const plan=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,active.batch_id,'plan.json'),'utf8'));
+ assert.equal(plan.resilient_discovery,true);
+ assert.equal(plan.cluster_outcomes[0].source_recovery_trigger,'invalid_discovery');
+ assert.equal(plan.cluster_outcomes[0].source_validation_failures[0].candidates[0]
+  .diagnostic_field,'kind');
+},[strong]));
+
+test('S3 independently validates mixed discovery and preserves two distinct facts',()=>fixture(async f=>{
+ const combined=strong+' '+different;
+ let discoveries=0,utilities=0;
+ const curate=async(_,{promptMessages})=>{
+  const system=promptMessages[0].content,data=JSON.parse(promptMessages[1].content);
+  if(system.includes('SOURCE-FIRST candidate discovery')){
+   discoveries++;
+   const e=data.evidence[0],split=strong.length+1;
+   if(discoveries===1)return {content:JSON.stringify({reason:'mixed source',
+    candidates:[
+     {kind:'blocker',source_ref:e.source,start:0,end:strong.length,temporal_status:'observed'},
+     {kind:'invalid_kind',source_ref:e.source,start:split,end:e.excerpt.length,temporal_status:'observed'}
+    ]})};
+   assert.deepEqual(data.previous_validation_failures.map(x=>x.reason),
+    ['invalid_fact_fields']);
+   return {content:JSON.stringify({reason:'correct sibling',
+    candidates:[{kind:'blocker',source_ref:e.source,start:split,
+     end:e.excerpt.length,temporal_status:'observed'}]})};
+  }
+  utilities++;
+  return {content:JSON.stringify({decisions:data.candidates.map(x=>({
+   index:x.index,disposition:'ACCEPT',reason_code:'source_specific_durable',
+   utility_class:'useful_negative'}))})};
+ };
+ const out=await runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true,resilientDiscovery:true}));
+ assert.equal(discoveries,2);assert.equal(utilities,2);
+ assert.equal(out.model_calls,4);
+ assert.equal(out.approved,2);assert.equal(out.persisted,2);
+ assert.equal(f.graphiti.writes.length,2);
+ const active=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,'_active.json'),'utf8'));
+ const plan=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,active.batch_id,'plan.json'),'utf8'));
+ assert.equal(plan.cluster_outcomes[0].source_recovery_trigger,'partial_invalid_discovery');
+ assert.equal(plan.cluster_outcomes[0].source_validation_failures[0].valid_candidate_count,1);
+},[strong+' '+different]));
+
+test('S3 does not retry a forged source reference',()=>fixture(async f=>{
+ let calls=0;
+ const curate=async()=>{calls++;return {content:JSON.stringify({
+  reason:'invented source',candidates:[{kind:'blocker',
+   source_ref:'opencode:forged',start:0,end:strong.length,
+   temporal_status:'observed'}]})};};
+ const out=await runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true,resilientDiscovery:true}));
+ assert.equal(calls,1);assert.equal(out.approved,0);
+ assert.equal(out.persisted,0);assert.equal(f.graphiti.writes.length,0);
+},[strong]));
+
+test('S3 opt-in cannot change existing S2 active identity',()=>fixture(async f=>{
+ let calls=0;
+ const curate=async()=>{calls++;return {content:JSON.stringify({
+  reason:'No source quote',candidates:[]})};};
+ await runAdmittedFiniteBatch(recallOpts({...f,curate,sourceRecovery:true}));
+ const before=calls;
+ await assert.rejects(runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true,resilientDiscovery:true})),
+  /RESILIENT_DISCOVERY_IDENTITY_CHANGED/);
+ assert.equal(calls,before);assert.equal(f.graphiti.writes.length,0);
+},[strong]));
+
+test('S3 ambiguous correction request is not retried after frozen intent',()=>fixture(async f=>{
+ let calls=0;
+ const curate=async(_,{promptMessages})=>{
+  calls++;
+  const system=promptMessages[0].content;
+  if(system.includes('SECOND-PASS SOURCE RECOVERY'))
+   throw Error('unresolved model response');
+  const e=JSON.parse(promptMessages[1].content).evidence[0];
+  return {content:JSON.stringify({reason:'invalid kind',
+   candidates:[{kind:'unsupported_kind',source_ref:e.source,
+    start:0,end:e.excerpt.length,temporal_status:'observed'}]})};
+ };
+ await assert.rejects(runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true,resilientDiscovery:true})),
+  /MODEL_CALL_OUTCOME_UNKNOWN_NO_REPLAY/);
+ await assert.rejects(runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true,resilientDiscovery:true})),
+  /MODEL_CALL_AMBIGUOUS_NO_REPLAY/);
+ assert.equal(calls,2);assert.equal(f.graphiti.writes.length,0);
+},[strong]));
+
+test('S3 partial recovery cannot reverse a rejected identical source quote',()=>fixture(async f=>{
+ const body=strong+' '+different;
+ let discoveries=0,utilities=0;
+ const curate=async(_,{promptMessages})=>{
+  const sys=promptMessages[0].content,data=JSON.parse(promptMessages[1].content);
+  if(sys.includes('SOURCE-FIRST candidate discovery')){
+   discoveries++;
+   const e=data.evidence[0];
+   if(discoveries===1)return {content:JSON.stringify({reason:'mixed',
+    candidates:[
+     {kind:'blocker',source_ref:e.source,start:0,end:strong.length,temporal_status:'observed'},
+     {kind:'bad_kind',source_ref:e.source,start:strong.length+1,end:e.excerpt.length,
+      temporal_status:'observed'}
+    ]})};
+   assert.equal(data.previously_reviewed_spans.length,1);
+   return {content:JSON.stringify({reason:'same quote',
+    candidates:[{kind:'blocker',source_ref:e.source,start:0,end:strong.length,
+     temporal_status:'observed'}]})};
+  }
+  utilities++;
+  return {content:JSON.stringify({decisions:[{index:0,
+   disposition:utilities===1?'REVIEW':'ACCEPT',
+   reason_code:utilities===1?'not_substantive':'source_specific_durable',
+   ...(utilities===1?{}:{utility_class:'useful_negative'})}]})};
+ };
+ const out=await runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true,resilientDiscovery:true}));
+ assert.equal(discoveries,2);assert.equal(utilities,2);
+ assert.equal(out.model_calls,4);assert.equal(out.approved,0);
+ assert.equal(out.persisted,0);assert.equal(out.deferred,1);
+ assert.equal(f.graphiti.writes.length,0);
+},[strong+' '+different]));
+
+
+test('S4 three-stage claim critic and utility persist ONLY the exact original quote',()=>fixture(async f=>{
+ const calls={discovery:0,support:0,utility:0};
+ const normalized='Sphinx reStructuredText output omits dictionary parameter header rows in rendered API documentation.';
+ const curate=async(_,{promptMessages})=>{
+  const sys=promptMessages[0].content,data=JSON.parse(promptMessages[1].content);
+  if(sys.includes('CLAIM/EVIDENCE SEPARATION')){
+   calls.discovery++;
+   const e=data.evidence[0];
+   return {content:JSON.stringify({reason:'specific source finding',
+    candidates:[{kind:'blocker',temporal_status:'observed',source_ref:e.source,
+     start:0,end:e.excerpt.length,normalized_claim:normalized}]})};
+  }
+  if(sys.includes('independent SOURCE-SUPPORT critic')){
+   calls.support++;
+   assert.equal(data.candidates[0].normalized_claim,normalized);
+   return {content:JSON.stringify({decisions:[{index:0,
+    disposition:'SUPPORTED',reason_code:'supported_as_reported',
+    supporting_phrase:data.candidates[0].exact_evidence_quote}]})};
+  }
+  if(sys.includes('CLAIM-LED UTILITY')){
+   calls.utility++;
+   assert.equal(data.candidates[0].source_supported_claim,normalized);
+   return {content:JSON.stringify({decisions:[{index:0,
+    disposition:'ACCEPT',reason_code:'source_specific_durable',
+    utility_class:'useful_negative'}]})};
+  }
+  throw Error('UNEXPECTED_MODEL_STAGE');
+ };
+ const out=await runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true,resilientDiscovery:true,claimEvidence:true}));
+ assert.deepEqual(calls,{discovery:1,support:1,utility:1});
+ assert.equal(out.persisted,1);assert.equal(out.approved,1);
+ assert.equal(f.graphiti.writes.length,1);
+ assert.ok(f.graphiti.writes[0].episode_body.includes(strong));
+ assert.equal(f.graphiti.writes[0].episode_body.includes(normalized),false);
+ const active=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,'_active.json'),'utf8'));
+ assert.equal(active.claim_evidence,true);
+ const plan=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,active.batch_id,'plan.json'),'utf8'));
+ assert.equal(plan.claim_evidence,true);
+ assert.deepEqual(plan.calls.map(x=>x.stage).sort(),['discovery','support','utility']);
+ assert.equal(plan.cluster_outcomes[0].claim_support_outcomes[0].supported.length,1);
+},[strong]));
+
+test('S4 low-overlap unsupported claim reaches support but never utility/Graphiti',()=>fixture(async f=>{
+ let discovery=0,support=0,utility=0;
+ const curate=async(_,{promptMessages})=>{
+  const sys=promptMessages[0].content,data=JSON.parse(promptMessages[1].content);
+  if(sys.includes('CLAIM/EVIDENCE SEPARATION')){
+   discovery++;const e=data.evidence[0];
+   return {content:JSON.stringify({reason:'source',candidates:[{
+    kind:'blocker',source_ref:e.source,start:0,end:e.excerpt.length,
+    temporal_status:'observed',normalized_claim:'Graphiti implements caching.'}]})};
+  }
+  if(sys.includes('independent SOURCE-SUPPORT critic')){
+   support++;
+   assert.equal(data.candidates[0].normalized_claim,'Graphiti implements caching.');
+   return {content:JSON.stringify({decisions:[{
+    index:0,disposition:'REVIEW',reason_code:'unsupported_inference'}]})};
+  }
+  utility++;throw Error('UTILITY_NOT_AUTHORIZED');
+ };
+ const out=await runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true,resilientDiscovery:true,claimEvidence:true}));
+ assert.equal(discovery,1);assert.equal(support,1);assert.equal(utility,0);
+ assert.equal(out.persisted,0);assert.equal(f.graphiti.writes.length,0);
+ const active=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,'_active.json'),'utf8'));
+ const plan=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,active.batch_id,'plan.json'),'utf8'));
+ const outcomes=plan.cluster_outcomes[0].claim_support_outcomes;
+ assert.equal(outcomes.length,1);
+ assert.equal(outcomes[0].claim_diagnostics[0].source_vocabulary_overlap,0);
+},[strong]));
+
+test('S4 opt-in identity cannot retrofit frozen S3 state',()=>fixture(async f=>{
+ let calls=0;
+ const curate=async()=>{calls++;return {content:JSON.stringify({
+  reason:'empty',candidates:[]})};};
+ await runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true,resilientDiscovery:true}));
+ const before=calls;
+ await assert.rejects(runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true,resilientDiscovery:true,claimEvidence:true})),
+  /CLAIM_EVIDENCE_IDENTITY_CHANGED/);
+ assert.equal(calls,before);assert.equal(f.graphiti.writes.length,0);
+},[strong]));
+
+test('S4 unknown support-call result is never replayed',()=>fixture(async f=>{
+ let discovery=0,support=0;
+ const curate=async(_,{promptMessages})=>{
+  const sys=promptMessages[0].content;
+  if(sys.includes('CLAIM/EVIDENCE SEPARATION')){
+   discovery++;const e=JSON.parse(promptMessages[1].content).evidence[0];
+   return {content:JSON.stringify({reason:'source',candidates:[{
+    kind:'blocker',source_ref:e.source,start:0,end:e.excerpt.length,
+    temporal_status:'observed',normalized_claim:strong}]})};
+  }
+  if(sys.includes('independent SOURCE-SUPPORT critic')){
+   support++;throw Error('transport ambiguous');
+  }
+  throw Error('ILLEGAL_UTILITY');
+ };
+ await assert.rejects(runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true,resilientDiscovery:true,claimEvidence:true})),
+  /MODEL_CALL_OUTCOME_UNKNOWN_NO_REPLAY/);
+ await assert.rejects(runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true,resilientDiscovery:true,claimEvidence:true})),
+  /MODEL_CALL_AMBIGUOUS_NO_REPLAY/);
+ assert.equal(discovery,1);assert.equal(support,1);
+ assert.equal(f.graphiti.writes.length,0);
+},[strong]));
+
+test('S4 direct real-client call cannot use ambient admitted marker without flock',async()=>{
+ const prev=process.env.GHDEV_MEMORY_POST_EXIT_LEASE;
+ const fd=process.env.GHDEV_MEMORY_POST_EXIT_LOCK_FD;
+ try{
+  process.env.GHDEV_MEMORY_POST_EXIT_LEASE='admitted';
+  delete process.env.GHDEV_MEMORY_POST_EXIT_LOCK_FD;
+  let modelInvocations=0;
+  await assert.rejects(runAdmittedFiniteBatch({
+   root:'/tmp/issue92-no-side-effects',group:scope.group,
+   modelEndpoint:'http://127.0.0.1:8002/v1/chat/completions',
+   modelId:'chat-fast',claimEvidence:true,
+   resilientDiscovery:true,sourceRecovery:true,
+   curate:async()=>{modelInvocations++;throw Error('unexpected model');}
+  }),/EX_KERNEL_ADMISSION_REQUIRED:missing_lock_fd/);
+  assert.equal(modelInvocations,0);
+ }finally{
+  if(prev===undefined)delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;
+  else process.env.GHDEV_MEMORY_POST_EXIT_LEASE=prev;
+  if(fd===undefined)delete process.env.GHDEV_MEMORY_POST_EXIT_LOCK_FD;
+  else process.env.GHDEV_MEMORY_POST_EXIT_LOCK_FD=fd;
+ }
+});
+
+test('S6 exact complement rescues a source-stated fact without any normalized claim',()=>fixture(async f=>{
+ const counts={claim:0,complement:0,utility:0};
+ const curate=async(_,{promptMessages})=>{
+  const sys=promptMessages[0].content,data=JSON.parse(promptMessages[1].content);
+  if(sys.includes('SOURCE-EXACT COMPLEMENT UTILITY')){
+   counts.utility++;
+   assert.equal(data.candidates.length,1);
+   assert.equal(data.candidates[0].assertion,strong);
+   return {content:JSON.stringify({decisions:[{index:0,disposition:'ACCEPT',
+    reason_code:'source_specific_durable',utility_class:'useful_negative'}]})};
+  }
+  if(sys.includes('SOURCE-EXACT COMPLEMENT')){
+   counts.complement++;
+   const e=data.evidence[0];
+   return {content:JSON.stringify({reason:'independent source exact defect',
+    candidates:[{source_ref:e.source,start:0,end:e.excerpt.length,
+     kind:'blocker',temporal_status:'observed'}]})};
+  }
+  if(sys.includes('CLAIM/EVIDENCE SEPARATION')){
+   counts.claim++;return {content:JSON.stringify({reason:'none',
+    candidates:[]})};
+  }
+  throw Error('UNEXPECTED_MODEL_STAGE');
+ };
+ const result=await runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true,resilientDiscovery:true,claimEvidence:true,
+  sourceExactComplement:true}));
+ assert.deepEqual(counts,{claim:2,complement:1,utility:1});
+ assert.equal(result.persisted,1);assert.equal(result.approved,1);
+ assert.equal(f.graphiti.writes.length,1);
+ assert.ok(f.graphiti.writes[0].episode_body.includes(strong));
+ const active=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,'_active.json'),'utf8'));
+ assert.equal(active.source_exact_complement,true);
+ const plan=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,active.batch_id,'plan.json'),'utf8'));
+ assert.equal(plan.source_exact_complement,true);
+ assert.equal(plan.cluster_outcomes[0].source_exact_complement_outcome.approved,1);
+ assert.deepEqual(plan.calls.map(c=>c.stage).sort(),
+  ['discovery','discovery','discovery','utility']);
+},[strong]));
+
+test('S6 exact complement cannot promote forged source reference or call utility',()=>fixture(async f=>{
+ let complementCalls=0,utility=0;
+ const curate=async(_,{promptMessages})=>{
+  const sys=promptMessages[0].content;
+  if(sys.includes('SOURCE-EXACT COMPLEMENT UTILITY')){
+   utility++;throw Error('UTILITY_FORGED_QUOTE');
+  }
+  if(sys.includes('SOURCE-EXACT COMPLEMENT')){
+   complementCalls++;
+   return {content:JSON.stringify({reason:'forged',candidates:[{
+    source_ref:'opencode:forged',start:0,end:strong.length,
+    kind:'blocker',temporal_status:'observed'}]})};
+  }
+  if(sys.includes('CLAIM/EVIDENCE SEPARATION'))
+   return {content:JSON.stringify({reason:'none',candidates:[]})};
+  throw Error('UNEXPECTED_MODEL_STAGE');
+ };
+ const result=await runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true,resilientDiscovery:true,claimEvidence:true,
+  sourceExactComplement:true}));
+ assert.equal(complementCalls,1);assert.equal(utility,0);
+ assert.equal(result.persisted,0);assert.equal(f.graphiti.writes.length,0);
+},[strong]));
+
+test('S6 cannot retrofit complement into frozen S5 claim batch',()=>fixture(async f=>{
+ let calls=0;
+ const curate=async()=>{calls++;return {content:JSON.stringify({
+  reason:'no claim',candidates:[]})};};
+ await runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true,resilientDiscovery:true,claimEvidence:true}));
+ const before=calls;
+ await assert.rejects(runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true,resilientDiscovery:true,claimEvidence:true,
+  sourceExactComplement:true})),/SOURCE_EXACT_COMPLEMENT_IDENTITY_CHANGED/);
+ assert.equal(calls,before);
+ assert.equal(f.graphiti.writes.length,0);
+},[strong]));
+
+test('S6 never promotes a rejected normalized claim through a different exact quote',()=>fixture(async f=>{
+ const badClaim='Graphiti provides persistent cached episode graph results.';
+ const subquote=strong.slice(0,strong.indexOf(', causing'));
+ let support=0,complement=0,utility=0;
+ const curate=async(_,{promptMessages})=>{
+  const system=promptMessages[0].content;
+  const data=JSON.parse(promptMessages[1].content);
+  if(system.includes('SOURCE-EXACT COMPLEMENT UTILITY')){
+   utility++;
+   assert.equal(data.candidates[0].assertion,subquote);
+   return {content:JSON.stringify({decisions:[{index:0,
+    disposition:'ACCEPT',reason_code:'source_specific_durable',
+    utility_class:'useful_negative'}]})};
+  }
+  if(system.includes('SOURCE-EXACT COMPLEMENT')){
+   complement++;
+   assert.ok(data.previously_reviewed_spans.length>=1);
+   const e=data.evidence[0];
+   return {content:JSON.stringify({reason:'different precise source quote',
+    candidates:[{source_ref:e.source,start:0,end:subquote.length,
+     kind:'blocker',temporal_status:'observed'}]})};
+  }
+  if(system.includes('independent SOURCE-SUPPORT critic')){
+   support++;assert.equal(data.candidates[0].normalized_claim,badClaim);
+   return {content:JSON.stringify({decisions:[{index:0,
+    disposition:'REVIEW',reason_code:'unsupported_inference'}]})};
+  }
+  if(system.includes('CLAIM/EVIDENCE SEPARATION')){
+   const e=data.evidence[0];
+   return {content:JSON.stringify({reason:'unsupported paraphrase',
+    candidates:[{source_ref:e.source,start:0,end:e.excerpt.length,
+     kind:'blocker',temporal_status:'observed',normalized_claim:badClaim}]})};
+  }
+  throw Error('UNEXPECTED_STAGE');
+ };
+ const result=await runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true,resilientDiscovery:true,claimEvidence:true,
+  sourceExactComplement:true}));
+ assert.equal(result.persisted,1);
+ assert.deepEqual([support,complement,utility],[1,1,1]);
+ assert.equal(f.graphiti.writes.length,1);
+ assert.ok(f.graphiti.writes[0].episode_body.includes(subquote));
+ assert.equal(f.graphiti.writes[0].episode_body.includes(badClaim),false);
+ const records=(await f.store.list({limit:10})).items;
+ assert.equal(records.filter(r=>r.state==='persisted').length,1);
+ assert.equal(records.filter(r=>r.state==='deferred').length,1);
+},[strong]));
+
+test('Issue92 balanced opt-in suppresses only source-quoted duplicates',()=>fixture(async f=>{
+ const out=await runAdmittedFiniteBatch(recallOpts({...f,balancedDedup:true,
+  curate:model()}));
+ assert.equal(out.persisted,1);assert.equal(out.deferred,1);
+ assert.equal(f.graphiti.writes.length,1);
+ const active=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,'_active.json'),'utf8'));
+ assert.equal(active.balanced_dedup,true);
+ const plan=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,active.batch_id,'plan.json'),'utf8'));
+ assert.equal(plan.families[0].refinements[0].status,'source_quoted_review');
+},[strong,weak]));
+
+test('Issue92 balanced opt-in retains uncertain source facts',()=>fixture(async f=>{
+ const out=await runAdmittedFiniteBatch(recallOpts({...f,balancedDedup:true,
+  curate:model({uncertain:true})}));
+ assert.equal(out.persisted,2);assert.equal(out.deferred,0);
+},[strong,weak]));
+
+test('Issue92 balanced opt-in retains sourced facts after invalid arbitration',()=>fixture(async f=>{
+ const out=await runAdmittedFiniteBatch(recallOpts({...f,balancedDedup:true,
+  curate:model({invalid:true})}));
+ assert.equal(out.persisted,2);assert.equal(out.deferred,0);
+},[strong,weak]));
+
+test('Issue92 balanced opt-in retains sourced facts after invalid quote review',()=>fixture(async f=>{
+ const out=await runAdmittedFiniteBatch(recallOpts({...f,balancedDedup:true,
+  curate:model({specificity:'invalid'})}));
+ assert.equal(out.persisted,2);assert.equal(out.deferred,0);
+},[strong,weak]));
+
+test('Issue92 balanced opt-in cannot retrofit frozen recall batches',()=>fixture(async f=>{
+ const curate=model({distinct:true});
+ await runAdmittedFiniteBatch(recallOpts({...f,curate}));
+ await assert.rejects(runAdmittedFiniteBatch(recallOpts({...f,curate,
+  balancedDedup:true})),/BALANCED_DEDUP_IDENTITY_CHANGED/);
+},[strong,different]));
+
+test('source-quote salvage retains independently useful exact quote after rejecting normalized inference',()=>fixture(async f=>{
+ const unsupported='Graphiti automatically fixes every broken documentation renderer.';
+ const calls={support:0,salvage:0,complement:0};
+ const curate=async(_,{promptMessages})=>{
+  const sys=promptMessages[0].content;
+  const data=JSON.parse(promptMessages[1].content);
+  if(sys.includes('SOURCE-EXACT COMPLEMENT UTILITY')){
+   calls.salvage++;
+   assert.equal(data.candidates.length,1);
+   assert.equal(data.candidates[0].assertion,strong);
+   assert.equal(JSON.stringify(data).includes(unsupported),false);
+   return {content:JSON.stringify({decisions:[{index:0,disposition:'ACCEPT',
+    reason_code:'source_specific_durable',utility_class:'useful_negative',atomicity:{independent_predicates:1,rationale:'This entire quotation expresses one specific technical condition'}}]})};
+  }
+  if(sys.includes('SOURCE-EXACT COMPLEMENT')){
+   calls.complement++;
+   return {content:JSON.stringify({reason:'No other source predicates',candidates:[]})};
+  }
+  if(sys.includes('independent SOURCE-SUPPORT critic')){
+   calls.support++;
+   assert.equal(data.candidates[0].normalized_claim,unsupported);
+   return {content:JSON.stringify({decisions:[{index:0,disposition:'REVIEW',
+    reason_code:'missing_predicate'}]})};
+  }
+  if(sys.includes('CLAIM/EVIDENCE SEPARATION')){
+   if(sys.includes('ONE bounded second pass'))
+    return {content:JSON.stringify({reason:'none beyond original',candidates:[]})};
+   const src=data.evidence[0];
+   return {content:JSON.stringify({reason:'unsupported paraphrase from good quote',
+    candidates:[{source_ref:src.source,start:0,end:src.excerpt.length,
+     kind:'blocker',temporal_status:'observed',normalized_claim:unsupported}]})};
+  }
+  throw Error('UNEXPECTED_CALL');
+ };
+ const result=await runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true,resilientDiscovery:true,claimEvidence:true,
+  sourceExactComplement:true,sourceQuoteSalvage:true}));
+ assert.deepEqual(calls,{support:1,salvage:1,complement:1});
+ assert.equal(result.persisted,1);
+ assert.equal(f.graphiti.writes.length,1);
+ assert.ok(f.graphiti.writes[0].episode_body.includes(strong));
+ assert.equal(f.graphiti.writes[0].episode_body.includes(unsupported),false);
+ const active=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,'_active.json'),'utf8'));
+ assert.equal(active.source_quote_salvage,true);
+ const plan=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,active.batch_id,'plan.json'),'utf8'));
+ assert.equal(plan.source_quote_salvage,true);
+ assert.equal(plan.atomicity_structural_v1,true);
+ assert.equal(plan.cluster_outcomes[0].source_quote_salvage_outcome.approved,1);
+ assert.equal(plan.items.filter(x=>x.utility_class).length,1);
+},[strong]));
+
+test('source-quote salvage never overrides independent exact quote utility REJECT',()=>fixture(async f=>{
+ let utility=0;
+ const curate=async(_,{promptMessages})=>{
+  const sys=promptMessages[0].content,data=JSON.parse(promptMessages[1].content);
+  if(sys.includes('SOURCE-EXACT COMPLEMENT UTILITY')){
+   utility++;
+   return {content:JSON.stringify({decisions:[{index:0,
+    disposition:'REVIEW',reason_code:'not_substantive'}]})};
+  }
+  if(sys.includes('SOURCE-EXACT COMPLEMENT'))
+   return {content:JSON.stringify({reason:'no other quote',candidates:[]})};
+  if(sys.includes('independent SOURCE-SUPPORT critic'))
+   return {content:JSON.stringify({decisions:[{index:0,
+    disposition:'REVIEW',reason_code:'unsupported_inference'}]})};
+  if(sys.includes('CLAIM/EVIDENCE SEPARATION')){
+   if(sys.includes('ONE bounded second pass'))
+    return {content:JSON.stringify({reason:'none',candidates:[]})};
+   const e=data.evidence[0];
+   return {content:JSON.stringify({reason:'claim unsupported',candidates:[{
+    source_ref:e.source,start:0,end:e.excerpt.length,
+    kind:'blocker',temporal_status:'observed',
+    normalized_claim:'Graphiti has magically fixed every incorrect output.'}]})};
+  }
+  throw Error('UNEXPECTED_STAGE');
+ };
+ const out=await runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true,resilientDiscovery:true,claimEvidence:true,
+  sourceExactComplement:true,sourceQuoteSalvage:true}));
+ assert.equal(utility,1);
+ assert.equal(out.persisted,0);assert.equal(f.graphiti.writes.length,0);
+},[strong]));
+
+test('source-quote salvage cannot be retrofitted into an older frozen batch',()=>fixture(async f=>{
+ let calls=0;
+ const curate=async()=>{calls++;return {content:JSON.stringify({
+  reason:'No source candidate',candidates:[]})};};
+ await runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true,resilientDiscovery:true,claimEvidence:true,
+  sourceExactComplement:true}));
+ const before=calls;
+ await assert.rejects(runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true,resilientDiscovery:true,claimEvidence:true,
+  sourceExactComplement:true,sourceQuoteSalvage:true})),
+  /SOURCE_QUOTE_SALVAGE_IDENTITY_CHANGED/);
+ assert.equal(calls,before);assert.equal(f.graphiti.writes.length,0);
+},[strong]));
+
+test('source-quote salvage requires an already admitted source-exact complement mode',()=>fixture(async f=>{
+ let calls=0;
+ await assert.rejects(runAdmittedFiniteBatch(recallOpts({...f,
+  sourceQuoteSalvage:true,curate:async()=>{calls++;throw Error('INVALID_CALL');}})),
+  /INVALID_BOUNDS/);
+ assert.equal(calls,0);assert.equal(f.graphiti.writes.length,0);
+},[strong]));
+
+test('invalid claim-support response still allows independent utility of exact config source',()=>{
+ const config='i had to uncomment LITELLM_MASTER_KEY for litellm to be able to start';
+ return fixture(async f=>{
+ let support=0,utility=0;
+ const curate=async(_,{promptMessages})=>{
+  const system=promptMessages[0].content,data=JSON.parse(promptMessages[1].content);
+  if(system.includes('SOURCE-EXACT COMPLEMENT UTILITY')){
+   utility++;
+   assert.equal(data.candidates.length,1);
+   assert.equal(data.candidates[0].assertion,config);
+   return {content:JSON.stringify({decisions:[{index:0,disposition:'ACCEPT',
+    reason_code:'source_specific_durable',utility_class:'reusable_procedure',atomicity:{independent_predicates:1,rationale:'This entire quotation expresses one specific technical condition'}}]})};
+  }
+  if(system.includes('SOURCE-EXACT COMPLEMENT'))
+   return {content:JSON.stringify({reason:'No other distinct source facts',candidates:[]})};
+  if(system.includes('independent SOURCE-SUPPORT critic')){
+   support++;return {content:'{"invalid_support_verdict":true}'};
+  }
+  if(system.includes('CLAIM/EVIDENCE SEPARATION')){
+   const e=data.evidence[0];
+   return {content:JSON.stringify({reason:'Original source reports startup dependency',
+    candidates:[{source_ref:e.source,start:0,end:e.excerpt.length,
+     kind:'dependency',temporal_status:'observed',normalized_claim:config}]})};
+  }
+  throw Error('UNEXPECTED_STAGE');
+ };
+ const result=await runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true,resilientDiscovery:true,claimEvidence:true,
+  sourceExactComplement:true,sourceQuoteSalvage:true}));
+ assert.equal(result.persisted,1);
+ assert.equal(f.graphiti.writes.length,1);
+ assert.deepEqual({support,utility},{support:1,utility:1});
+ assert.match(f.graphiti.writes[0].episode_body,/LITELLM_MASTER_KEY/);
+ const active=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,'_active.json'),'utf8'));
+ const plan=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,active.batch_id,'plan.json'),'utf8'));
+ assert.equal(plan.cluster_outcomes[0].source_quote_salvage_outcome.approved,1);
+ assert.equal(plan.cluster_outcomes[0].source_only_outcome,null);
+},[config]);
+});
+
+test('dense command text with zero discovery candidates receives bounded exact-source utility',()=>{
+ const command='opencode.db was recently pruned using sqlite3 DELETE FROM session '+
+  'WHERE time_archived IS NOT NULL OR time_updated < seven_days; '+
+  'DELETE FROM message WHERE session_id NOT IN (SELECT id FROM session); '+
+  'DELETE FROM part WHERE session_id NOT IN (SELECT id FROM session); '+
+  'DELETE FROM event WHERE aggregate_id NOT IN (SELECT id FROM session); '+
+  'VACUUM; '+('Repeat details of the durable sqlite maintenance procedure. '.repeat(4));
+ assert.ok(command.length>450);
+ return fixture(async f=>{
+ let utility=0;
+ const curate=async(_,{promptMessages})=>{
+  const system=promptMessages[0].content,data=JSON.parse(promptMessages[1].content);
+  if(system.includes('SOURCE-EXACT COMPLEMENT UTILITY')){
+   utility++;
+   assert.equal(data.candidates.length,1);
+   assert.ok(data.candidates[0].assertion.length<=450);
+   assert.match(data.candidates[0].assertion,/opencode.db was recently pruned/);
+   assert.match(data.candidates[0].assertion,/DELETE FROM session/);
+   return {content:JSON.stringify({decisions:[{index:0,disposition:'ACCEPT',
+    reason_code:'source_specific_durable',utility_class:'reusable_procedure',atomicity:{independent_predicates:1,rationale:'This entire quotation expresses one specific technical condition'}}]})};
+  }
+  if(system.includes('CLAIM/EVIDENCE SEPARATION')||
+     system.includes('SOURCE-EXACT COMPLEMENT'))
+   return {content:JSON.stringify({reason:'No extracted model claim',candidates:[]})};
+  throw Error('UNEXPECTED_STAGE');
+ };
+ const result=await runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true,resilientDiscovery:true,claimEvidence:true,
+  sourceExactComplement:true,sourceQuoteSalvage:true}));
+ assert.equal(result.persisted,1);
+ assert.equal(utility,1);
+ assert.equal(f.graphiti.writes.length,1);
+ assert.match(f.graphiti.writes[0].episode_body,/DELETE FROM session/);
+ const active=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,'_active.json'),'utf8'));
+ const plan=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,active.batch_id,'plan.json'),'utf8'));
+ assert.equal(plan.cluster_outcomes[0].source_only_outcome.approved,1);
+},[command]);
+});
+
+test('original-source fallback retains operator chatter in review, not Graphiti',()=>{
+ const status='The post-exit run appears complete; please provide the status summary.';
+ return fixture(async f=>{
+ let utility=0;
+ const curate=async(_,{promptMessages})=>{
+  const system=promptMessages[0].content;
+  if(system.includes('SOURCE-EXACT COMPLEMENT UTILITY')){
+   utility++;
+   return {content:JSON.stringify({decisions:[{index:0,disposition:'REVIEW',
+    reason_code:'not_substantive'}]})};
+  }
+  if(system.includes('CLAIM/EVIDENCE SEPARATION')||
+     system.includes('SOURCE-EXACT COMPLEMENT'))
+   return {content:JSON.stringify({reason:'No durable technical predicate',
+    candidates:[]})};
+  throw Error('UNEXPECTED_STAGE');
+ };
+ const result=await runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true,resilientDiscovery:true,claimEvidence:true,
+  sourceExactComplement:true,sourceQuoteSalvage:true}));
+ assert.equal(result.persisted,0);
+ assert.equal(f.graphiti.writes.length,0);
+ assert.equal(utility,1);
+ const active=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,'_active.json'),'utf8'));
+ const plan=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,active.batch_id,'plan.json'),'utf8'));
+ assert.equal(plan.cluster_outcomes[0].source_only_outcome.approved,0);
+},[status]);
+});
+
+test('final source-quote salvage defers a multi-predicate assertion despite model ACCEPT',()=>{
+ const mixed='Tdarr server and node use version three, and consult Context7 and Firecrawl when researching external API changes.';
+ return fixture(async f=>{
+  let calls=0;
+  const curate=async(_,{promptMessages})=>{
+   const system=promptMessages[0].content;
+   const payload=JSON.parse(promptMessages[1].content);
+   if(system.includes('SOURCE-EXACT COMPLEMENT UTILITY')){
+    calls++;
+    assert.match(system,/ATOMICITY/);
+    assert.equal(payload.candidates[0].assertion,mixed);
+    return {content:JSON.stringify({decisions:[{index:0,
+     disposition:'ACCEPT',reason_code:'source_specific_durable',
+     utility_class:'reusable_procedure',
+     atomicity:{independent_predicates:1,
+      rationale:'The source looks like one unified deployment and research convention'}}]})};
+   }
+   if(system.includes('CLAIM/EVIDENCE SEPARATION')||
+      system.includes('SOURCE-EXACT COMPLEMENT'))
+    return {content:JSON.stringify({reason:'No normalized claim',candidates:[]})};
+   throw Error('UNEXPECTED_ATOMICITY_STAGE');
+  };
+  const result=await runAdmittedFiniteBatch(recallOpts({...f,curate,
+   sourceRecovery:true,resilientDiscovery:true,claimEvidence:true,
+   sourceExactComplement:true,sourceQuoteSalvage:true}));
+  assert.equal(calls,1);
+  assert.equal(result.persisted,0);
+  assert.equal(f.graphiti.writes.length,0);
+  const active=JSON.parse(await readFile(path.join(f.root,
+   'issue92-finite-batches-v1',scope.group,'_active.json'),'utf8'));
+  assert.equal(active.atomicity_review_v1,true);
+  const plan=JSON.parse(await readFile(path.join(f.root,
+   'issue92-finite-batches-v1',scope.group,active.batch_id,'plan.json'),'utf8'));
+  assert.equal(plan.atomicity_review_v1,true);
+  assert.equal(active.atomicity_structural_v1,true);
+  assert.equal(plan.atomicity_structural_v1,true);
+  assert.ok(plan.items.some(x=>x.reason.includes('source_structural_independent_clause_boundary')));
+ },[mixed]);
+});
+test('missing atomicity attestation cannot write a Graphiti episode',()=>{
+ const sourceText='The compatibility constraint requires that stale writes be rejected by the revision gate.';
+ return fixture(async f=>{
+  const curate=async(_,{promptMessages})=>{
+   const system=promptMessages[0].content;
+   if(system.includes('SOURCE-EXACT COMPLEMENT UTILITY'))
+    return {content:JSON.stringify({decisions:[{index:0,
+     disposition:'ACCEPT',reason_code:'source_specific_durable',
+     utility_class:'stable_architecture'}]})};
+   if(system.includes('CLAIM/EVIDENCE SEPARATION')||
+      system.includes('SOURCE-EXACT COMPLEMENT'))
+    return {content:JSON.stringify({reason:'No normalized claim',candidates:[]})};
+   throw Error('UNEXPECTED_STAGE');
+  };
+  const result=await runAdmittedFiniteBatch(recallOpts({...f,curate,
+   sourceRecovery:true,resilientDiscovery:true,claimEvidence:true,
+   sourceExactComplement:true,sourceQuoteSalvage:true}));
+  assert.equal(result.persisted,0);
+  assert.equal(f.graphiti.writes.length,0);
+ },[sourceText]);
+});
+
+test('unrepresented same-session sibling can become a second atomic fact without persisting a weak sibling',()=>
+ fixture(async f=>{
+  const calls={claim:0,complement:0,sibling:0};
+  const curate=async(_,{promptMessages})=>{
+   const sys=promptMessages[0].content,data=JSON.parse(promptMessages[1].content);
+   if(sys.includes('SOURCE-EXACT COMPLEMENT UTILITY')){
+    calls.sibling++;
+    assert.equal(data.candidates.length,2);
+    assert.deepEqual(new Set(data.candidates.map(x=>x.assertion)),
+     new Set([different,weak]));
+    return {content:JSON.stringify({decisions:data.candidates.map(x=>
+     x.assertion===different?{index:x.index,disposition:'ACCEPT',
+      reason_code:'source_specific_durable',utility_class:'useful_negative',
+      atomicity:{independent_predicates:1,
+       rationale:'The Pylint parser difference states one independent technical fact'}}:
+     {index:x.index,disposition:'REVIEW',reason_code:'not_substantive'})})};
+   }
+   if(sys.includes('SOURCE-EXACT COMPLEMENT')){
+    calls.complement++;
+    return {content:JSON.stringify({reason:'No other discovered source claims',
+     candidates:[]})};
+   }
+   if(sys.includes('independent SOURCE-SUPPORT critic')){
+    assert.equal(data.candidates.length,1);
+    return {content:JSON.stringify({decisions:[{index:0,disposition:'SUPPORTED',
+     reason_code:'supported_as_reported',supporting_phrase:strong}]})};
+   }
+   if(sys.includes('CLAIM-LED UTILITY')){
+    return {content:JSON.stringify({decisions:[{index:0,disposition:'ACCEPT',
+     reason_code:'source_specific_durable',utility_class:'useful_negative',
+     atomicity:{independent_predicates:1,
+      rationale:'The Sphinx missing-row report is one independent technical fact'}}]})};
+   }
+   if(sys.includes('CLAIM/EVIDENCE SEPARATION')){
+    calls.claim++;
+    const e=data.evidence.find(x=>x.excerpt===strong);
+    assert.ok(e);
+    return {content:JSON.stringify({reason:'Original source-backed Sphinx defect',
+     candidates:[{source_ref:e.source,start:0,end:strong.length,
+      kind:'blocker',temporal_status:'observed',normalized_claim:strong}]})};
+   }
+   throw Error('UNEXPECTED_SHARED_SESSION_STAGE');
+  };
+  const result=await runAdmittedFiniteBatch(recallOpts({...f,curate,
+   sourceRecovery:true,resilientDiscovery:true,claimEvidence:true,
+   sourceExactComplement:true,sourceQuoteSalvage:true}));
+  assert.equal(result.persisted,2);
+  assert.equal(f.graphiti.writes.length,2);
+  assert.equal(new Set(f.graphiti.writes.map(x=>x.name)).size,2);
+  assert.ok(f.graphiti.writes.some(x=>x.episode_body.includes(strong)));
+  assert.ok(f.graphiti.writes.some(x=>x.episode_body.includes(different)));
+  assert.ok(f.graphiti.writes.some(x=>x.episode_body.includes(different)&&
+   x.episode_body.includes('Temporal: unknown')));
+  assert.ok(f.graphiti.writes.every(x=>!x.episode_body.includes(weak)));
+  const records=(await f.store.list({limit:20})).items.filter(x=>x.state==='persisted');
+  assert.equal(records.length,2);
+  assert.equal(new Set(records.map(x=>x.remote_episode_uuid)).size,2);
+  assert.equal(new Set(records.map(x=>x.facts[0].source_refs[0])).size,2);
+  const active=JSON.parse(await readFile(path.join(f.root,
+   'issue92-finite-batches-v1',scope.group,'_active.json'),'utf8'));
+  const plan=JSON.parse(await readFile(path.join(f.root,
+   'issue92-finite-batches-v1',scope.group,active.batch_id,'plan.json'),'utf8'));
+  assert.equal(plan.cluster_outcomes.length,1);
+  assert.equal(plan.cluster_outcomes[0].source_only_outcome.mode,'unrepresented_sibling');
+  assert.equal(plan.cluster_outcomes[0].source_only_outcome.approved,1);
+  assert.equal(plan.cluster_outcomes[0].source_only_outcome.deferred,1);
+  assert.deepEqual(calls,{claim:1,complement:1,sibling:1});
+ },[strong,different,weak],{sharedSession:true}));
+
+test('source-only recovery does not invent temporal certainty for proposed or hedged source',async()=>{
+ const sourceTexts=[
+  'The Tdarr Docker network should be named media-arr before deployment.',
+  'The pairing loop appears to fail after the host restarts.'
+ ];
+ for(const reported of sourceTexts){
+  await fixture(async f=>{
+   const curate=async(_,{promptMessages})=>{
+    const sys=promptMessages[0].content,data=JSON.parse(promptMessages[1].content);
+    if(sys.includes('SOURCE-EXACT COMPLEMENT UTILITY')){
+     assert.equal(data.candidates.length,1);
+     assert.equal(data.candidates[0].assertion,reported);
+     assert.equal(data.candidates[0].temporal_status,'unknown');
+     return {content:JSON.stringify({decisions:[{index:0,
+      disposition:'ACCEPT',reason_code:'source_specific_durable',
+      utility_class:'useful_negative',
+      atomicity:{independent_predicates:1,
+       rationale:'One quoted source report with no inferred verification status'}}]})};
+    }
+    if(sys.includes('CLAIM/EVIDENCE SEPARATION')||
+       sys.includes('SOURCE-EXACT COMPLEMENT'))
+     return {content:JSON.stringify({reason:'No separate normalized claim',
+      candidates:[]})};
+    throw Error('UNEXPECTED_TEMPORAL_SOURCE_MODEL_STAGE');
+   };
+   const result=await runAdmittedFiniteBatch(recallOpts({...f,curate,
+    sourceRecovery:true,resilientDiscovery:true,claimEvidence:true,
+    sourceExactComplement:true,sourceQuoteSalvage:true}));
+   assert.equal(result.persisted,1);
+   assert.equal(f.graphiti.writes.length,1);
+   assert.ok(f.graphiti.writes[0].episode_body.includes(reported));
+   assert.match(f.graphiti.writes[0].episode_body,/Temporal: unknown;/);
+   assert.doesNotMatch(f.graphiti.writes[0].episode_body,/Temporal: observed;/);
+   const persisted=(await f.store.list({limit:10})).items
+    .filter(x=>x.state==='persisted');
+   assert.equal(persisted.length,1);
+   assert.equal(persisted[0].facts[0].temporal_status,'unknown');
+  },[reported]);
+ }
+});
+
+test('V2 complement allows narrower sources only after an atomicity veto',()=>{
+ const text='The client proxy handles compatibility calls. The new adapter uses a different endpoint.';
+ const e=source('v2atom',text),c=selectClusters([e])[0];
+ const r=[{source_ref:e.source_refs[0],start:0,end:text.length,
+  reason_code:'source_structural_independent_clause_boundary'}];
+ assert.doesNotMatch(finiteBatchSourceExactComplementPrompt(c,r)[0].content,/NON-ATOMICITY RECOVERY/);
+ assert.match(finiteBatchSourceExactComplementPrompt(c,r,{quoteIntegrityV2:true})[0].content,
+  /NON-ATOMICITY RECOVERY/);
+ assert.doesNotMatch(finiteBatchSourceExactComplementPrompt(c,[{...r[0],
+  reason_code:'not_substantive'}],{quoteIntegrityV2:true})[0].content,
+  /NON-ATOMICITY RECOVERY/);
+});
+test('V2 recovers one atomic source claim after structural rejection of the combined quote',()=>
+ fixture(async f=>{
+  const first='The local compatibility proxy uses routing rules to forward malformed API calls to the serving endpoint.';
+  const combined=first+' The replacement client uses a different direct endpoint.';
+  const stages=[];
+  const curate=async(_,{promptMessages})=>{
+   const sys=promptMessages[0].content,data=JSON.parse(promptMessages[1].content);
+   if(sys.includes('SOURCE-EXACT COMPLEMENT UTILITY')){
+    stages.push('complement-utility');
+    assert.equal(data.candidates[0].assertion,first);
+    return {content:JSON.stringify({decisions:[{index:0,disposition:'ACCEPT',
+      reason_code:'source_specific_durable',utility_class:'stable_architecture',
+      atomicity:{independent_predicates:1,
+       rationale:'One independently reported local proxy routing behavior.'}}]})};
+   }
+   if(sys.includes('SOURCE-EXACT COMPLEMENT')){
+    stages.push('complement-discovery');
+    assert.match(sys,/NON-ATOMICITY RECOVERY/);
+    assert.ok(data.previously_reviewed_spans.some(x=>
+     x.reason_code==='source_structural_independent_clause_boundary'));
+    return {content:JSON.stringify({reason:'One atomic quote',
+     candidates:[{kind:'blocker',source_ref:data.evidence[0].source,
+      start:0,end:first.length,temporal_status:'observed'}]})};
+   }
+   if(sys.includes('CLAIM-LED UTILITY')){
+    stages.push('claim-utility');
+    return {content:JSON.stringify({decisions:[{index:0,disposition:'ACCEPT',
+      reason_code:'source_specific_durable',utility_class:'stable_architecture',
+      atomicity:{independent_predicates:1,
+       rationale:'The combined text mistakenly seems like one proxy contract.'}}]})};
+   }
+   if(sys.includes('independent SOURCE-SUPPORT critic')){
+    stages.push('support');
+    return {content:JSON.stringify({decisions:[{index:0,disposition:'SUPPORTED',
+      reason_code:'supported_as_reported',supporting_phrase:first}]})};
+   }
+   if(sys.includes('CLAIM/EVIDENCE SEPARATION')){
+    stages.push('claim-discovery');
+    return {content:JSON.stringify({reason:'Source-provided routing fact',
+     candidates:[{kind:'blocker',source_ref:data.evidence[0].source,
+      start:0,end:combined.length,normalized_claim:first,
+      temporal_status:'observed'}]})};
+   }
+   throw Error('UNEXPECTED_V2_STAGE');
+  };
+  const result=await runAdmittedFiniteBatch(recallOpts({...f,curate,
+   sourceRecovery:true,resilientDiscovery:true,claimEvidence:true,
+   sourceExactComplement:true,sourceQuoteSalvage:true,quoteIntegrityV2:true}));
+  assert.equal(result.persisted,1);
+  assert.equal(f.graphiti.writes.length,1);
+  assert.ok(f.graphiti.writes[0].episode_body.includes(first));
+  assert.ok(!f.graphiti.writes[0].episode_body.includes('replacement client'));
+  assert.deepEqual(stages,['claim-discovery','support','claim-utility',
+   'complement-discovery','complement-utility']);
+ },['The local compatibility proxy uses routing rules to forward malformed API calls to the serving endpoint. The replacement client uses a different direct endpoint.']));
+
+test('V2 defers a containing quote but keeps independent same-source and other-source facts',()=>{
+ const ref='opencode:synthetic';
+ const make=(id,start,end,sourceRef=ref)=>({id,cluster_id:'same-cluster',
+  utility_class:'reusable_procedure',fact:{source_refs:[sourceRef],
+   evidence_span:{source_ref:sourceRef,start,end}}});
+ const outer=make('outer',0,80),inner=make('inner',20,60),
+  partial=make('partial',61,95),other=make('other',20,60,'other-source');
+ const entries=new Map([outer,inner,partial,other].map(x=>[x.id,x]));
+ const selected=deferContainingSameSourceQuotes(entries,[outer,inner,partial,other]);
+ assert.deepEqual(selected.map(x=>x.id),['inner','partial','other']);
+ assert.equal(entries.get('outer').utility_class,null);
+ assert.equal(entries.get('outer').review_reason,'strict_containing_source_quote_needs_review');
+ assert.equal(entries.get('other').utility_class,'reusable_procedure');
+});
+test('V2 overlapping quote container does not create two Graphiti episodes',()=>
+ fixture(async f=>{
+  const text='For this local tool, the CSV parser must reject malformed rows.';
+  const inner=text.slice(text.indexOf('the CSV parser'));
+  const curate=async(_,{promptMessages})=>{
+   const sys=promptMessages[0].content,data=JSON.parse(promptMessages[1].content);
+   if(sys.includes('SOURCE-EXACT COMPLEMENT UTILITY')){
+    assert.equal(data.candidates.length,2);
+    return {content:JSON.stringify({decisions:data.candidates.map(c=>({
+      index:c.index,disposition:'ACCEPT',reason_code:'source_specific_durable',
+      utility_class:'reusable_procedure',
+      atomicity:{independent_predicates:1,
+       rationale:'One independent requirement for malformed CSV row handling.'}}))})};
+   }
+   if(sys.includes('SOURCE-EXACT COMPLEMENT')){
+    const e=data.evidence[0];
+    return {content:JSON.stringify({reason:'Narrow source and its enclosing description',
+     candidates:[{kind:'blocker',source_ref:e.source,start:0,end:text.length,
+      temporal_status:'proposed'},{kind:'blocker',source_ref:e.source,
+      start:text.indexOf('the CSV parser'),end:text.length,temporal_status:'proposed'}]})};
+   }
+   if(sys.includes('CLAIM/EVIDENCE SEPARATION'))
+    return {content:JSON.stringify({reason:'No normalized claim',candidates:[]})};
+   throw Error('UNEXPECTED_NESTED_STAGE');
+  };
+  const result=await runAdmittedFiniteBatch(recallOpts({...f,curate,
+   sourceRecovery:true,resilientDiscovery:true,claimEvidence:true,
+   sourceExactComplement:true,sourceQuoteSalvage:true,quoteIntegrityV2:true}));
+  assert.equal(result.persisted,1);
+  assert.equal(result.approved,1);
+  assert.equal(result.deferred,1);
+  assert.equal(f.graphiti.writes.length,1);
+  assert.ok(f.graphiti.writes[0].episode_body.includes(inner));
+  const active=JSON.parse(await readFile(path.join(f.root,
+   'issue92-finite-batches-v1',scope.group,'_active.json'),'utf8'));
+  const plan=JSON.parse(await readFile(path.join(f.root,
+   'issue92-finite-batches-v1',scope.group,active.batch_id,'plan.json'),'utf8'));
+  assert.equal(plan.quote_integrity_v2,true);
+  assert.equal(plan.items.filter(x=>x.reason==='strict_containing_source_quote_needs_review').length,1);
+ },['For this local tool, the CSV parser must reject malformed rows.']));
+
+
+test('V2 source-window recovery separately reviews an overlooked atomic fact',()=>fixture(async f=>{
+ const seen={window:0,utility:0};
+ const curate=async(_,{promptMessages})=>{
+  const sys=promptMessages[0].content;
+  const data=JSON.parse(promptMessages[1].content);
+  if(sys.includes('SOURCE-WINDOW RECOVERY V1')){
+   seen.window++;
+   assert.equal(data.evidence.length,1);
+   const e=data.evidence[0];
+   if(e.excerpt!==strong)
+    return {content:JSON.stringify({reason:'No new source fact',candidates:[]})};
+   return {content:JSON.stringify({reason:'Single source-reported defect',candidates:[{
+    kind:'blocker',source_ref:e.source,start:0,end:strong.length,
+    temporal_status:'unknown'}]})};
+  }
+  if(sys.includes('SOURCE-EXACT COMPLEMENT UTILITY')){
+   seen.utility++;
+   return {content:JSON.stringify({decisions:data.candidates.map(c=>
+    c.assertion===strong?{index:c.index,disposition:'ACCEPT',
+     reason_code:'source_specific_durable',utility_class:'useful_negative',
+     atomicity:{independent_predicates:1,
+      rationale:'One source-supported renderer defect with one specific consequence'}}:
+     {index:c.index,disposition:'REVIEW',reason_code:'not_substantive',
+      atomicity:{independent_predicates:1,rationale:'No independent technical predicate'}})})};
+  }
+  if(sys.includes('SOURCE-EXACT COMPLEMENT'))
+   return {content:JSON.stringify({reason:'No additional global quote',candidates:[]})};
+  if(sys.includes('independent SOURCE-SUPPORT critic'))
+   return {content:JSON.stringify({decisions:data.candidates.map(c=>({
+    index:c.index,disposition:'REVIEW',reason_code:'missing_predicate',
+    supporting_phrase:''}))})};
+  if(sys.includes('CLAIM/EVIDENCE SEPARATION')){
+   const e=data.evidence.find(x=>x.excerpt===weak);
+   assert.ok(e);
+   return {content:JSON.stringify({reason:'Unsupported normalized outcome',
+    candidates:[{kind:'blocker',source_ref:e.source,start:0,end:weak.length,
+     temporal_status:'unknown',
+     normalized_claim:'A deployed patch conclusively fixed all Sphinx rendering failures'}]})};
+  }
+  throw Error('UNEXPECTED_V2_WINDOW_STAGE');
+ };
+ const result=await runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true,resilientDiscovery:true,claimEvidence:true,
+  sourceExactComplement:true,sourceQuoteSalvage:true,
+  quoteIntegrityV2:true,sourceWindowRecovery:true}));
+ assert.equal(result.persisted,1);
+ assert.equal(f.graphiti.writes.length,1);
+ assert.match(f.graphiti.writes[0].episode_body,/Sphinx reStructuredText output drops/);
+ assert.doesNotMatch(f.graphiti.writes[0].episode_body,/conclusively fixed/);
+ assert.ok(seen.window>=1&&seen.window<=6&&seen.utility>=1);
+ const active=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,'_active.json'),'utf8'));
+ assert.equal(active.source_window_recovery_v1,true);
+ const plan=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,active.batch_id,'plan.json'),'utf8'));
+ assert.equal(plan.source_window_recovery_v1,true);
+ assert.equal(plan.cluster_outcomes[0].source_window_recovery_outcome.approved,1);
+ assert.ok(plan.items.some(x=>x.decision==='deferred'));
+},[strong,weak],{sharedSession:true}));
+
+test('V2 source-window mode does not promote an unhelpful exact source after REVIEW',()=>fixture(async f=>{
+ const curate=async(_,{promptMessages})=>{
+  const sys=promptMessages[0].content,data=JSON.parse(promptMessages[1].content);
+  if(sys.includes('SOURCE-EXACT COMPLEMENT UTILITY'))
+   return {content:JSON.stringify({decisions:data.candidates.map(x=>({
+    index:x.index,disposition:'REVIEW',reason_code:'not_substantive',
+    atomicity:{independent_predicates:1,rationale:'No durable technical predicate'}}))})};
+  if(sys.includes('SOURCE-WINDOW RECOVERY V1')){
+   const e=data.evidence[0];
+   return {content:JSON.stringify({reason:'A quote subject to utility',
+    candidates:[{kind:'observation',source_ref:e.source,start:0,
+     end:e.excerpt.length,temporal_status:'unknown'}]})};
+  }
+  return {content:JSON.stringify({reason:'No qualified global claim',candidates:[]})};
+ };
+ const result=await runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true,resilientDiscovery:true,claimEvidence:true,
+  sourceExactComplement:true,sourceQuoteSalvage:true,
+  quoteIntegrityV2:true,sourceWindowRecovery:true}));
+ assert.equal(result.persisted,0);
+ assert.equal(f.graphiti.writes.length,0);
+},[weak]));
+
+test('V2 source-window recovery is barred from an existing frozen batch',()=>fixture(async f=>{
+ const curate=async(_,{promptMessages})=>{
+  const sys=promptMessages[0].content,data=JSON.parse(promptMessages[1].content);
+  if(sys.includes('SOURCE-EXACT COMPLEMENT UTILITY'))
+   return {content:JSON.stringify({decisions:data.candidates.map(x=>({
+    index:x.index,disposition:'REVIEW',reason_code:'not_substantive'}))})};
+  return {content:JSON.stringify({reason:'No durable candidate',candidates:[]})};
+ };
+ const base=recallOpts({...f,curate,sourceRecovery:true,resilientDiscovery:true,
+  claimEvidence:true,sourceExactComplement:true,sourceQuoteSalvage:true,
+  quoteIntegrityV2:true});
+ await runAdmittedFiniteBatch(base);
+ await assert.rejects(()=>runAdmittedFiniteBatch({...base,sourceWindowRecovery:true}),
+  /SOURCE_WINDOW_RECOVERY_IDENTITY_CHANGED/);
+ assert.equal(f.graphiti.writes.length,0);
+},[weak]));

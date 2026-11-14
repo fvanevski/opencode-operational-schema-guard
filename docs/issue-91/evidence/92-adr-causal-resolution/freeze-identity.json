@@ -1,0 +1,39 @@
+{
+  "schema": "issue92-adr-causal-resolution-identity-v1",
+  "scoring_head": "f1ce23038223a864c66c058155b65bb2eb760dea",
+  "branch": "work/91-memory-utility-r1",
+  "original_scorecard_sha": "94cb32364e2115502f5bdde00b46735ac7bb112c",
+  "source_commits": {
+    "baseline": "c8eb5260f2b10832346234b1b5d0cf28302ffba8",
+    "candidate": "a684667a6eefa2dc19f29755bed0c3048874721d"
+  },
+  "freeze": {
+    "private_path": "/tmp/opencode/issue92-adr-qual/freeze.json",
+    "sha256": "96cfef46ab642aeb1d05cf246478da92f34547daf6575ea2d756d192afbdbb5f",
+    "authenticated": true,
+    "schema": "issue92-adr-prospective-freeze-v1",
+    "clusters": 24,
+    "targets_total": 27,
+    "targets_valuable": 16
+  },
+  "causal_bundle": {
+    "private_path": "/tmp/opencode/issue92-adr-qual/causal-bundle.json",
+    "schema": "issue92-adr-exposed-causal-audit-v1",
+    "sha256": "f8d6a5a219124f306c3e05dfae01738f46f8b3d3e2e1c56249a389b1e23bc280"
+  },
+  "causal_result": {
+    "schema": "issue92-adr-exposed-causal-result-v1",
+    "disposition": "COMPLETE",
+    "sha256": "bf373db96cb54a132d44fc1e0f8b0d4f1f7fda273aeb17485fcde3aa164459cd"
+  },
+  "raw_model_trace_coverage": {
+    "note": "Raw model decisions recovered from private curation-v1 ReviewStore records (structured decision/reason/utility_class/facts persisted at curation time). No RAW_MODEL_UNAVAILABLE for any of the 16 valuable targets in any arm. Digests are SHA-256 over the faithfully reconstructed raw JSON response; content stays private.",
+    "t1/baseline": { "clusters": 24, "unique_raw_responses": 24, "digest_set_sha256": "01c2ef0078a010bd2f4c815bb674a0632774b041e041faa660c4eb28147682e0" },
+    "t1/candidate": { "clusters": 24, "unique_raw_responses": 22, "digest_set_sha256": "619c9fa6a5803c80202cfdcb180a78bb0a58146dae45be8a7f335d6b017309df" },
+    "t2/baseline": { "clusters": 24, "unique_raw_responses": 22, "digest_set_sha256": "5b97afc932538d23a75cbd5109f0e19b42121d4bb4f8a4c4137967ec1e63d920" },
+    "t2/candidate": { "clusters": 25, "unique_raw_responses": 23, "digest_set_sha256": "5ac2dbbc4d9b506f57158206552886dca7ffd524d9d0bf8548e4aa725a4e23a7" }
+  },
+  "exposed_diagnostic_replay": "not_needed",
+  "ex_gate_proof": "not_applicable (no new model campaign; original raw decisions recoverable)",
+  "production_mutation": "none"
+}

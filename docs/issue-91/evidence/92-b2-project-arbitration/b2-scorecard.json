@@ -1,0 +1,177 @@
+{
+  "schema": "issue92-b2-scorecard-v1",
+  "kind": "sanitized, evidence-only, public",
+  "result": "REMEDIATION_REQUIRED",
+  "campaign": "issue92-adr-b2 project-scoped semantic-family consolidated qualification (one matched two-arm run)",
+  "repository": "fvanevski/opencode-operational-schema-guard",
+  "branch": "work/91-memory-utility-r1",
+  "identities": {
+    "required_starting_head": "3b5ce41776424c0786e10f2eebf1b5b195eecd4b",
+    "previous_source_sha": "8a112799a7a42b47c5a044d21aa11ef8ebe21b59",
+    "corrected_source_sha": "f51ca861c05f03bac2d86051a7bb339fe2fb5d05",
+    "finite_batch_blob_previous": "561b97d9f23875869b87ad768d894b72340ef4ce",
+    "finite_batch_blob_corrected": "2f87ed5efa828e0eb389f5f7c8e42653d9a2c46b",
+    "finite_batch_blob_at_head": "2f87ed5efa828e0eb389f5f7c8e42653d9a2c46b",
+    "original_freeze_sha256": "96cfef46ab642aeb1d05cf246478da92f34547daf6575ea2d756d192afbdbb5f",
+    "freeze_note": "original private freeze byte-lost to host reboot; 24-source corpus natively recovered from opencode.db session_v2/session_message and re-staged with identical source context"
+  },
+  "invariant_check": {
+    "only_finite_batch_semantics_changed": true,
+    "unchanged_blobs": {
+      "core.mjs": "5b1d33efedc62b5ba0ad5f74ed68cddbee6afb0e",
+      "worker.mjs": "503bf766ca7b61c574edfc2b73aecd6d082ef629",
+      "fact-review.mjs": "0131c5f03b3d524517a7ee7d488c4754839f175f",
+      "model.mjs": "99cb39a77822d11ff982dfd618ca9689bc66757b",
+      "model-policy.mjs": "866b369b6b041761bb5187f2088808e131c13207",
+      "queue.mjs": "b4e2df18e3741917e8f3f2513b54cb6aef874e98",
+      "curator-cli.mjs": "3b1bcd7a4cb7ba1caa0e7cc34e98aac1d2aec3bb"
+    },
+    "note": "only docs/issue-78/v2-curator/finite-batch.mjs changed production semantics between treatment pins (partitionKey [group,project,workspace] -> [group,project]); all other curator/queue/model blobs unchanged"
+  },
+  "frozen_corpus": {
+    "sha256": "96cfef46ab642aeb1d05cf246478da92f34547daf6575ea2d756d192afbdbb5f",
+    "clusters": 24,
+    "eligible_sources": 24,
+    "valuable_targets": 16,
+    "nonvaluable_controls": 11,
+    "capture_ineligible_privacy_control": "opencode:ses_e767fc4cbffe9zB9WHpLF4PLBe:message:ctrl",
+    "families": { "swebench-sphinx": 9, "swebench-django": 8, "swebench-pylint": 3, "graphiti-mcp": 4 },
+    "workspace_distinctness": {
+      "swebench-sphinx": "9 sources / 8 distinct workspaces",
+      "swebench-django": "8 sources / 8 distinct workspaces",
+      "swebench-pylint": "3 sources / 3 distinct workspaces",
+      "graphiti-mcp": "4 sources / 1 distinct workspace"
+    }
+  },
+  "ex_admission": {
+    "gate": "canonical openviking-commit-gate EX flock (flock /run/user/1000/openviking-agent.lock) + harness-exit + quiet-grace + scheduler-idle + production-drain serialization",
+    "launcher": "b2-ex-launcher.py (detached setsid, exactly-once marker guard)",
+    "harness_exit_utc": "2026-11-11T01:30:08Z",
+    "ex_flock_acquired_utc": "2026-11-11T01:30:36Z",
+    "quiet_grace_seconds": 30,
+    "ex_admission_proven_utc": "2026-11-11T01:31:06Z",
+    "campaign_settled_utc": "2026-11-11T01:32:41Z",
+    "scheduler_idle": "running=0 waiting=0",
+    "note": "first launcher (PID 467786) FAIL_CLOSED at 00:41:56Z on the 3600s bounded harness-wait (session left open); re-armed with 86400s bound (PID 1108140) and settled. No partial work from the timed-out attempt (failed in Phase 1 before EX lock)."
+  },
+  "treatments": {
+    "b2_previous": {
+      "sha": "8a112799a7a42b47c5a044d21aa11ef8ebe21b59",
+      "group": "graphiti-adr92-b2-previous",
+      "batch_id": "5d0eb3f8861fb1e8372b62de1357ae9e82b546b69674caab3cb81fa6de7c8c61",
+      "partition": "[group,project,workspace]",
+      "status": "review_required",
+      "candidates": 25,
+      "approved": 18,
+      "deferred": 7,
+      "persisted": 18,
+      "families": 18,
+      "pool_size_dist": { "1": 17, "2": 1 },
+      "singleton_pools": 17,
+      "model_calls": 65,
+      "model_call_stages": { "discovery": 24, "utility": 23, "arbitration": 18 },
+      "model_errors": 0,
+      "prompt_tokens": 49895,
+      "completion_tokens": 4191,
+      "deferred_reasons": { "not_substantive": 6, "alternative_equivalent_fact": 1 },
+      "attempts": 3,
+      "reconcile": "rc 3 -> rc 3 -> rc 0 (positive reconcile of queued/submission_unknown under retained EX; no model replay)"
+    },
+    "b2_corrected": {
+      "sha": "f51ca861c05f03bac2d86051a7bb339fe2fb5d05",
+      "group": "graphiti-adr92-b2-corrected",
+      "batch_id": "6c60b1a1109bc6901a477be1f2b83672c7b7fd7f4619629bc6804e8e6efc95b0",
+      "partition": "[group,project]",
+      "status": "review_required",
+      "candidates": 26,
+      "approved": 4,
+      "deferred": 22,
+      "persisted": 4,
+      "families": 3,
+      "pool_size_dist": { "8": 2, "3": 1 },
+      "singleton_pools": 0,
+      "model_calls": 50,
+      "model_call_stages": { "discovery": 24, "utility": 23, "arbitration": 3 },
+      "model_errors": 0,
+      "prompt_tokens": 46553,
+      "completion_tokens": 3888,
+      "deferred_reasons": { "alternative_equivalent_fact": 15, "not_substantive": 7 },
+      "attempts": 2,
+      "reconcile": "rc 3 -> rc 0 (positive reconcile under retained EX; no model replay)"
+    }
+  },
+  "model_profile": {
+    "model": "chat-fast",
+    "temperature": 0,
+    "max_tokens": 1600,
+    "response_format": "json_object",
+    "timeout_ms": 90000,
+    "endpoint": "http://127.0.0.1:8002/v1/chat/completions",
+    "graphiti_mcp": "http://127.0.0.1:8766/mcp",
+    "falkordb": "redis://127.0.0.1:6382"
+  },
+  "four_surface_proof": {
+    "previous": { "review_store": 18, "graphiti_mcp": 18, "falkordb_episodic": 18, "uuid_sets_identical": true, "source_binding_intact": true },
+    "corrected": { "review_store": 4, "graphiti_mcp": 4, "falkordb_episodic": 4, "uuid_sets_identical": true, "source_binding_intact": true },
+    "note": "every persisted fact verified across ReviewStore remote_episode_uuid, Graphiti MCP get_episodes, raw FalkorDB Episodic node, and the ReviewStore/episode-index source binding. No Source graph nodes invented (source index lives in local ReviewStore)."
+  },
+  "valuable_targets": {
+    "total": 16,
+    "b1_finite_batch_retained": 8,
+    "b1_retained_ids": ["sphinx_9230_dict_param_render_variant", "sphinx_14182_rst_header_rows", "sphinx_ascii_rst_header_rows", "django_add_filter_lazy_string_typeerror", "django_add_filter_lazy_string_variant", "pylint_short_verbose_expects_arg", "pylint_6386_verbose_flag_negative", "pylint_verbose_v_arg_expected"],
+    "b2_corrected_retained": 5,
+    "b2_retained_ids": ["pylint_short_verbose_expects_arg", "django_add_filter_lazy_string_typeerror", "sphinx_dict_str_str_param_render_defect", "sphinx_9230_dict_param_render_variant", "sphinx_14182_rst_header_rows"],
+    "regressed_lost_in_b2": ["sphinx_ascii_rst_header_rows", "django_add_filter_lazy_string_variant", "pylint_6386_verbose_flag_negative", "pylint_verbose_v_arg_expected"],
+    "gained_in_b2": ["sphinx_dict_str_str_param_render_defect"],
+    "net": "8/16 (B1) -> 5/16 (B2-corrected): a valuable-retention regression of 3",
+    "graphiti_unresolved_losses": ["graphiti_0312_py313_falkordb_smoke", "graphiti_0312_mcp_tools_only", "graphiti_llm_param_readonly_audit", "graphiti_live_mcp_no_openviking", "graphiti_temporal_memory_live_test", "graphiti_temporal_validation_skill"],
+    "graphiti_note": "all 6 graphiti valuable targets come from the single-workspace graphiti-mcp project, which produced 0 approved candidates in BOTH arms (deferred not_substantive); these are the pre-existing discovery/utility losses (g1-g4) the B2 source correction does not claim to fix"
+  },
+  "nonvaluable": {
+    "total_controls": 11,
+    "b1_finite_batch_persisted": 11,
+    "b2_previous_persisted": "18 total persisted (no dedup: 17 singleton pools), including the 11 nonvaluable duplicates",
+    "b2_corrected_persisted": "0 nonvaluable persisted (all 4 persisted episodes are valuable representatives)",
+    "assessment": "B2-corrected materially reduces duplicate/nonvaluable persistence (18 -> 4, all valuable) by genuine same-project cross-workspace family comparison"
+  },
+  "privacy": {
+    "control_ref": "opencode:ses_e767fc4cbffe9zB9WHpLF4PLBe:message:ctrl",
+    "absent_from_staged_events": true,
+    "absent_from_model_inputs": true,
+    "absent_from_review_store": true,
+    "eligible_sibling_staged": "opencode:ses_e767fc4cbffe9zB9WHpLF4PLBe:message:msg_189803b36001zxJWhWTzuYbfhZ (the ctrl session's eligible regular user message, staged as a normal graphiti-mcp source)"
+  },
+  "scope_authority": {
+    "per_fact_authorization_unchanged": true,
+    "note": "per-fact authorization still uses full native group/project/workspace/source_ref/evidence_class/observed_at/temporal_status; the [group,project] partition only governs the semantic-comparison pool, never source rewriting or cross-workspace provenance transfer"
+  },
+  "production_unchanged": {
+    "historical_campaign_groups": {
+      "graphiti-adr92-d1-previous": 2, "graphiti-adr92-d1-corrected": 15,
+      "graphiti-adr92-d2-previous": 14, "graphiti-adr92-d2-two-stage": 0,
+      "graphiti-adr92-d3-previous": 0, "graphiti-adr92-d3-corrected": 4,
+      "graphiti-adr92-b1-previous": 4, "graphiti-adr92-b1-finite-batch": 19,
+      "graphiti-adr92-prospective-t1-base": 10, "graphiti-adr92-prospective-t1-cand": 2,
+      "graphiti-adr92-prospective-t2-base": 9, "graphiti-adr92-prospective-t2-cand": 3
+    },
+    "all_unchanged_vs_baseline": true,
+    "development_knowledge": "100 -> 355 (active production drain held the EX lock during the campaign; not a B2 write — B2 wrote only to its two b2 groups)"
+  },
+  "crash_no_replay": {
+    "private_snapshots_preserved": true,
+    "file_modes": "0700 dirs / 0600 files (363 private files verified 0600)",
+    "model_call_intents_frozen": true,
+    "model_call_results_frozen": true,
+    "frozen_plan_per_arm": true,
+    "no_model_replay_on_reconcile": true,
+    "note": "the rc=3 -> rc=0 reconcile resumes the same frozen plan (model-call intent/result files already private and durable); no model call is replayed and no favorable-output sweep is performed"
+  },
+  "assessment": {
+    "singleton_arbitration_removed": "YES — previous arm 17 singleton pools + 1 pair (18 families); corrected arm 3 genuine cross-workspace families (8+8+3), 0 singletons",
+    "nonvaluable_persistence_reduced": "YES — 11/11 (B1) -> 0 nonvaluable persisted (B2-corrected, all 4 persisted are valuable)",
+    "valuable_retention_retained_or_improved": "NO — regressed from 8/16 (B1) to 5/16 (B2-corrected); 4 valuable cross-workspace variants (sp9, dj2, py2, py3) collapsed by overbroad project-scope family equivalence",
+    "regression_mechanism": "the [group,project] family-equivalence judgment defers cross-workspace variants as alternative_equivalent_fact to a single representative: sphinx_ascii_rst_header_rows -> sphinx_14182_rst_header_rows; django_add_filter_lazy_string_variant -> django_add_filter_lazy_string_typeerror; pylint_6386_verbose_flag_negative + pylint_verbose_v_arg_expected -> pylint_short_verbose_expects_arg",
+    "disposition": "REMEDIATION_REQUIRED"
+  },
+  "minimal_central_correction": "Make the project-scope family-equivalence / representative-arbitration judgment more conservative so that cross-workspace variants stating DISTINCT constraints are not collapsed into one representative: (a) allow multiple representatives per [group,project] family when a variant states a strictly new constraint (e.g. a negative case, an ascii-vs-rst format difference, a short-flag-vs-long-flag difference); and/or (b) require the arbitration to emit a per-variant distinct-constraint justification before deferring as alternative_equivalent_fact. This should retain B2's duplicate-reduction while recovering the 4 regressed valuable variants (target: restore toward >=8/16 valuable retention without re-introducing the 11 nonvaluable duplicates)."
+}

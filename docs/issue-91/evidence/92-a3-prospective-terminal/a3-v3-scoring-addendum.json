@@ -1,0 +1,38 @@
+{
+ "schema": "issue92-a3-v3-scoring-addendum-v1",
+ "group": "graphiti-adr92-a3-prospective-v2",
+ "created_utc": "2026-11-12T15:55:32.572792Z",
+ "frozen_before_first_model_intent": true,
+ "private_manifest_sha256": "7b96a1075cbcd94866553bbfc37e26877df460e803d0beb798b9985954b5c4f0",
+ "label_freeze_sha256": "96b9e51ee76182729f1426873e538ce164fa5855139173e8da875e53a2cb0f11",
+ "note": "Predeclared source-supported interpretations for the three fsm81 design-decision cases. Each source explicitly states \"Final decision: fsm81 adopts option C\" with a concrete named export / state change. Score ONLY these source-stated facts; do NOT credit options A/B (explicitly rejected by the source) or any final design decision the source does not state.",
+ "interpretations": [
+  {
+   "case_id": "i92-v3-07-29751d99",
+   "predicate": "fsm81_log_rotation_policy_design_decision",
+   "supported_fact": "fsm81 log retention adopts option C: the fixture file is append-only and the drain tool owns retention (the fixture never deletes/truncates a line). The fixture exposes only an append function and a read-back helper; the read-back helper is exported from fsm.js under the name lastLogLine and must return the last complete line without modifying the file.",
+   "not_supported": [
+    "option A (time-based fixed window)",
+    "option B (size-based byte cap)"
+   ]
+  },
+  {
+   "case_id": "i92-v3-09-630b1bd1",
+   "predicate": "fsm81_terminal_state_modeling_decision",
+   "supported_fact": "fsm81 terminal-state modeling adopts option C: a single explicit state map where each state owns its complete event vocabulary and the machine object remains a pure input to every transition call. The failed state gains an explicit done event that settles to a terminal done state with no outgoing events.",
+   "not_supported": [
+    "option A (fold done into failed with a flag)",
+    "option B (separate settlement event stream / second module)"
+   ]
+  },
+  {
+   "case_id": "i92-v3-10-f68e2d7a",
+   "predicate": "fsm81_export_format_serialization_decision",
+   "supported_fact": "fsm81 export format adopts option C: a content-addressed manifest listing each tracked file with exact byte length and a short checksum (changed files marked changed, not copied); the bundle never embeds file contents. The manifest writer is exported from fsm.js under the name writeBundleManifest.",
+   "not_supported": [
+    "option A (full directory snapshots)",
+    "option B (hand-maintained file-name manifest)"
+   ]
+  }
+ ]
+}

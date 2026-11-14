@@ -1,0 +1,13 @@
+{
+ "jobs": {
+  "source-exact-complement-proof": {
+   "rc": 0,
+   "attempts": 5
+  }
+ },
+ "completed_utc": "2026-11-12T05:50:06Z",
+ "bridge_blob": "004188b1cdcd3a99956f20e581621eadc63c4663",
+ "group": "graphiti-adr92-s6-exact-complement",
+ "state": "/tmp/opencode/issue92-s6/state/s6",
+ "graphiti_endpoint": "http://127.0.0.1:8766/mcp"
+}

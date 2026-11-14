@@ -1,0 +1,16 @@
+{
+ "schema": "issue92-final-integration-T1-v1",
+ "section": "verify_and_integrate",
+ "required_head": "a564d397bf66ec2f90db4f06f9cd43a0252ef9d7",
+ "stage_correction": "issue92-a3-stage.mjs:27 now accepts graphiti-adr92-a3-prospective-v[2-9] (declared fresh group) instead of hard-pinning v2; new issue92-a3-stage.test.mjs (3 tests: fresh-group isolation + staging identity)",
+ "blob_auth": "all 8 execution-source blobs verified committed==on-disk at a564d397 (provenance updated)",
+ "tests": {
+  "node --check issue92-a3-stage.mjs": "exit 0",
+  "node --test issue92-a3-stage.test.mjs": "3/3 pass, exit 0",
+  "node --test issue92-a3-acceptance.test.mjs": "12/12 pass, exit 0",
+  "npm run check": "exit 0",
+  "npm test": "524/524 pass, exit 0"
+ },
+ "staging_integration": "final v4 roster staged into its OWN fresh group graphiti-adr92-a3-prospective-v4 (27 native spans), NOT the populated historical v2 group (13 v3 episodes).",
+ "result": "PASS (all tests green; corrected staging group verified; no Central source defect; no semantic remediation)"
+}

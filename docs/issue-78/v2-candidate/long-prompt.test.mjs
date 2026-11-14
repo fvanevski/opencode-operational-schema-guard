@@ -40,7 +40,12 @@ test('whole-message privacy, SELF, control, oversized payload and weak-ID gates 
  assert.deepEqual(accepted(missing),[]);
  assert.deepEqual(fromPromptCandidates(native(long),scope),[]);
  assert.deepEqual(accepted(native(long)),accepted(native(long)));
- assert.deepEqual(accepted(native('{"source":"'+filler.repeat(70)+'"}')),[]);
+ // Structure alone is not a hard capture veto. Independent post-exit
+ // source/utility review decides whether raw structured data is durable.
+ const structured=accepted(native('{"source":"'+filler.repeat(70)+'"}'));
+ assert.ok(structured.length>0&&structured.length<=6);
+ assert.ok(structured.every(e=>e.evidence_class==='user-stated'&&
+  e.source_strength==='native-id'));
 });
 test('native multi-line quoted prompt recovers exact text under bounded whole-source controls',()=>{
  const input=filler.repeat(27)+'\nThe final decision is to retain the source-scoped export API.\r\n'+
@@ -64,7 +69,10 @@ test('narrative spans survive surrounding code without storing code segments as 
    filler.repeat(20)+'The project owner prefers continued source-bound memories. ';
  const spans=accepted(native(source));
  assert.ok(spans.length>0);
- assert.ok(spans.every(e=>!/[{}]/.test(e.excerpt)));
+ // Code next to authored technical narrative is bounded SOURCE evidence,
+ // not an independently verified memory assertion or an automatic graph write.
+ assert.ok(spans.some(e=>e.excerpt.includes(
+  'project owner prefers continued source-bound memories')));
  assert.ok(spans.every(e=>e.source_refs[0].includes(':span:')));
 });
 test('long source span is a real native source handle and cannot become a model-invented statement',async()=>{
@@ -80,7 +88,8 @@ test('long source span is a real native source handle and cannot become a model-
   assert.match(modelPrompt(clusters[0])[0].content,/omitted statements/);
   const target=clusters[0].events[0];
   const quote=target.excerpt.slice(0,74).trim();
-  const proposal={decision:'EMIT',reason:'grounded source',facts:[{
+  const proposal={decision:'EMIT',reason:'grounded source',
+  utility_class:'durable_decision',facts:[{
     assertion:quote,kind:'observation',
     source_refs:[target.source_refs[0]],temporal_status:'observed'}]};
   assert.equal(validateModelDecision(proposal,clusters[0]).ok,true);
@@ -116,3 +125,113 @@ test('native plugin stages all admitted long spans but no speculative or missing
  assert.equal(fromTool({sessionID:'ses-native',callID:'tool-empty',tool:'shell',
   status:'completed',input:{command:'node --test source.test.mjs'}},scope),null);
 }));
+
+test('injected OpenViking context is not new user evidence; authored technical tail survives',()=>{
+ const raw='<openviking-context>Relevant context from OpenViking. '+
+  'viking://user/project memory says a fabricated fix has shipped. '+
+  '</openviking-context> The source author explicitly requires that the '+
+  'state machine reject unknown transitions without caching a failed result.';
+ const rows=accepted(native(raw,'msg-openviking-tail'));
+ assert.equal(rows.length,1);
+ assert.match(rows[0].excerpt,/source author explicitly requires/);
+ assert.doesNotMatch(rows[0].excerpt,/fabricated fix|viking:\/\//);
+ assert.equal(rows[0].evidence_class,'user-stated');
+ assert.equal(rows[0].source_strength,'native-id');
+ assert.equal(rows[0].source_refs[0],
+  'opencode:ses-native:message:msg-openviking-tail:span:'+
+  raw.indexOf('The source author explicitly requires'));
+ assert.deepEqual(rows,accepted(native(raw,'msg-openviking-tail')));
+});
+test('OpenViking blocks in middle preserve two independently source-ranged authored statements',()=>{
+ const text='The cache invalidation must reject stale writes. '+
+  '<openviking-context>external recalled assistant theory</openviking-context> '+
+  'The revision counter must be checked before advancing the pointer.';
+ const rows=accepted(native(text,'msg-context-middle'));
+ assert.equal(rows.length,2);
+ assert.match(rows[0].excerpt,/cache invalidation must reject/);
+ assert.match(rows[1].excerpt,/revision counter must be checked/);
+ for(const row of rows){
+  const offset=Number(/:span:(\d+)$/.exec(row.source_refs[0])?.[1]);
+  assert.ok(Number.isSafeInteger(offset));
+  assert.equal(text.slice(offset,offset+row.excerpt.length),row.excerpt);
+  assert.doesNotMatch(row.excerpt,/recalled assistant theory/);
+ }
+});
+test('OpenViking memory-only or malformed tags have no source authority',()=>{
+ const only='<openviking-context>From OpenViking memories: code passed.</openviking-context>';
+ assert.deepEqual(accepted(native(only,'msg-context-only')),[]);
+ assert.deepEqual(accepted(native('<openviking-context>Unclosed memory and a fix request.')),[]);
+ assert.deepEqual(accepted(native('</openviking-context> Unmatched tag plus a fix request.')),[]);
+});
+test('original-input secret scan is not bypassed by a removable context block',()=>{
+ const input='<openviking-context>api_key=never_publish_this</openviking-context> '+
+  'The user requests that cache entries be invalidated on schema changes.';
+ assert.deepEqual(accepted(native(input,'msg-context-secret')),[]);
+ assert.deepEqual(accepted(native('The user requires more source facts. '+
+  '[GHDEV_GRAPHITI_CONTEXT] previous memory context')),[]);
+});
+
+test('native original multiline quotations remain literal and attributable',()=>{
+ const text='The runtime setting must be preserved.\r\n'+
+  'The default should not be changed without a migration review.\t'+
+  'The operator reported another compatibility limitation.';
+ const one=accepted(native(text,'msg-literal'));
+ assert.equal(one.length,1);
+ assert.equal(one[0].excerpt,text);
+ assert.deepEqual(accepted(native(JSON.stringify(text),'msg-decoded'))[0].excerpt,text);
+ const pref='<openviking-context>external retrieval</openviking-context>\n';
+ const after=accepted(native(pref+text,'msg-after-injection'));
+ assert.equal(after.length,1);
+ assert.equal(after[0].excerpt,text);
+ assert.equal(after[0].source_refs[0],
+   'opencode:ses-native:message:msg-after-injection:span:'+pref.length);
+});
+test('multiple context blocks cannot create a synthetic joint source citation',()=>{
+ const text='The cache must reject stale writes. '+
+  '<openviking-context>first injection</openviking-context> '+
+  'The revision counter must be checked. '+
+  '<openviking-context>second injection</openviking-context> '+
+  'The gate must reject a stale writer.';
+ const rows=accepted(native(text,'msg-fragments'));
+ assert.equal(rows.length,3);
+ for(const row of rows){
+  const offset=Number(/:span:(\d+)$/.exec(row.source_refs[0])?.[1]);
+  assert.equal(text.slice(offset,offset+row.excerpt.length),row.excerpt);
+  assert.ok(!row.excerpt.includes('injection'));
+ }
+});
+test('natural-language credential values fail the complete-input admission filter',()=>{
+ const prefix='An original technical requirement affects the migration code. '.repeat(22);
+ for(const secret of [
+  'Graphiti password is DEMO_VALUE_DO_NOT_USE',
+  'OpenViking access token is DEMO_VALUE_DO_NOT_USE',
+  'The client secret was DEMO_VALUE_DO_NOT_USE'
+ ]){
+  assert.deepEqual(accepted(native(secret)),[]);
+  assert.deepEqual(accepted(native(prefix+secret)),[]);
+  assert.deepEqual(accepted(native(
+    '<openviking-context>'+secret+'</openviking-context> '+prefix)),[]);
+ }
+ const safe='OpenSubtitles credentials can be found in ~/temp/opensubtitles, including API token, username and password field types.';
+ assert.equal(accepted(native(safe)).length,1);
+});
+
+
+test('long prompt preserves the early detailed source window between opening and sampled middle',()=>{
+ const pre=filler.repeat(13);
+ const predicate='The installed encoder rejected -legacy_spatial:v 1, whereas its supported CLI accepts -legacy-spatial for the same setting. ';
+ const text=pre+predicate+filler.repeat(160)+
+  'The final decision is to retain the original source-linked release manifest.';
+ assert.ok(text.length>1100&&text.length<=16000);
+ const rows=accepted(native(text,'msg-early-detail'));
+ assert.equal(rows.length,6);
+ assert.ok(rows[1].excerpt.includes('-legacy_spatial:v 1'));
+ assert.ok(rows[1].excerpt.includes('-legacy-spatial'));
+ assert.match(rows.at(-1).excerpt,/original source-linked release manifest/);
+ assert.deepEqual(rows,accepted(native(text,'msg-early-detail')));
+ for(const row of rows){
+  const offset=Number(/:span:(\d+)$/.exec(row.source_refs[0])?.[1]);
+  assert.equal(text.slice(offset,offset+row.excerpt.length),row.excerpt);
+ }
+ assert.deepEqual(accepted(native(text+' password=secret123','msg-private')),[]);
+});

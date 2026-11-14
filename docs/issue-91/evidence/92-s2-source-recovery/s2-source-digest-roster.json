@@ -1,0 +1,194 @@
+[
+ {
+  "project": "swebench-sphinx",
+  "session_id": "ses_e9593f9f4ffe4SD2IkfSI5dvg8",
+  "message_id": "msg_16a6c0647001311IkGisZDjGT6",
+  "native_text_sha256": "b8a8fc612077fe96",
+  "corpus_text_sha256": "b8a8fc612077fe96",
+  "native_len": 2648
+ },
+ {
+  "project": "swebench-sphinx",
+  "session_id": "ses_e9582bdd9ffepIYVAMSn1gCuh0",
+  "message_id": "msg_16a7d425f001WnLADilmIEhkTb",
+  "native_text_sha256": "5c1767ab6482bc3a",
+  "corpus_text_sha256": "5c1767ab6482bc3a",
+  "native_len": 3541
+ },
+ {
+  "project": "swebench-sphinx",
+  "session_id": "ses_e9574f83fffehlaJ83LC8CYLT1",
+  "message_id": "msg_16a8b0809001yJ6V63nZTWWK1Z",
+  "native_text_sha256": "5f2c5385d801ea90",
+  "corpus_text_sha256": "5f2c5385d801ea90",
+  "native_len": 3801
+ },
+ {
+  "project": "swebench-sphinx",
+  "session_id": "ses_e9567521dffeuY19c5vEusDqnG",
+  "message_id": "msg_16a98ae18001FdPhWvPLfUOjx4",
+  "native_text_sha256": "c134001c2f757425",
+  "corpus_text_sha256": "c134001c2f757425",
+  "native_len": 3685
+ },
+ {
+  "project": "swebench-sphinx",
+  "session_id": "ses_e955f8a84ffeo0ni3hxWOnUd9I",
+  "message_id": "msg_16aa07590001Z0m8X05yDfm4Mh",
+  "native_text_sha256": "c134001c2f757425",
+  "corpus_text_sha256": "c134001c2f757425",
+  "native_len": 3685
+ },
+ {
+  "project": "swebench-sphinx",
+  "session_id": "ses_e8f1db4a1ffe9JdTX7Qhtbjp7v",
+  "message_id": "msg_170e24bb4001RGEa2KeJoM0TAU",
+  "native_text_sha256": "27a20267dc48a149",
+  "corpus_text_sha256": "27a20267dc48a149",
+  "native_len": 1919
+ },
+ {
+  "project": "swebench-sphinx",
+  "session_id": "ses_e8b640f4bffet3JjZFf6N1j2MW",
+  "message_id": "msg_1749bf0d50014ygWoHbfDlRFe9",
+  "native_text_sha256": "27a20267dc48a149",
+  "corpus_text_sha256": "27a20267dc48a149",
+  "native_len": 1919
+ },
+ {
+  "project": "swebench-sphinx",
+  "session_id": "ses_e94da9a38ffe1yVVLJd3uu9B8v",
+  "message_id": "msg_16b2566210013HHXlTxsh32CB9",
+  "native_text_sha256": "e9834e3eb44c6c07",
+  "corpus_text_sha256": "e9834e3eb44c6c07",
+  "native_len": 4573
+ },
+ {
+  "project": "swebench-sphinx",
+  "session_id": "ses_e94e4d82cffeeh7uKWk8JRQUAe",
+  "message_id": "msg_16b1b2821001bVFEE0Su1jHBCY",
+  "native_text_sha256": "d0e4973893e3484a",
+  "corpus_text_sha256": "d0e4973893e3484a",
+  "native_len": 4963
+ },
+ {
+  "project": "swebench-django",
+  "session_id": "ses_e964118fbffekfVeGPEwAjqlBe",
+  "message_id": "msg_169bee7580011GvpG03JqweQQ5",
+  "native_text_sha256": "40dcc808f7adb6d2",
+  "corpus_text_sha256": "40dcc808f7adb6d2",
+  "native_len": 975
+ },
+ {
+  "project": "swebench-django",
+  "session_id": "ses_e961c4abfffeSdCYR1843VbF1T",
+  "message_id": "msg_169e3b561001Yn1QEgLWVk3L9S",
+  "native_text_sha256": "40dcc808f7adb6d2",
+  "corpus_text_sha256": "40dcc808f7adb6d2",
+  "native_len": 975
+ },
+ {
+  "project": "swebench-django",
+  "session_id": "ses_e960d58f3ffeV3fPWMydXF3hHz",
+  "message_id": "msg_169f2a748001bDAT4WwYWIzKs3",
+  "native_text_sha256": "40dcc808f7adb6d2",
+  "corpus_text_sha256": "40dcc808f7adb6d2",
+  "native_len": 975
+ },
+ {
+  "project": "swebench-django",
+  "session_id": "ses_e95f6b0afffe23PAOEm793xG0B",
+  "message_id": "msg_16a094f9e001oaiIybksRdbaG1",
+  "native_text_sha256": "9f5ffebcbcdc85c9",
+  "corpus_text_sha256": "9f5ffebcbcdc85c9",
+  "native_len": 1601
+ },
+ {
+  "project": "swebench-django",
+  "session_id": "ses_e95def118ffe3GKdfAqzIxxlNc",
+  "message_id": "msg_16a210f3f001BnFm3Hefd43prr",
+  "native_text_sha256": "28537d2d3e6e78c5",
+  "corpus_text_sha256": "28537d2d3e6e78c5",
+  "native_len": 1780
+ },
+ {
+  "project": "swebench-django",
+  "session_id": "ses_e95c63e0effeocLxdPca7gxitS",
+  "message_id": "msg_16a39c256001h9wcTqwvRZ5JlO",
+  "native_text_sha256": "29a51f2b7f17a8e8",
+  "corpus_text_sha256": "29a51f2b7f17a8e8",
+  "native_len": 1826
+ },
+ {
+  "project": "swebench-django",
+  "session_id": "ses_e8f24e0d6ffejhO9p5vguhfZz6",
+  "message_id": "msg_170db1f8b001f1JF59VMbIrpBh",
+  "native_text_sha256": "40dcc808f7adb6d2",
+  "corpus_text_sha256": "40dcc808f7adb6d2",
+  "native_len": 975
+ },
+ {
+  "project": "swebench-django",
+  "session_id": "ses_e8b7af7d2ffelYXZGBaQ7w7Zkz",
+  "message_id": "msg_1748508b70011shLm3gkOVxTHc",
+  "native_text_sha256": "40dcc808f7adb6d2",
+  "corpus_text_sha256": "40dcc808f7adb6d2",
+  "native_len": 975
+ },
+ {
+  "project": "swebench-pylint",
+  "session_id": "ses_e9513baf8ffeRpgtj05Pne1u5S",
+  "message_id": "msg_16aec4520001hobQIvnVzFSxu6",
+  "native_text_sha256": "2ef7f5aa72705160",
+  "corpus_text_sha256": "2ef7f5aa72705160",
+  "native_len": 2501
+ },
+ {
+  "project": "swebench-pylint",
+  "session_id": "ses_e95012e5effebFwL7UbVT06dnF",
+  "message_id": "msg_16afed1b5001u24JpdvjXrapMx",
+  "native_text_sha256": "72fbe0158884e9ce",
+  "corpus_text_sha256": "72fbe0158884e9ce",
+  "native_len": 3196
+ },
+ {
+  "project": "swebench-pylint",
+  "session_id": "ses_e8f1944f7ffeGm8PZ5PzzhEUVa",
+  "message_id": "msg_170e6bb1c001V8mjb514JEBxa8",
+  "native_text_sha256": "1791cdd254c593a7",
+  "corpus_text_sha256": "1791cdd254c593a7",
+  "native_len": 1403
+ },
+ {
+  "project": "graphiti-mcp",
+  "session_id": "ses_e76a3ea3bffe920olWqvwJ4zAc",
+  "message_id": "msg_1895c15c7001Q953QYbgF5GvSG",
+  "native_text_sha256": "64ecd3642cc0877c",
+  "corpus_text_sha256": "64ecd3642cc0877c",
+  "native_len": 9198
+ },
+ {
+  "project": "graphiti-mcp",
+  "session_id": "ses_e767fc4cbffe9zB9WHpLF4PLBe",
+  "message_id": "msg_189803b36001zxJWhWTzuYbfhZ",
+  "native_text_sha256": "a9f868b9b6888cac",
+  "corpus_text_sha256": "a9f868b9b6888cac",
+  "native_len": 1386
+ },
+ {
+  "project": "graphiti-mcp",
+  "session_id": "ses_e7623521affeOEDQv0i3I6eeZp",
+  "message_id": "msg_189dcade8001f4lXVbIxD8YuPU",
+  "native_text_sha256": "a1b49e833775ad55",
+  "corpus_text_sha256": "a1b49e833775ad55",
+  "native_len": 10817
+ },
+ {
+  "project": "graphiti-mcp",
+  "session_id": "ses_e72c51f52ffefe1LV6eg8VS7D1",
+  "message_id": "msg_18d3ae0b0001HuV64aECr1Pgoy",
+  "native_text_sha256": "68107beb0c2f6aee",
+  "corpus_text_sha256": "68107beb0c2f6aee",
+  "native_len": 17153
+ }
+]

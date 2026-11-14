@@ -3,7 +3,7 @@ import { modelPrompt } from './core.mjs';
 export async function curateCluster(cluster,{
   endpoint,model,apiKey='local',fetchImpl=fetch,timeoutMs=90000,
   // Defaults unchanged; opt-in controls for admitted model-only efficiency probes.
-  reasoningEffort=null,maxTokens=1600
+  reasoningEffort=null,maxTokens=1600,temperature=0,promptMessages=null
 }={}){
   if(process.env.GHDEV_MEMORY_POST_EXIT_LEASE!=='admitted')
     throw Error('MODEL_ADMISSION_REQUIRED');
@@ -12,18 +12,26 @@ export async function curateCluster(cluster,{
      !url.pathname.endsWith('/v1/chat/completions'))throw Error('Loopback model endpoint required');
   if(typeof model!=='string'||!model||model.length>160||timeoutMs<1000||timeoutMs>180000)
     throw Error('Invalid model settings');
-  if(!Number.isInteger(maxTokens)||maxTokens<128||maxTokens>1600)
+  if(!Number.isInteger(maxTokens)||maxTokens<128||maxTokens>4096)
     throw Error('Invalid model completion budget');
+  if(typeof temperature!=='number'||!Number.isFinite(temperature)||
+    temperature<0||temperature>1)
+    throw Error('Invalid model temperature');
   if(reasoningEffort!==null){
     if(model==='chat-fast')throw Error('CHAT_FAST_NO_REASONING_OVERRIDE');
     if(!['chat-review','chat-audit'].includes(model)||
       !['low','medium','high','xhigh'].includes(reasoningEffort))
       throw Error('THINKING_PROFILE_REQUIRED_FOR_REASONING_EFFORT');
   }
+  const messages=promptMessages??modelPrompt(cluster);
+  if(!Array.isArray(messages)||messages.length!==2||
+    messages[0]?.role!=='system'||messages[1]?.role!=='user'||
+    messages.some(m=>typeof m.content!=='string'||m.content.length>60000))
+    throw Error('INVALID_CURATOR_PROMPT_MESSAGES');
   const started=Date.now();
   const response=await fetchImpl(url,{method:'POST',signal:AbortSignal.timeout(timeoutMs),
     headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
-    body:JSON.stringify({model,messages:modelPrompt(cluster),temperature:0,max_tokens:maxTokens,
+    body:JSON.stringify({model,messages,temperature,max_tokens:maxTokens,
       response_format:{type:'json_object'},
       ...(reasoningEffort===null?{}:{reasoning_effort:reasoningEffort})})});
   if(!response.ok)throw Error('CURATOR_HTTP_'+response.status);

@@ -1,0 +1,43 @@
+{
+ "schema": "issue92-s3-native-test-results-v1",
+ "kind": "corrected-source CPU acceptance at 9b98e0e (4 prescribed gates, real producer exits)",
+ "at_utc": "2026-11-11T19:30:00Z",
+ "head": "9b98e0e40f60c4fad964182510664e703dc6f44d",
+ "gates": [
+  {
+   "name": "node --test docs/issue-78/v2-curator/fact-review.test.mjs",
+   "exit": 0,
+   "tests": 16,
+   "pass": 16,
+   "fail": 0,
+   "note": "previously-RED S3 isolated-discovery suite now GREEN"
+  },
+  {
+   "name": "node --test docs/issue-78/v2-curator/finite-batch.test.mjs",
+   "exit": 0,
+   "tests": 47,
+   "pass": 47,
+   "fail": 0,
+   "note": "includes 'S3 does not retry a forged source reference' (previously failing, now passing)"
+  },
+  {
+   "name": "npm run check",
+   "exit": 0,
+   "note": "static gate"
+  },
+  {
+   "name": "npm test",
+   "exit": 0,
+   "pass": 524,
+   "fail": 0,
+   "note": "root suite 524/524; OPERATIONAL_PLUGIN_TEST_RESULT: PASS"
+  }
+ ],
+ "log_paths": [
+  "/tmp/opencode/issue92-s3/corrected-fact-review.log",
+  "/tmp/opencode/issue92-s3/corrected-finite-batch.log",
+  "/tmp/opencode/issue92-s3/corrected-npm-check.log",
+  "/tmp/opencode/issue92-s3/corrected-npm-test.log"
+ ],
+ "assertions_weakened": false
+}

@@ -1,0 +1,18 @@
+{
+  "historical_v5_manifest": {
+    "path": "issue92-a3-v5-prospective-corpus.json",
+    "sha256": "efa72509f0a74975e4d1f69695e9574009a8a9a95fc6b8dbe51c4eb95bd0124c",
+    "expected": "efa72509f0a74975e4d1f69695e9574009a8a9a95fc6b8dbe51c4eb95bd0124c",
+    "unchanged": true
+  },
+  "native_v1_manifest": {
+    "path": "issue92-a3-v5-native-corpus.json",
+    "sha256": "14a25fa7ba52dc5f1f4ff082662125c7a41edf06f89495468d35018fc1420574",
+    "expected": "14a25fa7ba52dc5f1f4ff082662125c7a41edf06f89495468d35018fc1420574",
+    "unchanged": true
+  },
+  "remote_group": {
+    "graphiti-adr92-a3-prospective-v5": "0 episodes (empty) \u2014 no prior inference/write intent"
+  },
+  "note": "Historical manifests unmodified; only the new v2 corrected manifest+roster+ratification were added."
+}

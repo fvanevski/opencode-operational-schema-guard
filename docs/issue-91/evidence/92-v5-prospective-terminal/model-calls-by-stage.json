@@ -1,0 +1,18 @@
+{
+  "total_model_calls": 76,
+  "by_stage": {
+    "support": 11,
+    "discovery": 49,
+    "utility": 13,
+    "specificity": 1,
+    "arbitration": 2
+  },
+  "model_errors": 0,
+  "prompt_tokens": 69264,
+  "completion_tokens": 6140,
+  "batch_id": "bcd5f003c912302c4644aca681b15313d6b459b46fc4bc02c04c227b7f424ed5",
+  "candidates": 15,
+  "approved": 7,
+  "deferred": 8,
+  "persisted_episodes": 7
+}

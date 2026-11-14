@@ -1,0 +1,153 @@
+{
+  "schema": "issue92-adr-d3-receipt-v1",
+  "kind": "sanitized, evidence-only, public",
+  "campaign": "issue92-adr-d3 recalibrated matched two-stage exposed development comparison (one run, exactly-once)",
+  "repository": "fvanevski/opencode-operational-schema-guard",
+  "branch": "work/91-memory-utility-r1",
+  "branch_head_at_publication": "self-referential: the evidence commit containing this file; exact SHA recorded in the remote readback of the typed handback",
+  "identities": {
+    "starting_github_head_sha": "2bda5ab4268c2184835d7e82ecda26ece6408cd0",
+    "d3_previous_treatment_sha": "50db627850c28f2ce31a68f547f91f51ee3e43b0",
+    "d3_corrected_treatment_sha": "a19e82c7ab68e710339dfd8b4f1381c75b37e8a5",
+    "fact_review_blob_previous": "b91a09c444dced446ad7eb51e37682451b2cb28a",
+    "fact_review_blob_corrected": "0131c5f03b3d524517a7ee7d488c4754839f175f",
+    "scorer_sha256_at_head": "12f4f62b29e4efd9b54aecc5b6060ac69a03ff4a25574e41802445c25ffd399c",
+    "trace_wrapper_sha256": "f4ef907957179fe1c5e863509b35d62f289f5fae44245ab4318ebced75d6d213",
+    "original_freeze_sha256": "96cfef46ab642aeb1d05cf246478da92f34547daf6575ea2d756d192afbdbb5f",
+    "original_source_commits": {
+      "baseline": "c8eb5260f2b10832346234b1b5d0cf28302ffba8",
+      "candidate": "a684667a6eefa2dc19f29755bed0c3048874721d"
+    }
+  },
+  "phase_a_native_verification": {
+    "head": "2bda5ab4268c2184835d7e82ecda26ece6408cd0",
+    "all_producer_exits_zero": true,
+    "summary": "5x node --check 0; fact-review.test.mjs 14/14 (the one previously blocking case-sensitive prompt-wording assertion was repaired at 2bda5ab); curator.test.mjs 36/36; issue92-source-fact.test.mjs 5/5; adr-causal-audit.test.mjs 14/14; npm run check 0; npm test 524/524 PASS",
+    "scorer_d2_historical_preservation": "rerun of the D3 scorer on the private D2 bundle is byte-identical to the published D2 result (disposition COMPLETE)"
+  },
+  "ex_admission": {
+    "gate": "canonical openviking-commit-gate EX lock (flock) + harness-exit + quiet-grace + scheduler-idle observation",
+    "wrapper": "docs/issue-75/v2-candidate/post-exit-drain.py (installed plugin)",
+    "previous_wrapper_exit": 0,
+    "corrected_wrapper_exit": 0,
+    "admission_evidence": "EX admission proven per arm; LATE_RECONCILIATION_LOCAL_WORK resumes under retained EX until all 24 clusters drained; final status review_required (deferred review-only records, no remote ambiguity); both wrapper exits 0",
+    "no_inference_from_interactive_harness": true,
+    "campaign_window_utc": "2026-11-10T02:27:38Z harness exit -> 02:31:13Z completed"
+  },
+  "model": {
+    "profile": "chat-fast (temperature 0, max_tokens 1600, JSON output, 90s timeout); both arms two-stage factReview=true with separate discovery and independent review calls",
+    "previous": {
+      "mode": "two-stage runAdmitted(factReview=true) at 50db627 (original D2 prompts)",
+      "drain_resumes": 4,
+      "final_status": "review_required",
+      "totals": {
+        "model_calls": 47,
+        "model_errors": 0,
+        "model_ms": 17795,
+        "prompt_tokens": 34222,
+        "completion_tokens": 3752
+      }
+    },
+    "corrected": {
+      "mode": "two-stage runAdmitted(factReview=true) at a19e82c (Central-corrected discovery adapter + reviewer prompt)",
+      "drain_resumes": 4,
+      "final_status": "review_required",
+      "totals": {
+        "model_calls": 45,
+        "model_errors": 0,
+        "model_ms": 16673,
+        "prompt_tokens": 47457,
+        "completion_tokens": 3919
+      }
+    },
+    "exactly_once_traces": {
+      "previous_discovery": 24,
+      "previous_review": 23,
+      "corrected_discovery": 24,
+      "corrected_review": 21,
+      "call_intents_match": true,
+      "unfinished_call_intents": 0,
+      "mode_0600": true
+    },
+    "nondeterminism": "single run per arm; temp 0 does not guarantee identical decisions across runs"
+  },
+  "scorer_result": {
+    "schema": "issue92-adr-exposed-d3-result-v1",
+    "disposition": "COMPLETE",
+    "producer_exit": 0,
+    "d3_previous": {
+      "DISCOVERY_VALIDATOR_REJECTED": 1,
+      "REVIEW_DEFER": 10,
+      "DISCOVERED_OTHER_FACT": 5
+    },
+    "d3_corrected": {
+      "REMOTE_TARGET_PRESERVED": 2,
+      "REVIEW_DEFER": 11,
+      "DISCOVERED_OTHER_FACT": 3
+    }
+  },
+  "final_state": {
+    "previous": {
+      "review": { "deferred": 24 },
+      "episodes": 0,
+      "valuable_targets_retained": "0/16",
+      "nonvaluable_targets_persisted": 0,
+      "first_loss_matrix": {
+        "discovery_validator_rejected": 1,
+        "review_defer": 10,
+        "candidate_not_target_claim": 5
+      },
+      "discovery_rejection_detail": {
+        "discovery_invalid_shape_reason_gt_300_chars": ["adr92-g2 (reason 317 chars, frozen D2 validator)"]
+      },
+      "review_defer_reasons": {
+        "not_substantive": 20,
+        "source_ambiguous": 1,
+        "review_uncertain": 2,
+        "repetition_candidate": 0
+      }
+    },
+    "corrected": {
+      "review": { "deferred": 20, "persisted": 4 },
+      "episodes": 4,
+      "valuable_targets_retained": "2/16 (sphinx_ascii_rst_header_rows via c0ed4542-43bc-434b-b42f-d24d0c17b8f4; pylint_6386_verbose_flag_negative via 880e3102-af52-48da-8a46-0c54f60c3260; both independently source-supported and four-surface proven)",
+      "nonvaluable_targets_persisted": 2,
+      "nonvaluable_persisted_detail": [
+        "adr92-sp3 sphinx_param_dict_render_repetition via 793d2ac9-34ec-46d5-8d8f-509f636011ca (underlying meaning: sphinx dict(str,str) param rendering defect; sibling of valuable sp1 claim)",
+        "adr92-dj5 django_lazy_string_repetition3 via 3d931557-6d5c-492a-bc36-a956d080c5a1 (underlying meaning: django lazy-string add-filter TypeError; sibling of valuable dj1 claim)"
+      ],
+      "first_loss_matrix": {
+        "remote_target_preserved": 2,
+        "review_defer": 11,
+        "candidate_not_target_claim": 3,
+        "discovery_validator_rejected_nonvaluable": 3
+      },
+      "discovery_rejection_detail": {
+        "invalid_fact_fields_kind_not_in_allowed_set": ["adr92-dj4 cand#1 kind=constraint"],
+        "invalid_fact_fields_span_length_gt_450": ["adr92-dj7 (518 chars)", "adr92-dj8 (509 chars)"]
+      },
+      "review_defer_reasons_valuable_cases": {
+        "not_substantive": 6,
+        "repetition_candidate": 7,
+        "review_uncertain": 1,
+        "accepted_source_specific_durable": 2
+      },
+      "repetition_anchoring_observation": "the 2 persisted nonvaluable episodes are the family representatives: sp3 (nonvaluable) was ACCEPTed before its valuable sibling sp1, and dj5 (nonvaluable) before valuable dj1, so the valuable siblings were then REVIEWed as repetition_candidate. The reviewer's prior-facts window only contains episodes persisted so far in the same drain pass, making duplicate anchoring order-dependent."
+    }
+  },
+  "controls": {
+    "production_group_unchanged": "development-knowledge: 355 episodes before and after, newest 2026-11-08T03:57:03.076489Z (identical to D2 baseline)",
+    "historical_groups_unchanged": [
+      "graphiti-adr92-d1-previous: 2 episodes",
+      "graphiti-adr92-d1-corrected: 15 episodes",
+      "graphiti-adr92-d2-previous: 14 episodes",
+      "graphiti-adr92-d2-two-stage: 0 episodes"
+    ],
+    "installed_production_source_unchanged": "installed plugin v2-curator contains no fact-review.mjs (one-pass default intact; two-stage opt-in exists only in disposable campaign worktrees)",
+    "privacy_control": "ineligible :ctrl source (out_of_scope_workspace, case adr92-g1): 0 queue events and 0 trace prompts reference it in either arm (24/25 eligible sources staged)",
+    "no_replay": "call-intent preflight (wx) + exactly-once 0600 trace files; no second model call per cluster; 0 unfinished call intents; no ambiguous remote submission occurred (no submission_unknown states)",
+    "fresh_state": "two fresh empty ReviewStore state roots (new d3r collision-safe root) + two fresh empty Graphiti groups (0 episodes pre-campaign)"
+  },
+  "verdict": "REMEDIATION_REQUIRED",
+  "verdict_basis": "The corrected treatment recovers terminal retention from 0/16 (D2 two-stage) to 2/16 with two independently source-supported valuable facts (four-surface proven) and bounded low-value persistence (2 nonvaluable episodes, both duplicate-family representatives; no boilerplate episodes). However 14/16 valuable targets are still lost, and the dominant loss stage is the independent reviewer: 11 REVIEW_DEFER (7 repetition_candidate, 6 not_substantive, 1 review_uncertain) plus 3 targets whose only candidate was not the target's claim. The repetition_candidate deferrals are order-dependent: within a drain pass the nonvaluable sibling of a defect family is ACCEPTed first and then anchors the family, causing the valuable sibling to be REVIEWed as a repetition. A handful of favorable model decisions alone is not adequate per the contract; retention has not yet recovered materially across independently supported technical facts."
+}

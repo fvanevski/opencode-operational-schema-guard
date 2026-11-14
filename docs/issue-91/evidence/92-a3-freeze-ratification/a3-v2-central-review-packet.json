@@ -1,0 +1,326 @@
+{
+ "schema": "issue92-a3-v2-central-review-packet-v1",
+ "group": "graphiti-adr92-a3-prospective-v2",
+ "private_manifest_sha256": "a85941839f1f9dc7e04081829016aa3c38ef05e9a6f3c29ca58de8b53abbf5ca",
+ "label_freeze_sha256": "bdfb7c6c7c025c572ba899094b94d1388c425e59189e395b38f5469968da3a58",
+ "valuable": [
+  {
+   "case_id": "i92-v2-01-0589c35f",
+   "predicate": "falkordb_per_group_graph_layout",
+   "valuable": true,
+   "scope": {
+    "project": "f6e7bce8c4c55e2b6d837cfe4eb5af30617dae00",
+    "workspace": "/tmp/opencode/issue81-qual/fresh-session/work"
+   },
+   "source_digest_sha256": "2be300179e60a35f01cad99b8e9f37c84bbae485d524980a94e48b356bd877b1",
+   "source_locator": "opencode:ses_e514f306cffe3F3Hy1nkJgjujC:message:msg_1aeb0cfa4001WmFltu732cZHal",
+   "observed_at": "2026-11-06T02:29:46.100000Z",
+   "evidence_class": "user-stated",
+   "bounded_source_quote": "What FalkorDB layout is per-group graphs: `development-knowledge`, `ghdev_gh_mcp`, and an empty `graphiti_live` (0 nodes). The script queries `graphiti_live` filtered by `group_id='development-knowledge'` \u2014 but the data lives in the `development-knowledge` graph.",
+   "quote_chars": 263,
+   "rationale": "technical + durable, user-stated"
+  },
+  {
+   "case_id": "i92-v2-02-b25eaab5",
+   "predicate": "qualification_state_disposable_b75_journal_decision",
+   "valuable": true,
+   "scope": {
+    "project": "08cca5d3f5e9af4f7be35ad55aa846f2b88207b2",
+    "workspace": "/tmp/opencode/issue75-final-qual/v2demo"
+   },
+   "source_digest_sha256": "8651f98a5cce27379cf6e82917048e5e88d9be450b972260ece435dd8c349b12",
+   "source_locator": "opencode:ses_e664635c4ffeUVVxkN88PvHUY8:message:msg_199b9ca48001KKf3ulXBY8LBuT",
+   "observed_at": "2026-11-02T00:47:33.094000Z",
+   "evidence_class": "user-stated",
+   "bounded_source_quote": "Decision: For this repo, we will keep the qualification state in the disposable b75 journal; run python3 -m pytest /tmp/opencode/issue75-final-qual/v2demo/test_smoke.py -q and report the result",
+   "quote_chars": 193,
+   "rationale": "technical + durable, user-stated"
+  },
+  {
+   "case_id": "i92-v2-03-7e5dd082",
+   "predicate": "rust_caching_layer_vs_redis_architecture_decision",
+   "valuable": true,
+   "scope": {
+    "project": "6e1d1f14113b8296790eb58270fae14c20edf5be",
+    "workspace": "/workspace/mcp_servers/gh_mcp"
+   },
+   "source_digest_sha256": "605bdcc6cfea353bef0b66bbbe275cc773f6c241e392309a7d8d8c8300ab6a32",
+   "source_locator": "opencode:ses_e48972b74ffelp1G0HWJE6vNsS:message:msg_1b78bec51001h2ndc0lFXOlrjY",
+   "observed_at": "2026-11-07T19:46:02.983000Z",
+   "evidence_class": "user-stated",
+   "bounded_source_quote": "Did we ever make a decision about adding a Rust-based caching layer to this project, or about using Redis for the MCP transport?",
+   "quote_chars": 128,
+   "rationale": "technical + durable, user-stated"
+  },
+  {
+   "case_id": "i92-v2-04-79348562",
+   "predicate": "ghdev_curator_prod_service_exit_state",
+   "valuable": true,
+   "scope": {
+    "project": "6e1d1f14113b8296790eb58270fae14c20edf5be",
+    "workspace": "/workspace/mcp_servers/gh_mcp"
+   },
+   "source_digest_sha256": "76bbf87c5a9a27b161a50eb6cfa1f6d2092972db05c2a9135fb2fac433f5c353",
+   "source_locator": "opencode:ses_e43c11481ffe5a0OFcHTiHfMaX:message:msg_1bc3eeb83001yLkDK4fIb7qIJD",
+   "observed_at": "2026-11-08T17:40:02.577000Z",
+   "evidence_class": "user-stated",
+   "bounded_source_quote": "What happened with the ghdev-curator-prod service exit in early November, and what is the current curation approach?",
+   "quote_chars": 116,
+   "rationale": "technical + durable, user-stated"
+  },
+  {
+   "case_id": "i92-v2-05-07f3c815",
+   "predicate": "pr376_budget_action_resolution",
+   "valuable": true,
+   "scope": {
+    "project": "a707ba89fd42680779b9b29da9b2d18a801448a1",
+    "workspace": "/home/filip/.codex/skills/firecrawl"
+   },
+   "source_digest_sha256": "beca15e35f60c0c085be2f5c9567412ca23476f39493c970dfb6651f56740a19",
+   "source_locator": "opencode:ses_f62070694ffeMpisd2lP7ittxo:message:msg_09e2f66f8001EP2cW6jDrmqn5K",
+   "observed_at": "2026-09-14T04:31:41.816000Z",
+   "evidence_class": "user-stated",
+   "bounded_source_quote": "PR #376 \u2014 Exact budget-action resolution and positive-run continuation. Continue the existing host/service acceptance campaign for Issue #375 / PR #376. This handoff grants a single, narrowly bounded operator-action authorization.",
+   "quote_chars": 230,
+   "rationale": "technical + durable, user-stated"
+  },
+  {
+   "case_id": "i92-v2-06-8ebc4aed",
+   "predicate": "issue55_fresh_process_live_acceptance",
+   "valuable": true,
+   "scope": {
+    "project": "267708804c5ec0447a3b26f0263fe9cbf1250253",
+    "workspace": "/tmp/opencode-issue55-accept.xObFDD"
+   },
+   "source_digest_sha256": "6742dc727f9ce6f26f130e5472fe17af9d2ece0ad80332df2598abaf7e9109fa",
+   "source_locator": "opencode:ses_f6867b404ffeNgRTj34x90qKoz:message:msg_097984c14001L1sUBUR32lbFnx",
+   "observed_at": "2026-09-12T21:48:55.700000Z",
+   "evidence_class": "user-stated",
+   "bounded_source_quote": "Phase 2 \u2014 Fresh-process live acceptance for Issue #55. Perform the post-deployment live acceptance for REPO_ID=fvanevski/opencode-operational-schema-guard ISSUE_NUMBER=55",
+   "quote_chars": 170,
+   "rationale": "technical + durable, user-stated"
+  },
+  {
+   "case_id": "i92-v2-07-02cb0038",
+   "predicate": "abi_incompatibility_assumption_analysis",
+   "valuable": true,
+   "scope": {
+    "project": "53f15a255e83bbb3064cea4cb862ec78fe90138f",
+    "workspace": "/opt/containers/tdarr"
+   },
+   "source_digest_sha256": "1a4a165d7a10111e1dbdf87b9fb4c3d5077b88287f24d392690485977db81062",
+   "source_locator": "opencode:ses_ec824370dffesoGG5AHPb3HiLt:message:msg_137e208c4001nkrW0Q1lnIXDCL",
+   "observed_at": "2026-10-14T00:48:42.728000Z",
+   "evidence_class": "user-stated",
+   "bounded_source_quote": "The agent is making two incorrect assumptions, although the errors shown do not establish an ABI incompatibility. 1. `-f mkv` is not a valid FFmpeg muxer name. The correct muxer is `-f matroska`, or simply omit `-f` when writing a file ending in `.mkv`.",
+   "quote_chars": 253,
+   "rationale": "technical + durable, user-stated"
+  },
+  {
+   "case_id": "i92-v2-08-d3be2815",
+   "predicate": "issue168_ingress_ownership_root_reservation",
+   "valuable": true,
+   "scope": {
+    "project": "53f15a255e83bbb3064cea4cb862ec78fe90138f",
+    "workspace": "/opt/containers/tdarr"
+   },
+   "source_digest_sha256": "06453edcc50c40b08cec53ac153b401c8ae43183c79fa5aa0dbef5fa48e7ab14",
+   "source_locator": "opencode:ses_e7a64eda1ffewFGebO2dZcfpIY:message:msg_1859b12600019lAJihbb4bbbVj",
+   "observed_at": "2026-10-29T03:01:35.069000Z",
+   "evidence_class": "user-stated",
+   "bounded_source_quote": "Issue #168 \u2014 Recover failed ingress ownership and close never-executed root reservation. Harness: CPU_ONLY OpenCode / local Qwen. Single harness; no switching to GPU-capable Codex/Agy. PR: #169",
+   "quote_chars": 193,
+   "rationale": "technical + durable, user-stated"
+  },
+  {
+   "case_id": "i92-v2-09-2e6fcbfb",
+   "predicate": "issue134_native_interface_selection",
+   "valuable": true,
+   "scope": {
+    "project": "53f15a255e83bbb3064cea4cb862ec78fe90138f",
+    "workspace": "/opt/containers/tdarr"
+   },
+   "source_digest_sha256": "b0d8ceeb83339f71d3ec2a2b31a490405fca0d25e3f269fe421dc4fa454dcd89",
+   "source_locator": "opencode:ses_e916592d6ffe4TaamFUywINz3A:message:msg_16e9b0d2500113NpKUCRLlYC2w",
+   "observed_at": "2026-10-24T15:50:17.658000Z",
+   "evidence_class": "user-stated",
+   "bounded_source_quote": "Issue #134 \u2014 Selected installed native-interface evidence discovery. Repository: fvanevski/tdarr. Issue: https://github.com/fvanevski/tdarr/issues/134. PR: https://github.com/fvanevski/tdarr/pull/135",
+   "quote_chars": 199,
+   "rationale": "technical + durable, user-stated"
+  },
+  {
+   "case_id": "i92-v2-10-660f005a",
+   "predicate": "issue368_exact_head_host_revalidation",
+   "valuable": true,
+   "scope": {
+    "project": "a707ba89fd42680779b9b29da9b2d18a801448a1",
+    "workspace": "/home/filip/.codex/skills/firecrawl"
+   },
+   "source_digest_sha256": "b46d89078e1a72ab9a89c8cb094bd0ad0185829463ea5cd24f9900100578469d",
+   "source_locator": "opencode:ses_f71db7272ffe5QI73SFcmLfjjs:message:msg_08e578449001KlXBFPS2b3evnU",
+   "observed_at": "2026-09-11T02:41:35.305000Z",
+   "evidence_class": "user-stated",
+   "bounded_source_quote": "Issue #368 \u2014 Post-Codex exact-head host revalidation. ROLE=evidence-only LOCAL_AGENT_HARNESS=opencode REPO_ID=fvanevski/firecrawl_skill ISSUE_NUMBER=368 PR_NUMBER=372 TARGET_HEAD_SHA=e91c2f33e2dc8e429f331af7ac76b69c47f23215",
+   "quote_chars": 223,
+   "rationale": "technical + durable, user-stated"
+  }
+ ],
+ "controls": [
+  {
+   "case_id": "i92-v2-11-d7c36a6d",
+   "predicate": "routine_shell_echo_command",
+   "valuable": false,
+   "scope": {
+    "project": "2cfa05e81c79265ab99a7ab992d9bf8f4ac2699b",
+    "workspace": "/home/filip"
+   },
+   "source_digest_sha256": "bd2b6867b41d7fb31be2e0798faab0fe7e80ff6e997b604cd14ac74bb74cbf62",
+   "source_locator": "opencode:ses_e8fac88f1ffepVGCrIwNsjPP5D:message:msg_170554897001gP1mHe1a1hHgog",
+   "observed_at": "2026-10-24T23:53:19.779000Z",
+   "evidence_class": "user-stated",
+   "control_reason": "routine one-shot `echo prefix_stability_verified` shell command (test marker); non-durable",
+   "control_text_hash": "bd2b6867b41d7fb31be2e0798faab0fe7e80ff6e997b604cd14ac74bb74cbf62"
+  },
+  {
+   "case_id": "i92-v2-12-4c97cf21",
+   "predicate": "routine_touch_bash_command",
+   "valuable": false,
+   "scope": {
+    "project": "0f5d6bf45db635bc9c239ddd5c1329d651ed13fa",
+    "workspace": "/workspace/opencode-operational-schema-guard"
+   },
+   "source_digest_sha256": "b9781acc4cd2ac4bb499702ac1a22a70eb535da818051f13ae3e31f472504329",
+   "source_locator": "opencode:ses_f7d66ea60ffeEhEigc34ATSQ66:message:msg_082995aef001DvZ5jI3TOLz4cy",
+   "observed_at": "2026-09-08T19:58:03.503000Z",
+   "evidence_class": "user-stated",
+   "control_reason": "routine `touch /tmp/.../marker` bash command (filesystem marker); non-durable",
+   "control_text_hash": "b9781acc4cd2ac4bb499702ac1a22a70eb535da818051f13ae3e31f472504329"
+  },
+  {
+   "case_id": "i92-v2-13-227db738",
+   "predicate": "routine_execution_time_query",
+   "valuable": false,
+   "scope": {
+    "project": "53f15a255e83bbb3064cea4cb862ec78fe90138f",
+    "workspace": "/opt/containers/tdarr"
+   },
+   "source_digest_sha256": "af0e03653b0607d627c7782829309841fc29f48f6ba100d789dc7785d7581eea",
+   "source_locator": "opencode:ses_e86f787f2ffe3Gv3G1Ry024aX3:message:msg_17a9b63a5001B3TDRkWXyv4lnq",
+   "observed_at": "2026-10-26T23:46:06.477000Z",
+   "evidence_class": "user-stated",
+   "control_reason": "routine execution-time query about the last agent turn (process metric); non-durable",
+   "control_text_hash": "af0e03653b0607d627c7782829309841fc29f48f6ba100d789dc7785d7581eea"
+  },
+  {
+   "case_id": "i92-v2-14-dbacc46d",
+   "predicate": "routine_post_exit_tui_confirmation",
+   "valuable": false,
+   "scope": {
+    "project": "0f5d6bf45db635bc9c239ddd5c1329d651ed13fa",
+    "workspace": "/workspace/opencode-operational-schema-guard"
+   },
+   "source_digest_sha256": "23aa754a59a983e265784933a7d6f1a9feec8860128fceca2f843ea835dce20c",
+   "source_locator": "opencode:ses_e41524c4affeA2maKfppOzjB5Z:message:msg_1c1094fbe001Y0MxqVt91F5ZzD",
+   "observed_at": "2026-11-09T15:59:35.410000Z",
+   "evidence_class": "user-stated",
+   "control_reason": "routine post-exit TUI completion confirmation (process state check); non-durable",
+   "control_text_hash": "23aa754a59a983e265784933a7d6f1a9feec8860128fceca2f843ea835dce20c"
+  },
+  {
+   "case_id": "i92-v2-15-16c5aab1",
+   "predicate": "routine_media_deletion_state",
+   "valuable": false,
+   "scope": {
+    "project": "global",
+    "workspace": "/home/filip"
+   },
+   "source_digest_sha256": "f3a9bb0adf8ff60881331b5eaf6dadd2e22af636e78d329fc55422e7adcaff70",
+   "source_locator": "opencode:ses_f2706ab22ffeamEgcuGNjMizOy:message:msg_0d9205c80001xUiqKn5IB3sxJq",
+   "observed_at": "2026-09-25T15:12:51.840000Z",
+   "evidence_class": "user-stated",
+   "control_reason": "routine plex media-deletion status statement (user preference); non-technical",
+   "control_text_hash": "f3a9bb0adf8ff60881331b5eaf6dadd2e22af636e78d329fc55422e7adcaff70"
+  },
+  {
+   "case_id": "i92-v2-16-bc222379",
+   "predicate": "routine_query_generation_task",
+   "valuable": false,
+   "scope": {
+    "project": "6e1d1f14113b8296790eb58270fae14c20edf5be",
+    "workspace": "/workspace/mcp_servers/gh_mcp"
+   },
+   "source_digest_sha256": "c35cddd6372691c9c00185feb9a2b987bcc0ae6c202749f5ca61c60a92eaa4cc",
+   "source_locator": "opencode:ses_e48972b74ffelp1G0HWJE6vNsS:message:msg_1b7876fd4001cgITBIs5d1Mnet",
+   "observed_at": "2026-11-07T19:41:08.975000Z",
+   "evidence_class": "user-stated",
+   "control_reason": "routine query-generation task across categories A/B/C (task request); non-durable",
+   "control_text_hash": "c35cddd6372691c9c00185feb9a2b987bcc0ae6c202749f5ca61c60a92eaa4cc"
+  },
+  {
+   "case_id": "i92-v2-17-5dac2b5d",
+   "predicate": "routine_dependency_bump_request",
+   "valuable": false,
+   "scope": {
+    "project": "2d5b82f298ebae09c6670dfbbf361dc7246493a3",
+    "workspace": "/opt/containers/graphiti"
+   },
+   "source_digest_sha256": "7a351ef99d8a0afcec0756a3d7d42024b587f8bd2110791b066de4d8f1a9d8fd",
+   "source_locator": "opencode:ses_e76e885afffe5nDb1ch2WTfrNh:message:msg_1892c50bf001UtjsNNRuCvx0Rp",
+   "observed_at": "2026-10-29T19:39:05.324000Z",
+   "evidence_class": "user-stated",
+   "control_reason": "routine dependency-bump request for a PR (routine task); non-durable",
+   "control_text_hash": "7a351ef99d8a0afcec0756a3d7d42024b587f8bd2110791b066de4d8f1a9d8fd"
+  },
+  {
+   "case_id": "i92-v2-18-9b5e99f3",
+   "predicate": "meta_process_evidence_question",
+   "valuable": false,
+   "scope": {
+    "project": "7d7a2e305630bc45e21a2e34258e5583879cccdb",
+    "workspace": "/tmp/opencode/issue81-fresh-native-acceptance/fresh-native-v1"
+   },
+   "source_digest_sha256": "9fc4425cc836a712966addcb16c1ecb0c1a7df5a912382ada51054961331c3c9",
+   "source_locator": "opencode:ses_e4dee78f4ffePuP7ykc2KHnsve:message:msg_1b211871f001xONjgGL2NXxMRH",
+   "observed_at": "2026-11-06T18:14:16.298000Z",
+   "evidence_class": "user-stated",
+   "control_reason": "meta-process question about fresh-native-session recall evidence (meta, not a durable fact)",
+   "control_text_hash": "9fc4425cc836a712966addcb16c1ecb0c1a7df5a912382ada51054961331c3c9"
+  },
+  {
+   "case_id": "i92-v2-19-17581937",
+   "predicate": "speculative_ninfer_log_hypothesis",
+   "valuable": false,
+   "scope": {
+    "project": "0f5d6bf45db635bc9c239ddd5c1329d651ed13fa",
+    "workspace": "/workspace/opencode-issue81-merged-deploy"
+   },
+   "source_digest_sha256": "a83b51138e51f6ad55b7af32d72e4f28ba00263a9238f2dcf9e225fcb50010ea",
+   "source_locator": "opencode:ses_e518d2926ffe4iAujvBdg4SxaG:message:msg_1ae7b897c0012q0rSotb46Vs7O",
+   "observed_at": "2026-11-06T01:31:36.664000Z",
+   "evidence_class": "user-stated",
+   "control_reason": "speculative ninfer log-detail hypothesis (unconfirmed); not a durable fact",
+   "control_text_hash": "a83b51138e51f6ad55b7af32d72e4f28ba00263a9238f2dcf9e225fcb50010ea"
+  },
+  {
+   "case_id": "i92-v2-20-dda3a3f7",
+   "predicate": "routine_session_continuation",
+   "valuable": false,
+   "scope": {
+    "project": "53f15a255e83bbb3064cea4cb862ec78fe90138f",
+    "workspace": "/opt/containers/tdarr"
+   },
+   "source_digest_sha256": "7cf8f189c313a7dadb95a8eb6b2eaae607616001c59ef86974a5893d31749451",
+   "source_locator": "opencode:ses_eb9e900eeffeS25PK7OdoE7OVt:message:msg_146180ec3001h1kCgA1SAR8zRy",
+   "observed_at": "2026-10-16T19:02:24.222000Z",
+   "evidence_class": "user-stated",
+   "control_reason": "routine interrupted-session continuation request (process); non-durable",
+   "control_text_hash": "7cf8f189c313a7dadb95a8eb6b2eaae607616001c59ef86974a5893d31749451"
+  }
+ ],
+ "nonoverlap": {
+  "b3_24cluster": "0 session / 0 message (exact ID sets)",
+  "gh_mcp_20case": "0 session / 0 message / 0 text-digest (private holdout corpus)",
+  "h2_h3_h4": "byte-level digest crosscheck UNVERIFIED (private corpus files not on host); distinct cronparse/firecrawl families; H2 receipt records 0 session/message overlap with gh_mcp"
+ },
+ "sanitization": "bounded quotes only; no credentials, no entire messages, no raw logs, no source-private file contents"
+}

@@ -1,0 +1,90 @@
+{
+ "schema_version": 1,
+ "kind": "issue92-h2-freeze-receipt-v1 (PUBLIC, sanitized, evidence-only)",
+ "campaign": "92-a1-a3-first-campaign / h2 prospective multi-family holdout",
+ "branch": "work/91-memory-utility-r1",
+ "base_branch_head_at_receipt": "7bff2f0ab56a292e792cc46278774c284f365034",
+ "source_identities": {
+  "baseline_sha": "c8eb5260f2b10832346234b1b5d0cf28302ffba8",
+  "candidate_sha": "270848aa108df22b9d12738cc6f4903ec45da9c1"
+ },
+ "lineage": {
+  "original_seal_v1": {
+   "corpus_sha256": "dc58025c3a2649815551a8b0f9cc37bb6e955c2aa29dc5f79447eda782e09de3",
+   "corpus_cases": 30,
+   "corpus_valuable_provisional": 19,
+   "frozen_at": "2026-11-09T00:36:55.903Z",
+   "freeze_manifest_sha256": "663dd76f0f48771da7972de21b19e43eef231a30fbbd0edaf11c87b8a8d77b9e"
+  },
+  "re_freeze_v2": {
+   "corpus_path_host": "/tmp/opencode/issue92-h2/issue92-h2-cohort-refrozen.json (private)",
+   "corpus_sha256": "63948f771f96632b0e8272736739e3a6fe97505431abcbda2356962d974efb36",
+   "corpus_cases": 30,
+   "corpus_valuable_provisional": 19,
+   "families": {"tdarr": 10, "firecrawl": 10, "guard81": 10},
+   "frozen_at": "2026-11-09T01:08:11.317Z",
+   "freeze_manifest_sha256": "bdb180ac62534bc4ab706dd0179d7d7997478c520ba977e2f0cdc0394852a1e7",
+   "replaced_cases": [
+    {
+     "removed": "i92h2-22-fafe1848",
+     "added": "i92h2-22-ef6c1520",
+     "reason_class": "fact-level entanglement with the exposed gh_mcp FalkorDB crash-loop diagnostic family (removed case used the exposed crash-loop fact as a recall probe); replacement is a genuinely new source-backed durable runtime fact, natively re-verified on host, non-exposed",
+     "unchanged_cases": 29
+    }
+   ]
+  }
+ },
+ "exposure_control": {
+  "exposed_sets": ["gh_mcp diagnostic cohort (20 cases, 15 sessions)", "#81 cronparse development corpus (24 cases, 1 session)"],
+  "session_message_overlap_with_h2": 0,
+  "fact_level_replacements_pre_output": 1,
+  "rule": "whole exposed sessions excluded; any remaining fact-family overlap excluded pre-output"
+ },
+ "model_policy": {
+  "endpoint": "http://127.0.0.1:8002/v1/chat/completions",
+  "model_alias": "chat-fast",
+  "temperature": 0,
+  "max_tokens": 1600,
+  "response_format": "json_object",
+  "reasoning_effort": null,
+  "timeout_ms": 90000,
+  "digest_sha256": "30806d64f7d6174d73342ead8021fb09e8a56d606aa6cb3eb890aa0220521501",
+  "digest_method": "sha256 of compact JSON.stringify of the frozen model_policy object"
+ },
+ "ai_adjudication": {
+  "authority": "user_authorized",
+  "reviewer_kind": "independent_ai",
+  "reviewer_identity": "OpenCode V2 build primary agent (session ses_e422b4544ffe3BLGdWdCLYVPto; model Qwen3.8 Chat, provider local, bounded reasoning)",
+  "outputs_blinded": true,
+  "read_original_sources": true,
+  "used_private_source_access": true,
+  "ratification_schema": "issue92-h2-ai-ratification-v1",
+  "ratification_sha256": "925a21dbeaebad47216b7cf438e6471fb70499668c72139f3c8a95c4a5271ad8",
+  "ratified_at": "2026-11-09T01:09:12.258Z",
+  "label_changes": 0,
+  "valuable_ratified": 19,
+  "case_count": 30,
+  "preflight": "H2_PREFLIGHT_PASS (native producer exit 0)"
+ },
+ "group_allocation": {
+  "h2-base-dev": "graphiti-curator-utility-development-r05 (24-case exposed cronparse corpus, untouched queue)",
+  "h2-cand-dev": "graphiti-curator-utility-development-r06 (24-case exposed cronparse corpus, untouched queue)",
+  "h2-base-holdout": "graphiti-curator-utility-holdout-r09 (FRESH unused group, 30-case re-frozen cohort, untouched queue)",
+  "h2-cand-holdout": "graphiti-curator-utility-holdout-r10 (FRESH unused group, 30-case re-frozen cohort, untouched queue)",
+  "sealed_untouched_v1_holdout": ["graphiti-curator-utility-holdout-r07", "graphiti-curator-utility-holdout-r08"],
+  "graphiti_check": "all six groups verified episode-free in Graphiti MCP before seeding (2026-11-08)"
+ },
+ "seed_status": {
+  "h2-base-dev": "24 new / 0 reviews",
+  "h2-cand-dev": "24 new / 0 reviews",
+  "h2-base-holdout": "30 new / 0 reviews",
+  "h2-cand-holdout": "30 new / 0 reviews"
+ },
+ "chronology_proof": {
+  "statement": "No H2 model output has been generated as of this receipt: all four queues are untouched (new counts only, review_count=0), the v1 seal and the re-freeze both predate any model call on these events, and the interactive harness is prohibited from triggering inference (EX gate exclusive admission).",
+  "post_exit_runner": "docs/issue-91/h2-acceptance/h2-post-exit-run-reviewed.sh (centrally staged; operator post-exit shell only)",
+  "receipt_time": "2026-11-09T01:09:56.635Z"
+ },
+ "sanitization": "No raw private excerpts, credentials, or private text in this receipt; private byte locators (host paths) listed for the private auditor, digests authoritative.",
+ "next": "single post-exit operator action (one-shot launcher), then the consolidated final evidence-only commit (second evidence commit) with the paired scorecard."
+}

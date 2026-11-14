@@ -1,0 +1,76 @@
+{
+  "schema": "issue92-pr95-atomicity-final-receipt-v1",
+  "repo": "fvanevski/opencode-operational-schema-guard",
+  "pr": 95,
+  "branch": "issue/92-v7c-accepted",
+  "result": "SOURCE_REMEDIATION_REQUIRED",
+  "source_head": "28afd5307b0088d8e0f695efb49f9b2879d5d708",
+  "source_blobs_verified": {
+    "docs/issue-78/v2-candidate/events.mjs": "041aab302264d080362c1039439a34f1f3fbf80c",
+    "docs/issue-78/v2-curator/finite-batch.mjs": "f0c54e18e9e2832be17925d8b40f757b5bd9ddcc",
+    "docs/issue-78/v2-curator/fact-review.mjs": "e4b13873b0e16c31fd0b063462b551c2e7a58d3d",
+    "docs/issue-78/v2-curator/claim-evidence.mjs": "3c29c4ff617682701e01fdfb46609e21a1892bd6",
+    "docs/issue-78/v2-curator/finite-batch.test.mjs": "739e01f4518f2197f2cf5bca9843993c41d468b7"
+  },
+  "focused_tests": {"candidate_long_prompt": "31/0", "curator": "97/0", "a3": "19/0", "total": "147 PASS"},
+  "trusted_ci": {"run_id": "43481444760", "pre_contract_source_head": "8f85ee64a108d9f32cb8e6bc320e1ad8ecf6703d", "outcome": "pass", "root_profile_tests": 671},
+  "cpu_boundary": {
+    "api_key_removed_stages": true,
+    "demo_credential_value_rejected": true,
+    "credential_location_eligible_without_values": true,
+    "native_literal_whitespace_offsets_preserved": true
+  },
+  "exposed_atomicity": {
+    "group": "graphiti-adr92-exposed-atomicity-r1",
+    "pre_stage_episodes": 0,
+    "candidates": 5, "approved": 2, "deferred": 3,
+    "model_calls": 19, "model_errors": 0,
+    "model_calls_by_stage": {"discovery": 11, "utility": 5, "arbitration": 1, "support": 1, "specificity": 1},
+    "plan_certificate": {"atomicity_review_v1": true, "per_item_assertion_sha256": true},
+    "bundled_v7_v08": {
+      "case_id": "v7-v-08",
+      "native_message_id": "msg_160509336001zc8AM5tccpDCaM",
+      "assertion_sha256": "2c03af01093b4e136aee70b5e396a85bcb72b8d3231ec7b9b8dfe7ee10804c60",
+      "model_independent_predicates": 1,
+      "persisted_as_one_atomic_fact": true,
+      "remote_episode_uuid": "68405b68-3119-4d9f-8209-158b01974d88",
+      "predicates": ["Tdarr server/node v3 (version fact)", "Context7/Firecrawl MCP tool-use instruction"],
+      "verdict": "ACCEPTED_BUNDLED_DISQUALIFYING"
+    },
+    "atomic_positive_v7_v07": {
+      "case_id": "v7-v-07",
+      "assertion_sha256": "292674d5ef73eeac08a191d0078f3328e4f9951a1de5d2ca84139605aeb80cf0",
+      "model_independent_predicates": 1,
+      "persisted": true,
+      "remote_episode_uuid": "6fd0b306-3283-4d06-9bad-c6489662e1c4",
+      "verdict": "ACCEPTED_ATOMIC_POSITIVE"
+    },
+    "controls": [
+      {"case_id": "v7-c-01", "verdict": "DEFERRED_STAYED_OUT"},
+      {"case_id": "v7-c-02", "verdict": "DEFERRED_STAYED_OUT"}
+    ],
+    "control_pollution": 0,
+    "authority_breaches": 0,
+    "graphiti_readback": {"episodes_in_group": 2, "uuids": ["6fd0b306-3283-4d06-9bad-c6489662e1c4", "68405b68-3119-4d9f-8209-158b01974d88"]}
+  },
+  "ex_admission": {
+    "flock": "/run/user/1000/openviking-agent.lock",
+    "inherited_lock_fd": 3,
+    "kernel_backed_proof": "fd present in /proc/self/fd; fdinfo FLOCK held by launcher pid",
+    "scheduler_idle_at_admission": true,
+    "harness_exit": true,
+    "no_unresolved": true,
+    "quiet_grace_seconds": 30,
+    "once_only_marker_written": true,
+    "reconcile_only": {"driver_rc": 3, "attempts": 1, "reconciled_persisted": 2, "unresolved": 0, "status": "settled"}
+  },
+  "v8_freeze": {"prepared": false, "reason": "B did not qualify (bundled v7-v-08 assertion accepted); no v8 inference executed"},
+  "historical_integrity": "v7c corpus/label/staged/scorecard and all earlier states unchanged; no v7c inference replay; no writes to v7c or production groups",
+  "local_changes": "none semantic; host-local disposable group/state + throwaway EX launcher/driver under /tmp (not committed)",
+  "command_shape_friction": [
+    {"requested": "EX lock fd env var", "effective": "GHDEV_MEMORY_POST_EXIT_LOCK_FD", "provenance": "requireKernelExAdmission in ex-admission-proof.mjs reads GHDEV_MEMORY_POST_EXIT_LOCK_FD", "execution_effect": "first attempt used EX_LOCK_FD -> EX_KERNEL_ADMISSION_REQUIRED:missing_lock_fd; corrected, re-run admitted"}
+  ],
+  "decision_blockers": [
+    "chat-fast atomicity reviewer merges the two independent v7-v-08 predicates into one (independent_predicates=1) and persists the bundled original quote; Central must fix the source-level atomicity gate (lexical two-predicate detector or predicate-enumeration requirement in atomicity_review_v1) before the v8 cohort is ratifiable"
+  ]
+}

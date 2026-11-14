@@ -1,0 +1,387 @@
+{
+  "schema": "issue92-adr-two-trial-scorecard-v1",
+  "overall": "INSUFFICIENT_SAMPLE",
+  "freeze_sha256": "96cfef46ab642aeb1d05cf246478da92f34547daf6575ea2d756d192afbdbb5f",
+  "source_commits": {
+    "baseline": "c8eb5260f2b10832346234b1b5d0cf28302ffba8",
+    "candidate": "a684667a6eefa2dc19f29755bed0c3048874721d"
+  },
+  "preflight": {
+    "status": "ADR92_FREEZE_PASS",
+    "clusters": 24,
+    "families": 4,
+    "eligible_sources": 24,
+    "targets": 27,
+    "valuable_targets": 16,
+    "max_supported_by_three_per_cluster": 16,
+    "capacity_ceiling": 1,
+    "trials": [
+      "t1",
+      "t2"
+    ],
+    "source_commits": {
+      "baseline": "c8eb5260f2b10832346234b1b5d0cf28302ffba8",
+      "candidate": "a684667a6eefa2dc19f29755bed0c3048874721d"
+    }
+  },
+  "trial_scorecards": [
+    {
+      "schema": "issue92-adr-target-scorecard-v1",
+      "trial": "t1",
+      "overall": "INSUFFICIENT_SAMPLE",
+      "gates": {
+        "valuable_capture": "PASS",
+        "valuable_selection": "FAIL",
+        "valuable_retention": "FAIL",
+        "baseline_useful_preservation": "FAIL",
+        "groundedness": "PASS",
+        "sample": "INSUFFICIENT_SAMPLE",
+        "usefulness": "INSUFFICIENT_SAMPLE",
+        "selectivity": "PASS",
+        "redundancy_nonregression": "PASS",
+        "privacy_source_authority": "PASS",
+        "ex_and_remote": "PASS"
+      },
+      "arms": {
+        "baseline": {
+          "group_id": "graphiti-adr92-prospective-t1-base",
+          "counts": {
+            "sources": 24,
+            "source_captured": 24,
+            "valuable_targets": 16,
+            "valuable_source_visible": 16,
+            "discovered": 16,
+            "selected": 8,
+            "retained": 8,
+            "episodes": 10,
+            "grounded": 10,
+            "useful_grounded": 10,
+            "low_value": 0,
+            "redundant": 0,
+            "unsafe": 0
+          },
+          "rates": {
+            "raw_source_capture": 1,
+            "valuable_capture": 1,
+            "discovery": 1,
+            "selection": 0.5,
+            "retention": 0.5,
+            "grounding": 1,
+            "usefulness": 1
+          },
+          "uncertainty": {
+            "retention_wilson95": {
+              "lower": 0.2799923761135083,
+              "upper": 0.7200076238864916
+            },
+            "grounding_wilson95": {
+              "lower": 0.7224598312333834,
+              "upper": 1
+            }
+          },
+          "credited_ids": [
+            "django_add_filter_lazy_string_typeerror",
+            "graphiti_0312_py313_falkordb_smoke",
+            "graphiti_live_mcp_no_openviking",
+            "graphiti_llm_param_readonly_audit",
+            "graphiti_temporal_validation_skill",
+            "pylint_6386_verbose_flag_negative",
+            "pylint_short_verbose_expects_arg",
+            "sphinx_14182_rst_header_rows"
+          ],
+          "selected_ids": [
+            "django_add_filter_lazy_string_typeerror",
+            "graphiti_0312_py313_falkordb_smoke",
+            "graphiti_live_mcp_no_openviking",
+            "graphiti_llm_param_readonly_audit",
+            "graphiti_temporal_validation_skill",
+            "pylint_6386_verbose_flag_negative",
+            "pylint_short_verbose_expects_arg",
+            "sphinx_14182_rst_header_rows"
+          ],
+          "discovered_ids": [
+            "django_add_filter_lazy_string_typeerror",
+            "django_add_filter_lazy_string_variant",
+            "django_lazy_proxy_string_concat",
+            "graphiti_0312_mcp_tools_only",
+            "graphiti_0312_py313_falkordb_smoke",
+            "graphiti_live_mcp_no_openviking",
+            "graphiti_llm_param_readonly_audit",
+            "graphiti_temporal_memory_live_test",
+            "graphiti_temporal_validation_skill",
+            "pylint_6386_verbose_flag_negative",
+            "pylint_short_verbose_expects_arg",
+            "pylint_verbose_v_arg_expected",
+            "sphinx_14182_rst_header_rows",
+            "sphinx_9230_dict_param_render_variant",
+            "sphinx_ascii_rst_header_rows",
+            "sphinx_dict_str_str_param_render_defect"
+          ],
+          "episode_uuids": [
+            "04f4dd0c-0751-4dd3-826d-77bd5dbacbaf",
+            "0a1d5120-6082-49cb-8e19-e61ac3d963dd",
+            "4b23eb0e-361a-4772-803f-b4b408335bb6",
+            "90120873-cfdd-4253-964d-55caf438d810",
+            "9670e172-3bf9-4b80-bbda-7083a07585ec",
+            "c4f3cf09-3541-4313-a847-7bd5967b27a5",
+            "ca6a1982-fd18-42c7-bb6f-fa77c0cfb7b1",
+            "d133130c-a7f4-4eb6-a59e-c06dca316475",
+            "e3678783-3ff9-4505-bf3e-f10c1aa9034d",
+            "f65f8abe-8ac8-4447-b528-9e48e8cae637"
+          ]
+        },
+        "candidate": {
+          "group_id": "graphiti-adr92-prospective-t1-cand",
+          "counts": {
+            "sources": 24,
+            "source_captured": 24,
+            "valuable_targets": 16,
+            "valuable_source_visible": 16,
+            "discovered": 16,
+            "selected": 2,
+            "retained": 2,
+            "episodes": 2,
+            "grounded": 2,
+            "useful_grounded": 2,
+            "low_value": 0,
+            "redundant": 0,
+            "unsafe": 0
+          },
+          "rates": {
+            "raw_source_capture": 1,
+            "valuable_capture": 1,
+            "discovery": 1,
+            "selection": 0.125,
+            "retention": 0.125,
+            "grounding": 1,
+            "usefulness": 1
+          },
+          "uncertainty": {
+            "retention_wilson95": {
+              "lower": 0.034976749337057134,
+              "upper": 0.3602333143674828
+            },
+            "grounding_wilson95": {
+              "lower": 0.34237195288961925,
+              "upper": 1
+            }
+          },
+          "credited_ids": [
+            "graphiti_llm_param_readonly_audit",
+            "graphiti_temporal_validation_skill"
+          ],
+          "selected_ids": [
+            "graphiti_llm_param_readonly_audit",
+            "graphiti_temporal_validation_skill"
+          ],
+          "discovered_ids": [
+            "django_add_filter_lazy_string_typeerror",
+            "django_add_filter_lazy_string_variant",
+            "django_lazy_proxy_string_concat",
+            "graphiti_0312_mcp_tools_only",
+            "graphiti_0312_py313_falkordb_smoke",
+            "graphiti_live_mcp_no_openviking",
+            "graphiti_llm_param_readonly_audit",
+            "graphiti_temporal_memory_live_test",
+            "graphiti_temporal_validation_skill",
+            "pylint_6386_verbose_flag_negative",
+            "pylint_short_verbose_expects_arg",
+            "pylint_verbose_v_arg_expected",
+            "sphinx_14182_rst_header_rows",
+            "sphinx_9230_dict_param_render_variant",
+            "sphinx_ascii_rst_header_rows",
+            "sphinx_dict_str_str_param_render_defect"
+          ],
+          "episode_uuids": [
+            "4eafc8f9-8a05-4ee6-ab14-0bb23d43a019",
+            "ddbc3c81-0cb2-4110-9e47-56de495ef12c"
+          ]
+        }
+      },
+      "baseline_valuable_targets_missed": [
+        "django_add_filter_lazy_string_typeerror",
+        "graphiti_0312_py313_falkordb_smoke",
+        "graphiti_live_mcp_no_openviking",
+        "pylint_6386_verbose_flag_negative",
+        "pylint_short_verbose_expects_arg",
+        "sphinx_14182_rst_header_rows"
+      ],
+      "note": "Input receipts and source support are structural attestations; independently verify live sources and Graphiti before accepting."
+    },
+    {
+      "schema": "issue92-adr-target-scorecard-v1",
+      "trial": "t2",
+      "overall": "INSUFFICIENT_SAMPLE",
+      "gates": {
+        "valuable_capture": "PASS",
+        "valuable_selection": "FAIL",
+        "valuable_retention": "FAIL",
+        "baseline_useful_preservation": "FAIL",
+        "groundedness": "PASS",
+        "sample": "INSUFFICIENT_SAMPLE",
+        "usefulness": "INSUFFICIENT_SAMPLE",
+        "selectivity": "PASS",
+        "redundancy_nonregression": "PASS",
+        "privacy_source_authority": "PASS",
+        "ex_and_remote": "PASS"
+      },
+      "arms": {
+        "baseline": {
+          "group_id": "graphiti-adr92-prospective-t2-base",
+          "counts": {
+            "sources": 24,
+            "source_captured": 24,
+            "valuable_targets": 16,
+            "valuable_source_visible": 16,
+            "discovered": 16,
+            "selected": 5,
+            "retained": 5,
+            "episodes": 9,
+            "grounded": 9,
+            "useful_grounded": 9,
+            "low_value": 0,
+            "redundant": 0,
+            "unsafe": 0
+          },
+          "rates": {
+            "raw_source_capture": 1,
+            "valuable_capture": 1,
+            "discovery": 1,
+            "selection": 0.3125,
+            "retention": 0.3125,
+            "grounding": 1,
+            "usefulness": 1
+          },
+          "uncertainty": {
+            "retention_wilson95": {
+              "lower": 0.14164435051961052,
+              "upper": 0.5559606813326594
+            },
+            "grounding_wilson95": {
+              "lower": 0.7008472464490407,
+              "upper": 1
+            }
+          },
+          "credited_ids": [
+            "django_add_filter_lazy_string_typeerror",
+            "graphiti_0312_py313_falkordb_smoke",
+            "graphiti_llm_param_readonly_audit",
+            "graphiti_temporal_validation_skill",
+            "pylint_short_verbose_expects_arg"
+          ],
+          "selected_ids": [
+            "django_add_filter_lazy_string_typeerror",
+            "graphiti_0312_py313_falkordb_smoke",
+            "graphiti_llm_param_readonly_audit",
+            "graphiti_temporal_validation_skill",
+            "pylint_short_verbose_expects_arg"
+          ],
+          "discovered_ids": [
+            "django_add_filter_lazy_string_typeerror",
+            "django_add_filter_lazy_string_variant",
+            "django_lazy_proxy_string_concat",
+            "graphiti_0312_mcp_tools_only",
+            "graphiti_0312_py313_falkordb_smoke",
+            "graphiti_live_mcp_no_openviking",
+            "graphiti_llm_param_readonly_audit",
+            "graphiti_temporal_memory_live_test",
+            "graphiti_temporal_validation_skill",
+            "pylint_6386_verbose_flag_negative",
+            "pylint_short_verbose_expects_arg",
+            "pylint_verbose_v_arg_expected",
+            "sphinx_14182_rst_header_rows",
+            "sphinx_9230_dict_param_render_variant",
+            "sphinx_ascii_rst_header_rows",
+            "sphinx_dict_str_str_param_render_defect"
+          ],
+          "episode_uuids": [
+            "33a581ec-4667-49fd-bd24-fc4c5fb7e594",
+            "7d5d3062-caef-4c8c-9727-cdb6516a4499",
+            "8661f237-17f8-4be0-aaca-3080d09fd559",
+            "901c937c-61a1-4b57-be87-9faf9e2b5d65",
+            "90a8f4d8-678d-430e-b4ad-949d6b654def",
+            "b07bf67e-ace8-4c6e-b3c8-6a882a09bec0",
+            "b732987e-44f4-4bfb-a0c7-9e803f0f3af4",
+            "c43cfa9c-2727-4195-ac58-cb67354a2d4f",
+            "dd409852-92be-4ffb-a46b-9b7c40aeefc0"
+          ]
+        },
+        "candidate": {
+          "group_id": "graphiti-adr92-prospective-t2-cand",
+          "counts": {
+            "sources": 24,
+            "source_captured": 24,
+            "valuable_targets": 16,
+            "valuable_source_visible": 16,
+            "discovered": 16,
+            "selected": 2,
+            "retained": 2,
+            "episodes": 3,
+            "grounded": 3,
+            "useful_grounded": 3,
+            "low_value": 0,
+            "redundant": 0,
+            "unsafe": 0
+          },
+          "rates": {
+            "raw_source_capture": 1,
+            "valuable_capture": 1,
+            "discovery": 1,
+            "selection": 0.125,
+            "retention": 0.125,
+            "grounding": 1,
+            "usefulness": 1
+          },
+          "uncertainty": {
+            "retention_wilson95": {
+              "lower": 0.034976749337057134,
+              "upper": 0.3602333143674828
+            },
+            "grounding_wilson95": {
+              "lower": 0.43849391955098227,
+              "upper": 1
+            }
+          },
+          "credited_ids": [
+            "graphiti_llm_param_readonly_audit",
+            "graphiti_temporal_validation_skill"
+          ],
+          "selected_ids": [
+            "graphiti_llm_param_readonly_audit",
+            "graphiti_temporal_validation_skill"
+          ],
+          "discovered_ids": [
+            "django_add_filter_lazy_string_typeerror",
+            "django_add_filter_lazy_string_variant",
+            "django_lazy_proxy_string_concat",
+            "graphiti_0312_mcp_tools_only",
+            "graphiti_0312_py313_falkordb_smoke",
+            "graphiti_live_mcp_no_openviking",
+            "graphiti_llm_param_readonly_audit",
+            "graphiti_temporal_memory_live_test",
+            "graphiti_temporal_validation_skill",
+            "pylint_6386_verbose_flag_negative",
+            "pylint_short_verbose_expects_arg",
+            "pylint_verbose_v_arg_expected",
+            "sphinx_14182_rst_header_rows",
+            "sphinx_9230_dict_param_render_variant",
+            "sphinx_ascii_rst_header_rows",
+            "sphinx_dict_str_str_param_render_defect"
+          ],
+          "episode_uuids": [
+            "62b79537-c984-40e4-8b4f-8816c3ec9edf",
+            "6a801378-4c97-4c29-906e-8356a2f10716",
+            "ed40eebd-7e9e-4edb-8ecc-1e18179d23d7"
+          ]
+        }
+      },
+      "baseline_valuable_targets_missed": [
+        "django_add_filter_lazy_string_typeerror",
+        "graphiti_0312_py313_falkordb_smoke",
+        "pylint_short_verbose_expects_arg"
+      ],
+      "note": "Input receipts and source support are structural attestations; independently verify live sources and Graphiti before accepting."
+    }
+  ],
+  "note": "Each pre-registered trial must meet its own acceptance gates. Private source and live Graphiti attestations require separate independent verification."
+}

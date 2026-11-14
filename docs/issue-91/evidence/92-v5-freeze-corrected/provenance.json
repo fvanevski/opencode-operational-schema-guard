@@ -1,0 +1,16 @@
+{
+ "source_head": "5d8fdcf3aea63193a8b5b8f88148848944987c0d",
+ "evidence_head": "f4def20e64ea8106848e4ca4462f2134dea87b72",
+ "source_blobs_at_head": {
+  "finite-batch.mjs": "ed933b6c648d42cfcd315b568cf9cb678d4069af",
+  "claim-evidence.mjs": "104544605f467ca102b46da148b2512857db683e",
+  "fact-review.mjs": "20da07bcb99010c4c9ab5d4b8c7f9d3c8cb62ba9",
+  "curator-cli.mjs": "63a23e29e4fc14e942a2f85009d18718ebe44106",
+  "ex-admission-proof.mjs": "e63b8a36b51627a6211bf4367c62a5c76461fa76",
+  "queue.mjs": "b4e2df18e3741917e8f3f2513b54cb6aef874e98",
+  "events.mjs": "3f04633b0e98d34e987363285743f8a38875ced3",
+  "ex_admitted_node_bridge.py": "004188b1cdcd3a99956f20e581621eadc63c4663"
+ },
+ "bridge_blob": "004188b1cdcd3a99956f20e581621eadc63c4663",
+ "note": "Issue-92 v5 native-authority prospective binding at execution-source head 5d8fdcf (source-locator binding invariant); all 8 execution-source blobs verified committed==on-disk at evidence HEAD f4def20"
+}

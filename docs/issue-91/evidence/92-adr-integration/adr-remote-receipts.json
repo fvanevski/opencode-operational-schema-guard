@@ -1,0 +1,81 @@
+{
+  "packet": "92-adr-integration",
+  "model": "chat-fast @ 127.0.0.1:8002 (litellm), temperature 0",
+  "graphiti_mcp": "127.0.0.1:8766",
+  "falkordb": "127.0.0.1:6382",
+  "ex_admission": "GHDEV_MEMORY_POST_EXIT_LEASE=admitted",
+  "corpus": "10 events / 7 clusters (s1-s7) + 3 capture-reject controls (n1-n3)",
+  "verification_chain": "review-store record -> remote_episode_uuid -> raw FalkorDB Episodic node -> Graphiti MCP get_episodes",
+  "runs": [
+    {
+      "run": "r05",
+      "source": "original_76ff0e8",
+      "group": "graphiti-adr92-exposed-development-r05",
+      "drain": {"curated": 7, "deferred": 4, "skipped": 1, "approved": 2, "queued": 2, "persisted": 2, "model_calls": 7, "model_errors": 0, "prompt_tokens": 11021, "completion_tokens": 929, "exit": 0, "status": "review_required"},
+      "persisted_episodes": [
+        {"uuid": "c580b934-92b6-4da4-8e69-51c23d798641", "cluster": "s1", "utility_class": "durable_decision"},
+        {"uuid": "346662cc-df68-429b-9778-83894c6cf5ab", "cluster": "s3", "utility_class": "durable_decision"}
+      ],
+      "falkordb_episodic_count": 2,
+      "graphiti_mcp_get_episodes_count": 2
+    },
+    {
+      "run": "r06",
+      "source": "trim_fixed_copy",
+      "group": "graphiti-adr92-exposed-development-r06",
+      "drain": {"curated": 7, "deferred": 2, "skipped": 1, "approved": 4, "queued": 4, "persisted": 4, "model_calls": 7, "model_errors": 0, "prompt_tokens": 11026, "completion_tokens": 918, "exit": 0, "status": "review_required"},
+      "persisted_episodes": [
+        {"uuid": "429b9dcd-6383-40cf-b170-2400111d9d8a", "cluster": "s5", "utility_class": "durable_decision", "evidence_class": "user-stated", "source_ref": "opencode:s5:message:msg_s5u"},
+        {"uuid": "63231373-8e2a-4ab6-b7ce-79ebbad069f3", "cluster": "s1", "utility_class": "durable_decision", "evidence_class": "user-stated", "source_ref": "opencode:s1:message:msg_s1u"},
+        {"uuid": "5e710942-11ce-448e-85c9-129647c1e910", "cluster": "s2", "utility_class": "root_cause_fix", "evidence_class": "assistant-reported", "source_ref": "opencode:s2:message:msg_s2a"},
+        {"uuid": "e0b31ee7-8265-45d6-9254-2c04d42a0ca5", "cluster": "s4", "utility_class": "root_cause_fix", "evidence_class": "tool-reported", "source_ref": "opencode:s4:tool:call_s4t", "note": "trim-fix target: embedded tool-output (FalkorDB Episodic label) recovered"}
+      ],
+      "falkordb_episodic_count": 4,
+      "graphiti_mcp_get_episodes_count": 4,
+      "distinct_uuids": true,
+      "content_match": true,
+      "source_scope_match": true
+    },
+    {
+      "run": "r07",
+      "source": "trim_fixed_copy",
+      "group": "graphiti-adr92-exposed-development-r07",
+      "drain": {"curated": 7, "deferred": 2, "skipped": 1, "approved": 5, "queued": 5, "persisted": 5, "model_calls": 7, "model_errors": 0, "prompt_tokens": 11020, "completion_tokens": 1069, "exit": 0, "status": "review_required"},
+      "persisted_episodes": [
+        {"uuid": "0f66b63fe19babf0f35f445545913a5b8180ae75d54dc1f661e45b885061eb28", "cluster": "s2", "utility_class": "root_cause_fix"},
+        {"uuid": "34cc936e8952eb38a77f803db20d62d1db6ebbba93378a78d3e47fc7b863bfaa", "cluster": "s5", "utility_class": "durable_decision"},
+        {"uuid": "8684e84a448c0b8b5c1dc0978245eb9a1050b0274bc22dbb0e109a8c9d9bcf92", "cluster": "s1", "utility_class": "durable_decision"},
+        {"uuid": "63c63333-ceb7-4deb-a8b4-7081e91d244a", "cluster": "s1", "utility_class": "useful_negative"},
+        {"uuid": "e38074e6-4d79-4d79-8a11-b1ca1256ceaf", "cluster": "s4", "utility_class": "stable_architecture", "note": "FalkorDB Episodic label (trim-fix target) recovered"}
+      ],
+      "falkordb_episodic_count": 5,
+      "graphiti_mcp_get_episodes_count": 5,
+      "distinct_uuids": true
+    },
+    {
+      "run": "r08",
+      "source": "original_76ff0e8",
+      "group": "graphiti-adr92-exposed-development-r08",
+      "drain": {"curated": 7, "deferred": 4, "skipped": 1, "approved": 3, "queued": 3, "persisted": 3, "model_calls": 7, "model_errors": 0, "prompt_tokens": 11024, "completion_tokens": 1040, "exit": 0, "status": "review_required"},
+      "persisted_episodes": [
+        {"uuid": "4f6f1093ec5cb0028137e56a93c2338fef07d4d69ef609d25f92e25d97e292a9", "cluster": "s1", "utility_class": "durable_decision"},
+        {"uuid": "6204fa9c011ee97f70d1846637709a43ba8fc109f5b233ba770107d828837aed", "cluster": "s1", "utility_class": "useful_negative"},
+        {"uuid": "fce3bcf7-b3e1-4f2c-b682-14cae84be47b", "cluster": "s4", "utility_class": "stable_architecture", "note": "FalkorDB Episodic label persisted in ORIGINAL source too (model variance)"}
+      ],
+      "falkordb_episodic_count": 3,
+      "graphiti_mcp_get_episodes_count": 3,
+      "distinct_uuids": true
+    }
+  ],
+  "model_non_determinism": {
+    "observed_persisted_counts": {"r05": 2, "r06": 4, "r07": 5, "r08": 3},
+    "note": "persisted-fact identity varies per run in BOTH original and trim-fixed source; per-run output not reproducible"
+  },
+  "production_state": {
+    "development_knowledge_episodic_nodes": 355,
+    "development_knowledge_unchanged": true,
+    "graphiti_live_episodes": 0,
+    "ghdev_gh_mcp_episodes": 0,
+    "historical_h2_h4_curator_utility_groups_intact": true
+  }
+}

@@ -1,0 +1,628 @@
+{
+  "schema": "issue92-adr-exposed-d3-result-v1",
+  "source_commits": {
+    "baseline": "c8eb5260f2b10832346234b1b5d0cf28302ffba8",
+    "candidate": "a684667a6eefa2dc19f29755bed0c3048874721d"
+  },
+  "comparison_sources": {
+    "previous": "50db627850c28f2ce31a68f547f91f51ee3e43b0",
+    "corrected": "a19e82c7ab68e710339dfd8b4f1381c75b37e8a5"
+  },
+  "freeze_sha256": "96cfef46ab642aeb1d05cf246478da92f34547daf6575ea2d756d192afbdbb5f",
+  "disposition": "COMPLETE",
+  "summaries": [
+    {
+      "trial": "d3",
+      "arm": "previous",
+      "reviewed_targets": 16,
+      "missing_valuable_targets": [],
+      "complete": true,
+      "counts": {
+        "SOURCE_NOT_VISIBLE": 0,
+        "RAW_MODEL_UNAVAILABLE": 0,
+        "MODEL_SKIP": 0,
+        "MODEL_DEFER": 0,
+        "MODEL_OTHER_FACT": 0,
+        "MODEL_INVALID_PROPOSAL": 0,
+        "VALIDATOR_REJECTED": 0,
+        "VALIDATED_NO_TERMINAL_PROOF": 0,
+        "REMOTE_TARGET_PRESERVED": 0,
+        "REVIEW_ONLY_PROPOSAL": 0,
+        "DISCOVERY_NO_CANDIDATE": 0,
+        "DISCOVERY_VALIDATOR_REJECTED": 1,
+        "RAW_REVIEW_UNAVAILABLE": 0,
+        "REVIEW_INVALID_RESPONSE": 0,
+        "REVIEW_DEFER": 10,
+        "REVIEW_VALIDATOR_REJECTED": 0,
+        "DISCOVERED_OTHER_FACT": 5
+      }
+    },
+    {
+      "trial": "d3",
+      "arm": "corrected",
+      "reviewed_targets": 16,
+      "missing_valuable_targets": [],
+      "complete": true,
+      "counts": {
+        "SOURCE_NOT_VISIBLE": 0,
+        "RAW_MODEL_UNAVAILABLE": 0,
+        "MODEL_SKIP": 0,
+        "MODEL_DEFER": 0,
+        "MODEL_OTHER_FACT": 0,
+        "MODEL_INVALID_PROPOSAL": 0,
+        "VALIDATOR_REJECTED": 0,
+        "VALIDATED_NO_TERMINAL_PROOF": 0,
+        "REMOTE_TARGET_PRESERVED": 2,
+        "REVIEW_ONLY_PROPOSAL": 0,
+        "DISCOVERY_NO_CANDIDATE": 0,
+        "DISCOVERY_VALIDATOR_REJECTED": 0,
+        "RAW_REVIEW_UNAVAILABLE": 0,
+        "REVIEW_INVALID_RESPONSE": 0,
+        "REVIEW_DEFER": 11,
+        "REVIEW_VALIDATOR_REJECTED": 0,
+        "DISCOVERED_OTHER_FACT": 3
+      }
+    }
+  ],
+  "rows": [
+    {
+      "trial": "d3",
+      "arm": "previous",
+      "target_id": "graphiti_0312_py313_falkordb_smoke",
+      "case_id": "adr92-g1",
+      "source_ref_sha256": "713be6cec4923ad7cd01a786173dd7d0c8b7d7f23bc44295286a0992b806253e",
+      "stage": "DISCOVERED_OTHER_FACT",
+      "model_decision": "TWO_STAGE",
+      "validator_reason": null,
+      "review_state": "deferred",
+      "discovery_reply_sha256": "3cccee18f8701435b6c514e7f68971d52cbb75ab509ade72a2d554bab2dcfc5f",
+      "review_reply_sha256": "96e865a448ca7cede35143cf8d6f57d95dfe46f47918a22202fa458106de3504",
+      "fact_indices": [],
+      "terminal_count": 0,
+      "evidence_tier": "raw_discovery_and_original_source"
+    },
+    {
+      "trial": "d3",
+      "arm": "previous",
+      "target_id": "graphiti_0312_mcp_tools_only",
+      "case_id": "adr92-g1",
+      "source_ref_sha256": "713be6cec4923ad7cd01a786173dd7d0c8b7d7f23bc44295286a0992b806253e",
+      "stage": "DISCOVERED_OTHER_FACT",
+      "model_decision": "TWO_STAGE",
+      "validator_reason": null,
+      "review_state": "deferred",
+      "discovery_reply_sha256": "3cccee18f8701435b6c514e7f68971d52cbb75ab509ade72a2d554bab2dcfc5f",
+      "review_reply_sha256": "96e865a448ca7cede35143cf8d6f57d95dfe46f47918a22202fa458106de3504",
+      "fact_indices": [],
+      "terminal_count": 0,
+      "evidence_tier": "raw_discovery_and_original_source"
+    },
+    {
+      "trial": "d3",
+      "arm": "previous",
+      "target_id": "graphiti_llm_param_readonly_audit",
+      "case_id": "adr92-g2",
+      "source_ref_sha256": "4790d47e18320fbbaa05cc7a8d7ff01e3c9cf8d75c2784a431b86aaf55849e90",
+      "stage": "DISCOVERY_VALIDATOR_REJECTED",
+      "model_decision": "TWO_STAGE",
+      "validator_reason": "discovery_invalid_shape",
+      "review_state": "deferred",
+      "discovery_reply_sha256": "815ec46f572cbe2cf4461e189192209a0efebef33b5322edfe449608d65eead4",
+      "review_reply_sha256": null,
+      "fact_indices": [],
+      "terminal_count": 0,
+      "evidence_tier": "raw_discovery_and_original_source"
+    },
+    {
+      "trial": "d3",
+      "arm": "previous",
+      "target_id": "graphiti_live_mcp_no_openviking",
+      "case_id": "adr92-g3",
+      "source_ref_sha256": "0e65642063307d6b9018bff6a652032dc0aa522dc46d2ecfff259117d5e8b307",
+      "stage": "REVIEW_DEFER",
+      "model_decision": "TWO_STAGE",
+      "validator_reason": null,
+      "review_state": "deferred",
+      "discovery_reply_sha256": "142e4bc736c1742405d22ee29650df0625c65930577f150c1a00c987e1ee5271",
+      "review_reply_sha256": "e1e443e22024f45d3a7837997efce6234caab519f3dec635ab38ff5eb20833a1",
+      "fact_indices": [
+        0
+      ],
+      "terminal_count": 0,
+      "evidence_tier": "raw_discovery_and_original_source"
+    },
+    {
+      "trial": "d3",
+      "arm": "previous",
+      "target_id": "graphiti_temporal_memory_live_test",
+      "case_id": "adr92-g3",
+      "source_ref_sha256": "0e65642063307d6b9018bff6a652032dc0aa522dc46d2ecfff259117d5e8b307",
+      "stage": "REVIEW_DEFER",
+      "model_decision": "TWO_STAGE",
+      "validator_reason": null,
+      "review_state": "deferred",
+      "discovery_reply_sha256": "142e4bc736c1742405d22ee29650df0625c65930577f150c1a00c987e1ee5271",
+      "review_reply_sha256": "e1e443e22024f45d3a7837997efce6234caab519f3dec635ab38ff5eb20833a1",
+      "fact_indices": [
+        0
+      ],
+      "terminal_count": 0,
+      "evidence_tier": "raw_discovery_and_original_source"
+    },
+    {
+      "trial": "d3",
+      "arm": "previous",
+      "target_id": "graphiti_temporal_validation_skill",
+      "case_id": "adr92-g4",
+      "source_ref_sha256": "dfd019da349e8588b6e20630af17ddeeea9be7dc5fd5308cabf4e1d28fd1446e",
+      "stage": "DISCOVERED_OTHER_FACT",
+      "model_decision": "TWO_STAGE",
+      "validator_reason": null,
+      "review_state": "deferred",
+      "discovery_reply_sha256": "1a31269de3fdc00470e5fce4c08c135f118c7a8a5e01f568fdca1c9483e86d4c",
+      "review_reply_sha256": "c34c09a550f2812e310dbd935b9e3fc4e0d48de7e9fab31fb05697bbb3234d6f",
+      "fact_indices": [],
+      "terminal_count": 0,
+      "evidence_tier": "raw_discovery_and_original_source"
+    },
+    {
+      "trial": "d3",
+      "arm": "previous",
+      "target_id": "sphinx_dict_str_str_param_render_defect",
+      "case_id": "adr92-sp1",
+      "source_ref_sha256": "69d9830b83b93f69cfee4a82cc657dcac3ff8524ccbc56343c35fd7df79733a7",
+      "stage": "REVIEW_DEFER",
+      "model_decision": "TWO_STAGE",
+      "validator_reason": null,
+      "review_state": "deferred",
+      "discovery_reply_sha256": "ae7ff16c8ac4514ac132725d2acccad78bd32b16dcee8dee7ff0141b50286312",
+      "review_reply_sha256": "e1e443e22024f45d3a7837997efce6234caab519f3dec635ab38ff5eb20833a1",
+      "fact_indices": [
+        0
+      ],
+      "terminal_count": 0,
+      "evidence_tier": "raw_discovery_and_original_source"
+    },
+    {
+      "trial": "d3",
+      "arm": "previous",
+      "target_id": "sphinx_9230_dict_param_render_variant",
+      "case_id": "adr92-sp2",
+      "source_ref_sha256": "a199cd1540e4d5eca568343617a664adbc08a8fc1802b5af95df723ef733df9f",
+      "stage": "REVIEW_DEFER",
+      "model_decision": "TWO_STAGE",
+      "validator_reason": null,
+      "review_state": "deferred",
+      "discovery_reply_sha256": "6979abebf6028c3050339fca4829c11aa20e98060599e044a42e920149ef42cb",
+      "review_reply_sha256": "e1e443e22024f45d3a7837997efce6234caab519f3dec635ab38ff5eb20833a1",
+      "fact_indices": [
+        0
+      ],
+      "terminal_count": 0,
+      "evidence_tier": "raw_discovery_and_original_source"
+    },
+    {
+      "trial": "d3",
+      "arm": "previous",
+      "target_id": "sphinx_14182_rst_header_rows",
+      "case_id": "adr92-sp8",
+      "source_ref_sha256": "654726fcd71ea4c2dcec4b8e76e4b614b08279e0d04d609b6890ce67a58396d8",
+      "stage": "REVIEW_DEFER",
+      "model_decision": "TWO_STAGE",
+      "validator_reason": null,
+      "review_state": "deferred",
+      "discovery_reply_sha256": "2f3a9340d47ce1b22fc0dd9429afbd21985ec7b99055fe73239b8013bcb9eadf",
+      "review_reply_sha256": "7d40366a994a21a499c4ecbbf79324539629eb368eaebff6ba1d91726a63c194",
+      "fact_indices": [
+        0
+      ],
+      "terminal_count": 0,
+      "evidence_tier": "raw_discovery_and_original_source"
+    },
+    {
+      "trial": "d3",
+      "arm": "previous",
+      "target_id": "sphinx_ascii_rst_header_rows",
+      "case_id": "adr92-sp9",
+      "source_ref_sha256": "0451a7fa9645f1700fa2f15a467b4b40b96277fb73e2b8d0767f7ee699c1d338",
+      "stage": "REVIEW_DEFER",
+      "model_decision": "TWO_STAGE",
+      "validator_reason": null,
+      "review_state": "deferred",
+      "discovery_reply_sha256": "f61119697a9f74aeddadd9312da2591ed0252302c9cb5679aabe734592f097c5",
+      "review_reply_sha256": "e1e443e22024f45d3a7837997efce6234caab519f3dec635ab38ff5eb20833a1",
+      "fact_indices": [
+        0
+      ],
+      "terminal_count": 0,
+      "evidence_tier": "raw_discovery_and_original_source"
+    },
+    {
+      "trial": "d3",
+      "arm": "previous",
+      "target_id": "django_add_filter_lazy_string_typeerror",
+      "case_id": "adr92-dj1",
+      "source_ref_sha256": "728b4ce080f0a67cad7ae3dc2dee1bbd28917ee07d8bba692dcbde0f9c2e5a92",
+      "stage": "DISCOVERED_OTHER_FACT",
+      "model_decision": "TWO_STAGE",
+      "validator_reason": null,
+      "review_state": "deferred",
+      "discovery_reply_sha256": "f762c3fdd95e30fec63a76d39fabc08b597a8e7cb845b189777b3ce3f95ea2a4",
+      "review_reply_sha256": "e1e443e22024f45d3a7837997efce6234caab519f3dec635ab38ff5eb20833a1",
+      "fact_indices": [],
+      "terminal_count": 0,
+      "evidence_tier": "raw_discovery_and_original_source"
+    },
+    {
+      "trial": "d3",
+      "arm": "previous",
+      "target_id": "django_lazy_proxy_string_concat",
+      "case_id": "adr92-dj1",
+      "source_ref_sha256": "728b4ce080f0a67cad7ae3dc2dee1bbd28917ee07d8bba692dcbde0f9c2e5a92",
+      "stage": "DISCOVERED_OTHER_FACT",
+      "model_decision": "TWO_STAGE",
+      "validator_reason": null,
+      "review_state": "deferred",
+      "discovery_reply_sha256": "f762c3fdd95e30fec63a76d39fabc08b597a8e7cb845b189777b3ce3f95ea2a4",
+      "review_reply_sha256": "e1e443e22024f45d3a7837997efce6234caab519f3dec635ab38ff5eb20833a1",
+      "fact_indices": [],
+      "terminal_count": 0,
+      "evidence_tier": "raw_discovery_and_original_source"
+    },
+    {
+      "trial": "d3",
+      "arm": "previous",
+      "target_id": "django_add_filter_lazy_string_variant",
+      "case_id": "adr92-dj2",
+      "source_ref_sha256": "1b85be5334d171b7f03b6dd5c1b84bbc9a4478976e6ca68bd1b59c2c8b94af00",
+      "stage": "REVIEW_DEFER",
+      "model_decision": "TWO_STAGE",
+      "validator_reason": null,
+      "review_state": "deferred",
+      "discovery_reply_sha256": "df2fd891e1bd009f8a571e59f4dfb01f1e4ef9f609ecf64e26406898d73badc4",
+      "review_reply_sha256": "e1e443e22024f45d3a7837997efce6234caab519f3dec635ab38ff5eb20833a1",
+      "fact_indices": [
+        0
+      ],
+      "terminal_count": 0,
+      "evidence_tier": "raw_discovery_and_original_source"
+    },
+    {
+      "trial": "d3",
+      "arm": "previous",
+      "target_id": "pylint_short_verbose_expects_arg",
+      "case_id": "adr92-py1",
+      "source_ref_sha256": "d8eaa0ad489aced563b7b16839d3538fa0094386f1c47c8b803ef47d7cf2f4f0",
+      "stage": "REVIEW_DEFER",
+      "model_decision": "TWO_STAGE",
+      "validator_reason": null,
+      "review_state": "deferred",
+      "discovery_reply_sha256": "171157bee173dba6225e6ed8bc3132270982df7dbf07e94052015fb841a3ae00",
+      "review_reply_sha256": "e1e443e22024f45d3a7837997efce6234caab519f3dec635ab38ff5eb20833a1",
+      "fact_indices": [
+        0
+      ],
+      "terminal_count": 0,
+      "evidence_tier": "raw_discovery_and_original_source"
+    },
+    {
+      "trial": "d3",
+      "arm": "previous",
+      "target_id": "pylint_6386_verbose_flag_negative",
+      "case_id": "adr92-py2",
+      "source_ref_sha256": "22e087663f90f6502cfe3a8d95c03d754db9588ee6c3d318d209b92ff679f31f",
+      "stage": "REVIEW_DEFER",
+      "model_decision": "TWO_STAGE",
+      "validator_reason": null,
+      "review_state": "deferred",
+      "discovery_reply_sha256": "d3a8bffacccd3a2852663f66aa524a66e4b63ab07d6373c9ea16e57536c3b472",
+      "review_reply_sha256": "e1e443e22024f45d3a7837997efce6234caab519f3dec635ab38ff5eb20833a1",
+      "fact_indices": [
+        0
+      ],
+      "terminal_count": 0,
+      "evidence_tier": "raw_discovery_and_original_source"
+    },
+    {
+      "trial": "d3",
+      "arm": "previous",
+      "target_id": "pylint_verbose_v_arg_expected",
+      "case_id": "adr92-py3",
+      "source_ref_sha256": "c8df9629ad2d1de9322f9217398d27a96b31b0d3bbe08686d7783db26993472e",
+      "stage": "REVIEW_DEFER",
+      "model_decision": "TWO_STAGE",
+      "validator_reason": null,
+      "review_state": "deferred",
+      "discovery_reply_sha256": "553a56fa630d7006d78f8687e1d32558c5d9db5de019de308288bf78f5ce3af8",
+      "review_reply_sha256": "e1e443e22024f45d3a7837997efce6234caab519f3dec635ab38ff5eb20833a1",
+      "fact_indices": [
+        0
+      ],
+      "terminal_count": 0,
+      "evidence_tier": "raw_discovery_and_original_source"
+    },
+    {
+      "trial": "d3",
+      "arm": "corrected",
+      "target_id": "graphiti_0312_py313_falkordb_smoke",
+      "case_id": "adr92-g1",
+      "source_ref_sha256": "713be6cec4923ad7cd01a786173dd7d0c8b7d7f23bc44295286a0992b806253e",
+      "stage": "DISCOVERED_OTHER_FACT",
+      "model_decision": "TWO_STAGE",
+      "validator_reason": null,
+      "review_state": "deferred",
+      "discovery_reply_sha256": "3cae72ada067be1182ad31410177a05ac0e034c71396110e9707f0fe48dfe13b",
+      "review_reply_sha256": "d3e66f1a3fe661e2b969286d75f9a5902a99ec2a12405b70844e928764f33439",
+      "fact_indices": [],
+      "terminal_count": 0,
+      "evidence_tier": "raw_discovery_and_original_source"
+    },
+    {
+      "trial": "d3",
+      "arm": "corrected",
+      "target_id": "graphiti_0312_mcp_tools_only",
+      "case_id": "adr92-g1",
+      "source_ref_sha256": "713be6cec4923ad7cd01a786173dd7d0c8b7d7f23bc44295286a0992b806253e",
+      "stage": "DISCOVERED_OTHER_FACT",
+      "model_decision": "TWO_STAGE",
+      "validator_reason": null,
+      "review_state": "deferred",
+      "discovery_reply_sha256": "3cae72ada067be1182ad31410177a05ac0e034c71396110e9707f0fe48dfe13b",
+      "review_reply_sha256": "d3e66f1a3fe661e2b969286d75f9a5902a99ec2a12405b70844e928764f33439",
+      "fact_indices": [],
+      "terminal_count": 0,
+      "evidence_tier": "raw_discovery_and_original_source"
+    },
+    {
+      "trial": "d3",
+      "arm": "corrected",
+      "target_id": "graphiti_llm_param_readonly_audit",
+      "case_id": "adr92-g2",
+      "source_ref_sha256": "4790d47e18320fbbaa05cc7a8d7ff01e3c9cf8d75c2784a431b86aaf55849e90",
+      "stage": "REVIEW_DEFER",
+      "model_decision": "TWO_STAGE",
+      "validator_reason": null,
+      "review_state": "deferred",
+      "discovery_reply_sha256": "785e0505e3a18c11ac61d222ea638d5641e04da64288ff016feef53766c26463",
+      "review_reply_sha256": "0b9ec7e9dc29d42293effae92f78f6a0095af6cc1376f833a3f0b804f9034487",
+      "fact_indices": [
+        0
+      ],
+      "terminal_count": 0,
+      "evidence_tier": "raw_discovery_and_original_source"
+    },
+    {
+      "trial": "d3",
+      "arm": "corrected",
+      "target_id": "graphiti_live_mcp_no_openviking",
+      "case_id": "adr92-g3",
+      "source_ref_sha256": "0e65642063307d6b9018bff6a652032dc0aa522dc46d2ecfff259117d5e8b307",
+      "stage": "REVIEW_DEFER",
+      "model_decision": "TWO_STAGE",
+      "validator_reason": null,
+      "review_state": "deferred",
+      "discovery_reply_sha256": "1817f6f1bc51ffeddd027eae27b5b82d885106c1fff0d9def1ff95db80829ec7",
+      "review_reply_sha256": "1f4db590d3a7f2f39b5b712defaedb5d725472b5108e3882f4f4328769d10f11",
+      "fact_indices": [
+        0
+      ],
+      "terminal_count": 0,
+      "evidence_tier": "raw_discovery_and_original_source"
+    },
+    {
+      "trial": "d3",
+      "arm": "corrected",
+      "target_id": "graphiti_temporal_memory_live_test",
+      "case_id": "adr92-g3",
+      "source_ref_sha256": "0e65642063307d6b9018bff6a652032dc0aa522dc46d2ecfff259117d5e8b307",
+      "stage": "REVIEW_DEFER",
+      "model_decision": "TWO_STAGE",
+      "validator_reason": null,
+      "review_state": "deferred",
+      "discovery_reply_sha256": "1817f6f1bc51ffeddd027eae27b5b82d885106c1fff0d9def1ff95db80829ec7",
+      "review_reply_sha256": "1f4db590d3a7f2f39b5b712defaedb5d725472b5108e3882f4f4328769d10f11",
+      "fact_indices": [
+        0
+      ],
+      "terminal_count": 0,
+      "evidence_tier": "raw_discovery_and_original_source"
+    },
+    {
+      "trial": "d3",
+      "arm": "corrected",
+      "target_id": "graphiti_temporal_validation_skill",
+      "case_id": "adr92-g4",
+      "source_ref_sha256": "dfd019da349e8588b6e20630af17ddeeea9be7dc5fd5308cabf4e1d28fd1446e",
+      "stage": "DISCOVERED_OTHER_FACT",
+      "model_decision": "TWO_STAGE",
+      "validator_reason": null,
+      "review_state": "deferred",
+      "discovery_reply_sha256": "2130216daeaab5ab2baf90c2aba21bb9a1ba39c456aa83c6aff283d958a7a4be",
+      "review_reply_sha256": "87aa0418103631c7d7b498b2a265956017d0ac7e2e429ea58b7843506d7b8dec",
+      "fact_indices": [],
+      "terminal_count": 0,
+      "evidence_tier": "raw_discovery_and_original_source"
+    },
+    {
+      "trial": "d3",
+      "arm": "corrected",
+      "target_id": "sphinx_dict_str_str_param_render_defect",
+      "case_id": "adr92-sp1",
+      "source_ref_sha256": "69d9830b83b93f69cfee4a82cc657dcac3ff8524ccbc56343c35fd7df79733a7",
+      "stage": "REVIEW_DEFER",
+      "model_decision": "TWO_STAGE",
+      "validator_reason": null,
+      "review_state": "deferred",
+      "discovery_reply_sha256": "3b96271d14698723b55ff4815b5f09cac6d0ec00d6691f4636fe2f7ee7f14bb0",
+      "review_reply_sha256": "c52e243ff28de48e7767d66c811307f214115f00f5af12576b2764f0efab07e2",
+      "fact_indices": [
+        0
+      ],
+      "terminal_count": 0,
+      "evidence_tier": "raw_discovery_and_original_source"
+    },
+    {
+      "trial": "d3",
+      "arm": "corrected",
+      "target_id": "sphinx_9230_dict_param_render_variant",
+      "case_id": "adr92-sp2",
+      "source_ref_sha256": "a199cd1540e4d5eca568343617a664adbc08a8fc1802b5af95df723ef733df9f",
+      "stage": "REVIEW_DEFER",
+      "model_decision": "TWO_STAGE",
+      "validator_reason": null,
+      "review_state": "deferred",
+      "discovery_reply_sha256": "41ed223cca16b0335193c8564568a6cdf20b407f7bc35df7f6e4aadb5cca30bd",
+      "review_reply_sha256": "d3e66f1a3fe661e2b969286d75f9a5902a99ec2a12405b70844e928764f33439",
+      "fact_indices": [
+        0
+      ],
+      "terminal_count": 0,
+      "evidence_tier": "raw_discovery_and_original_source"
+    },
+    {
+      "trial": "d3",
+      "arm": "corrected",
+      "target_id": "sphinx_14182_rst_header_rows",
+      "case_id": "adr92-sp8",
+      "source_ref_sha256": "654726fcd71ea4c2dcec4b8e76e4b614b08279e0d04d609b6890ce67a58396d8",
+      "stage": "REVIEW_DEFER",
+      "model_decision": "TWO_STAGE",
+      "validator_reason": null,
+      "review_state": "deferred",
+      "discovery_reply_sha256": "da3594d496a8e37a79ce09e016f1d5c78897b627d330ef7cb154086bafe81be7",
+      "review_reply_sha256": "de1bcc442ff2258cffa0b266170d5a32076d686fb4ff1a5d96ae8ddd871b489c",
+      "fact_indices": [
+        0
+      ],
+      "terminal_count": 0,
+      "evidence_tier": "raw_discovery_and_original_source"
+    },
+    {
+      "trial": "d3",
+      "arm": "corrected",
+      "target_id": "sphinx_ascii_rst_header_rows",
+      "case_id": "adr92-sp9",
+      "source_ref_sha256": "0451a7fa9645f1700fa2f15a467b4b40b96277fb73e2b8d0767f7ee699c1d338",
+      "stage": "REMOTE_TARGET_PRESERVED",
+      "model_decision": "TWO_STAGE",
+      "validator_reason": null,
+      "review_state": "persisted",
+      "discovery_reply_sha256": "57b18e7570c845c08984ae6e2ce1195eb861843d7493096be65800138315a342",
+      "review_reply_sha256": "62aae6db75331e1cc52f539b796548e7793add6f47b0f5ca2c184a3d7dafcaf2",
+      "fact_indices": [
+        0
+      ],
+      "terminal_count": 1,
+      "evidence_tier": "source_discovery_review_and_remote"
+    },
+    {
+      "trial": "d3",
+      "arm": "corrected",
+      "target_id": "django_add_filter_lazy_string_typeerror",
+      "case_id": "adr92-dj1",
+      "source_ref_sha256": "728b4ce080f0a67cad7ae3dc2dee1bbd28917ee07d8bba692dcbde0f9c2e5a92",
+      "stage": "REVIEW_DEFER",
+      "model_decision": "TWO_STAGE",
+      "validator_reason": null,
+      "review_state": "deferred",
+      "discovery_reply_sha256": "e702c6c789eb27926d515316e7dd5682322d9251773465d1213358d94659fdb1",
+      "review_reply_sha256": "de1bcc442ff2258cffa0b266170d5a32076d686fb4ff1a5d96ae8ddd871b489c",
+      "fact_indices": [
+        0
+      ],
+      "terminal_count": 0,
+      "evidence_tier": "raw_discovery_and_original_source"
+    },
+    {
+      "trial": "d3",
+      "arm": "corrected",
+      "target_id": "django_lazy_proxy_string_concat",
+      "case_id": "adr92-dj1",
+      "source_ref_sha256": "728b4ce080f0a67cad7ae3dc2dee1bbd28917ee07d8bba692dcbde0f9c2e5a92",
+      "stage": "REVIEW_DEFER",
+      "model_decision": "TWO_STAGE",
+      "validator_reason": null,
+      "review_state": "deferred",
+      "discovery_reply_sha256": "e702c6c789eb27926d515316e7dd5682322d9251773465d1213358d94659fdb1",
+      "review_reply_sha256": "de1bcc442ff2258cffa0b266170d5a32076d686fb4ff1a5d96ae8ddd871b489c",
+      "fact_indices": [
+        0
+      ],
+      "terminal_count": 0,
+      "evidence_tier": "raw_discovery_and_original_source"
+    },
+    {
+      "trial": "d3",
+      "arm": "corrected",
+      "target_id": "django_add_filter_lazy_string_variant",
+      "case_id": "adr92-dj2",
+      "source_ref_sha256": "1b85be5334d171b7f03b6dd5c1b84bbc9a4478976e6ca68bd1b59c2c8b94af00",
+      "stage": "REVIEW_DEFER",
+      "model_decision": "TWO_STAGE",
+      "validator_reason": null,
+      "review_state": "deferred",
+      "discovery_reply_sha256": "16c982ea857c4baa03639298513508f46a81fb8a7fe540fca4ad16269273d4b4",
+      "review_reply_sha256": "de1bcc442ff2258cffa0b266170d5a32076d686fb4ff1a5d96ae8ddd871b489c",
+      "fact_indices": [
+        0
+      ],
+      "terminal_count": 0,
+      "evidence_tier": "raw_discovery_and_original_source"
+    },
+    {
+      "trial": "d3",
+      "arm": "corrected",
+      "target_id": "pylint_short_verbose_expects_arg",
+      "case_id": "adr92-py1",
+      "source_ref_sha256": "d8eaa0ad489aced563b7b16839d3538fa0094386f1c47c8b803ef47d7cf2f4f0",
+      "stage": "REVIEW_DEFER",
+      "model_decision": "TWO_STAGE",
+      "validator_reason": null,
+      "review_state": "deferred",
+      "discovery_reply_sha256": "444f6c0d12395479c666915b01473ee5a58552931bc5b42641f5a10cb3f4221f",
+      "review_reply_sha256": "de1bcc442ff2258cffa0b266170d5a32076d686fb4ff1a5d96ae8ddd871b489c",
+      "fact_indices": [
+        0
+      ],
+      "terminal_count": 0,
+      "evidence_tier": "raw_discovery_and_original_source"
+    },
+    {
+      "trial": "d3",
+      "arm": "corrected",
+      "target_id": "pylint_6386_verbose_flag_negative",
+      "case_id": "adr92-py2",
+      "source_ref_sha256": "22e087663f90f6502cfe3a8d95c03d754db9588ee6c3d318d209b92ff679f31f",
+      "stage": "REMOTE_TARGET_PRESERVED",
+      "model_decision": "TWO_STAGE",
+      "validator_reason": null,
+      "review_state": "persisted",
+      "discovery_reply_sha256": "4965a32655ceede0c53f81ae713f38c0508bd91d442d91de0eff27da4204993b",
+      "review_reply_sha256": "62aae6db75331e1cc52f539b796548e7793add6f47b0f5ca2c184a3d7dafcaf2",
+      "fact_indices": [
+        0
+      ],
+      "terminal_count": 1,
+      "evidence_tier": "source_discovery_review_and_remote"
+    },
+    {
+      "trial": "d3",
+      "arm": "corrected",
+      "target_id": "pylint_verbose_v_arg_expected",
+      "case_id": "adr92-py3",
+      "source_ref_sha256": "c8df9629ad2d1de9322f9217398d27a96b31b0d3bbe08686d7783db26993472e",
+      "stage": "REVIEW_DEFER",
+      "model_decision": "TWO_STAGE",
+      "validator_reason": null,
+      "review_state": "deferred",
+      "discovery_reply_sha256": "93207e4e477a116dfe5f61cc5033eb84ce0e91b4f56fa9aee4d4212bd5cb2709",
+      "review_reply_sha256": "6716b492278e3f3cf0f61f34fccd25d99426325b5780de4fee5d6233311ed7fa",
+      "fact_indices": [
+        0
+      ],
+      "terminal_count": 0,
+      "evidence_tier": "raw_discovery_and_original_source"
+    }
+  ],
+  "note": "No claim that model recognized a SKIPped target. Missing raw model trace is unknown, never credited as discovered. Semantic target matching and actual source/Graphiti receipts require separate independent host verification."
+}

@@ -1,0 +1,65 @@
+[
+  {
+    "uuid": "f6389714-4265-4486-8689-df731a9afacf",
+    "name": "curated-v1:fdb7e82c4475bc9735e3a749beabdafadaa76d12ab17526bc3db3a190d22179d",
+    "content": "Fact 1: i just edited ~/.config/openviking/cli.env to remove OPENVIKING_ROOT_API_KEY, which had recently been added. this may be part of the underlying issue, as this file is loaded by the commit gate service.\n[Evidence class: user-stated; Kind: blocker; Temporal: observed; Observed: 2026-10-09T17:10:55.800Z]\n[Source references: opencode:ses_ede61a7c4ffeiBTS6W9wnkW9PA:message:msg_121a57c38001Xhs1rWsOMElfw0; Scope group: graphiti-adr92-a3-prospective-v5; Project: global]",
+    "created_at": "2026-11-13T02:11:05.407208+00:00",
+    "source": "text",
+    "source_description": "source-grounded curator | fdb7e82c4475bc9735e3a749beabdafadaa76d12ab17526bc3db3a190d22179d",
+    "group_id": "graphiti-adr92-a3-prospective-v5"
+  },
+  {
+    "uuid": "b99c49a1-72c3-459e-a811-ac666223dad5",
+    "name": "curated-v1:c862cea91f7eb50e13bc6c608a5c34fb80b20f63cdb335f880112e0f8fb505db",
+    "content": "Fact 1: that when rtk wrapper corrupts output, you can use `rtk proxy` to bypass compressions and rewriting.\n[Evidence class: user-stated; Kind: blocker; Temporal: observed; Observed: 2026-09-21T21:02:43.084Z]\n[Source references: opencode:ses_f3e666e86ffeugw9WQzDV8nudu:message:msg_0c5c7398c001693rdOCFjjieMg; Scope group: graphiti-adr92-a3-prospective-v5; Project: global]",
+    "created_at": "2026-11-13T02:11:03.698539+00:00",
+    "source": "text",
+    "source_description": "source-grounded curator | c862cea91f7eb50e13bc6c608a5c34fb80b20f63cdb335f880112e0f8fb505db",
+    "group_id": "graphiti-adr92-a3-prospective-v5"
+  },
+  {
+    "uuid": "147cfb87-b539-477e-96f3-998c23983b8f",
+    "name": "curated-v1:b9ac48a70aac4410bb8b000e3db6cb8e3a7a3ee21cc1e7e4b99f9a1273b23b72",
+    "content": "Fact 1: note that SEARXNG_URL is set in ~/.zsecrets, i manually updated to SEARXNG_URL='https://search.garion.us'\n[Evidence class: user-stated; Kind: blocker; Temporal: observed; Observed: 2026-11-10T00:36:42.271Z]\n[Source references: opencode:ses_e3d225684ffe27IyufZzhZb56U:message:msg_1c2e28adf001zmVsZNHYPo0Baq; Scope group: graphiti-adr92-a3-prospective-v5; Project: c2da4a9312b4e0fe3484a4ddc7018d33eca10066]",
+    "created_at": "2026-11-13T02:11:01.276267+00:00",
+    "source": "text",
+    "source_description": "source-grounded curator | b9ac48a70aac4410bb8b000e3db6cb8e3a7a3ee21cc1e7e4b99f9a1273b23b72",
+    "group_id": "graphiti-adr92-a3-prospective-v5"
+  },
+  {
+    "uuid": "e45e89de-23bb-4998-85a6-2f4a6dc2a718",
+    "name": "curated-v1:673d17b3cd9ca8c7581e056701a68eb59da8a3653ffe10cd64a4baa458e9cd04",
+    "content": "Fact 1: note that /home/filip/.config/opencode/opencode.json is deterministically constructed from modular base files, so if changes were made to it, in order for these to persist the underlying modular base file (/home/filip/.config/opencode/opencode.base.json) needs to include the revision applied to the live configuration.\n[Evidence class: user-stated; Kind: blocker; Temporal: observed; Observed: 2026-11-08T20:45:33.557Z]\n[Source references: opencode:ses_e43251a6cffeipMnX858PK5z2u:message:msg_1bce8c3d3001URaBjEZdXdaVKE; Scope group: graphiti-adr92-a3-prospective-v5; Project: 2cfa05e81c79265ab99a7ab992d9bf8f4ac2699b]",
+    "created_at": "2026-11-13T02:10:59.074405+00:00",
+    "source": "text",
+    "source_description": "source-grounded curator | 673d17b3cd9ca8c7581e056701a68eb59da8a3653ffe10cd64a4baa458e9cd04",
+    "group_id": "graphiti-adr92-a3-prospective-v5"
+  },
+  {
+    "uuid": "b6ceb00c-bcc3-4c34-b465-d5b20fd17293",
+    "name": "curated-v1:4d41f32d66b42250159086d7f1ae29c9806d652a6f3c56e21ccdf22b711ff1d9",
+    "content": "Fact 1: OPENVIKING_ROOT_API_KEY was also purposely removed, as it changed the ability to access the existing DB store. it is correct to remove the root key, that should not be reverted either\n[Evidence class: user-stated; Kind: blocker; Temporal: observed; Observed: 2026-11-08T23:31:26.234Z]\n[Source references: opencode:ses_e42c78d09ffeWQSj9EZN5KdL84:message:msg_1bd809c0f0015EXEwDZIdJkIqD; Scope group: graphiti-adr92-a3-prospective-v5; Project: 2cfa05e81c79265ab99a7ab992d9bf8f4ac2699b]",
+    "created_at": "2026-11-13T02:10:57.426381+00:00",
+    "source": "text",
+    "source_description": "source-grounded curator | 4d41f32d66b42250159086d7f1ae29c9806d652a6f3c56e21ccdf22b711ff1d9",
+    "group_id": "graphiti-adr92-a3-prospective-v5"
+  },
+  {
+    "uuid": "83ad1352-9990-44a4-9262-ea7ab124217d",
+    "name": "curated-v1:3fbc139d81efde87e9b05bd26260e1f0640c47cdf8f6c7596d1c845a1d1f930e",
+    "content": "Fact 1: OPENAI_API_URL=http://127.0.0.1:8008/v1 is a litellm proxy designed to transform the previous incorrectly shaped \"responses\" calls before handing off to the vLLM server at http://127.0.0.1:8002/v1 to avoid vLLM server rejection. with the new version of probe, presumably this litellm proxy can by bypassed and probe configured to interact directly with http://127.0.0.1:8002/v1\n[Evidence class: user-stated; Kind: blocker; Temporal: observed; Observed: 2026-09-08T01:32:27.832Z]\n[Source references: opencode:ses_f8160a155ffeHwoJqWjU0cfrvs:message:msg_07ea52738001WOi0Wgy2m1cCk5; Scope group: graphiti-adr92-a3-prospective-v5; Project: global]",
+    "created_at": "2026-11-13T02:10:51.252075+00:00",
+    "source": "text",
+    "source_description": "source-grounded curator | 3fbc139d81efde87e9b05bd26260e1f0640c47cdf8f6c7596d1c845a1d1f930e",
+    "group_id": "graphiti-adr92-a3-prospective-v5"
+  },
+  {
+    "uuid": "3cebcf20-67d0-4b67-a1cb-5c9ed7110513",
+    "name": "curated-v1:0c517eb9f5bfbe0f533dedb4bed20baa4437b85cdd3025062b896c2894ab011f",
+    "content": "Fact 1: moved to a separate external repository named FFmpeg nv-codec-headers.Where to Find ThemRepository URL: http://git.videolan.org/?p=ffmpeg/nv-codec-headers.git or the GitHub nv-codec-headers Mirror.Requirement: You must clone and install this package separately before compiling FFmpeg with NVIDIA hardware acceleration (--enable-n\n[Evidence class: user-stated; Kind: blocker; Temporal: observed; Observed: 2026-09-17T18:20:47.870Z]\n[Source references: opencode:ses_f4f7a1727ffeF1xKcI928mUBI2:message:msg_0b0998b7e001VSIoOVvUE97xPv; Scope group: graphiti-adr92-a3-prospective-v5; Project: global]",
+    "created_at": "2026-11-13T02:10:44.301299+00:00",
+    "source": "text",
+    "source_description": "source-grounded curator | 0c517eb9f5bfbe0f533dedb4bed20baa4437b85cdd3025062b896c2894ab011f",
+    "group_id": "graphiti-adr92-a3-prospective-v5"
+  }
+]

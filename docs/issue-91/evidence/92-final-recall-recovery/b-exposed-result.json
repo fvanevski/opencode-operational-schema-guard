@@ -1,0 +1,30 @@
+{
+  "status": "unresolved",
+  "inference_calls": 1,
+  "corrective_path": "reconcile-only",
+  "model_calls": 19,
+  "model_calls_by_stage": {
+    "discovery": 10,
+    "utility": 5,
+    "specificity": 1,
+    "arbitration": 1,
+    "support": 2
+  },
+  "model_errors": 0,
+  "candidates": 5,
+  "approved": 2,
+  "deferred": [
+    "v5-v-10 opencode.db -> source_only_utility_not_substantive",
+    "v5-v-06 duplicate span -> source_quoted_semantic_duplicate",
+    "c-10 weather control -> source_only_utility_not_substantive"
+  ],
+  "persisted_facts": [
+    "v5-v-05 LITELLM_MASTER_KEY (recovered)",
+    "v5-v-06 rtk proxy (known positive)"
+  ],
+  "nonvaluable_pollution": 0,
+  "graphiti_uuids": [
+    "78fc7b09-8ab9-4d86-a7ca-1e23eff10364",
+    "80e37302-030e-47fb-b333-2ceb09b874fb"
+  ]
+}

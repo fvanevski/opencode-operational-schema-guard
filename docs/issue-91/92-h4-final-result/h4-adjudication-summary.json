@@ -1,0 +1,18 @@
+{
+ "schema": "issue92-h4-adjudication-summary-v1",
+ "note": "Blinded per-fact AI adjudication of all 43 persisted facts (arm identity withheld during review; unblinding key stored separately). Verdict aggregates only; per-fact rationales remain in the private packet.",
+ "facts_total": 43,
+ "grounded": 43,
+ "grounding_modes": {
+  "exact_contiguous": 33,
+  "not_contiguous_markup_only": 5,
+  "frozen_seed_excerpt": 5
+ },
+ "useful": 32,
+ "redundant": 2,
+ "privacy_issue": 0,
+ "authority_issue": 0,
+ "fabricated_source": 0,
+ "prospective_target_supported": 15,
+ "prospective_target_total": 18
+}

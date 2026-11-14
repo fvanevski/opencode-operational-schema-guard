@@ -1,0 +1,33 @@
+{
+ "schema": "issue92-s4-native-test-results-v1",
+ "kind": "S4 CPU acceptance at 3760146 (all prescribed gates, real producer exits)",
+ "at_utc": "2026-11-12T01:55:00Z",
+ "head": "37601461b21a9d5d5634ca5683db25479937f627",
+ "gates": [
+  {"name": "node --check (6 S4 files)", "exit": 0,
+   "note": "claim-evidence.mjs, claim-evidence.test.mjs, finite-batch.mjs, finite-batch.test.mjs, finite-batch-tuning.mjs, curator-cli.mjs all exit 0"},
+  {"name": "node --test docs/issue-78/v2-curator/claim-evidence.test.mjs", "exit": 0, "tests": 4, "pass": 4, "fail": 0,
+   "note": "S4 positives/negatives: claim/quote separation, forged source, wrong offsets, weak source vocabulary, support critic exact-phrase, unsupported/ambiguous deferral"},
+  {"name": "node --test docs/issue-78/v2-curator/finite-batch.test.mjs", "exit": 0, "tests": 51, "pass": 51, "fail": 0,
+   "note": "includes S4 distinct frozen call/plan identities + no-replay after ambiguous support call"},
+  {"name": "node --test docs/issue-78/v2-curator/finite-batch-tuning.test.mjs", "exit": 0, "tests": 5, "pass": 5, "fail": 0},
+  {"name": "node --test docs/issue-78/v2-curator/fact-review.test.mjs", "exit": 0, "tests": 16, "pass": 16, "fail": 0},
+  {"name": "node --test docs/issue-78/v2-curator/curator.test.mjs", "exit": 0, "tests": 36, "pass": 36, "fail": 0,
+   "note": "includes S1/S2/S3 default compatibility (claim-evidence off by default)"},
+  {"name": "node --test docs/issue-78/v2-curator/issue92-source-fact.test.mjs", "exit": 0, "tests": 5, "pass": 5, "fail": 0},
+  {"name": "node --test docs/issue-91/adr-acceptance/adr-causal-audit.test.mjs", "exit": 0, "tests": 14, "pass": 14, "fail": 0},
+  {"name": "npm run check", "exit": 0, "note": "static gate: 37 node --check"},
+  {"name": "npm test", "exit": 0, "pass": 524, "fail": 0, "note": "root suite 524/524; OPERATIONAL_PLUGIN_TEST_RESULT: PASS"}
+ ],
+ "s4_safeguards_verified": [
+  "separate normalized claim and immutable source quote",
+  "independent claim-support and utility stages",
+  "rejection of forged references and invalid offsets",
+  "no promotion of unsupported or falsely-verified claims",
+  "Graphiti persistence of only the authenticated source-exact fact",
+  "distinct frozen S4 call/plan identities",
+  "non-replay after an ambiguous support-model call",
+  "compatibility with existing S1/S2/S3 behavior"
+ ],
+ "assertions_weakened": false
+}

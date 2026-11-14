@@ -1,0 +1,31 @@
+{
+ "schema": "issue92-balanced-completion-A-v1",
+ "section": "authenticate_and_verify",
+ "required_head": "e31d22bbd4865d752a81995a457438c9d9904cde",
+ "source_commit": "fea134e (balanced-dedup: opt-in recall dedup with source-quoted specificity review)",
+ "modified_files": [
+  "docs/issue-78/v2-curator/finite-batch.mjs",
+  "docs/issue-78/v2-curator/curator-cli.mjs",
+  "docs/issue-78/v2-curator/finite-batch.test.mjs"
+ ],
+ "blob_auth": "all 8 execution-source blobs verified committed==on-disk at e31d22bb (provenance updated)",
+ "tests": {
+  "node --check (finite-batch,curator-cli,finite-batch.test)": "exit 0",
+  "node --test finite-batch.test.mjs": "61/61 pass (incl. 5 new balanced-dedup regressions), exit 0",
+  "node --test claim-evidence.test.mjs": "7/7 pass, exit 0",
+  "node --test ex-admission-proof.test.mjs": "2/2 pass, exit 0",
+  "node --test issue92-a3-acceptance.test.mjs": "12/12 pass, exit 0",
+  "python3 test_ex_admitted_node_bridge.py": "OK (1 test), exit 0",
+  "npm run check": "exit 0",
+  "npm test": "524/524 pass, exit 0"
+ },
+ "balanced_dedup_invariants": [
+  "a) genuine source-quoted duplicates defer after independent comparison (test: suppresses only source-quoted duplicates -> 1 durable fact)",
+  "b) uncertain families retain both source-supported facts (test: retains uncertain source facts)",
+  "c) malformed first-stage classification retains both (test: retains sourced facts after invalid arbitration)",
+  "d) invalid source-quote counter-review retains both (test: retains sourced facts after invalid quote review)",
+  "e) option cannot retrofit a frozen recall batch (test: BALANCED_DEDUP_IDENTITY_CHANGED)",
+  "source validation / privacy / independent utility / Graphiti UUID integrity / once-only submission unchanged (balanced path reuses existing source-quoted review + callOnce + ReviewStore/CAS/UUID; identity frozen in active/plan)"
+ ],
+ "result": "PASS (all tests green; no Central source defect found; no semantic remediation)"
+}

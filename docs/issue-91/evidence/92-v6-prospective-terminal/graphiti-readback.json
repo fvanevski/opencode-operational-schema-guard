@@ -1,0 +1,20 @@
+{
+  "group_episodes": 3,
+  "episodes": [
+    {
+      "uuid": "651447b9-3e19-40a6-a105-b14e9e315e2a",
+      "name": "curated-v1:feed50984252c113d66626b625358d18bb2244a10217f4714dfbdff22df2a907",
+      "content": "Fact 1: Historical note for the record: in the original fsm81 pilot the state map lived in a separate states.json file and the transition function read it at startup. That layout was retired in favor "
+    },
+    {
+      "uuid": "61991ec8-f3fe-4f15-b725-07feee3b310e",
+      "name": "curated-v1:8434919325b235355c1815d6a04f4dbf53a3dd3c3f9f3e1cd85d564d351bf536",
+      "content": "Fact 1: TBA-titled imports are currently succeeding only with operator intervention to manaully accept these blocklisted releases\n[Evidence class: user-stated; Kind: blocker; Temporal: observed; Obser"
+    },
+    {
+      "uuid": "b20cfe84-5517-4536-93d2-dbdd0fcfaa60",
+      "name": "curated-v1:678744b834b8cc387e8e4928b2ba6f1165f7705e727f8e6499b12694193d62f0",
+      "content": "Fact 1: i believe opencode plugin is `@opencode-ai/plugin`\n[Evidence class: user-stated; Kind: blocker; Temporal: observed; Observed: 2026-11-01T23:41:32.622Z]\n[Source references: opencode:ses_e6687fb"
+    }
+  ]
+}

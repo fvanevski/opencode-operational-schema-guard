@@ -1,0 +1,63 @@
+{
+ "schema_version": 1,
+ "kind": "issue92-evidence-manifest-v1",
+ "campaign": "92-a1-a3-first-campaign",
+ "base_sha": "c8eb5260f2b10832346234b1b5d0cf28302ffba8",
+ "candidate_sha": "270848aa108df22b9d12738cc6f4903ec45da9c1",
+ "branch": "work/91-memory-utility-r1",
+ "host": {
+  "node": "v26.13.0",
+  "graphiti_mcp": "http://127.0.0.1:8766/mcp",
+  "model_endpoint": "http://127.0.0.1:8002/v1/chat/completions",
+  "model_alias": "chat-fast",
+  "ex_gate": "/home/filip/.local/share/openviking-commit-gate/openviking_commit_gate.py",
+  "ex_lock": "$XDG_RUNTIME_DIR/openviking-agent.lock"
+ },
+ "private_refs": {
+  "full_holdout_corpus": "/home/filip/.local/state/ghdev-graphiti-issue92/private/issue92-holdout-corpus.json",
+  "full_holdout_corpus_sha256": "b81d446201545142d69691fc20c87312986f648ba2cc1691e0de0c4f26657d54",
+  "issue81_cron_corpus": "/home/filip/.local/state/ghdev-graphiti-issue81/holdout81-64d32eb7/private/holdout-corpus-cron.json",
+  "issue81_cron_corpus_sha256": "524de3ff36877442c6dc4e75edf5da9f317ba1c2e25e267b117233514e425863",
+  "issue81_webvtt_corpus": "/home/filip/.local/state/ghdev-graphiti-issue81/holdout81-64d32eb7/private/holdout-corpus.json",
+  "issue81_webvtt_corpus_sha256": "2bd1ecd19952debb0a44d561218a39852f61835018adc4dd47d03b0dda06e2fc"
+ },
+ "note": "Lists every published byte of this packet except manifest.json itself. Raw native_event excerpt text and tool output are retained in private access-restricted host storage; the packet carries sanitized case IDs, categories, source-locator digests and decision tables. Published commit SHA and remote readback are recorded in the campaign handback, not here, to keep the manifest self-consistent.",
+ "files": {
+  "a1-freeze.json": {
+   "sha256": "90fa2ebf98a4984a8c06f66c5134498d1d73f6921ebc0cc7d5c3d94184290307",
+   "bytes": 4304
+  },
+  "issue92-holdout-corpus-sanitized.json": {
+   "sha256": "8cef55a6e0afe7266dc394ae15f2a4f86ba7b5b3d67b5d695268bab84e394077",
+   "bytes": 12405
+  },
+  "a3-two-arm-config.json": {
+   "sha256": "4d4861a266dd10f9ab8694219c0db2a064f43c2cf71d322cacf413264b07365f",
+   "bytes": 3439
+  },
+  "a3-post-exit-run.sh": {
+   "sha256": "64c596401e59c5aa67e4e1911e8e8c1b06dd36b58aa468be5e45ad7af8b0a352",
+   "bytes": 2384
+  },
+  "scorecard.json": {
+   "sha256": "0d5021442d4b7e500a41071f34e0e20f443d3a7241e079c5a9a70a0e59a46c3f",
+   "bytes": 5742
+  },
+  "verification.md": {
+   "sha256": "453e4e41e1e6bf652536c3cbfcc98d1499b6636f96fd6ed8faaeca1aeb1134cb",
+   "bytes": 3599
+  },
+  "host-evidence.md": {
+   "sha256": "86811c6de5c5779e8d9eb9cfd09133afdd26eb0a5d168a7182b15daa372dead6",
+   "bytes": 3490
+  },
+  "limitations.md": {
+   "sha256": "1aedecde0027f9454f70c289f69c0eef832dde2c53a210dfab9f523c9f12bf2d",
+   "bytes": 2445
+  },
+  "friction.md": {
+   "sha256": "36526fd31369144e3c0f236518fb64f33a04a127f0b25d27610632e2c1767700",
+   "bytes": 3431
+  }
+ }
+}

@@ -1,0 +1,19 @@
+diff --git a/docs/issue-78/v2-curator/fact-review.mjs b/docs/issue-78/v2-curator/fact-review.mjs
+index 0131c5f..f6a232e 100644
+--- a/docs/issue-78/v2-curator/fact-review.mjs
++++ b/docs/issue-78/v2-curator/fact-review.mjs
+@@ -99,6 +99,14 @@ export function validateFactDiscovery(raw,cluster){
+    reason:'Provisional exact-source candidate awaiting independent utility review',
+    facts
+  },cluster);
++ // Preserve the exact source span as immutable proof material on each output
++ // fact. The shared normalizer freezes facts to a fixed field set that omits
++ // evidence_span; re-attach it here (post-validation, as provenance, never as
++ // a new validation input) so downstream consumers (e.g. S2 source-recovery
++ // previously-rejected spans) can read the authenticated start/end offsets.
++ if(checked.ok&&Array.isArray(checked.facts))
++   checked.facts=checked.facts.map((nf,i)=>i<facts.length?
++    Object.freeze({...nf,evidence_span:facts[i].evidence_span}):nf);
+  return {...checked,source_span_adjustments:repairs};
+ }
+ export function factReviewPrompt(cluster,proposal,priorFacts=[]){

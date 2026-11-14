@@ -1,0 +1,35 @@
+{
+ "schema": "issue92-final-integration-T3-v1",
+ "section": "freeze_and_prepare",
+ "final_freeze": {
+  "PRIVATE_MANIFEST_SHA256": "eed37ce1e32895172687301e9713f0611704dbfc4bd0fde18c2dff1a517e1ddf",
+  "LABEL_FREEZE_SHA256": "ee8f88f4906d9c2be09359cd658dcbd4d3eb907b0ba8602b498a570daf9d9971",
+  "group": "graphiti-adr92-a3-prospective-v4",
+  "cohort": "10 valuable (8 real-dev + 2 fsm81 + 2 real-dev findings) + 10 controls",
+  "staged_native_spans": 27,
+  "historical_preserved": "issue92-a3-v4-corpus-historical.json (earlier v4 with fsm81 siblings)"
+ },
+ "state_root": "/tmp/opencode/issue92-a3/state-v4 (fresh)",
+ "pre_inference_ratification": "issue92-a3-v4-ratification.json (0600, pre-inference, independent_reviewer, 20 ratified cases)",
+ "treatment": {
+  "finite_batch": true,
+  "novelty_policy": "recall",
+  "source_recovery": true,
+  "resilient_discovery": true,
+  "claim_evidence": true,
+  "source_exact_complement": true,
+  "balanced_dedup": true,
+  "max_clusters": 24,
+  "max_candidates": 72,
+  "max_seconds": 3600
+ },
+ "ex_bridge": {
+  "negative_preflight": "PASS (marker-only missing_lock_fd / non-inherited wrong_inode)",
+  "hermes_exempt": true,
+  "once_only": "state-v4/.a3-host-ran marker absent (no v4 inference run yet)",
+  "immutable_source_binding": "provenance -> a564d397 (8 blobs committed==on-disk)"
+ },
+ "scorer_readiness": "issue92-a3-score.mjs validates the final v4 freeze contract (roster/stage/ratification/authority) and fails closed at insufficient_review_samples (exit 1, no simulated PASS) \u2014 unchanged acceptance thresholds (recall >=9/10, grounded precision >=0.90, useful >=0.75 over >=8 distinct, zero breaches, Wilson 95%)",
+ "empty_group_proof": "graphiti-adr92-a3-prospective-v4 = 0 episodes (empty, positive get_episodes readback)",
+ "ready_to_run_command": "A3_HOST_APPROVED=1 python3 /tmp/opencode/issue92-a3/a3-v4-host-ex-launcher.py (GATED on Central acceptance; no inference executed in this campaign)"
+}

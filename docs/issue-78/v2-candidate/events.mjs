@@ -4,19 +4,22 @@ import path from 'node:path';
 
 const SAFE_ID = /^[A-Za-z0-9_.:-]{1,160}$/;
 const SAFE_SCOPE = /^[A-Za-z0-9_.-]{1,100}$/;
-const PRIVATE = /<private\b|<\/private>|BEGIN (?:[A-Z ]+ )?PRIVATE KEY|(?:api[_-]?key|access[_-]?token|password|secret|client_secret)\s*[:=]|authorization\s*:\s*bearer|gh[pousr]_[A-Za-z0-9]{18,}|sk-[A-Za-z0-9_-]{16,}|AKIA[0-9A-Z]{16}/i;
+const PRIVATE = /<private\b|<\/private>|BEGIN (?:[A-Z ]+ )?PRIVATE KEY|(?:(?:api[_-]?key|access[_-]?token|password|secret|client_secret)\s*[:=]|["'](?:api[_-]?key|access[_-]?token|password|secret|client_secret)["']\s*:)|authorization\s*:\s*bearer|gh[pousr]_[A-Za-z0-9]{18,}|sk-[A-Za-z0-9_-]{16,}|AKIA[0-9A-Z]{16}/i;
+const PRIVATE_VALUE = /\b(?:api[_ -]?key|api[_ -]?token|access[_ -]?token|client[_ -]?secret|bearer[_ -]?token|password|passwd|secret)\b(?:\s+for\s+[a-z0-9_.-]+)?\s*(?:(?::|=|=>)\s*|(?:is|was|were|are|equals|set\s+to)\s+)(?!["'\u0060]?(?:in|at|under|inside|on|stored|located|available|missing|unset|blank|redacted|configured|required|valid|invalid|needed|generated|included|found|specified|removed)\b)["'\u0060]?[a-z0-9_./+=!@#$%^&*-]{4,}/i;
+const containsPrivateValue = text => PRIVATE.test(text) || PRIVATE_VALUE.test(text);
 const SELF = /\[GHDEV_GRAPHITI_CONTEXT\]|\[\/GHDEV_GRAPHITI_CONTEXT\]|\[OPENVIKING_CONTEXT\]|Source reference:\s*opencode:/i;
 const CHATTER = /^(?:ok(?:ay)?|thanks|thank you|great|yes|no|continue|proceed|got it|hello|hi|done)[.! ]*$/i;
-const READ_ONLY_NOISE = /^(?:pwd|ls|cat|head|tail|grep|rg|find|wc|sed|awk)\b/i;
-const TOOL_INTEREST = /\b(?:pytest|test|spec|build|compile|lint|format|check|error|fail|pass|exception|traceback|migration|npm|node|python|cargo|go|git|gh|patch|install|deploy|permission|config|service|docker|curl|timeout)\b/i;
+// Tool/command names are no longer eligibility vetoes. Preserve source
+// authenticity and hard privacy limits; model curation judges usefulness.
 const RESULT_INTEREST = /\b(?:pass(?:ed)?|fail(?:ed|ure)?|error|exception|traceback|warning|changed|modified|created|deleted|exit(?:ed)?|timeout|denied|success|diff|build|test)\b/i;
 
 export const sha = text => createHash('sha256').update(text).digest('hex');
 const valid = (s, re = SAFE_ID) => typeof s === 'string' && re.test(s);
 export function cleanExcerpt(value, max = 1100) {
   if (typeof value !== 'string' || value.length > 16000 || /[\0-\u0008\u000b\u000e-\u001f]/u.test(value)) return '';
-  const text = value.replace(/\s+/g, ' ').trim();
-  if (!text || text.length > max || PRIVATE.test(text) || SELF.test(text)) return '';
+  // The excerpt itself is evidence: retain its literal internal whitespace.
+  const text = value.trim();
+  if (!text || text.length > max || containsPrivateValue(text) || SELF.test(text)) return '';
   return text;
 }
 // Only assistant text parts qualify. Scan the ENTIRE bounded message before
@@ -24,14 +27,14 @@ export function cleanExcerpt(value, max = 1100) {
 // cannot be hidden by truncation.
 function assistantExcerpt(raw) {
   if (typeof raw !== 'string' || raw.length > 16000 ||
-    PRIVATE.test(raw) || SELF.test(raw) ||
+    containsPrivateValue(raw) || SELF.test(raw) ||
     /[\0-\u0008\u000b\u000e-\u001f]/u.test(raw)) return '';
-  const condensed = raw.replace(/\s+/g, ' ').trim();
-  if (condensed.length <= 1100) return cleanExcerpt(condensed);
-  const head = condensed.slice(0, 1050);
+  const literal = raw.trim();
+  if (literal.length <= 1100) return cleanExcerpt(literal);
+  const head = literal.slice(0, 1050);
   const wordEnd = head.lastIndexOf(' ');
-  return cleanExcerpt((wordEnd >= 800 ? head.slice(0, wordEnd) : head) +
-    ' [truncated; source is a completed assistant turn]');
+  // A synthetic truncation marker would not be a verbatim source quotation.
+  return cleanExcerpt(wordEnd >= 800 ? head.slice(0, wordEnd) : head);
 }
 
 function stamp(time) {
@@ -106,51 +109,109 @@ function promptSpans(text) {
     let end = Math.min(start + PROMPT_SPAN_CHARS, text.length);
     if (end < text.length) {
       const wordEnd = text.lastIndexOf(' ', end);
-      // Do not cut a word if a nearby boundary is available.
       if (wordEnd >= start + 600) end = wordEnd;
     }
-    const excerpt = text.slice(start, end).trim();
-    // Retain narrative spans, not source/JSON fragments. This check is
-    // applied per span, not to an otherwise useful entire long message.
-    if (excerpt.length >= 24 && !CHATTER.test(excerpt) &&
-      !/[{}]/.test(excerpt) && /\s/.test(excerpt))
-      spans.push({ excerpt, offset: start });
+    const raw = text.slice(start, end);
+    const leading = raw.length - raw.trimStart().length;
+    const excerpt = raw.trim();
+    if (excerpt.length >= 24 && !CHATTER.test(excerpt) && /\s/.test(excerpt))
+      spans.push({ excerpt, offset: start + leading });
     start = end;
     while (text[start] === ' ') start++;
   }
-  if (spans.length <= MAX_PROMPT_SPANS) return spans;
-  // Deterministic coverage of the whole source (including its tail), rather
-  // than silently capturing only the beginning of a large user message.
-  return Array.from({ length: MAX_PROMPT_SPANS }, (_, i) =>
-    spans[Math.round(i * (spans.length - 1) / (MAX_PROMPT_SPANS - 1))]);
+  return spans;
+}
+/** Remove externally injected memory without ever joining nonadjacent
+ * authored source regions. Each returned offset references the original,
+ * decoded native prompt, not the normalized/rendered Graphiti assertion.
+ * Malformed, nested or unmatched wrapper tags fail closed.
+ */
+export function authoredPromptFragments(text) {
+  if (typeof text !== 'string') return null;
+  const open = /<openviking-context(?:\s[^>]*)?>/gi;
+  const close = /<\/openviking-context\s*>/i;
+  const fragments = [];
+  let match, offset = 0, removed = false;
+  while ((match = open.exec(text))) {
+    const before = text.slice(offset, match.index);
+    if (close.test(before)) return null;
+    if (before.trim()) fragments.push({ text: before, offset });
+    const from = match.index + match[0].length;
+    const remaining = text.slice(from);
+    const closing = close.exec(remaining);
+    if (!closing) return null;
+    const nested = /<openviking-context(?:\s[^>]*)?>/i.exec(remaining);
+    if (nested && nested.index < closing.index) return null;
+    offset = from + closing.index + closing[0].length;
+    removed = true;
+    open.lastIndex = offset;
+  }
+  const trailing = text.slice(offset);
+  if (close.test(trailing)) return null;
+  if (trailing.trim()) fragments.push({ text: trailing, offset });
+  return { fragments, removed };
+}
+// Backward-compatible single-fragment convenience. Multiple disjoint source
+// regions have no legitimate single contiguous string representation.
+export function withoutInjectedOpenVikingContext(text) {
+  const result = authoredPromptFragments(text);
+  return result?.fragments.length === 1
+    ? result.fragments[0].text.trim() : '';
 }
 export function fromPromptCandidates(event, scope, { admitted = false } = {}) {
-  if (!admitted) return []; // Only prompts observed in an admitted native context.
+  if (!admitted) return [];
   const sessionID = field(event, ['sessionID', 'sessionId']);
   const text = promptText(event);
+  // Scan the complete ORIGINAL decoded message before removing any injected
+  // content, truncation or segmentation. Rejected original input stays out.
   if (!text || text.length > MAX_LONG_PROMPT_CHARS ||
-    PRIVATE.test(text) || SELF.test(text) ||
+    containsPrivateValue(text) ||
     /[\0-\u0008\u000b\u000e-\u001f]/u.test(text)) return [];
-  const condensed = text.replace(/\s+/g, ' ').trim();
-  if (!condensed || CHATTER.test(condensed) || /^[?!. ]+$/.test(condensed) ||
-    // Pure JSON/source payload is not an authenticated user decision.
-    /^\s*(?:\{|\[\s*\{)/.test(condensed) ||
-    (condensed.length <= 1100 && condensed.length > 400 && /[{}]/.test(condensed))) return [];
+  const authored = authoredPromptFragments(text);
+  if (!authored || !authored.fragments.length ||
+    authored.fragments.some(f => SELF.test(f.text))) return [];
   const nativeID = field(event, ['messageID', 'messageId', 'promptID', 'promptId']) ||
     field(event?.prompt, ['messageID', 'messageId', 'id']);
   const qualified = valid(nativeID);
-  // Weak content-hash fallback is retained for short prompts only. Long
-  // message segmentation requires an authentic stable native message ID.
-  if (condensed.length > 1100 && !qualified) return [];
-  const isLong = condensed.length > 1100;
-  const segments = !isLong
-    ? [{ excerpt: condensed, offset: 0 }]
-    : promptSpans(condensed);
-  return segments.map(({ excerpt, offset }) => {
-    if (!cleanExcerpt(excerpt) || excerpt.length < 24) return null;
-    // Even one surviving span of a long message remains PARTIAL evidence.
+  // Weak source IDs cannot authenticate long, split or memory-stripped input.
+  if (!qualified && (text.length > 1100 || authored.removed ||
+    authored.fragments.length !== 1)) return [];
+  const segments = [];
+  for (const fragment of authored.fragments) {
+    const original = fragment.text;
+    const stripped = original.trim();
+    if (!stripped || CHATTER.test(stripped) || /^[?!. ]+$/.test(stripped))
+      continue;
+    const local = original.length > 1100
+      ? promptSpans(original)
+      : (() => {
+          const leading = original.length - original.trimStart().length;
+          return [{ excerpt: stripped, offset: leading }];
+        })();
+    for (const part of local) {
+      if (part.excerpt.length < 24 || !cleanExcerpt(part.excerpt)) continue;
+      if (!text.includes(part.excerpt) ||
+        text.slice(fragment.offset + part.offset,
+          fragment.offset + part.offset + part.excerpt.length) !== part.excerpt)
+        throw Error('NATIVE_SOURCE_OFFSET_INVALID');
+      segments.push({ excerpt: part.excerpt,
+        offset: fragment.offset + part.offset });
+    }
+  }
+  // Reserve the opening scope AND the first detailed continuation. Uniform
+  // sampling skipped actionable evidence immediately after long preambles.
+  // Keep the remaining four positions distributed through the message, tail
+  // included; every selected excerpt remains an authentic contiguous span.
+  const selected = segments.length <= MAX_PROMPT_SPANS ? segments :
+    [segments[0], segments[1],
+      ...Array.from({length: MAX_PROMPT_SPANS - 2}, (_, i) =>
+        segments[Math.round(1 + (i + 1) * (segments.length - 2) /
+          (MAX_PROMPT_SPANS - 2))])];
+  const partial = text.length > 1100 || authored.removed ||
+    authored.fragments.length > 1;
+  return selected.map(({ excerpt, offset }) => {
     const sourceID = qualified
-      ? (isLong ? nativeID + ':span:' + offset : nativeID)
+      ? (partial || offset !== 0 ? nativeID + ':span:' + offset : nativeID)
       : sha(excerpt).slice(0, 32);
     if (!valid(sourceID)) return null;
     return envelope(scope, { kind: 'user_turn', evidenceClass: 'user-stated',
@@ -168,7 +229,7 @@ export function fromPrompt(event, scope, options = {}) {
 // tools do not have shell-command inputs. Their receipts are observations,
 // NOT independently verified repository changes. Never persist file contents,
 // patch hunks, raw tool output, or external/secret-looking filenames.
-const FILE_TOOLS = new Set(['edit', 'write', 'apply_patch']);
+const FILE_TOOLS = new Set(['edit', 'write', 'apply_patch', 'read']);
 const PRIVATE_PATH = /(?:^|\/)(?:\.env(?:\.[^/]*)?|\.ssh|\.npmrc|\.pypirc|id_(?:rsa|ed25519)|credentials?(?:\.[^/]*)?|secrets?(?:\.[^/]*)?)(?:\/|$)/i;
 function scopedFile(raw, workspace) {
   if (typeof raw !== 'string' || raw.length < 1 || raw.length > 512 ||
@@ -189,23 +250,24 @@ function fromFileTool(event, scope, sessionID, callID) {
   if (name === 'apply_patch') {
     const patch = input.patch ?? input.patchText ?? input.patch_text;
     if (typeof patch !== 'string' || patch.length > 32000 ||
-      PRIVATE.test(patch) || SELF.test(patch)) return null;
+      containsPrivateValue(patch) || SELF.test(patch)) return null;
     files = [...patch.matchAll(/^\*\*\* (?:Add|Update|Delete) File: (.+)$/gm)]
       .map(m => m[1]);
     if (!files.length || files.length > 4) return null;
   } else {
     const body = input.content ?? input.newString ?? input.oldString ?? '';
     if (typeof body !== 'string' || body.length > 32000 ||
-      PRIVATE.test(body) || SELF.test(body)) return null;
+      containsPrivateValue(body) || SELF.test(body)) return null;
     files = [input.filePath ?? input.file_path ?? input.path];
   }
   const relative = files.map(file => scopedFile(file, scope.workspace));
   if (relative.some(x => !x)) return null;
+  const reading=name==='read';
   const excerpt = cleanExcerpt('tool ' + event.status + ': ' + name +
-    ' reported file operation on ' + relative.join(', ') +
-    ' (not independently verified)');
+    (reading?' reported file access to ':' reported file operation on ') + relative.join(', ') +
+    (reading?' (contents not stored; not independently verified)':' (not independently verified)'));
   if (!excerpt) return null;
-  return envelope(scope, { kind: 'file_change', evidenceClass: 'tool-reported',
+  return envelope(scope, { kind: reading?'file_access':'file_change', evidenceClass: 'tool-reported',
     sourceType: 'tool', sourceID: callID, sessionID, excerpt,
     time: event.timestamp || event.time, related: event.related_event_ids });
 }
@@ -219,15 +281,20 @@ export function fromTool(event, scope) {
     return fromFileTool(event, scope, sessionID, callID);
   }
   const cmd = cleanExcerpt(event?.input?.command ?? event?.input?.cmd ?? '', 250);
-  if (!cmd || READ_ONLY_NOISE.test(cmd) || !TOOL_INTEREST.test(cmd)) return null;
+  // Commands referencing sensitive paths cannot become private memory evidence.
+  if (!cmd || PRIVATE_PATH.test(cmd.replace(/\s+/g,'/'))) return null;
   const result = event.result;
   const exit = result?.exitCode ?? result?.exit_code ?? result?.code ??
     result?.output?.exit ?? result?.metadata?.exit;
   const output = result?.output?.output ?? result?.output?.stdout ??
     (typeof result?.output === 'string' ? result.output : result?.stdout ?? '');
-  if (typeof output !== 'string' || output.length > 16000 || PRIVATE.test(output) || SELF.test(output)) return null;
-  const lines = output.split(/\r?\n/).filter(x => RESULT_INTEREST.test(x)).slice(0, 3);
-  const evidence = lines.join(' ').slice(0, 650);
+  if (typeof output !== 'string' || output.length > 16000 || containsPrivateValue(output) || SELF.test(output)) return null;
+  const boundedLines=output.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+  // Error/result markers prioritize, but never gate eligibility. Preserve
+  // ordinary read-only command outputs when no marker exists.
+  const matched=boundedLines.filter(x=>RESULT_INTEREST.test(x)).slice(0,3);
+  const lines=matched.length?matched:boundedLines.slice(0,3);
+  const evidence=lines.join(' ').slice(0,650);
   if (!evidence && exit === undefined && event.status === 'completed') return null;
   const label = exit === undefined ? 'tool status ' + event.status :
     'tool exit ' + String(exit);

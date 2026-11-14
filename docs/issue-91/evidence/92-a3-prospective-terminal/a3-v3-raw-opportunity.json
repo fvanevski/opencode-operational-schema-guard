@@ -1,0 +1,18 @@
+{
+ "schema": "issue92-a3-v3-raw-opportunity-analysis-v1",
+ "group": "graphiti-adr92-a3-prospective-v2",
+ "source": "/home/filip/.local/share/opencode/opencode.db (live native data, v2 schema)",
+ "raw_opportunity_denominator": {
+  "genuinely_new_user_turns": 1113,
+  "distinct_sessions": 619,
+  "note": "nonoverlapping with B3 24-cluster, gh_mcp 20-case, v2 cohort; H2-H4 byte-level crosscheck UNVERIFIED (private corpus files not on host)"
+ },
+ "admission": {
+  "size_filter_dropped": 44,
+  "privacy_dropped": 279,
+  "chatter_dropped": 67,
+  "admitted": 1033,
+  "admit_rate": 0.726
+ },
+ "note": "A1 raw-native capture analysis; the A3 cohort is the 20-case prospective slice of the 1113-turn genuinely-new native corpus"
+}

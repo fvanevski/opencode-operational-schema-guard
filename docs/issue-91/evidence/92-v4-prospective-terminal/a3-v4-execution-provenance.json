@@ -1,0 +1,20 @@
+{
+ "schema": "issue92-a3-v4-execution-provenance-v1",
+ "group": "graphiti-adr92-a3-prospective-v4",
+ "source_binding": {
+  "repo_head": "a564d397bf66ec2f90db4f06f9cd43a0252ef9d7"
+ },
+ "execution_source_head": "a564d397bf66ec2f90db4f06f9cd43a0252ef9d7",
+ "manifest_sha256": "eed37ce1e32895172687301e9713f0611704dbfc4bd0fde18c2dff1a517e1ddf",
+ "label_freeze_sha256": "ee8f88f4906d9c2be09359cd658dcbd4d3eb907b0ba8602b498a570daf9d9971",
+ "batch_id": "01b37e0598e5a231e25649637cce4d6304e79cd024ad0af5ce4b824a31f41c6f",
+ "inference_calls": 1,
+ "model_calls_total": 71,
+ "model_calls_by_stage": null,
+ "persisted_episodes": 8,
+ "deferred": 18,
+ "unresolved_terminal": 8,
+ "corrective_path": "reconcile-only (rc=3 -> reconcile rc=0; no re-inference)",
+ "once_only_marker": "/tmp/opencode/issue92-a3/.a3-host-ran (v3 marker preserved as .a3-host-ran-v3-historical; v4 marker written once)",
+ "ex_admission": "canonical EX flock inherited-descriptor (pass_fds); Hermes exempt supervising harness; scheduler idle (0/0) + 30s quiet grace + no-unresolved-work before inference"
+}

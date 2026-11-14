@@ -1,0 +1,27 @@
+{
+ "schema": "issue92-s6-a1-raw-native-v1",
+ "kind": "sanitized, evidence-only, public",
+ "generated_utc": "2026-11-12T06:05:00Z",
+ "historical_capture_control_14of14": {
+  "result": "14/14 (tp=14 fn=0 recall=1.0)",
+  "status": "re-affirmed from frozen verified scorecard (92-a1-a3-first-campaign/scorecard.json -> capture_control_14of14, unverified=false, baseline 0/14)",
+  "corpus_state_on_host": "/home/filip/.local/state/ghdev-graphiti-issue81/holdout81-64d32eb7/state/ghdev-graphiti/candidate-events-v1/ (cur81_holdout_cc5349fc + cur81_native_8cd61d76 present)",
+  "corpus_present": true,
+  "note": "The 14/14 cron broad-capture recall control is RE-ASSERTED from frozen evidence. It is NOT a fresh current source-opportunity assessment; do not conflate it with the current raw-native measurement below."
+ },
+ "current_raw_native_opportunity": {
+  "source": "/home/filip/.local/share/opencode/opencode.db (SQLite v2: session_v2 + session_message), live current host data",
+  "method": "CPU-only bounded scan of native user-turn messages; no model calls; typed hard-drop criteria mirror docs/issue-78/v2-candidate/events.mjs (excerpt>=24 + whitespace, privacy secret-marker scan, native-ID binding, chatter filter)",
+  "raw_user_message_denominator": 1423,
+  "distinct_sessions": 754,
+  "typed_hard_drops": {
+   "size_lt24_or_no_whitespace": 44,
+   "privacy_secret_markers": 279,
+   "chatter_short_command_like": 67
+  },
+  "queue_admitted_eligible": 1033,
+  "admission_rate": 0.726,
+  "note": "This is a CURRENT source-opportunity evaluation on live native data, distinct from the historical 14/14 control and from the 40 historical all-deferred/model-error arm (which was a host-fault drain, not a successful capture assessment). Admission here is the raw capture-opportunity numerator; usefulness is judged only by prospective model scoring (A3), not by admission count."
+ },
+ "interpretation": "The A1 raw-native capture path is healthy on current data: 1033/1423 native user turns are eligible capture opportunities after typed privacy/size/chatter drops. The 14/14 historical recall control remains valid but is a frozen denominator, not a fresh capture study."
+}

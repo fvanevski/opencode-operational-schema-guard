@@ -19,3 +19,10 @@ jobs:
           package-manager-cache: false
       - run: npm run check
       - run: npm test
+      - name: Issue #92 native-source, utility and prospective acceptance regressions
+        run: |
+          node --test docs/issue-78/v2-candidate/candidate.test.mjs docs/issue-78/v2-candidate/long-prompt.test.mjs
+          node --test docs/issue-78/v2-curator/fact-review.test.mjs docs/issue-78/v2-curator/claim-evidence.test.mjs docs/issue-78/v2-curator/finite-batch.test.mjs
+          node --test docs/issue-91/adr-acceptance/issue92-a3-stage.test.mjs docs/issue-91/adr-acceptance/issue92-a3-acceptance.test.mjs
+      - name: Issue #92 post-exit EX launcher regressions
+        run: python3 -m unittest discover -s docs/issue-75/v2-candidate -p 'test_post_exit_drain.py' -v

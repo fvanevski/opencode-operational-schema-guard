@@ -1,0 +1,8 @@
+2026-11-12T05:19:10Z WAIT_FOR_HARNESS_EXIT: polling active harness processes
+2026-11-12T05:19:10Z HARNESS_EXITED: no interactive harness process
+2026-11-12T05:19:10Z EX_FLOCK_ACQUIRED: /run/user/1000/openviking-agent.lock fd=3
+2026-11-12T05:19:10Z ADMISSION_WAIT: scheduler busy (running/waiting nonzero); bounded retry in 5s
+2026-11-12T05:19:15Z QUIET_GRACE: 30s
+2026-11-12T05:19:45Z EX_ADMISSION_PROVEN: harness-exit + quiet-grace + scheduler-idle + no-unresolved
+2026-11-12T05:19:45Z JOB_START: claim-ex-proof
+2026-11-12T05:20:18Z FAIL_CLOSED: 'NoneType' object has no attribute 'strip'

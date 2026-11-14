@@ -37,7 +37,7 @@ const proposal=(event,decision='EMIT')=>({decision,reason:'Source-backed reusabl
   facts:decision==='EMIT'?[fact(event)]:[]});
 // Model-generated assertions must be exact source excerpts; operator edits can
 // use paraphrases under their distinct revision-checked approval contract.
-const modelProposal=(event=U)=>({decision:'EMIT',reason:'Exact source-backed decision',
+const modelProposal=(event=U)=>({decision:'EMIT',utility_class:'durable_decision',reason:'Exact source-backed decision',
   facts:[{assertion:event.excerpt,kind:'decision',
     source_refs:[event.source_refs[0]],temporal_status:'observed'}]});
 const temp=fn=> (async()=>{const root=await mkdtemp(path.join(os.tmpdir(),'curator80-'));
@@ -74,7 +74,7 @@ test('strict structured validator accepts grounded class and rejects all authori
  assert.equal(validateDecision(proposal(weak),{...c,events:[weak]}).ok,false);
 });
 test('model field binding uses original authenticated source data, not guessed metadata',()=>{
- const c=cluster(),f=fact(U),minimal={decision:'EMIT',reason:'Grounded decision',
+ const c=cluster(),f=fact(U),minimal={decision:'EMIT',utility_class:'durable_decision',reason:'Grounded decision',
    facts:[{assertion:U.excerpt,kind:'decision',source_refs:f.source_refs,temporal_status:'observed'}]};
  const result=validateModelDecision(JSON.stringify(minimal),c);
  assert.equal(result.ok,true);
@@ -116,6 +116,39 @@ test('model curation rejects paraphrases and fabricated extensions despite lexic
    source_refs:[U.source_refs[0],T.source_refs[0]]}]};
  assert.equal(validateModelDecision(combined,c).ok,false);
 });
+test('utility policy is an additional model-only persistence gate',()=>{ 
+  const c=cluster(),valid=modelProposal(U);
+  assert.equal(validateModelDecision(valid,c).ok,true);
+  const missing=validateModelDecision({...valid,utility_class:undefined},c);
+  assert.equal(missing.ok,false);assert.equal(missing.reason,'utility_class_required');
+  for(const utility_class of ['transient_result','repetition','superseded_stale',
+    'uncertain_unattributed']){
+    const outcome=validateModelDecision({...valid,utility_class},c);
+    assert.equal(outcome.ok,false);assert.equal(outcome.decision,'DEFER');
+    assert.equal(outcome.reason,'utility_class_not_durable');
+    assert.equal(outcome.facts.length,0);
+  }
+  assert.equal(validateModelDecision({...valid,utility_class:'verified'},c).reason,
+    'invalid_utility_class');
+  for(const utility_class of ['durable_decision','root_cause_fix',
+    'stable_architecture','reusable_procedure','useful_negative']){
+    const outcome=validateModelDecision({...valid,utility_class},c);
+    assert.equal(outcome.ok,true,utility_class);
+    assert.equal(outcome.utility_class,utility_class);
+  }
+  const skip=validateModelDecision({decision:'SKIP',utility_class:'repetition',
+    reason:'Repeated transient green check',facts:[]},c);
+  assert.equal(skip.ok,true);assert.equal(skip.decision,'SKIP');
+  const defer=validateModelDecision({decision:'DEFER',utility_class:'uncertain_unattributed',
+    reason:'Assistant speculation without independent proof',facts:[]},c);
+  assert.equal(defer.ok,true);
+  // Operator-reviewed facts and pre-existing approvals are not reclassified.
+  assert.equal(validateDecision({decision:'EMIT',reason:'Operator source review',
+    facts:[fact(U)]},c).ok,true);
+  assert.match(modelPrompt(c)[0].content,/durable_decision/);
+  assert.match(modelPrompt(c)[0].content,/Transient green counts/);
+});
+
 test('field-level model schema diagnostic survives durable deferred review without source text',()=>temp(async root=>{
  const c=cluster();
  const f=fact(U,{kind:'unsupported_tool_kind'});
@@ -487,6 +520,11 @@ test('one admitted model cluster emits exactly one source-linked Graphiti episod
   assert.equal(result.length_limited_responses,1);
   assert.equal(writes,1);
   assert.equal((await store.get(id)).state,'persisted');
+  assert.equal((await store.get(id)).utility_class,'durable_decision');
+  const listed=spawnSync(process.execPath,[new URL('./curator-cli.mjs',import.meta.url).pathname,
+    'list','--group',scope.group,'--state-dir',root],{encoding:'utf8'});
+  assert.equal(listed.status,0,listed.stderr);
+  assert.equal(JSON.parse(listed.stdout).items[0].utility_class,'durable_decision');
   assert.equal((await store.get(id)).remote_episode_uuid,uuid);
  }finally{delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;}
 }));
@@ -576,7 +614,7 @@ test('re-evaluated approval converges deferred source queue without re-staging e
   }};
   const result=await runAdmitted({root,group:scope.group,queue:q,store,graphiti,
     curate:async()=>({content:JSON.stringify({
-      decision:'EMIT',reason:'User-backed decision',
+      decision:'EMIT',utility_class:'durable_decision',reason:'User-backed decision',
       facts:[{assertion:U.excerpt,kind:'decision',
         source_refs:[U.source_refs[0]],temporal_status:'observed'}]}),duration_ms:30}),
     maxSeconds:20});
@@ -764,3 +802,104 @@ test('replay of a legal edge against an advanced record fails with clean false',
   assert.equal((await store.get(record.id)).state,'failed_extraction');
  }finally{delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;}
 }));
+
+test('curator prompt distinguishes reusable schema negatives from transient failures without changing the validator',()=>{
+  const c=cluster(),instruction=modelPrompt(c)[0].content;
+  assert.match(instruction,/schema-validation failure/);
+  assert.match(instruction,/reproducible incompatibility/);
+  assert.match(instruction,/useful_negative or reusable_procedure/);
+  assert.match(instruction,/raw stack trace/);
+  assert.match(instruction,/DEFER that claim for independent review/);
+  assert.match(instruction,/attributable source evidence/);
+  const durable={decision:'EMIT',utility_class:'useful_negative',
+    reason:'Source-stated repeatable invalid median result',
+    facts:[{assertion:T.excerpt,kind:'test_result',
+      source_refs:[T.source_refs[0]],temporal_status:'observed'}]};
+  const valid=validateModelDecision(durable,c);
+  assert.equal(valid.ok,true);
+  const ephemeral=validateModelDecision({...durable,utility_class:'transient_result'},c);
+  assert.equal(ephemeral.ok,false);
+  assert.equal(ephemeral.reason,'utility_class_not_durable');
+});
+
+test('Issue 92 extract-first policy ranks durable content within mixed transient clusters',()=>{
+ const prompt=modelPrompt(cluster())[0].content;
+ for(const exactRule of [
+   'inspect EACH source excerpt','preserve up to THREE',
+   'If one or more safe, attributed, exact durable spans exist',
+   'Choose SKIP only when NONE','Choose DEFER when a potentially durable conclusion',
+   'No forced EMIT, no authority upgrade'
+ ]) assert.ok(prompt.includes(exactRule),exactRule);
+ // The stronger model instruction does not grant unsupported or multi-source EMIT.
+ const c=cluster(),f=modelProposal(U);
+ assert.equal(validateModelDecision(f,c).ok,true);
+ assert.equal(validateModelDecision({...f,facts:[{...f.facts[0],
+   source_refs:[U.source_refs[0],T.source_refs[0]]}]},c).ok,false);
+ assert.equal(validateModelDecision({...f,facts:[{...f.facts[0],
+   assertion:U.excerpt+' This is independently verified.'}]},c).ok,false);
+});
+
+test('Issue 92 ADR recall policy evaluates atomic facts before cluster framing, without relaxing hard evidence controls',()=>{
+ const c=cluster(),policy=modelPrompt(c)[0].content;
+ const required=[
+  'REQUIRED DECISION ORDER: FIRST scan EVERY source excerpt',
+  'SECOND evaluate exact source support and future utility for EACH fact independently',
+  'THIRD choose cluster EMIT if at least one safe durable fact qualifies',
+  'Never classify the whole cluster by its dominant task/test framing',
+  'PER-FACT exclusion, NOT a reason to SKIP a mixed cluster',
+  'A generic task with no substantive source-backed technical claim is still low-value',
+  'Keep a user-reported bug or proposed change explicitly source-attributed and provisional',
+  'Never let a weak cluster sibling veto a separate safe durable fact'
+ ];
+ for(const rule of required)assert.ok(policy.includes(rule),rule);
+ assert.ok(policy.indexOf('REQUIRED DECISION ORDER') <
+   policy.indexOf('Only the FIRST FIVE classes can justify automatic EMIT'));
+ // The policy changes when to consider a fact, not source authorization.
+ const valid=modelProposal(U);
+ assert.equal(validateModelDecision(valid,c).ok,true);
+ const unsafe=validateModelDecision({...valid,facts:[{...valid.facts[0],
+   source_refs:['opencode:invented:source']}]},c);
+ assert.equal(unsafe.ok,false);
+ const transient=validateModelDecision({...valid,utility_class:'transient_result'},c);
+ assert.equal(transient.ok,false);
+ assert.equal(transient.reason,'utility_class_not_durable');
+ assert.equal(validateModelDecision({decision:'SKIP',
+   utility_class:'transient_result',reason:'Only incidental execution status exists',
+   facts:[]},c).ok,true);
+ assert.equal(validateModelDecision({decision:'SKIP',
+   utility_class:'transient_result',reason:'No source-backed facts were identified',
+   facts:valid.facts},c).ok,false);
+});
+
+test('V2 source-quote CLI cannot silently accept invalid or incomplete opt-in',()=>{
+ const cli=new URL('./curator-cli.mjs',import.meta.url).pathname;
+ const prereqs=[cli,'drain','--group','issue92cli',
+  '--state-dir','/tmp/issue92-cli-nomutate','--finite-batch','on',
+  '--source-recovery','on','--resilient-discovery','on',
+  '--claim-evidence','on','--source-exact-complement','on',
+  '--source-quote-salvage','on'];
+ const run=argv=>spawnSync(process.execPath,argv,
+  {encoding:'utf8',timeout:10000,env:{...process.env,GHDEV_MEMORY_POST_EXIT_LEASE:''}});
+ for(const argv of [
+  [...prereqs,'--quote-integrity-v2','off'],
+  [...prereqs,'--quote-integrity-v2'],
+  [...prereqs,'--quote-integrity-v2','']]){
+  const result=run(argv);
+  assert.notEqual(result.status,0);
+  assert.match(result.stderr,/QUOTE_INTEGRITY_V2_OPT_IN_INVALID/);
+ }
+ const noSalvage=run([cli,'drain','--group','issue92cli',
+  '--finite-batch','on','--quote-integrity-v2','on']);
+ assert.notEqual(noSalvage.status,0);
+ assert.match(noSalvage.stderr,/QUOTE_INTEGRITY_V2_REQUIRES_SOURCE_QUOTE_SALVAGE_DRAIN/);
+ const notDrain=run([cli,'status','--group','issue92cli','--finite-batch','on',
+  '--source-recovery','on','--resilient-discovery','on',
+  '--claim-evidence','on','--source-exact-complement','on',
+  '--source-quote-salvage','on','--quote-integrity-v2','on']);
+ assert.notEqual(notDrain.status,0);
+ assert.match(notDrain.stderr,/QUOTE_INTEGRITY_V2_REQUIRES_SOURCE_QUOTE_SALVAGE_DRAIN/);
+ const valid=run([...prereqs,'--quote-integrity-v2','on']);
+ assert.notEqual(valid.status,0);
+ assert.doesNotMatch(valid.stderr,/QUOTE_INTEGRITY_V2_(?:OPT_IN_INVALID|REQUIRES_)/);
+ assert.match(valid.stderr,/EX_POST_EXIT_ADMISSION_REQUIRED/);
+});

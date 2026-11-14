@@ -1,0 +1,17 @@
+{
+ "schema": "issue92-a3-authority-audit-v1",
+ "group": "graphiti-adr92-a3-prospective-v2",
+ "ex_lock_valid": true,
+ "no_model_replay": true,
+ "no_unauthorized_graphiti_writes": true,
+ "no_privacy_breach": true,
+ "no_wrong_group": true,
+ "no_false_verified_claims": true,
+ "raw_native_opportunities_verified": true,
+ "raw_native_opportunity_denominator": 1113,
+ "first_model_intent_at": "2026-11-12T15:59:34Z",
+ "first_model_intent_receipt_sha256": "aaf5e07c486012cbcdd638df4a9c38994b6bbd23783ee978f6a218ac25fcce9f",
+ "inference_calls": 1,
+ "corrective_path": "reconcile-only (no re-inference)",
+ "note": "EX flock + harness-exit + scheduler-idle + quiet-grace + no-unresolved admission proven; one immutable model-call intent; rc=3 corrective path reconcile-only"
+}

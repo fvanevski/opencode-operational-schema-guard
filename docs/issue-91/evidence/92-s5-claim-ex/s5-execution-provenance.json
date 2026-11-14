@@ -1,0 +1,39 @@
+{
+ "schema": "issue92-s5-execution-provenance-v1",
+ "kind": "frozen S5 execution source binding (40-char blob SHAs) at kickoff HEAD",
+ "source_head": "640f4a9a40b33d3efd230ff2c228bb4c5470f14e",
+ "source_blobs_at_head": {
+  "finite-batch.mjs": "02709b967454f6f4c06b9bd0c3736a853712f2bb",
+  "claim-evidence.mjs": "104544605f467ca102b46da148b2512857db683e",
+  "fact-review.mjs": "20da07bcb99010c4c9ab5d4b8c7f9d3c8cb62ba9",
+  "curator-cli.mjs": "9e77394b9833ae2a9b4f67d789ea50ab215df312",
+  "ex-admission-proof.mjs": "e63b8a36b51627a6211bf4367c62a5c76461fa76",
+  "core.mjs": "5b1d33efedc62b5ba0ad5f74ed68cddbee6afb0e",
+  "worker.mjs": "503bf766ca7b61c574edfc2b73aecd6d082ef629",
+  "finite-batch-tuning.mjs": "ed525173db4eaeaa7e758d0e47dc8cfeaed7e8dd"
+ },
+ "python_bridge_blobs": {
+  "ex_admitted_node_bridge.py": "004188b1cdcd3a99956f20e581621eadc63c4663"
+ },
+ "corpus": {
+  "path": "/tmp/opencode/b2-sources.json",
+  "sha256": "ebac7052065766eb8d1ef464142ea63dc3052d52deb36424492ebc477fdd3508",
+  "records": 24,
+  "kind": "original B3 24 native source records (identical roster to S2/S3/S4)"
+ },
+ "model": {
+  "endpoint": "http://127.0.0.1:8002/v1/chat/completions",
+  "id": "chat-fast",
+  "options": {},
+  "note": "default model settings, no tuning file, no temperature sweep"
+ },
+ "graphiti": {
+  "endpoint": "http://127.0.0.1:8766/mcp",
+  "managed_route": "http://127.0.0.1:8012/graphiti",
+  "group": "graphiti-adr92-s5-claim-ex-proof"
+ },
+ "treatment": {
+  "flags": ["finite-batch on","novelty-policy recall","source-recovery on","resilient-discovery on","claim-evidence on","max-clusters 24","max-candidates 72","max-seconds 3600"],
+  "call_stages": ["discovery","support","utility"]
+ }
+}

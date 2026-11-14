@@ -1,0 +1,81 @@
+{
+ "status": "review_required",
+ "batch_id": "598d07029de5fde83a012286bc20d92025dc73e7a9472743d67a05197f7efda7",
+ "snapshot_sha256": "b4dadef20301e42e8bbedb25a95dcc252a42c20dcf7860a9c1681d72046794b0",
+ "candidates": 50,
+ "approved": 19,
+ "deferred": 31,
+ "model_calls": 0,
+ "model_errors": 0,
+ "prompt_tokens": 0,
+ "completion_tokens": 0,
+ "model_metrics": {
+  "discovery": {
+   "calls": 61,
+   "prompt_tokens": 71768,
+   "completion_tokens": 10559,
+   "reasoning_tokens": 0,
+   "cached_prompt_tokens": 38628,
+   "latency_ms": 39733,
+   "latency_reports": 61,
+   "usage_field_reports": {
+    "prompt_tokens": 61,
+    "completion_tokens": 61,
+    "reasoning_tokens": 61,
+    "cached_prompt_tokens": 61
+   }
+  },
+  "support": {
+   "calls": 36,
+   "prompt_tokens": 17944,
+   "completion_tokens": 2047,
+   "reasoning_tokens": 0,
+   "cached_prompt_tokens": 8712,
+   "latency_ms": 7391,
+   "latency_reports": 36,
+   "usage_field_reports": {
+    "prompt_tokens": 36,
+    "completion_tokens": 36,
+    "reasoning_tokens": 36,
+    "cached_prompt_tokens": 36
+   }
+  },
+  "utility": {
+   "calls": 26,
+   "prompt_tokens": 27395,
+   "completion_tokens": 955,
+   "reasoning_tokens": 0,
+   "cached_prompt_tokens": 11277,
+   "latency_ms": 4608,
+   "latency_reports": 26,
+   "usage_field_reports": {
+    "prompt_tokens": 26,
+    "completion_tokens": 26,
+    "reasoning_tokens": 26,
+    "cached_prompt_tokens": 26
+   }
+  }
+ },
+ "tuning_sha256": "8d671d06a550b0f85d187cac4e181973bea748f71986487e2a6b0765385bc8e7",
+ "replay_only": false,
+ "source_recovery": true,
+ "source_exact_complement": true,
+ "persisted": 19,
+ "unresolved": 0,
+ "write_outcomes": [],
+ "driver": "s6-exact-complement-proof",
+ "driver_elapsed_ms": 78,
+ "source_binding": {
+  "repo_head": "9cf811ef875efbf97b78d9d500aac1b31be88567",
+  "blobs": {
+   "finite-batch.mjs": "90c3a8c272a4e81fccb26a6343a090660936860b",
+   "claim-evidence.mjs": "104544605f467ca102b46da148b2512857db683e",
+   "fact-review.mjs": "20da07bcb99010c4c9ab5d4b8c7f9d3c8cb62ba9",
+   "curator-cli.mjs": "7062de108f34576865c8a1009356090e1ccbe037",
+   "ex-admission-proof.mjs": "e63b8a36b51627a6211bf4367c62a5c76461fa76",
+   "core.mjs": "5b1d33efedc62b5ba0ad5f74ed68cddbee6afb0e",
+   "worker.mjs": "503bf766ca7b61c574edfc2b73aecd6d082ef629",
+   "finite-batch-tuning.mjs": "ed525173db4eaeaa7e758d0e47dc8cfeaed7e8dd"
+  }
+ }
+}

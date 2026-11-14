@@ -1,0 +1,239 @@
+{
+ "schema": "issue92-final-integration-T2-v1",
+ "section": "final_source_label_review",
+ "no_inference": true,
+ "v4_09_v4_10_review": [
+  {
+   "case": "v4-09 (fsm81 export format)",
+   "msg": "msg_1a7f8ba3c001",
+   "vs": "v3-10 (msg_1a801a723001)",
+   "finding": "IDENTICAL original text \u2014 same fsm81 export-format predicate, not materially different",
+   "action": "REPLACED with genuinely-unused source-supported finding"
+  },
+  {
+   "case": "v4-10 (fsm81 terminal state)",
+   "msg": "msg_1a7f06404001",
+   "vs": "v3-09 (msg_1a7ef3f9a001)",
+   "finding": "IDENTICAL original text \u2014 same fsm81 terminal-state predicate, not materially different",
+   "action": "REPLACED with genuinely-unused source-supported finding"
+  }
+ ],
+ "replacements": [
+  {
+   "case": "v4-09 (new)",
+   "msg": "msg_0bffbf941001",
+   "predicate": "hevc_video_density_threshold_derived",
+   "evidence": "source-stated technical finding: HEVC video-density thresholds derived from observation of the actual Plex library; useful cutoff ~19-21 MiB/min region with small media-type adjustments (3 native spans)"
+  },
+  {
+   "case": "v4-10 (new)",
+   "msg": "msg_10750e113001",
+   "predicate": "durable_segment_seal_before_deferred_commit",
+   "evidence": "source-stated design constraint: a durable segment must be sealed before submitting its deferred commit (1 native span)"
+  }
+ ],
+ "rationale": "Neither replacement is a pure handoff; both are source-stated findings/constraints, genuinely unused (not in v3/v2/B3/gh_mcp/v4), privacy-clean, and pass the A1 native capture. No completed-implementation proof demanded for the reported design constraint.",
+ "sanitized_20_case_roster": [
+  {
+   "id": "i92-v4-01-0195ea38",
+   "valuable": true,
+   "predicate": "rtk_git_status_exclude_constraint",
+   "message_id": "msg_0a66db535001ZZ6a1CMkEIAIcR",
+   "source_locator_sha256": "9f3b0a5d3ac61ee01efee8e2f4bfb48e8bd0b8691b79e96fb0f3e79af1b0742e",
+   "native_event_text_sha256": "3d1b218fa85043a6da9dbe06d69534357d80c251a7303257b22dad565a4f838c",
+   "observed_at": "2026-09-15T18:56:42.805000Z",
+   "bounded_quotation": "this must be from an imposed hook, i can add git status to the rtk exclude list"
+  },
+  {
+   "id": "i92-v4-02-f1746cb1",
+   "valuable": true,
+   "predicate": "react_flow_backlog_visualization_decision",
+   "message_id": "msg_199397990001OXw2eXQyBiVDhD",
+   "source_locator_sha256": "bdd556fe55f78e7d9a00e839098802a5a2297900799699bc1974d83aaaac30fb",
+   "native_event_text_sha256": "c369924b5a69f1d98c47088a88c98970259349605b359b817a577cdbf4a334b4",
+   "observed_at": "2026-11-01T22:27:23.266000Z",
+   "bounded_quotation": "\"I decided to use React Flow for the backlog dependency visualization in this project. Run the test suite for this project with: python3 -m "
+  },
+  {
+   "id": "i92-v4-03-ecfd3f19",
+   "valuable": true,
+   "predicate": "shared_integration_fixture_dir_decision",
+   "message_id": "msg_1993f342b001WOMUVtkKwHpWm0",
+   "source_locator_sha256": "a9630afc82993f8ad0bd1748ad781385d6e874cc19e3879778bf569ee02cf9fa",
+   "native_event_text_sha256": "37f2d9379d9f80ec6527c1e9e7692a56752490a4d807975ad8dea67b1a1a8033",
+   "observed_at": "2026-11-01T22:33:38.726000Z",
+   "bounded_quotation": "\"Let's switch to a single shared fixture directory for all integration tests in this repo. Run the test suite for this project with: python3"
+  },
+  {
+   "id": "i92-v4-04-09f018f4",
+   "valuable": true,
+   "predicate": "fileflows_2609_runtime_abi_established",
+   "message_id": "msg_0b0aae86d0017HU8XsgOnYgkjr",
+   "source_locator_sha256": "14a0ed6e118cc0131b47c45d0ae8c8844b6895e249d4b85188f0ebc1686a4282",
+   "native_event_text_sha256": "2dff0b048e35643aba2404a8d0c77cba16ece7c7a8a97e68c00c7d011c75d21b",
+   "observed_at": "2026-09-17T18:39:45.773000Z",
+   "bounded_quotation": "<openviking-context> Relevant context from OpenViking. Use the read MCP tool to expand URIs. - [memory 18%] viking://user/filip/peers/filip-"
+  },
+  {
+   "id": "i92-v4-05-6a594b8a",
+   "valuable": true,
+   "predicate": "ffmpeg_disposition_ssa_codec_resolved",
+   "message_id": "msg_0b5e9d406001Eoh8fgtXrGJSqo",
+   "source_locator_sha256": "4c8b9bf6d60d64b0becf7780660668f8e63375b5a77e2081c26056cd9397f49f",
+   "native_event_text_sha256": "2626aaec1a2c5c9fab9f60b12bd5c224c62bc96f177d8f9e44f76aa723764d93",
+   "observed_at": "2026-09-18T19:06:35.398000Z",
+   "bounded_quotation": "Stop investigating FFmpeg source for `-disposition` parsing or trying to make Matroska/ffprobe expose a distinct `ssa` codec.  Both issues a"
+  },
+  {
+   "id": "i92-v4-06-5e95464c",
+   "valuable": true,
+   "predicate": "ffdeps_reference_capability_not_byte_for_byte",
+   "message_id": "msg_0b5459266001BDiIh2co26z2OI",
+   "source_locator_sha256": "2754c10a52f2bd69f0a50ab5e366281f492b76d62c25b24ad8c4a0e02e81d492",
+   "native_event_text_sha256": "db6b1138c569546c787fc48fab7f2fe325f2d6928a46d10256ca31823a8e0519",
+   "observed_at": "2026-09-18T16:07:10.694000Z",
+   "bounded_quotation": "<openviking-context> Relevant context from OpenViking. Use the read MCP tool to expand URIs. - [memory 18%] viking://user/filip/peers/filip-"
+  },
+  {
+   "id": "i92-v4-07-f61c4f87",
+   "valuable": true,
+   "predicate": "fsm81_log_format_design_decision",
+   "message_id": "msg_1a7fc38bd001pQed1OVBnofNc2",
+   "source_locator_sha256": "2e04d5dbccec2c09d5eed6146b1754092225cf8a507ec6f721436b1c9bcdfb9e",
+   "native_event_text_sha256": "223329a92b78d49be215fcb80d1dbceb404b69a98eec88e73cf1e15e46f62bb6",
+   "observed_at": "2026-11-04T19:14:47.809000Z",
+   "bounded_quotation": "\"Design decision for the fsm81 log format. The fixture currently prints test output only, and the team wants a minimal structured log for fu"
+  },
+  {
+   "id": "i92-v4-08-b060d3fc",
+   "valuable": true,
+   "predicate": "fsm81_transition_throw_terminal_entries",
+   "message_id": "msg_1a8003700001IR52JWG3RA476o",
+   "source_locator_sha256": "6daa6795db327ab7373a8e353f1bb48e22b6cb5f52b63b9dc1c49cf7d613b5fa",
+   "native_event_text_sha256": "0fcacc6f23f562a8a24447ca4a39514e53cd2d60b104fe7bdf2be1c5afd969cb",
+   "observed_at": "2026-11-04T19:19:09.530000Z",
+   "bounded_quotation": "\"The transition function must throw on unknown events again. Add the missing terminal state entries to the state map in fsm.js so that the f"
+  },
+  {
+   "id": "i92-v4-09-a07bfd74",
+   "valuable": true,
+   "predicate": "hevc_video_density_threshold_derived",
+   "message_id": "msg_0bffbf941001QYNl1EQfN45EFb",
+   "source_locator_sha256": "5ac2466cea9212fed5f85abf9c0786306ec2ca01b69cbf3e1417409393aa160a",
+   "native_event_text_sha256": "12bb10a544ffe7e026387c680204901a88c81ff0fff4c3b4263e4b3948a52875",
+   "observed_at": "2026-09-20T18:02:36.737000Z",
+   "bounded_quotation": "## Central operator clarification  Central now supplies this additional operator authority:  ```text HISTORICAL_OPERATOR_RECOLLECTION:  The "
+  },
+  {
+   "id": "i92-v4-10-8f7c9d7f",
+   "valuable": true,
+   "predicate": "durable_segment_seal_before_deferred_commit",
+   "message_id": "msg_10750e1130015IN1KU0SWPeRod",
+   "source_locator_sha256": "cbf6562fb24f543e21e627025dc3094bc5cdca6028171b384b357061814e1cdc",
+   "native_event_text_sha256": "0f12ec96454d118510a802a49b13bed534f0176ef7a74942dcb5adbbf1f19738",
+   "observed_at": "2026-10-04T14:28:23.444000Z",
+   "bounded_quotation": "<openviking-context> Relevant context from OpenViking. Use the read MCP tool to expand URIs. - [memory 18%] viking://user/filip/peers/filip-"
+  },
+  {
+   "id": "i92-v4-11-1bc920ff",
+   "valuable": false,
+   "predicate": "control_meta_memory_subsystem_check",
+   "message_id": "msg_0849adeac001n6v6NBsx4AuGcq",
+   "source_locator_sha256": "5b9dff15dcfcbca08714355980c4d00b23d92b96322fdbdab668b2f483a427c9",
+   "native_event_text_sha256": "8d845105681cdac04095217ef6f0f142253aa2f783567747ddce007c2a540204",
+   "observed_at": "2026-09-09T05:18:57.196000Z",
+   "bounded_quotation": "confirm the openviking memory subsystem is wired correctly into this opencode harness for both memory storage and memory retrieval."
+  },
+  {
+   "id": "i92-v4-12-75aec408",
+   "valuable": false,
+   "predicate": "control_meta_prior_decisions_question",
+   "message_id": "msg_087283a41001eN7zGfXpEqm5SJ",
+   "source_locator_sha256": "cfb905e8785a3d61e572b0ca29d6d5b41cb9c123bde120cd80686812457b8f44",
+   "native_event_text_sha256": "c125379e269138c01d36e2db1178248d3e81a8e37692b4cb66f344d55804b21d",
+   "observed_at": "2026-09-09T17:12:35.650000Z",
+   "bounded_quotation": "<openviking-context> Relevant context from OpenViking. Use the read MCP tool to expand URIs. - [memory 18%] viking://user/filip/peers/filip-"
+  },
+  {
+   "id": "i92-v4-13-64ca7c2b",
+   "valuable": false,
+   "predicate": "control_continuation_request",
+   "message_id": "msg_08873c06300110WsVXiebWP18K",
+   "source_locator_sha256": "664fdace92dbfb3f80f224ac6c48db79f76d0d1380f919c262e7674748239a00",
+   "native_event_text_sha256": "8add38149718e26794c872e5b2d5e0d3f6c66780e02528ed7af1de437118892b",
+   "observed_at": "2026-09-09T23:14:42.403000Z",
+   "bounded_quotation": "<openviking-context> Relevant context from OpenViking. Use the read MCP tool to expand URIs. - [memory 18%] viking://user/filip/memories/tra"
+  },
+  {
+   "id": "i92-v4-14-bc962ea2",
+   "valuable": false,
+   "predicate": "control_continuation_request_variant",
+   "message_id": "msg_145fa83c6001kufxpLB3caFdqu",
+   "source_locator_sha256": "260550e695e1e50aff4245adc5f3cf096f02ee1639b8d4fef801a04d049afa43",
+   "native_event_text_sha256": "229401a0d700bdd3ceda44e230421888340428d4d134fe0146d09cb8644da821",
+   "observed_at": "2026-10-16T18:30:08.131000Z",
+   "bounded_quotation": "continue from interruptiopn"
+  },
+  {
+   "id": "i92-v4-15-fe92e483",
+   "valuable": false,
+   "predicate": "control_meta_tool_history_question",
+   "message_id": "msg_19554849c001G6KznBy5drcSBY",
+   "source_locator_sha256": "f68003e3a51e47548973400a3f8939fb03ffe72ea6c8f5e1410047c7bcea5a36",
+   "native_event_text_sha256": "50c7572a23db6f568a2ff8762684a794bd23cee9ff42e913103e13168333c176",
+   "observed_at": "2026-11-01T04:18:27.194000Z",
+   "bounded_quotation": "What is the history of gh_get_commit?"
+  },
+  {
+   "id": "i92-v4-16-4921ae64",
+   "valuable": false,
+   "predicate": "control_meta_weather_question",
+   "message_id": "msg_1b93f560c001eIgH4V0eqDS3RM",
+   "source_locator_sha256": "cf45b43566960ab0605571fc9c1308dc5a77fbf5ecd66413f2766964ec49a70b",
+   "native_event_text_sha256": "18aadf2fc202e1430ef72a7813d0a37c8e9593d03073fe18f2f034dbd9280a1a",
+   "observed_at": "2026-11-08T03:41:38.233000Z",
+   "bounded_quotation": "What is the weather in Tokyo right now?"
+  },
+  {
+   "id": "i92-v4-17-f2ce1151",
+   "valuable": false,
+   "predicate": "control_meta_crash_loop_question",
+   "message_id": "msg_1b944ff49001KnAHUxJKdKcNs4",
+   "source_locator_sha256": "a06a8c3a4b8e03c1b4217cf9c5266058461da03c2f1dfa6363aec74c2b9a1532",
+   "native_event_text_sha256": "792c293ef02a7b46077421fdf28657fe099be58d124040aed2a8e4bbe0e25f3a",
+   "observed_at": "2026-11-08T03:47:49.240000Z",
+   "bounded_quotation": "What is putting FalkorDB into a crash loop?"
+  },
+  {
+   "id": "i92-v4-18-e2977351",
+   "valuable": false,
+   "predicate": "control_meta_mcp_active_check",
+   "message_id": "msg_104d8619b001C8jFsw8lZR3fkL",
+   "source_locator_sha256": "5b0c9ff7d564a8b85ccc45ba32178d938c37295e48bc17b8a8e7c46f62f4784b",
+   "native_event_text_sha256": "9a049dd224e3b82aebda18a3cf82fc529b4951129e37a62b931769a36a664618",
+   "observed_at": "2026-10-04T02:57:32.059000Z",
+   "bounded_quotation": "<openviking-context> Relevant context from OpenViking. Use the read MCP tool to expand URIs. - [memory 18%] viking://user/filip/peers/filip-"
+  },
+  {
+   "id": "i92-v4-19-41e3f700",
+   "valuable": false,
+   "predicate": "control_meta_commit_change_question",
+   "message_id": "msg_1b92bb459001GNxL0VpXn380xP",
+   "source_locator_sha256": "f07a6e07b91efd4b130b15940194515321bbc60545efab723440787c56e3a0eb",
+   "native_event_text_sha256": "8be465fd892a80b41554dfb8d02f56b9063546ef93aeaa3ee1db1aca1a8db526",
+   "observed_at": "2026-11-08T03:20:11.641000Z",
+   "bounded_quotation": "What did commit 52863ae change in the graphiti test suite?"
+  },
+  {
+   "id": "i92-v4-20-21aa1d9b",
+   "valuable": false,
+   "predicate": "control_meta_graphiti_plugin_question",
+   "message_id": "msg_1b93e3414001v5hXcu82b1J432",
+   "source_locator_sha256": "08d4ee5ef094b2e439bb3066c39f6229cd8caeb0bb9d8f194a5fa90087299375",
+   "native_event_text_sha256": "ccf9aacf8df56220c9d83dd6e79b003c5569fc95073bfe549a1aef9e04830be8",
+   "observed_at": "2026-11-08T03:40:23.994000Z",
+   "bounded_quotation": "What is the installed Graphiti plugin architecture on this host?"
+  }
+ ],
+ "temporal_scope": "all 20 cases are prospective (observed_at in the native session window, nonoverlapping with v3/v2/B3/gh_mcp); frozen before any candidate model output."
+}

@@ -1,0 +1,183 @@
+{
+  "schema": "issue92-fact-coverage-scorecard-v2",
+  "cohort_sha256": "08b821199a1018ba43128783ecdad60b382877882dec284829cf6fd42774b47e",
+  "ratification_sha256": "0fbd7ed20fed9ad58b1ad6715156a562fba13263efccb1f2a313e29d0b5c7a7a",
+  "outcomes_sha256": "f8e4246ebaa859fd163bbfce6fbb1c90db53131dfefe7c106abfc9de354835bf",
+  "case_count": 38,
+  "valuable_cases": 29,
+  "families": {
+    "hermes": 14,
+    "openviking": 10,
+    "plex": 14
+  },
+  "source_commits": {
+    "baseline": "c8eb5260f2b10832346234b1b5d0cf28302ffba8",
+    "candidate": "21556fa39c7520cede0e53c6012cbf67f6ea3ed3"
+  },
+  "arms": {
+    "baseline": {
+      "persisted": 10,
+      "grounded": 10,
+      "useful": 10,
+      "low_value": 0,
+      "redundant": 0,
+      "privacy": 0,
+      "source_authority": 0,
+      "fabricated": 0,
+      "captured_valuable_cases": 29,
+      "retained_valuable_cases": 10,
+      "missing_valuable_case_ids": [
+        "i92h3-01-5d214dbd",
+        "i92h3-02-f0e4a4f2",
+        "i92h3-05-199df467",
+        "i92h3-06-829aeb30",
+        "i92h3-07-2c356b8b",
+        "i92h3-09-f1e8dcb8",
+        "i92h3-10-66aa943d",
+        "i92h3-15-f8c5fba0",
+        "i92h3-16-820ab56b",
+        "i92h3-17-a57b0425",
+        "i92h3-24-332ee2ed",
+        "i92h3-26-a4ef01cc",
+        "i92h3-27-4022db68",
+        "i92h3-30-2a7d8d26",
+        "i92h3-32-c77a8975",
+        "i92h3-33-9e8fdb87",
+        "i92h3-34-bbd23368",
+        "i92h3-35-67eb3cec",
+        "i92h3-37-327e6f0f"
+      ],
+      "rates": {
+        "useful_among_grounded": 1,
+        "usefulness_wilson95": [
+          0.722467,
+          1
+        ],
+        "grounded_among_persisted": 1,
+        "grounded_wilson95": [
+          0.722467,
+          1
+        ],
+        "low_value_among_persisted": 0,
+        "valuable_capture": 1,
+        "valuable_persisted_case_coverage": 0.344828,
+        "curator_selected_valuable_cases": 0.827586
+      },
+      "case_decisions": {
+        "EMIT": 29,
+        "SKIP": 0,
+        "DEFER": 9,
+        "MERGE": 0,
+        "SUPERSEDE_PROPOSED": 0
+      },
+      "cluster_decisions": {
+        "EMIT": 10,
+        "SKIP": 0,
+        "DEFER": 4,
+        "MERGE": 0,
+        "SUPERSEDE_PROPOSED": 0
+      },
+      "curator_selected_valuable_cases": 24,
+      "fact_support_verified": true,
+      "nonuseful_fact_count": 0
+    },
+    "candidate": {
+      "persisted": 2,
+      "grounded": 2,
+      "useful": 2,
+      "low_value": 0,
+      "redundant": 0,
+      "privacy": 0,
+      "source_authority": 0,
+      "fabricated": 0,
+      "captured_valuable_cases": 29,
+      "retained_valuable_cases": 2,
+      "missing_valuable_case_ids": [
+        "i92h3-01-5d214dbd",
+        "i92h3-02-f0e4a4f2",
+        "i92h3-05-199df467",
+        "i92h3-06-829aeb30",
+        "i92h3-07-2c356b8b",
+        "i92h3-08-4e1273e1",
+        "i92h3-09-f1e8dcb8",
+        "i92h3-10-66aa943d",
+        "i92h3-11-3f023200",
+        "i92h3-12-4048303f",
+        "i92h3-13-9d8e062f",
+        "i92h3-15-f8c5fba0",
+        "i92h3-16-820ab56b",
+        "i92h3-17-a57b0425",
+        "i92h3-18-3da24a46",
+        "i92h3-23-d96fa55a",
+        "i92h3-24-332ee2ed",
+        "i92h3-25-59ad201a",
+        "i92h3-26-a4ef01cc",
+        "i92h3-27-4022db68",
+        "i92h3-29-6089a360",
+        "i92h3-30-2a7d8d26",
+        "i92h3-32-c77a8975",
+        "i92h3-33-9e8fdb87",
+        "i92h3-34-bbd23368",
+        "i92h3-35-67eb3cec",
+        "i92h3-37-327e6f0f"
+      ],
+      "rates": {
+        "useful_among_grounded": 1,
+        "usefulness_wilson95": [
+          0.34238,
+          1
+        ],
+        "grounded_among_persisted": 1,
+        "grounded_wilson95": [
+          0.34238,
+          1
+        ],
+        "low_value_among_persisted": 0,
+        "valuable_capture": 1,
+        "valuable_persisted_case_coverage": 0.068966,
+        "curator_selected_valuable_cases": 0.137931
+      },
+      "case_decisions": {
+        "EMIT": 6,
+        "SKIP": 16,
+        "DEFER": 16,
+        "MERGE": 0,
+        "SUPERSEDE_PROPOSED": 0
+      },
+      "cluster_decisions": {
+        "EMIT": 2,
+        "SKIP": 4,
+        "DEFER": 8,
+        "MERGE": 0,
+        "SUPERSEDE_PROPOSED": 0
+      },
+      "curator_selected_valuable_cases": 4,
+      "fact_support_verified": true,
+      "nonuseful_fact_count": 0
+    }
+  },
+  "missed_baseline_useful_cases": [
+    "i92h3-11-3f023200",
+    "i92h3-12-4048303f",
+    "i92h3-13-9d8e062f",
+    "i92h3-29-6089a360",
+    "i92h3-08-4e1273e1",
+    "i92h3-25-59ad201a",
+    "i92h3-18-3da24a46",
+    "i92h3-23-d96fa55a"
+  ],
+  "gates": {
+    "sample": "INSUFFICIENT_SAMPLE",
+    "usefulness": "INSUFFICIENT_SAMPLE",
+    "groundedness": "PASS",
+    "valuable_capture": "PASS",
+    "valuable_persisted_case_coverage": "FAIL",
+    "selectivity": "FAIL",
+    "baseline_useful_preservation": "FAIL",
+    "privacy_source_authority": "PASS",
+    "redundancy_nonregression": "PASS"
+  },
+  "overall": "INSUFFICIENT_SAMPLE",
+  "score_method": "fact_supported_case_source_verified",
+  "gates_complete": true
+}
