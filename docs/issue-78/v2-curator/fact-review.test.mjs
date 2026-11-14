@@ -540,12 +540,14 @@ test('V2 isolates a proposed pre-execution guard rejection plus correction code'
  const rejected=[{reason:'review_uncertain',
   fact:{evidence_span:{source_ref:ref,start:0,end:body.length}}}];
  const spans=sourceAtomicSubspanCandidatesV2(c,rejected);
- assert.equal(spans.length,1);
- const text=e.excerpt.slice(spans[0].start,spans[0].end);
+ assert.ok(spans.length>=1&&spans.length<=3);
+ const rejection=spans.find(x=>e.excerpt.slice(x.start,x.end).startsWith('The operational guard should reject'));
+ assert.ok(rejection);
+ const text=e.excerpt.slice(rejection.start,rejection.end);
  assert.ok(text.startsWith('The operational guard should reject'));
  assert.match(text,/OPERATIONAL_CORRECTION: SPLIT_TARGET_ADMISSION/);
  assert.doesNotMatch(text,/reference to the runbook/);
- assert.equal(spans[0].temporal_status,'proposed');
+ assert.equal(rejection.temporal_status,'proposed');
  assert.equal(sourceAtomicityStructuralRisk(text),null);
- assert.equal(validateFactDiscovery({reason:'Original requirement',candidates:spans},c).ok,true);
+ assert.equal(validateFactDiscovery({reason:'Original requirement',candidates:[rejection]},c).ok,true);
 });

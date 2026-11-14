@@ -117,7 +117,7 @@ export function sourceAtomicSubspanCandidatesV2(cluster,reviewed=[],limit=3){
   'source_structural_independent_clause_boundary',
   'source_quote_utility_review_uncertain',
   'source_quote_utility_source_structural_independent_clause_boundary']);
- const anchor=/\b(?:Central|(?:The|A|An|This|That)[ \t]+(?:[\w./-]+[ \t]+){0,6}[\w./-]+)[ \t]+(?:has[ \t]+implemented|should[ \t]+reject|must[ \t]+reject|must[ \t]+preserve|should[ \t]+preserve|must[ \t]+fail|should[ \t]+fail|requires?|must|should|cannot|is|are|was|were)\b/gi;
+ const anchor=/\b(?:Central|(?:The|A|An|This|That)[ \t]+(?:[\w/-]+[ \t]+){0,6}[\w/-]+)[ \t]+(?:has[ \t]+implemented|should[ \t]+reject|must[ \t]+reject|must[ \t]+preserve|should[ \t]+preserve|must[ \t]+fail|should[ \t]+fail|requires?|must|should|cannot|is|are|was|were)\b/gi;
  const ranked=[];
  for(const event of cluster?.events??[]){
   if(event.source_strength!=='native-id'||event.source_refs?.length!==1)continue;
