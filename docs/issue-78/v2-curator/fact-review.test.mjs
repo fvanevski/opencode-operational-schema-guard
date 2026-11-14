@@ -9,6 +9,7 @@ import {selectClusters,validateModelDecision,ReviewStore} from './core.mjs';
 import {factDiscoveryPrompt,validateFactDiscovery,
  factReviewPrompt,validateFactReview,filterFactProposal,
  sourceAtomicityStructuralRisk,sourceAtomicSubspanCandidates,
+ sourceAtomicSubspanCandidatesV2,
  reviewProposedFacts} from './fact-review.mjs';
 import {runAdmitted} from './worker.mjs';
 
@@ -508,4 +509,43 @@ test('structurally rejected multi-paragraph quote offers only its narrower atomi
   cluster).ok,true);
  assert.deepEqual(sourceAtomicSubspanCandidates(cluster,[{...rejected[0],
   review_reason:'not_substantive'}]),[]);
+});
+
+
+test('V2 narrows a historical, source-reported architecture statement without claiming independent verification',()=>{
+ const body='Continue the integration task. Central has implemented the bounded readiness adapter, native root bindings, durable original-file identity, and revised release guidance. Check the host separately.';
+ const e=fromPrompt({sessionID:'ses92screen',messageID:'msg_v2_historical',
+  prompt:{text:body},timestamp:'2026-11-09T19:00:00Z'},scope,{admitted:true});
+ const c=selectClusters([e])[0],ref=e.source_refs[0];
+ const deferred=[{review_reason:'review_uncertain',
+  fact:{evidence_span:{source_ref:ref,start:20,end:body.length}}}];
+ const result=sourceAtomicSubspanCandidatesV2(c,deferred);
+ const quote=result.map(x=>e.excerpt.slice(x.start,x.end));
+ assert.ok(quote.includes('Central has implemented the bounded readiness adapter'));
+ const clause=result.find(x=>e.excerpt.slice(x.start,x.end).startsWith('Central'));
+ assert.equal(clause.temporal_status,'historical');
+ assert.equal(sourceAtomicityStructuralRisk(e.excerpt.slice(clause.start,clause.end)),null);
+ assert.equal(validateFactDiscovery({reason:'Source-exact bounded clause',candidates:[clause]},
+  c).ok,true);
+ assert.deepEqual(sourceAtomicSubspanCandidatesV2(c),[]);
+ assert.deepEqual(sourceAtomicSubspanCandidatesV2(c,[{
+  ...deferred[0],review_reason:'not_substantive'}]),[]);
+});
+
+test('V2 isolates a proposed pre-execution guard rejection plus correction code',()=>{
+ const body='Request the compound command: git worktree add --detach /tmp/example HEAD && git rev-parse HEAD - The operational guard should reject it BEFORE git executes, with OPERATIONAL_CORRECTION: SPLIT_TARGET_ADMISSION and a reference to the runbook. Confirm there are no mutations.';
+ const e=fromPrompt({sessionID:'ses92screen',messageID:'msg_v2_guard',
+  prompt:{text:body},timestamp:'2026-11-09T19:00:00Z'},scope,{admitted:true});
+ const c=selectClusters([e])[0],ref=e.source_refs[0];
+ const rejected=[{reason:'review_uncertain',
+  fact:{evidence_span:{source_ref:ref,start:0,end:body.length}}}];
+ const spans=sourceAtomicSubspanCandidatesV2(c,rejected);
+ assert.equal(spans.length,1);
+ const text=e.excerpt.slice(spans[0].start,spans[0].end);
+ assert.ok(text.startsWith('The operational guard should reject'));
+ assert.match(text,/OPERATIONAL_CORRECTION: SPLIT_TARGET_ADMISSION/);
+ assert.doesNotMatch(text,/reference to the runbook/);
+ assert.equal(spans[0].temporal_status,'proposed');
+ assert.equal(sourceAtomicityStructuralRisk(text),null);
+ assert.equal(validateFactDiscovery({reason:'Original requirement',candidates:spans},c).ok,true);
 });

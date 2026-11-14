@@ -102,6 +102,73 @@ export function sourceAtomicSubspanCandidates(cluster,reviewed=[],limit=3){
 }
 
 /**
+ * Prospective V2 clause recovery. Unlike V1's narrow command/paragraph
+ * triggers, this finds short, original-source clauses with explicit subjects
+ * and technical predicates after an independent review deferred a broader
+ * quotation. It does NOT approve the claim, paraphrase it, or grant any new
+ * authority. The existing source/utility/atomicity pipeline still governs.
+ *
+ * This is a separately frozen policy: existing V1 model receipts must not be
+ * reinterpreted by changing its deterministic candidate opportunities.
+ */
+export function sourceAtomicSubspanCandidatesV2(cluster,reviewed=[],limit=3){
+ if(!Number.isInteger(limit)||limit<0||limit>3)return [];
+ const pending=new Set(['review_uncertain',
+  'source_structural_independent_clause_boundary',
+  'source_quote_utility_review_uncertain',
+  'source_quote_utility_source_structural_independent_clause_boundary']);
+ const anchor=/\b(?:Central|(?:The|A|An|This|That)[ \t]+(?:[\w./-]+[ \t]+){0,6}[\w./-]+)[ \t]+(?:has[ \t]+implemented|should[ \t]+reject|must[ \t]+reject|must[ \t]+preserve|should[ \t]+preserve|must[ \t]+fail|should[ \t]+fail|requires?|must|should|cannot|is|are|was|were)\b/gi;
+ const ranked=[];
+ for(const event of cluster?.events??[]){
+  if(event.source_strength!=='native-id'||event.source_refs?.length!==1)continue;
+  const source_ref=event.source_refs[0],text=event.excerpt;
+  const unresolved=reviewed.filter(item=>
+   pending.has(item.review_reason??item.reason)&&
+   item.fact?.evidence_span?.source_ref===source_ref);
+  if(!unresolved.length)continue;
+  for(const match of text.matchAll(anchor)){
+   const start=match.index,tail=text.slice(start);
+   let end=start+Math.min(tail.length,450);
+   // Split only at a real natural-language sentence/line boundary. Dots
+   // within paths or versions do not represent a new factual sentence.
+   const boundary=/[.!?](?=\s|$)|\r?\n/g.exec(tail);
+   if(boundary)end=Math.min(end,start+boundary.index+
+    (/^[.!?]$/.test(boundary[0])?1:0));
+   const quoted=text.slice(start,end);
+   if(/has[ \t]+implemented/i.test(match[0])){
+    // A list of several completed tasks does not become one graph fact.
+    const comma=quoted.indexOf(',');
+    if(comma>=25)end=Math.min(end,start+comma);
+   }else{
+    // Retain the direct result/correction qualifier, not a second
+    // instruction about unrelated documentation or reporting.
+    const sibling=/\s+and\s+(?:a|an|the)\s+(?:reference|report|test|documentation|instruction)\b/i.exec(quoted);
+    if(sibling)end=Math.min(end,start+sibling.index);
+   }
+   while(end>start&&/\s/.test(text[end-1]))end--;
+   if(end-start<25||end-start>450)continue;
+   if(!unresolved.some(x=>x.fact.evidence_span.start<end&&
+      x.fact.evidence_span.end>start))continue;
+   const quote=text.slice(start,end);
+   if(sourceAtomicityStructuralRisk(quote))continue;
+   const historical=/has[ \t]+implemented/i.test(match[0]);
+   const priority=historical||/should[ \t]+reject|must[ \t]+reject/i.test(match[0])?
+    0:/should|must|requires?|cannot/i.test(match[0])?1:2;
+   ranked.push({source_ref,start,end,
+    kind:/reject|fail|cannot/i.test(match[0])?'blocker':'observation',
+    temporal_status:historical?'historical':'proposed',priority});
+  }
+ }
+ const seen=new Set();
+ return ranked.sort((a,b)=>a.priority-b.priority||
+  a.source_ref.localeCompare(b.source_ref)||a.start-b.start)
+  .filter(x=>{
+   const key=x.source_ref+':'+x.start+':'+x.end;
+   if(seen.has(key))return false;seen.add(key);return true;
+  }).slice(0,limit).map(({priority,...x})=>x);
+}
+
+/**
  * V2: bounded lexical repair of a clipped word in one authenticated excerpt.
  * Do not join sentences or alter meaning; reject unrepairable source pointers.
  */
