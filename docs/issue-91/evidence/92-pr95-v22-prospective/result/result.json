@@ -1,0 +1,95 @@
+{
+ "schema": "issue92-pr95-v22-prospective-terminal-result-v1",
+ "repo": "fvanevski/opencode-operational-schema-guard",
+ "pr": 95,
+ "branch": "issue/92-v7c-accepted",
+ "source_head": "285bc0e94c8cdd241be98481f698b3da224ec5ac",
+ "group": "graphiti-adr92-a3-prospective-v22",
+ "terminal_result": "V22_TERMINAL_FAIL",
+ "scorer_exit_status": 3,
+ "scorecard": {
+  "schema": "issue92-a3-adjudicated-acceptance-v1",
+  "group": "graphiti-adr92-a3-prospective-v22",
+  "frozen_manifest_sha256": "1e9f0bb550b67f40413470fe69521f5eb2e457c5590413650978141ac89d54a0",
+  "label_freeze_sha256": "a13b52f539b561837ffa42ba430546967ab937b498e7fd8c31913d72a376e1ed",
+  "raw_opportunity_denominator": 44,
+  "stats": {
+   "valuable_hits": 8,
+   "valuable_of": 10,
+   "nonvaluable_persisted_cases": 0,
+   "persisted_episodes": 13,
+   "grounded_facts": 13,
+   "independent_useful_facts": 13,
+   "duplicate_episodes": 0,
+   "authority_breaches": 0
+  },
+  "intervals95": {
+   "valuable_coverage": {
+    "point": 0.8,
+    "lower": 0.49015684672072335,
+    "upper": 0.9433190520193067,
+    "n": 10
+   },
+   "grounded_precision": {
+    "point": 1,
+    "lower": 0.7718981569447083,
+    "upper": 1,
+    "n": 13
+   },
+   "useful_among_grounded": {
+    "point": 1,
+    "lower": 0.7718981569447083,
+    "upper": 1,
+    "n": 13
+   }
+  },
+  "gates": {
+   "valuable_coverage": false,
+   "zero_control_fact_persistence": true,
+   "grounded_precision": true,
+   "useful_among_grounded": true,
+   "zero_authority_breaches": true,
+   "terminal_source_integrity": true,
+   "independently_ratified_labels": true
+  },
+  "pass": false,
+  "covered_target_ids": [
+   "v22-v-01",
+   "v22-v-02",
+   "v22-v-03",
+   "v22-v-04",
+   "v22-v-05",
+   "v22-v-06",
+   "v22-v-08",
+   "v22-v-09"
+  ],
+  "note": "Fact-level independent source adjudication; session/episode existence never earns target credit"
+ },
+ "model_run": {
+  "batch_id": "57e0d91e531529c7dbfac0cc918dee8fbda16a7ba9ea4e91a0f380b649585f4a",
+  "model": "chat-fast (Qwen3.8-27B NVFP4, temperature 0, max_output_tokens 1600, timeout 90000ms)",
+  "candidates": 58,
+  "approved": 13,
+  "deferred": 45,
+  "model_calls": 135,
+  "model_errors": 0,
+  "prompt_tokens": 160654,
+  "completion_tokens": 15755
+ },
+ "remote": {
+  "group": "graphiti-adr92-a3-prospective-v22",
+  "episodes_in_group": 13,
+  "reconciliation": "settled-verified-terminal-readback",
+  "historical_group_mutations": 0
+ },
+ "failing_invariant": "valuable_coverage: 8/10 valuable targets covered (Wilson point 0.80) < required 0.85 (>=9/10). Targets v22-v-07 and v22-v-10 produced no persisted fact.",
+ "passing_gates": [
+  "zero_control_fact_persistence",
+  "grounded_precision(1.0)",
+  "useful_among_grounded(1.0, 13>=8)",
+  "zero_authority_breaches",
+  "terminal_source_integrity",
+  "independently_ratified_labels"
+ ],
+ "immutable": "Terminal FAIL is immutable; no favorable-output retry or new held-out campaign under this freeze."
+}
