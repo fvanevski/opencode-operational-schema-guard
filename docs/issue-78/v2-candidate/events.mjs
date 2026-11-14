@@ -198,11 +198,15 @@ export function fromPromptCandidates(event, scope, { admitted = false } = {}) {
         offset: fragment.offset + part.offset });
     }
   }
-  // Capture no more than six representative contiguous spans from one native
-  // message, including the tail. No selected span crosses a removed block.
+  // Reserve the opening scope AND the first detailed continuation. Uniform
+  // sampling skipped actionable evidence immediately after long preambles.
+  // Keep the remaining four positions distributed through the message, tail
+  // included; every selected excerpt remains an authentic contiguous span.
   const selected = segments.length <= MAX_PROMPT_SPANS ? segments :
-    Array.from({ length: MAX_PROMPT_SPANS }, (_, i) =>
-      segments[Math.round(i * (segments.length - 1) / (MAX_PROMPT_SPANS - 1))]);
+    [segments[0], segments[1],
+      ...Array.from({length: MAX_PROMPT_SPANS - 2}, (_, i) =>
+        segments[Math.round(1 + (i + 1) * (segments.length - 2) /
+          (MAX_PROMPT_SPANS - 2))])];
   const partial = text.length > 1100 || authored.removed ||
     authored.fragments.length > 1;
   return selected.map(({ excerpt, offset }) => {

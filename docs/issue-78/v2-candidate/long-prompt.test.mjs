@@ -215,3 +215,23 @@ test('natural-language credential values fail the complete-input admission filte
  const safe='OpenSubtitles credentials can be found in ~/temp/opensubtitles, including API token, username and password field types.';
  assert.equal(accepted(native(safe)).length,1);
 });
+
+
+test('long prompt preserves the early detailed source window between opening and sampled middle',()=>{
+ const pre=filler.repeat(13);
+ const predicate='The installed encoder rejected -legacy_spatial:v 1, whereas its supported CLI accepts -legacy-spatial for the same setting. ';
+ const text=pre+predicate+filler.repeat(160)+
+  'The final decision is to retain the original source-linked release manifest.';
+ assert.ok(text.length>1100&&text.length<=16000);
+ const rows=accepted(native(text,'msg-early-detail'));
+ assert.equal(rows.length,6);
+ assert.ok(rows[1].excerpt.includes('-legacy_spatial:v 1'));
+ assert.ok(rows[1].excerpt.includes('-legacy-spatial'));
+ assert.match(rows.at(-1).excerpt,/original source-linked release manifest/);
+ assert.deepEqual(rows,accepted(native(text,'msg-early-detail')));
+ for(const row of rows){
+  const offset=Number(/:span:(\d+)$/.exec(row.source_refs[0])?.[1]);
+  assert.equal(text.slice(offset,offset+row.excerpt.length),row.excerpt);
+ }
+ assert.deepEqual(accepted(native(text+' password=secret123','msg-private')),[]);
+});
