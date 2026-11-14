@@ -1,0 +1,69 @@
+{
+  "schema": "issue92-pr95-post-v22-host-smoke-qualification-v1",
+  "issue": 92,
+  "pr": 95,
+  "kind": "host-exposed-v2-smoke",
+  "limitation": "Disposable host-exposed V2 regression smoke on a fresh group. NOT a prospective A3 scorecard and NOT a 4/6 or 2/2 coverage replacement for the approved A3 metric. Historical v7c 9/10 PASS, V11-R1 7/10 FAIL, and V22 8/10 FAIL scorecards are immutable and preserved; V22 13/13 source-faithful/useful facts and zero controls are corroborative, not retroactively rescored. #94 Graphiti+OpenViking coexistence milestone is not claimed by this smoke.",
+  "source_code_sha": "53874a055731e801f8afedeb368e3285a5e02c59",
+  "pr95_head_at_handback": "53874a055731e801f8afedeb368e3285a5e02c59",
+  "exact_head_ci": {
+    "run_id": 43652080917,
+    "sha": "53874a055731e801f8afedeb368e3285a5e02c59",
+    "verdict": "success",
+    "suites": ["4 curator suites", "A3 scorer tests", "Python EX launcher", "broad npm test"]
+  },
+  "prospective_policy": "issue92-a3-coverage-70pct-2026-11-14",
+  "v22_evidence": {
+    "tar_sha256": "9694ef58224930a50e16615c83d81c3fee2ffca07d94a53d1381b02260253d31",
+    "manifest_sha256": "1e9f0bb550b67f40413470fe69521f5eb2e457c5590413650978141ac89d54a0",
+    "label_freeze_sha256": "a13b52f539b561837ffa42ba430546967ab937b498e7fd8c31913d72a376e1ed",
+    "roster_group": "graphiti-adr92-a3-prospective-v22",
+    "case_count": 20
+  },
+  "smoke_group": "graphiti-adr92-exposed-v2-53874a0-1794698637-f55cae",
+  "staged": { "cases": 6, "native_events": 14, "case_breakdown": { "v22-v-01": 1, "v22-v-02": 6, "v22-v-07": 2, "v22-v-10": 3, "v22-c-01": 1, "v22-c-02": 1 } },
+  "model": {
+    "route": "chat-fast",
+    "temperature": 0,
+    "max_output_tokens": 1600,
+    "request_timeout_ms": 90000,
+    "calls": 42,
+    "errors": 0,
+    "call_mix": { "discovery": 23, "utility": 15, "support": 4 }
+  },
+  "ex_admission": {
+    "lock": "kernel-backed flock on the canonical agent lock",
+    "harness_active_at_admission": false,
+    "scheduler_idle": true,
+    "quiet_grace_seconds": 30,
+    "retained_through_reconciliation": true,
+    "released_after_settlement": true
+  },
+  "results": {
+    "persisted_facts": 9,
+    "unique_remote_uuids": 9,
+    "all_uuids_in_exposed_group": true,
+    "positively_reconciled": true,
+    "deferred_facts": 17,
+    "skipped_facts": 1,
+    "control_origin_facts": 0,
+    "authority_privacy_ex_breaches": 0,
+    "historical_group_mutations": 0,
+    "replay": false,
+    "source_index_intact": true
+  },
+  "v22_exposed_cases": {
+    "v22-v-07": { "outcome": "persisted", "persisted": 3, "deferred": 5, "note": "V22 miss recovered: 3 source-grounded facts persisted to unique UUIDs" },
+    "v22-v-10": { "outcome": "persisted", "persisted": 1, "deferred": 7, "note": "V22 miss recovered: 1 source-grounded fact persisted; remaining subspan/structural candidates deferred" }
+  },
+  "source_subspan_recovery_v2": {
+    "frozen_active_and_plan": true,
+    "version": 2,
+    "opportunities": 5,
+    "source_valid": 5,
+    "approved": 3,
+    "deferred": 2
+  },
+  "authority_verdict": "PASS: every persisted fact traces to a native source locator (native-id authority); zero control-origin, wrong-group, privacy, or EX breaches; source index and 9 unique UUIDs intact and positively reconciled.",
+  "result": "HOST_EXPOSED_V2_PASS"
+}
