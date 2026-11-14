@@ -2154,3 +2154,71 @@ test('V2 atomic subspan policy cannot reinterpret a frozen V1 batch',()=>fixture
   /SOURCE_SUBSPAN_RECOVERY_V2_IDENTITY_CHANGED/);
  assert.equal(f.graphiti.writes.length,0);
 },[weak]));
+
+
+test('V2 source-atomic recovery reconsiders one independently sourced clause after compound-quote review',()=>fixture(async f=>{
+ const body='Continue the integration task. Central has implemented the bounded readiness adapter, native root bindings, durable original-file identity, and revised release guidance. Qualify the host separately.';
+ const broad='Central has implemented the bounded readiness adapter, native root bindings, durable original-file identity, and revised release guidance.';
+ const narrow='Central has implemented the bounded readiness adapter';
+ const stages=[];
+ const curate=async(_,{promptMessages})=>{
+  const sys=promptMessages[0].content,data=JSON.parse(promptMessages[1].content);
+  if(sys.includes('CLAIM/EVIDENCE SEPARATION')){
+   stages.push('discovery');
+   const e=data.evidence[0],start=e.excerpt.indexOf(broad);
+   assert.ok(start>=0);
+   return {content:JSON.stringify({reason:'Source-reported architecture status',
+    candidates:[{kind:'implementation',source_ref:e.source,start,
+     end:start+broad.length,temporal_status:'historical',
+     normalized_claim:broad}]})};
+  }
+  if(sys.includes('independent SOURCE-SUPPORT critic')){
+   stages.push('support');
+   return {content:JSON.stringify({decisions:data.candidates.map(x=>({
+    index:x.index,disposition:'SUPPORTED',reason_code:'supported_as_reported',
+    supporting_phrase:x.exact_evidence_quote}))})};
+  }
+  if(sys.includes('CLAIM-LED UTILITY')){
+   stages.push('compound-review');
+   return {content:JSON.stringify({decisions:data.candidates.map(x=>({
+    index:x.index,disposition:'REVIEW',reason_code:'review_uncertain',
+    atomicity:{independent_predicates:3,
+     rationale:'The source quotation contains several independent implementation claims'}}))})};
+  }
+  if(sys.includes('SOURCE-EXACT COMPLEMENT UTILITY')){
+   stages.push('subspan-utility');
+   return {content:JSON.stringify({decisions:data.candidates.map(x=>
+    x.assertion===narrow?{index:x.index,disposition:'ACCEPT',
+     reason_code:'source_specific_durable',utility_class:'stable_architecture',
+     atomicity:{independent_predicates:1,
+      rationale:'One source-reported historical adapter implementation statement'}}:
+    {index:x.index,disposition:'REVIEW',reason_code:'not_substantive'})})};
+  }
+  if(sys.includes('SOURCE-EXACT COMPLEMENT')||
+     sys.includes('SOURCE-WINDOW RECOVERY V1')){
+   stages.push('empty-alternate');
+   return {content:JSON.stringify({reason:'No additional independently quotable claim',
+    candidates:[]})};
+  }
+  throw Error('UNEXPECTED_ATOMIC_V2_STAGE');
+ };
+ const result=await runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true,resilientDiscovery:true,claimEvidence:true,
+  sourceExactComplement:true,sourceQuoteSalvage:true,quoteIntegrityV2:true,
+  sourceWindowRecovery:true,sourceMessageIsolation:true,sourceSubspanRecovery:true,
+  sourceSubspanRecoveryV2:true}));
+ assert.equal(result.persisted,1);
+ assert.equal(f.graphiti.writes.length,1);
+ assert.ok(f.graphiti.writes[0].episode_body.includes(narrow));
+ assert.ok(!f.graphiti.writes[0].episode_body.includes('native root bindings'));
+ assert.ok(f.graphiti.writes[0].episode_body.includes('Temporal: historical'));
+ assert.ok(stages.includes('compound-review')&&stages.includes('subspan-utility'));
+ const active=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,'_active.json'),'utf8'));
+ const plan=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,active.batch_id,'plan.json'),'utf8'));
+ assert.equal(active.source_subspan_recovery_v2,true);
+ assert.equal(plan.source_subspan_recovery_v2,true);
+ assert.equal(plan.cluster_outcomes[0].source_subspan_recovery_outcome.version,2);
+ assert.equal(plan.cluster_outcomes[0].source_subspan_recovery_outcome.approved,1);
+},['Continue the integration task. Central has implemented the bounded readiness adapter, native root bindings, durable original-file identity, and revised release guidance. Qualify the host separately.']));
