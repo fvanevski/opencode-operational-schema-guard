@@ -75,6 +75,10 @@ if(quoteIntegrityArg==='on'&&
   (!sourceQuoteSalvage||!finiteBatch||command!=='drain'))
   throw Error('QUOTE_INTEGRITY_V2_REQUIRES_SOURCE_QUOTE_SALVAGE_DRAIN');
 const quoteIntegrityV2=quoteIntegrityArg==='on';
+const windowArg=arg('source-window-recovery');
+if(windowArg&&windowArg!=='on')throw Error('SOURCE_WINDOW_RECOVERY_OPT_IN_INVALID');
+if(windowArg==='on'&&!quoteIntegrityV2)throw Error('SOURCE_WINDOW_RECOVERY_REQUIRES_QUOTE_INTEGRITY_V2');
+const sourceWindowRecovery=windowArg==='on';
 if(tuningPath&&command!=='validate-tuning'&&(!finiteBatch||command!=='drain'))
  throw Error('FINITE_BATCH_TUNING_ONLY_ON_DRAIN');
 if(command==='validate-tuning'){
@@ -96,7 +100,8 @@ if(command==='validate-tuning'){
      '[--source-exact-complement on (requires claim-evidence)] '+
      '[--balanced-dedup on (recall mode, semantic duplicate review)] '+
      '[--source-quote-salvage on (independent source-quote utility)] '+
-     '[--quote-integrity-v2 on (requires source-quote-salvage; new frozen batch only)]. '+
+     '[--quote-integrity-v2 on (requires source-quote-salvage; new frozen batch only)] '+
+     '[--source-window-recovery on (V2 only; new frozen batch)]. '+
     'For drain set LOCAL_CURATOR_URL, LOCAL_CURATOR_MODEL, LOCAL_CURATOR_API_KEY.');
   process.exitCode=2;
 }else{
@@ -164,7 +169,7 @@ if(command==='validate-tuning'){
     const data=finiteBatch?
       await runAdmittedFiniteBatch({...inputs,maxCandidates,noveltyPolicy,replayOnly,
        sourceRecovery,resilientDiscovery,claimEvidence,sourceExactComplement,
-        balancedDedup,sourceQuoteSalvage,quoteIntegrityV2,
+        balancedDedup,sourceQuoteSalvage,quoteIntegrityV2,sourceWindowRecovery,
        tuning:tuningPath?await loadFiniteBatchTuning(tuningPath):null}):
       await runAdmitted({...inputs,factReview});
     console.log(JSON.stringify(data));
