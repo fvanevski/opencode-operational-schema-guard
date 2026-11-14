@@ -28,12 +28,23 @@ export const normalizedAssertion = s => String(s).toLowerCase().replace(/\s+/g,'
 // verification; the evidence class remains exactly what the source proves.
 const tokens = s => new Set((String(s).toLowerCase().match(/[a-z0-9_./:-]{4,}/g)||[])
   .filter(x=>!['that','this','with','from','were','have','does','will','into','when','then','only','also','their','after','before'].includes(x)));
-export function selectClusters(items, {maxEvents=8,maxClusters=8}={}) {
+export function selectClusters(items, {maxEvents=8,maxClusters=8,
+ sourceMessageIsolation=false}={}) {
+ if(typeof sourceMessageIsolation!=='boolean')throw Error('source isolation flag invalid');
   if(!Array.isArray(items)||!Number.isInteger(maxEvents)||maxEvents<2||maxEvents>12) throw Error('cluster arguments invalid');
   const groups=new Map();
   for(const e of items) {
     if(e?.state!=='new'||!HEX.test(e.event_id||'')||!SAFE.test(e.group||'')) continue;
-    const key=[e.group,e.project,e.workspace,e.session_id].join('\n');
+    // Native messages are independent evidence opportunities. An unrelated
+    // same-session message must not occupy its sibling's three-fact budget.
+    const ref=e.source_refs?.[0];
+    if(sourceMessageIsolation&&
+       (e.source_strength!=='native-id'||e.source_refs?.length!==1||
+        typeof ref!=='string'||!ref.startsWith('opencode:')))
+      throw Error('source isolation requires one authenticated native source');
+    const origin=sourceMessageIsolation?ref.replace(/:span:\d+$/,''):null;
+    const key=[e.group,e.project,e.workspace,e.session_id,
+      ...(sourceMessageIsolation?[origin]:[])].join('\n');
     if(!groups.has(key))groups.set(key,[]);
     groups.get(key).push(e);
   }

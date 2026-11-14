@@ -903,3 +903,24 @@ test('V2 source-quote CLI cannot silently accept invalid or incomplete opt-in',(
  assert.doesNotMatch(valid.stderr,/QUOTE_INTEGRITY_V2_(?:OPT_IN_INVALID|REQUIRES_)/);
  assert.match(valid.stderr,/EX_POST_EXIT_ADMISSION_REQUIRED/);
 });
+
+
+test('source-isolated selection keeps same-session native messages independently bounded',()=>{
+ const a=fromPrompt({sessionID:'ses_80',messageID:'msg_iso_a',prompt:{text:
+  'The local model must preserve the originating source identity in every fact.'},
+  timestamp:'2026-11-09T19:00:00Z'},scope,{admitted:true});
+ const b=fromPrompt({sessionID:'ses_80',messageID:'msg_iso_b',prompt:{text:
+  'A separately authored native source must retain its own review budget.'},
+  timestamp:'2026-11-09T19:00:01Z'},scope,{admitted:true});
+ assert.ok(a&&b);
+ assert.equal(selectClusters([a,b]).length,1);
+ const isolated=selectClusters([a,b],{sourceMessageIsolation:true});
+ assert.equal(isolated.length,2);
+ assert.deepEqual(isolated.map(c=>c.events.length),[1,1]);
+ assert.deepEqual(isolated.map(c=>c.source_event_ids[0]).sort(),
+  [a.event_id,b.event_id].sort());
+ assert.equal(new Set(isolated.map(c=>c.id)).size,2);
+ assert.deepEqual(selectClusters([b,a],{sourceMessageIsolation:true}),isolated);
+ assert.throws(()=>selectClusters([a,{...b,source_strength:'session-scoped-fallback'}],
+  {sourceMessageIsolation:true}),/authenticated native source/);
+});
