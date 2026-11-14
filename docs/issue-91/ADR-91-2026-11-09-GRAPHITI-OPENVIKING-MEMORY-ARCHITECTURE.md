@@ -149,14 +149,24 @@ optimized at the expense of catastrophic valuable-fact retention.
 
 The historical #81 14/14 capture control, original source-exact and negative
 controls, H2/H3/H4 frozen corpora, labels and scorecards stay unchanged. Do
-not convert old failures into passes. Existing prospective targets (>=85%
-high-value coverage, >=90% grounded precision, proposed >=75% usefulness with
-an independently sufficient persisted sample) remain the starting binding
-project constraints unless a **separate prospective, operator-approved**
-measurement change is explicitly made. Preserve numerator/denominator,
-Wilson/uncertainty, and report \`INSUFFICIENT_SAMPLE\` when applicable. Any
-new multi-fact or changed claim/evidence unit needs **new prospective**
-definition and freeze, not retroactive credit.
+not convert old failures into passes.
+
+**Operator-approved prospective coverage revision (2026-11-14):** #92's
+high-value coverage floor changes from >=85% to **>=70%** (at least 7 of 10
+independently adjudicated valuable targets in the established 10/10 design).
+The >=90% source-grounded precision, >=75% useful-among-grounded, >=8
+independently useful facts, zero control-origin persistence, and all
+privacy/temporal/source/EX/remote-integrity gates remain binding. Preserve
+numerator/denominator, Wilson uncertainty and `INSUFFICIENT_SAMPLE` when
+appropriate. New scorecards explicitly identify this measurement policy.
+
+**Historical evidence is immutable:** v7c's previously accepted 9/10 PASS,
+V11-R1's recorded 7/10 FAIL, and V22's recorded 8/10 FAIL retain their
+original scorecards, labels, source hashes, model decisions and dispositions.
+The new numerical policy does not retroactively rename those failures.
+A new multi-fact or claim/evidence-unit definition still requires
+pre-inference ratification; exposed-case regression is not fresh prospective
+evidence.
 
 Before another untouched campaign, demonstrate on **exposed H2–H4 cases**
 that (i) previously missed valuable raw evidence survives capture,

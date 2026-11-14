@@ -102,6 +102,24 @@ test('nine source-grounded valuable facts pass with zero control-sourced persist
  assert.equal(r.gates.zero_control_fact_persistence,true);
  assert.equal(r.pass,true);
 });
+test('seven of ten meets revised coverage, but eight independent useful facts remain mandatory',()=>{
+ const seven=run(fixture({persisted:7}));
+ assert.equal(seven.stats.valuable_hits,7);
+ assert.equal(seven.gates.valuable_coverage,true);
+ assert.equal(seven.gates.useful_among_grounded,false);
+ assert.equal(seven.pass,false);
+ const six=run(fixture({persisted:6}));
+ assert.equal(six.gates.valuable_coverage,false);
+ assert.equal(six.pass,false);
+ const eight=run(fixture({persisted:8}));
+ assert.equal(eight.stats.valuable_hits,8);
+ assert.equal(eight.gates.valuable_coverage,true);
+ assert.equal(eight.gates.useful_among_grounded,true);
+ assert.equal(eight.pass,true);
+ assert.equal(eight.measurement_policy.id,'issue92-a3-coverage-70pct-2026-11-14');
+ assert.equal(eight.measurement_policy.valuable_coverage_min,0.70);
+ assert.equal(eight.measurement_policy.independent_useful_fact_min,8);
+});
 test('a grounded control-sourced persisted fact blocks overall PASS',()=>{
  const r=run(fixture());
  assert.equal(r.stats.valuable_hits,9);

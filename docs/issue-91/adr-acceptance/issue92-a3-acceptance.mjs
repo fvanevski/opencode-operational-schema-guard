@@ -5,6 +5,10 @@
 import {createHash} from 'node:crypto';
 
 const sha=s=>createHash('sha256').update(String(s)).digest('hex');
+// Explicit operator-approved policy for newly scored prospective cohorts.
+// Historical V7/V11/V22 scorecards and original PASS/FAIL dispositions are immutable.
+export const PROSPECTIVE_COVERAGE_POLICY='issue92-a3-coverage-70pct-2026-11-14';
+export const PROSPECTIVE_COVERAGE_MIN=0.70;
 const fail=reason=>{throw Error('A3_ACCEPTANCE_UNVERIFIED:'+reason);};
 const unique=(a,label)=>{
  if(new Set(a).size!==a.length)fail('duplicate_'+label);
@@ -197,7 +201,7 @@ export function scoreProspective({
  const precision=wilson(grounded,persisted.length);
  const useful=wilson(independentUseful,grounded);
  const gates={
-  valuable_coverage:recall.point>=0.85,
+  valuable_coverage:recall.point>=PROSPECTIVE_COVERAGE_MIN,
   // The source of the persisted FACT, not mere review-context siblings,
   // determines whether a negative-control event polluted the graph.
   zero_control_fact_persistence:falsePositives.size===0,
@@ -208,6 +212,10 @@ export function scoreProspective({
   independently_ratified_labels:true
  };
  return {schema:'issue92-a3-adjudicated-acceptance-v1',group,
+   measurement_policy:{id:PROSPECTIVE_COVERAGE_POLICY,
+    valuable_coverage_min:PROSPECTIVE_COVERAGE_MIN,
+    grounded_precision_min:0.90,useful_among_grounded_min:0.75,
+    independent_useful_fact_min:8},
   frozen_manifest_sha256:roster.private_manifest_sha256,
   label_freeze_sha256:roster.label_freeze_sha256,
   raw_opportunity_denominator:authority.raw_native_opportunity_denominator??null,
