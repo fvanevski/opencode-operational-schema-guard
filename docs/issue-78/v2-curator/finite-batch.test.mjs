@@ -2080,3 +2080,64 @@ test('source-subspan recovery does not promote generic questions or bypass froze
   /SOURCE_SUBSPAN_RECOVERY_IDENTITY_CHANGED/);
  assert.equal(f.graphiti.writes.length,0);
 },['What port does FalkorDB run on this host?']));
+
+
+test('same-session native message with three accepted facts cannot starve a separate message',()=>fixture(async f=>{
+ const a=[
+  'The encoder should reject invalid input dimensions before assigning a GPU.',
+  'The encoder must retain its source whenever the output quality gate fails.',
+  'The encoder should record its selected quality class for future auditing.'
+ ];
+ const b='FileFlows must invoke the selected candidate FFmpeg binary inside the actual optimization workflow.';
+ assert.ok((await f.queue.stage(source('three',a.join(' '),scope,'sess-shared'))).status==='staged');
+ assert.ok((await f.queue.stage(source('sibling',b,scope,'sess-shared'))).status==='staged');
+ const calls={discovery:0,support:0,utility:0};
+ const curate=async(_,{promptMessages})=>{
+  const sys=promptMessages[0].content,data=JSON.parse(promptMessages[1].content);
+  if(sys.includes('CLAIM/EVIDENCE SEPARATION')){
+   calls.discovery++;
+   assert.equal(data.evidence.length,1);
+   const e=data.evidence[0],texts=e.excerpt.includes('invalid input dimensions')?a:[b];
+   return {content:JSON.stringify({reason:'Distinct sourced development constraints',
+    candidates:texts.map(clause=>({
+     kind:'blocker',temporal_status:'proposed',source_ref:e.source,
+     start:e.excerpt.indexOf(clause),end:e.excerpt.indexOf(clause)+clause.length,
+     normalized_claim:clause}))})};
+  }
+  if(sys.includes('independent SOURCE-SUPPORT critic')){
+   calls.support++;
+   return {content:JSON.stringify({decisions:data.candidates.map(x=>({
+    index:x.index,disposition:'SUPPORTED',reason_code:'supported_as_reported',
+    supporting_phrase:x.exact_evidence_quote}))})};
+  }
+  if(sys.includes('CLAIM-LED UTILITY')){
+   calls.utility++;
+   return {content:JSON.stringify({decisions:data.candidates.map(x=>({
+    index:x.index,disposition:'ACCEPT',reason_code:'source_specific_durable',
+    utility_class:'durable_decision',atomicity:{independent_predicates:1,
+     rationale:'This exact sentence is one distinct source-reported operating constraint'}}))})};
+  }
+  if(sys.includes('SOURCE-EXACT COMPLEMENT')||
+     sys.includes('SOURCE-WINDOW RECOVERY V1'))
+   return {content:JSON.stringify({reason:'No other exact atomic source quote',candidates:[]})};
+  throw Error('UNEXPECTED_SOURCE_ISOLATION_STAGE');
+ };
+ const result=await runAdmittedFiniteBatch(recallOpts({...f,curate,
+  sourceRecovery:true,resilientDiscovery:true,claimEvidence:true,
+  sourceExactComplement:true,sourceQuoteSalvage:true,quoteIntegrityV2:true,
+  sourceWindowRecovery:true,sourceMessageIsolation:true,sourceSubspanRecovery:true}));
+ assert.equal(result.persisted,4);
+ assert.equal(f.graphiti.writes.length,4);
+ assert.deepEqual(calls,{discovery:2,support:2,utility:2});
+ assert.ok(f.graphiti.writes.some(x=>x.episode_body.includes(b)));
+ const active=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,'_active.json'),'utf8'));
+ const snapshot=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,active.batch_id,'snapshot.json'),'utf8'));
+ assert.equal(snapshot.clusters.length,2);
+ assert.deepEqual(snapshot.clusters.map(c=>c.events.length),[1,1]);
+ const plan=JSON.parse(await readFile(path.join(f.root,
+  'issue92-finite-batches-v1',scope.group,active.batch_id,'plan.json'),'utf8'));
+ assert.equal(plan.source_message_isolation_v1,true);
+ assert.equal(plan.items.filter(x=>x.decision==='approved').length,4);
+},[]));
