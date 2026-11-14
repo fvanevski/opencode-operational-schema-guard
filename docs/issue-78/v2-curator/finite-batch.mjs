@@ -11,7 +11,8 @@ import {ReviewStore,selectClusters,validateModelDecision,validateDecision} from 
 import {curateCluster} from './model.mjs';
 import {factDiscoveryPrompt,validateFactDiscovery,factReviewPrompt,
   validateFactReview,filterFactProposal,
-  sourceAtomicityStructuralRisk,sourceAtomicSubspanCandidates} from './fact-review.mjs';
+  sourceAtomicityStructuralRisk,sourceAtomicSubspanCandidates,
+  sourceAtomicSubspanCandidatesV2} from './fact-review.mjs';
 import {promoteOne,reconcile} from './worker.mjs';
 import {claimEvidenceDiscoveryPrompt,validateClaimEvidenceDiscovery,
  claimSupportPrompt,validateClaimSupport,supportedClaimProposal,
@@ -588,7 +589,7 @@ export async function runAdmittedFiniteBatch({
   resilientDiscovery=false,claimEvidence=false,sourceExactComplement=false,
    balancedDedup=false,sourceQuoteSalvage=false,quoteIntegrityV2=false,
    sourceWindowRecovery=false,sourceMessageIsolation=false,
-   sourceSubspanRecovery=false,
+   sourceSubspanRecovery=false,sourceSubspanRecoveryV2=false,
   onCheckpoint=null
 }={}){
  // Preserve mock-only Node test fixtures; live claim/evidence clients must
@@ -616,6 +617,7 @@ export async function runAdmittedFiniteBatch({
      typeof sourceWindowRecovery==='boolean'&&(!sourceWindowRecovery||quoteIntegrityV2)&&
       typeof sourceMessageIsolation==='boolean'&&(!sourceMessageIsolation||sourceWindowRecovery)&&
       typeof sourceSubspanRecovery==='boolean'&&(!sourceSubspanRecovery||sourceMessageIsolation)&&
+       typeof sourceSubspanRecoveryV2==='boolean'&&(!sourceSubspanRecoveryV2||sourceSubspanRecovery)&&
    typeof balancedDedup==='boolean'&&(!balancedDedup||noveltyPolicy==='recall')&&
   (!sourceRecovery||noveltyPolicy==='recall'),'INVALID_BOUNDS');
  // The final source-quote treatment activates frozen, independent atomicity
@@ -680,6 +682,7 @@ export async function runAdmittedFiniteBatch({
      ...(sourceWindowRecovery?{source_window_recovery_v1:true}:{}),
       ...(sourceMessageIsolation?{source_message_isolation_v1:true}:{}),
       ...(sourceSubspanRecovery?{source_subspan_recovery_v1:true}:{}),
+       ...(sourceSubspanRecoveryV2?{source_subspan_recovery_v2:true}:{}),
    ...(atomicityReview?{atomicity_review_v1:true}:{}),
    ...(structuralAtomicityReview?{atomicity_structural_v1:true}:{})};
   try{await writeOnce(activePath,active);}
@@ -715,6 +718,8 @@ export async function runAdmittedFiniteBatch({
     'SOURCE_MESSAGE_ISOLATION_IDENTITY_CHANGED');
   assert(Boolean(active.source_subspan_recovery_v1)===sourceSubspanRecovery,
     'SOURCE_SUBSPAN_RECOVERY_IDENTITY_CHANGED');
+  assert(Boolean(active.source_subspan_recovery_v2)===sourceSubspanRecoveryV2,
+    'SOURCE_SUBSPAN_RECOVERY_V2_IDENTITY_CHANGED');
    if(active.tuning_sha256!==undefined)
    assert(active.tuning_sha256===tuningSha,'TUNING_IDENTITY_CHANGED');
   else assert(legacyIdentity,'LEGACY_TUNING_IDENTITY_UNVERIFIED');
@@ -1233,7 +1238,8 @@ export async function runAdmittedFiniteBatch({
    // model utility/atomicity review. Previous rejected spans stay rejected.
    let subspanOutcome=null;
    if(sourceSubspanRecovery&&approved.length<3){
-    const candidates=sourceAtomicSubspanCandidates(cluster,
+    const candidates=(sourceSubspanRecoveryV2?
+      sourceAtomicSubspanCandidatesV2:sourceAtomicSubspanCandidates)(cluster,
      [...entries.values()],3-approved.length);
     const found=validateFactDiscovery({
      reason:'Original source-exact atomic subspan, no inferred claim',
@@ -1241,12 +1247,14 @@ export async function runAdmittedFiniteBatch({
        repairWordBoundaries:quoteIntegrityV2});
     const fresh=found.ok&&found.decision==='EMIT'?
      found.facts.filter(x=>!entries.has(childId(cluster,x))):[];
-    subspanOutcome={proposed:candidates.length,source_valid:fresh.length,
+    subspanOutcome={version:sourceSubspanRecoveryV2?2:1,
+     proposed:candidates.length,source_valid:fresh.length,
      approved:0,deferred:0,invalid_source:found.invalid_candidates??[]};
     if(fresh.length){
      const proposal={...found,facts:fresh};
      const response=await callOnce('utility',
-      cluster.id+':atomic-source-subspan-v1',cluster,
+      cluster.id+(sourceSubspanRecoveryV2?
+       ':atomic-source-subspan-v2':':atomic-source-subspan-v1'),cluster,
       finiteBatchSourceExactComplementUtilityPrompt(cluster,proposal));
      const screen=validateFactReview(response.content,proposal,
       {requireAtomicity:atomicityReview});
@@ -1481,6 +1489,7 @@ export async function runAdmittedFiniteBatch({
      ...(sourceWindowRecovery?{source_window_recovery_v1:true}:{}),
       ...(sourceMessageIsolation?{source_message_isolation_v1:true}:{}),
       ...(sourceSubspanRecovery?{source_subspan_recovery_v1:true}:{}),
+       ...(sourceSubspanRecoveryV2?{source_subspan_recovery_v2:true}:{}),
     ...(atomicityReview?{atomicity_review_v1:true}:{}),
     ...(structuralAtomicityReview?{atomicity_structural_v1:true}:{}),
     created_at:new Date().toISOString(),
@@ -1528,6 +1537,8 @@ export async function runAdmittedFiniteBatch({
    'PLAN_SOURCE_MESSAGE_ISOLATION_IDENTITY_CHANGED');
   assert(Boolean(plan.source_subspan_recovery_v1)===sourceSubspanRecovery,
    'PLAN_SOURCE_SUBSPAN_RECOVERY_IDENTITY_CHANGED');
+  assert(Boolean(plan.source_subspan_recovery_v2)===sourceSubspanRecoveryV2,
+   'PLAN_SOURCE_SUBSPAN_RECOVERY_V2_IDENTITY_CHANGED');
  assert(Boolean(plan.atomicity_review_v1)===atomicityReview,
   'PLAN_ATOMICITY_REVIEW_IDENTITY_CHANGED');
  assert(Boolean(plan.atomicity_structural_v1)===structuralAtomicityReview,

@@ -96,6 +96,12 @@ if(args.includes('--source-subspan-recovery')&&subspanArg!=='on')
 if(subspanArg==='on'&&!sourceMessageIsolation)
  throw Error('SOURCE_SUBSPAN_RECOVERY_REQUIRES_SOURCE_MESSAGE_ISOLATION');
 const sourceSubspanRecovery=subspanArg==='on';
+const subspanV2Arg=arg('source-subspan-recovery-v2');
+if(args.includes('--source-subspan-recovery-v2')&&subspanV2Arg!=='on')
+ throw Error('SOURCE_SUBSPAN_RECOVERY_V2_OPT_IN_INVALID');
+if(subspanV2Arg==='on'&&!sourceSubspanRecovery)
+ throw Error('SOURCE_SUBSPAN_RECOVERY_V2_REQUIRES_V1_ADMISSION');
+const sourceSubspanRecoveryV2=subspanV2Arg==='on';
 if(tuningPath&&command!=='validate-tuning'&&(!finiteBatch||command!=='drain'))
  throw Error('FINITE_BATCH_TUNING_ONLY_ON_DRAIN');
 if(command==='validate-tuning'){
@@ -120,7 +126,8 @@ if(command==='validate-tuning'){
      '[--quote-integrity-v2 on (requires source-quote-salvage; new frozen batch only)] '+
      '[--source-window-recovery on (V2 only; new frozen batch)] '+
      '[--source-message-isolation on (new frozen batch only)] '+
-     '[--source-subspan-recovery on (new frozen batch only)]. '+
+     '[--source-subspan-recovery on (new frozen batch only)] '+
+     '[--source-subspan-recovery-v2 on (new frozen batch only)]. '+
     'For drain set LOCAL_CURATOR_URL, LOCAL_CURATOR_MODEL, LOCAL_CURATOR_API_KEY.');
   process.exitCode=2;
 }else{
@@ -189,7 +196,7 @@ if(command==='validate-tuning'){
       await runAdmittedFiniteBatch({...inputs,maxCandidates,noveltyPolicy,replayOnly,
        sourceRecovery,resilientDiscovery,claimEvidence,sourceExactComplement,
         balancedDedup,sourceQuoteSalvage,quoteIntegrityV2,sourceWindowRecovery,
-        sourceMessageIsolation,sourceSubspanRecovery,
+        sourceMessageIsolation,sourceSubspanRecovery,sourceSubspanRecoveryV2,
        tuning:tuningPath?await loadFiniteBatchTuning(tuningPath):null}):
       await runAdmitted({...inputs,factReview});
     console.log(JSON.stringify(data));

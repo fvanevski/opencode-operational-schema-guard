@@ -239,3 +239,10 @@ class PostExitAdmissionTests(TestCase):
         args = runner.finite_v2_drain_args(True)
         i = args.index("--source-subspan-recovery")
         self.assertEqual(args[i + 1], "on")
+
+
+    def test_versioned_atomic_clause_recovery_is_admitted_only_for_finite_v2(self):
+        args = runner.finite_v2_drain_args(True)
+        i = args.index("--source-subspan-recovery-v2")
+        self.assertEqual(args[i + 1], "on")
+        self.assertNotIn("--source-subspan-recovery-v2", runner.finite_v2_drain_args(False))

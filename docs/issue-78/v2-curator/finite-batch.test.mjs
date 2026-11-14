@@ -2141,3 +2141,16 @@ test('same-session native message with three accepted facts cannot starve a sepa
  assert.equal(plan.source_message_isolation_v1,true);
  assert.equal(plan.items.filter(x=>x.decision==='approved').length,4);
 },[]));
+
+
+test('V2 atomic subspan policy cannot reinterpret a frozen V1 batch',()=>fixture(async f=>{
+ const curate=async()=>({content:JSON.stringify({reason:'No source-supported claim',candidates:[]})});
+ const opts=recallOpts({...f,curate,sourceRecovery:true,
+  resilientDiscovery:true,claimEvidence:true,sourceExactComplement:true,
+  sourceQuoteSalvage:true,quoteIntegrityV2:true,sourceWindowRecovery:true,
+  sourceMessageIsolation:true,sourceSubspanRecovery:true});
+ await runAdmittedFiniteBatch(opts);
+ await assert.rejects(()=>runAdmittedFiniteBatch({...opts,sourceSubspanRecoveryV2:true}),
+  /SOURCE_SUBSPAN_RECOVERY_V2_IDENTITY_CHANGED/);
+ assert.equal(f.graphiti.writes.length,0);
+},[weak]));

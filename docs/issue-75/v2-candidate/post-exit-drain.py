@@ -103,7 +103,7 @@ def finite_v2_drain_args(enabled):
         "--source-recovery", "on", "--resilient-discovery", "on",
         "--claim-evidence", "on", "--source-exact-complement", "on",
         "--source-quote-salvage", "on", "--quote-integrity-v2", "on",
-        "--source-window-recovery", "on", "--source-message-isolation", "on", "--source-subspan-recovery", "on",
+        "--source-window-recovery", "on", "--source-message-isolation", "on", "--source-subspan-recovery", "on", "--source-subspan-recovery-v2", "on",
         "--max-clusters", "24", "--max-candidates", "72",
     ]
 
