@@ -337,3 +337,39 @@ test('explicit credential values are rejected across user, assistant, tool and f
   content:'The login value is '+secret}},scope),null);
  assert.ok(fromPrompt(prompt('OpenSubtitles credentials are stored at ~/temp/opensubtitles; the values are not included.'),scope,{admitted:true}));
 });
+
+
+test('quoted and punctuation-prefixed credential values cannot bypass descriptive exemptions',()=>{
+ const cases=[
+  'The database password is "in-production-2026".',
+  'The database password is "removed-for-rotation".',
+  'The database password is in-production-2026.',
+  'The database password is in.production2026.',
+  'The database password is "in production 2026".',
+  'The service access token was "stored-in-vault-2026".'
+ ];
+ for(const [i,secret] of cases.entries()){
+  assert.equal(fromPrompt(prompt('Operator note: '+secret,'msg-value-'+i),
+   scope,{admitted:true}),null,'native prompt '+i);
+  assert.equal(fromFinishedTurn({sessionID:'ses-1',
+   messageID:'msg-assistant-value-'+i,role:'assistant',status:'completed',
+   text:'The integration report says '+secret},scope),null,'assistant '+i);
+  assert.equal(fromTool({...tool('call-value-'+i,'Connection notes: '+secret,0),
+   input:{command:'cat connection-notes.txt'}},scope),null,'read-only command '+i);
+  assert.equal(fromTool({...tool('write-value-'+i),tool:'write',
+   input:{filePath:scope.workspace+'/docs/report.md',
+    content:'Connection notes: '+secret}},scope),null,'write '+i);
+  assert.equal(fromTool({...tool('patch-value-'+i),tool:'apply_patch',
+   input:{patch:'*** Begin Patch\n*** Update File: docs/report.md\n'+secret+
+    '\n*** End Patch'}},scope),null,'patch '+i);
+ }
+ for(const safe of [
+  'The database password is configured.',
+  'The database password is removed for rotation.',
+  'The database password is at /srv/config.',
+  'The database password is located in the vault.'
+ ]){
+  assert.ok(fromPrompt(prompt('Development note: '+safe),scope,
+   {admitted:true}),safe);
+ }
+});

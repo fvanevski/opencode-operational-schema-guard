@@ -235,3 +235,19 @@ test('long prompt preserves the early detailed source window between opening and
  }
  assert.deepEqual(accepted(native(text+' password=secret123','msg-private')),[]);
 });
+
+
+test('late quoted and compound credential values veto full long-native admission',()=>{
+ const lead=filler.repeat(115);
+ assert.ok(lead.length>2000&&lead.length<12000);
+ for(const tail of [
+  'The database password is "in-production-2026".',
+  'The database password is "removed-for-rotation".',
+  'The database password is in-production-2026.',
+  'The database password is "in production 2026".'
+ ]){
+  assert.deepEqual(accepted(native(lead+tail,'msg-long-private')),[]);
+ }
+ assert.ok(accepted(native(lead+' The database password is configured.',
+  'msg-long-safe')).length>0);
+});
