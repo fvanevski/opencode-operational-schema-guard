@@ -41,7 +41,9 @@ export function scoreLedger(input){
     if((row.kind==='positive')!==(expected.length>0))invalid('case truth');
     for(const stage of STAGES)stages[stage]=labels(row.stages[stage],row.id+'.'+stage);
     if(!Number.isInteger(row.context_chars)||row.context_chars<0||
-      row.context_chars>1400||stages.presented.length>5||
+      row.context_chars>100000||stages.presented.length>5||
+      (row.budget_chars!==undefined&&(!Number.isInteger(row.budget_chars)||
+        row.budget_chars<0||row.budget_chars>1400))||
       typeof row.on_time!=='boolean'||typeof row.associated!=='boolean'||
       !row.controls||!['secret','wrong_group','false_verified']
         .every(k=>typeof row.controls[k]==='boolean'))
@@ -51,7 +53,7 @@ export function scoreLedger(input){
     if(stages.answer_supported.some(x=>!stages.presented.includes(x)))
       invalid('answer use without presentation');
     cases.push({id:row.id,kind:row.kind,expected,stages,
-      context_chars:row.context_chars,on_time:row.on_time,
+      context_chars:row.context_chars,budget_chars:row.budget_chars??null,on_time:row.on_time,
       associated:row.associated,controls:row.controls});
   }
   const times=[];
@@ -84,7 +86,9 @@ export function scoreLedger(input){
         c.stages.presented.length).map(c=>c.id),
       on_time_associated_positive_cases:cases.filter(c=>c.kind==='positive'&&
         c.on_time&&c.associated).length,
-      context_chars_total:cases.reduce((sum,c)=>sum+c.context_chars,0)},
+      context_chars_total:cases.reduce((sum,c)=>sum+c.context_chars,0),
+      rendered_over_1400_cases:cases.filter(c=>c.context_chars>1400).map(c=>c.id),
+      missing_budget_measurement_cases:cases.filter(c=>c.budget_chars===null).map(c=>c.id)},
     callback_latency:latency,
     candidate_vs_semantic:{
       positive_coverage_delta:selections.candidate.positive_case_coverage-

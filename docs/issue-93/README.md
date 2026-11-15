@@ -12,11 +12,16 @@ Graphiti search result as positive source authority.
 Input is a private JSON object with schema issue93.stage-ledger.v1, cohort
 (frozen, holdout, exposed, native), cases (1..96), and callbacks (0..10000).
 Each case: id, kind=positive/negative, expected=[synthetic labels],
-stages={all nine arrays}, context_chars (<=1400), on_time, associated and
+stages={all nine arrays}, context_chars (actual rendered text length), optional
+budget_chars (sum of selector JSON item costs, <=1400), on_time, associated and
 controls={secret:false,wrong_group:false,false_verified:false}. The control
 flags indicate actual observed breaches. Callbacks contain duration_ms,
 injected and error for ALL Graphiti context-hook invocations, including
-abstentions and failures. Search latency and callback latency are distinct.
+abstentions and failures. Search latency and callback latency are distinct. The selector charges the
+sum of JSON item lengths to its 1400-character limit; formatContext adds
+presentation prose and may render more characters. The scorer records a
+rendered-over-1400 observation without misclassifying it as a selector-budget
+breach; missing budget measurements remain separately visible.
 
 Execute from the repository checkout:
 

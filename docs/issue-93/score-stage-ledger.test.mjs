@@ -36,9 +36,14 @@ test('strict-only losses are explicit',()=>{
 });
 test('rejects raw identifiers, overbudget contexts and fabricated answer use',()=>{
   assert.throws(()=>scoreLedger(input([{...yes,expected:['opencode:source']}])) ,/INVALID_LEDGER/);
-  assert.throws(()=>scoreLedger(input([{...yes,context_chars:1401}])),/INVALID_LEDGER/);
+  assert.throws(()=>scoreLedger(input([{...yes,budget_chars:1401}])),/INVALID_LEDGER/);
   assert.throws(()=>scoreLedger(input([{...yes,on_time:false}])),/INVALID_LEDGER/);
   assert.throws(()=>scoreLedger(input([{...yes,stages:stages({answer_supported:['target']})}])),/INVALID_LEDGER/);
+});
+test('rendered chars and selector budget are different measurements',()=>{
+  const result=scoreLedger(input([{...yes,context_chars:1500,budget_chars:1370}],[]));
+  assert.deepEqual(result.native.rendered_over_1400_cases,['S03']);
+  assert.deepEqual(result.native.missing_budget_measurement_cases,[]);
 });
 test('no callbacks is UNVERIFIED',()=>{
   assert.equal(scoreLedger(input([yes],[])).callback_p95_within_300ms,'UNVERIFIED');

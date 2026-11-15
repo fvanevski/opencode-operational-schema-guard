@@ -35,8 +35,8 @@ CENTRAL_REVIEW=required
    stale UUID, source, secret and false-verified controls. For each, record
    source-exact query truth and actual: Graphiti search facts, independent
    journal/review/source-index match, per-fact remote positive episode
-   membership, shortlist, strict/semantic selection, the 1400-character /
-   5-fact model-facing projection, associated real native model request,
+   membership, shortlist, strict/semantic selection, the selector 1400-character JSON-cost budget /
+   5-fact limit and separately measured actual formatted text, associated real native model request,
    on-time race result and independent answer support. Distinguish an
    indexed-only fact's remote proof from Graphiti search facts. Missing
    source/material is UNVERIFIED, never fabricated.
