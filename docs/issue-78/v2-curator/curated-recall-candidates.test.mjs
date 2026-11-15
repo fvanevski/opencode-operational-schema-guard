@@ -230,6 +230,19 @@ test('more than 4096 review records retain indexed persisted facts without skipp
     assert.deepEqual(await curatedRecallCandidates(
       root,group,workspace,project,growthQuery,'semantic'),[]);
   }));
+test('unrelated malformed index JSON cannot blackout healthy persisted candidates after 4096 reviews',
+  ()=>growthFixture({persisted:2,deferred:4095,targetIndex:1},async({root,targetUUID})=>{
+    const index=path.join(root,'curation-v1',group,'_episode-index',
+      growthUUID(2)+'.json');
+    await writeFile(index,'{');
+    for(const policy of ['strict','semantic']) {
+      const found=await curatedRecallCandidates(root,group,workspace,project,growthQuery,policy);
+      assert.equal(found.length,1,'an invalid unrelated index must be skipped, not reject all');
+      assert.equal(found[0].remoteEpisodeUuid,targetUUID);
+      assert.equal(found[0].source,source);
+    }
+  }));
+
 test('remote >=1000 episode inventory remains fail-closed after local overflow recovery',
   ()=>growthFixture({persisted:1,deferred:4096,targetIndex:1},async({root})=>{
     const calls=[];

@@ -38,7 +38,7 @@ async function readIndexedInventory(store) {
       const uuid=name.slice(0,-5);
       let index;
       try { index=JSON.parse(await fs.readFile(path.join(dir,name),'utf8')); }
-      catch(e){if(e?.code==='ENOENT')return null;throw e;}
+      catch(e){if(e?.code==='ENOENT'||e instanceof SyntaxError)return null;throw e;}
       if(index?.remote_episode_uuid!==uuid ||
          !REVIEW_FILE.test((index?.id||'')+'.json'))return null;
       const review=await store.get(index.id);
