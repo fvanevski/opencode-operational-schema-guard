@@ -241,6 +241,20 @@ test('unrelated malformed index JSON cannot blackout healthy persisted candidate
       assert.equal(found[0].remoteEpisodeUuid,targetUUID);
       assert.equal(found[0].source,source);
     }
+    // Adjacent failure boundary: corrupt review JSON and corrupt identity/state
+    // must not suppress a distinct, positively indexed healthy review.
+    await writeFile(index,JSON.stringify({
+      id:growthId(2),remote_episode_uuid:growthUUID(2)
+    }));
+    const reviewPath=path.join(root,'curation-v1',group,growthId(2)+'.json');
+    for(const invalid of ['{',JSON.stringify({id:growthId(2),group:'wrong',state:'persisted'})]) {
+      await writeFile(reviewPath,invalid);
+      for(const policy of ['strict','semantic']) {
+        const found=await curatedRecallCandidates(root,group,workspace,project,growthQuery,policy);
+        assert.equal(found.length,1,'an unrelated corrupt review must be skipped');
+        assert.equal(found[0].remoteEpisodeUuid,targetUUID);
+      }
+    }
   }));
 
 test('remote >=1000 episode inventory remains fail-closed after local overflow recovery',

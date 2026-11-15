@@ -41,7 +41,15 @@ async function readIndexedInventory(store) {
       catch(e){if(e?.code==='ENOENT'||e instanceof SyntaxError)return null;throw e;}
       if(index?.remote_episode_uuid!==uuid ||
          !REVIEW_FILE.test((index?.id||'')+'.json'))return null;
-      const review=await store.get(index.id);
+      let review;
+      try { review=await store.get(index.id); }
+      catch(e) {
+        // An unrelated damaged review cannot suppress other indexed facts.
+        // Fatal filesystem/permission failures still reject the inventory.
+        if(e instanceof SyntaxError||e?.message==='Corrupt review identity/state')
+          return null;
+        throw e;
+      }
       return review?.state==='persisted'&&review.remote_episode_uuid===uuid
         ?review:null;
     }));
