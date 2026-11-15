@@ -12,6 +12,46 @@ const SOURCE=/^opencode:[^\s]+:(?:message|tool|user):/;
 const CLASSES=new Set(['user-stated','tool-reported','assistant-reported']);
 const PAGE=500, MAX_REVIEW_SCAN=4096, SHORTLIST=24, RESOLVER_BATCH=288;
 const READ_BATCH=32, REVIEW_FILE=/^[a-f0-9]{64}\.json$/;
+const INDEX_FILE=/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}\.json$/i;
+const MAX_INDEX_SCAN=4096;
+
+/**
+ * Overflow discovery from the existing durable episode index.
+ * The index is a source of candidate identities, NEVER a source authority:
+ * each referenced review is re-read through ReviewStore.get(), and the
+ * caller's sourcedEpisodeResolver plus fresh remote proof still apply.
+ *
+ * Persisted reviews without a matching episode index were already ineligible
+ * for sourcedEpisodeResolver, so this path does not discard a formerly
+ * source-proven candidate merely because unrelated deferred reviews grew.
+ */
+async function readIndexedInventory(store) {
+  const dir=path.join(store.dir,'_episode-index');
+  let names;
+  try { names=(await fs.readdir(dir)).filter(n=>INDEX_FILE.test(n)).sort(); }
+  catch(e){if(e?.code==='ENOENT')return [];throw e;}
+  // Explicit fail-closed guard on actual indexed episodes, not total history.
+  if(names.length>MAX_INDEX_SCAN)return [];
+  const records=[],seen=new Set();
+  for(let offset=0;offset<names.length;offset+=READ_BATCH) {
+    const batch=await Promise.all(names.slice(offset,offset+READ_BATCH).map(async name=>{
+      const uuid=name.slice(0,-5);
+      let index;
+      try { index=JSON.parse(await fs.readFile(path.join(dir,name),'utf8')); }
+      catch(e){if(e?.code==='ENOENT')return null;throw e;}
+      if(index?.remote_episode_uuid!==uuid ||
+         !REVIEW_FILE.test((index?.id||'')+'.json'))return null;
+      const review=await store.get(index.id);
+      return review?.state==='persisted'&&review.remote_episode_uuid===uuid
+        ?review:null;
+    }));
+    for(const review of batch) {
+      if(!review||seen.has(review.id))continue;
+      seen.add(review.id);records.push(review);
+    }
+  }
+  return records;
+}
 
 async function readBoundedInventory(store) {
   // ReviewStore.list() fully reads and parses the entire directory BEFORE
@@ -21,8 +61,10 @@ async function readBoundedInventory(store) {
   let names;
   try { names=(await fs.readdir(store.dir)).filter(n=>REVIEW_FILE.test(n)).sort(); }
   catch(e){if(e?.code==='ENOENT')return [];throw e;}
-  // Fail closed rather than silently omitting an unexamined section.
-  if(names.length>MAX_REVIEW_SCAN)return [];
+  // A global review count includes deferred/skipped history. Once it exceeds
+  // the bounded interactive scan, discover only persisted, indexed episodes
+  // rather than blacking out every eligible curated fact.
+  if(names.length>MAX_REVIEW_SCAN)return readIndexedInventory(store);
   const records=[];
   for(let offset=0;offset<names.length;offset+=READ_BATCH) {
     const batch=await Promise.all(names.slice(offset,offset+READ_BATCH)

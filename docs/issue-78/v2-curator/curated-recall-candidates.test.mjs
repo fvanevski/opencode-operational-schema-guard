@@ -212,6 +212,43 @@ test('query-scoped production/replay retriever reads each inventory record only 
     assert.deepEqual(await retriever(),[]);
   }));
 
+test('more than 4096 review records retain indexed persisted facts without skipping old IDs',
+  ()=>growthFixture({persisted:1,deferred:4096,targetIndex:1},async({root,targetUUID})=>{
+    for(const policy of ['strict','semantic']) {
+      const found=await curatedRecallCandidates(root,group,workspace,project,growthQuery,policy);
+      assert.equal(found.length,1,'deferred growth must not black out persisted index');
+      assert.equal(found[0].remoteEpisodeUuid,targetUUID);
+      assert.equal(found[0].source,source);
+    }
+    assert.deepEqual(await curatedRecallCandidates(
+      root,group,'/workspace/other',project,growthQuery,'semantic'),[]);
+    assert.deepEqual(await curatedRecallCandidates(
+      root,group,workspace,'other',growthQuery,'strict'),[]);
+    // Source-index corruption cannot become a positive provenance claim.
+    const index=path.join(root,'curation-v1',group,'_episode-index',targetUUID+'.json');
+    await writeFile(index,JSON.stringify({id:'f'.repeat(64),remote_episode_uuid:targetUUID}));
+    assert.deepEqual(await curatedRecallCandidates(
+      root,group,workspace,project,growthQuery,'semantic'),[]);
+  }));
+test('remote >=1000 episode inventory remains fail-closed after local overflow recovery',
+  ()=>growthFixture({persisted:1,deferred:4096,targetIndex:1},async({root})=>{
+    const calls=[];
+    const graphiti={call:async name=>{
+      calls.push(name);
+      if(name==='search_memory_facts')return {facts:[]};
+      if(name==='get_episodes')return {episodes:Array.from({length:1000},(_,n)=>({
+        uuid:growthUUID(n+1),group_id:group
+      }))};
+      throw Error('unexpected Graphiti operation '+name);
+    }};
+    const memory=new Memory({journal:new Journal(root,group),graphiti,group,
+      curatedCandidateRetriever:curatedRecallRetriever(root,group,workspace,project)});
+    const result=await memory.search(growthQuery);
+    assert.deepEqual(result,[],'full remote inventory never grants group membership');
+    assert.ok(calls.includes('get_episodes'));
+    assert.ok(!calls.includes('add_memory'));
+  }));
+
 test('missing reserved episode cannot suppress the next proven strict winner',async()=>{
   const q='What database did we originally use for archive storage recovery?';
   for(const proofFailure of ['remote-episode','local-index']) {
