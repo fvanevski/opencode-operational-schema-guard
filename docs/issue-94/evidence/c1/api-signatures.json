@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "kind": "issue94-graphiti-mcp-tools-list",
+  "endpoint": "http://127.0.0.1:8766/mcp",
+  "protocol_version": "2024-11-05",
+  "total_tools": 13,
+  "note": "Names and typed argument shapes only; no example values, group data, UUIDs, or credentials. Captured read-only from the live Graphiti MCP server.",
+  "tools": [
+    {"name": "add_memory", "required": ["name", "episode_body"], "args": ["name", "episode_body", "group_id", "source", "source_description", "uuid", "reference_time", "excluded_entity_types", "custom_extraction_instructions", "previous_episode_uuids", "update_communities", "saga", "saga_previous_episode_uuid"], "write": true},
+    {"name": "search_nodes", "required": ["query"], "args": ["query", "group_ids", "max_nodes", "entity_types", "center_node_uuid"], "write": false},
+    {"name": "search_memory_facts", "required": ["query"], "args": ["query", "group_ids", "max_facts", "center_node_uuid", "edge_types", "valid_at_after", "valid_at_before", "invalid_at_after", "invalid_at_before"], "write": false},
+    {"name": "delete_entity_edge", "required": ["uuid"], "args": ["uuid", "group_id"], "write": true},
+    {"name": "delete_episode", "required": ["uuid"], "args": ["uuid", "group_id"], "write": true},
+    {"name": "get_entity_edge", "required": ["uuid"], "args": ["uuid", "group_id"], "write": false},
+    {"name": "get_episodes", "required": [], "args": ["group_ids", "max_episodes"], "write": false, "targeted_single_uuid_param": false},
+    {"name": "summarize_saga", "required": ["saga_name"], "args": ["saga_name", "group_id"], "write": false},
+    {"name": "build_communities", "required": [], "args": ["group_ids"], "write": true},
+    {"name": "add_triplet", "required": ["source_node_name", "edge_name", "fact", "target_node_name"], "args": ["source_node_name", "edge_name", "fact", "target_node_name", "group_id", "source_node_uuid", "target_node_uuid"], "write": true},
+    {"name": "get_episode_entities", "required": ["episode_uuids"], "args": ["episode_uuids", "group_id"], "write": false, "targeted_episode_uuid_list_param": true},
+    {"name": "clear_graph", "required": [], "args": ["group_ids"], "write": true},
+    {"name": "get_status", "required": [], "args": [], "write": false}
+  ],
+  "findings": {
+    "get_episodes_targeted_single_uuid_lookup": "NOT available — get_episodes accepts only group_ids + max_episodes (group-wide, bounded). No single-episode-UUID membership param.",
+    "targeted_per_uuid_read_available": "YES — get_episode_entities(episode_uuids, group_id) is a read-only targeted per-episode-UUID provenance read (list input). Observed to succeed on the live endpoint."
+  }
+}

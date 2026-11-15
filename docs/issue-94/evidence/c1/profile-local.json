@@ -1,0 +1,186 @@
+{
+  "schema_version": 1,
+  "kind": "issue94-local-read-only-profile",
+  "mode": "local",
+  "generated_at": "2026-11-15T20:47:24.498Z",
+  "node": "26.13.1",
+  "no_graphiti_mutations": true,
+  "no_live_store_mutations": true,
+  "remote_episode_authority_not_measured": true,
+  "native_callback_and_model_utility_not_measured": true,
+  "review_scan_ceiling": 4096,
+  "remote_episode_inventory_ceiling": 1000,
+  "inventory": {
+    "review_files": 565,
+    "states": {
+      "deferred": 205,
+      "persisted": 355,
+      "skipped": 5
+    },
+    "persisted_facts": 355,
+    "episode_index_files": 355,
+    "persisted_missing_uuid": 0,
+    "persisted_nonatomic_review_records": 0,
+    "unique_persisted_origin_clusters": 355,
+    "max_persisted_facts_per_origin": 1,
+    "reviews_above_4096": false,
+    "source_index_health_not_verified": true
+  },
+  "local_queries": [
+    {
+      "id": "source-exact-port",
+      "status": "READ_ONLY_LOCAL_PROFILE",
+      "iterations": 3,
+      "cold_ms": 66.679,
+      "warm": {
+        "n": 2,
+        "p50_ms": 52.447,
+        "p95_ms": 58.051,
+        "max_ms": 58.051
+      },
+      "all": {
+        "n": 3,
+        "p50_ms": 58.051,
+        "p95_ms": 66.679,
+        "max_ms": 66.679
+      },
+      "source_qualified_shortlist_counts": [
+        30,
+        30,
+        30
+      ],
+      "remote_membership_proven": false,
+      "model_injection_proven": false
+    },
+    {
+      "id": "paraphrase-filetools",
+      "status": "READ_ONLY_LOCAL_PROFILE",
+      "iterations": 3,
+      "cold_ms": 59.12,
+      "warm": {
+        "n": 2,
+        "p50_ms": 45.441,
+        "p95_ms": 45.92,
+        "max_ms": 45.92
+      },
+      "all": {
+        "n": 3,
+        "p50_ms": 45.92,
+        "p95_ms": 59.12,
+        "max_ms": 59.12
+      },
+      "source_qualified_shortlist_counts": [
+        24,
+        24,
+        24
+      ],
+      "remote_membership_proven": false,
+      "model_injection_proven": false
+    },
+    {
+      "id": "stale-historical-exit",
+      "status": "READ_ONLY_LOCAL_PROFILE",
+      "iterations": 3,
+      "cold_ms": 39.111,
+      "warm": {
+        "n": 2,
+        "p50_ms": 37.313,
+        "p95_ms": 37.575,
+        "max_ms": 37.575
+      },
+      "all": {
+        "n": 3,
+        "p50_ms": 37.575,
+        "p95_ms": 39.111,
+        "max_ms": 39.111
+      },
+      "source_qualified_shortlist_counts": [
+        24,
+        24,
+        24
+      ],
+      "remote_membership_proven": false,
+      "model_injection_proven": false
+    },
+    {
+      "id": "wrong-group-postgres",
+      "status": "READ_ONLY_LOCAL_PROFILE",
+      "iterations": 3,
+      "cold_ms": 41.407,
+      "warm": {
+        "n": 2,
+        "p50_ms": 41.736,
+        "p95_ms": 43.194,
+        "max_ms": 43.194
+      },
+      "all": {
+        "n": 3,
+        "p50_ms": 41.736,
+        "p95_ms": 43.194,
+        "max_ms": 43.194
+      },
+      "source_qualified_shortlist_counts": [
+        24,
+        24,
+        24
+      ],
+      "remote_membership_proven": false,
+      "model_injection_proven": false
+    },
+    {
+      "id": "secret-negative",
+      "status": "REJECTED_BY_QUERY_FENCE",
+      "iterations": 0
+    },
+    {
+      "id": "high-group-persisted",
+      "status": "READ_ONLY_LOCAL_PROFILE",
+      "iterations": 3,
+      "cold_ms": 46.663,
+      "warm": {
+        "n": 2,
+        "p50_ms": 42.466,
+        "p95_ms": 43.31,
+        "max_ms": 43.31
+      },
+      "all": {
+        "n": 3,
+        "p50_ms": 43.31,
+        "p95_ms": 46.663,
+        "max_ms": 46.663
+      },
+      "source_qualified_shortlist_counts": [
+        24,
+        24,
+        24
+      ],
+      "remote_membership_proven": false,
+      "model_injection_proven": false
+    },
+    {
+      "id": "off-topic-empty",
+      "status": "READ_ONLY_LOCAL_PROFILE",
+      "iterations": 3,
+      "cold_ms": 38.236,
+      "warm": {
+        "n": 2,
+        "p50_ms": 35.514,
+        "p95_ms": 37.007,
+        "max_ms": 37.007
+      },
+      "all": {
+        "n": 3,
+        "p50_ms": 37.007,
+        "p95_ms": 38.236,
+        "max_ms": 38.236
+      },
+      "source_qualified_shortlist_counts": [
+        0,
+        0,
+        0
+      ],
+      "remote_membership_proven": false,
+      "model_injection_proven": false
+    }
+  ]
+}

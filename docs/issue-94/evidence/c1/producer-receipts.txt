@@ -1,0 +1,58 @@
+# Issue #94 C1 — producer / test receipts (exact commands and producer exit statuses)
+# All commands run from the authenticated issue/94 worktree (staged commit 5df362ec), node v26.13.1.
+# No secrets, no raw query text, no episode UUIDs.
+
+## CPU-only syntax + focused tests (from docs/issue-94/README.md)
+node --check docs/issue-94/retrieval-profile.mjs
+# -> exit 0
+
+node --test docs/issue-94/retrieval-profile.test.mjs
+# -> pass 4, fail 0 (4/4), exit 0
+
+node --test docs/issue-78/v2-curator/curated-recall-candidates.test.mjs
+# -> pass 12, fail 0 (12/12), exit 0
+
+## Disposable synthetic scaling control (private 0700 scratch; disposable os.tmpdir() fixture)
+node docs/issue-94/retrieval-profile.mjs \
+  --mode synthetic --sizes 512,4096,4097 --rounds 3 \
+  --output <PRIVATE_0700>/issue94-synthetic.json
+# -> {"status":"PROFILE_WRITTEN","mode":"synthetic",...} exit 0
+#    report sha256 (synthetic): 6c284c60166047a4aa94a5439b257b8edcd1725f330bdf6ae199fc87004e865c
+
+## Local read-only profile on the authenticated live state (correct parent root)
+node docs/issue-94/retrieval-profile.mjs \
+  --mode local \
+  --state-dir /home/filip/.local/state/ghdev-graphiti \
+  --group development-knowledge \
+  --workspace /workspace/mcp_servers/gh_mcp \
+  --project gh_mcp \
+  --queries <PRIVATE_0600>/issue94-queries.json \
+  --rounds 3 \
+  --output <PRIVATE_0700>/issue94-local.json
+# -> {"status":"PROFILE_WRITTEN","mode":"local",...} exit 0
+#    report sha256 (local, 7 cases): 4d4768bd0e060dbc778882aba5487575081b7a219bdc77b888036f5057362d3d
+
+## Note on the live state root
+# ReviewStore(root, group) resolves its directory as <root>/curation-v1/<group>.
+# Therefore --state-dir must be the PARENT of the curation-v1 directory
+# (/home/filip/.local/state/ghdev-graphiti), not the curation-v1 dir itself.
+# An initial run with --state-dir pointing at curation-v1 (the wrong level) returned
+# an all-zero inventory (565->0) and was superseded by the corrected run above.
+
+## Read-only remote proof probes (Graphiti MCP, local endpoint; read-only, no writes)
+# get_episodes(group_ids=[development-knowledge], max_episodes=8)  -> "Episodes retrieved successfully" (succeeded)
+# get_episode_entities(episode_uuids=[<one persisted uuid>], group_id=development-knowledge) -> "Retrieved provenance for 1 episode(s)" (succeeded)
+# Timings are local-endpoint RTT (coarse wall-clock), NOT callback p95 (contract: do not infer callback p95 from Graphiti RTT).
+
+## Graphiti MCP tools/list
+# -> 13 tools (see api-signatures.json). No write executed; only tools/list + 2 read-only tools/call.
+
+## Producer exit summary
+node --check: 0
+node --test (retrieval-profile): 0  (4/4)
+node --test (curated-recall-candidates): 0  (12/12)
+profiler --mode synthetic: 0
+profiler --mode local: 0
+get_episodes (read): success
+get_episode_entities (read): success
+tools/list: success
