@@ -1,0 +1,27 @@
+{
+  "schema": "issue93.prospective-baseline.v1",
+  "tested_source_sha": "68eaf2400194eb19a3803984bc2c7eb43fbf8e82",
+  "snapshot_fingerprint": "dc597c690b0e8990…",
+  "cohort": "prospective-dev-93-20261115 (18 positives, 5 negatives); holdout prospective-holdout-93-20261115 (4 pos, 2 neg) SEALED_NOT_RUN",
+  "method": "UNMODIFIED strict and UNMODIFIED current semantic via the real Memory.search() pipeline on an IDENTICAL frozen Graphiti search-result + same-group get_episodes membership snapshot (frozen transport), with the real #92 curatedCandidateRetriever + sourcedEpisodeResolver index/resolver. Raw facts kept private.",
+  "strict": { "tp": 13, "fn": 5, "coverage": "13/18", "source_exact": 13 },
+  "semantic": { "tp": 15, "fn": 3, "coverage": "15/18", "source_exact": 15 },
+  "strict_only_losses": [],
+  "not_recovered_by_semantic": ["D02", "D05", "D15"],
+  "not_recovered_by_strict": ["D01", "D02", "D05", "D06", "D15"],
+  "raw_top24_absent": {
+    "case_ids": ["D02", "D03", "D11", "D14", "D15", "D17"],
+    "recovered_via_92_index_rescue": ["D03", "D11", "D14", "D17"],
+    "not_recovered": ["D02", "D15"],
+    "note": "genuine raw-pool-miss cases: target fact absent from the 24-fact search pool but present in the #92 source index; 4 of 6 recovered by the index rescue path"
+  },
+  "negatives": {
+    "N01": { "kind": "offtopic", "note": "the observed France case", "semantic_injected": 1, "strict_injected": 0 },
+    "N02": { "kind": "offtopic", "note": "additional distinct off-topic", "semantic_injected": 4, "strict_injected": 0 },
+    "N03": { "kind": "wronggroup", "note": "content intent of a different group, not a cross-group remote leak", "semantic_injected": 4, "strict_injected": 0 },
+    "N04": { "kind": "secret", "note": "privacy fence (pre-Graphiti short-circuit)", "semantic_injected": 0, "strict_injected": 0 },
+    "N05": { "kind": "falseverified", "note": "source-authority control", "semantic_injected": 3, "strict_injected": 1, "residual": "the pool has only native-id (strong) sources, so a clean session-weak source-authority abstention is not isolated by this control" }
+  },
+  "invariants": { "max_facts": 5, "max_selector_json_chars": 1400, "remote_membership_count": 355, "truncated_at_1000": false },
+  "old_issue81": "fingerprint 47e141bd… immutable; 12/16 strict and 13/16 semantic are archival, NOT re-passed by this prospective baseline"
+}
