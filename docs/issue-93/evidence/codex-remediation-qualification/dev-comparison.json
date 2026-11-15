@@ -1,0 +1,59 @@
+{
+  "schema": "issue93.codex-remediation.dev-comparison.v1",
+  "tested_remediation_source_sha": "d40506d15ed2ed2c2c08edcd64995182c197a6d8",
+  "roles": {
+    "strict": "d40506d, policy=strict (unchanged strict relevance.mjs)",
+    "base": "69014b739d490f8cb90bce86233edf3054673209, policy=semantic (original semantic)",
+    "b22": "4bc169cc59e8900f5dc3cd4d3c70a22d0fcfb9f4, policy=semantic (original once-only B2.2)",
+    "revised": "d40506d15ed2ed2c2c08edcd64995182c197a6d8, policy=semantic (POST_EXPOSURE_CODEX_REMEDIATION_EXCEPTION)"
+  },
+  "snapshot_fingerprint": "dc597c690b0e8990b925b01467269f530d37dfb2dd7730663bdda46680e7231b",
+  "frozen_transport": "re-captured read-only from live Graphiti 127.0.0.1:8766/mcp (group development-knowledge); source-independent; NOT byte-identical to the 2026-11-15 original capture (see KNOWN_GAPS: N04/HN02 secret-fence drift)",
+  "development": {
+    "strict": "13/18",
+    "base": "15/18",
+    "b22": "15/18",
+    "revised": "15/18",
+    "positives_source_exact_TP": {
+      "D01": {"strict": false, "base": true, "b22": true, "revised": true},
+      "D02": {"strict": false, "base": false, "b22": false, "revised": false},
+      "D03": {"strict": true, "base": true, "b22": true, "revised": true},
+      "D04": {"strict": true, "base": true, "b22": true, "revised": true},
+      "D05": {"strict": false, "base": false, "b22": false, "revised": false},
+      "D06": {"strict": false, "base": true, "b22": true, "revised": true},
+      "D07": {"strict": true, "base": true, "b22": true, "revised": true},
+      "D08": {"strict": true, "base": true, "b22": true, "revised": true},
+      "D09": {"strict": true, "base": true, "b22": true, "revised": true},
+      "D10": {"strict": true, "base": true, "b22": true, "revised": true},
+      "D11": {"strict": true, "base": true, "b22": true, "revised": true},
+      "D12": {"strict": true, "base": true, "b22": true, "revised": true},
+      "D13": {"strict": true, "base": true, "b22": true, "revised": true},
+      "D14": {"strict": true, "base": true, "b22": true, "revised": true},
+      "D15": {"strict": false, "base": false, "b22": false, "revised": false},
+      "D16": {"strict": true, "base": true, "b22": true, "revised": true},
+      "D17": {"strict": true, "base": true, "b22": true, "revised": true},
+      "D18": {"strict": true, "base": true, "b22": true, "revised": true}
+    },
+    "negative_selected_counts": {
+      "N01": {"base": 1, "b22": 0, "revised": 0},
+      "N02": {"base": 4, "b22": 0, "revised": 0},
+      "N03": {"base": 4, "b22": 4, "revised": 4},
+      "N04": {"base": 4, "b22": 4, "revised": 4, "note": "ABSOLUTE secret-fence=0 NOT met under re-captured transport; identical across all four roles => transport drift, not a revised regression (historical trusted run recorded 0)"},
+      "N05": {"base": 3, "b22": 3, "revised": 3}
+    }
+  },
+  "gate": {
+    "strict_13of18_reproduced": true,
+    "base_15of18_reproduced": true,
+    "b22_15of18_reproduced": true,
+    "revised_no_positive_loss_vs_base": true,
+    "revised_no_positive_loss_vs_b22": true,
+    "revised_new_gains": [],
+    "N01_abstain": true,
+    "N02_abstain": true,
+    "N03_not_worse": true,
+    "N05_not_worse": true,
+    "N04_absolute_fence": "UNVERIFIED (transport drift; all roles=4, historical=0)"
+  },
+  "comparative_dev_gate": "PASS (relative, nonnegative: revised >= base and >= b22 case-wise, no losses, no gains; N01/N02 abstain; N03/N05 not worse)"
+}

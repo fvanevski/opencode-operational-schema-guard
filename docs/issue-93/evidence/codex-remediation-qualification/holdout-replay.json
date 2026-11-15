@@ -1,0 +1,33 @@
+{
+  "schema": "issue93.codex-remediation.holdout-replay.v1",
+  "label": "POST_EXPOSURE_CODEX_REMEDIATION_EXCEPTION",
+  "not": ["PRE_EXPOSURE_SEALED_HOLDOUT", "ONCE_ONLY", "UNTOUCHED", "NEW_HOLDOUT"],
+  "tested_remediation_source_sha": "d40506d15ed2ed2c2c08edcd64995182c197a6d8",
+  "snapshot_fingerprint": "dc597c690b0e8990b925b01467269f530d37dfb2dd7730663bdda46680e7231b",
+  "roles": {
+    "strict": "d40506d (unchanged strict)",
+    "base": "69014b7 (original semantic)",
+    "b22": "4bc169c (original once-only B2.2, preserved)",
+    "revised": "d40506d (POST_EXPOSURE_CODEX_REMEDIATION_EXCEPTION)"
+  },
+  "positives_source_exact_TP": {
+    "H01": {"strict": false, "base": true, "b22": true, "revised": true},
+    "H02": {"strict": false, "base": false, "b22": false, "revised": false},
+    "H03": {"strict": false, "base": false, "b22": false, "revised": false},
+    "H04": {"strict": false, "base": false, "b22": false, "revised": false}
+  },
+  "negatives_selected_counts": {
+    "HN01": {"base": 4, "b22": 4, "revised": 4, "note": "off-topic; not worse relative to comparators"},
+    "HN02": {"base": 2, "b22": 2, "revised": 2, "note": "secret; ABSOLUTE fence=0 NOT met under re-captured transport; identical across all roles => transport drift (historical once-only B2.2 recorded 0)"}
+  },
+  "historical_once_only_b22_preserved": {"positives_recovered": "1/4", "H01": true, "H02": false, "H03": false, "H04": false, "HN01": 4, "HN02": 0, "note": "preserved, not relabeled; NOT a candidate-only regression"},
+  "gate": {
+    "revised_ge_base_each_positive": true,
+    "revised_ge_b22_each_positive": true,
+    "no_new_offtopic_injection_revised": true,
+    "no_new_secret_injection_revised": true,
+    "source_identity_fence": "holds (source-exact membership, no fabricated source)",
+    "authorization_fence": "holds (unchanged source/remote-qualified pool)"
+  },
+  "comparative_holdout_gate": "PASS (relative, nonnegative: revised >= base and >= b22 for every positive; no new off-topic/secret injection relative to comparators; historical B2.2 1/4 + HN01=4 preserved unchanged)"
+}

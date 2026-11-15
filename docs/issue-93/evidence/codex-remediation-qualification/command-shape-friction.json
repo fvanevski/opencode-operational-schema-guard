@@ -1,0 +1,34 @@
+{
+  "schema": "issue93.command-shape-friction.v1",
+  "ghdev_10": [
+    {
+      "requested": "Run 14 focused semantic-abstention tests + relevant integration tests + historical strict-anchor counterexample at the exact remediation SHA",
+      "effective": "git worktree add <scratch>/issue93-d40506d d40506d; node --test docs/issue-93/{semantic-abstention,native-source-context,score-stage-ledger}.test.mjs + 7 issue-75/78 integration files; node cx-counterexample.mjs",
+      "rewrite_provenance": "isolated git worktree at the exact SHA so the source under test is authenticated; node --test v26 emits '\u2129 tests/pass/fail' not '# ', so summary counts were grepped from the tformat, not the classic TAP '# tests' line",
+      "outcome": "118/118 pass, exit 0; counterexample 11/11, exit 0",
+      "gap_classification": "none (no rewrite required; v26 TAP-format grep was the only adjustment)"
+    },
+    {
+      "requested": "Re-verify the three frozen identities with the original freeze-manifest.mjs algorithm",
+      "effective": "node issue93-frozen-verify.mjs (re-parse pretty-printed cohort files, re-serialize compact, sha256(JSON.stringify))",
+      "rewrite_provenance": "freeze-manifest.mjs writes cohort files pretty-printed (JSON.stringify(.,null,2)) but hashes the compact form; the private packet has no persisted frozen transport, so digests were recomputed from the private dev-cohort/holdout-cohort/source-snapshot bytes",
+      "outcome": "dev/holdout/snapshot all MATCH (exit 0)",
+      "gap_classification": "none (byte-faithful recompute of the original algorithm)"
+    },
+    {
+      "requested": "Deterministic source-exact dev + holdout comparison across strict/base/b22/revised on identical frozen input",
+      "effective": "node issue93-dev-compare.mjs + node issue93-holdout-replay.mjs (re-capture frozen transport from live read-only Graphiti 127.0.0.1:8766/mcp; four worktrees at 69014b7/4bc169c/d40506d)",
+      "rewrite_provenance": "the original frozen transport was never persisted as a file; it is re-captured from the live read-only service, which has drifted since the 2026-11-15 freeze",
+      "outcome": "positive gates + comparative no-loss/no-injection PASS; absolute secret fence N04/HN02 read 4/2 vs historical 0 (drift, all roles identical)",
+      "gap_classification": "bounded known gap: absolute secret-fence=0 UNVERIFIED under drifted transport (not a candidate regression)"
+    },
+    {
+      "requested": "Native context-hook p95<=300ms on the revised source, >=20 mixed observations",
+      "effective": "node issue93-native-timing.mjs (drive the d40506d worktree plugin chain; mock transport only for error/late; separate live search/get_episodes RTT)",
+      "rewrite_provenance": "installed plugin tree's semantic-recall.mjs DIFFERS from d40506d, so the hook was driven from the d40506d worktree chain to test the revised source; injected count dropped 14->6 because the d40506d strict-anchor selector is more selective (abstains where B2.2 injected)",
+      "outcome": "n=20, p95=299.99ms<=300ms, source-attributed, 1011 selector JSON chars, 2 facts (PASS)",
+      "gap_classification": "none"
+    }
+  ],
+  "omitted_sensitive_values": "raw query text, fact assertions, source refs, episode UUIDs, tokens, API headers, private logs (kept in the 0600 private packet, not published)"
+}

@@ -1,0 +1,21 @@
+{
+  "schema": "issue93.codex-remediation.d12-answer-bridge.v1",
+  "verdict": "ANSWER_PROOF_REUSED_WITH_EXACT_BRIDGE",
+  "model_answer_benefit_for_revised": "PASS_BY_EXACT_SOURCE_BRIDGE",
+  "source_d12_proof": "docs/issue-93/evidence/clean-answer-adjudication/ADJUDICATION.md (INDEPENDENT_ANSWER_PASS for B2.2 4bc169c)",
+  "bridge_proof": {
+    "d12_fact_selected_at_revised": true,
+    "selection_identical_b22_vs_revised": "EXACT_SOURCE_BEHAVIOR_EQUIVALENT (no-anchor AND with-anchor selections byte-identical between 4bc169c and d40506d)",
+    "selection_path": "independent support (lexical overlap + answer-type); NOT dependent on the new strictAnchor floor logic in semantic-recall.mjs",
+    "source_ref_unchanged": true,
+    "evidence_class_unchanged": "tool-reported",
+    "injected_system_context_semantics": "unchanged (formatContext in memory-core.mjs is byte-identical; only semantic-recall.mjs changed)",
+    "plugin_host_transport_authorization": "unchanged (4bc169c..d40506d diff touches ONLY docs/issue-75/v2-candidate/semantic-recall.mjs + docs/issue-93/semantic-abstention.test.mjs; plugin.mjs, events.mjs, queue.mjs, memory-core.mjs, GraphitiMcp transport all byte-identical)"
+  },
+  "assumptions": [
+    "The D12 query/fact and its source ref are the same frozen fact (SERVICE_ACTIVATION_PENDING_OPERATOR, tool-reported).",
+    "The D12 fact is selected via the independent-support path, so the d40506d strict-anchor remediation does not alter its selection (verified byte-identical output at both SHAs).",
+    "The prior causal attribution (credit entered treatment input only; control lacked it; no alternate channel) is unaffected because plugin/host/transport authorization is unchanged."
+  ],
+  "caveat": "The earlier adjudication's advertised 'skill' function schema was OFFERED_BUT_UNUSED (no tool invoked/result occurred). This is a tool-exposure gap, not an alternate answer channel; it is carried forward unchanged. This bridge is a CPU read-only source-equivalence argument, NOT a fresh model-inference PASS on d40506d."
+}
