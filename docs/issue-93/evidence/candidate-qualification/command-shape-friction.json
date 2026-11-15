@@ -1,0 +1,22 @@
+{
+  "schema": "issue93.command-shape-friction.v1",
+  "encountered": "yes",
+  "events": [
+    {
+      "scenario": "inline_node_script",
+      "requested_shape": "node -e '<sanitized inline script>'",
+      "effective_shape": "same-as-requested",
+      "rewrite_provenance": "none",
+      "event_kind": "guard_annotation",
+      "execution_effect": "executed_succeeded",
+      "correction_or_annotation": "Host guard flagged inline -e/-c scripts and a recursive-delete for approval (auto-approved by a saved 'always' approval); no rewrite. Recurring across frozen-hash verification, tree extraction, and the N02 diagnosis.",
+      "replacement_shape": "none",
+      "recipe_reference": "none",
+      "resource_reference": "none",
+      "contract_conflict": "no",
+      "durable_gap_candidate": "no"
+    }
+  ],
+  "omitted_sensitive_values": "no",
+  "notes": "All diagnostic commands (git fetch/checkout/archive, node --test, node <file>.mjs, node -e, sed/cp for the temp stopword verify+revert) executed as submitted with real exit codes. No rtk/opencode hook, shell/alias, or pre-execution rejection altered the effective command shape. The temp relevance.mjs stopword patch was reverted (git status clean); no production source change committed."
+}
