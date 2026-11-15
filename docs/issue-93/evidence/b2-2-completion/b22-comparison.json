@@ -1,0 +1,33 @@
+{
+  "schema": "issue93.b22-comparison.v1",
+  "candidate_source_sha": "4bc169cc59e8900f5dc3cd4d3c70a22d0fcfb9f4",
+  "previous_source_sha": "69014b739d490f8cb90bce86233edf3054673209",
+  "b21_source_sha": "e53dbbfd4b1ee153a0562547e03d0210aae57629",
+  "frozen_snapshot_fingerprint": "dc597c690b0e8990…",
+  "dev_manifest_sha256": "3e799c4610809853…",
+  "sealed_holdout_sha256": "3f9eaebb6debe949…",
+  "relevance_mjs": "byte-identical to the pre-candidate ac416a5 (strict control unchanged); B2.2 change is semantic-recall.mjs only (semantic-only now-handling)",
+  "method": "unchanged strict, unchanged former semantic (69014b7), B2.1 (e53dbbf), and B2.2 (4bc169c) via the real Memory.search() pipeline on ONE identical frozen Graphiti search + same-group get_episodes transport, with the real #92 curatedCandidateRetriever + sourcedEpisodeResolver. Raw facts kept private.",
+  "strict": "13/18",
+  "baseline_semantic": "15/18",
+  "b21_semantic": "15/18",
+  "b22_semantic": "15/18",
+  "zero_positive_loss_b22": true,
+  "strict_only_losses": [],
+  "new_source_exact_positives_b22": [],
+  "not_recovered_by_b22": ["D02", "D05", "D15"],
+  "index_rescue": {
+    "raw_top24_absent": ["D02", "D03", "D11", "D14", "D15", "D17"],
+    "recovered_via_92_index": ["D03", "D11", "D14", "D17"],
+    "not_recovered": ["D02", "D15"]
+  },
+  "negatives": {
+    "N01": { "kind": "offtopic", "note": "France", "baseline": 1, "b21": 0, "b22": 0, "gate": "ZERO (met)" },
+    "N02": { "kind": "offtopic", "note": "Tokyo-weather (predeclared)", "baseline": 4, "b21": 4, "b22": 0, "gate": "ZERO (met) — B2.2 now-stripping removes the weak single-token anchor" },
+    "N03": { "kind": "wronggroup", "baseline": 4, "b21": 4, "b22": 4, "gate": "not worsened (met)" },
+    "N04": { "kind": "secret", "baseline": 0, "b21": 0, "b22": 0, "gate": "ZERO (met)" },
+    "N05": { "kind": "falseverified", "baseline": 3, "b21": 3, "b22": 3, "gate": "not worsened (met); native-id-only pool, not cleanly isolated" }
+  },
+  "selector_budget": { "max_facts": 5, "max_selector_json_chars": 1400, "observed_max_facts": 5, "within_budget": true },
+  "dev_gate": "PASS (strict 13/18; all 15/18 positives preserved; N01=0, N02=0, N04=0; N03/N05 not worsened; zero losses)"
+}

@@ -1,0 +1,24 @@
+{
+  "schema": "issue93.regression-receipts.v5",
+  "tested_source_sha": "4bc169cc59e8900f5dc3cd4d3c70a22d0fcfb9f4",
+  "node_version": "v26.13.1",
+  "workdir": "/workspace/opencode-issue93-build",
+  "runner": "node --test <file>",
+  "focused_suites": [
+    { "file": "docs/issue-93/semantic-abstention.test.mjs", "tests": 11, "pass": 11, "fail": 0, "exit": 0, "note": "Central new 11-test B2.2 regression" },
+    { "file": "docs/issue-75/v2-candidate/relevance.test.mjs", "tests": 31, "pass": 31, "fail": 0, "exit": 0 },
+    { "file": "docs/issue-75/v2-candidate/semantic-recall.test.mjs", "tests": 15, "pass": 15, "fail": 0, "exit": 0 },
+    { "file": "docs/issue-75/v2-candidate/semantic-memory-integration.test.mjs", "tests": 4, "pass": 4, "fail": 0, "exit": 0 },
+    { "file": "docs/issue-78/v2-curator/curated-recall-candidates.test.mjs", "tests": 12, "pass": 12, "fail": 0, "exit": 0 },
+    { "file": "docs/issue-93/native-source-context.test.mjs", "tests": 6, "pass": 6, "fail": 0, "exit": 0 },
+    { "file": "docs/issue-93/score-stage-ledger.test.mjs", "tests": 10, "pass": 10, "fail": 0, "exit": 0 },
+    { "file": "docs/issue-75/v2-candidate/memory-core.test.mjs", "tests": 22, "pass": 22, "fail": 0, "exit": 0 },
+    { "file": "docs/issue-75/v2-candidate/relevance-priority-regression.test.mjs", "tests": 3, "pass": 3, "fail": 0, "exit": 0 },
+    { "file": "docs/issue-75/v2-candidate/relevance-observation-replay.test.mjs", "tests": 1, "pass": 1, "fail": 0, "exit": 0 }
+  ],
+  "focused_total": { "tests": 115, "pass": 115, "fail": 0, "exit": 0 },
+  "project_gates": {
+    "npm_run_check": "exit 0 (passed/full)",
+    "npm_run_test": "exit 0, OPERATIONAL_PLUGIN_TEST_RESULT: PASS (full suite, 0 fail)"
+  }
+}

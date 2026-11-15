@@ -1,0 +1,22 @@
+{
+  "schema": "issue93.command-shape-friction.v1",
+  "encountered": "yes",
+  "events": [
+    {
+      "scenario": "inline_node_script",
+      "requested_shape": "node -e '<sanitized inline script>'",
+      "effective_shape": "same-as-requested",
+      "rewrite_provenance": "none",
+      "event_kind": "guard_annotation",
+      "execution_effect": "executed_succeeded",
+      "correction_or_annotation": "Host guard flagged inline -e/-c scripts, recursive deletes, and the opencode headless runs for approval (auto-approved by a saved 'always' approval); no rewrite. Recurring across hash verification, tree extraction, four-way comparison, holdout, native timing, and the model-answer runs.",
+      "replacement_shape": "none",
+      "recipe_reference": "none",
+      "resource_reference": "none",
+      "contract_conflict": "no",
+      "durable_gap_candidate": "no"
+    }
+  ],
+  "omitted_sensitive_values": "no",
+  "notes": "All diagnostic commands (git fetch/checkout/archive, node --test, node <file>.mjs, node -e, opencode run --standalone) executed as submitted with real exit codes. No rtk/opencode hook, shell/alias, or pre-execution rejection altered the effective command shape. No production source/test/config change committed."
+}

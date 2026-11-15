@@ -1,0 +1,32 @@
+{
+  "schema": "issue93.native-qualification.v1",
+  "candidate_source_sha": "4bc169cc59e8900f5dc3cd4d3c70a22d0fcfb9f4",
+  "native_context_proof": {
+    "route": "real installed stock-V2 plugin (local.ghdev-graphiti-memory) + real read-only #92 ReviewStore/Graphiti (group development-knowledge, workspace /workspace/mcp_servers/gh_mcp, project gh_mcp, capture:false)",
+    "assembled_model_input": "the context hook assembles a real source-attributed fact into the model request (event.system [GHDEV_GRAPHITI_CONTEXT]); 14/20 injected invocations carried an opencode: source attribution with the private excerpt omitted",
+    "source_attribution": true,
+    "private_excerpt_omitted": true,
+    "note": "a mock host ctx alone is NOT claimed as a fresh external process; the real plugin + real route are driven, with the Graphiti transport mocked only for the controlled error/late outcomes"
+  },
+  "native_timing": {
+    "n": 20, "p50_ms": 45.72, "p95_ms": 299.77, "max_ms": 300.273,
+    "injected": 14, "empty": 2, "error": 2, "late": 2,
+    "p95_within_300ms": true,
+    "note": "p95=299.77ms <= 300ms (gate met); the two 'late' outcomes sit at the 300ms context allowance by design (max 300.273ms); slow/empty cases retained, none discarded"
+  },
+  "search_and_get_episodes_rtt": {
+    "search_memory_facts_rtt_ms": [146.751, 155.938, 156.174, 159.305],
+    "search_p50_ms": 156.174, "search_p95_ms": 159.31,
+    "get_episodes_rtt_ms": [34.894, 35.441, 36.178, 37.548, 45.671],
+    "get_episodes_p50_ms": 36.178, "get_episodes_p95_ms": 45.67,
+    "get_episodes_within_70ms_window": true,
+    "note": "search RTT and get_episodes proof RTT (70ms optional enrichment window) measured separately; search RTT never used to infer proof latency"
+  },
+  "selector_budget": { "max_facts": 5, "max_selector_json_chars": 1400, "within_budget": true },
+  "answer_support": {
+    "status": "UNVERIFIED",
+    "fact": "a genuinely sourced, nontrivial #92 fact (a specific internal PR-head commit) was injected and the memory-enabled model referenced it, but a clean causal proof is NOT isolated",
+    "reason": "the credited fact is a git commit, reachable via a separate tool/history channel: the memory-DISABLED no-tools control also surfaced it (and the current remote head) via a git/API tool, and the memory-enabled answer combined the injected fact with a tool result. A clean causal proof requires a fact NOT derivable from any non-Graphiti channel, in a fully isolated single-plugin no-tools fresh process.",
+    "ready_for_final_operator_run": "one specific operator-owned command (fresh isolated OpenCode process, ghdev plugin only, tools disabled, a non-git-history #92 fact, serial memory-disabled-then-enabled no-tools runs, single GPU, no concurrent inference) is returned in handback.md"
+  }
+}
