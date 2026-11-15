@@ -1,0 +1,26 @@
+{
+  "schema": "issue93.original-81-roster-recovery.v1",
+  "cohort": "frozen",
+  "tested_source_sha": "5aa14fde42f47c7abfb144f550cdb6bcab6989bb",
+  "roster_identity": {
+    "frozen_roster_sha256": "47e141bdc81f1f2cdc2e98c7697162dbbf3250a5eb209a56361b358bc2441652",
+    "case_count": 20,
+    "positive_count": 16,
+    "negative_count": 4,
+    "group": "development-knowledge",
+    "workspace": "/workspace/mcp_servers/gh_mcp",
+    "project": "gh_mcp"
+  },
+  "recovered_from": [
+    "evidence/issue81-semantic-recall/baseline-retention-verification/replay-matrix.json (FINGERPRINT-ONLY shadow replay)",
+    "evidence/issue81-semantic-recall/shadow-replay-comparison.json",
+    "evidence/issue81-semantic-recall/quality-followup/paired-source-scorecard.json"
+  ],
+  "recorded_baselines": {
+    "baseline_retention": { "strict_source_exact": "12/16", "semantic_source_exact": "13/16", "negative_nonempty": "strict 1, semantic 2" },
+    "quality_followup_later": { "strict_source_exact": "10/16", "semantic_source_exact": "10/16", "note": "corpus drift; frozen 2026-11-06 roster predates current curation state (S07 source drift)" }
+  },
+  "authority": "FINGERPRINT_RECOVERED",
+  "fresh_same_snapshot_reproduction": "UNVERIFIED",
+  "exact_reason": "The raw #81 roster body (raw queries + raw expected source refs) is host-private (SHA256 47e141bd... re-authenticated host-side). A bounded search of the repo evidence, /home/filip/.local/state/ghdev-graphiti, and the issue81 worktrees/tmp archives found only SHA-256 fingerprints and the recorded shadow-replay baselines, not the raw 20-case roster. Therefore the exact 12/16 strict and 13/16 semantic floors are recovered as immutable PROVENANCE, not freshly reproduced in this campaign. Per the continuation contract, ORIGINAL_16 is classified UNVERIFIED for a fresh same-snapshot reproduction."
+}

@@ -1,0 +1,500 @@
+{
+  "schema": "issue93.prospective-replacement-holdout.casewise.v1",
+  "tested_candidate_sha": "d40506d15ed2ed2c2c08edcd64995182c197a6d8",
+  "roles": [
+    "strict",
+    "original_semantic",
+    "b22",
+    "revised"
+  ],
+  "case_ids": [
+    "P1",
+    "P2",
+    "P3",
+    "P4",
+    "N1",
+    "N2"
+  ],
+  "case_kinds": {
+    "P1": "direct",
+    "P2": "cause",
+    "P3": "decision",
+    "P4": "temporal",
+    "N1": "offtopic",
+    "N2": "secret"
+  },
+  "raw_query_sha256": {
+    "P1": "0c10e012b6f4847d4e7039cf253c610ad0245bea548a3df023798c7cf57d4686",
+    "P2": "587a6caf2583c75554edb5f8c0f146d94765390b9b808bb89642e4dd28db279f",
+    "P3": "e0736fa9dc37e4d3f1f4a7d0fbe7bc4d6524b12991a51b6587d77059eb9dccdf",
+    "P4": "ba9bc737fa0920c484e66a97b93d4a7be4d14d2d4bb6516f2748f48e55e95bff",
+    "N1": "1eec01887f762ec010813b1519780ffda034a9d94a983db141c7c52132e1b0f2",
+    "N2": "5d94f6f8898004d986fe82bd9c67e9d81ef195ebe9951ea4017ca8290c9ac83f"
+  },
+  "casewise": {
+    "strict": {
+      "P1": {
+        "kind": "direct",
+        "admission": "ADMITTED",
+        "no_search_call": false,
+        "selected_facts": 1,
+        "selected_source_count": 1,
+        "selected_source_sha256": [
+          "e1085468db72088d54843ecd41e6ecb5aa7ffe78e5187e2ae1504d7a9049edd4"
+        ],
+        "expected_source_sha256": "41c67200a726475ad077255bf339ed62d7921bd6b12e96ad1b09a876da45f275",
+        "expected_source_selected": false,
+        "selector_json_chars": 366,
+        "within_json_budget_1400": true,
+        "within_fact_cap_5": true
+      },
+      "P2": {
+        "kind": "cause",
+        "admission": "ADMITTED",
+        "no_search_call": false,
+        "selected_facts": 1,
+        "selected_source_count": 1,
+        "selected_source_sha256": [
+          "ba94f0575c1bcf521c765a373b4ad489d10ce5aefa5e563307a6e1e84139c2d9"
+        ],
+        "expected_source_sha256": "ba94f0575c1bcf521c765a373b4ad489d10ce5aefa5e563307a6e1e84139c2d9",
+        "expected_source_selected": true,
+        "selector_json_chars": 365,
+        "within_json_budget_1400": true,
+        "within_fact_cap_5": true
+      },
+      "P3": {
+        "kind": "decision",
+        "admission": "ADMITTED",
+        "no_search_call": false,
+        "selected_facts": 1,
+        "selected_source_count": 1,
+        "selected_source_sha256": [
+          "9c3ff5445694c1f8c1c9da0c337d8b55be862c1d8aa253b5a5262452f35b3c1b"
+        ],
+        "expected_source_sha256": "9c3ff5445694c1f8c1c9da0c337d8b55be862c1d8aa253b5a5262452f35b3c1b",
+        "expected_source_selected": true,
+        "selector_json_chars": 404,
+        "within_json_budget_1400": true,
+        "within_fact_cap_5": true
+      },
+      "P4": {
+        "kind": "temporal",
+        "admission": "ADMITTED",
+        "no_search_call": false,
+        "selected_facts": 1,
+        "selected_source_count": 1,
+        "selected_source_sha256": [
+          "be593cc5264d7ee0e90ed1058da750bb1c2b1ec6dad690ebf0701802c7483d52"
+        ],
+        "expected_source_sha256": "be593cc5264d7ee0e90ed1058da750bb1c2b1ec6dad690ebf0701802c7483d52",
+        "expected_source_selected": true,
+        "selector_json_chars": 347,
+        "within_json_budget_1400": true,
+        "within_fact_cap_5": true
+      },
+      "N1": {
+        "kind": "offtopic",
+        "admission": "ADMITTED",
+        "no_search_call": false,
+        "selected_facts": 0,
+        "selected_source_count": 0,
+        "selected_source_sha256": [],
+        "expected_source_sha256": null,
+        "expected_source_selected": null,
+        "selector_json_chars": 2,
+        "within_json_budget_1400": true,
+        "within_fact_cap_5": true
+      },
+      "N2": {
+        "kind": "secret",
+        "admission": "REJECTED",
+        "no_search_call": true,
+        "selected_facts": 0,
+        "selected_source_count": 0,
+        "selected_source_sha256": [],
+        "expected_source_sha256": null,
+        "expected_source_selected": null,
+        "selector_json_chars": 2,
+        "within_json_budget_1400": true,
+        "within_fact_cap_5": true
+      }
+    },
+    "original_semantic": {
+      "P1": {
+        "kind": "direct",
+        "admission": "ADMITTED",
+        "no_search_call": false,
+        "selected_facts": 4,
+        "selected_source_count": 4,
+        "selected_source_sha256": [
+          "e1085468db72088d54843ecd41e6ecb5aa7ffe78e5187e2ae1504d7a9049edd4",
+          "bc472ee7195db362e681bc493d948984fb76ad1ba756d979d98fe459fc4a16b8",
+          "1c876fc365012ad1123edc5a67de1a85b0aee4a52e9b49413d8fdd0bdb0ea8e5",
+          "6802043e7b4f6e7e1c208da955789983d75af9fae5e9b708755eee7e811c64e2"
+        ],
+        "expected_source_sha256": "41c67200a726475ad077255bf339ed62d7921bd6b12e96ad1b09a876da45f275",
+        "expected_source_selected": false,
+        "selector_json_chars": 1389,
+        "within_json_budget_1400": true,
+        "within_fact_cap_5": true
+      },
+      "P2": {
+        "kind": "cause",
+        "admission": "ADMITTED",
+        "no_search_call": false,
+        "selected_facts": 4,
+        "selected_source_count": 4,
+        "selected_source_sha256": [
+          "ba94f0575c1bcf521c765a373b4ad489d10ce5aefa5e563307a6e1e84139c2d9",
+          "3d340d39aaaab8a4e6da1a44f553dac7721b811e4f3575aab070a869ec03939d",
+          "f7d0bfa8b78050ed492baddc6d7353ce99410271d6e968d18144c318d812bed1",
+          "41186036848401333d8ed7215e31f89cb9c222e6e75110f993b0b90302c0ce48"
+        ],
+        "expected_source_sha256": "ba94f0575c1bcf521c765a373b4ad489d10ce5aefa5e563307a6e1e84139c2d9",
+        "expected_source_selected": true,
+        "selector_json_chars": 1357,
+        "within_json_budget_1400": true,
+        "within_fact_cap_5": true
+      },
+      "P3": {
+        "kind": "decision",
+        "admission": "ADMITTED",
+        "no_search_call": false,
+        "selected_facts": 3,
+        "selected_source_count": 3,
+        "selected_source_sha256": [
+          "9c3ff5445694c1f8c1c9da0c337d8b55be862c1d8aa253b5a5262452f35b3c1b",
+          "0a27a6152f1d407de5d4f4b7e8ccbe7c90b242f392b26a56c7bde862461bff29",
+          "0145d558d194fdf2f718be77a06192b0467ea05cc19b3b5e6ef928fbad687c21"
+        ],
+        "expected_source_sha256": "9c3ff5445694c1f8c1c9da0c337d8b55be862c1d8aa253b5a5262452f35b3c1b",
+        "expected_source_selected": true,
+        "selector_json_chars": 1258,
+        "within_json_budget_1400": true,
+        "within_fact_cap_5": true
+      },
+      "P4": {
+        "kind": "temporal",
+        "admission": "ADMITTED",
+        "no_search_call": false,
+        "selected_facts": 3,
+        "selected_source_count": 3,
+        "selected_source_sha256": [
+          "be593cc5264d7ee0e90ed1058da750bb1c2b1ec6dad690ebf0701802c7483d52",
+          "aa214c2b28ae55df58c29876cce2f707a16b70006881d616774b25dd837fbc8f",
+          "9fbb7a3eab4905d54a70f7d8b31d4d0a79a35b9ca19bd87ade8b5b5fe536f572"
+        ],
+        "expected_source_sha256": "be593cc5264d7ee0e90ed1058da750bb1c2b1ec6dad690ebf0701802c7483d52",
+        "expected_source_selected": true,
+        "selector_json_chars": 1018,
+        "within_json_budget_1400": true,
+        "within_fact_cap_5": true
+      },
+      "N1": {
+        "kind": "offtopic",
+        "admission": "ADMITTED",
+        "no_search_call": false,
+        "selected_facts": 3,
+        "selected_source_count": 3,
+        "selected_source_sha256": [
+          "b8dbd14bc75a668fcb5db9fb7ff8e0fd0c595a09794a88d684c67676afed7dff",
+          "4f06a1f6e0cdcc132f4f78cced0b7b6e2a941d874d2f204c1b99387ebb98612f",
+          "b8631da437877ee013bfa211632fe2fe6cccd5ead4317faccb7658796e8adbc6"
+        ],
+        "expected_source_sha256": null,
+        "expected_source_selected": null,
+        "selector_json_chars": 1060,
+        "within_json_budget_1400": true,
+        "within_fact_cap_5": true
+      },
+      "N2": {
+        "kind": "secret",
+        "admission": "REJECTED",
+        "no_search_call": true,
+        "selected_facts": 0,
+        "selected_source_count": 0,
+        "selected_source_sha256": [],
+        "expected_source_sha256": null,
+        "expected_source_selected": null,
+        "selector_json_chars": 2,
+        "within_json_budget_1400": true,
+        "within_fact_cap_5": true
+      }
+    },
+    "b22": {
+      "P1": {
+        "kind": "direct",
+        "admission": "ADMITTED",
+        "no_search_call": false,
+        "selected_facts": 4,
+        "selected_source_count": 4,
+        "selected_source_sha256": [
+          "e1085468db72088d54843ecd41e6ecb5aa7ffe78e5187e2ae1504d7a9049edd4",
+          "bc472ee7195db362e681bc493d948984fb76ad1ba756d979d98fe459fc4a16b8",
+          "1c876fc365012ad1123edc5a67de1a85b0aee4a52e9b49413d8fdd0bdb0ea8e5",
+          "6802043e7b4f6e7e1c208da955789983d75af9fae5e9b708755eee7e811c64e2"
+        ],
+        "expected_source_sha256": "41c67200a726475ad077255bf339ed62d7921bd6b12e96ad1b09a876da45f275",
+        "expected_source_selected": false,
+        "selector_json_chars": 1389,
+        "within_json_budget_1400": true,
+        "within_fact_cap_5": true
+      },
+      "P2": {
+        "kind": "cause",
+        "admission": "ADMITTED",
+        "no_search_call": false,
+        "selected_facts": 4,
+        "selected_source_count": 4,
+        "selected_source_sha256": [
+          "ba94f0575c1bcf521c765a373b4ad489d10ce5aefa5e563307a6e1e84139c2d9",
+          "3d340d39aaaab8a4e6da1a44f553dac7721b811e4f3575aab070a869ec03939d",
+          "f7d0bfa8b78050ed492baddc6d7353ce99410271d6e968d18144c318d812bed1",
+          "41186036848401333d8ed7215e31f89cb9c222e6e75110f993b0b90302c0ce48"
+        ],
+        "expected_source_sha256": "ba94f0575c1bcf521c765a373b4ad489d10ce5aefa5e563307a6e1e84139c2d9",
+        "expected_source_selected": true,
+        "selector_json_chars": 1357,
+        "within_json_budget_1400": true,
+        "within_fact_cap_5": true
+      },
+      "P3": {
+        "kind": "decision",
+        "admission": "ADMITTED",
+        "no_search_call": false,
+        "selected_facts": 3,
+        "selected_source_count": 3,
+        "selected_source_sha256": [
+          "9c3ff5445694c1f8c1c9da0c337d8b55be862c1d8aa253b5a5262452f35b3c1b",
+          "0a27a6152f1d407de5d4f4b7e8ccbe7c90b242f392b26a56c7bde862461bff29",
+          "0145d558d194fdf2f718be77a06192b0467ea05cc19b3b5e6ef928fbad687c21"
+        ],
+        "expected_source_sha256": "9c3ff5445694c1f8c1c9da0c337d8b55be862c1d8aa253b5a5262452f35b3c1b",
+        "expected_source_selected": true,
+        "selector_json_chars": 1258,
+        "within_json_budget_1400": true,
+        "within_fact_cap_5": true
+      },
+      "P4": {
+        "kind": "temporal",
+        "admission": "ADMITTED",
+        "no_search_call": false,
+        "selected_facts": 3,
+        "selected_source_count": 3,
+        "selected_source_sha256": [
+          "be593cc5264d7ee0e90ed1058da750bb1c2b1ec6dad690ebf0701802c7483d52",
+          "aa214c2b28ae55df58c29876cce2f707a16b70006881d616774b25dd837fbc8f",
+          "9fbb7a3eab4905d54a70f7d8b31d4d0a79a35b9ca19bd87ade8b5b5fe536f572"
+        ],
+        "expected_source_sha256": "be593cc5264d7ee0e90ed1058da750bb1c2b1ec6dad690ebf0701802c7483d52",
+        "expected_source_selected": true,
+        "selector_json_chars": 1018,
+        "within_json_budget_1400": true,
+        "within_fact_cap_5": true
+      },
+      "N1": {
+        "kind": "offtopic",
+        "admission": "ADMITTED",
+        "no_search_call": false,
+        "selected_facts": 3,
+        "selected_source_count": 3,
+        "selected_source_sha256": [
+          "b8dbd14bc75a668fcb5db9fb7ff8e0fd0c595a09794a88d684c67676afed7dff",
+          "4f06a1f6e0cdcc132f4f78cced0b7b6e2a941d874d2f204c1b99387ebb98612f",
+          "b8631da437877ee013bfa211632fe2fe6cccd5ead4317faccb7658796e8adbc6"
+        ],
+        "expected_source_sha256": null,
+        "expected_source_selected": null,
+        "selector_json_chars": 1060,
+        "within_json_budget_1400": true,
+        "within_fact_cap_5": true
+      },
+      "N2": {
+        "kind": "secret",
+        "admission": "REJECTED",
+        "no_search_call": true,
+        "selected_facts": 0,
+        "selected_source_count": 0,
+        "selected_source_sha256": [],
+        "expected_source_sha256": null,
+        "expected_source_selected": null,
+        "selector_json_chars": 2,
+        "within_json_budget_1400": true,
+        "within_fact_cap_5": true
+      }
+    },
+    "revised": {
+      "P1": {
+        "kind": "direct",
+        "admission": "ADMITTED",
+        "no_search_call": false,
+        "selected_facts": 4,
+        "selected_source_count": 4,
+        "selected_source_sha256": [
+          "e1085468db72088d54843ecd41e6ecb5aa7ffe78e5187e2ae1504d7a9049edd4",
+          "bc472ee7195db362e681bc493d948984fb76ad1ba756d979d98fe459fc4a16b8",
+          "1c876fc365012ad1123edc5a67de1a85b0aee4a52e9b49413d8fdd0bdb0ea8e5",
+          "6802043e7b4f6e7e1c208da955789983d75af9fae5e9b708755eee7e811c64e2"
+        ],
+        "expected_source_sha256": "41c67200a726475ad077255bf339ed62d7921bd6b12e96ad1b09a876da45f275",
+        "expected_source_selected": false,
+        "selector_json_chars": 1389,
+        "within_json_budget_1400": true,
+        "within_fact_cap_5": true
+      },
+      "P2": {
+        "kind": "cause",
+        "admission": "ADMITTED",
+        "no_search_call": false,
+        "selected_facts": 4,
+        "selected_source_count": 4,
+        "selected_source_sha256": [
+          "ba94f0575c1bcf521c765a373b4ad489d10ce5aefa5e563307a6e1e84139c2d9",
+          "3d340d39aaaab8a4e6da1a44f553dac7721b811e4f3575aab070a869ec03939d",
+          "f7d0bfa8b78050ed492baddc6d7353ce99410271d6e968d18144c318d812bed1",
+          "41186036848401333d8ed7215e31f89cb9c222e6e75110f993b0b90302c0ce48"
+        ],
+        "expected_source_sha256": "ba94f0575c1bcf521c765a373b4ad489d10ce5aefa5e563307a6e1e84139c2d9",
+        "expected_source_selected": true,
+        "selector_json_chars": 1357,
+        "within_json_budget_1400": true,
+        "within_fact_cap_5": true
+      },
+      "P3": {
+        "kind": "decision",
+        "admission": "ADMITTED",
+        "no_search_call": false,
+        "selected_facts": 3,
+        "selected_source_count": 3,
+        "selected_source_sha256": [
+          "9c3ff5445694c1f8c1c9da0c337d8b55be862c1d8aa253b5a5262452f35b3c1b",
+          "0a27a6152f1d407de5d4f4b7e8ccbe7c90b242f392b26a56c7bde862461bff29",
+          "0145d558d194fdf2f718be77a06192b0467ea05cc19b3b5e6ef928fbad687c21"
+        ],
+        "expected_source_sha256": "9c3ff5445694c1f8c1c9da0c337d8b55be862c1d8aa253b5a5262452f35b3c1b",
+        "expected_source_selected": true,
+        "selector_json_chars": 1258,
+        "within_json_budget_1400": true,
+        "within_fact_cap_5": true
+      },
+      "P4": {
+        "kind": "temporal",
+        "admission": "ADMITTED",
+        "no_search_call": false,
+        "selected_facts": 3,
+        "selected_source_count": 3,
+        "selected_source_sha256": [
+          "be593cc5264d7ee0e90ed1058da750bb1c2b1ec6dad690ebf0701802c7483d52",
+          "aa214c2b28ae55df58c29876cce2f707a16b70006881d616774b25dd837fbc8f",
+          "9fbb7a3eab4905d54a70f7d8b31d4d0a79a35b9ca19bd87ade8b5b5fe536f572"
+        ],
+        "expected_source_sha256": "be593cc5264d7ee0e90ed1058da750bb1c2b1ec6dad690ebf0701802c7483d52",
+        "expected_source_selected": true,
+        "selector_json_chars": 1018,
+        "within_json_budget_1400": true,
+        "within_fact_cap_5": true
+      },
+      "N1": {
+        "kind": "offtopic",
+        "admission": "ADMITTED",
+        "no_search_call": false,
+        "selected_facts": 3,
+        "selected_source_count": 3,
+        "selected_source_sha256": [
+          "b8dbd14bc75a668fcb5db9fb7ff8e0fd0c595a09794a88d684c67676afed7dff",
+          "4f06a1f6e0cdcc132f4f78cced0b7b6e2a941d874d2f204c1b99387ebb98612f",
+          "b8631da437877ee013bfa211632fe2fe6cccd5ead4317faccb7658796e8adbc6"
+        ],
+        "expected_source_sha256": null,
+        "expected_source_selected": null,
+        "selector_json_chars": 1060,
+        "within_json_budget_1400": true,
+        "within_fact_cap_5": true
+      },
+      "N2": {
+        "kind": "secret",
+        "admission": "REJECTED",
+        "no_search_call": true,
+        "selected_facts": 0,
+        "selected_source_count": 0,
+        "selected_source_sha256": [],
+        "expected_source_sha256": null,
+        "expected_source_selected": null,
+        "selector_json_chars": 2,
+        "within_json_budget_1400": true,
+        "within_fact_cap_5": true
+      }
+    }
+  },
+  "negative_stage_counts": {
+    "strict": {
+      "N1": {
+        "raw_top24": "admitted",
+        "selector_facts": 0,
+        "source_facts": 0,
+        "native_model_facing": 0
+      },
+      "N2": {
+        "raw_top24": 0,
+        "selector_facts": 0,
+        "source_facts": 0,
+        "native_model_facing": 0
+      }
+    },
+    "original_semantic": {
+      "N1": {
+        "raw_top24": "admitted",
+        "selector_facts": 3,
+        "source_facts": 3,
+        "native_model_facing": 3
+      },
+      "N2": {
+        "raw_top24": 0,
+        "selector_facts": 0,
+        "source_facts": 0,
+        "native_model_facing": 0
+      }
+    },
+    "b22": {
+      "N1": {
+        "raw_top24": "admitted",
+        "selector_facts": 3,
+        "source_facts": 3,
+        "native_model_facing": 3
+      },
+      "N2": {
+        "raw_top24": 0,
+        "selector_facts": 0,
+        "source_facts": 0,
+        "native_model_facing": 0
+      }
+    },
+    "revised": {
+      "N1": {
+        "raw_top24": "admitted",
+        "selector_facts": 3,
+        "source_facts": 3,
+        "native_model_facing": 3
+      },
+      "N2": {
+        "raw_top24": 0,
+        "selector_facts": 0,
+        "source_facts": 0,
+        "native_model_facing": 0
+      }
+    }
+  },
+  "gates": {
+    "comparative_positive_no_loss_revised_vs_comparators": true,
+    "comparative_no_new_offtopic_injection_revised": true,
+    "secret_fence_zero": true,
+    "selector_json_budget": true,
+    "group_remote_source_authority": "verified (all selected facts group=development-knowledge; resolver rows remote_uuid all in frozen episode set; evidence classes valid; 0 credential-shaped strings across candidate pool)",
+    "no_live_fallthrough": "verified (frozen mock; unrecorded RPC throws; no live Graphiti / no reranker / no model in replay)"
+  },
+  "absolute_findings": {
+    "P1_source_exact_retrieval_miss": "expected fact (snapshot idx 40) and its episode are NOT in the frozen top-24 for the P1 query; uniform miss across all 4 roles (a frozen-transport retrieval property, not a candidate regression)",
+    "N1_absolute_offtopic_injection": "3 in-group dev-knowledge facts for the 3 semantic roles (0 for strict); reported, not a gate failure (contract: no new absolute off-topic threshold invented)"
+  }
+}

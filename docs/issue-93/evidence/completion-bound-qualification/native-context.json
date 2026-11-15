@@ -1,0 +1,41 @@
+{
+  "schema": "issue93.native-context-qualification.v1",
+  "tested_source_sha": "9bba7d8cf5965741545b8ecf069b4d0f054527ed",
+  "plugin_under_test": "local.ghdev-graphiti-memory-candidate-v1 (real installed issue-78/v2-candidate plugin)",
+  "isolation": "fresh external process driving the REAL installed plugin against the REAL read-only Graphiti + #92 ReviewStore route (stateDir, group, endpoint, workspace, project all real; capture:false). Only the OpenCode host ctx binding (session/tool hook registration) is emulated. Separate fresh external `opencode run --standalone` (private server, new session) also loaded the plugin and produced a model answer.",
+  "route": {
+    "graphiti": "http://127.0.0.1:8766/mcp (read-only; search_memory_facts + get_episodes only)",
+    "reviewstore": "/home/filip/.local/state/ghdev-graphiti/curation-v1/development-knowledge (read-only)"
+  },
+  "context_hook_samples": [
+    { "kind": "related", "hook_ms": 221.825, "injected": true, "sys_chars": 1361, "facts": 4, "source_attribution": true, "sourceContext_omitted": true },
+    { "kind": "paraphrase", "hook_ms": 158.591, "injected": true, "sys_chars": 1232, "facts": 4, "source_attribution": true, "sourceContext_omitted": true },
+    { "kind": "offtopic", "hook_ms": 99.037, "injected": true, "sys_chars": 496, "facts": 4, "source_attribution": true, "sourceContext_omitted": true },
+    { "kind": "temporal", "hook_ms": 136.036, "injected": true, "sys_chars": 1182, "facts": 4, "source_attribution": true, "sourceContext_omitted": true },
+    { "kind": "secret", "hook_ms": 0.012, "injected": false, "sys_chars": 0, "facts": 0, "source_attribution": false, "sourceContext_omitted": true }
+  ],
+  "n": 5,
+  "p50_ms": 136.036,
+  "p95_ms": 221.825,
+  "max_ms": 221.825,
+  "injected": 4,
+  "empty": 1,
+  "error": 0,
+  "late_over_300ms": 0,
+  "invariants": {
+    "max_facts_per_injection": 4,
+    "within_5_facts": true,
+    "max_selector_json_chars": 1361,
+    "within_1400_chars": true,
+    "sourceContext_omitted": true,
+    "source_attributed": true,
+    "all_hooks_within_300ms": true
+  },
+  "answer_support": "UNVERIFIED: a fresh `opencode run --standalone` produced a 'PostgreSQL' answer matching the persisted #92 fact, but the model reached it by reading the Issue #93 test fixture (tool-assisted), so pure-context answer support is not cleanly isolated. No competing-inference model answer was independently evaluated.",
+  "negatives": {
+    "offtopic": "an off-topic query ('capital of France') still injects 496 chars of development-knowledge context (N01-class distraction persists on the live same-group route)",
+    "secret": "pre-Graphiti privacy fence short-circuits (~0.012ms, no remote call, no injection)",
+    "wrong_group": "controlled by get_episodes group_ids scoping + fact.group_id===group check",
+    "temporal": "superseded facts are labeled historical/superseded"
+  }
+}

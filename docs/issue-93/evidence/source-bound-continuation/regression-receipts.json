@@ -1,0 +1,20 @@
+{
+  "schema": "issue93.regression-receipts.v2",
+  "tested_source_sha": "5aa14fde42f47c7abfb144f550cdb6bcab6989bb",
+  "runner": "node --test <file>",
+  "shell_pipe_masking": "none (real exit codes and counts captured)",
+  "note": "Revised scorer + coherent existing semantic/memory/curator set. First-campaign 94-test receipt retained as provenance (not re-run as ritual).",
+  "suites": [
+    { "file": "docs/issue-93/score-stage-ledger.test.mjs", "tests": 10, "pass": 10, "fail": 0, "exit": 0, "note": "revised scorer (native-context-hook vs graphiti-search-rtt classification)" },
+    { "file": "docs/issue-75/v2-candidate/semantic-recall.test.mjs", "tests": 15, "pass": 15, "fail": 0, "exit": 0 },
+    { "file": "docs/issue-75/v2-candidate/memory-core.test.mjs", "tests": 22, "pass": 22, "fail": 0, "exit": 0 },
+    { "file": "docs/issue-75/v2-candidate/relevance.test.mjs", "tests": 31, "pass": 31, "fail": 0, "exit": 0 },
+    { "file": "docs/issue-75/v2-candidate/relevance-priority-regression.test.mjs", "tests": 3, "pass": 3, "fail": 0, "exit": 0 },
+    { "file": "docs/issue-75/v2-candidate/relevance-observation-replay.test.mjs", "tests": 1, "pass": 1, "fail": 0, "exit": 0 },
+    { "file": "docs/issue-75/v2-candidate/semantic-memory-integration.test.mjs", "tests": 4, "pass": 4, "fail": 0, "exit": 0 },
+    { "file": "docs/issue-78/v2-curator/curated-recall-candidates.test.mjs", "tests": 12, "pass": 12, "fail": 0, "exit": 0 }
+  ],
+  "total_tests": 98,
+  "total_fail": 0,
+  "scorer_invocation": "node docs/issue-93/score-stage-ledger.mjs --input <private-ledger> --output <scorecard.json> (exit 0, cases=7, native callbacks=8, search-rtt callbacks=4)"
+}

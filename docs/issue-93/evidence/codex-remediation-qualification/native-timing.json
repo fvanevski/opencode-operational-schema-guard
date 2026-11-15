@@ -1,0 +1,31 @@
+{
+  "schema": "issue93.codex-remediation.native-timing.v1",
+  "tested_remediation_source_sha": "d40506d15ed2ed2c2c08edcd64995182c197a6d8",
+  "route": "real d40506d worktree plugin chain (docs/issue-78/v2-candidate/plugin.mjs -> issue-75 memory-core -> semantic-recall) + real read-only #92 ReviewStore/Graphiti (group development-knowledge, capture:false); Graphiti transport mocked ONLY for controlled error/late outcomes",
+  "native_timing": {
+    "n": 20, "p50_ms": 42.53, "p95_ms": 299.99, "max_ms": 300.876,
+    "injected": 6, "empty": 10, "error": 2, "late": 2,
+    "p95_le_300ms": true,
+    "all_calls_retained_including_late_error_empty": true,
+    "note": "p95=299.99ms <= 300ms (gate met); the two 'late' outcomes sit at the 300ms context allowance by design; injected=6 reflects the more-selective d40506d strict-anchor selector (abstains where B2.2 injected) - a selection difference, not a wiring defect; slow/empty cases retained, none discarded"
+  },
+  "context_association": {
+    "source_attributed_to_matching_user_message": true,
+    "injected_have_source_attribution": true,
+    "private_excerpt_omitted": true,
+    "max_selector_json_chars": 1011,
+    "selector_json_within_1400": true,
+    "max_facts": 2,
+    "fact_cap_5": true,
+    "group_excerpt_privacy_ex_boundaries": "holds (group development-knowledge, private excerpt omitted, EX/source fences via unchanged memory-core)"
+  },
+  "search_and_get_episodes_rtt": {
+    "search_memory_facts_rtt_ms": [144.219, 140.467, 148.722, 156.244, 155.017],
+    "search_p50_ms": 148.722,
+    "get_episodes_rtt_ms": [45.521, 36.008, 34.132, 34.396, 37.137],
+    "get_episodes_p50_ms": 37.137,
+    "separate_classes": true,
+    "note": "search RTT and get_episodes proof RTT measured separately; search RTT never used to infer proof latency"
+  },
+  "native_performance_gate": "PASS (p95<=300ms, >=20 mixed observations, source-attributed, <=5 facts, <=1400 selector JSON chars)"
+}

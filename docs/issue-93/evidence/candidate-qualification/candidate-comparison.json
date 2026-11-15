@@ -1,0 +1,25 @@
+{
+  "schema": "issue93.candidate-comparison.v1",
+  "candidate_source_sha": "e53dbbfd4b1ee153a0562547e03d0210aae57629",
+  "previous_source_sha": "69014b739d490f8cb90bce86233edf3054673209",
+  "frozen_snapshot_fingerprint": "dc597c690b0e8990…",
+  "cohort": "prospective-dev-93-20261115 (18 positives, 5 negatives); digest 3e799c46…",
+  "sealed_holdout": "prospective-holdout-93-20261115 (4 pos, 2 neg); digest 3f9eaebb…; SEALED_NOT_RUN",
+  "method": "UNMODIFIED strict, previous semantic (69014b7), and Central candidate semantic (e53dbbf) via the real Memory.search() pipeline on ONE identical frozen Graphiti search + same-group get_episodes transport, with the real #92 curatedCandidateRetriever + sourcedEpisodeResolver. Raw facts kept private.",
+  "strict": "13/18 source-exact",
+  "previous_semantic": "15/18 source-exact",
+  "candidate": "15/18 source-exact",
+  "positive_losses": [],
+  "strict_only_losses": [],
+  "new_source_exact_positives": [],
+  "not_recovered_by_candidate": ["D02", "D05", "D15"],
+  "negatives": {
+    "N01": { "kind": "offtopic", "note": "the observed France case", "previous": 1, "candidate": 0, "gate": "ABSTAIN (met)" },
+    "N02": { "kind": "offtopic", "note": "second predeclared off-topic (Tokyo)", "previous": 4, "candidate": 4, "gate": "NOT ZERO (not met); candidate adds 0 new positives, so the alternative positive-recovery route is also not met" },
+    "N03": { "kind": "wronggroup", "previous": 4, "candidate": 4, "gate": "not worsened (met)" },
+    "N04": { "kind": "secret", "previous": 0, "candidate": 0, "gate": "zero (met)" },
+    "N05": { "kind": "falseverified", "previous": 3, "candidate": 3, "gate": "not worsened (met)" }
+  },
+  "selector_budget": { "max_facts": 5, "max_selector_json_chars": 1400, "observed_max_facts": 5, "within_budget": true },
+  "dev_gate": "FAILED at N02 (see n02-diagnosis.json)"
+}

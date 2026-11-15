@@ -1,0 +1,136 @@
+{
+  "schema": "issue93.scorecard.v1",
+  "cohort": "frozen",
+  "status": "MEASUREMENT_ONLY_REQUIRES_INDEPENDENT_SOURCE_AND_HOST_PROOF",
+  "cases": 7,
+  "positive_cases": 5,
+  "negative_cases": 2,
+  "selections": {
+    "graphiti": {
+      "tp": 5,
+      "fp": 23,
+      "fn": 0,
+      "positive_case_coverage": 5,
+      "negative_injection_cases": 2
+    },
+    "source_join": {
+      "tp": 5,
+      "fp": 23,
+      "fn": 0,
+      "positive_case_coverage": 5,
+      "negative_injection_cases": 2
+    },
+    "remote_proven": {
+      "tp": 5,
+      "fp": 23,
+      "fn": 0,
+      "positive_case_coverage": 5,
+      "negative_injection_cases": 2
+    },
+    "shortlist": {
+      "tp": 4,
+      "fp": 3,
+      "fn": 1,
+      "positive_case_coverage": 4,
+      "negative_injection_cases": 1
+    },
+    "strict": {
+      "tp": 4,
+      "fp": 1,
+      "fn": 1,
+      "positive_case_coverage": 4,
+      "negative_injection_cases": 1
+    },
+    "semantic": {
+      "tp": 5,
+      "fp": 13,
+      "fn": 0,
+      "positive_case_coverage": 5,
+      "negative_injection_cases": 2
+    },
+    "candidate": {
+      "tp": 5,
+      "fp": 13,
+      "fn": 0,
+      "positive_case_coverage": 5,
+      "negative_injection_cases": 2
+    },
+    "presented": {
+      "tp": 5,
+      "fp": 13,
+      "fn": 0,
+      "positive_case_coverage": 5,
+      "negative_injection_cases": 2
+    },
+    "answer_supported": {
+      "tp": 5,
+      "fp": 0,
+      "fn": 0,
+      "positive_case_coverage": 5,
+      "negative_injection_cases": 0
+    }
+  },
+  "controls": {
+    "secret": [],
+    "wrong_group": [],
+    "false_verified": []
+  },
+  "strict_only_losses": [],
+  "omissions": [
+    {
+      "id": "S01",
+      "missing_at": []
+    },
+    {
+      "id": "S02",
+      "missing_at": [
+        "shortlist",
+        "strict"
+      ]
+    },
+    {
+      "id": "S03",
+      "missing_at": []
+    },
+    {
+      "id": "S04",
+      "missing_at": []
+    },
+    {
+      "id": "S05",
+      "missing_at": []
+    }
+  ],
+  "native": {
+    "negative_presented": [
+      "N01",
+      "N02"
+    ],
+    "on_time_associated_positive_cases": 5,
+    "context_chars_total": 3020,
+    "rendered_over_1400_cases": [],
+    "missing_budget_measurement_cases": [
+      "S01",
+      "S02",
+      "S03",
+      "S04",
+      "S05",
+      "N01",
+      "N02"
+    ]
+  },
+  "callback_latency": {
+    "count": 3,
+    "p50_ms": 156,
+    "p95_ms": 157,
+    "max_ms": 157,
+    "no_injection": 0,
+    "errors": 0,
+    "over_300_ms": 0
+  },
+  "candidate_vs_semantic": {
+    "positive_coverage_delta": 0,
+    "negative_injection_delta": 0
+  },
+  "callback_p95_within_300ms": true
+}

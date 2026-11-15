@@ -1,0 +1,22 @@
+{
+  "schema": "issue93.central-change-contract.v1",
+  "title": "Narrow off-topic single-fact suppression in the semantic selector",
+  "authority": "Central owns code + tests; this is the measured contract, not an implementation",
+  "affected_source_function": "docs/issue-75/v2-candidate/semantic-recall.mjs :: selectSemanticContext(query, items, {maxSelected, maxChars, baselineAnchor})",
+  "failing_trace_class": "unanchored single-fact injection: a native graphiti candidate (recallOrigin='graphiti', nativeRank<24) is admitted as the sole fact when no candidate has lexical overlap, driven solely by the native-rank prior (N01 France: 1 fact injected; N02/N03 off-topic/wrong-group-content: 4 facts when some weak overlap/anchor exists)",
+  "input_output_behavior": {
+    "before": "when anchored===false, cap=1 and the highest native-prior fact is admitted even with zero lexical/answer-type/identity/source-excerpt support",
+    "after": "when anchored===false, admit the single fact only if answerTypeSupport(query,fact)>0 OR identitySignal(query,fact)>0 OR sourceContext lexical overlap>0; otherwise return []"
+  },
+  "source_proof_requirements": "the admitted fact must carry a valid opencode: source, a trusted evidence class, and (in the unanchored single-fact path) a non-native-prior relevance signal; native rank remains a ranking signal, never an authority substitute",
+  "named_regression_controls": [
+    "issue-75 zero-overlap paraphrase positive (relevant, must remain admitted via answer-type/identity signal)",
+    "all 15/18 prospective semantic source-exact positives (must remain admitted)",
+    "N01 France: single off-topic fact must abstain",
+    "N04 secret: pre-Graphiti privacy fence must still short-circuit (0 injection)",
+    "the anchored multi-fact branch (cap=maxSelected) must be unchanged"
+  ],
+  "zero_regression_requirement": "zero strict-only case losses (verified strict_only_losses=[]) AND no loss of the 15/18 semantic source-exact positives AND no increase in other negative injections (N02/N03/N05 not worsened)",
+  "explicit_non_goals": "no blanket zero-lexical-overlap veto; no new LLM reranker; no change to the <=5 fact cap, <=1400 char selector budget, 300ms hook allowance, group/privacy/temporal/EX fences, or the #92 index rescue route; no candidate tuning on the sealed holdout",
+  "candidate_qualification": "Central stages ONE candidate on this branch; it is evaluated once against the frozen snapshot (dc597c69…) + the sealed holdout (3f9eaebb…, never run) in a separate consolidated qualification"
+}

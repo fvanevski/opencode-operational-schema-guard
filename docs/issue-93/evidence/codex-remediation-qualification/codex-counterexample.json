@@ -1,0 +1,17 @@
+{
+  "schema": "issue93.codex-remediation.counterexample.v1",
+  "tested_remediation_source_sha": "d40506d15ed2ed2c2c08edcd64995182c197a6d8",
+  "codex_finding": "PR #96 discussion_r4577140954 (P2 strict-anchor regression): a legitimate historical comparison whose only literal overlap was 'now' could lose a verified strict-control fact after semantic lexical normalization",
+  "counterexample": "query='What did we use originally, and what do we use now?' against sourced fact 'Previously we used Redis; now we use PostgreSQL.' with unchanged strict anchor",
+  "results": {
+    "native_lane_preserves_strict_fact": true,
+    "remote_proven_indexed_lane_preserves_strict_fact": true,
+    "without_strict_anchor_abstains": true,
+    "n02_now_only_noise_abstains": true,
+    "fabricated_source_anchor_cannot_bypass": true,
+    "improperly_sourced_anchor_cannot_bypass": true,
+    "out_of_pool_anchor_cannot_be_imported": true
+  },
+  "independent_probe": "11/11 assertions PASS (exit 0) on the actual unmodified d40506d source; the 3 new regression cases in semantic-abstention.test.mjs (14-case file) also pass",
+  "verdict": "HISTORICAL_STRICT_ANCHOR_COUNTEREXAMPLE_CORRECTED"
+}

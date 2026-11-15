@@ -1,0 +1,50 @@
+{
+  "dev_cohort_id": "prospective-dev-93-20261115",
+  "holdout_cohort_id": "prospective-holdout-93-20261115",
+  "dev_manifest_sha256": "3e799c461080985324c58d487ec6327e7616436b546ee9aa2dce3a67251919db",
+  "holdout_manifest_sha256": "3f9eaebb6debe949bc9eb07eb777f2851b957adc1a8a3d94bccfcd27fa75c0c9",
+  "snapshot_fingerprint": "dc597c690b0e8990b925b01467269f530d37dfb2dd7730663bdda46680e7231b",
+  "freeze_timestamp": "2026-11-15T02:45:26.381Z",
+  "denominators": {
+    "dev_positives": 18,
+    "dev_negatives": 5,
+    "holdout_positives": 4,
+    "holdout_negatives": 2,
+    "holdout_status": "SEALED_NOT_RUN"
+  },
+  "dev_positive_ids": [
+    "D01",
+    "D02",
+    "D03",
+    "D04",
+    "D05",
+    "D06",
+    "D07",
+    "D08",
+    "D09",
+    "D10",
+    "D11",
+    "D12",
+    "D13",
+    "D14",
+    "D15",
+    "D16",
+    "D17",
+    "D18"
+  ],
+  "dev_negative_ids": [
+    "N01",
+    "N02",
+    "N03",
+    "N04",
+    "N05"
+  ],
+  "dev_kinds": [
+    "direct",
+    "cause",
+    "decision",
+    "paraphrase",
+    "temporal"
+  ],
+  "note": "Raw queries, expected fact/source/remote digests, and group/workspace/project live in the private cohort manifests; only labels + digests + denominators are published."
+}

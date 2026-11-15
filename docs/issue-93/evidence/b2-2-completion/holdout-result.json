@@ -1,0 +1,28 @@
+{
+  "schema": "issue93.holdout-outcome.v1",
+  "cohort_id": "prospective-holdout-93-20261115",
+  "manifest_sha256": "3f9eaebb6debe949…",
+  "snapshot_fingerprint": "dc597c690b0e8990…",
+  "run": "ONCE (unsealed only after the development gate passed; not used for tuning)",
+  "candidate": "B2.2 (4bc169c)",
+  "positives": {
+    "recovered": "1/4",
+    "cases": {
+      "H01": { "kind": "paraphrase", "strict": false, "b22": true },
+      "H02": { "kind": "paraphrase", "strict": false, "b22": false },
+      "H03": { "kind": "temporal", "strict": false, "b22": false },
+      "H04": { "kind": "paraphrase", "strict": false, "b22": false }
+    }
+  },
+  "negatives": {
+    "HN01": { "kind": "offtopic", "b22_injected": 4 },
+    "HN02": { "kind": "secret", "b22_injected": 0 }
+  },
+  "gate": "no source-exact positive loss AND no new unsafe/off-topic negative",
+  "outcome": "HOLDOUT_FAILED",
+  "reasons": [
+    "3/4 holdout positives NOT recovered (H02, H03, H04) — source-exact positive loss",
+    "HN01 (off-topic: boiling point of water) injects 4 development facts — a new off-topic negative"
+  ],
+  "note": "The candidate preserves the development 15/18 but under-recovers the sealed paraphrase/temporal holdout positives (single-fact selection in the unanchored/weak-overlap path) and admits off-topic facts on an off-topic holdout query. No candidate tuning was performed on the holdout."
+}

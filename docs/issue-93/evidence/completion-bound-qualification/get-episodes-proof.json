@@ -1,0 +1,22 @@
+{
+  "schema": "issue93.remote-proof-latency.v1",
+  "tested_source_sha": "9bba7d8cf5965741545b8ecf069b4d0f054527ed",
+  "graphiti_endpoint": "http://127.0.0.1:8766/mcp",
+  "group": "development-knowledge",
+  "probe_uuid": "ad850db8…",
+  "remote_source_uuid_proof": {
+    "present_same_group": true,
+    "get_episodes_total": 355,
+    "truncated_at_1000": false
+  },
+  "get_episodes_rtt_serial_ms": [34.525, 38.028, 38.875, 39.377, 40.6],
+  "get_episodes_p50_ms": 38.88,
+  "get_episodes_p95_ms": 40.6,
+  "get_episodes_max_ms": 40.6,
+  "index_enrichment_max_wait_ms": 70,
+  "proofs_finish_within_70ms": true,
+  "search_memory_facts_rtt_ms": [152.015, 160.498, 193.256],
+  "search_memory_facts_p50_ms": 160.498,
+  "search_memory_facts_p95_ms": 193.256,
+  "note": "get_episodes remote-proof latency (p95=40.6ms) is measured separately from search_memory_facts RTT (p95=193.256ms) and compared against the 70ms optional indexed-proof window. Warm get_episodes calls finish inside the window; a proof does not systematically expire. search RTT is never used to infer proof latency."
+}

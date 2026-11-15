@@ -1,0 +1,23 @@
+{
+  "schema": "issue93.command-shape-friction.v1",
+  "encountered": "yes",
+  "events": [
+    {
+      "scenario": "inline_python_parse",
+      "requested_shape": "python3 -c '<inline JSON/JSONL parse of captured model-input and answer NDJSON>'",
+      "effective_shape": "same-as-requested",
+      "rewrite_provenance": "none",
+      "event_kind": "guard_annotation",
+      "execution_effect": "executed_succeeded",
+      "correction_or_annotation": "Host approval guard flagged inline -c/-e scripts (and one recursive delete of the scratch worktree) for approval; auto-approved by a saved 'always' approval. No command was rewritten; read-only parse/digest commands executed as submitted with real exit codes.",
+      "replacement_shape": "none",
+      "recipe_reference": "none",
+      "resource_reference": "none",
+      "contract_conflict": "no",
+      "durable_gap_candidate": "no"
+    }
+  ],
+  "omitted_sensitive_values": "yes",
+  "omitted_note": "Raw prompt, credited fact token, source UUID, raw model answers, config secrets, and API headers were read from 0600 private files and reduced to digests/counts before any publication; none were printed to the evidence commit.",
+  "notes": "CPU-only, read-only adjudication: git fetch/worktree/rev-parse/show/log, sha256sum over 0600 private artifacts, and node/python parsing of the captured model-input and answer NDJSON. No model inference, no Graphiti/ReviewStore/config write, no new branch/PR. No rtk/opencode hook, shell alias, or pre-execution rejection altered the effective command shape. Producer exit statuses were preserved (off.exit=0, on.exit=0 read directly from the 2-byte files)."
+}

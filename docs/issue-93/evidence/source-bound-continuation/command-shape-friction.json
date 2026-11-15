@@ -1,0 +1,22 @@
+{
+  "schema": "issue93.command-shape-friction.v1",
+  "encountered": "yes",
+  "events": [
+    {
+      "scenario": "inline_node_script",
+      "requested_shape": "node -e '<sanitized inline script>'",
+      "effective_shape": "same-as-requested",
+      "rewrite_provenance": "none",
+      "event_kind": "guard_annotation",
+      "execution_effect": "executed_succeeded",
+      "correction_or_annotation": "Host guard flagged the inline `-e`/`-c` script for approval (auto-approved by a saved 'always' approval). No command rewrite; executed as requested. Recorded here as under-captured feedback per the first-campaign Central disposition item 6 (which disclosed this note but left encountered=no).",
+      "replacement_shape": "none",
+      "recipe_reference": "none",
+      "resource_reference": "none",
+      "contract_conflict": "no",
+      "durable_gap_candidate": "no"
+    }
+  ],
+  "omitted_sensitive_values": "no",
+  "notes": "All diagnostic commands (git worktree/checkout/fetch/push, node --test, node <file>, node -e, curl, sha256sum, mktemp) executed as submitted with real exit codes. No rtk/opencode hook rewrite, shell/alias rewrite, pre-execution rejection, or runtime misbinding altered the effective command shape. The single guard_annotation event is a non-shape approval guard."
+}

@@ -1,0 +1,35 @@
+{
+  "schema": "issue93.codex-remediation.handback.v1",
+  "RESULT": "PARTIAL",
+  "REQUIRED_REMOTE_HEAD_SHA": "224c2e1678218c68a1ac7b3b29de87d21cf66e62",
+  "TESTED_REMEDIATION_SOURCE_SHA": "d40506d15ed2ed2c2c08edcd64995182c197a6d8",
+  "FINAL_BRANCH_SHA": "<set at publication: this evidence commit on issue/93>",
+  "APPROVAL_AUTHORITY": "docs/issue-93/APPROVED_CODEX_REMEDIATION_COMPARATOR_EXTENSION.md (blob 122 lines; readback committed)",
+  "PR_NUMBER": 96,
+  "DIFF_PROTECTED_SURFACES": [
+    "docs/issue-75/v2-candidate/semantic-recall.mjs (blob 9dd4d49c3e5cb90d4ba29cdf7d5d8730c653ca16 at d40506d)",
+    "docs/issue-93/semantic-abstention.test.mjs (blob 0f9cd0895b2650d9194c23b82c97627b24667747 at d40506d)",
+    "docs/issue-75/v2-candidate/relevance.mjs (blob 46749f1d8fbe37ac97b79ffba711e115897a07d6, byte-identical fd81cd6..d40506d)",
+    "caller source/group/remote/EX checks: byte-identical (not in diff)"
+  ],
+  "FOCUSED_TESTS": "node --test x10 files (isolated worktree @d40506d, node v26.13.1): 118/118 pass, exit 0 (14+6+10 focused, 31+15+4+12+22+3+1 integration/curator/privacy). npm gates not re-run (trusted repository-final-v1 524/524 PASS at prior code head; focused #93 files not in that profile).",
+  "CODEX_COUNTEREXAMPLE": "11/11 PASS (exit 0): native + remote-proven indexed lanes preserve the exact strict fact; without anchor / N02 now-only / fabricated / improperly-sourced / out-of-pool anchors all abstain.",
+  "FROZEN_IDENTITIES": "dev=3e799c46…, holdout=3f9eaebb…, snapshot=dc597c69… — all three recomputed and MATCH via original freeze-manifest.mjs algorithm (sha256 of JSON.stringify; snapshot over joined pair string).",
+  "DEV_CASE_MATRIX": "strict=13/18 base=15/18 b22=15/18 revised=15/18; revised no-loss vs base & b22, no gains; N01=0,N02=0,N03=4,N04=4,N05=3 (N04 absolute-fence drift).",
+  "HOLDOUT_CASE_MATRIX": "H01=T H02-04=F (1/4, =b22, revised); HN01=4,HN02=2 (HN02 absolute-fence drift); label POST_EXPOSURE_CODEX_REMEDIATION_EXCEPTION.",
+  "COMPARATIVE_DEV_GATE": "PASS (relative, nonnegative)",
+  "COMPARATIVE_HOLDOUT_GATE": "PASS (relative, nonnegative)",
+  "SOURCE_GROUP_REMOTE_TEMPORAL_PRIVACY_EX": "verified (group development-knowledge / ws gh_mcp / project gh_mcp; snapshot facts carry remote_episode_uuid + remote_proven; source-identity + authorization fences hold)",
+  "SELECTOR_JSON_BUDGET_AND_FACT_CAP": "max selector JSON 1011 chars (<=1400), max facts 2 (<=5)",
+  "NATIVE_HOOK_OBSERVATIONS": "n=20 (6 injected/10 empty/2 error/2 late), p50=42.53ms, p95=299.99ms, max=300.876ms, p95<=300ms=TRUE",
+  "SEARCH_GET_EPISODES_RTT": "search_memory_facts p50~148ms (140-156ms); get_episodes p50~37ms (34-45ms); separate classes",
+  "D12_ANSWER_PROOF_BRIDGE": "EXACT_SOURCE_BEHAVIOR_EQUIVALENT: D12 (SERVICE_ACTIVATION_PENDING_OPERATOR, tool-reported) selected identically at 4bc169c and d40506d (no-anchor + with-anchor byte-identical) via independent support; source ref unchanged; plugin/host/transport unchanged",
+  "MODEL_ANSWER_BENEFIT_FOR_REVISED": "PASS_BY_EXACT_SOURCE_BRIDGE (CPU read-only equivalence; NOT a fresh model-inference PASS; prior skill schema OFFERED_BUT_UNUSED carried)",
+  "CI_CURRENT_HEAD": "SUCCESS on 224c2e1… (3 recent node-contract runs); reviewDecision empty. AFTER this evidence commit a NEW PR SHA requires exact-head revalidation — do not infer CI from this head.",
+  "EVIDENCE_COMMIT": "<full SHA at publication> — files: README.md, handback.json, dev-comparison.json, holdout-replay.json, native-timing.json, d12-bridge.json, codex-counterexample.json, frozen-identities.json, focused-regression-receipts.json, command-shape-friction.json, SHA256SUMS",
+  "KNOWN_GAPS": [
+    "Absolute secret fence N04 (dev) and HN02 (holdout) = 0 is UNVERIFIED: the original byte-identical frozen transport was not persisted and the live read-only Graphiti service has since ranked FalkorDB/secret-adjacent facts into the N04/HN02 query top-24, opening the fence identically for all four roles (not a revised-candidate regression). A prospectively re-frozen transport would be needed to re-close the absolute fence.",
+    "MODEL_ANSWER_BENEFIT_FOR_REVISED is a source-equivalence bridge, not a fresh GPU/model inference PASS on d40506d."
+  ],
+  "COMMAND_SHAPE_FRICTION": "see command-shape-friction.json"
+}

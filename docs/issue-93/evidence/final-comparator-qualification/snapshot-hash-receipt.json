@@ -1,0 +1,17 @@
+{
+  "schema": "issue93.snapshot-hash-receipt.v1",
+  "frozen_snapshot_fingerprint": "dc597c690b0e8990b925b01467269f530d37dfb2dd7730663bdda46680e7231b",
+  "dev_manifest_sha256": "3e799c461080985324c58d487ec6327e7616436b546ee9aa2dce3a67251919db",
+  "holdout_manifest_sha256": "3f9eaebb6debe949bc9eb07eb777f2851b957adc1a8a3d94bccfcd27fa75c0c9",
+  "all_three_verified": true,
+  "method": {
+    "helper": "sha(o) = SHA256( UTF8( JSON.stringify(o) ) )",
+    "input": "fact_pool.map(f => [f.assertion, f.remote_episode_uuid].join('|')).join('\\n')  -- a JavaScript string",
+    "canonicalization": "Because the argument is a string, JSON.stringify emits a JSON string literal (surrounding double quotes + escaped \\n). The hash is over that quoted/escaped form, NOT the raw joined UTF-8 text and NOT the array of pairs.",
+    "raw_joined_chars": 69297,
+    "json_stringified_chars": 69952
+  },
+  "recomputed_fingerprint": "dc597c690b0e8990b925b01467269f530d37dfb2dd7730663bdda46680e7231b",
+  "match": true,
+  "notes": "Raw sha256(joined-string)=1fba71c1... and sha256(array-of-pairs)=7886ad8b... are the two non-matching variants that produced the earlier misdiagnosis; superseded by docs/issue-93/CENTRAL_SNAPSHOT_HASH_ERRATUM.md. Private fact pool, source refs, UUIDs and queries are not published."
+}

@@ -1,0 +1,21 @@
+{
+  "schema": "issue93.regression-receipts.v6",
+  "tested_source_sha": "d40506d15ed2ed2c2c08edcd64995182c197a6d8",
+  "node_version": "v26.13.1",
+  "workdir": "/opt/filip/.hermes/cache/scratch/issue93-d40506d (isolated git worktree at exact SHA)",
+  "runner": "node --test <file>",
+  "focused_suites": [
+    {"file": "docs/issue-93/semantic-abstention.test.mjs", "tests": 14, "pass": 14, "fail": 0, "exit": 0, "note": "14-case file incl. 3 new Codex strict-anchor regression cases"},
+    {"file": "docs/issue-93/native-source-context.test.mjs", "tests": 6, "pass": 6, "fail": 0, "exit": 0},
+    {"file": "docs/issue-93/score-stage-ledger.test.mjs", "tests": 10, "pass": 10, "fail": 0, "exit": 0},
+    {"file": "docs/issue-75/v2-candidate/relevance.test.mjs", "tests": 31, "pass": 31, "fail": 0, "exit": 0},
+    {"file": "docs/issue-75/v2-candidate/semantic-recall.test.mjs", "tests": 15, "pass": 15, "fail": 0, "exit": 0},
+    {"file": "docs/issue-75/v2-candidate/semantic-memory-integration.test.mjs", "tests": 4, "pass": 4, "fail": 0, "exit": 0},
+    {"file": "docs/issue-78/v2-curator/curated-recall-candidates.test.mjs", "tests": 12, "pass": 12, "fail": 0, "exit": 0},
+    {"file": "docs/issue-75/v2-candidate/memory-core.test.mjs", "tests": 22, "pass": 22, "fail": 0, "exit": 0},
+    {"file": "docs/issue-75/v2-candidate/relevance-priority-regression.test.mjs", "tests": 3, "pass": 3, "fail": 0, "exit": 0},
+    {"file": "docs/issue-75/v2-candidate/relevance-observation-replay.test.mjs", "tests": 1, "pass": 1, "fail": 0, "exit": 0}
+  ],
+  "focused_total": {"tests": 118, "pass": 118, "fail": 0, "exit": 0},
+  "npm_gates": "NOT re-run: trusted repository-final-v1 profile already PASS (524/524) at the prior code head; the focused Issue #93 test files are NOT in that profile. No changed source or absent receipt demanded a full npm run."
+}

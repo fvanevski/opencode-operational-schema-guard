@@ -1,0 +1,15 @@
+{
+  "schema": "issue93.codex-remediation.frozen-identities.v1",
+  "method": "sha(o) = SHA256(UTF8(JSON.stringify(o))); snapshot over fact_pool.map(f=>[f.assertion, f.remote_episode_uuid].join('|')).join('\\n') in original stored order (cohort files re-parsed + re-serialized compact to recover the digest input)",
+  "verified": {
+    "dev_manifest_sha256": {"expected": "3e799c461080985324c58d487ec6327e7616436b546ee9aa2dce3a67251919db", "recomputed": "3e799c461080985324c58d487ec6327e7616436b546ee9aa2dce3a67251919db", "match": true},
+    "holdout_manifest_sha256": {"expected": "3f9eaebb6debe949bc9eb07eb777f2851b957adc1a8a3d94bccfcd27fa75c0c9", "recomputed": "3f9eaebb6debe949bc9eb07eb777f2851b957adc1a8a3d94bccfcd27fa75c0c9", "match": true},
+    "snapshot_fingerprint": {"expected": "dc597c690b0e8990b925b01467269f530d37dfb2dd7730663bdda46680e7231b", "recomputed": "dc597c690b0e8990b925b01467269f530d37dfb2dd7730663bdda46680e7231b", "match": true}
+  },
+  "authority": {
+    "same_group_source_reviewstore_remote_episode": "verified (group development-knowledge, workspace /workspace/mcp_servers/gh_mcp, project gh_mcp; snapshot facts carry remote_episode_uuid + remote_proven)",
+    "test_runner_adapter_identity": "node v26.13.1, node --test <file>"
+  },
+  "frozen_inputs_mutated": false,
+  "verdict": "ALL_THREE_FROZEN_IDENTITIES_REVERIFIED"
+}

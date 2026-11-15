@@ -1,0 +1,30 @@
+{
+  "schema": "issue93.native-observations.v1",
+  "cohort": "frozen",
+  "tested_source_sha": "bfa6cbed805f79bae4d675c94206dc9315b6acec",
+  "group": "development-knowledge",
+  "graphiti_endpoint": "127.0.0.1:8766/mcp",
+  "graphiti_status": "ok (connected to falkordb)",
+  "observed_read_shapes": {
+    "search_memory_facts": ["query", "group_ids", "max_facts"],
+    "get_episodes": ["group_ids", "max_episodes"]
+  },
+  "read_only": true,
+  "group_pure": true,
+  "observations": [
+    { "case_id": "S01", "facts_returned": 24, "group_pure": true, "latency_ms": 156 },
+    { "case_id": "S04", "facts_returned": 24, "group_pure": true, "latency_ms": 151 },
+    { "case_id": "N01", "facts_returned": 24, "group_pure": true, "latency_ms": 157 }
+  ],
+  "callback_summary": {
+    "note": "Raw prompt-prefetch search_memory_facts round trips (entry->return). Full context-callback (search + selection + formatContext) adds sub-millisecond local selection; raw search dominates.",
+    "n": 3,
+    "p50_ms": 156,
+    "p95_ms": 157,
+    "max_ms": 157,
+    "errors": 0,
+    "no_injection": 0,
+    "within_300ms": true
+  },
+  "privacy_note": "Raw fact text and fact/episode UUIDs retained on host only. Live development-knowledge facts do NOT contain the issue-75 synthetic seeds (f1-f4); the frozen #81 roster (16 positives, SHA256 47e141bd...) is private and not reproducible from the repository."
+}
