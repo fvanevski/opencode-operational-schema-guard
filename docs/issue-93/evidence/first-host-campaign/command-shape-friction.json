@@ -1,0 +1,7 @@
+{
+  "schema": "issue93.command-shape-friction.v1",
+  "encountered": "no",
+  "events": [],
+  "omitted_sensitive_values": "no",
+  "notes": "All diagnostic commands (git worktree add, node --test, node <file>, node -e, curl, sed, mktemp) executed as submitted with real exit codes. No rtk/opencode hook rewrite, shell/alias rewrite, pre-execution rejection, or runtime misbinding altered the effective command shape. A `node -e` inline-script invocation triggered a host guard annotation (auto-approved by a saved 'always' approval); it is a non-shape guard, not a command-shape friction, and did not alter execution."
+}
