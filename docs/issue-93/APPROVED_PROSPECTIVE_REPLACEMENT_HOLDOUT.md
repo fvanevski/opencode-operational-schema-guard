@@ -7,10 +7,10 @@ with a genuinely new prospective test of the already-fixed Codex-remediated
 selector. The previous holdout is historical and is **not rewritten**.
 
 **Fixed candidate implementation:** full commit
-\`d40506d15ed2ed2c2c08edcd64995182c197a6d8\`,
-PR #96 in \`fvanevski/opencode-operational-schema-guard\`.
+`d40506d15ed2ed2c2c08edcd64995182c197a6d8`,
+PR #96 in `fvanevski/opencode-operational-schema-guard`.
 
-**Acceptance authority:** \`APPROVED_PROSPECTIVE_ACCEPTANCE.md\` (notably
+**Acceptance authority:** `APPROVED_PROSPECTIVE_ACCEPTANCE.md` (notably
 sections 2-7), plus the two already-approved, explicitly retrospective
 comparator exceptions. This document authorizes **one finite supplemental
 prospective 4-positive/2-negative holdout** without changing hard source,
@@ -24,13 +24,13 @@ holdout as untouched.
 
 The original 2026-11-15 holdout sealed the source pool and episode
 membership, but did not retain the original per-query Graphiti
-\`search_memory_facts\` top-24 responses. Subsequent read-only re-capture
+`search_memory_facts` top-24 responses. Subsequent read-only re-capture
 could not prove identical selection inputs. One attempted requalification
 also used abbreviated guillemet/redaction placeholders instead of the
 original secret-negative queries, creating invalid 4/2 negative
 measurements. Private host stage-attribution then reported that the
 exact frozen N04/HN02 raw queries are rejected at stage 0 by
-\`safeText(query,500)\`, with no model-facing facts. The source-level
+`safeText(query,500)`, with no model-facing facts. The source-level
 privacy prefilter is unchanged and Central independently reproduced
 the long-credential rejection versus shortened-placeholder admission
 on synthetic examples. The private original raw queries were evaluated
@@ -64,16 +64,16 @@ authorized after the prospective test is opened.
    fixed source snapshot and original compared implementation SHA,
    and authoritative registrar timestamp. Store private artifacts
    with directory 0700/file 0600. Clearly distinguish
-   \`raw_query_sha256\` from \`safeText_query_sha256\`;
-   \`sha256('')\` is NOT a unique raw-query identity.
+   `raw_query_sha256` from `safeText_query_sha256`;
+   `sha256('')` is NOT a unique raw-query identity.
 3. Before any candidate/comparator ranking, capture and seal
    **byte-exact per-query Graphiti search request + full ordered
    top-24 response** for every admitted query, not only underlying
    graph facts; also freeze exact read-only source-journal/curated
-   index rows, same-group \`get_episodes\` responses and remote
+   index rows, same-group `get_episodes` responses and remote
    proof needed by all comparator paths. For privacy-rejected query,
-   record \`admission=REJECTED\`, the exact prefilter provenance,
-   and \`NO_SEARCH_CALL\`; do NOT call Graphiti artificially.
+   record `admission=REJECTED`, the exact prefilter provenance,
+   and `NO_SEARCH_CALL`; do NOT call Graphiti artificially.
    Make a second immutable SHA256-sealed transport bundle,
    with completion timestamp and original query-manifest digest.
    Verify the source snapshot against the original 355-fact
@@ -84,9 +84,9 @@ authorized after the prospective test is opened.
    read-only replay against the identical frozen input package
    with four existing implementations: unchanged strict control,
    unchanged original semantic
-   \`69014b739d490f8cb90bce86233edf3054673209\`,
-   prior B2.2 \`4bc169cc59e8900f5dc3cd4d3c70a22d0fcfb9f4\`,
-   and fixed candidate \`d40506d15ed2ed2c2c08edcd64995182c197a6d8\`.
+   `69014b739d490f8cb90bce86233edf3054673209`,
+   prior B2.2 `4bc169cc59e8900f5dc3cd4d3c70a22d0fcfb9f4`,
+   and fixed candidate `d40506d15ed2ed2c2c08edcd64995182c197a6d8`.
    The replay MUST NOT fall through to live Graphiti, different
    source/index/proof responses, substituted question strings,
    or unrecorded reranking services. Any unknown transport
@@ -113,7 +113,7 @@ authorized after the prospective test is opened.
    No automatic GPU rerun or redundant benchmark campaign.
    Source or environment mismatch is UNVERIFIED, not a PASS.
 7. Publish **one sanitized evidence-only commit** on existing
-   \`issue/93\` and PR #96, with pre-ranking seal digests,
+   `issue/93` and PR #96, with pre-ranking seal digests,
    transport-response seal digests, raw-query identity proofs
    expressed as hashes only, exact per-case adjudicated
    source-exact booleans/counts, absolute privacy result,
@@ -127,7 +127,7 @@ authorized after the prospective test is opened.
 ## Hard stop conditions / authority
 
 If a new case is invalid before sealing, report
-\`NO_ELIGIBLE_PROSPECTIVE_COHORT\` without consuming a trial.
+`NO_ELIGIBLE_PROSPECTIVE_COHORT` without consuming a trial.
 Once sealed, do NOT substitute/refreeze cases or transport,
 repeat candidate runs to chase outcomes, tune thresholds,
 change production code, edit tests, or alter privacy or
@@ -143,7 +143,7 @@ the earlier comparator recovery, Codex diagnostic,
 and erroneous guillemet replay remain immutable and
 are never silently replaced by the new results.
 
-**Result of operator decision:** \`APPROVED_ONE_PROSPECTIVE_REPLACEMENT_HOLDOUT\`.
+**Result of operator decision:** `APPROVED_ONE_PROSPECTIVE_REPLACEMENT_HOLDOUT`.
 
 **Qualification:** NOT YET PERFORMED.
 

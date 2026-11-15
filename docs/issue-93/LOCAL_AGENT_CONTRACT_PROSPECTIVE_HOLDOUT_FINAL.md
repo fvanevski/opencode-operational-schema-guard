@@ -40,16 +40,16 @@ non-force branch advance and remote readback).
 1. Authenticated fetch/readback of exact remote head,
    PR #96, both original acceptance documents,
    this approval and the fixed-source remediation
-   \`d40506d15ed2ed2c2c08edcd64995182c197a6d8\`.
+   `d40506d15ed2ed2c2c08edcd64995182c197a6d8`.
    Use a separate worktree after fetching its exact
    immutable SHA; preserve the owner's main checkout.
    Inspect actual #92 source records and the replay
    adapter/source (rather than reconstructing APIs
    from a prose summary). Current installed schema
-   is authoritative; \`get_episodes\` needs
-   \`group_ids:[group]\` and \`max_episodes\`, and
-   \`search_memory_facts\` takes
-   \`query\`, \`group_ids\`, \`max_facts:24\`.
+   is authoritative; `get_episodes` needs
+   `group_ids:[group]` and `max_episodes`, and
+   `search_memory_facts` takes
+   `query`, `group_ids`, `max_facts:24`.
    Verify no implicit Graphiti writes or hidden
    model/reranker calls; use source-authenticated
    groups/workspace/project and no-capture.
@@ -57,7 +57,7 @@ non-force branch advance and remote readback).
 2. Review the previous guillemet mistake. In this
    campaign, exact raw private q bytes from the
    sealed manifest are always consumed by the
-   actual \`safeText(q,500)\` and native prompt
+   actual `safeText(q,500)` and native prompt
    path. NEVER replace a frozen secret/sentinel
    query with redacted print text when executing
    or comparing. Identify correct private scratch
@@ -75,7 +75,7 @@ non-force branch advance and remote readback).
    deterministic errors/timeouts; and no unrecorded
    live fallback after freezing. If the adapter
    cannot satisfy transport closure on the
-   existing code, STOP \`BLOCKED_CAPTURE_INTEGRITY\`.
+   existing code, STOP `BLOCKED_CAPTURE_INTEGRITY`.
    Debug harness I/O/schema errors narrowly before
    observing candidate results; do not modify
    the selector or source authority.
@@ -114,12 +114,12 @@ non-force branch advance and remote readback).
    direct semantic comparison to the existing
    registered cohorts (do not print those).
    If fewer than 4+2 valid cases exist, STOP
-   \`NO_ELIGIBLE_PROSPECTIVE_COHORT\`, with no
+   `NO_ELIGIBLE_PROSPECTIVE_COHORT`, with no
    test run or force-filling.
 
 6. Store exact raw UTF-8 query strings and full
    SHA256 (NOT truncated prefix; NOT digest of
-   \`safeText(q)\`) in a PRIVATE 4+2 manifest
+   `safeText(q)`) in a PRIVATE 4+2 manifest
    with expected fact/source/episode identities,
    group/project/workspace/temporal metadata,
    case labels and fresh freeze timestamp.
@@ -136,15 +136,15 @@ non-force branch advance and remote readback).
 
 7. Capture **one** exact read-only transport bundle
    for each admitted raw query: prefilter admission;
-   complete \`search_memory_facts\` request and
+   complete `search_memory_facts` request and
    ordered response array (all top 24 with metadata,
-   not only linked facts); same-group \`get_episodes\`
+   not only linked facts); same-group `get_episodes`
    raw response/membership, index/curator rows for
    strict/semantic policy and relevant source-journal
    mappings; actual service configuration/group and
    source/remote proof. For prefilter-rejected
    secret query record no Graphiti request and
-   explicit \`NO_SEARCH_CALL\`, as native code does.
+   explicit `NO_SEARCH_CALL`, as native code does.
    Capture a closed deterministic call map for
    all expected read-only RPCs; mock response identity
    is sealed, not a newly constructed "equivalent"
@@ -167,7 +167,7 @@ non-force branch advance and remote readback).
    *actual native admission* for the negative
    secret case, not a separate guillemet string.
    Any hash difference/adapter divergence =>
-   \`BLOCKED_CAPTURE_INTEGRITY\`, not a retest.
+   `BLOCKED_CAPTURE_INTEGRITY`, not a retest.
 
 9. Adjudicate four positives case-by-case,
    not by aggregate totals alone:
@@ -208,7 +208,7 @@ non-force branch advance and remote readback).
     (true exits), source/native timing sample
     n=20 p95=299.99ms and D12 exact-source
     answer-proof bridge apply to the UNCHANGED
-    \`d40506d\` selector. These are PREVIOUSLY
+    `d40506d` selector. These are PREVIOUSLY
     RECORDED evidence categories, not fresh
     tests or new model runs. Do not consume
     GPU or rerun native performance tests
@@ -219,13 +219,13 @@ non-force branch advance and remote readback).
     exact-head CI/Verify and independent review.
 
 12. Publish at most ONE sanitized evidence-only
-    commit under \`PUBLIC_EVIDENCE_DIR\` with
-    \`README.md\`, schema-versioned typed results,
+    commit under `PUBLIC_EVIDENCE_DIR` with
+    `README.md`, schema-versioned typed results,
     pre-evaluation manifest/transport SHA256,
     source case membership digests (not values),
     per-role casewise TP/FN and negative-stage
     counts, private-data redaction audit and
-    \`SHA256SUMS\`. Capture actual commands,
+    `SHA256SUMS`. Capture actual commands,
     exits, case labels and separate provenance.
     Do not put any raw query, synthetic token,
     fact text, source ref, UUID, private Graphiti
