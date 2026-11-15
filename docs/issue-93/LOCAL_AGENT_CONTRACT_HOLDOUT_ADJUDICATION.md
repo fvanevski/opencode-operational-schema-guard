@@ -1,9 +1,11 @@
 # Issue #93 — one bounded holdout evidence reconciliation
 
-ROLE=evidence (if prepared worktree and private files readable);
-otherwise BUILD in a genuinely fresh session with READ-ONLY
-scope due to stock-V2 filespace constraints. Do not broaden
-permission controls simply for evidence collection.
+ROLE=build (genuinely fresh OpenCode Build session restricted to
+READ-ONLY investigation, because private host packet access
+and an optional evidence commit require build-role filespace
+and Git operations on the stock-V2 harness). The Build role
+is an execution accommodation, not permission to alter source,
+Graphiti, configuration, private manifests or CI controls.
 
 GOAL=Resolve whether the published HOLDOUT_FAILED disposition
 actually establishes regression against the authorized
@@ -50,12 +52,13 @@ FIRST; never re-execute the holdout to make a PASS.
 
 ## B. Authorized comparison, not tuning
 
-If the ORIGINAL holdout run already contains an unmodified
-semantic comparator, report per-case Boolean exact expected
-source membership for H01-H04, negative injected counts for
-HN01/HN02, and strict/B2.2 results. Report also whether
-these comparator outputs were generated in the once-only
-run BEFORE unsealing/candidate inspection, with evidence.
+If the ORIGINAL once-only holdout run already contains
+an unmodified semantic comparator, report per-case Boolean
+exact expected source membership for H01-H04, negative
+injected counts for HN01/HN02, and strict/B2.2 results.
+Prove all comparator outputs were from that same once-only
+holdout qualification with the predeclared snapshot, before
+any result-driven tuning; do not invent pre-unseal timestamps.
 
 If no original semantic comparator outputs exist:
 - mark BASELINE_COMPARATOR_NOT_RECORDED;
@@ -94,12 +97,11 @@ approval. Do not initiate either on this handoff.
 
 Evidence-only: no source edit, no tests altered, no GitHub
 issue edit/PR, no extra tests run merely to make check green.
-If an Evidence-role host sandbox lacks access to essential
-private files, STOP with the exact path/permission; do not
-bypass the role. A separately scoped fresh Build role is
-allowed as an explicitly justified read-only fallback, with
-no production writes and no owner-checkout changes.
-Git setup for an Evidence role belongs to the operator.
+Use a genuinely fresh Build session limited to host-bound
+read-only inspection and, only if justified, one sanitized
+existing-branch evidence commit. Do not treat Build's broader
+permissions as general mutation authorization. Preserve the
+owner checkout and stop at the first material authority conflict.
 
 Publish at most ONE sanitized evidence-only commit on
 existing issue/93 under
