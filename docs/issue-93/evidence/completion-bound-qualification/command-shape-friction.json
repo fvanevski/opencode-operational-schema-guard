@@ -1,0 +1,36 @@
+{
+  "schema": "issue93.command-shape-friction.v1",
+  "encountered": "yes",
+  "events": [
+    {
+      "scenario": "inline_node_script",
+      "requested_shape": "node -e '<sanitized inline script>'",
+      "effective_shape": "same-as-requested",
+      "rewrite_provenance": "none",
+      "event_kind": "guard_annotation",
+      "execution_effect": "executed_succeeded",
+      "correction_or_annotation": "Host guard flagged inline -e/-c scripts for approval (auto-approved by a saved 'always' approval). No rewrite; executed as requested. Recurring across review-store inventory, get-episodes probe, and native-context extraction.",
+      "replacement_shape": "none",
+      "recipe_reference": "none",
+      "resource_reference": "none",
+      "contract_conflict": "no",
+      "durable_gap_candidate": "no"
+    },
+    {
+      "scenario": "opencode_headless_session_id",
+      "requested_shape": "opencode run --standalone --session <id> ...",
+      "effective_shape": "same-as-requested (after operator corrected the id prefix)",
+      "rewrite_provenance": "operator",
+      "event_kind": "arg_contract",
+      "execution_effect": "first_invocation_rejected_then_succeeded",
+      "correction_or_annotation": "OpenCode requires --session ids to start with 'ses'; a non-prefixed id was rejected (rc=1) and re-run with a ses- prefix. A normal CLI argument contract, not a host command-shape rewrite.",
+      "replacement_shape": "opencode run --standalone --session ses-<id> ...",
+      "recipe_reference": "none",
+      "resource_reference": "none",
+      "contract_conflict": "no",
+      "durable_gap_candidate": "no"
+    }
+  ],
+  "omitted_sensitive_values": "no",
+  "notes": "No rtk/opencode hook, shell/alias, or pre-execution rejection altered the effective command shape of the diagnostic commands. Both recorded events are non-shape (guard approval / CLI arg contract)."
+}

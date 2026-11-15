@@ -1,0 +1,17 @@
+{
+  "schema": "issue93.regression-receipts.v3",
+  "tested_source_sha": "9bba7d8cf5965741545b8ecf069b4d0f054527ed",
+  "node_version": "v26.13.1",
+  "workdir": "/workspace/opencode-issue93-build",
+  "runner": "node --test <file>",
+  "new_central_regression": {
+    "command": "node --test docs/issue-93/native-source-context.test.mjs",
+    "tests": 6, "pass": 6, "fail": 0, "cancelled": 0, "skipped": 0, "exit": 0,
+    "note": "Central-authored source-backed native-hook regression (mock Graphiti transport + temp #92 ReviewStore). Deterministic PROOF_OF_WIRING ONLY. First-run green; no fixture repair needed."
+  },
+  "corrected_scorer": {
+    "command": "node --test docs/issue-93/score-stage-ledger.test.mjs",
+    "tests": 10, "pass": 10, "fail": 0, "exit": 0
+  },
+  "prior_receipt": "98-test coherent semantic/memory/curator receipt from the source-bound continuation (46312c3) retained as provenance; not re-run as ritual (no new failures justify it)."
+}

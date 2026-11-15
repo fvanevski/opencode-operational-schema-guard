@@ -1,0 +1,31 @@
+{
+  "schema": "issue93.reviewstore-proof.v1",
+  "tested_source_sha": "9bba7d8cf5965741545b8ecf069b4d0f054527ed",
+  "state_dir": "/home/filip/.local/state/ghdev-graphiti",
+  "store": "curation-v1 (#92 ReviewStore, distinct from the empty Issue-75 Journal)",
+  "group": "development-knowledge",
+  "scoped_counts": {
+    "total_reviews": 565,
+    "persisted": 355,
+    "with_remote_episode_uuid": 355,
+    "with_source_refs": 411
+  },
+  "concrete_persisted_record": {
+    "id_prefix": "fdadb9942cdc",
+    "state": "persisted",
+    "remote_episode_uuid": "ad850db8…",
+    "group": "development-knowledge",
+    "project": "gh_mcp",
+    "workspace": "/workspace/mcp_servers/gh_mcp",
+    "source_ref_strength": "native-id (opencode:<session>:message:<msg> / :tool:call_*)",
+    "evidence_class": "assistant-reported"
+  },
+  "v2_resolver_retriever_binding": {
+    "installed_plugin": "/home/filip/.config/opencode/plugins/ghdev-graphiti-memory/docs/issue-78/v2-candidate/plugin.mjs",
+    "sourcedEpisodeResolver": "sourced-recall.mjs sourcedEpisodeResolver(root,group,workspace,project,ids)",
+    "curatedCandidateRetriever": "curated-recall-candidates.mjs curatedRecallRetriever(root,group,workspace,project)",
+    "recallPolicy": "semantic",
+    "note": "both bound only when workspace is absolute and project is set; the isolated ctx binding in this campaign matches the installed config"
+  },
+  "validation": "scoped, read-only inventory; no backfill from arbitrary Graphiti hits; no installed-config change"
+}
