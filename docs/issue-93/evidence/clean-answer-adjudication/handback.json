@@ -1,0 +1,88 @@
+{
+  "schema": "issue93.answer-receipt-adjudication.handback.v1",
+  "RESULT": "INDEPENDENT_ANSWER_PASS",
+  "REMOTE_HEAD_SHA": "dc6140c346d0ee7d96b28e12bb3b3d55961816cf",
+  "PRIVATE_RUN_ARTIFACT_DIGESTS": {
+    "packet-manifest.json": "67705b5b2a836d5b2dd0b49120b65721e7ba7876a2d1429607f161e9b9ffce22",
+    "preflight.json": "ce9632763569bea191ac05bd4ac5a036ac8d9598d0b61b1561829571f1f7cc42",
+    "model-capture-proxy.mjs": "888ffac0225093a9d480af16a72f220ac44b9c6498c213c1f6ea0ca0e4b093d8",
+    "run-clean-answer-proof.sh": "f4303939980f3652724d41677fbe50e06a385f7df7fffd7f5546fb0d8ff5c780",
+    "model-input.jsonl": "d905d6c548ddded308c5ff87b16d5359420ac5f8034b86b28f8b505e5718ee55",
+    "expected.json": "09a2c8d281b1e59eeca9b95d83acd79a0316f41ae74b286a631b183417926d47",
+    "prompt.txt": "9911cc24808ac15b33cfe96f8a15f0ff1f8aebdca8ddc67ec97bf8a5b9690aed",
+    "results/receipt.json": "bee4ddb361116aa5839dd91563d0dc8d3611ca86807b931ba0647cad21c55478",
+    "results/off.answer.ndjson": "1f3312f9ca93ee96bea8f3d02bc54fed9ff54eeea13c98e7dec915344abedfc0",
+    "results/on.answer.ndjson": "6e0820c4d42298cc157f976ae46ab26207ac11598f576c183e92658912981a51",
+    "results/off.exit": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+    "results/on.exit": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+    "results/off.model-input.jsonl": "5f4f0da5f3a30f35c96e72cf6d1b176bb37143114ebfacb2f076616bf2a712ea",
+    "results/on.model-input.jsonl": "7e6691c41a98a99a32c09fb3d30d831de65f0541c45732743700828f483ae84d",
+    "results/off.session": "9a9eeb3c37d876bf0e504b8f63c94a79191edc1b5f909131b5a8acccb12f81fe",
+    "results/on.session": "162018d3dc1738720d97779534d3371e0b1c9b16198abc3bc19352b8f9eea41e"
+  },
+  "OPENCODE_BINARY_AND_PLUGIN_SOURCE": {
+    "opencode_real_binary": "589253d36810f21217edd51545cd435b328cdc3cf4f451fbe0cce6f88afcf5e1",
+    "opencode_version": "v2.2.7",
+    "plugin_main": "f9a7ca6671b46ef0c6b2b7485c276d405d3a7c734c4397e1da36d3102aaf1b50",
+    "plugin_issue75_main": "b840bdda9d6edbf8c259e87b690c6b45109593f4effbc2da54e63bf477693d1f",
+    "plugin_memory_core": "2adb75b6ae437156a96343ba346e1c5d94a31338e2ec1afa2646da6ffd6f5e5c",
+    "plugin_semantic_recall": "2fb1f296ba8827c6d79764b322f3c639d19f98f9a311546a2de1f0ff13d7c9e1",
+    "config_off": "16854caa7d24fe88d5c67df60718961f8b306c58d7d17f4ec9c9ae6349910c19",
+    "config_on": "f114b4ee89f7ce6227eb27d87db911ba93a7ad92e3783517e37c175a35eeb232",
+    "note": "Verified against preflight.json digests; binary + plugin + both arm configs + relay digests all match the manifest."
+  },
+  "REQUESTS_OFF_ON": {
+    "captured_requests": {"off": 2, "on": 2},
+    "shape_per_arm": "1 auxiliary title request (no tools) + 1 substantive answer request",
+    "answer_request_identity": {
+      "user_content_sha256": "9911cc24808ac15b33cfe96f8a15f0ff1f8aebdca8ddc67ec97bf8a5b9690aed",
+      "user_content_identical_across_arms": true,
+      "model": "local/chat (Qwen3.8 Chat, xhigh reasoning, bounded)",
+      "identical_sampling": {"stream": true, "max_completion_tokens": 32768, "reasoning_effort": "xhigh", "temperature": 1, "top_p": 0.95, "top_k": 20},
+      "message_roles_answer_request": ["system", "user"],
+      "message_count_answer_request": 2
+    }
+  },
+  "GRAPHITI_SOURCE_CONTEXT_ONLY_ON": "yes",
+  "EXPOSED_TOOL_SCHEMAS": {
+    "off_answer_request": ["skill"],
+    "on_answer_request": ["skill"],
+    "note": "A 'skill' function schema is advertised in both answer requests despite the answerprobe agent's deny-all permission (tool-exposure gap)."
+  },
+  "TOOL_INVOCATIONS_OFF_ON": {
+    "off": 0,
+    "on": 0,
+    "evidence_source": "answer NDJSON part types are step-start/text/step-finish only (no tool part) in both arms; no tool-role message in any captured answer request. Classification: OFFERED_BUT_UNUSED."
+  },
+  "EFFECTIVE_PLUGIN_AND_SESSION_ISOLATION": {
+    "status": "measured",
+    "plugin": "single ghdev-graphiti-memory plugin; enabled=false (off) / enabled=true (on); identical otherwise",
+    "isolation": "per-arm fresh XDG_CONFIG/DATA/STATE/CACHE_HOME; OPENCODE_DISABLE_PROJECT_CONFIG=1; OPENVIKING_HYBRID_RECALL=off; compaction auto:false; real ELF binary (bypasses openviking shim); distinct fresh sessions per arm",
+    "alternative_channel_markers_in_answer_requests": "none (openviking / viking:// / hybrid-recall / session-memory all absent in both arms)"
+  },
+  "ACTUAL_ANSWERS_SOURCE_EXACT": {
+    "off": "absent (control answer does not contain the credited token)",
+    "on": "correct (treatment answer contains the credited token, matching frozen expected_answer sha256 280dca65e171441315447778c79a2a4c26368c7bd692dc7fe19e2a4ecd5f68e3)"
+  },
+  "OFF_ON_PROCESS_EXITS": {"off": 0, "on": 0},
+  "RECEIPT_GUARD_DEFECTS": [
+    "D1: ANSWER_PASS predicate omits OFF_EXIT=0/ON_EXIT=0/ALT_CHANNEL=verified (written to receipt but not in the PASS branch)",
+    "D2: CONTROL_ANSWER_SOURCE_EXACT=yes is misnamed; it means the credited token is ABSENT from the control answer",
+    "D3: LOADED_CONTEXT_PLUGIN_IDS_OFF_ON / EFFECTIVE_TOOLS_OFF_ON / ISOLATED_DB_CONFIG_STATE_PATHS are string literals, not measured; 'tools=0 both arms' is imprecise (a 'skill' schema is offered -> OFFERED_BUT_UNUSED)",
+    "D4: CANDIDATE_SOURCE_SHA=6e5c2ce6 is the issue-branch documentation head, conflated with the B2.2 selector-candidate source 4bc169cc",
+    "D5: committed receipt KNOWN_GAPS describes trace-log capture (stale); the actual run and the runner template use the no-inference relay"
+  ],
+  "ALTERNATIVE_CHANNEL_BENEFIT_EXCLUSION": "yes",
+  "SOURCE_PRIVACY_EX": {
+    "status": "verified",
+    "detail": "private packet files are 0600 and not committed; only digests, counts, and verdicts are published. No raw prompt/fact text, credited token, source UUID, raw model answer, config secret, API header, or private log appears in this evidence commit."
+  },
+  "MODEL_ANSWER_INDEPENDENT_GATE": "PASS",
+  "EVIDENCE_COMMIT_SHA": "<full 40-hex of the evidence-only clean-answer-adjudication commit on issue/93; reported in the returned handback + remote readback>",
+  "KNOWN_GAPS": [
+    "The runner does not self-authenticate; the PASS is derived independently from the raw result artifacts.",
+    "The 'skill' function schema is offered at the outbound-request level despite deny-all; it is OFFERED_BUT_UNUSED (no invocation, no result), so it is a tool-exposure gap, not an answer channel.",
+    "The committed receipt's KNOWN_GAPS text predates the relay-based runner template (stale prose; not verdict-affecting)."
+  ],
+  "COMMAND_SHAPE_FRICTION": "see command-shape-friction.json (canonical GHDEV-10 schema)"
+}
