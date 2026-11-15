@@ -44,9 +44,17 @@ fresh SAME-GROUP Graphiti get_episodes UUID. Distinguish legacy
 Issue-75 Journal from #92 ReviewStore. Inspect the actual isolated
 V2 ctx.options binding for sourcedEpisodeResolver and
 curatedCandidateRetriever. Do not fabricate or backfill either data store
-from arbitrary Graphiti hits; do not change installed config. For the
-raw-pool-absent S03/S05/S13 failure class, confirm whether a qualified
-curated index path can supply a fact without relaxing authority.
+from arbitrary Graphiti hits; do not change installed config. In the same
+read-only group, independently time a few SERIAL get_episodes responses:
+the source currently allocates at most 70ms to optional indexed proof
+(INDEX_ENRICHMENT_MAX_WAIT_MS), separate from Graphiti search RTT. Report
+the measured get_episodes p50/p95 and whether proofs actually finish
+inside that 70ms window; never infer proof latency from search RTT.
+If actual proof systematically expires, return the exact host receipts
+to Central for a source-correct budget/architecture fix; do not enlarge
+70ms, the model-facing budgets or 300ms hook allowance locally.
+For the raw-pool-absent S03/S05/S13 failure class, confirm whether a
+qualified curated index path can supply a fact without relaxing authority.
 
 D. If and ONLY IF an existing genuine, persisted, authorized per-fact
 source record and current matching Graphiti episode are available,
