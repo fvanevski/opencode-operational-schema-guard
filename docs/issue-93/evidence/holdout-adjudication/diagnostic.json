@@ -1,0 +1,32 @@
+{
+  "schema": "issue93.holdout-adjudication.v1",
+  "label": "POST_EXPOSURE_DIAGNOSTIC_NOT_HOLDOUT",
+  "purpose": "Read-only reconstruction of the ORIGINAL unchanged semantic comparator (69014b7) on the already-exposed sealed 4/2 holdout, to establish the baseline arithmetic that the once-only holdout run did NOT record. Diagnostic-only: it does not re-qualify the holdout as untouched and does not authorize a comparative PASS.",
+  "transport": "Same frozen Graphiti transport as the once-only run (live search_memory_facts + same-group get_episodes); B2.2 columns reproduce the recorded holdout-result.json exactly (H01=T, H02/H03/H04=F; HN01=4, HN02=0), validating reproducibility.",
+  "previous_source_sha": "69014b739d490f8cb90bce86233edf3054673209",
+  "candidate_source_sha": "4bc169cc59e8900f5dc3cd4d3c70a22d0fcfb9f4",
+  "positives": [
+    { "id": "H01", "kind": "paraphrase", "baseTP": true, "b22TP": true, "baseCount": 4, "b22Count": 4 },
+    { "id": "H02", "kind": "paraphrase", "baseTP": false, "b22TP": false, "baseCount": 3, "b22Count": 3 },
+    { "id": "H03", "kind": "temporal", "baseTP": false, "b22TP": false, "baseCount": 4, "b22Count": 4 },
+    { "id": "H04", "kind": "paraphrase", "baseTP": false, "b22TP": false, "baseCount": 4, "b22Count": 4 }
+  ],
+  "negatives": [
+    { "id": "HN01", "kind": "offtopic", "base": 4, "b22": 4 },
+    { "id": "HN02", "kind": "secret", "base": 0, "b22": 0 }
+  ],
+  "deltas": {
+    "positive_loss_b22_vs_base": [],
+    "positive_gain_b22_vs_base": [],
+    "new_offtopic_injection_b22_vs_base": [],
+    "secret_fence_b22": ["HN02=0"]
+  },
+  "interpretation": {
+    "positive_comparison": "B2.2 recovers H01 only (1/4); the original semantic ALSO recovers H01 only (1/4). B2.2 loses NO positive the original semantic had. The published reason '3/4 source-exact positive loss' is not supported relative to current semantic.",
+    "offtopic_relevance": "HN01 (off-topic) injects 4 in BOTH the original semantic and B2.2. The published reason 'new off-topic negative' is not supported: the injection is pre-existing, not new.",
+    "source_authorization": "HN02 (secret) injects 0 in both — the privacy fence holds; this is an absolute zero, not a relative count.",
+    "verdict_arithmetic": "On the exposed holdout, B2.2 is NONNEGATIVE (neutral) relative to the original semantic: no positive loss, no new off-topic injection, secret fence intact."
+  },
+  "provenance_caveat": "Cohort manifest identities verify (dev 3e799c46…, sealed holdout 3f9eaebb…). The stored private source-snapshot.json fact pool does NOT reproduce the frozen snapshot fingerprint dc597c69… (it recomputes to a different digest), so the source-snapshot provenance is broken; the diagnostic arithmetic therefore rests on a drifted snapshot and is diagnostic-only.",
+  "private_not_published": "Raw queries, expected facts, source UUID/source-ref maps, and per-stage traces remain in the private packet /opt/filip/.hermes/cache/scratch/issue93f-ngY8kq and are not published."
+}
