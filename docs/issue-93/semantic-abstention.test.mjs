@@ -94,10 +94,11 @@ test('right now is not an independent topical anchor for indexed narration',()=>
       recallOrigin:'index',nativeRank:undefined})
   ];
   for (const candidate of indexed) {
-    assert.equal(lexicalSupport(q,candidate.fact).count,0,
-      'now is temporal narration, not query-topic evidence');
+    assert.equal(lexicalSupport(q,candidate.fact).count,1,
+      'the strict baseline still sees now as a lexical token');
     if(candidate.sourceContext)
-      assert.equal(lexicalSupport(q,candidate.sourceContext).count,0);
+      assert.equal(lexicalSupport(q,candidate.sourceContext).count,1,
+        'shared strict lexical scoring is unchanged');
   }
   assert.deepEqual(preselectIndexedContext(q,indexed),[],
     'index rescue should not use now as a weak lexical bridge');

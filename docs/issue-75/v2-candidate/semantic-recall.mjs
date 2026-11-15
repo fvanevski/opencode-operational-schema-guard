@@ -9,6 +9,11 @@ const SOURCE = /^opencode:[^\s]+:(?:message|tool|user):/;
 const EVIDENCE = new Set(['user-stated', 'tool-reported', 'assistant-reported']);
 const ISSUE = /\bissues?\s*[-#]?\s*(\d+)\b/gi;
 const TOKENS = text => new Set(String(text).toLowerCase().match(/[a-z0-9]{3,}/g) || []);
+/** 'Now' is a temporal discourse modifier, not independent topical support.
+ * Localize this to semantic presentation: strict relevance.mjs and its
+ * source-qualified anchor remain an unchanged benchmark control. */
+const semanticLexicalSupport = (query,text) =>
+  lexicalSupport(String(query || '').replace(/\bnow\b/gi,' '),text);
 function issueIds(text) { return new Set([...String(text).matchAll(ISSUE)].map(x => x[1].replace(/^0+(?=\d)/, ''))); }
 function identitySignal(query, fact) {
   const requested = issueIds(query), observed = issueIds(fact);
@@ -17,9 +22,9 @@ function identitySignal(query, fact) {
   return observed.size ? -1.1 : -0.25; // absence is not a contradiction
 }
 function rankSignal(query, item) {
-  const overlap = lexicalSupport(query, item.fact);
+  const overlap = semanticLexicalSupport(query, item.fact);
   const contextual = typeof item.sourceContext === 'string'
-    ? lexicalSupport(query, item.sourceContext) : {count:0};
+    ? semanticLexicalSupport(query, item.sourceContext) : {count:0};
   const native = item.recallOrigin === 'graphiti' && Number.isInteger(item.nativeRank)
     && item.nativeRank >= 0 && item.nativeRank < 24;
   // A top native semantic hit remains eligible despite zero/one lexical match.
@@ -86,7 +91,7 @@ export function preselectIndexedContext(query, rows, {limit=24}={}) {
   const semantic=qualified.map(x=>({...x,signal:rankSignal(query,x.item)}))
     .filter(x=>x.signal.overlap>0 ||
       (typeof x.item.sourceContext==='string' &&
-       lexicalSupport(query,x.item.sourceContext).count>0))
+       semanticLexicalSupport(query,x.item.sourceContext).count>0))
     .sort((a,b)=>b.signal.score-a.signal.score || a.index-b.index)
     .map(x=>x.item);
   const selected=[],seen=new Set();
@@ -110,7 +115,7 @@ export function selectSemanticContext(query, items, {maxSelected=5,maxChars=1400
     .map(x=>({...x, signal:rankSignal(query,x.item)}))
     .filter(x=>x.signal.native || x.signal.overlap>0 ||
       (typeof x.item.sourceContext==='string' &&
-       lexicalSupport(query,x.item.sourceContext).count>0))
+       semanticLexicalSupport(query,x.item.sourceContext).count>0))
     .sort((a,b)=>b.signal.score-a.signal.score || a.index-b.index);
   if (!ranked.length) return [];
   const anchored=ranked.some(x=>x.signal.overlap>0);

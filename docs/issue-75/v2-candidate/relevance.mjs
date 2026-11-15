@@ -1,6 +1,6 @@
 /** Strict, bounded automatic-injection admission. On-demand Graphiti search
  * may return a broader set. This module never calls the extraction LLM. */
-const COMMON = new Set('a an and are as at be been by can did do does for from has have how i in is it its of on or our should that the their them these this to was were what when where which who why will with we you your used use repo project please current does now'.split(' '));
+const COMMON = new Set('a an and are as at be been by can did do does for from has have how i in is it its of on or our should that the their them these this to was were what when where which who why will with we you your used use repo project please current does'.split(' '));
 // Keep exact numeric identifiers (e.g. Issue #75) and match common e-dropping
 // gerunds (closing/close, using/use) without treating a generated suffix form
 // as a second independent query term. Do not turn fuzzy stems into authority.
