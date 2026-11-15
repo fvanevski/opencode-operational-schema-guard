@@ -1,0 +1,38 @@
+{
+  "schema": "issue93.command-shape-friction.v1",
+  "ghdev_10": [
+    {
+      "scenario": "A. Prepare + validate ONE read-only transport capture and deterministic replay adapter on synthetic inputs",
+      "requested": "Build/validate a single capture + replay adapter preserving ordered exact retrieval responses, source/index/journal rows, deterministic errors, and no unrecorded live fallback",
+      "effective": "single adapter.mjs (capture + replay modes) driven from the d40506d tree memory-core; synthetic bundle validated: replay x2 byte-identical, secret sentinel -> NO_SEARCH_CALL, unrecorded RPC -> UNRECORDED_TRANSPORT_REQUEST (fail closed), 4 roles present",
+      "rewrite_provenance": "recallPolicy is only 'strict'|'semantic', so B2.2 is a separate tree (4bc169) run with 'semantic' — the three semantic roles differ only by which tree's semantic-recall.mjs is loaded; the frozen local journal (0 rows on this host) means source resolution is carried entirely by the sourcedEpisodeResolver rows, which the adapter captures per-case",
+      "outcome": "adapter closure verified on synthetic non-cohort data BEFORE sealing real cases",
+      "gap_classification": "none (transport closure satisfied on existing code; no selector/source-authority modification)"
+    },
+    {
+      "scenario": "B. Source-adjudicate + register + SEAL the private 4+2 manifest",
+      "requested": "Register exact raw UTF-8 queries, full raw SHA256 (not safeText digest), expected source identities, group/project/workspace/temporal metadata; seal before observing selector output",
+      "effective": "cases.json (6 cases, raw bytes + full sha256 + expected source_ref/remote_episode_uuid/evidence_class) -> private-manifest.json (0600) -> manifest-seal.json; raw-query sha256 disjoint from the 29 existing cohort queries",
+      "rewrite_provenance": "355-fact snapshot fingerprint recomputed in node with the original freeze-manifest algorithm sha256(JSON.stringify(joined)) = dc597c69… (a raw-string sha256 or a Python json.dumps variant does NOT reproduce it); the authoritative value is the node one",
+      "outcome": "manifest sealed 2026-11-15T16:46:35.227Z sha256 281ce968…",
+      "gap_classification": "none"
+    },
+    {
+      "scenario": "C. Capture + separately SEAL the actual ordered Graphiti top-24 transport",
+      "requested": "Capture ordered top-24 search_memory_facts + same-group get_episodes + curated/index/journal rows + remote proofs; privacy-rejected query => NO_SEARCH_CALL (no artificial Graphiti call)",
+      "effective": "live read-only Graphiti 127.0.0.1:8766/mcp; P1-P4/N1 admitted (24 facts each), N2 rejected at stage 0 (safeText '' via PRIVATE sk-+16alnum) => NO_SEARCH_CALL; 355 episodes; journal 0 rows; resolver rows fully cover wanted episodes",
+      "rewrite_provenance": "the secret sentinel uses a synthetic sk- + 22-alnum token so it matches the PRIVATE regex and is rejected at stage 0 — this is the correction of the prior guillemet/redaction-placeholder mistake (which ADMITTED the query), giving a genuine NO_SEARCH_CALL",
+      "outcome": "transport sealed 2026-11-15T16:47:02.234Z sha256 054b7a8c… (sha256 of exact bundle bytes)",
+      "gap_classification": "none"
+    },
+    {
+      "scenario": "D. ONE frozen replay of all four roles on identical inputs",
+      "requested": "After BOTH seals, run unchanged strict, original semantic 69014b, B2.2 4bc169, and fixed d40506d ONCE on the same frozen bundle; no live Graphiti fallback",
+      "effective": "frozenGraphiti mock (search keyed by safeText sha256 + frozen episodes; unrecorded RPC throws); frozen journal/curated/resolver; ranker=null (no model). All 4 roles on the one bundle",
+      "rewrite_provenance": "original-semantic/b22/revised produce byte-identical selection for these 6 cases (the d40506d strict-anchor requalification only fires on specific anchor/now-abstention shapes not present here)",
+      "outcome": "P2/P3/P4 source-exact TP all roles; P1 uniform retrieval miss all roles; N1=3 (semantic) /0 (strict); N2=0 NSC all roles; max selector JSON 1389c / 4 facts",
+      "gap_classification": "bounded: P1 absolute positive is a frozen-transport retrieval miss (expected fact not in top-24), not a candidate regression"
+    }
+  ],
+  "omitted_sensitive_values": "raw query text, synthetic sk- sentinel token, fact assertions, source refs (opencode:ses_…), episode UUIDs, private Graphiti top-24 responses, model transcript, API credentials, host secrets — all kept in the 0600 private packet (/opt/filip/.hermes/cache/scratch/issue93h-work, dir 0700), not published; only hashes, counts, labels and booleans are in this directory"
+}

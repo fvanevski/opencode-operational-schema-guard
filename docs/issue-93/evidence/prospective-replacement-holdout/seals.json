@@ -1,0 +1,15 @@
+{
+  "schema": "issue93.prospective-replacement-holdout.seals.v1",
+  "manifest": {
+    "sha256": "281ce968cd4b659391b6c83fde86cea82af611cc37a4ce0aff10172cc73a840c",
+    "sealed_at": "2026-11-15T16:46:35.227Z",
+    "case_count": 6
+  },
+  "transport": {
+    "sha256": "054b7a8c2d227ec9b7b76e92a1d4d977987e61d413b975aeefd314dd172ec6bc",
+    "sealed_at": "2026-11-15T16:47:02.234Z",
+    "cross_links_manifest_sha256": "281ce968cd4b659391b6c83fde86cea82af611cc37a4ce0aff10172cc73a840c"
+  },
+  "snapshot_fingerprint_355fact": "dc597c690b0e8990b925b01467269f530d37dfb2dd7730663bdda46680e7231b",
+  "episode_count": 355
+}

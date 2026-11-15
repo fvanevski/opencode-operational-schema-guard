@@ -1,0 +1,56 @@
+{
+  "schema": "issue93.prospective-replacement-holdout.handback.v1",
+  "RESULT": "PARTIAL",
+  "REQUIRED_HEAD_SHA": "962d2c30c6206acd80c9c23d9a826b0e03e0f8dd",
+  "ACTUAL_TESTED_SELECTOR_SHA": "d40506d15ed2ed2c2c08edcd64995182c197a6d8",
+  "OWNER_CHECKOUT_PRESERVED": "yes",
+  "PR_NUMBER": 96,
+  "NEW_CASES": "P1 direct, P2 cause, P3 decision, P4 temporal (4 positive); N1 offtopic, N2 secret (2 negative)",
+  "NOVELTY_SOURCE_ADJUDICATION": "verified — all 6 raw-query sha256 distinct from the 29 existing dev/holdout cohort queries; expected positive facts (snapshot idx 13/40/90/108) are not referenced by any existing cohort; positives source-adjudicated from the 355-fact snapshot BEFORE any selector output observed",
+  "PRIVATE_RAW_QUERY_DIGESTS": {
+    "P1": "0c10e012b6f4847d4e7039cf253c610ad0245bea548a3df023798c7cf57d4686",
+    "P2": "587a6caf2583c75554edb5f8c0f146d94765390b9b808bb89642e4dd28db279f",
+    "P3": "e0736fa9dc37e4d3f1f4a7d0fbe7bc4d6524b12991a51b6587d77059eb9dccdf",
+    "P4": "ba9bc737fa0920c484e66a97b93d4a7be4d14d2d4bb6516f2748f48e55e95bff",
+    "N1": "1eec01887f762ec010813b1519780ffda034a9d94a983db141c7c52132e1b0f2",
+    "N2": "5d94f6f8898004d986fe82bd9c67e9d81ef195ebe9951ea4017ca8290c9ac83f"
+  },
+  "MANIFEST_FROZEN_BEFORE_TRANSPORT": "yes, 2026-11-15T16:46:35.227Z, 281ce968cd4b659391b6c83fde86cea82af611cc37a4ce0aff10172cc73a840c",
+  "TRANSPORT_FROZEN_BEFORE_EVALUATION": "yes, 2026-11-15T16:47:02.234Z, 054b7a8c2d227ec9b7b76e92a1d4d977987e61d413b975aeefd314dd172ec6bc",
+  "TOP24_CAPTURE": "P1=24 P2=24 P3=24 P4=24 N1=24 (admitted, ordered top-24 + metadata); N2=NO_SEARCH_CALL (stage-0 rejected, 0). Original ordered-response fingerprints in casewise-results.json / private bundle.",
+  "SOURCE_SNAPSHOT_INDEX_REMOTE_PROOF": "frozen: 355-fact snapshot fingerprint dc597c690b0e8990b925b01467269f530d37dfb2dd7730663bdda46680e7231b; 355 same-group episodes captured; all curated/resolver rows' remote_episode_uuid present in the frozen episode set (0 unmatched); group=development-knowledge, ws=/workspace/mcp_servers/gh_mcp, project=gh_mcp",
+  "NO_LIVE_FALLTHROUGH": "verified — replay ran against the frozen mock only (search_memory_facts + get_episodes); unrecorded RPC throws UNRECORDED_TRANSPORT_REQUEST; no live Graphiti, no reranker, no model inference during replay",
+  "CASEWISE_POSITIVES": {
+    "P1_direct": "SOURCE-EXACT FN for ALL 4 roles (strict/base/b22/revised). Root cause: the pre-registered expected fact (snapshot idx 40) and its episode are NOT present in the frozen top-24 retrieval response for the P1 query phrasing — a uniform frozen-transport retrieval miss, NOT a candidate regression (strict misses it identically).",
+    "P2_cause": "SOURCE-EXACT TP for all 4 roles",
+    "P3_decision": "SOURCE-EXACT TP for all 4 roles (user-stated evidence class preserved)",
+    "P4_temporal": "SOURCE-EXACT TP for all 4 roles (temporal/observed status preserved)",
+    "role_TP": { "strict": ["P2","P3","P4"], "original_semantic": ["P2","P3","P4"], "b22": ["P2","P3","P4"], "revised": ["P2","P3","P4"] }
+  },
+  "NEGATIVE_STAGE_COUNTS": {
+    "N1_offtopic": {
+      "strict": { "raw_top24": "admitted", "selector_facts": 0, "source_facts": 0, "native_model_facing": 0 },
+      "original_semantic": { "raw_top24": "admitted", "selector_facts": 3, "source_facts": 3, "native_model_facing": 3 },
+      "b22": { "raw_top24": "admitted", "selector_facts": 3, "source_facts": 3, "native_model_facing": 3 },
+      "revised": { "raw_top24": "admitted", "selector_facts": 3, "source_facts": 3, "native_model_facing": 3 },
+      "note": "absolute off-topic injection = 3 in-group dev-knowledge facts for the three semantic roles (0 for strict). Identical across base/b22/revised => no NEW injection by the revised candidate. Reported as an absolute finding, not a gate failure (contract: no new absolute off-topic threshold invented)."
+    },
+    "N2_secret": {
+      "all_roles": { "admission": "REJECTED (stage-0 safeText(query,500) via PRIVATE regex)", "no_search_call": true, "selector_facts": 0, "source_facts": 0, "native_model_facing": 0 }
+    }
+  },
+  "SECRET_QUERY_EXACT_RAW_ADMISSION": "rejected — stage-0 safeText(query,500) returns '' (synthetic sk-+22alnum sentinel matches the PRIVATE regex); NO_SEARCH_CALL. raw digest 5d94f6f8898004d986fe82bd9c67e9d81ef195ebe9951ea4017ca8290c9ac83f. Verified raw-byte identity (not a guillemet/redaction placeholder).",
+  "ABSOLUTE_PRIVACY_ZERO": "PASS — zero model-facing facts and zero credential disclosure for N2 across all 4 roles; 0 credential-shaped strings (sk-/ghp_/key:/password:/secret:) across the 227-fact candidate pool",
+  "COMPARATIVE_HOLDOUT_GATE": "PASS (relative, nonnegative) — revised loses no positive and injects no new off-topic/secret fact relative to original-semantic and B2.2; strict-only floor preserved",
+  "SELECTOR_JSON_BUDGET_AND_FACT_CAP": "max selector JSON 1389 chars (<=1400), max 4 facts (<=5) — PASS across all 4 roles",
+  "REUSED_FOCUSED_NATIVE_ANSWER_GATES": "exact-source applicable: d40506d selector blobs verified (relevance.mjs 46749f1d8fbe37ac97b79ffba711e115897a07d6, semantic-recall.mjs 9dd4d49c3e5cb90d4ba29cdf7d5d8730c653ca16 — both byte-identical to the prior codex-remediation evidence). Reused as separate evidence classes, NOT fresh runs: 118/118 focused tests (10 suites, exit 0); native hook n=20 p95=299.99ms<=300ms (max selector JSON 1011, 2 facts); D12 answer-proof bridge = ANSWER_PROOF_REUSED_WITH_EXACT_BRIDGE (CPU source-equivalence, not a fresh GPU/model PASS).",
+  "EVIDENCE_COMMIT_SHA": "<set at publication>",
+  "FINAL_BRANCH_SHA": "<set at publication>",
+  "PR_CI_TRUSTED_VERIFY_STATUS": "exact-head revalidation REQUIRED after this evidence commit (new PR SHA); NOT inherited from 962d2c3. Central owns exact-head Actions + trusted Verify + independent review.",
+  "KNOWN_GAPS": [
+    "P1 absolute positive is a source-exact FN for all 4 roles: the pre-registered expected fact (snapshot idx 40) and its episode are absent from the frozen top-24 retrieval response for that query phrasing. Uniform across roles (strict included) => a frozen-transport retrieval property, not a revised-candidate regression. Selectors did surface topically-equivalent graphiti_live-binding facts from other sources.",
+    "N1 absolute off-topic injection = 3 in-group dev-knowledge facts for the three semantic roles (0 for strict); identical across base/b22/revised => not a candidate regression. Reported per contract; no new absolute off-topic threshold invented.",
+    "REUSED focused/native/D12 gates are exact-source CPU evidence classes for d40506d, not fresh GPU/model-inference runs."
+  ],
+  "COMMAND_SHAPE_FRICTION": "see ghdev-10-command-shape-friction.json"
+}
