@@ -56,22 +56,34 @@ export function scoreLedger(input){
       context_chars:row.context_chars,budget_chars:row.budget_chars??null,on_time:row.on_time,
       associated:row.associated,controls:row.controls});
   }
-  const times=[];
+  // A Graphiti search round trip is NOT a native OpenCode context callback.
+  // Historical untyped samples remain measurable but cannot certify the hook.
+  const observations={native:[],search:[],unclassified:[]};
   for(const [i,r] of input.callbacks.entries()){
     if(!r||typeof r.duration_ms!=='number'||!Number.isFinite(r.duration_ms)||
       r.duration_ms<0||typeof r.injected!=='boolean'||typeof r.error!=='boolean')
-      invalid('callback '+i);
-    times.push(r.duration_ms);
+      invalid('callback ' + i);
+    const kind=r.observation_kind??'unclassified';
+    if(!['native-context-hook','graphiti-search-rtt','unclassified'].includes(kind))
+      invalid('callback observation_kind ' + i);
+    const key=kind==='native-context-hook'?'native':
+      kind==='graphiti-search-rtt'?'search':'unclassified';
+    observations[key].push(r);
   }
-  times.sort((a,b)=>a-b);
+  const summarize=(rows)=>{
+    const times=rows.map(r=>r.duration_ms).sort((a,b)=>a-b);
+    return {count:times.length,p50_ms:percentile(times,0.5),
+      p95_ms:percentile(times,0.95),max_ms:times.at(-1)??null,
+      no_injection:rows.filter(r=>!r.injected).length,
+      errors:rows.filter(r=>r.error).length,
+      over_300_ms:times.filter(x=>x>300).length};
+  };
   const selections=Object.fromEntries(STAGES.map(s=>[s,measure(cases,s)]));
   const controls=Object.fromEntries(['secret','wrong_group','false_verified'].map(k=>
     [k,cases.filter(c=>c.controls[k]).map(c=>c.id)]));
-  const latency={count:times.length,p50_ms:percentile(times,0.5),
-    p95_ms:percentile(times,0.95),max_ms:times.at(-1)??null,
-    no_injection:input.callbacks.filter(r=>!r.injected).length,
-    errors:input.callbacks.filter(r=>r.error).length,
-    over_300_ms:times.filter(x=>x>300).length};
+  const latency=summarize(observations.native);
+  const searchLatency=summarize(observations.search);
+  const unclassifiedLatency=summarize(observations.unclassified);
   return {schema:'issue93.scorecard.v1',cohort:input.cohort,
     status:'MEASUREMENT_ONLY_REQUIRES_INDEPENDENT_SOURCE_AND_HOST_PROOF',
     cases:cases.length,
@@ -90,6 +102,9 @@ export function scoreLedger(input){
       rendered_over_1400_cases:cases.filter(c=>c.context_chars>1400).map(c=>c.id),
       missing_budget_measurement_cases:cases.filter(c=>c.budget_chars===null).map(c=>c.id)},
     callback_latency:latency,
+    graphiti_search_latency:searchLatency,
+    unclassified_timing:unclassifiedLatency,
+    latency_provenance:'SELF_REPORTED_KINDS_REQUIRE_NATIVE_HOST_CORROBORATION',
     candidate_vs_semantic:{
       positive_coverage_delta:selections.candidate.positive_case_coverage-
         selections.semantic.positive_case_coverage,

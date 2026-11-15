@@ -15,9 +15,15 @@ Each case: id, kind=positive/negative, expected=[synthetic labels],
 stages={all nine arrays}, context_chars (actual rendered text length), optional
 budget_chars (sum of selector JSON item costs, <=1400), on_time, associated and
 controls={secret:false,wrong_group:false,false_verified:false}. The control
-flags indicate actual observed breaches. Callbacks contain duration_ms,
-injected and error for ALL Graphiti context-hook invocations, including
-abstentions and failures. Search latency and callback latency are distinct. The selector charges the
+flags indicate actual observed breaches. Timing samples contain duration_ms, injected, error, and an explicit
+observation_kind: native-context-hook or graphiti-search-rtt. Only genuine
+native-context-hook samples enter callback_latency and its 300-ms gate.
+Unlabeled samples are reported under unclassified_timing; their presence
+cannot prove the native callback p95. Include all observed native callbacks,
+including abstentions, late completions, and errors. Search latency, native
+callback latency, and model-turn latency are distinct; a plausible model
+answer or synthesized scorer entry cannot establish assembled-context
+association. The selector charges the
 sum of JSON item lengths to its 1400-character limit; formatContext adds
 presentation prose and may render more characters. The scorer records a
 rendered-over-1400 observation without misclassifying it as a selector-budget
@@ -32,8 +38,11 @@ The scorer writes a 0600 exclusive output and rejects raw-looking source IDs.
 Never publish the private input, queries, facts, live UUID mapping, assembled
 model prompts or sensitive traces. Scorecard aggregate numbers are meaningful
 only alongside independent source, remote-membership, association and
-callback instrumentation evidence. Missing proof remains UNVERIFIED; a
-metadata row does not establish it. Preserve the semantic 13/16 and strict
+callback instrumentation evidence. Missing proof remains UNVERIFIED; a metadata row does not establish it.
+The scorer reports answer_supported memberships supplied by the producer,
+but a real model answer with independent attribution is required to claim
+observed answer support. Retain any historical evidence-only packet unchanged
+when the scoring instrumentation is corrected. Preserve the semantic 13/16 and strict
 12/16 source-exact controls without retroactive relabeling.
 
 ## Correction decision
