@@ -110,10 +110,19 @@ export function selectSemanticContext(query, items, {maxSelected=5,maxChars=1400
   if (typeof query!=='string' || !Array.isArray(items) ||
       !Number.isInteger(maxSelected) || maxSelected<1 || maxSelected>5 ||
       !Number.isInteger(maxChars) || maxChars<100 || maxChars>8000) return [];
+  // Preserve the unchanged strict admission floor only for an exact observation
+  // already in the caller's source/remote-qualified pool. Requalify even a
+  // supplied baselineAnchor: its mere presence cannot authorize injection.
+  const strictAnchor=baselineAnchor&&valid(baselineAnchor,query)&&
+    shortlistQualifiedCandidates(query,[baselineAnchor],{limit:1}).some(x=>
+      x.fact===baselineAnchor.fact&&x.source===baselineAnchor.source&&
+      x.evidenceClass===baselineAnchor.evidenceClass) ? baselineAnchor:null;
+  const isStrictAnchor=item=>strictAnchor&&item.fact===strictAnchor.fact&&
+    item.source===strictAnchor.source&&item.evidenceClass===strictAnchor.evidenceClass;
   const ranked=items.map((item,index)=>({item,index}))
     .filter(x=>valid(x.item,query))
     .map(x=>({...x, signal:rankSignal(query,x.item)}))
-    .filter(x=>x.signal.native || x.signal.overlap>0 ||
+    .filter(x=>isStrictAnchor(x.item) || x.signal.native || x.signal.overlap>0 ||
       (typeof x.item.sourceContext==='string' &&
        semanticLexicalSupport(query,x.item.sourceContext).count>0))
     .sort((a,b)=>b.signal.score-a.signal.score || a.index-b.index);
@@ -123,10 +132,7 @@ export function selectSemanticContext(query, items, {maxSelected=5,maxChars=1400
   // A source-qualified strict-control fact must not disappear solely because
   // native semantic rank or unrelated lexical overlap filled the display.
   // Do not import an anchor that is absent from this exact verified pool.
-  const anchorIndex=baselineAnchor?ranked.findIndex(x=>
-    x.item.fact===baselineAnchor.fact &&
-    x.item.source===baselineAnchor.source &&
-    x.item.evidenceClass===baselineAnchor.evidenceClass):-1;
+  const anchorIndex=strictAnchor?ranked.findIndex(x=>isStrictAnchor(x.item)):-1;
   const best=Math.max(...ranked.map(x=>x.signal.score));
   if(anchorIndex>0)ranked.unshift(...ranked.splice(anchorIndex,1));
   const selected=[], fingerprints=[], seen=new Set();
@@ -137,7 +143,7 @@ export function selectSemanticContext(query, items, {maxSelected=5,maxChars=1400
     // rank and an optional uncalibrated reranker are the sole support.
     // Continue scanning: a lower native hit with independent evidence can
     // still supply the one authorized context fact.
-    if (!anchored && !signal.independentSupport) continue;
+    if (!anchored && !signal.independentSupport && !isStrictAnchor(item)) continue;
     // A relative score threshold controls low-quality context expansion, but
     // never suppresses the highest ranked confirmed observation by itself.
     if (selected.length && signal.score < Math.max(0.15,best*0.33)) break;

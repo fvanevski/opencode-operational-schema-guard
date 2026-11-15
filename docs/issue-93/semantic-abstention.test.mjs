@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {lexicalSupport,answerTypeSupport} from '../issue-75/v2-candidate/relevance.mjs';
-import {selectSemanticContext,preselectIndexedContext} from '../issue-75/v2-candidate/semantic-recall.mjs';
+import {selectSemanticContext,preselectIndexedContext,strictControlAnchor} from '../issue-75/v2-candidate/semantic-recall.mjs';
 
 const source='opencode:ses-issue93:message:msg-sourced';
 const item=(fact,extras={})=>({
@@ -122,4 +122,41 @@ test('right now does not suppress an independently topical development answer',(
   assert.ok(lexicalSupport(q,fact).count>=2,
     'FalkorDB and recovery remain meaningful topic anchors');
   assert.deepEqual(selectSemanticContext(q,[item(fact)]).map(x=>x.fact),[fact]);
+});
+
+test('historical now comparison preserves independently qualified strict anchor in native lane',async()=>{
+  const q='What did we use originally, and what do we use now?';
+  const historical=item('Previously we used Redis; now we use PostgreSQL.',{
+    temporal:'historical/superseded'});
+  const anchor=await strictControlAnchor(q,[historical],[]);
+  assert.ok(anchor,'unchanged strict policy must qualify the temporal comparison');
+  assert.equal(lexicalSupport(q,historical.fact).count,1,'now is the only lexical overlap');
+  assert.deepEqual(selectSemanticContext(q,[historical],{baselineAnchor:anchor}).map(x=>x.fact),
+    [historical.fact],'semantic selection must retain the same verified strict fact');
+});
+
+test('historical now comparison retains remote-proven indexed strict anchor',async()=>{
+  const q='What did we use originally, and what do we use now?';
+  const historical=item('Previously we used Redis; now we use PostgreSQL.',{
+    recallOrigin:'index',nativeRank:undefined,temporal:'historical/superseded'});
+  assert.deepEqual(preselectIndexedContext(q,[historical]).map(x=>x.fact),[historical.fact]);
+  const anchor=await strictControlAnchor(q,[],[historical]);
+  assert.ok(anchor);
+  assert.deepEqual(selectSemanticContext(q,[historical],{baselineAnchor:anchor}).map(x=>x.fact),
+    [historical.fact]);
+});
+
+test('unqualified and out-of-pool anchors cannot reintroduce now-only injections',async()=>{
+  const q='What is the weather in Tokyo right now?';
+  const noise=item('Now I can see the development graph state.');
+  assert.equal(await strictControlAnchor(q,[noise],[]),null);
+  assert.deepEqual(selectSemanticContext(q,[noise],{baselineAnchor:noise}),[],
+    'unqualified caller-supplied anchor must not bypass strict admission');
+
+  const historyQuery='What did we use originally, and what do we use now?';
+  const historical=item('Previously we used Redis; now we use PostgreSQL.',{nativeRank:1});
+  const missing=await strictControlAnchor(historyQuery,[historical],[]);
+  assert.ok(missing);
+  assert.deepEqual(selectSemanticContext(historyQuery,[noise],{baselineAnchor:missing}),[],
+    'a strict-qualified fact absent from the verified candidate pool cannot be imported');
 });
