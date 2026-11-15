@@ -1,0 +1,38 @@
+{
+  "schema": "issue93.native-context-hook.v1",
+  "cohort": "native",
+  "tested_source_sha": "5aa14fde42f47c7abfb144f550cdb6bcab6989bb",
+  "plugin_under_test": "docs/issue-75/v2-candidate/plugin.mjs (stock-V2 native context/recall adapter; selector source unchanged from bfa6cbed)",
+  "isolation": "real plugin module driven in an isolated mock OpenCode ctx (private client/session binding); NOT the live production plugin/config; no live runtime overwritten or restarted",
+  "hook_measured": "ctx.session.hook('context') entry->return, includes the 300ms Promise.race over the prompt-prefetch memory.search",
+  "group": "development-knowledge",
+  "graphiti_endpoint": "127.0.0.1:8766/mcp",
+  "native_context_hook": {
+    "observation_kind": "native-context-hook",
+    "n": 8,
+    "p50_ms": 147.047,
+    "p95_ms": 224.952,
+    "max_ms": 224.952,
+    "empty_no_injection": 8,
+    "errors": 0,
+    "over_300_ms": 0,
+    "within_300ms": true,
+    "samples_ms": [224.952, 152.037, 147.047, 142.333, 143.002, 150.032, 147.461, 0.005],
+    "query_kinds": ["useful x5", "offtopic x2", "secret-fence x1 (0.005ms, pre-Graphiti privacy short-circuit)"]
+  },
+  "graphiti_search_rtt": {
+    "observation_kind": "graphiti-search-rtt",
+    "n": 4,
+    "p50_ms": 152.862,
+    "p95_ms": 156.659,
+    "max_ms": 156.659,
+    "samples_ms": [152.856, 152.862, 155.609, 156.659]
+  },
+  "unclassified_timing": { "n": 0 },
+  "interpretation": [
+    "The native context-hook p95 (224.952ms) is measured on the REAL plugin context hook and is within the 300ms allowance; it is separate from and higher than the raw search RTT p95 (156.659ms).",
+    "empty_no_injection=8 because the host development-knowledge source journal is empty (no persisted per-fact source mappings), so recall yields no sourced facts and the hook injects nothing; the hook still ran the full search+join on-time. This is a host-state observation, not a selector defect.",
+    "The secret-fence query short-circuits at ~0.005ms before any remote call (safeText PRIVATE regex), confirming the pre-Graphiti privacy fence in the hook path."
+  ],
+  "privacy_note": "Query kinds recorded, not raw queries. No raw facts, model requests, credentials, or UUID mappings published."
+}
