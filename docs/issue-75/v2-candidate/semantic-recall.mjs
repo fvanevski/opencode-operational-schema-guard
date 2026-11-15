@@ -29,10 +29,17 @@ function rankSignal(query, item) {
   // Optional local reranker scores are uncalibrated ranking signals only.
   const rerank=typeof item.rerankScore==='number' && Number.isFinite(item.rerankScore)
     && item.rerankScore>=0 && item.rerankScore<=1 ? item.rerankScore*1.25 : 0;
+  const answerType=answerTypeSupport(query,item.fact);
+  const identity=identitySignal(query,item.fact);
   const score = prior + rerank + Math.min(overlap.count, 5) * 0.48 +
     overlap.score * 0.75 + Math.min(contextual.count, 3) * 0.12 +
-    answerTypeSupport(query, item.fact) * 0.5 + identitySignal(query, item.fact);
-  return { score, overlap:overlap.count, native };
+    answerType * 0.5 + identity;
+  // Graphiti's native rank is useful retrieval evidence, but it cannot by
+  // itself justify injecting an otherwise unanchored observation.
+  // A response-type, exact identity or authenticated source excerpt may
+  // retain a legitimate zero-token-overlap paraphrase.
+  return {score,overlap:overlap.count,native,
+    independentSupport:answerType>0||identity>0||contextual.count>0};
 }
 function valid(item, query) {
   return item && typeof item.fact === 'string' && item.fact.trim().length >= 4 &&
@@ -121,6 +128,11 @@ export function selectSemanticContext(query, items, {maxSelected=5,maxChars=1400
   let budget=maxChars;
   for (const {item,signal} of ranked) {
     if (selected.length>=cap) break;
+    // Only in the existing unanchored single-fact lane, abstain if native
+    // rank and an optional uncalibrated reranker are the sole support.
+    // Continue scanning: a lower native hit with independent evidence can
+    // still supply the one authorized context fact.
+    if (!anchored && !signal.independentSupport) continue;
     // A relative score threshold controls low-quality context expansion, but
     // never suppresses the highest ranked confirmed observation by itself.
     if (selected.length && signal.score < Math.max(0.15,best*0.33)) break;
