@@ -1,0 +1,16 @@
+COMMAND_SHAPE_FRICTION:
+  encountered=yes
+  events:
+    - scenario=local-metadata-and-index-health-read
+      requested_shape="node -e '<inline js>' (read live review/episode-index records for metadata + bidirectional index-health check)"
+      effective_shape="same-as-requested (executed; flagged by harness as 'script execution via -e/-c flag' and auto-approved)"
+      rewrite_provenance=harness_hook
+      event_kind=guard_annotation
+      execution_effect=executed_succeeded
+      correction_or_annotation="Inline node -e reads were flagged and auto-approved by a saved 'always' approval; no shape change required. Per the C2 contract, broad recursive filesystem discovery was avoided (targeted test -d / direct paths used), so the C1 broad-find timeout did not recur."
+      replacement_shape=none
+      recipe_reference=none
+      resource_reference=none
+      contract_conflict=no
+      durable_gap_candidate=no
+  omitted_sensitive_values=yes

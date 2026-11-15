@@ -286,7 +286,9 @@ export class ReviewStore {
   async get(id){
     try {
       const v=JSON.parse(await fs.readFile(this.filename(id),'utf8'));
-      if(v.id!==id||v.group!==this.group||!STATES.has(v.state))throw Error('Corrupt review identity/state');
+      if(!v||typeof v!=='object'||Array.isArray(v)||
+        v.id!==id||v.group!==this.group||!STATES.has(v.state))
+        throw Error('Corrupt review identity/state');
       return v;
     } catch(e){if(e.code==='ENOENT')return null;throw e;}
   }

@@ -1,0 +1,111 @@
+{
+  "schema_version": 1,
+  "kind": "issue94-local-read-only-profile",
+  "mode": "synthetic",
+  "generated_at": "2026-11-15T21:05:08.264Z",
+  "node": "26.13.1",
+  "no_graphiti_mutations": true,
+  "no_live_store_mutations": true,
+  "remote_episode_authority_not_measured": true,
+  "native_callback_and_model_utility_not_measured": true,
+  "review_scan_ceiling": 4096,
+  "remote_episode_inventory_ceiling": 1000,
+  "synthetic": [
+    {
+      "review_count": 512,
+      "over_4096": false,
+      "expected_target_persisted": true,
+      "target_in_local_shortlist": true,
+      "source_only_not_remote_proof": true,
+      "samples": {
+        "id": "synthetic-target",
+        "status": "READ_ONLY_LOCAL_PROFILE",
+        "iterations": 3,
+        "cold_ms": 27.253,
+        "warm": {
+          "n": 2,
+          "p50_ms": 17.852,
+          "p95_ms": 22.11,
+          "max_ms": 22.11
+        },
+        "all": {
+          "n": 3,
+          "p50_ms": 22.11,
+          "p95_ms": 27.253,
+          "max_ms": 27.253
+        },
+        "source_qualified_shortlist_counts": [
+          1,
+          1,
+          1
+        ],
+        "remote_membership_proven": false,
+        "model_injection_proven": false
+      }
+    },
+    {
+      "review_count": 4096,
+      "over_4096": false,
+      "expected_target_persisted": true,
+      "target_in_local_shortlist": true,
+      "source_only_not_remote_proof": true,
+      "samples": {
+        "id": "synthetic-target",
+        "status": "READ_ONLY_LOCAL_PROFILE",
+        "iterations": 3,
+        "cold_ms": 145.917,
+        "warm": {
+          "n": 2,
+          "p50_ms": 132.368,
+          "p95_ms": 153.706,
+          "max_ms": 153.706
+        },
+        "all": {
+          "n": 3,
+          "p50_ms": 145.917,
+          "p95_ms": 153.706,
+          "max_ms": 153.706
+        },
+        "source_qualified_shortlist_counts": [
+          1,
+          1,
+          1
+        ],
+        "remote_membership_proven": false,
+        "model_injection_proven": false
+      }
+    },
+    {
+      "review_count": 4097,
+      "over_4096": true,
+      "expected_target_persisted": true,
+      "target_in_local_shortlist": true,
+      "source_only_not_remote_proof": true,
+      "samples": {
+        "id": "synthetic-target",
+        "status": "READ_ONLY_LOCAL_PROFILE",
+        "iterations": 3,
+        "cold_ms": 177.492,
+        "warm": {
+          "n": 2,
+          "p50_ms": 143.186,
+          "p95_ms": 144.789,
+          "max_ms": 144.789
+        },
+        "all": {
+          "n": 3,
+          "p50_ms": 144.789,
+          "p95_ms": 177.492,
+          "max_ms": 177.492
+        },
+        "source_qualified_shortlist_counts": [
+          1,
+          1,
+          1
+        ],
+        "remote_membership_proven": false,
+        "model_injection_proven": false
+      }
+    }
+  ]
+}

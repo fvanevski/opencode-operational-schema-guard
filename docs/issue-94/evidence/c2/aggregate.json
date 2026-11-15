@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "kind": "issue94-c2-bounded-growth-aggregate",
+  "generated_from": {
+    "repo_id": "fvanevski/opencode-operational-schema-guard",
+    "working_branch": "issue/94",
+    "c1_evidence_sha": "1ba4ccbe1068b7a614bc0dedf780ab0e08e4bde0",
+    "c2_source_sha": "9418c97f6379090d8f7e8a1e811fcc7b1c3b2f7e",
+    "c2_tree_sha": "b0d14aa27e77920b313d0dbb086292c74aed10b4",
+    "node": "26.13.1",
+    "opencode_version": "v2.2.7",
+    "graphiti_mcp_endpoint": "http://127.0.0.1:8766/mcp",
+    "curation_group": "development-knowledge",
+    "live_state_root": "/home/filip/.local/state/ghdev-graphiti"
+  },
+  "source_digests": {
+    "curated-recall-candidates.mjs": "5ee82b9cbdb5fa3125b88e30197e557344fe773fcada90376c40e0ad4960fdd4",
+    "curated-recall-candidates.test.mjs": "3b838fa4ff5c450155172925137858fd5248882b62bae69f45ad2a2407799c2b",
+    "memory-core.mjs_unchanged": "2adb75b6ae437156a96343ba346e1c5d94a31338e2ec1afa2646da6ffd6f5e5c",
+    "retrieval-profile.mjs": "664d01f2c3be2ddf515c39eae3bd5439b9957d673433b01012739e8b4912ef54"
+  },
+  "c2_change_verdict": {
+    "only_production_change": "readBoundedInventory overflow branch (>4096) now calls readIndexedInventory(store) instead of returning []",
+    "new_helper": "readIndexedInventory: reads _episode-index (bounded MAX_INDEX_SCAN=4096), re-reads each referenced review via ReviewStore.get, returns only persisted reviews whose remote_episode_uuid matches the index UUID",
+    "fast_legacy_path_below_4096": "UNCHANGED",
+    "safeguards_retained": [
+      "provisional() still requires state=persisted, facts.length=1, valid UUID, SOURCE-pattern source_refs (<=8)",
+      "sourcedEpisodeResolver + fresh remote get_episodes group/UUID membership still required",
+      "1400-char selector / <=5 facts / 300ms context budget in memory-core.mjs unchanged",
+      "remote get_episodes max_episodes=1000 strictly-fewer-than-1000 limit unchanged (fail-closed)",
+      "group/workspace/project, source-index, and privacy fences unchanged"
+    ]
+  },
+  "test_receipts": {
+    "node --check curated-recall-candidates.mjs": 0,
+    "node --check curated-recall-candidates.test.mjs": 0,
+    "node --test curated-recall-candidates.test.mjs": "pass 14, fail 0 (12 C1 + 2 new C2), exit 0",
+    "node --test retrieval-profile.test.mjs": "pass 4, fail 0, exit 0"
+  },
+  "c1_vs_c2_matched_workload": {
+    "synthetic_512": {"target_in_local_shortlist": true, "cold_ms": 27.3},
+    "synthetic_4096": {"target_in_local_shortlist": true, "cold_ms": 145.9, "note": "fast path, unchanged from C1"},
+    "synthetic_4097": {
+      "c1": {"target_in_local_shortlist": false, "shortlist": [0, 0, 0], "cold_ms": 2.534, "note": "fail-closed blackout"},
+      "c2": {"target_in_local_shortlist": true, "shortlist": [1, 1, 1], "cold_ms": 177.492, "note": "target now recovered via episode-index overflow path"},
+      "delta": "C2 recovers the indexed persisted target above the 4096 global scan ceiling; latency rises to ~177ms cold (bounded index read) instead of an immediate ~2.5ms blackout"
+    },
+    "live_local_565_reviews": {
+      "path": "fast (565 < 4096), unchanged",
+      "inventory": "565 reviews (205 deferred / 355 persisted / 5 skipped); 355 persisted facts; 355 index files; 0 missing UUIDs; 0 non-atomic; max 1 fact/origin",
+      "shortlist_counts_range": [0, 30],
+      "cold_ms_range": [36.6, 60.3],
+      "secret_fence_caught": ["secret-negative"],
+      "off_topic_empty_shortlist": ["off-topic-empty"],
+      "note": "identical shape to C1; remote_membership_proven=false by design"
+    }
+  },
+  "source_index_health": {
+    "method": "metadata-only bidirectional check (no live record modified)",
+    "index_files": 355,
+    "valid_index_to_persisted_review_mappings": 355,
+    "bad_maps": 0,
+    "orphan_refs": 0,
+    "persisted_reviews_missing_index": 0,
+    "verdict": "CONSISTENT"
+  },
+  "remote_membership_and_negative_control": {
+    "graphiti_mcp_tools": 13,
+    "get_episodes_development_knowledge_max8": "succeeded (Episodes retrieved successfully)",
+    "get_episodes_bogus_group_negative_control": "No episodes found, episodes=[] (no false membership)",
+    "remote_1000_row_limit": "unchanged, fail-closed (regression test: full 1000-episode inventory grants no group membership, no add_memory)"
+  },
+  "callback_p95": "UNVERIFIED (harness-owned native callback not directly measured; not inferred from Graphiti RTT)",
+  "c3_readiness": "READY_PENDING_MERGE: C2 source is complete, regression-tested, and index-consistent. C3 is a separate operator continuation against the EXACT MERGED main (after Central independent exact-head review + one PR + authorized merge), doing a fresh stock OpenCode + Graphiti + OpenViking validation under the shared post-exit lease. C1/C2 evidence is baseline, not a substitute for fresh-process C3. Not executed in this campaign (stop at C2 checkpoint).",
+  "c2_result": "PASS",
+  "production_source_changed_by_agent": false,
+  "agent_source_diff": "none (Central-owned source/tests unchanged by the local agent; only docs/issue-94/evidence/c2/ added)"
+}

@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "kind": "issue94-c1-baseline-aggregate",
+  "generated_from": {
+    "repo_id": "fvanevski/opencode-operational-schema-guard",
+    "working_branch": "issue/94",
+    "source_base_sha": "5892ebac26894ca895dde235916da33d437c3ba9",
+    "c1_source_sha": "5df362ec665d213098549da20135f22df4684b86",
+    "node": "26.13.1",
+    "opencode_version": "v2.2.7",
+    "opencode_binary_sha256": "0105a81dfcbdc82349b871c657adda54d6250e52c3a2f8bf32c3f3addaac2c6b",
+    "graphiti_mcp_endpoint": "http://127.0.0.1:8766/mcp",
+    "graphiti_config_group_id": "graphiti_live",
+    "curation_group": "development-knowledge",
+    "openviking_version": "0.5.5",
+    "plugin_name": "opencode-v2-candidate-graphiti",
+    "plugin_version": "1.1.0",
+    "plugin_main_sha256": "f9a7ca6671b46ef0c6b2b7485c276d405d3a7c734c4397e1da36d3102aaf1b50"
+  },
+  "invariant_checks": {
+    "issue92_one_fact_per_episode": {
+      "persisted_facts": 355,
+      "max_persisted_facts_per_origin": 1,
+      "persisted_nonatomic_review_records": 0,
+      "persisted_missing_uuid": 0,
+      "episode_index_files": 355,
+      "verdict": "PRESERVED"
+    },
+    "issue93_abstention_strict_anchor": {
+      "present_in_staged_source": true,
+      "search_limit_5": true,
+      "selector_json_char_budget_1400": true,
+      "safeText_fences": true,
+      "verdict": "PRESERVED"
+    },
+    "source_confirmed_limits": {
+      "MAX_REVIEW_SCAN": 4096,
+      "get_episodes_max_episodes": 1000,
+      "get_episodes_strictly_fewer_than": 1000,
+      "INDEX_ENRICHMENT_MAX_WAIT_MS": 70,
+      "selector_maxChars": 1400,
+      "selector_limit": 5
+    }
+  },
+  "live_inventory_development_knowledge": {
+    "review_files": 565,
+    "states": {"deferred": 205, "persisted": 355, "skipped": 5},
+    "persisted_facts": 355,
+    "episode_index_files": 355,
+    "unique_persisted_origin_clusters": 355,
+    "max_persisted_facts_per_origin": 1,
+    "reviews_above_4096": false,
+    "note": "current live count 565 vs historical documentation ~562 (grew by 3); well under the 4096 local scan ceiling and the 1000 remote episode ceiling."
+  },
+  "local_scan_cpu_only": {
+    "state": "authenticated live read-only (565-review development-knowledge store)",
+    "cold_ms_range": [38.2, 66.7],
+    "warm_p95_ms_range": [36.0, 46.7],
+    "shortlist_counts_range": [0, 30],
+    "combined_pre_proof_pool_ceiling": 48,
+    "all_bounded": true,
+    "secret_fence_caught": ["secret-negative"],
+    "off_topic_empty_shortlist": ["off-topic-empty"],
+    "wrong_group_still_topical_not_group_proven": ["wrong-group-postgres"],
+    "remote_membership_proven": false,
+    "note": "Local scan/shortlist/index-join only; NOT a remote membership proof. All shortlists bounded well under the 48 pre-proof pool and the 300ms callback budget."
+  },
+  "synthetic_scaling_disposable": {
+    "512": {"target_in_local_shortlist": true, "cold_ms": 30.141},
+    "4096": {"target_in_local_shortlist": true, "cold_ms": 148.714},
+    "4097": {"over_4096": true, "target_in_local_shortlist": false, "shortlist_counts": [0, 0, 0], "cold_ms": 2.534, "note": "fail-closed blackout: the entire curated inventory returns [] above 4096 (safe availability, not scalable recall)"},
+    "growth_cliff_confirmed": true
+  },
+  "graphiti_remote": {
+    "tools_total": 13,
+    "get_episodes_targeted_single_uuid_param": false,
+    "get_episode_entities_targeted_uuid_list_read": true,
+    "get_episodes_read_only_probe": "succeeded (max_episodes=8, development-knowledge)",
+    "get_episode_entities_read_only_probe": "succeeded (1 persisted uuid)",
+    "timings_are": "local-endpoint RTT, NOT callback p95"
+  },
+  "native_callback_and_model_answer": {
+    "native_prefetch_context_callback_p95": "UNVERIFIED (owned by the active OpenCode harness plugin; not intercepted read-only; contract forbids inferring callback p95 from Graphiti RTT)",
+    "injection_and_model_answer": "UNVERIFIED (would require a live model invocation; not executed to avoid displacing the shared lease)"
+  },
+  "ex_post_exit_posture": "read-only observation: existing post-exit-drain supervisor observed running (curator-cli.mjs, --state-dir /home/filip/.local/state/ghdev-graphiti, --group development-knowledge); no EX post-exit work executed inside the active harness.",
+  "c1_result": "BASELINE_COMPLETE",
+  "c2_recommendation": "PROFILE_ONLY_ACCEPTED",
+  "c2_rationale": "At the live 565-review / 355-persisted scale there is ample headroom below both the 4096 local-scan ceiling and the 1000 remote-episode ceiling; local scan is fast (~38-67ms) and bounded, well under the 300ms callback budget, with no material runtime loss observed. The measured 4096->4097 fail-closed blackout is a real, safe (fail-closed, not silent) growth boundary; it does not itself authorize a new local cache or a relaxation of remote proof. A source-backed C2 lever, if the store approaches the ceiling, is the observed read-only targeted get_episode_entities(episode_uuids, group_id) capability (a per-UUID provenance read) that the current get_episodes(max_episodes=1000) group-wide fetch does not use. No speculative C2 is forced now.",
+  "production_source_changed": false,
+  "source_diff": "none",
+  "material_blockers": "none"
+}

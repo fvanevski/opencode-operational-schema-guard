@@ -1,0 +1,28 @@
+COMMAND_SHAPE_FRICTION:
+  encountered=yes
+  events:
+    - scenario=live-state-root-discovery
+      requested_shape="find /opt /home/filip /workspace /var -type d -name curation-v1 (broad host scan for the live Graphiti state root)"
+      effective_shape="same-as-requested (executed, then re-run with a narrower path set after timeout)"
+      rewrite_provenance=unknown
+      event_kind=execution_failure
+      execution_effect=recovered_after_retry
+      correction_or_annotation="Broad multi-root find exceeded the 180s foreground limit twice; recovered by narrowing to the known state/share subtrees (/home/filip/.local/state, /home/filip/.local/share) which located curation-v1 immediately."
+      replacement_shape="find /home/filip/.local/state/ghdev-graphiti ... -type d -name curation-v1"
+      recipe_reference=none
+      resource_reference=none
+      contract_conflict=no
+      durable_gap_candidate=yes
+    - scenario=local-metadata-read-via-node
+      requested_shape="node -e '<inline js>' <file> (read live review records for state/workspace/project digests)"
+      effective_shape="same-as-requested (executed; flagged by harness as 'script execution via -e/-c flag' and auto-approved)"
+      rewrite_provenance=harness_hook
+      event_kind=guard_annotation
+      execution_effect=executed_succeeded
+      correction_or_annotation="Inline node -e reads were flagged and auto-approved by a saved 'always' approval; no shape change was required. Reused for the metadata digest steps."
+      replacement_shape=none
+      recipe_reference=none
+      resource_reference=none
+      contract_conflict=no
+      durable_gap_candidate=no
+  omitted_sensitive_values=yes
