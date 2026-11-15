@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {lexicalSupport,answerTypeSupport} from '../issue-75/v2-candidate/relevance.mjs';
-import {selectSemanticContext} from '../issue-75/v2-candidate/semantic-recall.mjs';
+import {selectSemanticContext,preselectIndexedContext} from '../issue-75/v2-candidate/semantic-recall.mjs';
 
 const source='opencode:ses-issue93:message:msg-sourced';
 const item=(fact,extras={})=>({
@@ -77,4 +77,48 @@ test('issue #75 native paraphrase and soft issue identification remain eligible'
   assert.deepEqual(selectSemanticContext(q,[target]).map(x=>x.fact),[target.fact]);
   const withoutIssue=item('FalkorDB AOF crash loop caused effects format incompatibility.');
   assert.deepEqual(selectSemanticContext('What went wrong with FalkorDB in Issue #81?',[withoutIssue]).map(x=>x.fact),[withoutIssue.fact]);
+});
+
+
+test('right now is not an independent topical anchor for indexed narration',()=>{
+  const q='What is the weather in Tokyo right now?';
+  const indexed=[
+    item('Now I can see the memory graph entries.',{
+      recallOrigin:'index',nativeRank:undefined,
+      sourceContext:'Now the local knowledge collection was listed.'}),
+    item('Now clear: the validation queue can be drained.',{
+      recallOrigin:'index',nativeRank:undefined}),
+    item('Now passes: the workspace snapshot has been checked.',{
+      recallOrigin:'index',nativeRank:undefined}),
+    item('Now responds: the development graph endpoint is ready.',{
+      recallOrigin:'index',nativeRank:undefined})
+  ];
+  for (const candidate of indexed) {
+    assert.equal(lexicalSupport(q,candidate.fact).count,0,
+      'now is temporal narration, not query-topic evidence');
+    if(candidate.sourceContext)
+      assert.equal(lexicalSupport(q,candidate.sourceContext).count,0);
+  }
+  assert.deepEqual(preselectIndexedContext(q,indexed),[],
+    'index rescue should not use now as a weak lexical bridge');
+  assert.deepEqual(selectSemanticContext(q,indexed),[]);
+});
+
+test('high native rank cannot reintroduce now-only unrelated observations',()=>{
+  const q='What is the weather in Tokyo right now?';
+  const hits=[
+    item('Now I can see the development graph state.',{nativeRank:0}),
+    item('Now passes: graph readback validation.',{nativeRank:1}),
+    item('Now the project memory service is ready.',{nativeRank:2})
+  ];
+  assert.deepEqual(selectSemanticContext(q,hits),[],
+    'the prior-only unanchored lane must abstain even with multiple native hits');
+});
+
+test('right now does not suppress an independently topical development answer',()=>{
+  const q='What is the FalkorDB recovery status right now?';
+  const fact='FalkorDB recovery completed after the storage repair.';
+  assert.ok(lexicalSupport(q,fact).count>=2,
+    'FalkorDB and recovery remain meaningful topic anchors');
+  assert.deepEqual(selectSemanticContext(q,[item(fact)]).map(x=>x.fact),[fact]);
 });
