@@ -1,0 +1,56 @@
+# Issue #94 C2 — producer / test receipts (exact commands and exit statuses)
+# All commands from the authenticated issue/94 worktree at C2 source commit 9418c97f, node v26.13.1.
+# No secrets, no raw query text, no episode UUIDs.
+
+## CPU-only syntax + focused tests (per LOCAL_AGENT_CONTRACT_C2.md)
+node --check docs/issue-78/v2-curator/curated-recall-candidates.mjs
+# -> exit 0
+node --check docs/issue-78/v2-curator/curated-recall-candidates.test.mjs
+# -> exit 0
+
+node --test docs/issue-78/v2-curator/curated-recall-candidates.test.mjs
+# -> pass 14, fail 0 (12 C1 + 2 new C2 regression tests), exit 0
+#    new: "more than 4096 review records retain indexed persisted facts without skipping old IDs"
+#    new: "remote >=1000 episode inventory remains fail-closed after local overflow recovery"
+
+node --test docs/issue-94/retrieval-profile.test.mjs
+# -> pass 4, fail 0, exit 0
+
+## Disposable synthetic scaling control (private 0700 scratch; os.tmpdir() fixture)
+node docs/issue-94/retrieval-profile.mjs \
+  --mode synthetic --sizes 512,4096,4097 --rounds 3 \
+  --output <PRIVATE_0700>/issue94-c2-synthetic.json
+# -> {"status":"PROFILE_WRITTEN","mode":"synthetic",...} exit 0
+#    report sha256 (C2 synthetic): e919adb92174459faab2144f1d7b1ad0385c8e639311b9c574be7e4f14a6506b
+#    key delta vs C1: at 4097, target_in_local_shortlist flips false -> true (shortlist [1,1,1], cold ~177ms)
+
+## Local read-only profile on the authenticated live state (parent-of-curation-v1 root)
+node docs/issue-94/retrieval-profile.mjs \
+  --mode local \
+  --state-dir /home/filip/.local/state/ghdev-graphiti \
+  --group development-knowledge \
+  --workspace /workspace/mcp_servers/gh_mcp \
+  --project gh_mcp \
+  --queries <REUSED_C1_PRIVATE_0600_QUERY_FILE sha256 4b02d53e8ded875f66edfa0f65b65cc1107ff563f80e00571b89c36ecee20d68> \
+  --rounds 3 \
+  --output <PRIVATE_0700>/issue94-c2-local.json
+# -> {"status":"PROFILE_WRITTEN","mode":"local",...} exit 0
+#    report sha256 (C2 local, 7 cases): 060c8d721551c860b9e95b8f0831994ba9019b58b088ff884267e1158ce2b4cd
+
+## Source-index health (metadata-only, bidirectional)
+# 355 index files; 355 valid index->persisted-review mappings; 0 bad maps; 0 orphan refs;
+# 0 persisted reviews missing an index -> CONSISTENT. No live record modified.
+
+## Read-only remote membership + negative control (Graphiti MCP, local endpoint)
+# tools/list -> 13 tools (unchanged)
+# get_episodes(group_ids=[development-knowledge], max_episodes=8) -> "Episodes retrieved successfully"
+# get_episodes(group_ids=[<bogus group>], max_episodes=8) -> "No episodes found", episodes=[] (negative control)
+# No writes; no add_memory; no model invocation.
+
+## Producer exit summary
+node --check (both changed files): 0, 0
+node --test curated-recall-candidates: 0 (14/14)
+node --test retrieval-profile: 0 (4/4)
+profiler --mode synthetic: 0
+profiler --mode local: 0
+graphiti tools/list + 2 read-only tools/call: success
