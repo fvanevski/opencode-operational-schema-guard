@@ -247,8 +247,12 @@ test('unrelated malformed index JSON cannot blackout healthy persisted candidate
       id:growthId(2),remote_episode_uuid:growthUUID(2)
     }));
     const reviewPath=path.join(root,'curation-v1',group,growthId(2)+'.json');
-    for(const invalid of ['{',JSON.stringify({id:growthId(2),group:'wrong',state:'persisted'})]) {
+    for(const invalid of ['{','null',JSON.stringify({id:growthId(2),group:'wrong',state:'persisted'})]) {
       await writeFile(reviewPath,invalid);
+      if(invalid==='null')await assert.rejects(
+        ()=>new ReviewStore(root,group).get(growthId(2)),
+        /Corrupt review identity\/state/,
+        'valid JSON null must be classified as corrupted review data, not a TypeError');
       for(const policy of ['strict','semantic']) {
         const found=await curatedRecallCandidates(root,group,workspace,project,growthQuery,policy);
         assert.equal(found.length,1,'an unrelated corrupt review must be skipped');
