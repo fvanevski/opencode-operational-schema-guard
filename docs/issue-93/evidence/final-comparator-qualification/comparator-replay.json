@@ -1,0 +1,28 @@
+{
+  "schema": "issue93.comparator-replay.v1",
+  "label": "POST_EXPOSURE_COMPARATOR_APPROVED_EXCEPTION",
+  "not": "PRE_EXPOSURE_PAIRED_TEST",
+  "authority": "docs/issue-93/APPROVED_LIMITED_HOLDOUT_COMPARATOR_RECOVERY.md (one-time, B2.2-only method exception)",
+  "method": "Deterministic read-only replay of the unmodified original semantic comparator (69014b7) on the already-exposed frozen 4+2 holdout, over the same frozen Graphiti transport (live search_memory_facts + same-group get_episodes) and the stored private source snapshot. B2.2 columns reproduce the once-only recorded outputs exactly.",
+  "original_semantic_sha": "69014b739d490f8cb90bce86233edf3054673209",
+  "candidate_b22_sha": "4bc169cc59e8900f5dc3cd4d3c70a22d0fcfb9f4",
+  "positives": [
+    { "id": "H01", "kind": "paraphrase", "base_source_exact": true,  "b22_source_exact": true },
+    { "id": "H02", "kind": "paraphrase", "base_source_exact": false, "b22_source_exact": false },
+    { "id": "H03", "kind": "temporal",   "base_source_exact": false, "b22_source_exact": false },
+    { "id": "H04", "kind": "paraphrase", "base_source_exact": false, "b22_source_exact": false }
+  ],
+  "negatives": [
+    { "id": "HN01", "kind": "offtopic", "base_injected": 4, "b22_injected": 4 },
+    { "id": "HN02", "kind": "secret",  "base_injected": 0, "b22_injected": 0 }
+  ],
+  "once_only_recorded_b22": { "positives_recovered": "1/4", "HN01": 4, "HN02": 0, "reproduced_exactly": true },
+  "deltas": {
+    "positive_loss_b22_vs_base": [],
+    "positive_gain_b22_vs_base": [],
+    "new_offtopic_injection_b22_vs_base": [],
+    "secret_fence": "HN02=0 (holds)"
+  },
+  "gate": "candidate source-exact support >= original comparator (case-wise, no losses) AND no new off-topic/unsafe negative injection",
+  "comparative_gate": "PASS (relative, nonnegative). Absolute B2.2 holdout utility remains 1/4 positives + HN01=4 off-topic facts; a nonnegative relative score is not a claim of high absolute quality."
+}

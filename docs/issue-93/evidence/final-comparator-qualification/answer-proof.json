@@ -1,0 +1,16 @@
+{
+  "schema": "issue93.answer-proof.v1",
+  "model": "local/chat (single local inference engine via the :8788 mux; no new model server, no competing GPU inference)",
+  "config": "isolated single-plugin (ghdev-graphiti-memory) fresh standalone process; capture=false; all tools denied (custom answerprobe agent, deny-all permissions) so no shell/read/web/github/openviking answer channels",
+  "fact_class": "non-git-history development-knowledge fact: development-knowledge FalkorDB graph node/edge layout (assistant-reported, remote-proven). Referenced by label/digest only; private source ref/UUID not published.",
+  "runs": {
+    "control_memory_off": { "enabled": false, "tools_used": 0, "answer_summary": "node count 35 attributed to a 'historical, superseded assistant report' (a non-Graphiti channel); edge count NOT present in context -> cannot determine" },
+    "treatment_memory_on": { "enabled": true, "tools_used": 0, "answer_summary": "node count 35 attributed to 'a source-attributed Graphiti observation: The data physically lives in the development-knowledge graph (35 nodes) while graphiti_live has 0 nodes'; edge count NOT present in context -> cannot determine" }
+  },
+  "native_context_association": "SHOWN - the memory-on answer cites a Graphiti source-attributed observation that the memory-off control did not attribute to Graphiti; native source-attributed context reached the assembled model request.",
+  "clean_isolated_answer_benefit": "UNVERIFIED - the control leaked the node count via a non-Graphiti channel (session/OpenViking not fully gated in this harness), and the specific edge-count fact was not selected, so no clean numeric delta is isolated.",
+  "model_answer_benefit": "UNVERIFIED",
+  "native_hook_receipt": { "n": 20, "p50_ms": 45.72, "p95_ms": 299.77, "max_ms": 300.273, "injected": 14, "empty": 2, "error": 2, "late": 2, "p95_le_300ms": true, "all_calls_retained_including_late_error_empty": true, "injected_have_source_attribution": true, "private_excerpt_omitted": true },
+  "search_vs_proof_rtt": { "search_memory_facts_p95_ms": 159.31, "get_episodes_p95_ms": 45.67, "get_episodes_within_70ms": true, "separate_classes": true },
+  "ready_for_final_operator_run": "See README.md READY_FOR_FINAL_OPERATOR_RUN: one bounded, fully isolated (OpenViking + session memory + all tools gated) serial memory-off then memory-on no-tools run on a Graphiti-only non-git-history fact, with answer/source receipt adjudicated privately before the two runs. Never claim PASS from this in-harness run."
+}
