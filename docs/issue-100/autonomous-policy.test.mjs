@@ -81,3 +81,26 @@ test('bundle recovery preserves retention and atomic source spans',async()=>{
     assert.deepEqual(again.records.map(x=>x.retention),first.records.map(x=>x.retention));
   } finally {await fs.rm(root,{recursive:true,force:true});}
 });
+
+test('operator edit cannot retain an AI classification or its stale source span',async()=>{
+  const root=await fs.mkdtemp(path.join(os.tmpdir(),'ghdev100-human-'));
+  try{
+    const c=cluster(),d=validateAutonomousDecision(decision(c),c);
+    const store=new ReviewStore(root,c.group);
+    const first=(await store.create(c,{...d,facts:[d.facts[0]],
+      fact_utilities:[d.fact_utilities[0]],
+      fact_retentions:[d.fact_retentions[0]],
+      fact_source_spans:[d.fact_source_spans[0]],
+      fact_utility_reasons:[d.fact_utility_reasons[0]]})).record;
+    assert.equal(first.retention.status,'established_retention');
+    const replacement={...first.facts[0],assertion:quoteB,
+      source_refs:[c.events[1].source_refs[0]]};
+    const changed=await store.change(first.id,first.revision,'edit-and-approve',{
+      reason:'Corrected source identity after independent review',
+      facts:[replacement]});
+    assert.equal(changed.state,'approved');
+    assert.equal(changed.retention,null);
+    assert.equal((await store.get(first.id)).retention,null);
+    assert.equal(changed.facts[0].assertion,quoteB);
+  }finally{await fs.rm(root,{recursive:true,force:true});}
+});

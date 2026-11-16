@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {ReviewStore} from '../issue-78/v2-curator/core.mjs';
 import {sourcedEpisodeResolver} from '../issue-78/v2-curator/sourced-recall.mjs';
+import {curatedRecallCandidates} from '../issue-78/v2-curator/curated-recall-candidates.mjs';
 import {validateAutonomousDecision} from './autonomous-policy.mjs';
 import {consolidationTrigger,selectConsolidationPairs,consolidationPrompt,validateConsolidationDecision} from './consolidation.mjs';
 const event=(id,phrase,at)=>({
@@ -65,7 +66,7 @@ test('retention CAS, historical identity, logical exclusion and rollback',async(
         session_id:'ses_100',source_event_ids:[e.event_id],events:[e]};
       const proposal=validateAutonomousDecision({decision:'EMIT',
         reason:'One source-supported observation',
-        facts:[{kind:'architecture',temporal_status:'observed',
+        facts:[{kind:'architecture',temporal_status:id==='a'?'historical':'observed',
           source_refs:e.source_refs,evidence_span:{source_ref:e.source_refs[0],
             start:0,end:phrase.length},retention_status:status,
           utility_class:'stable_architecture',
@@ -108,6 +109,12 @@ test('retention CAS, historical identity, logical exclusion and rollback',async(
     assert.equal((await s.rollbackRetentionConsolidation(old.id,changed.revision)).status,'rolled_back');
     const restored=await s.get(old.id);
     assert.equal(restored.retention.status,'provisional_retention');
+    const available=await curatedRecallCandidates(root,old.group,
+      old.workspace,old.project);
+    const recalled=available.find(x=>x.remoteEpisodeUuid===old.remote_episode_uuid);
+    assert.ok(recalled);
+    assert.match(recalled.temporal,/provisional retention/);
+    assert.match(recalled.temporal,/historical\/superseded/);
     assert.equal((await sourcedEpisodeResolver(root,old.group,
       old.workspace,old.project,[old.remote_episode_uuid])).length,1);
     assert.equal(restored.remote_episode_uuid,old.remote_episode_uuid);

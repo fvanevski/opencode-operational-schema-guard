@@ -603,7 +603,11 @@ export class ReviewStore {
       if(!checked.ok)throw Error('INVALID_APPROVAL: '+checked.reason);
       const state=decision==='SKIP'?'skipped':decision==='EMIT'?'approved':'deferred';
       const now=new Date().toISOString();
+      // A human correction/exceptional disposition is not the initial AI
+      // utility judgment. Never carry a prior source-span/utility assessment
+      // across a potentially changed fact or decision state.
       const updated={...old,state,decision:checked.decision,reason:checked.reason,
+        retention:null,
         utility_class:null,facts:checked.facts,reevaluate_requested:action==='reevaluate',
         revision:old.revision+1,updated_at:now,
         audit:[...old.audit.slice(-59),{at:now,action,outcome:state}]};
