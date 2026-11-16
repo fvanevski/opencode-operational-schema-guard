@@ -119,17 +119,11 @@ export class CandidateQueue {
       await syncDir(this.dir);
       return {status:'recovered',kind:'dead-owner-v2'};
     }
-    // Historical empty mkdir locks have no PID identity. EX proof plus a
-    // conservative age check is required before legacy recovery.
-    if(st.isDirectory()) {
-      if((await fs.readdir(lock)).length)throw Error('QUEUE_LOCK_LEGACY_NOT_EMPTY');
-      const check=await fs.lstat(lock);
-      if(check.dev!==st.dev||check.ino!==st.ino)
-        throw Error('QUEUE_LOCK_CHANGED_BEFORE_RECOVERY');
-      await fs.rmdir(lock);
-      await syncDir(this.dir);
-      return {status:'recovered',kind:'quiescent-legacy-dir'};
-    }
+    // Legacy mkdir locks contain no owner identity. Even genuine EX admission
+    // cannot prove an ungoverned host process has released one: fail closed.
+    // Removal requires separately authenticated host quiescence, never a
+    // silent reclaim by the production curator.
+    if(st.isDirectory())throw Error('QUEUE_LOCK_LEGACY_OWNER_UNVERIFIED');
     throw Error('QUEUE_LOCK_TYPE_UNVERIFIED');
   }
   async _locked(operation) {

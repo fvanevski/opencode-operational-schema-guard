@@ -172,11 +172,11 @@ test('SIGKILL after hard-link leaves a dead-owner lock recovered before converge
    await assert.rejects(new CandidateQueue(root,group).recoverAbandonedLock(),/QUEUE_LOCK_OWNER_ACTIVE/);
  });
 }));
-test('unknown owners fail closed; old idle empty lock needs supervised recovery',()=>sandbox(async root=>{
+test('unknown owners and legacy ownerless locks always fail closed',()=>sandbox(async root=>{
  const q=new CandidateQueue(root,group);await q.init();
  await fs.symlink('unknown-owner',q.lockPath());
  await assert.rejects(q.recoverAbandonedLock(),/QUEUE_LOCK_OWNER_UNVERIFIED/);
  await fs.unlink(q.lockPath());await fs.mkdir(q.lockPath());
- assert.equal((await q.recoverAbandonedLock()).kind,'quiescent-legacy-dir');
- assert.equal(await q.lockPresent(),false);
+ await assert.rejects(q.recoverAbandonedLock(),/QUEUE_LOCK_LEGACY_OWNER_UNVERIFIED/);
+ assert.equal(await q.lockPresent(),true);
 }));
