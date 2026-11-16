@@ -1,9 +1,10 @@
 /** Issue #100: source-first autonomous utility decision. No I/O or remote authority. */
 import {modelPrompt, validateModelDecision, normalizedAssertion} from '../issue-78/v2-curator/core.mjs';
+import {cleanExcerpt} from '../issue-78/v2-candidate/events.mjs';
 
 const RETENTION = new Set(['established_retention','provisional_retention','skip_non_substantive']);
 const DURABLE = new Set(['durable_decision','root_cause_fix','stable_architecture','reusable_procedure','useful_negative']);
-const reasonOK = x => typeof x==='string' && x.trim()===x && x.length>=5 && x.length<=240;
+const reasonOK = x => typeof x==='string' && x.length>=5 && x.length<=240 && cleanExcerpt(x,240)===x;
 const error = (reason,retryable=false,blocked_candidates=[]) =>
   ({ok:false,decision:'DEFER',reason,facts:[],retryable,blocked_candidates});
 

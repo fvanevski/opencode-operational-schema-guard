@@ -55,6 +55,14 @@ test('malformed model output remains retryable instead of SKIP',()=>{
   assert.equal(validateAutonomousDecision('{broken',cluster()).retryable,true);
   assert.equal(validateAutonomousDecision({decision:'DEFER',reason:'Uncertain',facts:[]},cluster()).retryable,true);
 });
+test('utility rationale cannot echo secret-bearing or self-referential text',()=>{
+  const c=cluster(),d=decision(c);
+  d.facts[0].utility_reason='secret: xxxxxxxxxxxxxxxxxxxxxxxxx';
+  const p=validateAutonomousDecision(d,c);
+  assert.equal(p.facts.length,1);
+  assert.equal(p.blocked_candidates[0].reason,'invalid_utility_choice');
+});
+
 test('only source-bearing utility is selected, never truth certification',()=>{
   const prompt=autonomousPrompt(cluster());
   assert.match(prompt[0].content,/original-source support/);

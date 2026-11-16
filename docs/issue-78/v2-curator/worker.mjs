@@ -29,7 +29,6 @@ export function episodeBody(record){
     '[Evidence class: '+f.evidence_class+'; Kind: '+f.kind+
     '; Temporal: '+f.temporal_status+'; Observed: '+f.observed_at+']',
     ...(record.retention?['[Retention: '+record.retention.status+
-      '; Utility rationale: '+record.retention.reason+
       '; This is a retention judgment, NOT independent verification]']:[]),
     '[Source references: '+f.source_refs.join(', ')+
     '; Scope group: '+record.group+'; Project: '+record.project+']'

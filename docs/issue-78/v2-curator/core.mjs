@@ -282,7 +282,7 @@ function validatedRetention(cluster,decision,checked,index){
   const src=cluster.events.find(e=>e.source_refs?.[0]===fact?.source_refs?.[0]);
   const utility=decision.fact_utilities?.[index];
   if(!['established_retention','provisional_retention'].includes(status)||
-    typeof reason!=='string'||reason.trim()!==reason||reason.length<5||reason.length>240||
+    typeof reason!=='string'||reason.length<5||reason.length>240||cleanExcerpt(reason,240)!==reason||
     !span||span.source_ref!==fact?.source_refs?.[0]||
     !Number.isSafeInteger(span.start)||!Number.isSafeInteger(span.end)||
     span.start<0||span.end<=span.start||!src||span.end>src.excerpt.length||
