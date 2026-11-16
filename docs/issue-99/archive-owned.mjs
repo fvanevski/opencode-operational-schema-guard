@@ -45,7 +45,8 @@ export async function planSourceArchive(queue,store,{limit=4000}={}) {
   const excluded={unowned:0,cross_origin:0,scope_or_source_mismatch:0,
     nonsettled_review:0,missing_terminal_index:0};
   if(!pending.length)return {items:[],eligible_total:0,pending_total:0,
-    excluded,plan_sha256:hash([])};
+    excluded,plan_sha256:hash({schema:'archive-plan-v2',group:queue.group,limit,
+      eligible_total:0,selected:[]})};
   const owner=new Map(),validIndex=new Map();
   for(const r of await reviewsAll(store)) {
     if(!HEX.test(r?.id||'')||r.group!==store.group||
@@ -82,9 +83,11 @@ export async function planSourceArchive(queue,store,{limit=4000}={}) {
         .sort((a,b)=>a[0].localeCompare(b[0]))});
   }
   eligible.sort((a,b)=>a.id.localeCompare(b.id));
-  return {items:eligible.slice(0,limit).map(x=>({id:x.id,fingerprint:x.fingerprint})),
-    eligible_total:eligible.length,pending_total:pending.length,excluded,
-    plan_sha256:hash(eligible)};
+  const selected=eligible.slice(0,limit);
+  const plan_sha256=hash({schema:'archive-plan-v2',group:queue.group,
+    limit,eligible_total:eligible.length,selected});
+  return {items:selected.map(x=>({id:x.id,fingerprint:x.fingerprint})),
+    eligible_total:eligible.length,pending_total:pending.length,excluded,plan_sha256};
 }
 async function syncDir(folder) {
   const h=await fs.open(folder,'r');try {await h.sync();}finally {await h.close();}

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {promises as fs} from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import {spawnSync} from 'node:child_process';
 import {CandidateQueue} from '../issue-78/v2-candidate/queue.mjs';
 import {ReviewStore} from '../issue-78/v2-curator/core.mjs';
 import {sha} from '../issue-78/v2-candidate/events.mjs';
@@ -128,4 +129,56 @@ test('review CAS before queue state transition converges without duplicate curat
  assert.equal((await archiveOwnedSources(q,r)).archived,1);
  assert.equal((await q.stage(e)).status,'duplicate');
  assert.equal((await q.get(e.event_id)).state,'new');
+}));
+
+test('batch limit and review revisions bind exact confirmation hash',()=>sandbox(async root=>{
+ const q=new CandidateQueue(root,group),r=new ReviewStore(root,group);
+ const one=event(root,'batch1'),two=event(root,'batch2');
+ for(const e of [one,two])await q.stage(e);
+ await review(r,one,'skipped',{id:'a'.repeat(64)});
+ await review(r,two,'skipped',{id:'b'.repeat(64)});
+ const first=await planSourceArchive(q,r,{limit:1});
+ const both=await planSourceArchive(q,r,{limit:2});
+ assert.equal(first.eligible_total,2);
+ assert.notEqual(first.plan_sha256,both.plan_sha256);
+ await assert.rejects(archiveOwnedSources(q,r,{limit:2,expectedPlan:first.plan_sha256}),/ARCHIVE_PLAN_STALE/);
+ assert.equal((await archiveOwnedSources(q,r,{limit:1,expectedPlan:first.plan_sha256})).archived,1);
+ assert.equal((await q.status()).archived_total,1);
+ assert.equal((await q.status()).total,1);
+}));
+test('SIGKILL after hard-link leaves a dead-owner lock recovered before convergence',()=>sandbox(async root=>{
+ const q=new CandidateQueue(root,group),r=new ReviewStore(root,group),e=event(root,'killed');
+ await q.stage(e);await review(r,e,'skipped');
+ const url=new URL('../issue-78/v2-candidate/queue.mjs',import.meta.url).href;
+ const script=[
+   "import {promises as fs} from 'node:fs';",
+   "import {CandidateQueue} from "+JSON.stringify(url)+";",
+   "const q=new CandidateQueue(process.argv[1],process.argv[2]);",
+   "await q._locked(async()=>{",
+   " await fs.mkdir(q.archiveDir,{recursive:true});",
+   " await fs.link(q.filename(process.argv[3]),q.archiveFilename(process.argv[3]));",
+   " process.kill(process.pid,'SIGKILL');",
+   "});"
+ ].join('\n');
+ const child=spawnSync(process.execPath,['--input-type=module','-e',script,root,group,e.event_id],
+   {encoding:'utf8',timeout:10000});
+ assert.equal(child.signal,'SIGKILL',child.stderr);
+ assert.equal(await q.lockPresent(),true);
+ assert.equal((await q.recoverAbandonedLock()).kind,'dead-owner-v2');
+ assert.equal((await archiveOwnedSources(q,r)).archived,1);
+ assert.equal(await q.lockPresent(),false);
+ assert.equal((await q.stage(e)).status,'duplicate');
+ await q._locked(async()=>{
+   await assert.rejects(new CandidateQueue(root,group).recoverAbandonedLock(),/QUEUE_LOCK_OWNER_ACTIVE/);
+ });
+}));
+test('unknown owners fail closed; old idle empty lock needs supervised recovery',()=>sandbox(async root=>{
+ const q=new CandidateQueue(root,group);await q.init();
+ await fs.symlink('unknown-owner',q.lockPath());
+ await assert.rejects(q.recoverAbandonedLock(),/QUEUE_LOCK_OWNER_UNVERIFIED/);
+ await fs.unlink(q.lockPath());await fs.mkdir(q.lockPath());
+ await assert.rejects(q.recoverAbandonedLock(),/QUEUE_LOCK_LEGACY_TOO_RECENT/);
+ const past=new Date(Date.now()-90000);await fs.utimes(q.lockPath(),past,past);
+ assert.equal((await q.recoverAbandonedLock()).kind,'quiescent-legacy-dir');
+ assert.equal(await q.lockPresent(),false);
 }));

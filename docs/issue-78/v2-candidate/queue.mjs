@@ -15,6 +15,23 @@ export const sourceFingerprint = e => sha(JSON.stringify([
 async function syncDir(dir) {
   const h=await fs.open(dir,'r');try {await h.sync();}finally {await h.close();}
 }
+// A single atomic symlink is the lock+owner record: SIGKILL cannot leave a
+// half-written owner file. Linux/local-filesystem only; no cross-host NFS locks.
+async function processIdentity(pid) {
+  if(process.platform!=='linux')throw Error('QUEUE_LOCK_LINUX_REQUIRED');
+  let stat,namespace;
+  try {
+    stat=await fs.readFile('/proc/'+pid+'/stat','utf8');
+    namespace=await fs.readlink('/proc/'+pid+'/ns/pid');
+  }catch(e){if(e.code==='ENOENT')return null;throw e;}
+  const fields=stat.slice(stat.lastIndexOf(')')+1).trim().split(/\s+/);
+  const ns=/^pid:\[(\d+)\]$/.exec(namespace);
+  if(!ns||!/^\d+$/.test(fields[19]||''))throw Error('QUEUE_LOCK_PROCESS_IDENTITY_INVALID');
+  const boot=(await fs.readFile('/proc/sys/kernel/random/boot_id','utf8')).trim().replaceAll('-','');
+  if(!/^[0-9a-f]{32}$/.test(boot))throw Error('QUEUE_LOCK_BOOT_ID_INVALID');
+  return {pid,start:fields[19],namespace:ns[1],boot};
+}
+const LOCK_TOKEN=/^v2\.(\d{1,10})\.(\d+)\.(\d+)\.([0-9a-f]{32})\.([0-9a-f]{32})$/;
 const TRANSITIONS = {
   new: ['reserved', 'deferred', 'skipped'],
   reserved: ['new', 'deferred', 'skipped', 'approved'],
@@ -70,24 +87,77 @@ export class CandidateQueue {
   async pendingIds() {
     return (await this._names()).map(n=>n.slice(0,-5)).sort();
   }
+  lockPath() {return path.join(this.dir,'.queue.lock');}
+  async lockPresent() {
+    try {await fs.lstat(this.lockPath());return true;}
+    catch(e){if(e.code==='ENOENT')return false;throw e;}
+  }
+  // Privileged caller must authenticate exclusive kernel EX admission first.
+  // A regular producer NEVER calls this; unknown or live owners fail closed.
+  async recoverAbandonedLock() {
+    const lock=this.lockPath();
+    let st;
+    try {st=await fs.lstat(lock);}
+    catch(e){if(e.code==='ENOENT')return {status:'absent'};throw e;}
+    if(st.isSymbolicLink()) {
+      const token=await fs.readlink(lock),match=LOCK_TOKEN.exec(token);
+      if(!match)throw Error('QUEUE_LOCK_OWNER_UNVERIFIED');
+      const [,rawPid,start,namespace,boot]=match;
+      const current=await processIdentity(Number(rawPid));
+      const self=await processIdentity(process.pid);
+      if(!self)throw Error('QUEUE_LOCK_SELF_IDENTITY_UNAVAILABLE');
+      if(self.boot===boot&&current&&current.namespace!==namespace)
+        throw Error('QUEUE_LOCK_DIFFERENT_PID_NAMESPACE');
+      if(self.boot===boot&&current&&current.start===start)
+        throw Error('QUEUE_LOCK_OWNER_ACTIVE');
+      // Different boot ID means the original lock cannot still be held
+      // on this local filesystem; PID and namespace may have been reused.
+      if((await fs.readlink(lock))!==token)
+        throw Error('QUEUE_LOCK_CHANGED_BEFORE_RECOVERY');
+      await fs.unlink(lock);
+      await syncDir(this.dir);
+      return {status:'recovered',kind:'dead-owner-v2'};
+    }
+    // Historical empty mkdir locks have no PID identity. EX proof plus a
+    // conservative age check is required before legacy recovery.
+    if(st.isDirectory()) {
+      if((await fs.readdir(lock)).length)throw Error('QUEUE_LOCK_LEGACY_NOT_EMPTY');
+      if(Date.now()-st.mtimeMs<30000)throw Error('QUEUE_LOCK_LEGACY_TOO_RECENT');
+      const check=await fs.lstat(lock);
+      if(check.dev!==st.dev||check.ino!==st.ino)
+        throw Error('QUEUE_LOCK_CHANGED_BEFORE_RECOVERY');
+      await fs.rmdir(lock);
+      await syncDir(this.dir);
+      return {status:'recovered',kind:'quiescent-legacy-dir'};
+    }
+    throw Error('QUEUE_LOCK_TYPE_UNVERIFIED');
+  }
   async _locked(operation) {
-    const run = async () => {
+    const run=async()=>{
       await this.init();
-      const lock = path.join(this.dir, '.queue.lock');
-      let acquired = false;
-      for (let i = 0; i < 100; i++) {
-        try { await fs.mkdir(lock, { mode: 0o700 }); acquired = true; break; }
-        catch (e) {
-          if (e.code !== 'EEXIST') throw e;
-          await new Promise(resolve => setTimeout(resolve, 15 + (i % 8) * 5));
+      const lock=this.lockPath();
+      const me=await processIdentity(process.pid);
+      if(!me)throw Error('QUEUE_LOCK_SELF_IDENTITY_UNAVAILABLE');
+      const token='v2.'+process.pid+'.'+me.start+'.'+me.namespace+'.'+
+        me.boot+'.'+randomUUID().replaceAll('-','');
+      let acquired=false;
+      for(let i=0;i<100;i++) {
+        try {await fs.symlink(token,lock);acquired=true;break;}
+        catch(e){
+          if(e.code!=='EEXIST')throw e;
+          await new Promise(resolve=>setTimeout(resolve,15+(i%8)*5));
         }
       }
-      if (!acquired) throw Error('candidate_queue_busy: inspect lock owner before recovery');
-      try { return await operation(); }
-      finally { await fs.rmdir(lock); }
+      if(!acquired)throw Error('candidate_queue_busy: EX supervisor must inspect lock owner');
+      try {return await operation();}
+      finally {
+        if((await fs.readlink(lock))!==token)
+          throw Error('QUEUE_LOCK_OWNERSHIP_LOST');
+        await fs.unlink(lock);
+      }
     };
-    const result = this.tail.then(run, run);
-    this.tail = result.catch(() => {});
+    const result=this.tail.then(run,run);
+    this.tail=result.catch(()=>{});
     return result;
   }
   async _names(folder = this.dir) {
