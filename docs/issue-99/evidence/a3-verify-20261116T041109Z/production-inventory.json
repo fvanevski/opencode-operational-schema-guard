@@ -1,0 +1,25 @@
+{
+  "schema": "issue99-a3-production-inventory-v1",
+  "mode": "read-only",
+  "group": "development-knowledge",
+  "counts": {
+    "source": 4000,
+    "review": 565,
+    "episode_index": 355
+  },
+  "queue_full": true,
+  "actionable_source_files": 0,
+  "cumulative_drops": {
+    "queue_full": 5949,
+    "historical": true,
+    "new_this_campaign": 0
+  },
+  "status_json_updated_at": "2026-11-16T01:38:54.447Z (predates this campaign; curator is FAIL_CLOSED, not writing)",
+  "drift_check": {
+    "before": "4000/565/355 drops=5949",
+    "after_20s": "4000/565/355 drops=5949",
+    "drifting": false
+  },
+  "live_graphiti_checked": false,
+  "private_content_exported": false
+}

@@ -1,0 +1,72 @@
+{
+  "schema": "issue99-a3-evidence-manifest-v1",
+  "run_id": "a3-verify-20261116T041109Z",
+  "issue": 99,
+  "stage": "A3 host qualification + curator service diagnosis (CPU-first, evidence-only)",
+  "source": {
+    "repo": "fvanevski/opencode-operational-schema-guard",
+    "branch": "issue/99",
+    "source_sha": "c9af9534aa9b5931c527d100832b0ec4df6cab8a",
+    "central_a3_source_head": "edc7e117bceeb90f171fcdc60994386a4b2cede3",
+    "pr_number": 102,
+    "remote_head_preflight": "c9af9534aa9b5931c527d100832b0ec4df6cab8a"
+  },
+  "host": {
+    "node_version": "v26.13.1",
+    "cpu": "AMD Ryzen 9 5950X (32 threads)",
+    "storage": "NVMe btrfs; disposable roots on tmpfs (RAM-backed)"
+  },
+  "boundary_flags": {
+    "SOURCE_REMOTE_UPDATE": "mechanical_only",
+    "EVIDENCE_REMOTE_UPDATE": "allowed",
+    "PRODUCTION_STATE_MUTATION": "forbidden",
+    "PR_CREATION": "forbidden"
+  },
+  "files": [
+    {
+      "name": "cpu-tests.json",
+      "sha256": "48f29dc9d277cf4887903d57550bbf817ce1c7bcab7cc3a9c79331a54b64667b",
+      "size": 1132
+    },
+    {
+      "name": "ex-integration-cycle.json",
+      "sha256": "0da66d8f7e38e73601df8e479216938789a219fdb32ee995ee7684cb5b8bafb1",
+      "size": 1322
+    },
+    {
+      "name": "service-root-cause.json",
+      "sha256": "3bda1ccf1f5fcd12593a8dd5633376c74454dba60bbeeddf9e52bd74e827d849",
+      "size": 2965
+    },
+    {
+      "name": "production-inventory.json",
+      "sha256": "433b89efcc3f2d290a3a6983bbf9c0bec6edaf9761bcc3a86988211266a21e6d",
+      "size": 673
+    },
+    {
+      "name": "archive-disposable.json",
+      "sha256": "07b73e1fc690bde46039fb7d155e047c19e9aac58bad464da24b0ea478b9026b",
+      "size": 3504
+    }
+  ],
+  "summary": {
+    "cpu_tests": "all genuine PASS: node --check x4 (0); node --test archive+lifecycle 11/11; candidate+curator 57/57; npm run check 0; npm test 524/524 PASS",
+    "disposable_archive": "501-cap and 4000-cap: plan(sha256)->apply(exact hash) archives all owned settled sources; queue_full->fresh admission after freeing; restart cold readback dedups; source bytes preserved (hardlink); stale-plan guard (ARCHIVE_PLAN_STALE); backup/restore exact inventory match (source/review/index)",
+    "ex_integration_cycle": "disposable authentically EX-gated cycle (real wrapper+gate+Graphiti endpoint, isolated group graphiti-a3-isolation-r01) -> FAIL_CLOSED exit 2 at exclusive lease acquisition (shared-lease starvation); no production mutation",
+    "service_root_cause": "CONFIRMED: ghdev-curator-prod.service exit-2 loop = EX-admission lease starvation; the transient issue/93 opencode-serve tenant (ghdev93-opencode-serve-93, ~3.25h) holds the shared OpenViking commit-gate lease, so the production post-exit curator's 120s exclusive EX wait always exhausts (FAIL_CLOSED). Not a curator/archive code defect.",
+    "production_inventory": "development-knowledge: source 4000 (full, 0 actionable) / review 565 / episode-index 355; 5949 historical queue_full drops, 0 new this campaign; state stable (no drift)"
+  },
+  "service_remediation_decision": "Reversible A4 action: supervised stop of the transient ghdev93-opencode-serve-93 tenant to release the shared gate lease (rollback: re-run its relaunch script); or reconcile the EX gate topology if the serve tenant must persist. Not applied by this campaign (production mutation forbidden).",
+  "a4_readiness": "Source A3 (archive F design + invariants) is CPU-qualified (all tests pass, disposable archive/crash/backup-restore proven). A4 production activation is blocked on the EX-lease starvation root cause; reversible activation should first release the starved shared lease (transient serve tenant) then run a fresh native capture + post-exit EX proof under the quiescent gate.",
+  "limitations": [
+    "CPU-first: crash-window convergence (link-before-unlink, collision, CAS) proven by unit tests, not by real kill-9/fsync/power-loss",
+    "disposable roots on tmpfs; no concurrent-producer / lock-contention load in the archive benchmarks",
+    "EX integration cycle is a bounded screen (30s lease / 60s drain), blocked by the live shared-lease starvation; not a full model-backed drain",
+    "live Graphiti group/index count not performed (kept read-only + CPU-first); local _episode-index readback is the terminal-scope corroboration"
+  ],
+  "command_shape_friction": {
+    "encountered": "no",
+    "events": [],
+    "omitted_sensitive_values": "yes"
+  }
+}

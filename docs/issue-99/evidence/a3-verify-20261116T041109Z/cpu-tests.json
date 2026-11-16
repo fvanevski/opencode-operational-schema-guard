@@ -1,0 +1,47 @@
+{
+  "schema": "issue99-a3-cpu-tests-v1",
+  "host_node_version": "v26.13.1",
+  "commands": [
+    {
+      "command": "node --check docs/issue-78/v2-candidate/queue.mjs",
+      "exit": 0
+    },
+    {
+      "command": "node --check docs/issue-78/v2-curator/worker.mjs",
+      "exit": 0
+    },
+    {
+      "command": "node --check docs/issue-99/archive-owned.mjs",
+      "exit": 0
+    },
+    {
+      "command": "node --check docs/issue-99/archive-cli.mjs",
+      "exit": 0
+    },
+    {
+      "command": "node --test docs/issue-99/archive.test.mjs docs/issue-99/lifecycle.test.mjs",
+      "exit": 0,
+      "pass": 11,
+      "fail": 0
+    },
+    {
+      "command": "node --test docs/issue-78/v2-candidate/candidate.test.mjs docs/issue-78/v2-curator/curator.test.mjs",
+      "exit": 0,
+      "pass": 57,
+      "fail": 0
+    },
+    {
+      "command": "npm run check",
+      "exit": 0
+    },
+    {
+      "command": "npm test",
+      "exit": 0,
+      "pass": 524,
+      "fail": 0,
+      "result": "OPERATIONAL_PLUGIN_TEST_RESULT: PASS"
+    }
+  ],
+  "pre_existing_vs_new": "all pass; no pre-existing or new failures",
+  "no_false_pass": true
+}

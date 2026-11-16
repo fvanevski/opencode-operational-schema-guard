@@ -1,0 +1,19 @@
+{
+  "schema": "issue99-a3-ex-integration-cycle-v1",
+  "mode": "disposable, authentically EX-gated, isolated from production group/state",
+  "group": "graphiti-a3-isolation-r01",
+  "state_dir": "fresh disposable root (path omitted; verified empty after run - no group created, no production mutation)",
+  "wrapper": "post-exit-drain.py (real installed EX gate: real gate source + real gate TOML + real lock file + real Graphiti MCP endpoint)",
+  "graphiti_endpoint": "loopback MCP port 8766 (live, http 400 on bare GET = reachable)",
+  "invocation": "--group graphiti-a3-isolation-r01 --state-dir <disposable> --endpoint <loopback:8766>/mcp --max-seconds 60 --lock-timeout 30",
+  "result": {
+    "exit": 2,
+    "stderr": "FAIL_CLOSED: shared agent/gate lease held; bounded wait exhausted",
+    "gate_reached": "exclusive EX lease acquisition (first gate)",
+    "blocked_by": "shared OpenViking commit-gate lease held by the transient opencode-serve tenant (same root cause as the production loop)",
+    "production_state_mutated": false,
+    "disposable_root_clean": true
+  },
+  "model_process_spawned": false,
+  "note": "CPU-first reconcile/drain path (no model inference); authentically EX-admitted via the real wrapper; currently EX-gated/blocked by the shared-lease starvation, corroborating the service root cause."
+}
