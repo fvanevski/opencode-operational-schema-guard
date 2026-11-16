@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import path from 'node:path';
 import os from 'node:os';
 import {promises as fs} from 'node:fs';
-import {autonomousPrompt,validateAutonomousDecision} from './autonomous-policy.mjs';
+import {autonomousPrompt,validateAutonomousDecision,completeSourceTokenSpan} from './autonomous-policy.mjs';
 import {ReviewStore} from '../issue-78/v2-curator/core.mjs';
 
 const quoteA='The cache contract requires invalidating the previous episode lookup whenever its source revision changes.';
@@ -103,4 +103,53 @@ test('operator edit cannot retain an AI classification or its stale source span'
     assert.equal((await store.get(first.id)).retention,null);
     assert.equal(changed.facts[0].assertion,quoteB);
   }finally{await fs.rm(root,{recursive:true,force:true});}
+});
+
+test('model-copied exact quote derives source offsets without model arithmetic',()=>{
+  const c=cluster(),e=c.events[0],f={...fact(e),evidence_quote:e.excerpt};
+  delete f.evidence_span;
+  const result=validateAutonomousDecision({decision:'EMIT',
+    reason:'A complete original source statement',facts:[f]},c);
+  assert.equal(result.ok,true);
+  assert.equal(result.facts[0].assertion,e.excerpt);
+  assert.deepEqual(result.fact_source_spans[0],
+    {source_ref:e.source_refs[0],start:0,end:e.excerpt.length});
+  assert.match(autonomousPrompt(c)[0].content,/do not count character offsets/i);
+});
+test('middle-of-token span is local retry, not a remotely persisted fragment',()=>{
+  const c=cluster(),e=c.events[0];
+  const f={...fact(e),evidence_span:{
+    source_ref:e.source_refs[0],start:0,end:e.excerpt.indexOf('lookup')+3}};
+  assert.equal(completeSourceTokenSpan(e.excerpt,0,f.evidence_span.end),false);
+  const result=validateAutonomousDecision({decision:'EMIT',
+    reason:'Truncated source wording must be retried',facts:[f]},c);
+  assert.equal(result.retryable,true);
+  assert.equal(result.reason,'technical_retry_source_quote');
+  assert.equal(result.blocked_candidates[0].reason,'incomplete_source_token_boundary');
+});
+test('nonexistent model quote cannot acquire source attribution',()=>{
+  const c=cluster(),f={...fact(c.events[0]),
+    evidence_quote:'A fabricated claim not present in the supplied source.'};
+  delete f.evidence_span;
+  const result=validateAutonomousDecision({decision:'EMIT',
+    reason:'The synthetic claim lacks verbatim source support',facts:[f]},c);
+  assert.equal(result.retryable,true);
+  assert.equal(result.facts.length,0);
+  assert.equal(result.blocked_candidates[0].reason,'invalid_exact_source_quote');
+});
+test('safe sibling remains independent of a truncated first source',()=>{
+  const c=cluster(),d=decision(c);
+  d.facts[0].evidence_span.end=c.events[0].excerpt.indexOf('lookup')+3;
+  const result=validateAutonomousDecision(d,c);
+  assert.equal(result.ok,true);
+  assert.equal(result.facts.length,1);
+  assert.equal(result.blocked_candidates[0].reason,'incomplete_source_token_boundary');
+});
+test('UTF-16 surrogate pairs and mid-word edges do not become valid source spans',()=>{
+  const excerpt='The library records emoji 🚀 glyphs and source metadata together.';
+  const emoji=excerpt.indexOf('🚀');
+  assert.equal(completeSourceTokenSpan(excerpt,0,emoji+1),false);
+  assert.equal(completeSourceTokenSpan(excerpt,0,emoji+2),true);
+  assert.equal(completeSourceTokenSpan(excerpt,1,excerpt.length),false);
+  assert.equal(completeSourceTokenSpan(excerpt,0,excerpt.length),true);
 });
