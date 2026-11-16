@@ -244,6 +244,9 @@ export class CandidateQueue {
     return this._locked(async()=>{
       await fs.mkdir(this.archiveDir,{recursive:true,mode:0o700});
       await fs.chmod(this.archiveDir,0o700);
+      // Persist the _archive directory entry before unlinking any active source.
+      // Syncing _archive alone does not make its name durable in the parent.
+      await syncDir(this.dir);
       const removals=[],seen=new Set();let already=0;
       for(const entry of entries) {
         if(seen.has(entry.id))throw Error('DUPLICATE_ARCHIVE_PLAN_ID');
