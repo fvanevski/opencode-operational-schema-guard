@@ -2,7 +2,9 @@
 """One-shot post-harness Graphiti drain, NOT a second scheduler.
 Use the installed OpenViking gate's own Config, parser, process classifier and
 canonical shared EX lock; hold it through remote episode persistence readback.
-This only admits when gate-excluded interactive harnesses are absent.\nAn unexcluded Hermes orchestrator may call synchronously if the gate verifies\nactual model idleness, quiet grace and the shared EX lock.
+This only admits when gate-excluded interactive harnesses are absent.
+An unexcluded Hermes orchestrator may call synchronously if the gate verifies
+actual model idleness, quiet grace and the shared EX lock.
 """
 import argparse
 import contextlib
