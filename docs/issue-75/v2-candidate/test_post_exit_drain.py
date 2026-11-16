@@ -281,3 +281,47 @@ class PostExitAdmissionTests(TestCase):
             with self.assertRaises(SystemExit) as ctx:
                 runner.main()
             self.assertEqual(ctx.exception.code,2)
+
+    def test_issue100_local_technical_retry_releases_ex_after_positive_readback(self):
+        # The corrected autonomous-only status distinguishes no-model work
+        # from an ambiguous Graphiti submission. A second read-only result 4
+        # proves there is still local work but NO remote uncertainty.
+        with tempfile.TemporaryDirectory() as td:
+            cfg = SimpleNamespace(
+                lock_file=str(Path(td) / "agent.lock"), metrics_url="http://127.0.0.1:8002/metrics",
+                process_names=["opencode"], quiet_grace_seconds=0,
+                metrics_fallback_urls=(), metrics_running="auto",
+                metrics_waiting="auto")
+            gate=SimpleNamespace(Config=SimpleNamespace(load=lambda _: cfg))
+            argv=["post-exit-drain.py","--gate-source","/fake/gate.py",
+                  "--gate-config","/fake/gate.toml","--cli",__file__,
+                  "--group","disposable","--state-dir",td,
+                  "--endpoint","http://127.0.0.1:8766/mcp",
+                  "--autonomous-curation"]
+            with mock.patch.object(runner,"load_gate",return_value=gate), \\
+                 mock.patch.object(runner,"wait_for_scheduler_idle"), \\
+                 mock.patch.object(runner,"observation"), \\
+                 mock.patch.object(runner.time,"sleep"), \\
+                 mock.patch.object(runner.sys,"argv",argv), \\
+                 mock.patch.object(runner.subprocess,"run") as child:
+                child.side_effect=[SimpleNamespace(returncode=4),
+                                   SimpleNamespace(returncode=4)]
+                self.assertEqual(runner.main(),4)
+                self.assertEqual(child.call_count,2)
+                self.assertIn("drain",child.call_args_list[0].args[0])
+                self.assertIn("reconcile-only",child.call_args_list[1].args[0])
+                self.assertEqual(child.call_args_list[0].kwargs["pass_fds"],
+                                 child.call_args_list[1].kwargs["pass_fds"])
+
+    def test_issue100_late_autonomous_technical_retry_does_not_loop(self):
+        with mock.patch.object(runner.subprocess,"run") as run:
+            run.side_effect=[SimpleNamespace(returncode=4),
+                             SimpleNamespace(returncode=4)]
+            with mock.patch.object(runner.time,"sleep") as sleep:
+                result=runner.reconcile_late("/tmp/curator-cli.mjs",
+                    "disposable", "/tmp/private", "http://127.0.0.1:8766/mcp",
+                    {"GHDEV_MEMORY_POST_EXIT_LEASE":"admitted"},
+                    lock_fd=8, autonomous_curation=True)
+            self.assertEqual(result,4)
+            self.assertEqual(run.call_count,2)
+            sleep.assert_not_called()

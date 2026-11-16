@@ -164,6 +164,14 @@ def reconcile_late(cli, group, state_dir, endpoint, env, interval_seconds=15,
                                              timeout=max_seconds + 45)
                     if resumed.returncode == 0:
                         return 0
+                    if resumed.returncode == 4 and autonomous_curation:
+                        # Only the autonomous JS drain emits 4 after
+                        # terminal remote reconciliation; local source work
+                        # remains actionable without holding EX forever.
+                        print("LATE_AUTONOMOUS_LOCAL_TECHNICAL_RETRY: "
+                              "releasing EX with retryable NEW source",
+                              flush=True)
+                        return 4
                     if resumed.returncode != 3:
                         print("LATE_RESUMED_DRAIN_UNVERIFIABLE: retaining EX",
                               file=sys.stderr, flush=True)
@@ -242,6 +250,30 @@ def main():
             exit_code = 3
         if exit_code == 0:
             return 0
+        if exit_code == 4 and args.autonomous_curation:
+            # The autonomous curator reserved 4 for a purely local technical
+            # retry after terminal remote reconciliation. Recheck through the
+            # admitted read-only CLI before releasing the shared EX lock.
+            verify = subprocess.run([
+                "node", str(Path(args.cli).resolve(strict=True)), "reconcile-only",
+                "--group", args.group, "--state-dir", args.state_dir,
+                "--endpoint", args.endpoint], env=env, check=False,
+                pass_fds=(lock_fd,), timeout=45)
+            if verify.returncode == 4:
+                print("AUTONOMOUS_LOCAL_TECHNICAL_RETRY: no unresolved remote "
+                      "submission; source remains NEW for later admitted drain",
+                      flush=True)
+                return 4
+            if verify.returncode == 3:
+                print("AUTONOMOUS_TECHNICAL_RETRY_REMOTE_UNKNOWN: holding EX",
+                      file=sys.stderr, flush=True)
+                return reconcile_late(args.cli, args.group, args.state_dir,
+                    args.endpoint, env, max_seconds=args.max_seconds,
+                    lock_fd=lock_fd, autonomous_curation=True)
+            # 0 means local work settled meanwhile; any other value is
+            # unclassifiable and must retain EX exactly as before.
+            if verify.returncode == 0:
+                return 0
         if exit_code != 3:
             # A non-3 exit does not attest that any queued remote submission
             # exists. Never reinterpret an arbitrary CLI/programming failure

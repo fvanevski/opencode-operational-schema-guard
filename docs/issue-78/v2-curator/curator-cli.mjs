@@ -215,6 +215,10 @@ if(command==='validate-tuning'){
        tuning:tuningPath?await loadFiniteBatchTuning(tuningPath):null}):
       await runAdmitted({...inputs,factReview,autonomousCuration});
     console.log(JSON.stringify(data));
-    if(data.status==='unresolved'||data.status==='incomplete')process.exitCode=3;
+    // Exit 3 means remote uncertainty (or bounded admitted continuation);
+    // exit 4 in autonomous mode means a proven LOCAL retry with no unresolved
+    // remote write. The Python holder rechecks before releasing its EX lock.
+    if(data.status==='technical_retry')process.exitCode=4;
+    else if(data.status==='unresolved'||data.status==='incomplete')process.exitCode=3;
   }
 }

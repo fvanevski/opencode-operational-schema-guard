@@ -935,3 +935,31 @@ test('source-isolated selection keeps same-session native messages independently
  assert.throws(()=>selectClusters([a,{...b,source_strength:'session-scoped-fallback'}],
   {sourceMessageIsolation:true}),/authenticated native source/);
 });
+
+test('autonomous technical model error leaves NEW source and no remote ambiguity',()=>temp(async root=>{
+  const prior=process.env.GHDEV_MEMORY_POST_EXIT_LEASE;
+  process.env.GHDEV_MEMORY_POST_EXIT_LEASE='admitted';
+  try {
+    const queue=new CandidateQueue(root,scope.group),store=new ReviewStore(root,scope.group);
+    for(const e of [U,T,A])assert.equal((await queue.stage(e)).status,'staged');
+    let remoteWrites=0;
+    const graphiti={call:async method=>{
+      if(method==='get_episodes')return {episodes:[]};
+      if(method==='add_memory')remoteWrites++;
+      throw Error('Unexpected Graphiti method '+method);
+    }};
+    const result=await runAdmitted({root,group:scope.group,queue,store,graphiti,
+      autonomousCuration:true,curate:async()=>{throw Error('MODEL_URL_UNSET');},
+      maxSeconds:20});
+    assert.equal(result.status,'technical_retry');
+    assert.equal(result.technical_retry,1);
+    assert.equal(result.unresolved,0);
+    assert.equal(result.model_errors,1);
+    assert.equal(remoteWrites,0);
+    assert.equal((await store.list()).total,0);
+    assert.equal((await queue.status()).counts.new,3);
+  } finally {
+    if(prior===undefined)delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;
+    else process.env.GHDEV_MEMORY_POST_EXIT_LEASE=prior;
+  }
+}));
