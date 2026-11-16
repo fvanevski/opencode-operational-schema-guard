@@ -298,12 +298,12 @@ class PostExitAdmissionTests(TestCase):
                   "--group","disposable","--state-dir",td,
                   "--endpoint","http://127.0.0.1:8766/mcp",
                   "--autonomous-curation"]
-            with mock.patch.object(runner,"load_gate",return_value=gate), \\
-                 mock.patch.object(runner,"wait_for_scheduler_idle"), \\
-                 mock.patch.object(runner,"observation"), \\
-                 mock.patch.object(runner.time,"sleep"), \\
-                 mock.patch.object(runner.sys,"argv",argv), \\
-                 mock.patch.object(runner.subprocess,"run") as child:
+            with (mock.patch.object(runner,"load_gate",return_value=gate),
+                  mock.patch.object(runner,"wait_for_scheduler_idle"),
+                  mock.patch.object(runner,"observation"),
+                  mock.patch.object(runner.time,"sleep"),
+                  mock.patch.object(runner.sys,"argv",argv),
+                  mock.patch.object(runner.subprocess,"run") as child):
                 child.side_effect=[SimpleNamespace(returncode=4),
                                    SimpleNamespace(returncode=4)]
                 self.assertEqual(runner.main(),4)
