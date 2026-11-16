@@ -5,6 +5,21 @@ import {cleanExcerpt} from '../issue-78/v2-candidate/events.mjs';
 const RETENTION = new Set(['established_retention','provisional_retention','skip_non_substantive']);
 const DURABLE = new Set(['durable_decision','root_cause_fix','stable_architecture','reusable_procedure','useful_negative']);
 const reasonOK = x => typeof x==='string' && x.length>=5 && x.length<=240 && cleanExcerpt(x,240)===x;
+// Exact original-source membership does not prevent a mid-word quotation.
+const tokenChar=c=>typeof c==='string' && /[\p{L}\p{N}_./-]/u.test(c);
+export function completeSourceTokenSpan(excerpt,start,end){
+  if(typeof excerpt!=='string'||!Number.isSafeInteger(start)||
+     !Number.isSafeInteger(end)||start<0||end<=start||end>excerpt.length)
+    return false;
+  if(start>0&&tokenChar(excerpt[start-1])&&tokenChar(excerpt[start]))
+    return false;
+  if(end<excerpt.length&&tokenChar(excerpt[end-1])&&tokenChar(excerpt[end]))
+    return false;
+  const splitsPair=i=>i>0&&i<excerpt.length&&
+    excerpt.charCodeAt(i-1)>=0xD800&&excerpt.charCodeAt(i-1)<=0xDBFF&&
+    excerpt.charCodeAt(i)>=0xDC00&&excerpt.charCodeAt(i)<=0xDFFF;
+  return !splitsPair(start)&&!splitsPair(end);
+}
 const error = (reason,retryable=false,blocked_candidates=[]) =>
   ({ok:false,decision:'DEFER',reason,facts:[],retryable,blocked_candidates});
 
@@ -19,10 +34,10 @@ export function autonomousPrompt(cluster){
     'Use established_retention for clearly useful facts, provisional_retention for safely quoted facts of uncertain utility, novelty, relationship or temporal standing, and skip_non_substantive for chatter or useless duplicates.',
     'Uncertain utility is NOT uncertain original-source support. Do NOT retain unsupported synthesis, invented causes, private material, or a mixed-scope claim provisionally.',
     'A user-reported defect stays user-stated; an assistant hypothesis stays assistant-reported. Neither becomes verified.',
-    'Use one authentic source handle and one exact contiguous 25..450-character quote per fact. No stitching, omitted context, or multiple independent predicates.',
-    'Output JSON only: {decision:"EMIT|SKIP",reason:"5..240 characters",facts:[{kind,temporal_status,source_refs:[source],evidence_span:{source_ref,start,end},retention_status,utility_class,utility_reason}]}',
+    'Use one authentic source handle and one exact contiguous 25..450-character evidence_quote COPIED VERBATIM per fact. Choose complete words and one coherent independent sentence or clause; keep all essential qualifiers. Never stitch unrelated predicates. The host computes original offsets. Legacy evidence_span is accepted only at whole-token boundaries.',
+    'Output JSON only: {decision:"EMIT|SKIP",reason:"5..240 characters",facts:[{kind,temporal_status,source_refs:[source],evidence_quote:"verbatim source sentence or clause",retention_status,utility_class,utility_reason}]}',
     'kind: decision|implementation|test_result|architecture|dependency|procedure|blocker|relationship|observation. temporal_status: observed|historical|proposed|unknown.',
-    'Offsets are 0-based JS UTF-16 positions into the given excerpt, end exclusive. Source handle must exactly match.',
+    'Do not count character offsets yourself: copy evidence_quote exactly from one source. The host derives its source span and validates boundaries, provenance, scope, privacy and temporal standing. Source handle must match.',
     'utility_reason is a concise 5..240 character explanation. For established_retention utility_class must be durable_decision|root_cause_fix|stable_architecture|reusable_procedure|useful_negative.',
     'For provisional_retention utility_class may be omitted; the host assigns plausibly_useful as a retention classification, not source verification.',
     'For SKIP use facts:[] only after inspecting every excerpt; never choose DEFER for uncertain usefulness.',
@@ -58,16 +73,37 @@ export function validateAutonomousDecision(raw,cluster){
       blocked_candidates.push({index:i,reason:'invalid_established_class'});continue;
     }
     const cls=status==='provisional_retention'?'plausibly_useful':f.utility_class;
-    const span=f?.evidence_span,ref=f?.source_refs?.[0];
+    const ref=f?.source_refs?.[0];
     const source=cluster?.events?.find(e=>e?.source_refs?.[0]===ref);
-    if(f?.source_refs?.length!==1||!span||span.source_ref!==ref||!source||
-      !Number.isSafeInteger(span.start)||!Number.isSafeInteger(span.end)||
-      span.start<0||span.end<=span.start||span.end>source.excerpt.length){
+    if(f?.source_refs?.length!==1||!source){
       blocked_candidates.push({index:i,reason:'invalid_original_source_span'});continue;
+    }
+    let span=f?.evidence_span;
+    if(f?.evidence_quote!==undefined){
+      const quote=f.evidence_quote;
+      if(typeof quote!=='string'||quote.length<25||quote.length>450||
+         quote.trim()!==quote||cleanExcerpt(quote,450)!==quote){
+        blocked_candidates.push({index:i,reason:'invalid_exact_source_quote'});continue;
+      }
+      const start=source.excerpt.indexOf(quote);
+      if(start<0){
+        blocked_candidates.push({index:i,reason:'invalid_exact_source_quote'});continue;
+      }
+      // Model-provided quoted text is checked against original source;
+      // original offsets are host-derived rather than model-guessed.
+      span={source_ref:ref,start,end:start+quote.length};
+    }
+    if(!span||span.source_ref!==ref||!Number.isSafeInteger(span.start)||
+       !Number.isSafeInteger(span.end)||span.start<0||
+       span.end<=span.start||span.end>source.excerpt.length){
+      blocked_candidates.push({index:i,reason:'invalid_original_source_span'});continue;
+    }
+    if(!completeSourceTokenSpan(source.excerpt,span.start,span.end)){
+      blocked_candidates.push({index:i,reason:'incomplete_source_token_boundary'});continue;
     }
     const checked=validateModelDecision({decision:'EMIT',
       reason:'Independent original-source validation',utility_class:cls,
-      facts:[{...f,utility_class:cls}]},cluster);
+      facts:[{...f,evidence_span:span,utility_class:cls}]},cluster);
     if(!checked.ok||checked.facts.length!==1){
       blocked_candidates.push({index:i,reason:checked.reason||'invalid_source_claim'});continue;
     }
@@ -80,10 +116,17 @@ export function validateAutonomousDecision(raw,cluster){
     fact_source_spans.push({...span});
     review_only_claims.push(...(checked.review_only_claims||[]).map(x=>({...x,index:i})));
   }
-  if(!facts.length)return blocked_candidates.length?
-    error('integrity_blocked',false,blocked_candidates):
-    {ok:true,decision:'SKIP',reason:v.reason,facts:[],
+  if(!facts.length){
+    if(blocked_candidates.length){
+      const onlyQuoteErrors=blocked_candidates.every(x=>
+        x.reason==='invalid_exact_source_quote'||
+        x.reason==='incomplete_source_token_boundary');
+      return error(onlyQuoteErrors?'technical_retry_source_quote':
+        'integrity_blocked',onlyQuoteErrors,blocked_candidates);
+    }
+    return {ok:true,decision:'SKIP',reason:v.reason,facts:[],
       skipped_candidates,blocked_candidates:[]};
+  }
   return {ok:true,decision:'EMIT',reason:v.reason,facts,
     utility_class:fact_utilities[0],fact_utilities,fact_retentions,
     fact_utility_reasons,fact_source_spans,
