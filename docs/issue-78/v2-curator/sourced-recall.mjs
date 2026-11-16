@@ -30,8 +30,13 @@ export async function sourcedEpisodeResolver(root,group,workspace,project,ids) {
       !fact.source_refs.every(ref=>r.events.some(e=>
         e.source_refs.includes(ref)&&e.evidence_class===fact.evidence_class &&
         e.source_strength==='native-id')))continue;
+    // This is an authenticated source qualification, not a Graphiti inference.
+    // Carry source temporal standing with retention to BOTH recall consumers.
+    const temporalStatus=['observed','historical','proposed','unknown']
+      .includes(fact.temporal_status)?fact.temporal_status:null;
     result.push({status:'persisted',group,remoteEpisodeUuid:uuid,
       sourceRef:fact.source_refs.join(', '),evidenceClass:fact.evidence_class,
+      ...(temporalStatus?{temporalStatus}:{}),
       ...(r.retention?.status?{retentionStatus:r.retention.status}:{})});
   }
   return result;

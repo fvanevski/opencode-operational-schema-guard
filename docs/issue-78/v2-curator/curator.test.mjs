@@ -13,6 +13,8 @@ import { selectClusters, modelPrompt, validateDecision, validateModelDecision, R
 import { promoteOne, reconcile, runAdmitted, positiveEpisode } from './worker.mjs';
 import { curateCluster } from './model.mjs';
 import { sourcedEpisodeResolver } from './sourced-recall.mjs';
+import { curatedRecallRetriever } from './curated-recall-candidates.mjs';
+import { validateAutonomousDecision } from '../../issue-100/autonomous-policy.mjs';
 import { Journal, Memory } from '../../issue-75/v2-candidate/memory-core.mjs';
 
 const scope={group:'stage80',workspace:'/workspace/gh_mcp',project:'gh_mcp'};
@@ -961,5 +963,63 @@ test('autonomous technical model error leaves NEW source and no remote ambiguity
   } finally {
     if(prior===undefined)delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;
     else process.env.GHDEV_MEMORY_POST_EXIT_LEASE=prior;
+  }
+}));
+
+test('Codex #103: provisional retention and original temporal status reach both native recall routes',()=>temp(async root=>{
+  const previous=process.env.GHDEV_MEMORY_POST_EXIT_LEASE;
+  process.env.GHDEV_MEMORY_POST_EXIT_LEASE='admitted';
+  try {
+    const c=cluster(),s=new ReviewStore(root,scope.group);
+    const selected=validateAutonomousDecision({decision:'EMIT',
+      reason:'Quoted original developer constraint, not an independently verified fact',
+      facts:[{kind:'decision',temporal_status:'proposed',
+        source_refs:[U.source_refs[0]],evidence_quote:U.excerpt,
+        retention_status:'provisional_retention',
+        utility_reason:'Potentially useful reported requirement pending further evidence'}]},c);
+    assert.equal(selected.ok,true);
+    const stored=(await s.create(c,selected)).record;
+    const uuid='98765432-2222-4222-8222-111111111111';
+    await s.advance(stored.id,'approved','submission_unknown',
+      {expected_revision:stored.revision});
+    await s.advance(stored.id,'submission_unknown','queued');
+    await s.advance(stored.id,'queued','persisted',{remote_episode_uuid:uuid});
+    const rows=await sourcedEpisodeResolver(root,scope.group,
+      scope.workspace,scope.project,[uuid]);
+    assert.equal(rows.length,1);
+    assert.equal(rows[0].retentionStatus,'provisional_retention');
+    assert.equal(rows[0].temporalStatus,'proposed');
+    let writes=0;
+    const graphiti={call:async (method)=>{
+      if(method==='search_memory_facts')
+        return {facts:[{fact:U.excerpt,group_id:scope.group,episodes:[uuid]}]};
+      if(method==='get_episodes')
+        return {episodes:[{uuid,group_id:scope.group,name:'curated-v1:'+stored.id}]};
+      if(method==='add_memory')writes++;
+      throw Error('Unexpected Graphiti call: '+method);
+    }};
+    for(const recallPolicy of ['strict','semantic']){
+      const memory=new Memory({journal:new Journal(root,scope.group),graphiti,
+        group:scope.group,recallPolicy,
+        extraSourceResolver:ids=>sourcedEpisodeResolver(root,scope.group,
+          scope.workspace,scope.project,ids),
+        curatedCandidateRetriever:curatedRecallRetriever(root,scope.group,
+          scope.workspace,scope.project)});
+      const output=await memory.search(
+        'Why must the invalid median algorithm keep the old CLI interface?');
+      assert.ok(output.length>0,recallPolicy+' must retain the fact');
+      const candidate=output.find(x=>x.fact===U.excerpt);
+      assert.ok(candidate,recallPolicy+' must include the original quote');
+      assert.equal(candidate.source,U.source_refs[0]);
+      assert.equal(candidate.evidenceClass,'user-stated');
+      assert.match(candidate.temporal,/provisional retention/);
+      assert.match(candidate.temporal,/proposed \(not established\)/);
+      assert.equal(output.filter(x=>x.fact===U.excerpt).length,1,
+        recallPolicy+' cannot duplicate an unqualified native candidate');
+    }
+    assert.equal(writes,0);
+  } finally {
+    if(previous===undefined)delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;
+    else process.env.GHDEV_MEMORY_POST_EXIT_LEASE=previous;
   }
 }));

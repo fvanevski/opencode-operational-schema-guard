@@ -428,12 +428,27 @@ export class Memory {
       const assertion = safeText(fact.fact, 480);
       if (!assertion || unique.has(assertion.toLowerCase())) continue;
       const ids = Array.isArray(fact.episodes) ? fact.episodes : [];
-      const source = ids.slice(0, 12).map(id => byRemote.get(id)).find(Boolean);
+      const sourceMatches = ids.slice(0, 12).map(id => byRemote.get(id)).filter(Boolean);
+      // A Graphiti fact can cite multiple positively sourced episodes. Never
+      // choose an unqualified sibling when an anchored curated episode remains
+      // provisional; the native lane is merged BEFORE the index lane.
+      const source = sourceMatches.find(s => s.retentionStatus === 'provisional_retention') ||
+        sourceMatches[0];
       if (!source) continue;
       unique.add(assertion.toLowerCase());
-      const temporal = fact.invalid_at ? 'historical/superseded' : 'current state not independently verified';
+      // The original temporal class is source authority, unlike Graphiti's
+      // absent invalid_at (which does not prove that the claim is current).
+      const temporal = fact.invalid_at || source.temporalStatus === 'historical'
+        ? 'historical/superseded'
+        : source.temporalStatus === 'proposed' ? 'proposed (not established)'
+        : source.temporalStatus === 'unknown' ? 'temporal standing unknown'
+        : source.temporalStatus === 'observed'
+          ? 'observed; current state not independently verified'
+          : 'current state not independently verified';
       candidates.push({ fact: assertion, source: source.sourceRef, evidenceClass: source.evidenceClass,
-        temporal, validAt: fact.valid_at ?? null, invalidAt: fact.invalid_at ?? null });
+        temporal: source.retentionStatus === 'provisional_retention'
+          ? 'provisional retention; ' + temporal : temporal,
+        validAt: fact.valid_at ?? null, invalidAt: fact.invalid_at ?? null });
     }
     const { relevanceFilter, shortlistQualifiedCandidates, rankQualifiedForMerge } =
       await import('./relevance.mjs');
