@@ -83,7 +83,9 @@ async function readBoundedInventory(store) {
 }
 
 function provisional(r,group,workspace,project) {
-  if(r?.state!=='persisted'||r.group!==group||r.workspace!==workspace||
+  if(r?.state!=='persisted'||
+     ['superseded','logically_retired'].includes(r.retention?.status)||
+     r.group!==group||r.workspace!==workspace||
      r.project!==project||r.facts?.length!==1||
      !UUID.test(r.remote_episode_uuid||''))return null;
   const f=r.facts[0];
@@ -102,8 +104,11 @@ function provisional(r,group,workspace,project) {
     .map(e=>safeText(e.excerpt,500)).find(Boolean)||'';
   return {fact,source,evidenceClass:f.evidence_class,
     remoteEpisodeUuid:r.remote_episode_uuid,sourceContext,
-    temporal:/histor|superse|prior|past/i.test(f.temporal_status||'')
+    temporal:r.retention?.status==='provisional_retention'?
+      'provisional retention; source-reported, standing not independently verified':
+      /histor|superse|prior|past/i.test(f.temporal_status||'')
       ?'historical/superseded':'current state not independently verified',
+    ...(r.retention?.status?{retentionStatus:r.retention.status}:{}),
     group,workspace,project};
 }
 
@@ -153,7 +158,8 @@ export async function curatedRecallCandidates(root,group,workspace,project,
   const byID=new Map(verified.map(x=>[x.remoteEpisodeUuid,x]));
   return possible.flatMap(r=>{
     const s=byID.get(r.remoteEpisodeUuid);
-    if(!s||s.evidenceClass!==r.evidenceClass)return [];
+    if(!s||s.evidenceClass!==r.evidenceClass||
+       (s.retentionStatus&&s.retentionStatus!==r.retentionStatus))return [];
     // Never trust provisional source identity over the exact persisted index.
     return [{...r,source:s.sourceRef}];
   });

@@ -4,6 +4,7 @@ import {promises as fs} from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {ReviewStore} from '../issue-78/v2-curator/core.mjs';
+import {sourcedEpisodeResolver} from '../issue-78/v2-curator/sourced-recall.mjs';
 import {validateAutonomousDecision} from './autonomous-policy.mjs';
 import {consolidationTrigger,selectConsolidationPairs,consolidationPrompt,validateConsolidationDecision} from './consolidation.mjs';
 const event=(id,phrase,at)=>({
@@ -83,6 +84,8 @@ test('retention CAS, historical identity, logical exclusion and rollback',async(
       'The database cache episode revision requires a new source mapping after schema changes.',
       '2026-11-16T10:00:00Z','established_retention',
       'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb');
+    assert.equal((await sourcedEpisodeResolver(root,old.group,
+      old.workspace,old.project,[old.remote_episode_uuid])).length,1);
     const pair=selectConsolidationPairs([old,next])[0];
     assert.ok(pair);
     const validated=validateConsolidationDecision({
@@ -93,6 +96,8 @@ test('retention CAS, historical identity, logical exclusion and rollback',async(
     assert.equal(result.status,'applied');
     const changed=await s.get(old.id);
     assert.equal(changed.retention.status,'logically_retired');
+    assert.deepEqual(await sourcedEpisodeResolver(root,old.group,
+      old.workspace,old.project,[old.remote_episode_uuid]),[]);
     assert.equal(changed.remote_episode_uuid,old.remote_episode_uuid);
     assert.deepEqual(changed.facts,old.facts);
     assert.deepEqual(changed.events,old.events);
@@ -101,6 +106,8 @@ test('retention CAS, historical identity, logical exclusion and rollback',async(
     assert.equal((await s.rollbackRetentionConsolidation(old.id,changed.revision)).status,'rolled_back');
     const restored=await s.get(old.id);
     assert.equal(restored.retention.status,'provisional_retention');
+    assert.equal((await sourcedEpisodeResolver(root,old.group,
+      old.workspace,old.project,[old.remote_episode_uuid])).length,1);
     assert.equal(restored.remote_episode_uuid,old.remote_episode_uuid);
     assert.equal(consolidationTrigger(restored,next),null);
   } finally {

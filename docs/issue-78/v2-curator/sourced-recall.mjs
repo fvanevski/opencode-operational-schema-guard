@@ -19,7 +19,9 @@ export async function sourcedEpisodeResolver(root,group,workspace,project,ids) {
     } catch(e){if(e.code==='ENOENT')continue;throw e;}
     if(index.remote_episode_uuid!==uuid||!(/^[a-f0-9]{64}$/).test(index.id||''))continue;
     const r=await store.get(index.id);
-    if(!r||r.state!=='persisted'||r.remote_episode_uuid!==uuid||
+    if(!r||r.state!=='persisted'||
+       ['superseded','logically_retired'].includes(r.retention?.status)||
+       r.remote_episode_uuid!==uuid||
       r.group!==group||r.project!==project||r.workspace!==workspace||
       r.facts?.length!==1)continue;
     const fact=r.facts[0];
@@ -29,7 +31,8 @@ export async function sourcedEpisodeResolver(root,group,workspace,project,ids) {
         e.source_refs.includes(ref)&&e.evidence_class===fact.evidence_class &&
         e.source_strength==='native-id')))continue;
     result.push({status:'persisted',group,remoteEpisodeUuid:uuid,
-      sourceRef:fact.source_refs.join(', '),evidenceClass:fact.evidence_class});
+      sourceRef:fact.source_refs.join(', '),evidenceClass:fact.evidence_class,
+      ...(r.retention?.status?{retentionStatus:r.retention.status}:{})});
   }
   return result;
 }
