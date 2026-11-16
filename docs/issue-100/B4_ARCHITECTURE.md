@@ -1,6 +1,6 @@
 # #100 B4: selective, local-authoritative retention consolidation
 
-Accepted predecessor: #99 source-preserving F archive; post-exit EX/quiet grace; existing `ReviewStore` with one independently attributable source fact per positive Graphiti episode. **No new state store or graph update API.** This source is an opt-in candidate until exact-head and host acceptance.
+Accepted predecessor: #99 source-preserving F archive; canonical EX/quiet grace; existing `ReviewStore` with one independently attributable source fact per positive Graphiti episode. **No new state store or graph update API.** This source is an opt-in candidate until exact-head and host acceptance.
 
 ## Why the Graphiti API does not own status
 
@@ -22,7 +22,7 @@ The local model chooses one of `retain_provisional`, `promote_retention`, `super
 
 - New capture/curation and terminal-UUID reconciliation take priority. Optional consolidation runs only after the current EX drain settles eligible new/retry work; no nightly full-graph reranking.
 - At most two consolidation model attempts per admitted run; aggregate model calls/tokens and status transitions are counted separately.
-- The **existing** Python `post-exit-drain.py` wrapper now has an opt-in `--autonomous-curation` flag, passed on both first drain and exit-4 local-work resumption. It remains off for all pre-existing production service invocations; incompatible `--finite-batch-v2` is rejected.
+- The **existing** Python `post-exit-drain.py` wrapper now has an opt-in `--autonomous-curation` flag, passed on both first drain and exit-4 local-work resumption. Its historical filename does not require an unexcluded Hermes orchestrator to exit; the gate still enforces classified harness exclusions, protected model idleness, quiet grace and the exclusive EX lease. It remains off for all pre-existing production service invocations; incompatible `--finite-batch-v2` is rejected.
 - Graphiti submission_unknown/queued never becomes a trigger. No physical node/edge/episode mutation for consolidation.
 - New model `utility_reason` is sanitized and **not included in remote Graphiti episode bodies**. They contain only exact source assertion, source/temporal evidence labels and retention classification.
 - No fresh host evidence for a prospective real model utility rate, automatic consolidation frequency or verified same-request recall has yet been claimed.
@@ -31,4 +31,4 @@ The local model chooses one of `retain_provisional`, `promote_retention`, `super
 
 This first implementation covers **new source-triggered reconsideration of existing provisional facts**. It does not automatically retire every older established fact upon a reported contradiction, infer a graph relationship solely from unlabeled semantic neighbors, or update Graphiti metadata. Such extensions require evidence of material incremental benefit and source-safe semantics; #100 acceptance need not be inflated into a full graph-ontology migration. #101 retains consumer/ranking and final shared-service acceptance.
 
-Next qualification: exact-head trusted Actions and focused CPU tests, **then** a genuine post-harness model-backed disposable group comparison (including normal/predecessor plain drain vs new auto mode, immutable original-source/UUID and blocked invalid cases), central exact-source review, late Codex review only where authorized, merge/main Verify, and reversible installed-module/config activation with fresh native capture/curation and Graphiti readback. Actual answer/context utility remains #101.
+Next qualification: exact-head trusted Actions and focused CPU tests, **then** a genuine EX-admitted model-backed disposable group comparison orchestrated directly by unexcluded Hermes (including normal/predecessor plain drain vs new auto mode, immutable original-source/UUID and blocked invalid cases), central exact-source review, late Codex review only where authorized, merge/main Verify, and reversible installed-module/config activation with fresh native capture/curation and Graphiti readback. Actual answer/context utility remains #101.

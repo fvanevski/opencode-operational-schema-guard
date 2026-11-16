@@ -17,7 +17,7 @@ Counts with denominators: eligible native events, captured events, source cluste
 
 1. `DETERMINISTIC_INTEGRITY`: original-source/privacy/scope/temporal/remote no-replay, retention CAS/rollback, new-evidence-only trigger and source-qualified retrieval exclusion.
 2. `MODEL_UTILITY`: actual local model makes useful per-fact decisions on a predeclared set, preserves independent safe facts, does not create routine portal dependence. Report false negatives/duplicates, not invented universal performance.
-3. `EX_REMOTE`: only admitted after harness exit, no interactive inference contention, positive terminal Graphiti UUID and index; bounded unknown outcome stays unresolved and never re-submitted.
+3. `EX_REMOTE`: Hermes itself need not exit if it is not a classified excluded harness. The installed gate must still prove classified-harness absence, protected inference idleness, quiet grace, no unresolved work and shared EX lock. Require positive terminal Graphiti UUID and index; bounded unknown outcome stays unresolved and is never re-submitted.
 4. `ACTIVATION`: not part of premerge trial. Requires reviewed head, trusted Verify, merge/main Verify, reversible source+config promotion and genuinely fresh service/client native session.
 5. `RECALL_ANSWER`: #101 final integrated consumer owner; B5 provides source/retention mapping and preliminary readback, not unverified answer-level claims.
 

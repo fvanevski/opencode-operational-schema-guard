@@ -2,7 +2,7 @@
 """One-shot post-harness Graphiti drain, NOT a second scheduler.
 Use the installed OpenViking gate's own Config, parser, process classifier and
 canonical shared EX lock; hold it through remote episode persistence readback.
-This is designed to run only after the interactive agent process exits.
+This only admits when gate-excluded interactive harnesses are absent.\nAn unexcluded Hermes orchestrator may call synchronously if the gate verifies\nactual model idleness, quiet grace and the shared EX lock.
 """
 import argparse
 import contextlib
@@ -133,8 +133,8 @@ def reconcile_late(cli, group, state_dir, endpoint, env, interval_seconds=15,
 
     Child exit 3 means remote submission outcome still unknown; never replay.
     Child exit 4 means no remote ambiguity but local eligible work remains:
-    resume the ordinary drain under the SAME admitted EX lock, not in an
-    interactive process or by blind add_memory replay. Both the #75 memory
+    resume the ordinary drain under the SAME admitted EX lock, not under a
+    gate-excluded interactive inference process or by blind add_memory replay. Both the #75 memory
     CLI and the #80 curator CLI implement this shared exit contract.
     """
     script = str(Path(cli).resolve(strict=False))
