@@ -89,8 +89,8 @@ async function main(){
   const root=arg('state-dir'),group=arg('group');
   if(!path.isAbsolute(root))throw Error('ROOT_MUST_BE_ABSOLUTE');
   const queue=new CandidateQueue(root,group),store=new ReviewStore(root,group);
-  const [events,reviews,status]=await Promise.all([pages(queue),pages(store),queue.status()]);
-  if(events.length!==status.total)throw Error('STATUS_COUNT_MISMATCH');
+  const [events,reviews,status]=await Promise.all([pages({list:o=>queue.list({...o,includeArchived:true})}),pages(store),queue.status()]);
+  if(events.length!==status.retained_total)throw Error('STATUS_COUNT_MISMATCH');
   const s=summarize(events,reviews);
   let good=0,missing=0,bad=0;
   for(const r of reviews.filter(x=>x.state==='persisted')){
@@ -101,6 +101,7 @@ async function main(){
     }catch(e){if(e.code==='ENOENT')missing++;else bad++;}
   }
   const result={...s,group,capacity:status.capacity,full:status.full,
+    active_total:status.active_total,archived_total:status.archived_total,
     cumulative_drops:status.drops,index_valid:good,index_missing:missing,index_bad:bad,
     live_graphiti_checked:false,private_content_exported:false};
   process.stdout.write(JSON.stringify({...result,

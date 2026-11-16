@@ -750,7 +750,9 @@ test('unavailable model yields durable DEFER without losing candidate, no Graphi
     curate:async()=>{throw Error('provider unavailable')},maxSeconds:20});
   assert.equal(result.deferred,1);
   assert.equal((await store.list()).items[0].state,'deferred');
-  assert.equal((await q.status()).counts.deferred,3);
+  assert.equal((await q.status()).counts.deferred,0);
+  assert.equal((await q.status()).archived_total,3);
+  assert.equal((await q.list({includeArchived:true,states:['deferred']})).total,3);
  }finally{delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;}
 }));
 

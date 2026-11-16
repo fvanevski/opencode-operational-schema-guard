@@ -7,6 +7,14 @@ import { cleanExcerpt, sha } from './events.mjs';
 const SAFE_GROUP = /^[A-Za-z0-9_.-]{1,100}$/;
 const VALID_ID = /^[a-f0-9]{64}$/;
 const STATES = ['new', 'reserved', 'deferred', 'skipped', 'approved', 'submission_unknown', 'queued', 'persisted'];
+// Immutable source fingerprint: exclude mutable state and updated_at only.
+export const sourceFingerprint = e => sha(JSON.stringify([
+  e.event_id,e.group,e.project,e.workspace,e.session_id,e.kind,e.evidence_class,
+  e.source_strength,e.source_refs,e.excerpt,e.observed_at,e.related_event_ids,e.cluster_key
+]));
+async function syncDir(dir) {
+  const h=await fs.open(dir,'r');try {await h.sync();}finally {await h.close();}
+}
 const TRANSITIONS = {
   new: ['reserved', 'deferred', 'skipped'],
   reserved: ['new', 'deferred', 'skipped', 'approved'],
@@ -42,6 +50,7 @@ export class CandidateQueue {
     if (!Number.isInteger(maxItems) || maxItems < 501 || maxItems > 20000)
       throw Error('Queue capacity must be 501..20000');
     this.dir = path.join(root, 'candidate-events-v1', group);
+    this.archiveDir = path.join(this.dir, '_archive');
     this.group = group; this.maxItems = maxItems;
     this.tail = Promise.resolve();
   }
@@ -52,6 +61,13 @@ export class CandidateQueue {
   filename(id) {
     if (!VALID_ID.test(id)) throw Error('Invalid event ID');
     return path.join(this.dir, id + '.json');
+  }
+  archiveFilename(id) {
+    if(!VALID_ID.test(id))throw Error('Invalid event ID');
+    return path.join(this.archiveDir,id+'.json');
+  }
+  async pendingIds() {
+    return (await this._names()).map(n=>n.slice(0,-5)).sort();
   }
   async _locked(operation) {
     const run = async () => {
@@ -73,8 +89,8 @@ export class CandidateQueue {
     this.tail = result.catch(() => {});
     return result;
   }
-  async _names() {
-    try { return (await fs.readdir(this.dir)).filter(x => /^[a-f0-9]{64}\.json$/.test(x)); }
+  async _names(folder = this.dir) {
+    try { return (await fs.readdir(folder)).filter(x => /^[a-f0-9]{64}\.json$/.test(x)); }
     catch (e) { if (e.code === 'ENOENT') return []; throw e; }
   }
   async _bump(reason) {
@@ -132,8 +148,10 @@ export class CandidateQueue {
       return { status: 'invalid' };
     return this._locked(async () => {
       const dest = this.filename(event.event_id);
-      try { await fs.access(dest); return { status: 'duplicate', event_id: event.event_id }; }
-      catch (e) { if (e.code !== 'ENOENT') throw e; }
+      for(const file of [dest,this.archiveFilename(event.event_id)]) {
+        try {await fs.access(file);return {status:'duplicate',event_id:event.event_id};}
+        catch(e) {if(e.code!=='ENOENT')throw e;}
+      }
       if ((await this._names()).length >= this.maxItems) {
         await this._bump('queue_full');
         return { status: 'queue_full', event_id: event.event_id };
@@ -143,30 +161,40 @@ export class CandidateQueue {
     });
   }
   async get(id) {
-    try {
-      const value = JSON.parse(await fs.readFile(this.filename(id), 'utf8'));
-      if (value?.event_id !== id || value.group !== this.group || value.schema_version !== 1)
-        throw Error('Queue identity mismatch: ' + id);
-      return value;
-    } catch (e) { if (e.code === 'ENOENT') return null; throw e; }
+    for(const file of [this.filename(id),this.archiveFilename(id)]) {
+      try {
+        const v=JSON.parse(await fs.readFile(file,'utf8'));
+        if(v?.event_id!==id||v.group!==this.group||v.schema_version!==1)
+          throw Error('Queue identity mismatch: '+id);
+        return v;
+      } catch(e) {if(e.code!=='ENOENT')throw e;}
+    }
+    return null;
   }
   async transition(id, expected, next) {
     if (!STATES.includes(expected) || !STATES.includes(next) ||
       !TRANSITIONS[expected].includes(next)) throw Error('Invalid queue state transition');
     return this._locked(async () => {
+      const active=this.filename(id),archived=this.archiveFilename(id);
+      const exists=async file=>{try{await fs.access(file);return true;}
+        catch(e){if(e.code==='ENOENT')return false;throw e;}};
+      const isActive=await exists(active),isArchived=await exists(archived);
+      if(isActive&&isArchived)throw Error('ARCHIVE_DUPLICATE_PENDING_RECOVERY');
       const prior = await this.get(id);
       if (!prior || prior.state !== expected) return false;
-      await replaceAtomic(this.filename(id), { ...prior, state: next,
+      await replaceAtomic(isActive?active:archived, { ...prior, state: next,
         updated_at: new Date().toISOString() });
       return true;
     });
   }
-  async list({ offset = 0, limit = 100, states = null } = {}) {
+  async list({ offset = 0, limit = 100, states = null, includeArchived = false } = {}) {
     if (!Number.isInteger(offset) || offset < 0 || !Number.isInteger(limit) ||
-      limit < 1 || limit > 500 || (states && !states.every(s => STATES.includes(s))))
+      limit < 1 || limit > 500 || typeof includeArchived !== 'boolean' ||
+      (states && !states.every(s => STATES.includes(s))))
       throw Error('Invalid bounded queue list request');
     // Inspection must not create or chmod a new state directory.
-    const names = (await this._names()).sort();
+    const names = includeArchived ? [...new Set([...(await this._names()),
+      ...(await this._names(this.archiveDir))])].sort() : (await this._names()).sort();
     const rows = [];
     // This is a bounded page of all source events, not the legacy 500-row Graphiti journal list.
     for (const name of names) {
@@ -194,9 +222,52 @@ export class CandidateQueue {
       drops = meta.drops || {}; last_drop_reason = meta.last_drop_reason || null;
     } catch (e) { if (e.code !== 'ENOENT') throw e; }
     const total = Object.values(counts).reduce((a, b) => a + b, 0);
-    return { schema_version: 1, group: this.group, total, capacity: this.maxItems,
-      counts, drops, last_drop_reason, full: total >= this.maxItems };
+    const archived_total=(await this._names(this.archiveDir)).length;
+    return { schema_version: 1, group: this.group, total,active_total:total,
+      archived_total,retained_total:total+archived_total,capacity:this.maxItems,
+      counts,drops,last_drop_reason,full:total>=this.maxItems };
   }
-  // No automatic GC: source evidence or previously persisted Graphiti episodes
-  // must never be silently deleted to make room. Stage 2 owns audited archival.
+  // ReviewStore ownership has already been authenticated by archive-owned.mjs.
+  // Hard-link, fsync archive directory, unlink pending, fsync pending directory.
+  // Crash between link and unlink leaves identical paths for idempotent repair.
+  async archiveSettledBatch(entries) {
+    if(!Array.isArray(entries)||entries.length>32||
+      entries.some(e=>!VALID_ID.test(e?.id||'')||!VALID_ID.test(e?.fingerprint||'')))
+      throw Error('INVALID_ARCHIVE_BATCH');
+    if(!entries.length)return {archived:0,already_archived:0};
+    return this._locked(async()=>{
+      await fs.mkdir(this.archiveDir,{recursive:true,mode:0o700});
+      await fs.chmod(this.archiveDir,0o700);
+      const removals=[],seen=new Set();let already=0;
+      for(const entry of entries) {
+        if(seen.has(entry.id))throw Error('DUPLICATE_ARCHIVE_PLAN_ID');
+        seen.add(entry.id);
+        const active=this.filename(entry.id),archive=this.archiveFilename(entry.id);
+        let buffer;
+        try {buffer=await fs.readFile(active);}catch(e) {
+          if(e.code!=='ENOENT')throw e;
+          const archived=JSON.parse(await fs.readFile(archive,'utf8'));
+          if(sourceFingerprint(archived)!==entry.fingerprint)
+            throw Error('ARCHIVED_SOURCE_IDENTITY_MISMATCH');
+          already++;continue;
+        }
+        const parsed=JSON.parse(buffer.toString('utf8'));
+        if(parsed?.schema_version!==1||parsed.event_id!==entry.id||
+           parsed.group!==this.group||sourceFingerprint(parsed)!==entry.fingerprint)
+          throw Error('SOURCE_CHANGED_DURING_ARCHIVE');
+        const stat=await fs.lstat(active);
+        if(!stat.isFile()||stat.isSymbolicLink())throw Error('UNSAFE_SOURCE_TYPE');
+        try {await fs.link(active,archive);}catch(e) {
+          if(e.code!=='EEXIST')throw e;
+          if(!(await fs.readFile(archive)).equals(buffer))
+            throw Error('ARCHIVE_COLLISION_CONTENT_MISMATCH');
+        }
+        removals.push(active);
+      }
+      await syncDir(this.archiveDir);
+      for(const file of removals)await fs.unlink(file);
+      await syncDir(this.dir);
+      return {archived:removals.length,already_archived:already};
+    });
+  }
 }
