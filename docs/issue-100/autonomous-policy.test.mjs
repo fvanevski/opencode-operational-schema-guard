@@ -153,3 +153,62 @@ test('UTF-16 surrogate pairs and mid-word edges do not become valid source spans
   assert.equal(completeSourceTokenSpan(excerpt,1,excerpt.length),false);
   assert.equal(completeSourceTokenSpan(excerpt,0,excerpt.length),true);
 });
+
+test('missing utility rationale leaves an otherwise exact quote retryable',()=>{
+  const c=cluster(),f={...fact(c.events[0]),evidence_quote:quoteA};
+  delete f.utility_reason;
+  delete f.evidence_span;
+  const result=validateAutonomousDecision({decision:'EMIT',
+    reason:'One exact, safely sourced fact with malformed model metadata',
+    facts:[f]},c);
+  assert.equal(result.ok,false);
+  assert.equal(result.retryable,true);
+  assert.equal(result.reason,'technical_retry_utility_metadata');
+  assert.equal(result.blocked_candidates[0].reason,'invalid_utility_metadata');
+  assert.deepEqual(result.facts,[]);
+});
+test('invalid established utility class and overly short rationale are model retries',()=>{
+  const c=cluster(),e=c.events[0],f=fact(e);
+  const d={decision:'EMIT',reason:'One source-backed development statement',facts:[f]};
+  f.utility_class='not_a_durable_class';
+  const invalidClass=validateAutonomousDecision(d,c);
+  assert.equal(invalidClass.retryable,true);
+  assert.equal(invalidClass.blocked_candidates[0].reason,'invalid_established_class');
+  f.utility_class='stable_architecture';
+  f.utility_reason='x';
+  const invalidReason=validateAutonomousDecision(d,c);
+  assert.equal(invalidReason.retryable,true);
+  assert.equal(invalidReason.blocked_candidates[0].reason,'invalid_utility_metadata');
+});
+test('unsafe utility rationale or forged source is a hard block, not a retry',()=>{
+  const c=cluster(),f=fact(c.events[0]);
+  f.utility_reason='secret: xxxxxxxxxxxxxxxxxxxxxxxxx';
+  const unsafe=validateAutonomousDecision({decision:'EMIT',
+    reason:'Safe top-level model response',facts:[f]},c);
+  assert.equal(unsafe.reason,'integrity_blocked');
+  assert.equal(unsafe.retryable,false);
+  assert.equal(unsafe.blocked_candidates[0].reason,'invalid_utility_choice');
+  const foreign=fact(c.events[0]);
+  foreign.source_refs=['opencode:foreign:user:invented'];
+  delete foreign.utility_reason;
+  const spoof=validateAutonomousDecision({decision:'EMIT',
+    reason:'Safe top-level model response',facts:[foreign]},c);
+  assert.equal(spoof.reason,'integrity_blocked');
+  assert.equal(spoof.retryable,false);
+  assert.equal(spoof.blocked_candidates[0].reason,'invalid_original_source_span');
+  const mixed=validateAutonomousDecision({decision:'EMIT',
+    reason:'Safe top-level model response',facts:[
+      {...fact(c.events[1]),utility_reason:undefined},foreign]},c);
+  assert.equal(mixed.reason,'integrity_blocked');
+  assert.equal(mixed.retryable,false);
+});
+test('safe sibling survives malformed utility metadata without being deferred',()=>{
+  const c=cluster(),d=decision(c);
+  delete d.facts[0].utility_reason;
+  const result=validateAutonomousDecision(d,c);
+  assert.equal(result.ok,true);
+  assert.equal(result.decision,'EMIT');
+  assert.equal(result.facts.length,1);
+  assert.equal(result.facts[0].source_refs[0],c.events[1].source_refs[0]);
+  assert.equal(result.blocked_candidates[0].reason,'invalid_utility_metadata');
+});

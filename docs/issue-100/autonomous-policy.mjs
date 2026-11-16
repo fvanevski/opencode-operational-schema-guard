@@ -65,17 +65,31 @@ export function validateAutonomousDecision(raw,cluster){
   let skipped_candidates=0;
   for(let i=0;i<v.facts.length;i++){
     const f=v.facts[i],status=f?.retention_status;
-    if(!RETENTION.has(status)||!reasonOK(f?.utility_reason)){
+    const refs=f?.source_refs,ref=refs?.[0];
+    const source=cluster?.events?.find(e=>e?.source_refs?.[0]===ref);
+    // Source spoofing must stay a hard block even when the same model result
+    // also omits a utility field; no metadata retry may mask that failure.
+    if(refs!==undefined&&(!Array.isArray(refs)||refs.length!==1||
+       !source||source.source_strength!=='native-id')){
+      blocked_candidates.push({index:i,reason:'invalid_original_source_span'});continue;
+    }
+    const rationale=f?.utility_reason;
+    // Distinguish a malformed/missing utility field from unsafe rationale
+    // content. Secret-bearing or self-referential text is never retry-classed
+    // merely because the model also broke the required metadata schema.
+    if(typeof rationale==='string'&&
+       cleanExcerpt(rationale,Math.max(240,rationale.length))!==rationale.trim()){
       blocked_candidates.push({index:i,reason:'invalid_utility_choice'});continue;
+    }
+    if(!RETENTION.has(status)||!reasonOK(rationale)){
+      blocked_candidates.push({index:i,reason:'invalid_utility_metadata'});continue;
     }
     if(status==='skip_non_substantive'){skipped_candidates++;continue;}
     if(status==='established_retention'&&!DURABLE.has(f.utility_class)){
       blocked_candidates.push({index:i,reason:'invalid_established_class'});continue;
     }
     const cls=status==='provisional_retention'?'plausibly_useful':f.utility_class;
-    const ref=f?.source_refs?.[0];
-    const source=cluster?.events?.find(e=>e?.source_refs?.[0]===ref);
-    if(f?.source_refs?.length!==1||!source){
+    if(refs?.length!==1||!source){
       blocked_candidates.push({index:i,reason:'invalid_original_source_span'});continue;
     }
     let span=f?.evidence_span;
@@ -118,11 +132,18 @@ export function validateAutonomousDecision(raw,cluster){
   }
   if(!facts.length){
     if(blocked_candidates.length){
+      const quoteErrors=new Set(['invalid_exact_source_quote',
+        'incomplete_source_token_boundary']);
+      const modelFormatErrors=new Set([...quoteErrors,
+        'invalid_utility_metadata','invalid_established_class']);
+      const onlyModelFormatErrors=blocked_candidates.every(x=>
+        modelFormatErrors.has(x.reason));
       const onlyQuoteErrors=blocked_candidates.every(x=>
-        x.reason==='invalid_exact_source_quote'||
-        x.reason==='incomplete_source_token_boundary');
-      return error(onlyQuoteErrors?'technical_retry_source_quote':
-        'integrity_blocked',onlyQuoteErrors,blocked_candidates);
+        quoteErrors.has(x.reason));
+      return error(onlyModelFormatErrors?
+        (onlyQuoteErrors?'technical_retry_source_quote':
+          'technical_retry_utility_metadata'):'integrity_blocked',
+        onlyModelFormatErrors,blocked_candidates);
     }
     return {ok:true,decision:'SKIP',reason:v.reason,facts:[],
       skipped_candidates,blocked_candidates:[]};

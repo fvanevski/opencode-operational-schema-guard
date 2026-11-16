@@ -1035,3 +1035,39 @@ test('Codex #103: provisional retention and original temporal status reach both 
     else process.env.GHDEV_MEMORY_POST_EXIT_LEASE=previous;
   }
 }));
+
+test('Codex #103: missing utility reason triggers bounded retry and leaves NEW source durable',()=>temp(async root=>{
+  const prior=process.env.GHDEV_MEMORY_POST_EXIT_LEASE;
+  process.env.GHDEV_MEMORY_POST_EXIT_LEASE='admitted';
+  try{
+    const queue=new CandidateQueue(root,scope.group);
+    const store=new ReviewStore(root,scope.group);
+    for(const event of [U,T,A])assert.equal((await queue.stage(event)).status,'staged');
+    let writes=0;
+    const graphiti={call:async method=>{
+      if(method==='get_episodes')return {episodes:[]};
+      if(method==='add_memory')writes++;
+      throw Error('Unexpected Graphiti method '+method);
+    }};
+    const result=await runAdmitted({root,group:scope.group,queue,store,graphiti,
+      autonomousCuration:true,maxSeconds:20,curate:async()=>({
+        content:JSON.stringify({decision:'EMIT',
+          reason:'A valid original excerpt with malformed utility metadata',
+          facts:[{kind:'decision',temporal_status:'observed',
+            source_refs:[U.source_refs[0]],evidence_quote:U.excerpt,
+            retention_status:'established_retention',
+            utility_class:'durable_decision'}]}),
+        duration_ms:10})});
+    assert.equal(result.status,'technical_retry');
+    assert.equal(result.technical_retry,1);
+    assert.equal(result.unresolved,0);
+    assert.equal(result.deferred,0);
+    assert.equal(result.model_errors,0);
+    assert.equal(writes,0);
+    assert.equal((await store.list()).total,0);
+    assert.equal((await queue.status()).counts.new,3);
+  }finally{
+    if(prior===undefined)delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;
+    else process.env.GHDEV_MEMORY_POST_EXIT_LEASE=prior;
+  }
+}));
