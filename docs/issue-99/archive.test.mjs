@@ -180,3 +180,18 @@ test('unknown owners and legacy ownerless locks always fail closed',()=>sandbox(
  await assert.rejects(q.recoverAbandonedLock(),/QUEUE_LOCK_LEGACY_OWNER_UNVERIFIED/);
  assert.equal(await q.lockPresent(),true);
 }));
+
+test('production curator CLI cannot recover a queue lock without genuine kernel EX',()=>sandbox(async root=>{
+ const q=new CandidateQueue(root,group);await q.init();
+ await fs.symlink('unverified-owner',q.lockPath());
+ const cli=new URL('../issue-78/v2-curator/curator-cli.mjs',import.meta.url).pathname;
+ const env={...process.env};
+ delete env.GHDEV_MEMORY_POST_EXIT_LEASE;
+ delete env.GHDEV_MEMORY_POST_EXIT_LOCK_FD;
+ const run=spawnSync(process.execPath,[cli,'drain','--group',group,
+   '--state-dir',root,'--endpoint','http://127.0.0.1:8766/mcp'],
+   {env,encoding:'utf8',timeout:10000});
+ assert.notEqual(run.status,0);
+ assert.match(run.stderr,/EX_KERNEL_ADMISSION_REQUIRED:missing_lease/);
+ assert.equal(await q.lockPresent(),true);
+}));
