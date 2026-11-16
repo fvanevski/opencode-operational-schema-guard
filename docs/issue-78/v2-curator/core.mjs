@@ -3,6 +3,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { cleanExcerpt } from '../v2-candidate/events.mjs';
+import {consolidationTrigger} from '../../issue-100/consolidation.mjs';
 
 const HEX = /^[a-f0-9]{64}$/;
 const UUID = /^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i;
@@ -507,6 +508,80 @@ export class ReviewStore {
     for(const n of names)await this.restoreBundle(n.slice(0,-5));
     return names.length;
   }
+  /**
+   * Only a genuinely EX-admitted curator may revise retention. This never
+   * edits the source assertion, Graphiti episode, terminal UUID or source index.
+   * Latest source/record revision is re-read under the target record mutex.
+   */
+  async applyRetentionConsolidation(id,expectedRevision,trigger,verdict){
+    if(process.env.GHDEV_MEMORY_POST_EXIT_LEASE!=='admitted')
+      throw Error('EX_POST_EXIT_ADMISSION_REQUIRED');
+    if(!HEX.test(id||'')||!Number.isSafeInteger(expectedRevision)||expectedRevision<1||
+       !trigger||!HEX.test(trigger.new_record_id||'')||!HEX.test(trigger.id||'')||
+       !verdict||verdict.ok!==true||
+       !['retain_provisional','promote_retention','supersede','logical_retire'].includes(verdict.decision)||
+       typeof verdict.reason!=='string'||verdict.reason.length<5||
+       verdict.reason.length>240||cleanExcerpt(verdict.reason,240)!==verdict.reason)
+      throw Error('INVALID_CONSOLIDATION_INPUT');
+    return this._mutex(id,async()=>{
+      const current=await this.get(id);
+      if(!current||current.revision!==expectedRevision||
+         current.state!=='persisted'||current.retention?.status!=='provisional_retention')
+        return {status:'stale'};
+      const newer=await this.get(trigger.new_record_id);
+      const canonical=consolidationTrigger(current,newer);
+      if(!canonical||canonical.id!==trigger.id||canonical.new_episode_uuid!==trigger.new_episode_uuid||
+         canonical.new_observed_at!==trigger.new_observed_at)
+        return {status:'stale_trigger'};
+      if(verdict.trigger?.id!==canonical.id)return {status:'invalid_verdict_trigger'};
+      const before=current.retention;
+      const status={retain_provisional:'provisional_retention',
+        promote_retention:'established_retention',
+        supersede:'superseded',logical_retire:'logically_retired'}[verdict.decision];
+      const now=new Date().toISOString();
+      const updated={...current,revision:current.revision+1,updated_at:now,
+        retention:{...before,status,reason:verdict.reason,
+          revision:before.revision+1,assessed_at:now,
+          trigger:'new_independent_source',last_trigger_id:canonical.id,
+          last_trigger_observed_at:canonical.new_observed_at,
+          last_trigger_record_id:canonical.new_record_id,
+          last_trigger_episode_uuid:canonical.new_episode_uuid,
+          previous:{status:before.status,reason:before.reason,
+            revision:before.revision}},
+        audit:[...current.audit.slice(-59),{at:now,
+          action:'consolidation_'+verdict.decision,
+          retention_before:before.status,outcome:status,
+          trigger_id:canonical.id,new_source_record_id:canonical.new_record_id,
+          new_source_episode_uuid:canonical.new_episode_uuid}]};
+      await atomic(this.filename(id),updated);
+      return {status:'applied',revision:updated.revision,
+        retention_status:status};
+    });
+  }
+  /** One-step CAS rollback of a retention-only revision. Source/Graphiti stay put. */
+  async rollbackRetentionConsolidation(id,expectedRevision){
+    if(process.env.GHDEV_MEMORY_POST_EXIT_LEASE!=='admitted')
+      throw Error('EX_POST_EXIT_ADMISSION_REQUIRED');
+    if(!HEX.test(id||'')||!Number.isSafeInteger(expectedRevision)||expectedRevision<1)
+      throw Error('INVALID_ROLLBACK_IDENTITY');
+    return this._mutex(id,async()=>{
+      const old=await this.get(id);
+      if(!old||old.revision!==expectedRevision||old.state!=='persisted'||
+         !old.retention?.previous)return {status:'stale'};
+      const prev=old.retention.previous;
+      const now=new Date().toISOString();
+      const updated={...old,revision:old.revision+1,updated_at:now,
+        retention:{...old.retention,status:prev.status,reason:prev.reason,
+          revision:old.retention.revision+1,assessed_at:now,previous:null},
+        audit:[...old.audit.slice(-59),{at:now,action:'consolidation_rollback',
+          retention_before:old.retention.status,outcome:prev.status,
+          trigger_id:old.retention.last_trigger_id}]};
+      await atomic(this.filename(id),updated);
+      return {status:'rolled_back',revision:updated.revision,
+        retention_status:prev.status};
+    });
+  }
+
   async change(id,expectedRevision,action,{reason='',facts=null}={}){
     return this._mutex(id,async()=>{
       const old=await this.get(id);
