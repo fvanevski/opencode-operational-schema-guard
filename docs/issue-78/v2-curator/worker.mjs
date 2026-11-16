@@ -1,5 +1,6 @@
 /** Issue #80: one-shot Graphiti curator, only under the existing EX/quiet-grace gate. */
 import { CandidateQueue } from '../v2-candidate/queue.mjs';
+import { archiveOwnedSources } from '../../issue-99/archive-owned.mjs';
 import { GraphitiMcp, EXTRACTION_INSTRUCTIONS } from '../../issue-75/v2-candidate/memory-core.mjs';
 import { ReviewStore, selectClusters, validateDecision, validateModelDecision, normalizedAssertion } from './core.mjs';
 import { curateCluster } from './model.mjs';
@@ -187,10 +188,17 @@ export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='loca
     persisted:0,unresolved:0,model_attempts:0,model_calls:0,
     model_errors:0,model_ms:0,prompt_tokens:0,completion_tokens:0,
     usage_reported_calls:0,reasoning_tokens:0,reasoning_reported_calls:0,
-    length_limited_responses:0};
+    length_limited_responses:0,archived_sources:0};
+  const archive=async()=>{
+    if(queue instanceof CandidateQueue&&store instanceof ReviewStore) {
+      const r=await archiveOwnedSources(queue,store,{limit:128});
+      stats.archived_sources+=r.archived;
+    }
+  };
   // Recover any crash-interrupted fact bundle from its durable local plan
   // before source ownership and remote identity reconciliation.
   if(typeof store.restoreBundles==='function')await store.restoreBundles();
+  await archive();
   let result=await reconcile(store,graphiti);
   stats.persisted+=result.persisted;stats.unresolved=result.unresolved;
   if(result.unresolved)return {...stats,status:'unresolved'};
@@ -370,6 +378,7 @@ export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='loca
   // A deadline/max-clusters bound may leave approved reviews or candidate
   // source work behind after the remote episode has settled. Do not report a
   // terminal drain to the EX wrapper while eligible work remains.
+  await archive();
   const queueLeft=await queue.status();
   const pendingReviews=(await allRecords(store)).some(r=>
     ['approved','retry_authorized'].includes(r.state)||(r.state==='deferred'&&r.reevaluate_requested));

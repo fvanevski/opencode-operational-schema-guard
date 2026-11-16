@@ -623,8 +623,14 @@ test('re-evaluated approval converges deferred source queue without re-staging e
   assert.equal((await store.get(c.id)).state,'persisted');
   const qstatus=await q.status();
   assert.equal(qstatus.counts.deferred,0);
-  assert.equal(qstatus.counts.approved,3);
-  assert.equal(qstatus.total,3);
+  assert.equal(qstatus.counts.approved,0);
+  assert.equal(qstatus.total,0);
+  assert.equal(qstatus.archived_total,3);
+  const history=await q.list({includeArchived:true,states:['approved']});
+  assert.equal(history.total,3);
+  assert.deepEqual(new Set(history.items.map(e=>e.event_id)),
+    new Set(c.events.map(e=>e.event_id)));
+  assert.equal((await store.get(c.id)).remote_episode_uuid,uuid);
  }finally{delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;}
 }));
 test('partial deferred source transitions converge before rechunking or new model calls',()=>temp(async root=>{
@@ -750,7 +756,9 @@ test('unavailable model yields durable DEFER without losing candidate, no Graphi
     curate:async()=>{throw Error('provider unavailable')},maxSeconds:20});
   assert.equal(result.deferred,1);
   assert.equal((await store.list()).items[0].state,'deferred');
-  assert.equal((await q.status()).counts.deferred,3);
+  assert.equal((await q.status()).counts.deferred,0);
+  assert.equal((await q.status()).archived_total,3);
+  assert.equal((await q.list({includeArchived:true,states:['deferred']})).total,3);
  }finally{delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;}
 }));
 

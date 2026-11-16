@@ -1,0 +1,47 @@
+{
+  "schema": "issue99-lifecycle-audit-v1",
+  "source_files": 4000,
+  "review_files": 565,
+  "queue_states": {
+    "deferred": 862,
+    "approved": 3117,
+    "skipped": 21
+  },
+  "review_states": {
+    "deferred": 205,
+    "persisted": 355,
+    "skipped": 5
+  },
+  "owned_states": {
+    "deferred": 862,
+    "approved": 3117,
+    "skipped": 21
+  },
+  "unowned_states": {},
+  "actionable_source_files": 0,
+  "owned_source_files": 4000,
+  "review_references_absent_source": 0,
+  "unowned_nonactionable_files": 0,
+  "wrong_scope_source_ids": 0,
+  "multiple_origin_source_ids": 0,
+  "ambiguous_review_files": 0,
+  "ambiguous_owned_source_ids": 0,
+  "candidate_archivable_source_files_not_authorized": 4000,
+  "persisted_reviews_with_uuid": 355,
+  "persisted_reviews_without_uuid": 0,
+  "source_identity_sha256": "ce1472920b7339ca13bc23ab670338cf91cbece92dc667b706a421cc090030f4",
+  "review_identity_sha256": "24b85b08d048571cff8b1642f73a46f88f3d5d072875359413b993d01549dba3",
+  "archive_is_not_remote_settlement": true,
+  "group": "development-knowledge",
+  "capacity": 4000,
+  "full": true,
+  "cumulative_drops": {
+    "queue_full": 5949
+  },
+  "index_valid": 355,
+  "index_missing": 0,
+  "index_bad": 0,
+  "live_graphiti_checked": false,
+  "private_content_exported": false,
+  "payload_sha256": "a903a472e938db86730c3f4cb43ddc68953c37f2fa594c39cedf47a2b1e3ea0e"
+}

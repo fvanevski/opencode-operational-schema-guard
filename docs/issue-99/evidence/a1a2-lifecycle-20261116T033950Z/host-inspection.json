@@ -1,0 +1,65 @@
+{
+  "schema": "issue99-host-inspection-v1",
+  "mode": "read-only",
+  "production_group": "development-knowledge",
+  "historical_group_not_assumed": "ghdev_gh_mcp is the retired development namespace, NOT the production group",
+  "state_root": "verified production state root (absolute path omitted for sanitization)",
+  "installed_components": {
+    "ex_wrapper": "post-exit-drain.py (exclusive EX inference-admission gate, oneshot event-wake)",
+    "ex_gate": "pre-existing Python gate: openviking_commit_gate.py + commit-gate.toml",
+    "curator_cli": "curator-cli.mjs (v2-curator)",
+    "graphiti_endpoint": "loopback MCP endpoint, port 8766",
+    "curator_unit": "ghdev-curator-prod.service (oneshot, NoNewPrivileges, UMask 0077, Restart=on-failure 30s)"
+  },
+  "curator_cli_flags_sanitized": [
+    "--group development-knowledge",
+    "--state-dir <production state root>",
+    "--endpoint <loopback:8766>/mcp",
+    "--max-seconds 600",
+    "--lock-timeout 120"
+  ],
+  "unit_state_observation": "activating (auto-restart), Result exit-code, code=exited status=2 (read-only observation; not mutated by this campaign)",
+  "counts": {
+    "queue_source_files": 4000,
+    "queue_capacity": 4000,
+    "queue_full": true,
+    "queue_states": {
+      "approved": 3117,
+      "deferred": 862,
+      "skipped": 21
+    },
+    "actionable_source_files": 0,
+    "review_files": 565,
+    "review_states": {
+      "persisted": 355,
+      "deferred": 205,
+      "skipped": 5
+    },
+    "owned_source_files": 4000,
+    "unowned_source_files": 0,
+    "episode_index_files": 355,
+    "episode_index_valid": 355,
+    "episode_index_missing": 0,
+    "episode_index_bad": 0,
+    "persisted_reviews_with_uuid": 355,
+    "persisted_reviews_without_uuid": 0,
+    "candidate_archivable_source_files_not_authorized": 4000,
+    "ambiguous_review_files": 0,
+    "multiple_origin_source_ids": 0,
+    "wrong_scope_source_ids": 0
+  },
+  "drops": {
+    "historical_cumulative": {
+      "queue_full": 5949
+    },
+    "new_drops_this_campaign": 0,
+    "note": "5949 is the pre-existing cumulative counter in _status.json (last written by the production curator ~2h before this read-only audit); the read-only audit and the isolated tmpfs synthetic workloads caused 0 new drops."
+  },
+  "identity_provenance": {
+    "source_identity_sha256": "ce1472920b7339ca13bc23ab670338cf91cbece92dc667b706a421cc090030f4",
+    "review_identity_sha256": "24b85b08d048571cff8b1642f73a46f88f3d5d072875359413b993d01549dba3",
+    "audit_payload_sha256": "a903a472e938db86730c3f4cb43ddc68953c37f2fa594c39cedf47a2b1e3ea0e"
+  },
+  "live_graphiti_checked": false,
+  "private_content_exported": false
+}

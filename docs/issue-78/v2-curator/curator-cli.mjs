@@ -5,6 +5,7 @@ import os from 'node:os';
 import { CandidateQueue } from '../v2-candidate/queue.mjs';
 import { ReviewStore } from './core.mjs';
 import { runAdmitted, reconcile } from './worker.mjs';
+import {requireKernelExAdmission} from './ex-admission-proof.mjs';
 import { runAdmittedFiniteBatch } from './finite-batch.mjs';
 import {loadFiniteBatchTuning,tuningSummary} from './finite-batch-tuning.mjs';
 import { modelPolicy } from './model-policy.mjs';
@@ -187,6 +188,14 @@ if(command==='validate-tuning'){
     if(result.unresolved)process.exitCode=3;
     else if(eligible)process.exitCode=4;
   }else{
+    // Recover an orphaned queue sentinel only under the parent's genuine
+    // inherited kernel EX lease. Never steal a live OpenCode producer's lock.
+    const queue=new CandidateQueue(root,group);
+    if(await queue.lockPresent()){
+      requireKernelExAdmission();
+      const recovery=await queue.recoverAbandonedLock();
+      console.error('ISSUE99_QUEUE_LOCK_'+recovery.status.toUpperCase());
+    }
     const inputs={root,group,graphitiEndpoint:arg('endpoint'),
       modelEndpoint:process.env.LOCAL_CURATOR_URL,
       modelId:process.env.LOCAL_CURATOR_MODEL,

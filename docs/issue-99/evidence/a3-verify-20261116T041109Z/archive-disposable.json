@@ -1,0 +1,131 @@
+{
+  "501": {
+    "root": "disposable tmpfs root (path omitted; RAM-backed)",
+    "staged": {
+      "staged": 501,
+      "full": 0
+    },
+    "before_full": {
+      "status": "queue_full",
+      "event_id": "c62552203c7dfcad215e064cfe5e5abd249c0f5885394f48123cb7f3301fe1be"
+    },
+    "plan": {
+      "cli_exit": 0,
+      "raw": {
+        "schema": "issue99-source-archive-v1",
+        "mode": "plan",
+        "group": "issue99-a3-disposable",
+        "limit": 501,
+        "eligible_total": 501,
+        "pending_total": 501,
+        "excluded": {
+          "unowned": 0,
+          "cross_origin": 0,
+          "scope_or_source_mismatch": 0,
+          "nonsettled_review": 0,
+          "missing_terminal_index": 0
+        },
+        "plan_sha256": "8d3af843bec6fa0faa9226af434127d42a152326d7cb29b6a3947d745afa0627",
+        "archived": 0
+      }
+    },
+    "stale_apply": {
+      "cli_exit": 2,
+      "code": "ARCHIVE_PLAN_STALE"
+    },
+    "apply": {
+      "cli_exit": 0,
+      "raw": {
+        "schema": "issue99-source-archive-v1",
+        "mode": "apply",
+        "group": "issue99-a3-disposable",
+        "limit": 501,
+        "eligible_total": 501,
+        "pending_total": 501,
+        "excluded": {
+          "unowned": 0,
+          "cross_origin": 0,
+          "scope_or_source_mismatch": 0,
+          "nonsettled_review": 0,
+          "missing_terminal_index": 0
+        },
+        "plan_sha256": "8d3af843bec6fa0faa9226af434127d42a152326d7cb29b6a3947d745afa0627",
+        "archived": 501,
+        "already_archived": 0,
+        "remaining_eligible": 0
+      }
+    },
+    "srcDigestAfter": "f62be57a02de612529cf414368429218f57fed8592a64321ab508ceeac0e48dc",
+    "source_bytes_preserved": true,
+    "after_free": {
+      "status": "staged",
+      "event_id": "c62552203c7dfcad215e064cfe5e5abd249c0f5885394f48123cb7f3301fe1be"
+    },
+    "status": {
+      "total": 1,
+      "archived_total": 501,
+      "retained_total": 502,
+      "drops": {
+        "queue_full": 1
+      },
+      "oldest_pending_at": "2026-11-16T00:00:00Z"
+    },
+    "restart": {
+      "duplicate_after": "duplicate",
+      "cold_total": 1,
+      "cold_archived": 501,
+      "list_include_archived": 502
+    }
+  },
+  "4000": {
+    "root": "disposable tmpfs root (path omitted; RAM-backed)",
+    "denominator": {
+      "staged": 4000,
+      "full": 0
+    },
+    "before": {
+      "status": "queue_full"
+    },
+    "plan": {
+      "eligible_total": 4000,
+      "pending_total": 4000
+    },
+    "apply": {
+      "archived": 4000,
+      "already_archived": 0
+    },
+    "after": {
+      "status": "staged"
+    },
+    "status": {
+      "total": 1,
+      "archived_total": 4000,
+      "retained_total": 4001,
+      "drops": {
+        "queue_full": 1
+      }
+    },
+    "elapsed_ms": 34235.88
+  },
+  "backup_restore": {
+    "scope": "candidate-events-v1/group + curation-v1/group (+_episode-index)",
+    "inventory_match": {
+      "source": true,
+      "review": true,
+      "index": true
+    },
+    "counts": {
+      "source": 503,
+      "review": 502,
+      "index": 1,
+      "dest_source": 503,
+      "dest_review": 502,
+      "dest_index": 1
+    }
+  },
+  "caveats": [
+    "CPU-only single-process; crash-window convergence (link-before-unlink, collision, CAS) is proven by archive.test.mjs unit tests, not by real kill-9/fsync/power-loss",
+    "disposable roots on tmpfs (RAM-backed); no concurrent producer, no lock-contention load",
+    "no raw source excerpt leaves the host; only counts, digests and CLI JSON recorded"
+  ]
+}

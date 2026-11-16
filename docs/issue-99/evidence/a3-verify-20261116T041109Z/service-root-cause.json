@@ -1,0 +1,26 @@
+{
+  "schema": "issue99-a3-service-root-cause-v1",
+  "unit": "ghdev-curator-prod.service (oneshot, Restart=on-failure 30s, NoNewPrivileges)",
+  "observed_state": "activating (auto-restart) / Result exit-code; restart counter 244+ (loop ~every 2 min)",
+  "failing_command": "post-exit-drain.py EX wrapper -> curator-cli.mjs --group development-knowledge --max-seconds 600 --lock-timeout 120",
+  "failure_signature": "FAIL_CLOSED: shared agent/gate lease held; bounded wait exhausted -> exit 2 (INVALIDARGUMENT)",
+  "classification": {
+    "confirmed": [
+      "journalctl --user: repeated 'FAIL_CLOSED: shared agent/gate lease held; bounded wait exhausted' then 'Main process exited, code=exited, status=2/INVALIDARGUMENT'",
+      "fuser: the shared gate lease (openviking-agent.lock in the user runtime dir) is held via flock by a long-lived process",
+      "ps: the lease holder is the transient Issue-#93 opencode-serve tenant (ghdev93-opencode-serve-93.service, ~3.25h old) running admission_exec.py ... 'opencode serve --service' under a SHARED flock",
+      "post-exit-drain.py source: exclusive LOCK_EX acquisition of that lease, bounded by --lock-timeout (120s); while any shared holder exists it cannot proceed"
+    ],
+    "inferred": [
+      "the EX gate is in a non-quiescent state (active codex/opencode harness processes present), so observation() would also refuse to drain even if the lease freed",
+      "the shared lease is held persistently by the serve-mode gate tenant, so the production post-exit curator's exclusive EX wait always exhausts -> infinite on-failure restart"
+    ]
+  },
+  "root_cause": "EX-admission lease starvation: a long-lived transient opencode-serve tenant holds the shared OpenViking commit-gate lease, so the production post-exit curator cannot obtain exclusive EX admission within its 120s bounded wait. Not a curator/archive code defect; the curator correctly refuses to proceed without EX (FAIL_CLOSED).",
+  "bounded_remediation_proposal_for_central_a4": [
+    "Reversible primary: supervised 'systemctl --user stop ghdev93-opencode-serve-93' (transient unit) releases the shared flock; the production post-exit curator's next EX wait can then succeed, stopping the loop. Rollback: re-run the relaunch-opencode-serve.sh for that deployment. Production service transition -> A4 scope, Central/operator authorized.",
+    "If the serve tenant must persist: reconcile the EX gate topology so the serve-mode gate tenant and the production post-exit curator do not contend for the same exclusive lease (gate reconfiguration, Central-owned).",
+    "No data mutation by the loop itself (FAIL_CLOSED occurs before work); the 5949 historical queue_full drops are pre-existing and unrelated."
+  ],
+  "action_taken_by_this_campaign": "read-only only (systemctl --user status, journalctl --user, fuser, ps, lock inspection); no production service started/stopped/restarted; no EX reconfiguration; no archival applied to production"
+}
