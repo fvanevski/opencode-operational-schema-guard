@@ -1,4 +1,7 @@
 import test from 'node:test';
+// Include #100 policy regressions in the existing trusted CI curator test profile.
+import '../../issue-100/autonomous-policy.test.mjs';
+import '../../issue-100/consolidation.test.mjs';
 import { spawnSync } from 'node:child_process';
 import assert from 'node:assert/strict';
 import { mkdtemp, rm } from 'node:fs/promises';
@@ -10,6 +13,8 @@ import { selectClusters, modelPrompt, validateDecision, validateModelDecision, R
 import { promoteOne, reconcile, runAdmitted, positiveEpisode } from './worker.mjs';
 import { curateCluster } from './model.mjs';
 import { sourcedEpisodeResolver } from './sourced-recall.mjs';
+import { curatedRecallRetriever } from './curated-recall-candidates.mjs';
+import { validateAutonomousDecision } from '../../issue-100/autonomous-policy.mjs';
 import { Journal, Memory } from '../../issue-75/v2-candidate/memory-core.mjs';
 
 const scope={group:'stage80',workspace:'/workspace/gh_mcp',project:'gh_mcp'};
@@ -932,3 +937,137 @@ test('source-isolated selection keeps same-session native messages independently
  assert.throws(()=>selectClusters([a,{...b,source_strength:'session-scoped-fallback'}],
   {sourceMessageIsolation:true}),/authenticated native source/);
 });
+
+test('autonomous technical model error leaves NEW source and no remote ambiguity',()=>temp(async root=>{
+  const prior=process.env.GHDEV_MEMORY_POST_EXIT_LEASE;
+  process.env.GHDEV_MEMORY_POST_EXIT_LEASE='admitted';
+  try {
+    const queue=new CandidateQueue(root,scope.group),store=new ReviewStore(root,scope.group);
+    for(const e of [U,T,A])assert.equal((await queue.stage(e)).status,'staged');
+    let remoteWrites=0;
+    const graphiti={call:async method=>{
+      if(method==='get_episodes')return {episodes:[]};
+      if(method==='add_memory')remoteWrites++;
+      throw Error('Unexpected Graphiti method '+method);
+    }};
+    const result=await runAdmitted({root,group:scope.group,queue,store,graphiti,
+      autonomousCuration:true,curate:async()=>{throw Error('MODEL_URL_UNSET');},
+      maxSeconds:20});
+    assert.equal(result.status,'technical_retry');
+    assert.equal(result.technical_retry,1);
+    assert.equal(result.unresolved,0);
+    assert.equal(result.model_errors,1);
+    assert.equal(remoteWrites,0);
+    assert.equal((await store.list()).total,0);
+    assert.equal((await queue.status()).counts.new,3);
+  } finally {
+    if(prior===undefined)delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;
+    else process.env.GHDEV_MEMORY_POST_EXIT_LEASE=prior;
+  }
+}));
+
+test('Codex #103: provisional retention and original temporal status reach both native recall routes',()=>temp(async root=>{
+  const previous=process.env.GHDEV_MEMORY_POST_EXIT_LEASE;
+  process.env.GHDEV_MEMORY_POST_EXIT_LEASE='admitted';
+  try {
+    const c=cluster(),s=new ReviewStore(root,scope.group);
+    const selected=validateAutonomousDecision({decision:'EMIT',
+      reason:'Quoted original developer constraint, not an independently verified fact',
+      facts:[{kind:'decision',temporal_status:'proposed',
+        source_refs:[U.source_refs[0]],evidence_quote:U.excerpt,
+        retention_status:'provisional_retention',
+        utility_reason:'Potentially useful reported requirement pending further evidence'}]},c);
+    assert.equal(selected.ok,true);
+    const stored=(await s.create(c,selected)).record;
+    const uuid='98765432-2222-4222-8222-111111111111';
+    await s.advance(stored.id,'approved','submission_unknown',
+      {expected_revision:stored.revision});
+    await s.advance(stored.id,'submission_unknown','queued');
+    await s.advance(stored.id,'queued','persisted',{remote_episode_uuid:uuid});
+    const rows=await sourcedEpisodeResolver(root,scope.group,
+      scope.workspace,scope.project,[uuid]);
+    assert.equal(rows.length,1);
+    assert.equal(rows[0].retentionStatus,'provisional_retention');
+    assert.equal(rows[0].temporalStatus,'proposed');
+    // A native Graphiti fact may cite another non-provisional source first.
+    // The provisional curated episode must not be silently de-qualified.
+    const otherUUID='98765432-2222-4222-8222-222222222222';
+    let writes=0;
+    const graphiti={call:async (method)=>{
+      if(method==='search_memory_facts')
+        return {facts:[{fact:U.excerpt,group_id:scope.group,
+          episodes:[otherUUID,uuid],
+          invalid_at:'2026-11-04T00:00:00Z'}]};
+      if(method==='get_episodes')
+        return {episodes:[
+          {uuid:otherUUID,group_id:scope.group,name:'legacy-curated-control'},
+          {uuid,group_id:scope.group,name:'curated-v1:'+stored.id}]};
+      if(method==='add_memory')writes++;
+      throw Error('Unexpected Graphiti call: '+method);
+    }};
+    for(const recallPolicy of ['strict','semantic']){
+      const memory=new Memory({journal:new Journal(root,scope.group),graphiti,
+        group:scope.group,recallPolicy,
+        extraSourceResolver:async ids=>[
+          // A separately authenticated non-provisional search anchor.
+          {status:'persisted',group:scope.group,remoteEpisodeUuid:otherUUID,
+            sourceRef:U.source_refs[0],evidenceClass:'user-stated'},
+          ...await sourcedEpisodeResolver(root,scope.group,
+            scope.workspace,scope.project,ids)],
+        curatedCandidateRetriever:curatedRecallRetriever(root,scope.group,
+          scope.workspace,scope.project)});
+      const output=await memory.search(
+        'Why must the invalid median algorithm keep the old CLI interface?');
+      assert.ok(output.length>0,recallPolicy+' must retain the fact');
+      const candidate=output.find(x=>x.fact===U.excerpt);
+      assert.ok(candidate,recallPolicy+' must include the original quote');
+      assert.equal(candidate.source,U.source_refs[0]);
+      assert.equal(candidate.evidenceClass,'user-stated');
+      assert.match(candidate.temporal,/provisional retention/);
+      assert.match(candidate.temporal,/proposed \(not established\)/);
+      assert.match(candidate.temporal,/historical\/superseded/);
+      assert.equal(output.filter(x=>x.fact===U.excerpt).length,1,
+        recallPolicy+' cannot duplicate an unqualified native candidate');
+    }
+    assert.equal(writes,0);
+  } finally {
+    if(previous===undefined)delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;
+    else process.env.GHDEV_MEMORY_POST_EXIT_LEASE=previous;
+  }
+}));
+
+test('Codex #103: missing utility reason triggers bounded retry and leaves NEW source durable',()=>temp(async root=>{
+  const prior=process.env.GHDEV_MEMORY_POST_EXIT_LEASE;
+  process.env.GHDEV_MEMORY_POST_EXIT_LEASE='admitted';
+  try{
+    const queue=new CandidateQueue(root,scope.group);
+    const store=new ReviewStore(root,scope.group);
+    for(const event of [U,T,A])assert.equal((await queue.stage(event)).status,'staged');
+    let writes=0;
+    const graphiti={call:async method=>{
+      if(method==='get_episodes')return {episodes:[]};
+      if(method==='add_memory')writes++;
+      throw Error('Unexpected Graphiti method '+method);
+    }};
+    const result=await runAdmitted({root,group:scope.group,queue,store,graphiti,
+      autonomousCuration:true,maxSeconds:20,curate:async()=>({
+        content:JSON.stringify({decision:'EMIT',
+          reason:'A valid original excerpt with malformed utility metadata',
+          facts:[{kind:'decision',temporal_status:'observed',
+            source_refs:[U.source_refs[0]],evidence_quote:U.excerpt,
+            retention_status:'established_retention',
+            utility_class:'durable_decision'}]}),
+        duration_ms:10})});
+    assert.equal(result.status,'technical_retry');
+    assert.equal(result.technical_retry,1);
+    assert.equal(result.unresolved,0);
+    assert.equal(result.deferred,0);
+    assert.equal(result.model_errors,0);
+    assert.equal(writes,0);
+    assert.equal((await store.list()).total,0);
+    assert.equal((await queue.status()).counts.new,3);
+  }finally{
+    if(prior===undefined)delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;
+    else process.env.GHDEV_MEMORY_POST_EXIT_LEASE=prior;
+  }
+}));

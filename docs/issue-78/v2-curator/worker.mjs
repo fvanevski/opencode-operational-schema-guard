@@ -4,6 +4,8 @@ import { archiveOwnedSources } from '../../issue-99/archive-owned.mjs';
 import { GraphitiMcp, EXTRACTION_INSTRUCTIONS } from '../../issue-75/v2-candidate/memory-core.mjs';
 import { ReviewStore, selectClusters, validateDecision, validateModelDecision, normalizedAssertion } from './core.mjs';
 import { curateCluster } from './model.mjs';
+import {autonomousPrompt,validateAutonomousDecision} from '../../issue-100/autonomous-policy.mjs';
+import {selectConsolidationPairs,consolidationPrompt,validateConsolidationDecision} from '../../issue-100/consolidation.mjs';
 import { reviewProposedFacts, factDiscoveryPrompt,
   validateFactDiscovery } from './fact-review.mjs';
 const validUUID=s=>typeof s==='string'&&/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i.test(s);
@@ -27,6 +29,8 @@ export function episodeBody(record){
     'Fact '+(i+1)+': '+f.assertion,
     '[Evidence class: '+f.evidence_class+'; Kind: '+f.kind+
     '; Temporal: '+f.temporal_status+'; Observed: '+f.observed_at+']',
+    ...(record.retention?['[Retention: '+record.retention.status+
+      '; This is a retention judgment, NOT independent verification]']:[]),
     '[Source references: '+f.source_refs.join(', ')+
     '; Scope group: '+record.group+'; Project: '+record.project+']'
   ].join('\n')).join('\n\n');
@@ -151,6 +155,44 @@ export async function promoteOne(store,record,graphiti){
     return {status:'submission_unknown'};
   }
 }
+/** Two bounded EX-admitted reconsiderations after settled new source evidence.
+ * No graph mutation or remote replay; unavailable membership blocks the pass.
+ */
+async function consolidateSelected(store,graphiti,curate,modelArgs,deadline,stats){
+  const pairs=selectConsolidationPairs(await allRecords(store),{limit:2});
+  if(!pairs.length)return;
+  let episodes;
+  try{
+    const response=await graphiti.call('get_episodes',{
+      group_ids:[store.group],max_episodes:1000});
+    episodes=response?.episodes;
+    if(!Array.isArray(episodes)||episodes.length>=1000)
+      throw Error('CONSOLIDATION_REMOTE_PROOF_BOUNDED');
+  }catch{stats.consolidation_remote_blocked+=pairs.length;return;}
+  for(const pair of pairs){
+    if(Date.now()>deadline-5000)break;
+    try{
+      if(positiveEpisode(pair.target,episodes)!==pair.target.remote_episode_uuid||
+         positiveEpisode(pair.newer,episodes)!==pair.newer.remote_episode_uuid){
+        stats.consolidation_remote_blocked++;continue;
+      }
+    }catch{stats.consolidation_remote_blocked++;continue;}
+    stats.model_attempts++;stats.consolidation_attempts++;
+    try{
+      const reply=await curate(pair.target,{...modelArgs,
+        promptMessages:consolidationPrompt(pair)});
+      tallyModelUsage(stats,reply);
+      const decision=validateConsolidationDecision(reply.content,pair);
+      if(!decision.ok){stats.consolidation_retry++;continue;}
+      const applied=await store.applyRetentionConsolidation(pair.target.id,
+        pair.target.revision,pair.trigger,decision);
+      if(applied.status==='applied'){
+        stats.consolidation_applied++;
+        stats['consolidation_'+decision.decision]++;
+      }else stats.consolidation_stale++;
+    }catch{stats.model_errors++;stats.consolidation_retry++;}
+  }
+}
 // Aggregate usage without logging any source excerpt or model response.
 export function tallyModelUsage(stats,reply){
   stats.model_calls++;
@@ -174,10 +216,11 @@ export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='loca
   graphitiEndpoint,queue,store,graphiti,curate=curateCluster,
   modelOptions={},maxClusters=6,maxSeconds=600,
   // Optional only for ADR exposed qualification until independent acceptance.
-  factReview=false,factReviewModelCall=null}={}){
+  factReview=false,factReviewModelCall=null,autonomousCuration=false}={}){
   admitted();
-  if(typeof factReview!=='boolean'||
-    (factReviewModelCall!==null&&typeof factReviewModelCall!=='function'))
+  if(typeof factReview!=='boolean'||typeof autonomousCuration!=='boolean'||
+     (autonomousCuration&&factReview)||
+     (factReviewModelCall!==null&&typeof factReviewModelCall!=='function'))
     throw Error('Invalid optional fact review setting');
   if(!Number.isInteger(maxClusters)||maxClusters<1||maxClusters>12)throw Error('Invalid cluster bound');
   const deadline=Date.now()+maxSeconds*1000;
@@ -188,7 +231,13 @@ export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='loca
     persisted:0,unresolved:0,model_attempts:0,model_calls:0,
     model_errors:0,model_ms:0,prompt_tokens:0,completion_tokens:0,
     usage_reported_calls:0,reasoning_tokens:0,reasoning_reported_calls:0,
-    length_limited_responses:0,archived_sources:0};
+    length_limited_responses:0,archived_sources:0,
+     provisional_selected:0,established_selected:0,integrity_blocked:0,
+     technical_retry:0,skipped_candidates:0,
+     consolidation_attempts:0,consolidation_applied:0,consolidation_retry:0,
+     consolidation_remote_blocked:0,consolidation_stale:0,
+     consolidation_retain_provisional:0,consolidation_promote_retention:0,
+     consolidation_supersede:0,consolidation_logical_retire:0};
   const archive=async()=>{
     if(queue instanceof CandidateQueue&&store instanceof ReviewStore) {
       const r=await archiveOwnedSources(queue,store,{limit:128});
@@ -289,15 +338,28 @@ export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='loca
     try{
       const reply=await curate(cluster,{endpoint:modelEndpoint,model:modelId,apiKey,
         ...modelOptions,
-        ...(factReview?{promptMessages:factDiscoveryPrompt(cluster)}:{})});
-      proposal=factReview?
-        validateFactDiscovery(reply.content,cluster):
-        validateModelDecision(reply.content,cluster);
+        ...(autonomousCuration?{promptMessages:autonomousPrompt(cluster)}:
+           factReview?{promptMessages:factDiscoveryPrompt(cluster)}:{})});
+      proposal=autonomousCuration?validateAutonomousDecision(reply.content,cluster):
+         factReview?validateFactDiscovery(reply.content,cluster):
+         validateModelDecision(reply.content,cluster);
       tallyModelUsage(stats,reply);
     }catch(e){
       stats.model_errors++;
       proposal={ok:false,decision:'DEFER',facts:[],
-        reason:'curator_unavailable_or_invalid'};
+         reason:autonomousCuration?'technical_retry_model_unavailable':'curator_unavailable_or_invalid',
+         retryable:autonomousCuration};
+    }
+    // No trustworthy model answer: leave immutable source NEW for a bounded
+    // future admitted drain, without a fake SKIP, human-approval queue or write intent.
+    if(autonomousCuration&&proposal.retryable){stats.technical_retry++;continue;}
+    if(autonomousCuration){
+      stats.integrity_blocked+=(proposal.blocked_candidates||[]).length;
+      stats.skipped_candidates+=proposal.skipped_candidates||0;
+      if(proposal.ok&&proposal.decision==='EMIT'){
+        stats.provisional_selected+=proposal.fact_retentions.filter(x=>x==='provisional_retention').length;
+        stats.established_selected+=proposal.fact_retentions.filter(x=>x==='established_retention').length;
+      }
     }
     if(factReview&&proposal.ok&&proposal.decision==='EMIT'){
       try{
@@ -375,6 +437,21 @@ export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='loca
     stats.persisted+=result.persisted;
   }
   stats.unresolved=result.unresolved+(recoveryBlocked?1:0);
+  // New source admission and terminal reconciliation take precedence over
+  // optional graph-aware reconsideration, always under the original EX lease.
+  // Fresh capture/remote-settlement work takes priority over optional
+  // consolidation: first reclaim settled #99 source slots and check for work.
+  if(autonomousCuration&&!stats.unresolved&&Date.now()<deadline-5000){
+    await archive();
+    const pending=await queue.status();
+    const pendingFact=(await allRecords(store)).some(r=>
+      r.state==='approved'||r.state==='retry_authorized');
+    if(pending.counts.new===0&&pending.counts.reserved===0&&!pendingFact)
+      await consolidateSelected(store,graphiti,curate,{
+
+      endpoint:modelEndpoint,model:modelId,apiKey,...modelOptions
+      },deadline,stats);
+  }
   // A deadline/max-clusters bound may leave approved reviews or candidate
   // source work behind after the remote episode has settled. Do not report a
   // terminal drain to the EX wrapper while eligible work remains.
@@ -384,6 +461,11 @@ export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='loca
     ['approved','retry_authorized'].includes(r.state)||(r.state==='deferred'&&r.reevaluate_requested));
   const localWork=pendingReviews||queueLeft.counts.new>0||
     queueLeft.counts.reserved>0;
+  // Autonomous no-model/invalid-model leaves immutable NEW sources, not a
+  // remote write intent. Distinguish actionable local technical retry from
+  // Graphiti submission_unknown; the EX holder may then safely release after
+  // a positive reconcile-only check instead of looping on nonexistent ACKs.
   return {...stats,status:stats.unresolved?'unresolved':
+    localWork&&autonomousCuration&&stats.technical_retry>0?'technical_retry':
     localWork?'incomplete':stats.deferred?'review_required':'settled'};
 }

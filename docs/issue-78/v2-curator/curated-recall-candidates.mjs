@@ -83,7 +83,9 @@ async function readBoundedInventory(store) {
 }
 
 function provisional(r,group,workspace,project) {
-  if(r?.state!=='persisted'||r.group!==group||r.workspace!==workspace||
+  if(r?.state!=='persisted'||
+     ['superseded','logically_retired'].includes(r.retention?.status)||
+     r.group!==group||r.workspace!==workspace||
      r.project!==project||r.facts?.length!==1||
      !UUID.test(r.remote_episode_uuid||''))return null;
   const f=r.facts[0];
@@ -100,10 +102,18 @@ function provisional(r,group,workspace,project) {
     e.evidence_class===f.evidence_class&&Array.isArray(e.source_refs)&&
     e.source_refs.some(ref=>refs.has(ref)))
     .map(e=>safeText(e.excerpt,500)).find(Boolean)||'';
+  const originalTemporal=f.temporal_status==='historical'?'historical/superseded':
+    f.temporal_status==='proposed'?'proposed (not established)':
+    f.temporal_status==='unknown'?'temporal standing unknown':
+    'observed; current state not independently verified';
+  // The actual model-facing consumer projects `temporal` but not
+  // `retentionStatus`. Preserve BOTH original-source temporal standing and
+  // the independent provisional-retention decision in that public field.
   return {fact,source,evidenceClass:f.evidence_class,
     remoteEpisodeUuid:r.remote_episode_uuid,sourceContext,
-    temporal:/histor|superse|prior|past/i.test(f.temporal_status||'')
-      ?'historical/superseded':'current state not independently verified',
+    temporal:r.retention?.status==='provisional_retention'?
+      'provisional retention; '+originalTemporal:originalTemporal,
+    ...(r.retention?.status?{retentionStatus:r.retention.status}:{}),
     group,workspace,project};
 }
 
@@ -153,7 +163,8 @@ export async function curatedRecallCandidates(root,group,workspace,project,
   const byID=new Map(verified.map(x=>[x.remoteEpisodeUuid,x]));
   return possible.flatMap(r=>{
     const s=byID.get(r.remoteEpisodeUuid);
-    if(!s||s.evidenceClass!==r.evidenceClass)return [];
+    if(!s||s.evidenceClass!==r.evidenceClass||
+       (s.retentionStatus&&s.retentionStatus!==r.retentionStatus))return [];
     // Never trust provisional source identity over the exact persisted index.
     return [{...r,source:s.sourceRef}];
   });

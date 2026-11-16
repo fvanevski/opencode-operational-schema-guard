@@ -3,6 +3,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { cleanExcerpt } from '../v2-candidate/events.mjs';
+import {consolidationTrigger} from '../../issue-100/consolidation.mjs';
 
 const HEX = /^[a-f0-9]{64}$/;
 const UUID = /^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i;
@@ -15,9 +16,9 @@ const KINDS = new Set(['decision','implementation','test_result','architecture',
 // Old review records need no migration; operator approval remains independently validated.
 const UTILITY_CLASSES = new Set(['durable_decision','root_cause_fix','stable_architecture',
   'reusable_procedure','useful_negative','transient_result','repetition',
-  'superseded_stale','uncertain_unattributed']);
+  'superseded_stale','uncertain_unattributed','plausibly_useful']);
 const PERSISTABLE_UTILITY = new Set(['durable_decision','root_cause_fix',
-  'stable_architecture','reusable_procedure','useful_negative']);
+  'stable_architecture','reusable_procedure','useful_negative','plausibly_useful']);
 const STATES = new Set(['deferred','approved','skipped','submission_unknown','queued','persisted','failed_extraction','retry_authorized']);
 const digest = input => createHash('sha256').update(input).digest('hex');
 const validDate = s => typeof s === 'string' && Number.isFinite(Date.parse(s));
@@ -275,6 +276,26 @@ async function atomic(dest,payload){
   try{await fs.rename(tmp,dest);}
   finally{await fs.rm(tmp,{force:true});}
 }
+function validatedRetention(cluster,decision,checked,index){
+  if(!Array.isArray(decision?.fact_retentions))return null;
+  const status=decision.fact_retentions[index],reason=decision.fact_utility_reasons?.[index];
+  const span=decision.fact_source_spans?.[index],fact=checked.facts[index];
+  const src=cluster.events.find(e=>e.source_refs?.[0]===fact?.source_refs?.[0]);
+  const utility=decision.fact_utilities?.[index];
+  if(!['established_retention','provisional_retention'].includes(status)||
+    typeof reason!=='string'||reason.length<5||reason.length>240||cleanExcerpt(reason,240)!==reason||
+    !span||span.source_ref!==fact?.source_refs?.[0]||
+    !Number.isSafeInteger(span.start)||!Number.isSafeInteger(span.end)||
+    span.start<0||span.end<=span.start||!src||span.end>src.excerpt.length||
+    src.excerpt.slice(span.start,span.end).trim()!==fact.assertion||
+    (status==='provisional_retention'&&utility!=='plausibly_useful')||
+    (status==='established_retention'&&utility==='plausibly_useful'))
+    throw Error('INVALID_RETENTION_SOURCE_OR_UTILITY');
+  return {status,reason,source_span:{...span},revision:1,
+    trigger:'initial_ai_utility',assessed_at:new Date().toISOString()};
+}
+
+/** Source-attested per-fact retention lives with the revisioned review. */
 export class ReviewStore {
   constructor(root,group){
     if(typeof root!=='string'||!path.isAbsolute(root)||!SAFE.test(group))throw Error('Invalid review store scope');
@@ -355,6 +376,7 @@ export class ReviewStore {
     const valid=validateDecision(decision,cluster);
     const state=valid.decision==='SKIP'?'skipped':
       valid.ok&&valid.decision==='EMIT'?'approved':'deferred';
+    const retention=state==='approved'?validatedRetention(cluster,decision,valid,0):null;
     return this._mutex(cluster.id,async()=>{
       const prior=await this.get(cluster.id);
       if(prior)return {record:prior,created:false};
@@ -367,7 +389,10 @@ export class ReviewStore {
         source_event_ids:cluster.source_event_ids,
         origin_cluster_id:cluster.origin_cluster_id??cluster.id,
         state,decision:valid.decision,
-        reason:valid.reason,
+        reason:valid.reason,retention,
+        blocked_candidates:Array.isArray(decision?.blocked_candidates)?
+          decision.blocked_candidates.filter(x=>Number.isInteger(x?.index)&&x.index>=0&&x.index<3&&
+            typeof x.reason==='string'&&x.reason.length<=90).slice(0,3):[],
         // For a single model-selected fact, the independently validated fact
         // classification governs the persisted review. The top-level label
         // remains a compatibility fallback; operator edits remain unclassified.
@@ -410,7 +435,14 @@ export class ReviewStore {
        verified.facts.length>3||
        !Array.isArray(decision.fact_utilities)||
        decision.fact_utilities.length!==verified.facts.length||
-       decision.fact_utilities.some(x=>!PERSISTABLE_UTILITY.has(x)))
+       decision.fact_utilities.some(x=>!PERSISTABLE_UTILITY.has(x))||
+       (decision.fact_retentions!==undefined&&(
+         !Array.isArray(decision.fact_retentions)||
+         decision.fact_retentions.length!==verified.facts.length||
+         !Array.isArray(decision.fact_utility_reasons)||
+         decision.fact_utility_reasons.length!==verified.facts.length||
+         !Array.isArray(decision.fact_source_spans)||
+         decision.fact_source_spans.length!==verified.facts.length)))
       throw Error('INVALID_BOUNDED_FACT_BUNDLE');
     await this.ensure();
     const id=cluster.id,folder=path.join(this.dir,'_fact-bundles');
@@ -429,6 +461,10 @@ export class ReviewStore {
         child_ids:childIds,cluster,decision:{
           decision:'EMIT',reason:verified.reason,utility_class:decision.utility_class,
           facts:verified.facts,fact_utilities:decision.fact_utilities,
+          fact_retentions:decision.fact_retentions,
+          fact_utility_reasons:decision.fact_utility_reasons,
+          fact_source_spans:decision.fact_source_spans,
+          blocked_candidates:decision.blocked_candidates||[],
           review_only_claims:decision.review_only_claims||[]
         },created_at:new Date().toISOString()
       });
@@ -453,6 +489,12 @@ export class ReviewStore {
       const r=await this.create({...b.cluster,id:child,origin_cluster_id:id},
         {ok:true,decision:'EMIT',reason:checked.reason,
          utility_class:b.decision.fact_utilities[i],facts:[f],
+         fact_utilities:[b.decision.fact_utilities[i]],
+         ...(Array.isArray(b.decision.fact_retentions)?{
+           fact_retentions:[b.decision.fact_retentions[i]],
+           fact_utility_reasons:[b.decision.fact_utility_reasons[i]],
+           fact_source_spans:[b.decision.fact_source_spans[i]]}:{}),
+         blocked_candidates:b.decision.blocked_candidates||[],
          review_only_claims:(b.decision.review_only_claims||[]).filter(x=>x.index===i)});
       records.push(r.record);
     }
@@ -466,6 +508,80 @@ export class ReviewStore {
     for(const n of names)await this.restoreBundle(n.slice(0,-5));
     return names.length;
   }
+  /**
+   * Only a genuinely EX-admitted curator may revise retention. This never
+   * edits the source assertion, Graphiti episode, terminal UUID or source index.
+   * Latest source/record revision is re-read under the target record mutex.
+   */
+  async applyRetentionConsolidation(id,expectedRevision,trigger,verdict){
+    if(process.env.GHDEV_MEMORY_POST_EXIT_LEASE!=='admitted')
+      throw Error('EX_POST_EXIT_ADMISSION_REQUIRED');
+    if(!HEX.test(id||'')||!Number.isSafeInteger(expectedRevision)||expectedRevision<1||
+       !trigger||!HEX.test(trigger.new_record_id||'')||!HEX.test(trigger.id||'')||
+       !verdict||verdict.ok!==true||
+       !['retain_provisional','promote_retention','supersede','logical_retire'].includes(verdict.decision)||
+       typeof verdict.reason!=='string'||verdict.reason.length<5||
+       verdict.reason.length>240||cleanExcerpt(verdict.reason,240)!==verdict.reason)
+      throw Error('INVALID_CONSOLIDATION_INPUT');
+    return this._mutex(id,async()=>{
+      const current=await this.get(id);
+      if(!current||current.revision!==expectedRevision||
+         current.state!=='persisted'||current.retention?.status!=='provisional_retention')
+        return {status:'stale'};
+      const newer=await this.get(trigger.new_record_id);
+      const canonical=consolidationTrigger(current,newer);
+      if(!canonical||canonical.id!==trigger.id||canonical.new_episode_uuid!==trigger.new_episode_uuid||
+         canonical.new_observed_at!==trigger.new_observed_at)
+        return {status:'stale_trigger'};
+      if(verdict.trigger?.id!==canonical.id)return {status:'invalid_verdict_trigger'};
+      const before=current.retention;
+      const status={retain_provisional:'provisional_retention',
+        promote_retention:'established_retention',
+        supersede:'superseded',logical_retire:'logically_retired'}[verdict.decision];
+      const now=new Date().toISOString();
+      const updated={...current,revision:current.revision+1,updated_at:now,
+        retention:{...before,status,reason:verdict.reason,
+          revision:before.revision+1,assessed_at:now,
+          trigger:'new_independent_source',last_trigger_id:canonical.id,
+          last_trigger_observed_at:canonical.new_observed_at,
+          last_trigger_record_id:canonical.new_record_id,
+          last_trigger_episode_uuid:canonical.new_episode_uuid,
+          previous:{status:before.status,reason:before.reason,
+            revision:before.revision}},
+        audit:[...current.audit.slice(-59),{at:now,
+          action:'consolidation_'+verdict.decision,
+          retention_before:before.status,outcome:status,
+          trigger_id:canonical.id,new_source_record_id:canonical.new_record_id,
+          new_source_episode_uuid:canonical.new_episode_uuid}]};
+      await atomic(this.filename(id),updated);
+      return {status:'applied',revision:updated.revision,
+        retention_status:status};
+    });
+  }
+  /** One-step CAS rollback of a retention-only revision. Source/Graphiti stay put. */
+  async rollbackRetentionConsolidation(id,expectedRevision){
+    if(process.env.GHDEV_MEMORY_POST_EXIT_LEASE!=='admitted')
+      throw Error('EX_POST_EXIT_ADMISSION_REQUIRED');
+    if(!HEX.test(id||'')||!Number.isSafeInteger(expectedRevision)||expectedRevision<1)
+      throw Error('INVALID_ROLLBACK_IDENTITY');
+    return this._mutex(id,async()=>{
+      const old=await this.get(id);
+      if(!old||old.revision!==expectedRevision||old.state!=='persisted'||
+         !old.retention?.previous)return {status:'stale'};
+      const prev=old.retention.previous;
+      const now=new Date().toISOString();
+      const updated={...old,revision:old.revision+1,updated_at:now,
+        retention:{...old.retention,status:prev.status,reason:prev.reason,
+          revision:old.retention.revision+1,assessed_at:now,previous:null},
+        audit:[...old.audit.slice(-59),{at:now,action:'consolidation_rollback',
+          retention_before:old.retention.status,outcome:prev.status,
+          trigger_id:old.retention.last_trigger_id}]};
+      await atomic(this.filename(id),updated);
+      return {status:'rolled_back',revision:updated.revision,
+        retention_status:prev.status};
+    });
+  }
+
   async change(id,expectedRevision,action,{reason='',facts=null}={}){
     return this._mutex(id,async()=>{
       const old=await this.get(id);
@@ -487,7 +603,11 @@ export class ReviewStore {
       if(!checked.ok)throw Error('INVALID_APPROVAL: '+checked.reason);
       const state=decision==='SKIP'?'skipped':decision==='EMIT'?'approved':'deferred';
       const now=new Date().toISOString();
+      // A human correction/exceptional disposition is not the initial AI
+      // utility judgment. Never carry a prior source-span/utility assessment
+      // across a potentially changed fact or decision state.
       const updated={...old,state,decision:checked.decision,reason:checked.reason,
+        retention:null,
         utility_class:null,facts:checked.facts,reevaluate_requested:action==='reevaluate',
         revision:old.revision+1,updated_at:now,
         audit:[...old.audit.slice(-59),{at:now,action,outcome:state}]};
