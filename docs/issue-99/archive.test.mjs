@@ -85,3 +85,47 @@ test('sibling review fact identities retain common origin and nonsettled sibling
  other.state='deferred';await fs.writeFile(r.filename(other.id),JSON.stringify(other));
  assert.equal((await archiveOwnedSources(q,r)).archived,1);
 }));
+
+test('full 501-item cap reclaims owned sources and admits another event',()=>sandbox(async root=>{
+ const q=new CandidateQueue(root,group,{maxItems:501}),r=new ReviewStore(root,group);
+ const sources=Array.from({length:501},(_,i)=>event(root,'bulk'+i));
+ for(const e of sources)assert.equal((await q.stage(e)).status,'staged');
+ const next=event(root,'after');
+ assert.equal((await q.stage(next)).status,'queue_full');
+ for(let i=0;i<sources.length;i++)
+   await review(r,sources[i],'skipped',{id:i.toString(16).padStart(64,'0')});
+ const p=await archiveOwnedSources(q,r,{dryRun:true,limit:501});
+ assert.equal(p.eligible_total,501);
+ assert.equal((await archiveOwnedSources(q,r,{limit:501,expectedPlan:p.plan_sha256})).archived,501);
+ assert.equal((await q.stage(next)).status,'staged');
+ const s=await q.status();
+ assert.equal(s.total,1);assert.equal(s.archived_total,501);
+ assert.equal(s.retained_total,502);assert.equal(s.drops.queue_full,1);
+ assert.equal(s.oldest_pending_at,next.observed_at);
+ assert.equal((await q.list({includeArchived:true})).total,502);
+}));
+test('persisted positive UUID and index authorize source archival',()=>sandbox(async root=>{
+ const q=new CandidateQueue(root,group),r=new ReviewStore(root,group),e=event(root,'uuid');
+ await q.stage(e);
+ await review(r,e,'persisted',{uuid:'12345678-1111-4111-a111-222222222222'});
+ assert.equal((await archiveOwnedSources(q,r)).archived,1);
+ assert.equal((await q.stage(e)).status,'duplicate');
+}));
+test('archive collision mismatch cannot remove original evidence',()=>sandbox(async root=>{
+ const q=new CandidateQueue(root,group),r=new ReviewStore(root,group),e=event(root,'collision');
+ await q.stage(e);await review(r,e,'skipped');
+ await fs.mkdir(q.archiveDir,{recursive:true});
+ await fs.writeFile(q.archiveFilename(e.event_id),
+   JSON.stringify({...e,excerpt:'corrupted archive'}));
+ await assert.rejects(archiveOwnedSources(q,r),/ARCHIVE_COLLISION_CONTENT_MISMATCH/);
+ assert.equal((await q.get(e.event_id)).excerpt,e.excerpt);
+ assert.equal((await q.status()).total,1);
+}));
+test('review CAS before queue state transition converges without duplicate curation',()=>sandbox(async root=>{
+ const q=new CandidateQueue(root,group),r=new ReviewStore(root,group),e=event(root,'cas');
+ await q.stage(e);await review(r,e,'skipped');
+ assert.equal((await q.get(e.event_id)).state,'new');
+ assert.equal((await archiveOwnedSources(q,r)).archived,1);
+ assert.equal((await q.stage(e)).status,'duplicate');
+ assert.equal((await q.get(e.event_id)).state,'new');
+}));

@@ -75,11 +75,11 @@ export class CandidateQueue {
       await this.init();
       const lock = path.join(this.dir, '.queue.lock');
       let acquired = false;
-      for (let i = 0; i < 8; i++) {
+      for (let i = 0; i < 100; i++) {
         try { await fs.mkdir(lock, { mode: 0o700 }); acquired = true; break; }
         catch (e) {
           if (e.code !== 'EEXIST') throw e;
-          await new Promise(resolve => setTimeout(resolve, 10 + i * 5));
+          await new Promise(resolve => setTimeout(resolve, 15 + (i % 8) * 5));
         }
       }
       if (!acquired) throw Error('candidate_queue_busy: inspect lock owner before recovery');
@@ -211,11 +211,15 @@ export class CandidateQueue {
   async status() {
     // Read-only observation, including for an as-yet nonexistent group.
     const counts = Object.fromEntries(STATES.map(x => [x, 0]));
+    let oldest_pending_at = null;
     for (const name of await this._names()) {
       const row = await this.get(name.slice(0, -5));
       if (row) {
         if (!STATES.includes(row.state)) throw Error('Unknown candidate state: ' + row.event_id);
         counts[row.state]++;
+        if (['new','reserved'].includes(row.state) &&
+            (oldest_pending_at === null || row.observed_at < oldest_pending_at))
+          oldest_pending_at = row.observed_at;
       }
     }
     let drops = {}, last_drop_reason = null;
@@ -227,7 +231,7 @@ export class CandidateQueue {
     const archived_total=(await this._names(this.archiveDir)).length;
     return { schema_version: 1, group: this.group, total,active_total:total,
       archived_total,retained_total:total+archived_total,capacity:this.maxItems,
-      counts,drops,last_drop_reason,full:total>=this.maxItems };
+      counts,drops,last_drop_reason,oldest_pending_at,full:total>=this.maxItems };
   }
   // ReviewStore ownership has already been authenticated by archive-owned.mjs.
   // Hard-link, fsync archive directory, unlink pending, fsync pending directory.
