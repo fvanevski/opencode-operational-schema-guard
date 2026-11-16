@@ -20,7 +20,8 @@ function record(id,phrase,at,status='provisional_retention'){
     state:'persisted',remote_episode_uuid:id.repeat(8)+'-aaaa-bbbb-cccc-'+id.repeat(12),
     facts:[{assertion:phrase,evidence_class:'user-stated',source_refs:e.source_refs,
       observed_at:at,temporal_status:'observed'}],
-    retention:{status,revision:1,source_span:{source_ref:e.source_refs[0],start:0,end:phrase.length}}
+    retention:{status,revision:1,assessed_at:at,
+      source_span:{source_ref:e.source_refs[0],start:0,end:phrase.length}}
   };
 }
 const older=()=>record('a','The cache episode revision is invalid after the database schema changes.','2026-11-16T09:00:00Z');
