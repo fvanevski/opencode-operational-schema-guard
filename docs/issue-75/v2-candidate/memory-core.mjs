@@ -438,13 +438,19 @@ export class Memory {
       unique.add(assertion.toLowerCase());
       // The original temporal class is source authority, unlike Graphiti's
       // absent invalid_at (which does not prove that the claim is current).
-      const temporal = fact.invalid_at || source.temporalStatus === 'historical'
+      const originalTemporal = source.temporalStatus === 'historical'
         ? 'historical/superseded'
         : source.temporalStatus === 'proposed' ? 'proposed (not established)'
         : source.temporalStatus === 'unknown' ? 'temporal standing unknown'
         : source.temporalStatus === 'observed'
           ? 'observed; current state not independently verified'
           : 'current state not independently verified';
+      // An invalidated Graphiti edge must not erase the original's proposed,
+      // unknown, or observed evidence class. Preserve BOTH qualifications.
+      const temporal = fact.invalid_at
+        ? originalTemporal.includes('historical/superseded')
+          ? originalTemporal : originalTemporal + '; historical/superseded'
+        : originalTemporal;
       candidates.push({ fact: assertion, source: source.sourceRef, evidenceClass: source.evidenceClass,
         temporal: source.retentionStatus === 'provisional_retention'
           ? 'provisional retention; ' + temporal : temporal,

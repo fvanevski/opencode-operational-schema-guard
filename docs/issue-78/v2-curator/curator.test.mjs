@@ -989,20 +989,31 @@ test('Codex #103: provisional retention and original temporal status reach both 
     assert.equal(rows.length,1);
     assert.equal(rows[0].retentionStatus,'provisional_retention');
     assert.equal(rows[0].temporalStatus,'proposed');
+    // A native Graphiti fact may cite another non-provisional source first.
+    // The provisional curated episode must not be silently de-qualified.
+    const otherUUID='98765432-2222-4222-8222-222222222222';
     let writes=0;
     const graphiti={call:async (method)=>{
       if(method==='search_memory_facts')
-        return {facts:[{fact:U.excerpt,group_id:scope.group,episodes:[uuid]}]};
+        return {facts:[{fact:U.excerpt,group_id:scope.group,
+          episodes:[otherUUID,uuid],
+          invalid_at:'2026-11-04T00:00:00Z'}]};
       if(method==='get_episodes')
-        return {episodes:[{uuid,group_id:scope.group,name:'curated-v1:'+stored.id}]};
+        return {episodes:[
+          {uuid:otherUUID,group_id:scope.group,name:'legacy-curated-control'},
+          {uuid,group_id:scope.group,name:'curated-v1:'+stored.id}]};
       if(method==='add_memory')writes++;
       throw Error('Unexpected Graphiti call: '+method);
     }};
     for(const recallPolicy of ['strict','semantic']){
       const memory=new Memory({journal:new Journal(root,scope.group),graphiti,
         group:scope.group,recallPolicy,
-        extraSourceResolver:ids=>sourcedEpisodeResolver(root,scope.group,
-          scope.workspace,scope.project,ids),
+        extraSourceResolver:async ids=>[
+          // A separately authenticated non-provisional search anchor.
+          {status:'persisted',group:scope.group,remoteEpisodeUuid:otherUUID,
+            sourceRef:U.source_refs[0],evidenceClass:'user-stated'},
+          ...await sourcedEpisodeResolver(root,scope.group,
+            scope.workspace,scope.project,ids)],
         curatedCandidateRetriever:curatedRecallRetriever(root,scope.group,
           scope.workspace,scope.project)});
       const output=await memory.search(
@@ -1014,6 +1025,7 @@ test('Codex #103: provisional retention and original temporal status reach both 
       assert.equal(candidate.evidenceClass,'user-stated');
       assert.match(candidate.temporal,/provisional retention/);
       assert.match(candidate.temporal,/proposed \(not established\)/);
+      assert.match(candidate.temporal,/historical\/superseded/);
       assert.equal(output.filter(x=>x.fact===U.excerpt).length,1,
         recallPolicy+' cannot duplicate an unqualified native candidate');
     }
