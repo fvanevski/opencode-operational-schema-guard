@@ -37,6 +37,7 @@ test('invalid, same-origin, stale and unrelated sources do not schedule an AI pa
   const old=older(),next=newer();
   assert.equal(consolidationTrigger(old,{...next,origin_cluster_id:old.origin_cluster_id}),null);
   assert.equal(consolidationTrigger(old,{...next,state:'submission_unknown'}),null);
+  assert.equal(consolidationTrigger(old,{...next,created_at:'2026-11-16T08:00:00Z'}),null);
   assert.equal(consolidationTrigger(old,{...next,facts:[{...next.facts[0],observed_at:old.facts[0].observed_at}]}),null);
   assert.equal(consolidationTrigger({...old,retention:{...old.retention,status:'established_retention'}},next),null);
   assert.equal(consolidationTrigger(old,{...next,facts:[{...next.facts[0],assertion:'A wholly separate subject from any other library entirely.'}]}),null);

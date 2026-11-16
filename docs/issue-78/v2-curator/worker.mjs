@@ -439,10 +439,19 @@ export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='loca
   stats.unresolved=result.unresolved+(recoveryBlocked?1:0);
   // New source admission and terminal reconciliation take precedence over
   // optional graph-aware reconsideration, always under the original EX lease.
-  if(autonomousCuration&&!stats.unresolved&&Date.now()<deadline-5000)
-    await consolidateSelected(store,graphiti,curate,{
+  // Fresh capture/remote-settlement work takes priority over optional
+  // consolidation: first reclaim settled #99 source slots and check for work.
+  if(autonomousCuration&&!stats.unresolved&&Date.now()<deadline-5000){
+    await archive();
+    const pending=await queue.status();
+    const pendingFact=(await allRecords(store)).some(r=>
+      r.state==='approved'||r.state==='retry_authorized');
+    if(pending.counts.new===0&&pending.counts.reserved===0&&!pendingFact)
+      await consolidateSelected(store,graphiti,curate,{
+
       endpoint:modelEndpoint,model:modelId,apiKey,...modelOptions
-    },deadline,stats);
+      },deadline,stats);
+  }
   // A deadline/max-clusters bound may leave approved reviews or candidate
   // source work behind after the remote episode has settled. Do not report a
   // terminal drain to the EX wrapper while eligible work remains.

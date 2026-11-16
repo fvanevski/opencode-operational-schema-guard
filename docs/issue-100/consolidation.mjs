@@ -28,6 +28,12 @@ export function consolidationTrigger(target,newer){
     !scopeMatches(target,newer)||target.retention?.status!=='provisional_retention'||
     !target.retention?.source_span||!Number.isSafeInteger(target.retention.revision)||
     target.source_event_ids?.some(id=>newer.source_event_ids?.includes(id)))return null;
+  // A source already present before the target's last retention assessment
+  // cannot trigger a new model judgment just because its clock time is later.
+  if(!Number.isFinite(Date.parse(newer.created_at))||
+     !Number.isFinite(Date.parse(target.retention.assessed_at))||
+     Date.parse(newer.created_at)<Date.parse(target.retention.assessed_at))
+    return null;
   const olderTime=target.retention.last_trigger_observed_at||
     target.facts[0].observed_at;
   const newTime=newer.facts[0].observed_at;
