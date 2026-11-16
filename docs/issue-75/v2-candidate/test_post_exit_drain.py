@@ -246,3 +246,38 @@ class PostExitAdmissionTests(TestCase):
         i = args.index("--source-subspan-recovery-v2")
         self.assertEqual(args[i + 1], "on")
         self.assertNotIn("--source-subspan-recovery-v2", runner.finite_v2_drain_args(False))
+
+    def test_issue100_autonomous_flag_is_opt_in_not_implicit(self):
+        self.assertEqual(runner.autonomous_curation_args(False), [])
+        self.assertEqual(runner.autonomous_curation_args(True),
+                         ["--autonomous-curation", "on"])
+
+    def test_issue100_late_local_work_preserves_autonomous_mode_and_ex_fd(self):
+        with mock.patch.object(runner.subprocess, "run") as run:
+            run.side_effect = [SimpleNamespace(returncode=4),
+                               SimpleNamespace(returncode=0)]
+            result = runner.reconcile_late("/tmp/curator-cli.mjs",
+                "disposable_issue100", "/tmp/disposable-state",
+                "http://127.0.0.1:8766/mcp",
+                {"GHDEV_MEMORY_POST_EXIT_LEASE":"admitted",
+                 "GHDEV_MEMORY_POST_EXIT_LOCK_FD":"9"},
+                lock_fd=9, autonomous_curation=True)
+        self.assertEqual(result,0)
+        self.assertEqual(run.call_count,2)
+        for call in run.call_args_list:
+            self.assertEqual(call.kwargs["pass_fds"],(9,))
+        self.assertNotIn("--autonomous-curation",run.call_args_list[0].args[0])
+        resumed=run.call_args_list[1].args[0]
+        self.assertEqual(resumed[resumed.index("--autonomous-curation")+1],"on")
+        self.assertNotIn("--finite-batch",resumed)
+
+    def test_issue100_wrapper_rejects_incompatible_mode_flags(self):
+        with mock.patch.object(runner.sys,"argv",[
+            "post-exit-drain.py","--gate-source","/abs/source.py",
+            "--gate-config","/abs/gate.toml","--cli","/abs/curator-cli.mjs",
+            "--group","test","--state-dir","/tmp/test",
+            "--endpoint","http://127.0.0.1:8766/mcp",
+            "--finite-batch-v2","--autonomous-curation"]):
+            with self.assertRaises(SystemExit) as ctx:
+                runner.main()
+            self.assertEqual(ctx.exception.code,2)

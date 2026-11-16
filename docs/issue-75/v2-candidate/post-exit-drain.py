@@ -108,6 +108,11 @@ def finite_v2_drain_args(enabled):
     ]
 
 
+def autonomous_curation_args(enabled):
+    # Opt-in only; the production service retains its historical plain drain.
+    return ["--autonomous-curation", "on"] if enabled else []
+
+
 def wait_for_scheduler_idle(gate, cfg, max_seconds):
     """Only transient scheduler busy may wait; all other admission failures stop."""
     deadline = time.monotonic() + max_seconds
@@ -122,7 +127,8 @@ def wait_for_scheduler_idle(gate, cfg, max_seconds):
 
 
 def reconcile_late(cli, group, state_dir, endpoint, env, interval_seconds=15,
-                   max_seconds=600, lock_fd=None, finite_batch_v2=False):
+                   max_seconds=600, lock_fd=None, finite_batch_v2=False,
+                   autonomous_curation=False):
     """Retain EX while ambiguous remote work resolves, then resume local work.
 
     Child exit 3 means remote submission outcome still unknown; never replay.
@@ -136,6 +142,7 @@ def reconcile_late(cli, group, state_dir, endpoint, env, interval_seconds=15,
     reconcile_cmd = ["node", script, "reconcile-only", *common]
     drain_cmd = ["node", script, "drain", *common,
                  *finite_v2_drain_args(finite_batch_v2),
+                 *autonomous_curation_args(autonomous_curation),
                  "--max-seconds", str(max_seconds)]
     pass_fds = (lock_fd,) if lock_fd is not None else ()
     while True:
@@ -187,7 +194,11 @@ def main():
                    help="bounded busy-scheduler wait before quiet grace (0..180s)")
     p.add_argument("--finite-batch-v2", action="store_true",
                    help="opt in to the fresh V2 finite-batch/source-window policy")
+    p.add_argument("--autonomous-curation", action="store_true",
+                   help="opt-in #100 autonomous source curation and selective consolidation")
     args = p.parse_args()
+    if args.autonomous_curation and args.finite_batch_v2:
+        p.error("autonomous-curation and finite-batch-v2 are mutually exclusive")
     if not 5 <= args.max_seconds <= 3600:
         p.error("max-seconds must be between 5 and 3600")
     if not 0 <= args.lock_timeout <= 600:
@@ -215,6 +226,7 @@ def main():
             "--group", args.group, "--state-dir", args.state_dir,
             "--endpoint", args.endpoint,
             *finite_v2_drain_args(args.finite_batch_v2),
+            *autonomous_curation_args(args.autonomous_curation),
             "--max-seconds", str(args.max_seconds)
         ]
         print("EX admission proven; invoking candidate drain with lock retained",
@@ -250,7 +262,8 @@ def main():
               file=sys.stderr, flush=True)
         return reconcile_late(args.cli, args.group, args.state_dir,
                               args.endpoint, env, max_seconds=args.max_seconds,
-                              lock_fd=lock_fd, finite_batch_v2=args.finite_batch_v2)
+                              lock_fd=lock_fd, finite_batch_v2=args.finite_batch_v2,
+                              autonomous_curation=args.autonomous_curation)
 
 if __name__ == "__main__":
     try:
