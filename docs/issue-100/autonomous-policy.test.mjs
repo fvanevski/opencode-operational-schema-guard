@@ -41,11 +41,15 @@ test('invalid sibling is blocked without contaminating a valid sibling',()=>{
   assert.equal(p.ok,true);assert.equal(p.facts.length,1);
   assert.equal(p.blocked_candidates[0].reason,'invalid_original_source_span');
 });
-test('unsupported inference never becomes provisional authority',()=>{
+test('an invented normalized assertion cannot replace the exact original quote',()=>{
   const c=cluster(),f=fact(c.events[0],'provisional_retention');
   f.assertion='A fabricated root cause was independently verified and repaired';
-  const p=validateAutonomousDecision({decision:'EMIT',reason:'Provisional candidate',facts:[f]},c);
-  assert.equal(p.ok,false);assert.equal(p.reason,'integrity_blocked');
+  const p=validateAutonomousDecision({decision:'EMIT',
+    reason:'Potentially useful reported observation',facts:[f]},c);
+  assert.equal(p.ok,true);
+  assert.equal(p.facts[0].assertion,quoteA);
+  assert.equal(p.facts[0].evidence_class,'user-stated');
+  assert.equal(p.review_only_claims[0].status,'review_only_unverified');
 });
 test('malformed model output remains retryable instead of SKIP',()=>{
   assert.equal(validateAutonomousDecision('{broken',cluster()).retryable,true);
@@ -53,7 +57,7 @@ test('malformed model output remains retryable instead of SKIP',()=>{
 });
 test('only source-bearing utility is selected, never truth certification',()=>{
   const prompt=autonomousPrompt(cluster());
-  assert.match(prompt[0].content,/uncertain original-source support/);
+  assert.match(prompt[0].content,/original-source support/);
   assert.match(prompt[0].content,/No model output authorizes Graphiti/);
 });
 test('bundle recovery preserves retention and atomic source spans',async()=>{

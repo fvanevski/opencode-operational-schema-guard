@@ -4,6 +4,7 @@ import { archiveOwnedSources } from '../../issue-99/archive-owned.mjs';
 import { GraphitiMcp, EXTRACTION_INSTRUCTIONS } from '../../issue-75/v2-candidate/memory-core.mjs';
 import { ReviewStore, selectClusters, validateDecision, validateModelDecision, normalizedAssertion } from './core.mjs';
 import { curateCluster } from './model.mjs';
+import {autonomousPrompt,validateAutonomousDecision} from '../../issue-100/autonomous-policy.mjs';
 import { reviewProposedFacts, factDiscoveryPrompt,
   validateFactDiscovery } from './fact-review.mjs';
 const validUUID=s=>typeof s==='string'&&/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i.test(s);
@@ -27,6 +28,9 @@ export function episodeBody(record){
     'Fact '+(i+1)+': '+f.assertion,
     '[Evidence class: '+f.evidence_class+'; Kind: '+f.kind+
     '; Temporal: '+f.temporal_status+'; Observed: '+f.observed_at+']',
+    ...(record.retention?['[Retention: '+record.retention.status+
+      '; Utility rationale: '+record.retention.reason+
+      '; This is a retention judgment, NOT independent verification]']:[]),
     '[Source references: '+f.source_refs.join(', ')+
     '; Scope group: '+record.group+'; Project: '+record.project+']'
   ].join('\n')).join('\n\n');
@@ -174,10 +178,11 @@ export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='loca
   graphitiEndpoint,queue,store,graphiti,curate=curateCluster,
   modelOptions={},maxClusters=6,maxSeconds=600,
   // Optional only for ADR exposed qualification until independent acceptance.
-  factReview=false,factReviewModelCall=null}={}){
+  factReview=false,factReviewModelCall=null,autonomousCuration=false}={}){
   admitted();
-  if(typeof factReview!=='boolean'||
-    (factReviewModelCall!==null&&typeof factReviewModelCall!=='function'))
+  if(typeof factReview!=='boolean'||typeof autonomousCuration!=='boolean'||
+     (autonomousCuration&&factReview)||
+     (factReviewModelCall!==null&&typeof factReviewModelCall!=='function'))
     throw Error('Invalid optional fact review setting');
   if(!Number.isInteger(maxClusters)||maxClusters<1||maxClusters>12)throw Error('Invalid cluster bound');
   const deadline=Date.now()+maxSeconds*1000;
@@ -188,7 +193,9 @@ export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='loca
     persisted:0,unresolved:0,model_attempts:0,model_calls:0,
     model_errors:0,model_ms:0,prompt_tokens:0,completion_tokens:0,
     usage_reported_calls:0,reasoning_tokens:0,reasoning_reported_calls:0,
-    length_limited_responses:0,archived_sources:0};
+    length_limited_responses:0,archived_sources:0,
+     provisional_selected:0,established_selected:0,integrity_blocked:0,
+     technical_retry:0,skipped_candidates:0};
   const archive=async()=>{
     if(queue instanceof CandidateQueue&&store instanceof ReviewStore) {
       const r=await archiveOwnedSources(queue,store,{limit:128});
@@ -289,15 +296,28 @@ export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='loca
     try{
       const reply=await curate(cluster,{endpoint:modelEndpoint,model:modelId,apiKey,
         ...modelOptions,
-        ...(factReview?{promptMessages:factDiscoveryPrompt(cluster)}:{})});
-      proposal=factReview?
-        validateFactDiscovery(reply.content,cluster):
-        validateModelDecision(reply.content,cluster);
+        ...(autonomousCuration?{promptMessages:autonomousPrompt(cluster)}:
+           factReview?{promptMessages:factDiscoveryPrompt(cluster)}:{})});
+      proposal=autonomousCuration?validateAutonomousDecision(reply.content,cluster):
+         factReview?validateFactDiscovery(reply.content,cluster):
+         validateModelDecision(reply.content,cluster);
       tallyModelUsage(stats,reply);
     }catch(e){
       stats.model_errors++;
       proposal={ok:false,decision:'DEFER',facts:[],
-        reason:'curator_unavailable_or_invalid'};
+         reason:autonomousCuration?'technical_retry_model_unavailable':'curator_unavailable_or_invalid',
+         retryable:autonomousCuration};
+    }
+    // No trustworthy model answer: leave immutable source NEW for a bounded
+    // future admitted drain, without a fake SKIP, human-approval queue or write intent.
+    if(autonomousCuration&&proposal.retryable){stats.technical_retry++;continue;}
+    if(autonomousCuration){
+      stats.integrity_blocked+=(proposal.blocked_candidates||[]).length;
+      stats.skipped_candidates+=proposal.skipped_candidates||0;
+      if(proposal.ok&&proposal.decision==='EMIT'){
+        stats.provisional_selected+=proposal.fact_retentions.filter(x=>x==='provisional_retention').length;
+        stats.established_selected+=proposal.fact_retentions.filter(x=>x==='established_retention').length;
+      }
     }
     if(factReview&&proposal.ok&&proposal.decision==='EMIT'){
       try{

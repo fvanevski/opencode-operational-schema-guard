@@ -1,4 +1,6 @@
 import test from 'node:test';
+// Include #100 policy regressions in the existing trusted CI curator test profile.
+import '../../issue-100/autonomous-policy.test.mjs';
 import { spawnSync } from 'node:child_process';
 import assert from 'node:assert/strict';
 import { mkdtemp, rm } from 'node:fs/promises';

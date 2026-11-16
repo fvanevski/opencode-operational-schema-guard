@@ -22,10 +22,16 @@ const maxClusters=Number(arg('max-clusters')||'6');
 const factReviewArg=arg('fact-review');
 if(factReviewArg&&factReviewArg!=='on')throw Error('FACT_REVIEW_OPT_IN_INVALID');
 const factReview=factReviewArg==='on';
+const autonomousArg=arg('autonomous-curation');
+if(autonomousArg&&autonomousArg!=='on')throw Error('AUTONOMOUS_CURATION_OPT_IN_INVALID');
+if(autonomousArg&&command!=='drain')throw Error('AUTONOMOUS_CURATION_DRAIN_ONLY');
+const autonomousCuration=autonomousArg==='on';
+if(autonomousCuration&&factReview)throw Error('AUTONOMOUS_CURATION_INCOMPATIBLE_FACT_REVIEW');
 const finiteBatchArg=arg('finite-batch');
 if(finiteBatchArg&&finiteBatchArg!=='on')throw Error('FINITE_BATCH_OPT_IN_INVALID');
 const finiteBatch=finiteBatchArg==='on';
 if(finiteBatch&&factReview)throw Error('FINITE_BATCH_ALREADY_INCLUDES_FACT_REVIEW');
+if(finiteBatch&&autonomousCuration)throw Error('AUTONOMOUS_CURATION_INCOMPATIBLE_FINITE_BATCH');
 const noveltyPolicy=arg('novelty-policy')||'recall';
 if(!['recall','conservative'].includes(noveltyPolicy)||
  (!finiteBatch&&arg('novelty-policy')))
@@ -116,7 +122,7 @@ if(command==='validate-tuning'){
    !Number.isInteger(maxSeconds)||maxSeconds<5||maxSeconds>3600){
   console.error('Usage: node curator-cli.mjs drain|status|list|reconcile-only --group GROUP --state-dir DIR '+
     '[--endpoint LOOPBACK_GRAPHITI_MCP --max-seconds 600 --max-clusters 6] '+ 
-    '[--fact-review on | --finite-batch on (development only)] '+ 
+    '[--autonomous-curation on | --fact-review on | --finite-batch on (development only)] '+ 
     '[--max-candidates 48] [--novelty-policy recall|conservative] '+
     '[--tuning-file ABSOLUTE_JSON_PATH] [--replay-only on] [--source-recovery on] '+
      '[--resilient-discovery on (requires source-recovery)] '+
@@ -207,7 +213,7 @@ if(command==='validate-tuning'){
         balancedDedup,sourceQuoteSalvage,quoteIntegrityV2,sourceWindowRecovery,
         sourceMessageIsolation,sourceSubspanRecovery,sourceSubspanRecoveryV2,
        tuning:tuningPath?await loadFiniteBatchTuning(tuningPath):null}):
-      await runAdmitted({...inputs,factReview});
+      await runAdmitted({...inputs,factReview,autonomousCuration});
     console.log(JSON.stringify(data));
     if(data.status==='unresolved'||data.status==='incomplete')process.exitCode=3;
   }
