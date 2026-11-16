@@ -15,7 +15,8 @@ const validFactRecord=r=>r?.state==='persisted'&&r.facts?.length===1&&
   HEX.test(r.id||'')&&UUID.test(r.remote_episode_uuid||'')&&
   typeof r.facts[0].assertion==='string'&&r.facts[0].source_refs?.length===1&&
   r.events?.some(e=>e.source_strength==='native-id'&&
-    e.source_refs?.[0]===r.facts[0].source_refs[0]&&e.evidence_class===r.facts[0].evidence_class);
+    e.source_refs?.[0]===r.facts[0].source_refs[0]&&e.evidence_class===r.facts[0].evidence_class&&
+    e.observed_at===r.facts[0].observed_at&&e.excerpt.includes(r.facts[0].assertion));
 
 /** A later, distinct, positively indexed original source is the trigger.
  * Token overlap is an economical PROMPT selection filter, not a truth verdict.
@@ -53,7 +54,8 @@ export function consolidationTrigger(target,newer){
 export function selectConsolidationPairs(records,{limit=2}={}){
   if(!Array.isArray(records)||!Number.isInteger(limit)||limit<1||limit>4)
     throw Error('INVALID_CONSOLIDATION_BOUNDS');
-  const originals=records.filter(validFactRecord);
+  const originals=records.filter(r=>validFactRecord(r)&&
+    !['superseded','logically_retired'].includes(r.retention?.status));
   const targets=originals.filter(r=>r.retention?.status==='provisional_retention')
     .sort((a,b)=>a.created_at.localeCompare(b.created_at)||a.id.localeCompare(b.id));
   const newest=[...originals].sort((a,b)=>

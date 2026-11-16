@@ -1,5 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {promises as fs} from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import {ReviewStore} from '../issue-78/v2-curator/core.mjs';
+import {validateAutonomousDecision} from './autonomous-policy.mjs';
 import {consolidationTrigger,selectConsolidationPairs,consolidationPrompt,validateConsolidationDecision} from './consolidation.mjs';
 const event=(id,phrase,at)=>({
   event_id:id.repeat(64),source_refs:['opencode:ses_100:message:msg_'+id],
@@ -42,4 +47,65 @@ test('model response is a retention recommendation, never a remote mutation',()=
   assert.deepEqual({ok:val.ok,decision:val.decision},{ok:true,decision:'logical_retire'});
   assert.equal(validateConsolidationDecision('{bad',pair).ok,false);
   assert.equal(validateConsolidationDecision({trigger_id:'wrong',decision:'promote_retention',reason:'Enough context'},pair).ok,false);
+});
+
+test('retention CAS, historical identity, logical exclusion and rollback',async()=>{
+  const root=await fs.mkdtemp(path.join(os.tmpdir(),'ghdev100-cons-'));
+  const beforeLease=process.env.GHDEV_MEMORY_POST_EXIT_LEASE;
+  process.env.GHDEV_MEMORY_POST_EXIT_LEASE='admitted';
+  try{
+    const s=new ReviewStore(root,'development-knowledge');
+    async function persisted(id,phrase,time,status,uuid){
+      const e=event(id,phrase,time);
+      const cluster={id:id.repeat(64),group:'development-knowledge',
+        project:'repo',workspace:'/workspace/repo',
+        session_id:'ses_100',source_event_ids:[e.event_id],events:[e]};
+      const proposal=validateAutonomousDecision({decision:'EMIT',
+        reason:'One source-supported observation',
+        facts:[{kind:'architecture',temporal_status:'observed',
+          source_refs:e.source_refs,evidence_span:{source_ref:e.source_refs[0],
+            start:0,end:phrase.length},retention_status:status,
+          utility_class:'stable_architecture',
+          utility_reason:'Source-grounded technical fact to retain'}]},cluster);
+      assert.equal(proposal.ok,true);
+      const first=(await s.create(cluster,proposal)).record;
+      assert.equal(await s.advance(first.id,'approved','submission_unknown',
+        {expected_revision:first.revision}),true);
+      await s.advance(first.id,'submission_unknown','queued');
+      await s.advance(first.id,'queued','persisted',{remote_episode_uuid:uuid});
+      return s.get(first.id);
+    }
+    const old=await persisted('a',
+      'The cache episode revision is invalid after the database schema changes.',
+      '2026-11-16T09:00:00Z','provisional_retention',
+      'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa');
+    const next=await persisted('b',
+      'The database cache episode revision requires a new source mapping after schema changes.',
+      '2026-11-16T10:00:00Z','established_retention',
+      'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb');
+    const pair=selectConsolidationPairs([old,next])[0];
+    assert.ok(pair);
+    const validated=validateConsolidationDecision({
+      trigger_id:pair.trigger.id,decision:'logical_retire',
+      reason:'Superseded for current retention by newer source mapping'},pair);
+    const result=await s.applyRetentionConsolidation(old.id,old.revision,
+      pair.trigger,validated);
+    assert.equal(result.status,'applied');
+    const changed=await s.get(old.id);
+    assert.equal(changed.retention.status,'logically_retired');
+    assert.equal(changed.remote_episode_uuid,old.remote_episode_uuid);
+    assert.deepEqual(changed.facts,old.facts);
+    assert.deepEqual(changed.events,old.events);
+    assert.equal((await s.applyRetentionConsolidation(old.id,old.revision,
+      pair.trigger,validated)).status,'stale');
+    assert.equal((await s.rollbackRetentionConsolidation(old.id,changed.revision)).status,'rolled_back');
+    const restored=await s.get(old.id);
+    assert.equal(restored.retention.status,'provisional_retention');
+    assert.equal(restored.remote_episode_uuid,old.remote_episode_uuid);
+    assert.equal(consolidationTrigger(restored,next),null);
+  } finally {
+    if(beforeLease===undefined)delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;
+    else process.env.GHDEV_MEMORY_POST_EXIT_LEASE=beforeLease;
+    await fs.rm(root,{recursive:true,force:true});
+  }
 });
