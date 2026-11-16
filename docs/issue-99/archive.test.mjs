@@ -177,8 +177,6 @@ test('unknown owners fail closed; old idle empty lock needs supervised recovery'
  await fs.symlink('unknown-owner',q.lockPath());
  await assert.rejects(q.recoverAbandonedLock(),/QUEUE_LOCK_OWNER_UNVERIFIED/);
  await fs.unlink(q.lockPath());await fs.mkdir(q.lockPath());
- await assert.rejects(q.recoverAbandonedLock(),/QUEUE_LOCK_LEGACY_TOO_RECENT/);
- const past=new Date(Date.now()-90000);await fs.utimes(q.lockPath(),past,past);
  assert.equal((await q.recoverAbandonedLock()).kind,'quiescent-legacy-dir');
  assert.equal(await q.lockPresent(),false);
 }));

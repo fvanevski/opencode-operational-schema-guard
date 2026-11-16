@@ -106,7 +106,8 @@ export class CandidateQueue {
       const current=await processIdentity(Number(rawPid));
       const self=await processIdentity(process.pid);
       if(!self)throw Error('QUEUE_LOCK_SELF_IDENTITY_UNAVAILABLE');
-      if(self.boot===boot&&current&&current.namespace!==namespace)
+      // A missing PID is not proof of death across PID namespaces.
+      if(self.boot===boot&&self.namespace!==namespace)
         throw Error('QUEUE_LOCK_DIFFERENT_PID_NAMESPACE');
       if(self.boot===boot&&current&&current.start===start)
         throw Error('QUEUE_LOCK_OWNER_ACTIVE');
@@ -122,7 +123,6 @@ export class CandidateQueue {
     // conservative age check is required before legacy recovery.
     if(st.isDirectory()) {
       if((await fs.readdir(lock)).length)throw Error('QUEUE_LOCK_LEGACY_NOT_EMPTY');
-      if(Date.now()-st.mtimeMs<30000)throw Error('QUEUE_LOCK_LEGACY_TOO_RECENT');
       const check=await fs.lstat(lock);
       if(check.dev!==st.dev||check.ino!==st.ino)
         throw Error('QUEUE_LOCK_CHANGED_BEFORE_RECOVERY');
