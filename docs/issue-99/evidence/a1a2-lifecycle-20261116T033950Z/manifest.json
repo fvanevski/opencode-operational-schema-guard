@@ -1,0 +1,186 @@
+{
+  "schema": "issue99-evidence-manifest-v1",
+  "run_id": "a1a2-lifecycle-20261116T033950Z",
+  "issue": 99,
+  "scope": "A1+A2 consolidated lifecycle audit and measured file-vs-SQLite architectural comparison (CPU-only, read-only host, evidence-only)",
+  "source": {
+    "repo": "fvanevski/opencode-operational-schema-guard",
+    "branch": "issue/99",
+    "source_sha": "3c24a0aa0caca5aee82da73ea5be07845f85f9dd",
+    "base_sha": "61f00c25bef8cbc5517b067f77823a4aef8a4da9",
+    "remote_head_preflight": "3c24a0aa0caca5aee82da73ea5be07845f85f9dd"
+  },
+  "host": {
+    "node_version": "v26.13.1",
+    "node_builtin_sqlite": "available (DatabaseSync)",
+    "cpu": "AMD Ryzen 9 5950X 16-core / 32-thread",
+    "storage_class": "NVMe btrfs root; synthetic comparator runs on os.tmpdir() = tmpfs (RAM-backed), not the NVMe root"
+  },
+  "boundary_flags": {
+    "SOURCE_REMOTE_UPDATE": "forbidden",
+    "EVIDENCE_REMOTE_UPDATE": "allowed",
+    "PR_CREATION": "forbidden",
+    "LIVE_STATE_MUTATION": "forbidden",
+    "SEMANTIC_REMEDIATION": "forbidden",
+    "source_diff_expected": "none"
+  },
+  "files": [
+    {
+      "name": "audit-development-knowledge.json",
+      "sha256": "49fff7a6859372411e0c87b307694442ff92cc9a19c64f00718605bc3ad03e3f",
+      "size": 1362
+    },
+    {
+      "name": "compare-4000.json",
+      "sha256": "98f29f4680de46c960efc7d99afc285274e060f5d935221157e3db2713241f79",
+      "size": 1768
+    },
+    {
+      "name": "compare-8000.json",
+      "sha256": "799c1d3220a0853714e38eee102e4b9a10ad02c34da4a4148226cc46c1963c20",
+      "size": 1776
+    },
+    {
+      "name": "host-inspection.json",
+      "sha256": "27da1bf140141ec15b574006ca602fdcfdd860d44ee3f85d83cd6f79ca5cc319",
+      "size": 2650
+    },
+    {
+      "name": "tests-exits.json",
+      "sha256": "a70e3b4ac4dc5de3def90d4a3131425c140b438b812b2f26ab24f1b075629195",
+      "size": 883
+    }
+  ],
+  "tests_and_exits": {
+    "node --check audit-lifecycle.mjs": 0,
+    "node --check compare-ledgers.mjs": 0,
+    "node --test lifecycle.test.mjs": "3 pass / 0 fail, exit 0",
+    "compare-ledgers --records 4000": "exit 0",
+    "compare-ledgers --records 8000": "exit 0",
+    "audit-lifecycle (production group, read-only)": "exit 0"
+  },
+  "host_inventory": {
+    "production_group": "development-knowledge",
+    "queue": "4000/4000 full; 0 actionable; states approved=3117 deferred=862 skipped=21",
+    "reviews": "565 files; persisted=355 (all UUID+index valid), deferred=205, skipped=5",
+    "episode_index": "355 valid / 0 missing / 0 bad",
+    "ownership": "4000 owned / 0 unowned; 0 ambiguous, 0 cross-origin, 0 wrong-scope",
+    "archivable_candidates_not_authorized": 4000,
+    "historical_cumulative_drops": {
+      "queue_full": 5949
+    },
+    "new_drops_this_campaign": 0
+  },
+  "benchmark_summary": {
+    "note": "synthetic single-process screening on tmpfs; not multi-process durable equivalence",
+    "4000": {
+      "retained_json": {
+        "accepted": 4000,
+        "dropped": 1000,
+        "actionable": 4000,
+        "archive": 0,
+        "p50_ms": 3.3525,
+        "elapsed_ms": 16107.8,
+        "bytes": 796000
+      },
+      "archive_json": {
+        "accepted": 5000,
+        "dropped": 0,
+        "actionable": 2000,
+        "archive": 3000,
+        "p50_ms": 3.4899,
+        "elapsed_ms": 17968.81,
+        "bytes": 995000
+      },
+      "sqlite_transactional": {
+        "accepted": 5000,
+        "dropped": 0,
+        "actionable": 2000,
+        "archive": 3000,
+        "rollback_preserves_active": true,
+        "p50_ms": 2.7777,
+        "elapsed_ms": 14253.62,
+        "bytes": 1974272
+      }
+    },
+    "8000": {
+      "retained_json": {
+        "accepted": 8000,
+        "dropped": 2000,
+        "actionable": 8000,
+        "archive": 0,
+        "p50_ms": 4.0884,
+        "elapsed_ms": 45232.4,
+        "bytes": 1592000
+      },
+      "archive_json": {
+        "accepted": 10000,
+        "dropped": 0,
+        "actionable": 4000,
+        "archive": 6000,
+        "p50_ms": 4.2481,
+        "elapsed_ms": 45431.13,
+        "bytes": 1990000
+      },
+      "sqlite_transactional": {
+        "accepted": 10000,
+        "dropped": 0,
+        "actionable": 4000,
+        "archive": 6000,
+        "rollback_preserves_active": true,
+        "p50_ms": 2.8699,
+        "elapsed_ms": 29726.21,
+        "bytes": 3948544
+      }
+    }
+  },
+  "design_tradeoffs": {
+    "F_file_archive": {
+      "summary": "Split bounded actionable pending from a durable, source-preserving, addressable archive. Keep original source JSON and exact event IDs.",
+      "evidence_fit": "Host inventory is a clean, low-ambiguity archival case: queue 4000/4000 full, 0 actionable, 4000 archivable candidates, 0 ambiguous/cross-origin/wrong-scope/unowned, 355/355 persisted reviews UUID+index valid. The capacity problem is entirely 'settled sources occupy slots'. Synthetic screen: archive_json frees capacity (0 burst drops vs 1000/2000 for retained_json).",
+      "cost_loc": "small: an archive directory + a bounded 'move settled source to archive' transition; consumers keep reading the same JSON layout.",
+      "rollback": "reversible (rename back); source-preserving, no data loss.",
+      "crash": "weakest point is rename-not-fsync'd archival (crash mid-move can leave a file in pending OR history) - bounded and governed by the F rule 'crash after review CAS but before archive must converge'; duplicate-after-archival is a duplicate (confirmed by both comparators).",
+      "migration_risk": "low - additive, no schema, no all-consumer migration, no competing mirror."
+    },
+    "S_single_sqlite": {
+      "summary": "One transactional SQLite evidence/work ledger with unique source IDs, fact ownership and exact remote UUID/index; must replace redundant JSON review/queue authorities, not become a permanent competing mirror. Prototype is deliberately NOT production schema/migration code.",
+      "evidence_fit": "Adds transactional crash safety (rollback_preserves_active=true) and ~20-33% faster p50 admission at scale (2.78 vs 3.49 @4000; 2.87 vs 4.25 @8000).",
+      "cost_loc": "new production schema + migration + migrating ALL consumers (queue, review, episode-index, EX gate, portal, recall) into one ledger; ~2x storage bytes (1.97MB vs 0.995MB @4000; 3.95MB vs 1.99MB @8000).",
+      "justified_when": "scans/joins/cross-file crash boundaries materially defeat F. Current host data shows no such pathology (clean single-origin, 0 index misses/bad, no corruption), so S's added cost is not yet justified by the evidence."
+    }
+  },
+  "recommendation": {
+    "value": "F",
+    "rationale": "Measured bounded active work (0 actionable) plus a source-preserving archive solves the observed capacity saturation (queue_full 5949 historical drops) with materially lower operational complexity and migration risk than a full SQLite ledger migration. S is retained as the justified alternative if Central later wants transactional crash atomicity and accepts migrating all consumers. Final A3 choice is Central's; this is A1/A2 evidence only, not final migration/production acceptance.",
+    "quarantine_or_central_decision": "All 4000 production sources are archivable candidates requiring Central authorization to archive (A3). 0 sources require quarantine (0 ambiguous, 0 cross-origin, 0 wrong-scope, 0 unowned, 0 missing/bad index)."
+  },
+  "a3_invariants": [
+    "Archive only sources with authenticated durable review ownership (owned, single-origin, right-scope, non-actionable).",
+    "Split bounded actionable pending from the source-preserving archive; never delete evidence to gain capacity.",
+    "Crash after review CAS but before archive must converge (idempotent; no orphan, no double-count).",
+    "Duplicate submission of an archived source remains a duplicate.",
+    "Anomalous retained events must not be silently orphaned, deleted, or converted to terminal.",
+    "Preserve revision CAS, no-replay, EX, and rollback through any migration."
+  ],
+  "omission_log": [
+    "Home paths (/home/...) and the full curator.env / unit definition are omitted from published files; the installed contract is described functionally (group, EX wrapper role, curator CLI role, loopback endpoint port 8766) with no secrets or full config dumps.",
+    "Live Graphiti group/index count was NOT performed (live_graphiti_checked=false) to keep the campaign CPU-only and strictly read-only; the local _episode-index readback (355 valid / 0 missing / 0 bad) is the terminal-scope corroboration.",
+    "No add_memory, model inference, Graphiti replay, schema conversion, service restart, or production mutation was performed.",
+    "Benchmarks are synthetic single-process screening on tmpfs, not multi-process durable equivalence (per comparator limitations)."
+  ],
+  "installed_contract_short": {
+    "group": "development-knowledge",
+    "ex_gate": "post-exit-drain.py + openviking_commit_gate.py/commit-gate.toml (exclusive EX inference admission)",
+    "curator_cli": "curator-cli.mjs (v2-curator), --group development-knowledge, --max-seconds 600, --lock-timeout 120",
+    "graphiti_endpoint": "loopback MCP port 8766",
+    "curator_unit": "ghdev-curator-prod.service (oneshot event-wake; observed activating/auto-restart exit-code, not mutated)",
+    "secrets_included": false,
+    "home_paths_included": false
+  },
+  "command_shape_friction": {
+    "encountered": "no",
+    "events": [],
+    "omitted_sensitive_values": "yes"
+  }
+}

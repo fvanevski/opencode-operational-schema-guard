@@ -1,0 +1,35 @@
+{
+  "schema": "issue99-test-exit-receipts-v1",
+  "host_node_version": "v26.13.1",
+  "node_builtin_sqlite_available": true,
+  "checks": [
+    {
+      "command": "node --check docs/issue-99/audit-lifecycle.mjs",
+      "exit": 0
+    },
+    {
+      "command": "node --check docs/issue-99/compare-ledgers.mjs",
+      "exit": 0
+    },
+    {
+      "command": "node --test docs/issue-99/lifecycle.test.mjs",
+      "exit": 0,
+      "pass": 3,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0
+    }
+  ],
+  "comparator_runs": [
+    {
+      "command": "node docs/issue-99/compare-ledgers.mjs --records 4000 --burst 1000 --archive-percent 75",
+      "exit": 0,
+      "artifact": "compare-4000.json"
+    },
+    {
+      "command": "node docs/issue-99/compare-ledgers.mjs --records 8000 --burst 2000 --archive-percent 75",
+      "exit": 0,
+      "artifact": "compare-8000.json"
+    }
+  ]
+}

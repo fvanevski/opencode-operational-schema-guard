@@ -1,0 +1,64 @@
+{
+  "schema": "issue99-comparator-v1",
+  "records": 8000,
+  "burst": 2000,
+  "archive_percent": 75,
+  "synthetic_only": true,
+  "comparators": {
+    "retained_json": {
+      "accepted": 8000,
+      "dropped": 2000,
+      "duplicate_after_archival": "duplicate",
+      "history_findable": true,
+      "actionable_files": 8000,
+      "archive_files": 0,
+      "admission": {
+        "n": 10000,
+        "p50_ms": 4.0884,
+        "p95_ms": 6.4368,
+        "max_ms": 28.9493
+      },
+      "elapsed_ms": 45232.4,
+      "bytes": 1592000
+    },
+    "archive_json": {
+      "accepted": 10000,
+      "dropped": 0,
+      "duplicate_after_archival": "duplicate",
+      "history_findable": true,
+      "actionable_files": 4000,
+      "archive_files": 6000,
+      "admission": {
+        "n": 10000,
+        "p50_ms": 4.2481,
+        "p95_ms": 6.3655,
+        "max_ms": 25.3729
+      },
+      "elapsed_ms": 45431.13,
+      "bytes": 1990000
+    },
+    "sqlite_transactional": {
+      "accepted": 10000,
+      "dropped": 0,
+      "duplicate_after_archival": "duplicate",
+      "history_findable": true,
+      "actionable_files": 4000,
+      "archive_files": 6000,
+      "rollback_preserves_active": true,
+      "admission": {
+        "n": 10000,
+        "p50_ms": 2.8699,
+        "p95_ms": 3.4362,
+        "max_ms": 34.6533
+      },
+      "elapsed_ms": 29726.21,
+      "bytes": 3948544
+    }
+  },
+  "limitations": [
+    "Synthetic single-process screening: no actual review/episode/index migration or EX service",
+    "Archive prototype does not fsync directory renames; file and SQLite crash semantics differ",
+    "No concurrent producer, kill -9, power-loss or completed factual-source provenance proof",
+    "Node built-in SQLite availability and speed are host/runtime dependent"
+  ]
+}
