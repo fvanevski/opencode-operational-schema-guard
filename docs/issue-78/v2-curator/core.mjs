@@ -15,9 +15,9 @@ const KINDS = new Set(['decision','implementation','test_result','architecture',
 // Old review records need no migration; operator approval remains independently validated.
 const UTILITY_CLASSES = new Set(['durable_decision','root_cause_fix','stable_architecture',
   'reusable_procedure','useful_negative','transient_result','repetition',
-  'superseded_stale','uncertain_unattributed']);
+  'superseded_stale','uncertain_unattributed','plausibly_useful']);
 const PERSISTABLE_UTILITY = new Set(['durable_decision','root_cause_fix',
-  'stable_architecture','reusable_procedure','useful_negative']);
+  'stable_architecture','reusable_procedure','useful_negative','plausibly_useful']);
 const STATES = new Set(['deferred','approved','skipped','submission_unknown','queued','persisted','failed_extraction','retry_authorized']);
 const digest = input => createHash('sha256').update(input).digest('hex');
 const validDate = s => typeof s === 'string' && Number.isFinite(Date.parse(s));
@@ -275,6 +275,26 @@ async function atomic(dest,payload){
   try{await fs.rename(tmp,dest);}
   finally{await fs.rm(tmp,{force:true});}
 }
+function validatedRetention(cluster,decision,checked,index){
+  if(!Array.isArray(decision?.fact_retentions))return null;
+  const status=decision.fact_retentions[index],reason=decision.fact_utility_reasons?.[index];
+  const span=decision.fact_source_spans?.[index],fact=checked.facts[index];
+  const src=cluster.events.find(e=>e.source_refs?.[0]===fact?.source_refs?.[0]);
+  const utility=decision.fact_utilities?.[index];
+  if(!['established_retention','provisional_retention'].includes(status)||
+    typeof reason!=='string'||reason.trim()!==reason||reason.length<5||reason.length>240||
+    !span||span.source_ref!==fact?.source_refs?.[0]||
+    !Number.isSafeInteger(span.start)||!Number.isSafeInteger(span.end)||
+    span.start<0||span.end<=span.start||!src||span.end>src.excerpt.length||
+    src.excerpt.slice(span.start,span.end).trim()!==fact.assertion||
+    (status==='provisional_retention'&&utility!=='plausibly_useful')||
+    (status==='established_retention'&&utility==='plausibly_useful'))
+    throw Error('INVALID_RETENTION_SOURCE_OR_UTILITY');
+  return {status,reason,source_span:{...span},revision:1,
+    trigger:'initial_ai_utility',assessed_at:new Date().toISOString()};
+}
+
+/** Source-attested per-fact retention lives with the revisioned review. */
 export class ReviewStore {
   constructor(root,group){
     if(typeof root!=='string'||!path.isAbsolute(root)||!SAFE.test(group))throw Error('Invalid review store scope');
@@ -355,6 +375,7 @@ export class ReviewStore {
     const valid=validateDecision(decision,cluster);
     const state=valid.decision==='SKIP'?'skipped':
       valid.ok&&valid.decision==='EMIT'?'approved':'deferred';
+    const retention=state==='approved'?validatedRetention(cluster,decision,valid,0):null;
     return this._mutex(cluster.id,async()=>{
       const prior=await this.get(cluster.id);
       if(prior)return {record:prior,created:false};
@@ -367,7 +388,10 @@ export class ReviewStore {
         source_event_ids:cluster.source_event_ids,
         origin_cluster_id:cluster.origin_cluster_id??cluster.id,
         state,decision:valid.decision,
-        reason:valid.reason,
+        reason:valid.reason,retention,
+        blocked_candidates:Array.isArray(decision?.blocked_candidates)?
+          decision.blocked_candidates.filter(x=>Number.isInteger(x?.index)&&x.index>=0&&x.index<3&&
+            typeof x.reason==='string'&&x.reason.length<=90).slice(0,3):[],
         // For a single model-selected fact, the independently validated fact
         // classification governs the persisted review. The top-level label
         // remains a compatibility fallback; operator edits remain unclassified.
@@ -410,7 +434,14 @@ export class ReviewStore {
        verified.facts.length>3||
        !Array.isArray(decision.fact_utilities)||
        decision.fact_utilities.length!==verified.facts.length||
-       decision.fact_utilities.some(x=>!PERSISTABLE_UTILITY.has(x)))
+       decision.fact_utilities.some(x=>!PERSISTABLE_UTILITY.has(x))||
+       (decision.fact_retentions!==undefined&&(
+         !Array.isArray(decision.fact_retentions)||
+         decision.fact_retentions.length!==verified.facts.length||
+         !Array.isArray(decision.fact_utility_reasons)||
+         decision.fact_utility_reasons.length!==verified.facts.length||
+         !Array.isArray(decision.fact_source_spans)||
+         decision.fact_source_spans.length!==verified.facts.length)))
       throw Error('INVALID_BOUNDED_FACT_BUNDLE');
     await this.ensure();
     const id=cluster.id,folder=path.join(this.dir,'_fact-bundles');
@@ -429,6 +460,10 @@ export class ReviewStore {
         child_ids:childIds,cluster,decision:{
           decision:'EMIT',reason:verified.reason,utility_class:decision.utility_class,
           facts:verified.facts,fact_utilities:decision.fact_utilities,
+          fact_retentions:decision.fact_retentions,
+          fact_utility_reasons:decision.fact_utility_reasons,
+          fact_source_spans:decision.fact_source_spans,
+          blocked_candidates:decision.blocked_candidates||[],
           review_only_claims:decision.review_only_claims||[]
         },created_at:new Date().toISOString()
       });
@@ -453,6 +488,12 @@ export class ReviewStore {
       const r=await this.create({...b.cluster,id:child,origin_cluster_id:id},
         {ok:true,decision:'EMIT',reason:checked.reason,
          utility_class:b.decision.fact_utilities[i],facts:[f],
+         fact_utilities:[b.decision.fact_utilities[i]],
+         ...(Array.isArray(b.decision.fact_retentions)?{
+           fact_retentions:[b.decision.fact_retentions[i]],
+           fact_utility_reasons:[b.decision.fact_utility_reasons[i]],
+           fact_source_spans:[b.decision.fact_source_spans[i]]}:{}),
+         blocked_candidates:b.decision.blocked_candidates||[],
          review_only_claims:(b.decision.review_only_claims||[]).filter(x=>x.index===i)});
       records.push(r.record);
     }
