@@ -31,6 +31,7 @@ async function replaceAtomic(dest, payload) {
     try { await handle.writeFile(JSON.stringify(payload) + '\n'); await handle.sync(); }
     finally { await handle.close(); }
     await fs.rename(tmp, dest);
+    await syncDir(path.dirname(dest));
   } finally { await fs.rm(tmp, { force: true }); }
 }
 async function createAtomic(dest, payload) {
@@ -157,6 +158,7 @@ export class CandidateQueue {
         return { status: 'queue_full', event_id: event.event_id };
       }
       const created = await createAtomic(dest, event);
+      if(created)await syncDir(this.dir); // admission is directory-durable before ACK
       return { status: created ? 'staged' : 'duplicate', event_id: event.event_id };
     });
   }

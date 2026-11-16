@@ -86,11 +86,22 @@ export async function planSourceArchive(queue,store,{limit=4000}={}) {
     eligible_total:eligible.length,pending_total:pending.length,excluded,
     plan_sha256:hash(eligible)};
 }
+async function syncDir(folder) {
+  const h=await fs.open(folder,'r');try {await h.sync();}finally {await h.close();}
+}
 export async function archiveOwnedSources(queue,store,{limit=128,dryRun=false,expectedPlan=null}={}) {
   if(typeof dryRun!=='boolean')throw Error('ARCHIVE_INVALID_DRY_RUN');
   const plan=await planSourceArchive(queue,store,{limit});
   if(expectedPlan!==null&&plan.plan_sha256!==expectedPlan)throw Error('ARCHIVE_PLAN_STALE');
   if(dryRun)return {...plan,items:undefined,archived:0};
+  if(plan.items.length) {
+    // A ReviewStore rename or episode-index name must survive power loss
+    // before the last active source link can be reclaimed.
+    await syncDir(store.dir);
+    const indexDir=path.join(store.dir,'_episode-index');
+    try {await syncDir(indexDir);}
+    catch(e) {if(e.code!=='ENOENT')throw e;}
+  }
   let archived=0,already=0;
   for(let i=0;i<plan.items.length;i+=32) {
     const n=await queue.archiveSettledBatch(plan.items.slice(i,i+32));
