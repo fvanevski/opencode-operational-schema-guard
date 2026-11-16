@@ -623,8 +623,14 @@ test('re-evaluated approval converges deferred source queue without re-staging e
   assert.equal((await store.get(c.id)).state,'persisted');
   const qstatus=await q.status();
   assert.equal(qstatus.counts.deferred,0);
-  assert.equal(qstatus.counts.approved,3);
-  assert.equal(qstatus.total,3);
+  assert.equal(qstatus.counts.approved,0);
+  assert.equal(qstatus.total,0);
+  assert.equal(qstatus.archived_total,3);
+  const history=await q.list({includeArchived:true,states:['approved']});
+  assert.equal(history.total,3);
+  assert.deepEqual(new Set(history.items.map(e=>e.event_id)),
+    new Set(c.events.map(e=>e.event_id)));
+  assert.equal((await store.get(c.id)).remote_episode_uuid,uuid);
  }finally{delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;}
 }));
 test('partial deferred source transitions converge before rechunking or new model calls',()=>temp(async root=>{
