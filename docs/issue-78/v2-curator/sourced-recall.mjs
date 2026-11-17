@@ -24,11 +24,14 @@ export async function sourcedEpisodeResolver(root,group,workspace,project,ids) {
        r.remote_episode_uuid!==uuid||
       r.group!==group||r.project!==project||r.workspace!==workspace||
       r.facts?.length!==1)continue;
+    // Envelope-valid JSON may have corrupt nested source/event structures.
     const fact=r.facts[0];
+    if(!fact||typeof fact!=='object'||!Array.isArray(r.events))continue;
     if(!CLASSES.has(fact.evidence_class)||!Array.isArray(fact.source_refs)||
       !fact.source_refs.length||fact.source_refs.length>8||
-      !fact.source_refs.every(ref=>r.events.some(e=>
-        e.source_refs.includes(ref)&&e.evidence_class===fact.evidence_class &&
+      !fact.source_refs.every(ref=>typeof ref==='string'&&
+         /^opencode:[^\s]+:(?:message|tool|user):/.test(ref)&&r.events.some(e=>
+        Array.isArray(e?.source_refs)&&e.source_refs.includes(ref)&&e.evidence_class===fact.evidence_class &&
         e.source_strength==='native-id')))continue;
     // This is an authenticated source qualification, not a Graphiti inference.
     // Carry source temporal standing with retention to BOTH recall consumers.
