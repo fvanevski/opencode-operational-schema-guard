@@ -27,7 +27,7 @@ async function readReviewIfIntact(store,id) {
 }
 
 /**
- * Overflow discovery from the existing durable episode index.
+ * Source-index discovery for normal query retrieval and large compatibility inventories.
  * The index is a source of candidate identities, NEVER a source authority:
  * each referenced review is re-read through ReviewStore.get(), and the
  * caller's sourcedEpisodeResolver plus fresh remote proof still apply.
@@ -66,10 +66,8 @@ async function readIndexedInventory(store) {
 }
 
 async function readBoundedInventory(store) {
-  // ReviewStore.list() fully reads and parses the entire directory BEFORE
-  // slicing a page. Repeating it multiplies interactive IO by page count.
-  // Snapshot names once, then read each review at most once via the existing
-  // identity/state-validating ReviewStore.get() method.
+  // Query-free tools retain this historical bounded listing path.
+  // The automatic query route does not enumerate the full review directory.
   let names;
   try { names=(await fs.readdir(store.dir)).filter(n=>REVIEW_FILE.test(n)).sort(); }
   catch(e){if(e?.code==='ENOENT')return [];throw e;}
@@ -126,8 +124,8 @@ function provisional(r,group,workspace,project) {
 
 /**
  * The old 288-episode whole-inventory veto caused an outage as soon as 299
- * durable episodes existed. In the automatic query path scan indexed reviews, shortlist only
- * query-relevant observations, then authenticate their episode-index
+ * durable episodes existed. The automatic query path now enumerates
+ * indexed reviews only, shortlists query-relevant observations, then authenticates their episode-index
  * sources. The caller independently proves current remote Graphiti membership.
  * An omitted query retains the bounded legacy inventory API for test/tools.
  */
