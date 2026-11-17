@@ -1,5 +1,6 @@
 import test from 'node:test';
-// Include #100 policy regressions in the existing trusted CI curator test profile.
+// Include #100/#101 regressions in the existing trusted CI curator profile.
+import './curated-recall-candidates.test.mjs';
 import '../../issue-100/autonomous-policy.test.mjs';
 import '../../issue-100/consolidation.test.mjs';
 import { spawnSync } from 'node:child_process';

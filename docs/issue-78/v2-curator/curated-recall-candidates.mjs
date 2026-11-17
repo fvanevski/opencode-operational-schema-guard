@@ -15,8 +15,19 @@ const READ_BATCH=32, REVIEW_FILE=/^[a-f0-9]{64}\.json$/;
 const INDEX_FILE=/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}\.json$/i;
 const MAX_INDEX_SCAN=4096;
 
+// Data-invalid review records are local omissions. IO and permission errors
+// remain fatal and must not be misclassified as harmless corruption.
+async function readReviewIfIntact(store,id) {
+  try { return await store.get(id); }
+  catch(e) {
+    if(e instanceof SyntaxError || e?.message==='Corrupt review identity/state')
+      return null;
+    throw e;
+  }
+}
+
 /**
- * Overflow discovery from the existing durable episode index.
+ * Source-index discovery for normal query retrieval and large compatibility inventories.
  * The index is a source of candidate identities, NEVER a source authority:
  * each referenced review is re-read through ReviewStore.get(), and the
  * caller's sourcedEpisodeResolver plus fresh remote proof still apply.
@@ -41,15 +52,8 @@ async function readIndexedInventory(store) {
       catch(e){if(e?.code==='ENOENT'||e instanceof SyntaxError)return null;throw e;}
       if(index?.remote_episode_uuid!==uuid ||
          !REVIEW_FILE.test((index?.id||'')+'.json'))return null;
-      let review;
-      try { review=await store.get(index.id); }
-      catch(e) {
-        // An unrelated damaged review cannot suppress other indexed facts.
-        // Fatal filesystem/permission failures still reject the inventory.
-        if(e instanceof SyntaxError||e?.message==='Corrupt review identity/state')
-          return null;
-        throw e;
-      }
+      // Damaged sibling reviews never black out other indexed facts.
+      const review=await readReviewIfIntact(store,index.id);
       return review?.state==='persisted'&&review.remote_episode_uuid===uuid
         ?review:null;
     }));
@@ -62,10 +66,8 @@ async function readIndexedInventory(store) {
 }
 
 async function readBoundedInventory(store) {
-  // ReviewStore.list() fully reads and parses the entire directory BEFORE
-  // slicing a page. Repeating it multiplies interactive IO by page count.
-  // Snapshot names once, then read each review at most once via the existing
-  // identity/state-validating ReviewStore.get() method.
+  // Query-free tools retain this historical bounded listing path.
+  // The automatic query route does not enumerate the full review directory.
   let names;
   try { names=(await fs.readdir(store.dir)).filter(n=>REVIEW_FILE.test(n)).sort(); }
   catch(e){if(e?.code==='ENOENT')return [];throw e;}
@@ -76,7 +78,7 @@ async function readBoundedInventory(store) {
   const records=[];
   for(let offset=0;offset<names.length;offset+=READ_BATCH) {
     const batch=await Promise.all(names.slice(offset,offset+READ_BATCH)
-      .map(name=>store.get(name.slice(0,-5))));
+      .map(name=>readReviewIfIntact(store,name.slice(0,-5))));
     records.push(...batch.filter(Boolean));
   }
   return records;
@@ -88,7 +90,10 @@ function provisional(r,group,workspace,project) {
      r.group!==group||r.workspace!==workspace||
      r.project!==project||r.facts?.length!==1||
      !UUID.test(r.remote_episode_uuid||''))return null;
+  // ReviewStore validates envelope identity/state, not nested content.
+  if(!Array.isArray(r.events))return null;
   const f=r.facts[0];
+  if(!f||typeof f!=='object')return null;
   if(!CLASSES.has(f.evidence_class)||!Array.isArray(f.source_refs)||
      !f.source_refs.length||f.source_refs.length>8||
      !f.source_refs.every(ref=>typeof ref==='string'&&SOURCE.test(ref)))return null;
@@ -119,8 +124,8 @@ function provisional(r,group,workspace,project) {
 
 /**
  * The old 288-episode whole-inventory veto caused an outage as soon as 299
- * durable episodes existed. Search ALL bounded review pages, shortlist only
- * query-relevant indexed observations, then authenticate their episode-index
+ * durable episodes existed. The automatic query path now enumerates
+ * indexed reviews only, shortlists query-relevant observations, then authenticates their episode-index
  * sources. The caller independently proves current remote Graphiti membership.
  * An omitted query retains the bounded legacy inventory API for test/tools.
  */
@@ -131,7 +136,11 @@ export async function curatedRecallCandidates(root,group,workspace,project,
      !/^[A-Za-z0-9_.-]{1,100}$/.test(group)||!project||
      (query!==null&&(typeof query!=='string'||safeText(query,500)!==query)))return [];
   const store=new ReviewStore(root,group);
-  const all=await readBoundedInventory(store);
+  // Every injectible curated fact already requires an episode index.
+  // Query-scoped retrieval must not scan unindexed deferred/skipped history.
+  // Keep the old bounded no-query inventory for explicit compatibility tools.
+  const all=query===null
+    ?await readBoundedInventory(store):await readIndexedInventory(store);
   const candidates=all.map(r=>provisional(r,group,workspace,project)).filter(Boolean);
   // When used by automatic recall, the query-dependent shortlist is the
   // bounded interface; NEVER discard the entire index because its history

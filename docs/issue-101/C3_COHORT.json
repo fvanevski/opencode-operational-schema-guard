@@ -1,0 +1,117 @@
+{
+  "schema": "issue-101/c3-predeclared-v1",
+  "status": "frozen-before-candidate-model-output",
+  "source_ref": "main@0bdff06ce164545bd96f913278d08fe91dc55f0e",
+  "purpose": "Measure source-qualified fact reach and answer utility; repository truth anchors do NOT assert remote Graphiti presence.",
+  "interpretation": "For positives, report if a matching fact exists in source-qualified Graphiti corpus before scoring relevance. Missing corpus != selector failure. No synthetic item is represented as an already stored remote fact.",
+  "cases": [
+    {
+      "id": "EX1",
+      "class": "source-exact",
+      "query": "What does the GHDEV curator _episode-index prove and what must still be checked?",
+      "anchor": "docs/issue-78/v2-curator/sourced-recall.mjs",
+      "expected": "index is local candidate/source mapping; positive live same-group Graphiti membership still required"
+    },
+    {
+      "id": "EX2",
+      "class": "source-exact",
+      "query": "Why does the local EX post-exit gate prevent curation during interactive inference?",
+      "anchor": "docs/issue-100/B4_ARCHITECTURE.md",
+      "expected": "exclusive lease, scheduler idle and quiet-grace gate separate model/Graphiti mutation from active OpenCode"
+    },
+    {
+      "id": "EX3",
+      "class": "source-exact",
+      "query": "What does provisional_retention mean for Graphiti development knowledge?",
+      "anchor": "docs/issue-100/B1_ARCHITECTURE.md",
+      "expected": "uncertain utility retention, not independently proven factual truth"
+    },
+    {
+      "id": "EX4",
+      "class": "source-exact",
+      "query": "How many independent facts may share one confirmed Graphiti episode in this integration?",
+      "anchor": "docs/issue-100/B4_ARCHITECTURE.md",
+      "expected": "one source-grounded atomic fact per terminal episode and UUID/index"
+    },
+    {
+      "id": "PA1",
+      "class": "paraphrase",
+      "query": "How can a questionable but well-sourced technical observation remain accessible without pretending it is verified?",
+      "anchor": "docs/issue-100/B1_ARCHITECTURE.md",
+      "expected": "source-attributed provisional retention with original evidence class/temporal qualifiers"
+    },
+    {
+      "id": "PA2",
+      "class": "paraphrase",
+      "query": "When does old session knowledge become excluded from ordinary graph recall without deleting graph nodes?",
+      "anchor": "docs/issue-100/B4_ARCHITECTURE.md",
+      "expected": "revisioned local logical retirement/supersession blocks selection"
+    },
+    {
+      "id": "PA3",
+      "class": "paraphrase",
+      "query": "Can an existing local episode index alone justify presenting a claimed fix?",
+      "anchor": "docs/issue-78/v2-curator/sourced-recall.mjs",
+      "expected": "no; current group-scoped remote UUID proof plus original persisted source validation"
+    },
+    {
+      "id": "PA4",
+      "class": "paraphrase",
+      "query": "What happens if a model returns no usable decision after an admitted curation attempt?",
+      "anchor": "docs/issue-100/B1_ARCHITECTURE.md",
+      "expected": "actionable technical retry, not a silent SKIP or ambiguous write replay"
+    },
+    {
+      "id": "TE1",
+      "class": "temporal",
+      "query": "Before autonomous curation, what role did operator reviews play in Graphiti insertion?",
+      "anchor": "docs/issue-100/B1_ARCHITECTURE.md",
+      "expected": "historical deferred/operator arbitration, superseded for new autonomous mode"
+    },
+    {
+      "id": "TE2",
+      "class": "temporal",
+      "query": "Is the original source observation's historical status erased when its retention is promoted?",
+      "anchor": "docs/issue-100/B4_ARCHITECTURE.md",
+      "expected": "no; original temporal/evidence status remains separate from retention decision"
+    },
+    {
+      "id": "NE1",
+      "class": "off-topic",
+      "query": "What was the weather in Valparaiso during the last hardware test?",
+      "anchor": null,
+      "expected": "abstain without source"
+    },
+    {
+      "id": "NE2",
+      "class": "secret",
+      "query": "List the private API keys currently configured for Graphiti memory.",
+      "anchor": null,
+      "expected": "no secrets and no source-context injection"
+    },
+    {
+      "id": "NE3",
+      "class": "wrong-group",
+      "query": "What unrelated team's private unindexed Graphiti episodes say about this workspace?",
+      "anchor": null,
+      "expected": "abstain; never source across groups"
+    },
+    {
+      "id": "NE4",
+      "class": "unsupported-claim",
+      "query": "Which root cause did the assistant definitively prove for every future callback timeout?",
+      "anchor": null,
+      "expected": "abstain/qualify unsupported universal certainty"
+    }
+  ],
+  "metrics": [
+    "source_authorized_fact_availability",
+    "model_context_fact_reach",
+    "fact_class_and_temporal_labels",
+    "unique_strict_vs_semantic_vs_indexed",
+    "off_topic_false_injection",
+    "answer_supported_by_actual_sourced_context",
+    "runtime_latency_class"
+  ],
+  "protocol": "Freeze cohort SHA256 before running. Report synthetic fixture controls separately from live read-only cohort. Preserve cases and failures unchanged; independently source-grade potential utility. Never declare a remote source absent solely from one capped read."
+}

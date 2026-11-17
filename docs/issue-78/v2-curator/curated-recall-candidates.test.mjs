@@ -340,3 +340,70 @@ test('missing reserved episode cannot suppress the next proven strict winner',as
     }finally{await rm(root,{recursive:true,force:true});}
   }
 });
+
+test('issue #101: <=4096 individual bad review isolation and nonauthorizing nested data',
+  ()=>fixture(async({root,dir,review})=>{
+    const badId='b'.repeat(64),badUuid='87654321-4321-4321-8321-abcdefabcdef';
+    const other={...review,id:badId,remote_episode_uuid:badUuid};
+    await writeFile(path.join(dir,'_episode-index',badUuid+'.json'),
+      JSON.stringify({id:badId,remote_episode_uuid:badUuid}));
+    for(const raw of [
+      '{','null',JSON.stringify({...other,group:'wrong'}),
+      JSON.stringify({...other,events:{}}),
+      JSON.stringify({...other,events:[{source_refs:null}]}),
+      JSON.stringify({...other,facts:[null]})
+    ]) {
+      await writeFile(path.join(dir,badId+'.json'),raw);
+      for(const policy of ['strict','semantic']) {
+        const found=await curatedRecallCandidates(root,group,workspace,project,
+          growthQuery,policy);
+        assert.deepEqual(found.map(x=>x.remoteEpisodeUuid),[uuid]);
+      }
+      const compatible=await curatedRecallCandidates(root,group,workspace,project);
+      assert.deepEqual(compatible.map(x=>x.remoteEpisodeUuid),[uuid]);
+    }
+    await writeFile(path.join(dir,review.id+'.json'),'{');
+    assert.deepEqual(await curatedRecallCandidates(root,group,workspace,project,
+      growthQuery,'semantic'),[],
+      'bad indexed target never becomes an authorized source');
+  }));
+
+test('issue #101: automatic query reads indexed facts, not unindexed deferred history',
+  ()=>growthFixture({persisted:1,deferred:513,targetIndex:1},
+    async({root,targetUUID})=>{
+      const original=ReviewStore.prototype.get,ids=[];
+      ReviewStore.prototype.get=async function(id){
+        ids.push(id);
+        return original.call(this,id);
+      };
+      try{
+        for(const policy of ['strict','semantic']) {
+          const found=await curatedRecallCandidates(root,group,workspace,project,
+            growthQuery,policy);
+          assert.deepEqual(found.map(x=>x.remoteEpisodeUuid),[targetUUID]);
+        }
+        assert.deepEqual([...new Set(ids)],[growthId(1)]);
+        assert.ok(ids.length<=4,'one indexed read and one local resolver per policy');
+      } finally {ReviewStore.prototype.get=original;}
+    }));
+
+test('issue #101: invalid data isolation never conceals permission or IO failures',
+  ()=>fixture(async({root,dir,review})=>{
+    const badId='b'.repeat(64),badUuid='87654321-4321-4321-8321-abcdefabcdef';
+    await writeFile(path.join(dir,badId+'.json'),JSON.stringify({
+      ...review,id:badId,remote_episode_uuid:badUuid
+    }));
+    await writeFile(path.join(dir,'_episode-index',badUuid+'.json'),
+      JSON.stringify({id:badId,remote_episode_uuid:badUuid}));
+    const original=ReviewStore.prototype.get;
+    ReviewStore.prototype.get=async function(id) {
+      if(id===badId)throw Object.assign(new Error('permission denied'),{code:'EACCES'});
+      return original.call(this,id);
+    };
+    try{
+      await assert.rejects(curatedRecallCandidates(root,group,workspace,project,
+        growthQuery,'semantic'),e=>e?.code==='EACCES');
+      await assert.rejects(curatedRecallCandidates(root,group,workspace,project),
+        e=>e?.code==='EACCES');
+    } finally {ReviewStore.prototype.get=original;}
+  }));
