@@ -7,7 +7,7 @@
 import {readFileSync} from 'node:fs';
 import {pathToFileURL} from 'node:url';
 
-export const SCHEMA = 'ghdev101-tool-boundary-v1';
+export const SCHEMA = 'ghdev101-tool-boundary-v2';
 export const SOURCE = 'df703861714717b795465423939f4563cb3d08e6';
 export const UPSTREAM = '61da67544e6645f029ae46751acc40784a3de528';
 
@@ -54,6 +54,25 @@ export function evaluate(report) {
     if (report.sandbox.host_secret_dir_mounted !== false) fail('sandbox.host_secret_dir_mounted','credential directory exposed');
     if (report.sandbox.untrusted_policy_cannot_widen !== true) fail('sandbox.untrusted_policy_cannot_widen','policy provenance not established');
   }
+  // Service-mode HOME is an intentional no-project V2 location. Its fail-closed
+  // plugin instance is distinct from a repository location in the same server.
+  const loc = report.location_scope;
+  if (!object(loc)) fail('location_scope','missing scoped proof');
+  else {
+    const required = {server_mode:'shared_service',home_directory:'/home/filip',
+      project_directory:'/workspace/opencode-operational-schema-guard',
+      home_instance:'fail_closed',home_tools_denied:true,
+      project_instance:'ready',project_tools_sandboxed:true,
+      same_service_epoch:true,fresh_project_client_session:true,
+      project_request_location_authenticated:true,
+      original_home_xdg_preserved:true,no_direct_application_db_edits:true};
+    for (const [key,value] of Object.entries(required)) {
+      if (loc[key] !== value) fail('location_scope.'+key,'expected '+String(value));
+    }
+    for (const key of ['home_evidence_ref','project_evidence_ref','native_evidence_ref']) {
+      if (!safeRef(loc[key])) fail('location_scope.'+key,'missing safe evidence reference');
+    }
+  }
   if (!object(report.tool_inventory) || report.tool_inventory.complete !== true)
     fail('tool_inventory','not complete');
   else if (!Array.isArray(report.tool_inventory.uncontained_execution_tools) ||
@@ -84,7 +103,7 @@ export function evaluate(report) {
   if (report.real_secret_values_in_artifact !== false) fail('artifact','real secret data not excluded');
   if (report.campaign_failure_or_rollback_unresolved !== false) fail('rollback','unresolved failure');
   return {result:problems.length?'FAIL':'PASS',problems,controls:observed,
-    criterion:'model-accessible tool boundary on named canary/control paths',
+    criterion:'same-service home-fail-closed/project-ready model-tool boundary',
     limits:'host-reported evidence only; no guarantees about malicious plugins, upstream runtime, or unlisted bypass surfaces'};
 }
 
