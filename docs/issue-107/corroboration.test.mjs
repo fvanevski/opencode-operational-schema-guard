@@ -5,7 +5,8 @@ import os from 'node:os';
 import path from 'node:path';
 import {fromPrompt} from '../issue-78/v2-candidate/events.mjs';
 import {ReviewStore,selectClusters,nativeFactOrigin} from '../issue-78/v2-curator/core.mjs';
-import {promoteOne} from '../issue-78/v2-curator/worker.mjs';
+import {promoteOne,runAdmitted} from '../issue-78/v2-curator/worker.mjs';
+import {CandidateQueue} from '../issue-78/v2-candidate/queue.mjs';
 const scope={group:'cor107',project:'gh_mcp',workspace:'/workspace/gh_mcp'};
 const quote='The versioned source index must retain its original native reference before the next Graphiti review.';
 const uuid='b2345678-1111-4111-a111-222222222222';
@@ -83,6 +84,28 @@ test('#107 same original native occurrence is not independent corroboration',()=
    call:async()=>{throw Error('Unexpected Graphiti call');}});
  assert.equal(result.reason,'LOCAL_REPEATED_ASSERTION');
  assert.equal((await store.get(other.id)).corroboration,undefined);
+ assert.equal((await store.get(prior.id)).state,'persisted');
+}));
+test('#107 missing local index settles as a deferred no-write drain, not an EX loop',()=>tmp(async root=>{
+ const store=new ReviewStore(root,scope.group),queue=new CandidateQueue(root,scope.group);
+ const prior=await persisted(store,occurrence('ses_missing_old','msg_missing_old'));
+ const newer=occurrence('ses_missing_new','msg_missing_new');
+ const {c,decision}=candidate(newer);
+ await store.create(c,decision);
+ const {unlink}=await import('node:fs/promises');
+ await unlink(path.join(store.dir,'_episode-index',uuid+'.json'));
+ let graphCalls=0,modelCalls=0;
+ const result=await runAdmitted({root,group:scope.group,store,queue,
+   graphiti:{call:async()=>{graphCalls++;throw Error('Unexpected Graphiti RPC');}},
+   curate:async()=>{modelCalls++;throw Error('Unexpected model call');},
+   autonomousCuration:true,maxClusters:4,maxSeconds:15});
+ assert.equal(result.status,'review_required');
+ assert.equal(result.unresolved,0);
+ assert.equal(graphCalls,0);assert.equal(modelCalls,0);
+ const deferred=await store.get(c.id);
+ assert.equal(deferred.state,'deferred');
+ assert.equal(deferred.reason,'LOCAL_CORROBORATION_PROOF_UNAVAILABLE');
+ assert.equal(deferred.remote_episode_uuid,null);
  assert.equal((await store.get(prior.id)).state,'persisted');
 }));
 test('#107 missing positive prior index denies local corroboration',()=>tmp(async root=>{
