@@ -93,6 +93,13 @@ test('#106 tool line clipping preserves complete source tokens',()=>{
   assert.ok(withoutBoundary?.excerpt.includes('[3] middle source detail 3'));
   assert.ok(!withoutBoundary.excerpt.includes('[1] x'),
     'indivisible overlong tokens must not be represented by a fabricated prefix');
+  const unicodeLine='PASS '+'x'.repeat(174)+'😀 followed by a diagnostic';
+  const unicode=fromTool({...event,callID:'call_unicode',
+    result:{output:{exit:0,output:[unicodeLine,'row 2','middle source detail 3','row 4','tail source detail 5'].join('\n')}}},
+    SCOPE,{lineSelection:'coverage'});
+  assert.ok(unicode);
+  assert.ok(!unicode.excerpt.includes('\uD83D'),
+    'a cut through a Unicode surrogate pair cannot enter the source excerpt');
 });
 test('#106 source-oriented isolation accepts colon-bearing authenticated session IDs',()=>{
   const sessionID='ses:valid';

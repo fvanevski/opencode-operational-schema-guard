@@ -24,7 +24,11 @@ const TOOL_TOKEN_CHAR = c => typeof c === 'string' && /[\p{L}\p{N}_./-]/u.test(c
 function boundedToolLinePrefix(text, maxChars = 180) {
   if (text.length <= maxChars) return text;
   let end = maxChars;
-  while (end > 0 && TOOL_TOKEN_CHAR(text[end - 1]) && TOOL_TOKEN_CHAR(text[end])) end--;
+  const splitsSurrogatePair = i => i > 0 && i < text.length &&
+    text.charCodeAt(i - 1) >= 0xD800 && text.charCodeAt(i - 1) <= 0xDBFF &&
+    text.charCodeAt(i) >= 0xDC00 && text.charCodeAt(i) <= 0xDFFF;
+  while (end > 0 && (splitsSurrogatePair(end) ||
+    (TOOL_TOKEN_CHAR(text[end - 1]) && TOOL_TOKEN_CHAR(text[end])))) end--;
   // An indivisible overlong token cannot be represented within the budget
   // without inventing a token boundary. Omit that selected line instead.
   return text.slice(0, end).trimEnd();
