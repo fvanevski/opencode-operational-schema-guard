@@ -113,9 +113,11 @@ const emptyTotals=()=>({attempted_calls:0,completed_calls:0,model_errors:0,
   missed_useful_reference:0,excluded_reference_retained:0,
   unadjudicated_retained:0,skipped_despite_useful_reference:0,
   blocked_siblings:0,skipped_siblings:0});
-function fold(t,r){
+function fold(t,r,referenceTotal){
   t.attempted_calls++;
-  if(r.model_error){t.model_errors++;return;}
+  // A failed/absent model answer must still count against the frozen denominator.
+  t.useful_reference_total+=referenceTotal;
+  if(r.model_error){t.model_errors++;t.missed_useful_reference+=referenceTotal;return;}
   t.completed_calls++;
   if(r.usage&&Number.isSafeInteger(r.usage.prompt_tokens)&&
     r.usage.prompt_tokens>=0&&Number.isSafeInteger(r.usage.completion_tokens)&&
@@ -130,7 +132,6 @@ function fold(t,r){
   t.accepted_facts+=s.retained;t.established+=s.established;
   t.provisional+=s.provisional;
   t.useful_reference_matched+=s.useful_reference_matched;
-  t.useful_reference_total+=s.useful_reference_total;
   t.missed_useful_reference+=s.missed_useful_reference;
   t.excluded_reference_retained+=s.excluded_reference_retained;
   t.unadjudicated_retained+=s.unadjudicated_retained;
@@ -168,13 +169,15 @@ export async function runPairedQualification(cases,{curate,modelArgs={}}={}){
       throw Error('B1_SOURCE_PAYLOAD_MISMATCH');
     for(const v of order){
       let reply,model_error=false;
-      try{reply=await curate(c.cluster,{...modelArgs,
-        promptMessages:payload[v]});}
-      catch{model_error=true;}
+      try{
+        reply=await curate(c.cluster,{...modelArgs,promptMessages:payload[v]});
+        if(typeof reply?.content!=='string'||reply.content.length>12000)
+          throw Error('B1_INVALID_MODEL_REPLY');
+      }catch{model_error=true;}
       const score=model_error?null:summarizeResponse(reply.content,v,c);
       const observation={model_error,
         usage:reply?.usage??null,duration_ms:reply?.duration_ms??null,score};
-      fold(totals[v],observation);
+      fold(totals[v],observation,c.opportunities.filter(x=>x.grade==='useful').length);
       out[v]=model_error?{model_error:true}:{
         ...score,model_error:false,
         prompt_tokens:Number.isSafeInteger(reply?.usage?.prompt_tokens)?
