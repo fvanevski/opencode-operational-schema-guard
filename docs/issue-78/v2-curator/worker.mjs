@@ -260,6 +260,8 @@ export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='loca
     length_limited_responses:0,archived_sources:0,
      provisional_selected:0,established_selected:0,integrity_blocked:0,
      technical_retry:0,skipped_candidates:0,
+      sibling_retry_attempts:0,sibling_retry_recovered:0,
+      sibling_retry_pending:0,sibling_retry_exhausted:0,
      consolidation_attempts:0,consolidation_applied:0,consolidation_retry:0,
      consolidation_remote_blocked:0,consolidation_stale:0,
      consolidation_retain_provisional:0,consolidation_promote_retention:0,
@@ -337,6 +339,46 @@ export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='loca
       await queue.transition(id,row.state,'skipped');
     }
   }
+  // Only a durable format-rejected child is reconsidered. Valid siblings
+  // retain their original ReviewStore/Graphiti identities and are not re-run.
+  if(autonomousCuration){
+    const pending=(await allRecords(store)).filter(r=>
+      r.state==='deferred'&&r.reconsideration&&
+      ['pending','running'].includes(r.reconsideration.status)&&
+      r.reconsideration.attempts<r.reconsideration.limit);
+    for(const row of pending.slice(0,Math.min(2,maxClusters))){
+      if(Date.now()>deadline-5000)break;
+      const reserved=await store.reserveSiblingRetry(row.id,row.revision);
+      if(!reserved)continue;
+      const source=reserved.events.find(e=>
+        e.source_strength==='native-id'&&
+        e.source_refs?.[0]===reserved.reconsideration.source_ref);
+      if(!source)throw Error('SIBLING_SOURCE_IDENTITY_LOST');
+      const focused={...reserved,events:[source],
+        source_event_ids:[source.event_id]};
+      const prompt=autonomousPrompt(focused);
+      prompt[0]={...prompt[0],content:prompt[0].content+' '+
+        'This is a bounded correction for one model-format-invalid sibling. '+
+        'Return AT MOST ONE independently useful exact source fact. '+
+        'Use ONLY the source handle in the supplied evidence. '+
+        'Do not restate any retained sibling or synthesize a fact from outside '+
+        'the single quoted source.'};
+      let decision=null,technicalFailure=false;
+      stats.model_attempts++;stats.sibling_retry_attempts++;
+      try{
+        const reply=await curate(focused,{endpoint:modelEndpoint,model:modelId,
+          apiKey,...modelOptions,promptMessages:prompt});
+        tallyModelUsage(stats,reply);
+        decision=validateAutonomousDecision(reply.content,focused);
+        technicalFailure=decision.ok!==true&&decision.retryable===true;
+      }catch{stats.model_errors++;technicalFailure=true;}
+      const outcome=await store.finishSiblingRetry(reserved.id,reserved.revision,
+        decision,{technicalFailure});
+      if(outcome.status==='recovered')stats.sibling_retry_recovered++;
+      else if(outcome.status==='pending')stats.sibling_retry_pending++;
+      else if(outcome.status==='exhausted')stats.sibling_retry_exhausted++;
+    }
+  }
   const list=await queue.list({limit:500,states:['new']});
   // Autonomous curation grants each distinct authenticated native origin its
   // own bounded decision budget. Legacy ordinary and finite-batch modes retain
@@ -407,7 +449,8 @@ export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='loca
           reason:'independent_fact_review_unavailable',facts:[]};
       }
     }
-    const isBundle=proposal.ok&&proposal.decision==='EMIT'&&proposal.facts.length>1;
+    const isBundle=proposal.ok&&proposal.decision==='EMIT'&&
+      (proposal.facts.length>1||(proposal.recoverable_siblings||[]).length>0);
     const stored=isBundle?await store.createBundle(cluster,proposal):
       await store.create(cluster,proposal);
     if(!stored.created)continue;
@@ -488,7 +531,10 @@ export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='loca
   await archive();
   const queueLeft=await queue.status();
   const pendingReviews=(await allRecords(store)).some(r=>
-    ['approved','retry_authorized'].includes(r.state)||(r.state==='deferred'&&r.reevaluate_requested));
+    ['approved','retry_authorized'].includes(r.state)||
+    (r.state==='deferred'&&(r.reevaluate_requested||
+      (r.reconsideration&&['pending','running'].includes(r.reconsideration.status)&&
+        r.reconsideration.attempts<r.reconsideration.limit))));
   const localWork=pendingReviews||queueLeft.counts.new>0||
     queueLeft.counts.reserved>0;
   // Autonomous no-model/invalid-model leaves immutable NEW sources, not a
