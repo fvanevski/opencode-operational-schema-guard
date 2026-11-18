@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {mkdtemp,rm} from 'node:fs/promises';
+import {spawnSync} from 'node:child_process';
+import {fileURLToPath} from 'node:url';
 import path from 'node:path';
 import os from 'node:os';
 import {fromPromptCandidates} from '../issue-78/v2-candidate/events.mjs';
@@ -70,6 +72,18 @@ test('#107 accepted fact is terminal before targeted sibling retry, with one epi
    const accepted=rows.find(r=>r.state==='persisted');
    const pending=rows.find(r=>r.reconsideration?.status==='pending');
    assert.ok(accepted&&pending);
+   // The canonical Python EX wrapper invokes this precise read-only CLI to
+   // distinguish local work (4) from remote submission ambiguity (3).
+   const reconcileStatus=()=>spawnSync(process.execPath,[
+     fileURLToPath(new URL('../issue-78/v2-curator/curator-cli.mjs',import.meta.url)),
+     'reconcile-only','--group',scope.group,'--state-dir',root,
+     '--endpoint','http://127.0.0.1:9621/mcp'],{
+     encoding:'utf8',timeout:15000,env:{...process.env,
+       GHDEV_MEMORY_POST_EXIT_LEASE:'admitted'}});
+   const beforeCLI=reconcileStatus();
+   assert.equal(beforeCLI.status,4,beforeCLI.stderr);
+   assert.equal(JSON.parse(beforeCLI.stdout).status,'work_remaining');
+   assert.equal(JSON.parse(beforeCLI.stdout).pending_review,true);
    assert.equal(accepted.facts[0].assertion,a);
    assert.equal(accepted.remote_episode_uuid,episodes[0].uuid);
    const acceptedRevision=accepted.revision;
@@ -91,6 +105,9 @@ test('#107 accepted fact is terminal before targeted sibling retry, with one epi
    assert.equal(recovered.origin_cluster_id,accepted.origin_cluster_id);
    assert.deepEqual(recovered.source_event_ids,accepted.source_event_ids);
    assert.equal(recovered.reconsideration.status,'recovered');
+   const afterCLI=reconcileStatus();
+   assert.equal(afterCLI.status,0,afterCLI.stderr);
+   assert.equal(JSON.parse(afterCLI.stdout).status,'settled');
    const third=await runAdmitted(args);
    assert.equal(third.sibling_retry_attempts,0);
    assert.equal(modelCalls,2);
