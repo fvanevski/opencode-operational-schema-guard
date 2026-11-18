@@ -40,6 +40,9 @@ export async function main(argv=process.argv.slice(2),env=process.env){
     fail('AUTHENTICATED_MODEL_BINDING_REQUIRED');
   const timeoutMs=Number(env.GHDEV_107_MODEL_TIMEOUT_MS||90000);
   const maxTokens=Number(env.GHDEV_107_MAX_TOKENS||1600);
+  if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1000||timeoutMs>180000||
+    !Number.isSafeInteger(maxTokens)||maxTokens<128||maxTokens>4096)
+    fail('BOUNDED_MODEL_SETTINGS_REQUIRED');
   const modelArgs={endpoint,model,apiKey:env.LOCAL_CURATOR_API_KEY||'local',
     timeoutMs,maxTokens,temperature:0};
   const comparison=await runPairedQualification(parsed,{

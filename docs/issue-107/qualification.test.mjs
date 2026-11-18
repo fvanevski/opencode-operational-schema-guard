@@ -6,6 +6,7 @@ import {autonomousPrompt} from '../issue-100/autonomous-policy.mjs';
 import {compactAutonomousPrompt,normalizeCompactDecision,
   validateCompactDecision} from './protocol.mjs';
 import {freezeQualificationCases,runPairedQualification} from './qualification.mjs';
+import {main as qualificationCli} from './qualify-cli.mjs';
 
 const scope={group:'issue107',project:'curation',workspace:'/workspace/curation'};
 const quoteA='The storage adapter must preserve the original revision before committing a graph episode.';
@@ -127,6 +128,10 @@ test('#107 reference cohort is frozen before model inference and excludes source
   foreign.opportunities[0].source_ref='opencode:foreign:message:fake';
   assert.throws(()=>freezeQualificationCases([foreign]),
     /B1_UNSUPPORTED_REFERENCE_GRADE/);
+});
+test('#107 host CLI never reads a private cohort without a genuine kernel EX lock',async()=>{
+  await assert.rejects(()=>qualificationCli(['run','--cases','/tmp/not-a-cohort',
+    '--out','/tmp/not-an-output'],{}),/EX_KERNEL_ADMISSION_REQUIRED:/);
 });
 test('#107 no paired model call without admitted EX marker',async()=>{
   const prior=process.env.GHDEV_MEMORY_POST_EXIT_LEASE;
