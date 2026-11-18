@@ -428,7 +428,19 @@ export class ReviewStore {
     await fs.mkdir(lock,{mode:0o700}); // collisions remain visible; never steal lock
     try{return await fn();}finally{await fs.rmdir(lock);}
   }
-  async create(cluster,decision,{origin='curated'}={}){
+  async create(cluster,decision,{origin='curated',pendingSibling=null}={}){
+    if(pendingSibling!==null&&(
+      origin!=='curated'||decision?.decision!=='DEFER'||
+      !HEX.test(cluster?.origin_cluster_id||'')||
+      pendingSibling.parent_id!==cluster.origin_cluster_id||
+      !Number.isInteger(pendingSibling.index)||pendingSibling.index<0||
+      pendingSibling.index>2||
+      !['invalid_utility_metadata','invalid_established_class',
+        'incomplete_source_token_boundary','invalid_exact_source_quote']
+        .includes(pendingSibling.reason)||
+      !cluster.events?.some(e=>e?.source_refs?.[0]===pendingSibling.source_ref&&
+        e.source_strength==='native-id')))
+      throw Error('INVALID_PENDING_SIBLING');
     if(!['curated','qualification_operator_seed'].includes(origin))
       throw Error('Invalid review creation origin');
     if(!HEX.test(cluster?.id||'')||!Array.isArray(cluster.events)||
@@ -467,6 +479,8 @@ export class ReviewStore {
         review_only_claims:Array.isArray(decision?.review_only_claims)?
           decision.review_only_claims.slice(0,3):[],
         reevaluate_requested:false,
+        ...(pendingSibling?{reconsideration:{...pendingSibling,
+          status:'pending',attempts:0,limit:2}}:{}),
         revision:1,created_at:now,updated_at:now,
         remote_episode_uuid:null,origin,
         audit:[{at:now,action:origin,outcome:state}]};
@@ -492,8 +506,20 @@ export class ReviewStore {
         ...f,utility_class:decision.fact_utilities?.[i]
       }))
     },cluster);
-    if(!verified.ok||verified.decision!=='EMIT'||verified.facts.length<2||
+    const pending=Array.isArray(decision.recoverable_siblings)?
+      decision.recoverable_siblings:[];
+    if(!verified.ok||verified.decision!=='EMIT'||verified.facts.length<1||
        verified.facts.length>3||
+       (verified.facts.length<2&&pending.length===0)||
+       pending.length+verified.facts.length>3||
+       pending.some(p=>!Number.isInteger(p?.index)||p.index<0||p.index>2||
+         typeof p.source_ref!=='string'||
+         !['invalid_utility_metadata','invalid_established_class',
+           'incomplete_source_token_boundary','invalid_exact_source_quote']
+           .includes(p.reason)||
+         !cluster.events?.some(e=>e.source_refs?.[0]===p.source_ref&&
+           e.source_strength==='native-id'))||
+       new Set(pending.map(p=>p.index)).size!==pending.length||
        !Array.isArray(decision.fact_utilities)||
        decision.fact_utilities.length!==verified.facts.length||
        decision.fact_utilities.some(x=>!PERSISTABLE_UTILITY.has(x))||
@@ -517,15 +543,21 @@ export class ReviewStore {
       const childIds=verified.facts.map((f,i)=>digest(
         'issue92-fact-v2\n'+id+'\n'+i+'\n'+f.assertion+'\n'+f.source_refs.join(',')));
       if(new Set(childIds).size!==childIds.length)throw Error('DUPLICATE_FACT_BUNDLE_CHILD');
+      const pendingIds=pending.map(p=>digest('issue107-format-sibling-v1\n'+
+        id+'\n'+p.index+'\n'+p.source_ref));
+      if(new Set([...childIds,...pendingIds]).size!==childIds.length+pendingIds.length)
+        throw Error('DUPLICATE_FACT_BUNDLE_CHILD');
       await atomic(this.bundlePath(id),{
-        schema:'issue92-bounded-fact-bundle-v1',parent_id:id,
-        child_ids:childIds,cluster,decision:{
+        schema:pending.length?'issue107-format-sibling-bundle-v1':
+          'issue92-bounded-fact-bundle-v1',parent_id:id,
+        child_ids:childIds,pending_ids:pendingIds,cluster,decision:{
           decision:'EMIT',reason:verified.reason,utility_class:decision.utility_class,
           facts:verified.facts,fact_utilities:decision.fact_utilities,
           fact_retentions:decision.fact_retentions,
           fact_utility_reasons:decision.fact_utility_reasons,
           fact_source_spans:decision.fact_source_spans,
           blocked_candidates:decision.blocked_candidates||[],
+          recoverable_siblings:pending,
           review_only_claims:decision.review_only_claims||[]
         },created_at:new Date().toISOString()
       });
@@ -536,9 +568,16 @@ export class ReviewStore {
     let b;
     try{b=JSON.parse(await fs.readFile(this.bundlePath(id),'utf8'));}
     catch(e){if(e.code==='ENOENT')return null;throw e;}
-    if(b?.schema!=='issue92-bounded-fact-bundle-v1'||b.parent_id!==id||
-      !Array.isArray(b.child_ids)||b.child_ids.length<2||b.child_ids.length>3||
-      b.child_ids.length!==b.decision?.facts?.length)
+    const modern=b?.schema==='issue107-format-sibling-bundle-v1';
+    if(!modern&&b?.schema!=='issue92-bounded-fact-bundle-v1')
+      throw Error('CORRUPT_FACT_BUNDLE');
+    const pending=modern?b.decision?.recoverable_siblings:[];
+    if(b.parent_id!==id||!Array.isArray(b.child_ids)||
+      b.child_ids.length<(modern?1:2)||b.child_ids.length>3||
+      b.child_ids.length!==b.decision?.facts?.length||
+      (modern&&(!Array.isArray(pending)||!pending.length||
+        !Array.isArray(b.pending_ids)||b.pending_ids.length!==pending.length||
+        b.child_ids.length+pending.length>3)))
       throw Error('CORRUPT_FACT_BUNDLE');
     const checked=validateDecision(b.decision,b.cluster);
     if(!checked.ok||checked.decision!=='EMIT')throw Error('INVALID_FACT_BUNDLE');
@@ -557,6 +596,22 @@ export class ReviewStore {
            fact_source_spans:[b.decision.fact_source_spans[i]]}:{}),
          blocked_candidates:b.decision.blocked_candidates||[],
          review_only_claims:(b.decision.review_only_claims||[]).filter(x=>x.index===i)});
+      records.push(r.record);
+    }
+    if(modern)for(let i=0;i<pending.length;i++){
+      const p=pending[i],child=b.pending_ids[i];
+      if(!Number.isInteger(p?.index)||p.index<0||p.index>2||
+        !b.cluster.events?.some(e=>e.source_refs?.[0]===p.source_ref&&
+          e.source_strength==='native-id')||
+        !['invalid_utility_metadata','invalid_established_class',
+          'incomplete_source_token_boundary','invalid_exact_source_quote']
+          .includes(p.reason)||
+        child!==digest('issue107-format-sibling-v1\n'+id+'\n'+
+          p.index+'\n'+p.source_ref))throw Error('INVALID_BUNDLE_SIBLING');
+      const r=await this.create({...b.cluster,id:child,origin_cluster_id:id},
+        {decision:'DEFER',reason:'technical_format_sibling_pending',facts:[]},
+        {pendingSibling:{parent_id:id,index:p.index,source_ref:p.source_ref,
+          reason:p.reason}});
       records.push(r.record);
     }
     return {created:true,records};
