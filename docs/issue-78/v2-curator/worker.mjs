@@ -339,46 +339,12 @@ export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='loca
       await queue.transition(id,row.state,'skipped');
     }
   }
-  // Only a durable format-rejected child is reconsidered. Valid siblings
-  // retain their original ReviewStore/Graphiti identities and are not re-run.
-  if(autonomousCuration){
-    const pending=(await allRecords(store)).filter(r=>
-      r.state==='deferred'&&r.reconsideration&&
-      ['pending','running'].includes(r.reconsideration.status)&&
-      r.reconsideration.attempts<r.reconsideration.limit);
-    for(const row of pending.slice(0,Math.min(2,maxClusters))){
-      if(Date.now()>deadline-5000)break;
-      const reserved=await store.reserveSiblingRetry(row.id,row.revision);
-      if(!reserved)continue;
-      const source=reserved.events.find(e=>
-        e.source_strength==='native-id'&&
-        e.source_refs?.[0]===reserved.reconsideration.source_ref);
-      if(!source)throw Error('SIBLING_SOURCE_IDENTITY_LOST');
-      const focused={...reserved,events:[source],
-        source_event_ids:[source.event_id]};
-      const prompt=autonomousPrompt(focused);
-      prompt[0]={...prompt[0],content:prompt[0].content+' '+
-        'This is a bounded correction for one model-format-invalid sibling. '+
-        'Return AT MOST ONE independently useful exact source fact. '+
-        'Use ONLY the source handle in the supplied evidence. '+
-        'Do not restate any retained sibling or synthesize a fact from outside '+
-        'the single quoted source.'};
-      let decision=null,technicalFailure=false;
-      stats.model_attempts++;stats.sibling_retry_attempts++;
-      try{
-        const reply=await curate(focused,{endpoint:modelEndpoint,model:modelId,
-          apiKey,...modelOptions,promptMessages:prompt});
-        tallyModelUsage(stats,reply);
-        decision=validateAutonomousDecision(reply.content,focused);
-        technicalFailure=decision.ok!==true&&decision.retryable===true;
-      }catch{stats.model_errors++;technicalFailure=true;}
-      const outcome=await store.finishSiblingRetry(reserved.id,reserved.revision,
-        decision,{technicalFailure});
-      if(outcome.status==='recovered')stats.sibling_retry_recovered++;
-      else if(outcome.status==='pending')stats.sibling_retry_pending++;
-      else if(outcome.status==='exhausted')stats.sibling_retry_exhausted++;
-    }
-  }
+  // Existing source retries must not race new native opportunities or
+  // immediately re-curate an accepted sibling in its own initial drain.
+  const retryableAtStart=autonomousCuration?new Set(
+    (await allRecords(store)).filter(r=>r.state==='deferred'&&
+      r.reconsideration&&['pending','running'].includes(r.reconsideration.status)&&
+      r.reconsideration.attempts<r.reconsideration.limit).map(r=>r.id)):null;
   const list=await queue.list({limit:500,states:['new']});
   // Autonomous curation grants each distinct authenticated native origin its
   // own bounded decision budget. Legacy ordinary and finite-batch modes retain
@@ -469,6 +435,47 @@ export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='loca
         if(await queue.transition(e.event_id,'new','reserved'))
           await queue.transition(e.event_id,'reserved','approved');
       }else await queue.transition(e.event_id,'new',to);
+    }
+  }
+  // Only a durable format-rejected child is reconsidered. Valid siblings
+  // retain their original ReviewStore/Graphiti identities and are not re-run.
+  if(autonomousCuration){
+    const pending=(await allRecords(store)).filter(r=>
+      retryableAtStart.has(r.id)&&
+      r.state==='deferred'&&r.reconsideration&&
+      ['pending','running'].includes(r.reconsideration.status)&&
+      r.reconsideration.attempts<r.reconsideration.limit);
+    for(const row of pending.slice(0,Math.min(2,maxClusters))){
+      if(Date.now()>deadline-5000)break;
+      const reserved=await store.reserveSiblingRetry(row.id,row.revision);
+      if(!reserved)continue;
+      const source=reserved.events.find(e=>
+        e.source_strength==='native-id'&&
+        e.source_refs?.[0]===reserved.reconsideration.source_ref);
+      if(!source)throw Error('SIBLING_SOURCE_IDENTITY_LOST');
+      const focused={...reserved,events:[source],
+        source_event_ids:[source.event_id]};
+      const prompt=autonomousPrompt(focused);
+      prompt[0]={...prompt[0],content:prompt[0].content+' '+
+        'This is a bounded correction for one model-format-invalid sibling. '+
+        'Return AT MOST ONE independently useful exact source fact. '+
+        'Use ONLY the source handle in the supplied evidence. '+
+        'Do not restate any retained sibling or synthesize a fact from outside '+
+        'the single quoted source.'};
+      let decision=null,technicalFailure=false;
+      stats.model_attempts++;stats.sibling_retry_attempts++;
+      try{
+        const reply=await curate(focused,{endpoint:modelEndpoint,model:modelId,
+          apiKey,...modelOptions,promptMessages:prompt});
+        tallyModelUsage(stats,reply);
+        decision=validateAutonomousDecision(reply.content,focused);
+        technicalFailure=decision.ok!==true&&decision.retryable===true;
+      }catch{stats.model_errors++;technicalFailure=true;}
+      const outcome=await store.finishSiblingRetry(reserved.id,reserved.revision,
+        decision,{technicalFailure});
+      if(outcome.status==='recovered')stats.sibling_retry_recovered++;
+      else if(outcome.status==='pending')stats.sibling_retry_pending++;
+      else if(outcome.status==='exhausted')stats.sibling_retry_exhausted++;
     }
   }
   const after=await allRecords(store);
