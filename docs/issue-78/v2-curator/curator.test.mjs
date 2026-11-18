@@ -827,10 +827,17 @@ test('curator prompt distinguishes reusable schema negatives from transient fail
   assert.match(instruction,/attributable source evidence/);
   const durable={decision:'EMIT',utility_class:'useful_negative',
     reason:'Source-stated repeatable invalid median result',
-    facts:[{assertion:T.excerpt,kind:'test_result',
-      source_refs:[T.source_refs[0]],temporal_status:'observed'}]};
+    // The receipt header and generated line label are not original output.
+    // Exercise the same durability classification against an authenticated
+    // contiguous output-line span, not a model-quoted synthetic composite.
+    facts:[{kind:'test_result',source_refs:[T.source_refs[0]],
+      temporal_status:'observed',evidence_span:{source_ref:T.source_refs[0],
+        start:T.excerpt.indexOf('1 test failed due to median invalid result'),
+        end:T.excerpt.indexOf('1 test failed due to median invalid result')+
+          '1 test failed due to median invalid result'.length}}]};
   const valid=validateModelDecision(durable,c);
   assert.equal(valid.ok,true);
+  assert.equal(valid.facts[0].assertion,'1 test failed due to median invalid result');
   const ephemeral=validateModelDecision({...durable,utility_class:'transient_result'},c);
   assert.equal(ephemeral.ok,false);
   assert.equal(ephemeral.reason,'utility_class_not_durable');
