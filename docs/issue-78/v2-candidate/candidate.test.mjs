@@ -4,6 +4,7 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fromPrompt, fromPromptCandidates, fromTool, fromFinishedTurn } from './events.mjs';
+import '../../issue-106/capture-coverage.test.mjs';
 import { CandidateQueue } from './queue.mjs';
 import plugin from './plugin.mjs';
 import { selectUserDecision, selectCompletedTest } from '../../issue-75/v2-candidate/memory-core.mjs';

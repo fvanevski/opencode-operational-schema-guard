@@ -1,0 +1,22 @@
+# Issue #106 A1–A3: source-opportunity coverage implementation packet
+
+Authority: [issue #106](https://github.com/fvanevski/opencode-operational-schema-guard/issues/106), parent #105. Exact baseline: `main@df703861714717b795465423939f4563cb3d08e6`. This is a prospective code-and-source comparator, **not** installed production or model-backed acceptance.
+
+## Decisions and scope
+
+- **KEEP:** whole-input privacy and self-context rejection; native source refs and verified prompt offsets; weak fallback never masquerades as native; bounded six spans / three tool-output lines; #99 queue F/archive, single ReviewStore, event/episode dedup; #100 autonomous EX-only utility/provisional retention; #101 original-source and live Graphiti UUID membership.
+- **COMPARE (A2):** deterministic legacy `uniform` prompt sampling and first-three `markers` tool selection versus `coverage` selection. The candidate keeps two opening spans, the final span, one highest explicit source-signal span, and two maximally separated positions. Cues choose **presentation** only; no signal gates eligibility or source strength. The tool candidate includes an early marker, a middle line and a terminal line, labeled with original line numbers. It does not pretend those noncontiguous lines are a single unaltered output quote. All output is screened as a whole before line selection. No full transcript retained.
+- **COMPARE (A3):** historical same-session grouping versus source-origin grouping for **autonomous** drain only. Long native user spans share their message's decision budget; distinct user, assistant and tool sources cannot compete in a sibling's three-fact budget. A weak fallback has its own bounded group and retains weak identity. The finite-batch and historical ordinary mode contracts remain unchanged. Tool related-event IDs remain descriptive; no speculative tool-to-prompt merged source group.
+- **AUDIT, not rewrite:** pending/inflight/session buffers and queue drop counters; current limits remain unchanged absent demonstrated materially avoidable loss. The 4000 cap and source-archive ownership stay intact.
+
+## Frozen comparator / methods
+
+`compare.mjs` freezes synthetic original-input definitions before host evaluation. `node docs/issue-106/compare.mjs` produces paired source-exact stage metrics: eligibility, source events admitted, distinct useful substring opportunities visible in selected excerpts, hard negatives, offset integrity and an **upper bound** on model fact slots per clustered batch. None of these are actual model-emitted facts, independently measured live capture, or remote Graphiti successes. The heuristic signal is not itself ground truth. The fixed synthetic examples include long middle evidence, late unmarked tool evidence, distant private value, an injected Graphiti marker, and an OpenViking-authored tail. Native user/assistant/tool/weak fallback and queue/archive retained regressions must also pass.
+
+For original native host observations: freeze a small sanitized case list and independently annotate source-supported useful opportunities and hard exclusions **before** comparing output variants; record real versus synthetic denominators, possible selection bias, and missing native IDs. Do not export private raw messages. A safe fact is counted considered only when the selected excerpt actually contains the original source evidence, not because a model guessed it.
+
+**Decision:** retain the candidate only if it recovers genuinely distinct supported opportunities or reduces processing cost at equal reach, with no hard-negative or source-identity regression. If there is no meaningful benefit, keep the simpler baseline selector/grouping and document the result instead of forcing a refactor. Do not equate increased event count/fact-slot capacity with useful retained memory.
+
+## Unchanged contracts and stop point
+
+No new datastore, queue, daemon, network write, assistant completion hook, graph mutator, EX bypass, imported memory capture, provisional utility hard veto or historical reingestion. Source diff and tests require exact-head central independent review; the local agent verifies source/runtime and returns a sanitized, digest-verifiable evidence packet. Compatible production activation belongs to a distinct post-merge authorized change of installed source/config, with rollback and fresh service/client/native session only where actual live behavior changed.

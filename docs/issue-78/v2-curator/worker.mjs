@@ -312,7 +312,11 @@ export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='loca
     }
   }
   const list=await queue.list({limit:500,states:['new']});
-  const clusters=selectClusters(list.items,{maxClusters});
+  // Autonomous curation grants each distinct authenticated native origin its
+  // own bounded decision budget. Legacy ordinary and finite-batch modes retain
+  // their separate historical selection contracts.
+  const clusters=selectClusters(list.items,{
+    maxClusters,sourceMessageIsolation:autonomousCuration});
   for(const cluster of clusters){
     if(Date.now()>deadline-5000)break;
     const existing=(await store.get(cluster.id))||

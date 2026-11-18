@@ -40,12 +40,24 @@ export function selectClusters(items, {maxEvents=8,maxClusters=8,
     // same-session message must not occupy its sibling's three-fact budget.
     const ref=e.source_refs?.[0];
     if(sourceMessageIsolation&&
-       (e.source_strength!=='native-id'||e.source_refs?.length!==1||
-        typeof ref!=='string'||!ref.startsWith('opencode:')))
-      throw Error('source isolation requires one authenticated native source');
-    const origin=sourceMessageIsolation?ref.replace(/:span:\d+$/,''):null;
+       (e.source_refs?.length!==1||typeof ref!=='string'||
+        !ref.startsWith('opencode:'+e.session_id+':')))
+      throw Error('source isolation requires one authenticated source handle');
+    if(sourceMessageIsolation&&
+       ((e.source_strength==='native-id'&&!/^opencode:[^:]+:(?:message|tool):/.test(ref))||
+        (e.source_strength==='session-scoped-fallback'&&!ref.startsWith(
+          'opencode:'+e.session_id+':prompt:'))||
+        !['native-id','session-scoped-fallback'].includes(e.source_strength)))
+      throw Error('source isolation strength/handle mismatch');
+    // A long native USER message may have several independently attributable
+    // :span:<offset> handles; they share one source-origin fact budget. Do not
+    // accidentally strip an ordinary tool call ID with the same suffix.
+    const origin=!sourceMessageIsolation?null:e.source_strength==='native-id'?
+      (e.kind==='user_turn'&&ref.includes(':message:')?
+        ref.replace(/:span:\d+$/,''):ref):
+      'fallback-event:'+e.event_id;
     const key=[e.group,e.project,e.workspace,e.session_id,
-      ...(sourceMessageIsolation?[origin]:[])].join('\n');
+      ...(sourceMessageIsolation?[e.kind,e.source_strength,origin]:[])].join('\n');
     if(!groups.has(key))groups.set(key,[]);
     groups.get(key).push(e);
   }
