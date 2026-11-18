@@ -178,8 +178,18 @@ if(command==='validate-tuning'){
     let pendingReview=false;
     for(let offset=0;;offset+=500){
       const page=await store.list({limit:500,offset});
-      if(page.items.some(r=>r.state==='approved'||r.state==='retry_authorized'||
-        (r.state==='deferred'&&r.reevaluate_requested)))pendingReview=true;
+      if(page.items.some(r=>{
+        if(r.state==='approved'||r.state==='retry_authorized')return true;
+        if(r.state!=='deferred')return false;
+        if(r.reevaluate_requested)return true;
+        const sibling=r.reconsideration;
+        if(!sibling)return false;
+        // A crashed final reservation is running at the attempt limit.
+        // It still requires an EX-admitted drain to finalize locally,
+        // but it must never authorize another model or Graphiti call.
+        return sibling.status==='running'||
+          (sibling.status==='pending'&&sibling.attempts<sibling.limit);
+      }))pendingReview=true;
       if(!page.has_more)break;
     }
     const queueStatus=await new CandidateQueue(root,group).status();

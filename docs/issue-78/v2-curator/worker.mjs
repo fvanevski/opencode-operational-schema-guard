@@ -2,7 +2,7 @@
 import { CandidateQueue } from '../v2-candidate/queue.mjs';
 import { archiveOwnedSources } from '../../issue-99/archive-owned.mjs';
 import { GraphitiMcp, EXTRACTION_INSTRUCTIONS } from '../../issue-75/v2-candidate/memory-core.mjs';
-import { ReviewStore, selectClusters, validateDecision, validateModelDecision, normalizedAssertion } from './core.mjs';
+import { ReviewStore, selectClusters, validateDecision, validateModelDecision, normalizedAssertion, nativeFactOrigin } from './core.mjs';
 import { curateCluster } from './model.mjs';
 import {autonomousPrompt,validateAutonomousDecision} from '../../issue-100/autonomous-policy.mjs';
 import {selectConsolidationPairs,consolidationPrompt,validateConsolidationDecision} from '../../issue-100/consolidation.mjs';
@@ -65,11 +65,28 @@ async function duplicateState(record,store,graphiti) {
   // Cheap local semantic identity and confirmed remote factual equality.
   const listed=await allRecords(store);
   const ours=new Set(record.facts.map(f=>normalizedAssertion(f.assertion)));
+  let distinctCorroboration=null;
   for(const other of listed){
     if(other.id===record.id||!['persisted','queued','submission_unknown','failed_extraction','retry_authorized'].includes(other.state))continue;
-    for(const f of other.facts||[])if(ours.has(normalizedAssertion(f.assertion)))
-      return other.state==='failed_extraction'?'LOCAL_PRIOR_FAILED_EXTRACTION_NO_REPLAY':'LOCAL_REPEATED_ASSERTION';
+    for(const f of other.facts||[])if(ours.has(normalizedAssertion(f.assertion))){
+      if(other.state==='failed_extraction')return 'LOCAL_PRIOR_FAILED_EXTRACTION_NO_REPLAY';
+      // Distinct authentic source: preserve a local link to the indexed prior
+      // rather than labeling it a source replay or creating another episode.
+      // Unsettled remote states remain hard no-replay blockers.
+      if(other.state==='persisted'&&record.facts.length===1&&
+         other.facts.length===1&&other.group===record.group&&
+         other.project===record.project&&other.workspace===record.workspace&&
+         other.retention?.status!=='logically_retired'&&
+         other.retention?.status!=='superseded'&&
+         nativeFactOrigin(record,record.facts[0])&&nativeFactOrigin(other,f)&&
+         nativeFactOrigin(record,record.facts[0])!==nativeFactOrigin(other,f)){
+        distinctCorroboration??={kind:'source_distinct_corroboration',prior_id:other.id};
+        continue;
+      }
+      return 'LOCAL_REPEATED_ASSERTION';
+    }
   }
+  if(distinctCorroboration)return distinctCorroboration;
   for(const f of record.facts){
     const matches=await graphiti.call('search_memory_facts',{query:f.assertion,
       group_ids:[record.group],max_facts:12});
@@ -111,6 +128,20 @@ export async function promoteOne(store,record,graphiti){
       deferValidatedSnapshot(store,record,'duplicate_check_unavailable');
   }
   if(duplicate){
+    if(typeof duplicate==='object'&&
+       duplicate.kind==='source_distinct_corroboration'){
+      if(retry)return {status:'recovery_preflight_blocked',
+        reason:'LOCAL_DISTINCT_SOURCE_CORROBORATION'};
+      const linked=await store.deferCorroboration(record.id,record.revision,
+        duplicate.prior_id);
+      return linked?{status:'deferred',reason:'LOCAL_DISTINCT_SOURCE_CORROBORATION'}:
+        // Missing/stale positive index or superseded prior is a *local*
+        // corroboration-proof failure, not a remote submission and not
+        // automatically an operator race. CAS-defer this approved candidate
+        // without Graphiti writes; a real concurrent update still returns
+        // concurrent_transition through deferValidatedSnapshot.
+        deferValidatedSnapshot(store,record,'LOCAL_CORROBORATION_PROOF_UNAVAILABLE');
+    }
     return retry?{status:'recovery_preflight_blocked',reason:duplicate}:
       deferValidatedSnapshot(store,record,duplicate);
   }
@@ -234,6 +265,9 @@ export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='loca
     length_limited_responses:0,archived_sources:0,
      provisional_selected:0,established_selected:0,integrity_blocked:0,
      technical_retry:0,skipped_candidates:0,
+      sibling_retry_attempts:0,sibling_retry_recovered:0,
+      sibling_retry_pending:0,sibling_retry_exhausted:0,
+      sibling_retry_interrupted_exhausted:0,
      consolidation_attempts:0,consolidation_applied:0,consolidation_retry:0,
      consolidation_remote_blocked:0,consolidation_stale:0,
      consolidation_retain_provisional:0,consolidation_promote_retention:0,
@@ -247,6 +281,16 @@ export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='loca
   // Recover any crash-interrupted fact bundle from its durable local plan
   // before source ownership and remote identity reconciliation.
   if(typeof store.restoreBundles==='function')await store.restoreBundles();
+  if(autonomousCuration&&typeof store.expireInterruptedSibling==='function'){
+    // Under a new exclusive EX lease, a previous final-attempt owner is gone.
+    // Settle its interrupted, already exhausted model-only retry durably.
+    for(const r of (await allRecords(store)).filter(r=>
+      r.state==='deferred'&&r.reconsideration?.status==='running'&&
+      r.reconsideration.attempts>=r.reconsideration.limit)){
+      if(await store.expireInterruptedSibling(r.id,r.revision))
+        stats.sibling_retry_interrupted_exhausted++;
+    }
+  }
   await archive();
   let result=await reconcile(store,graphiti);
   stats.persisted+=result.persisted;stats.unresolved=result.unresolved;
@@ -311,6 +355,12 @@ export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='loca
       await queue.transition(id,row.state,'skipped');
     }
   }
+  // Existing source retries must not race new native opportunities or
+  // immediately re-curate an accepted sibling in its own initial drain.
+  const retryableAtStart=autonomousCuration?new Set(
+    (await allRecords(store)).filter(r=>r.state==='deferred'&&
+      r.reconsideration&&['pending','running'].includes(r.reconsideration.status)&&
+      r.reconsideration.attempts<r.reconsideration.limit).map(r=>r.id)):null;
   const list=await queue.list({limit:500,states:['new']});
   // Autonomous curation grants each distinct authenticated native origin its
   // own bounded decision budget. Legacy ordinary and finite-batch modes retain
@@ -381,7 +431,8 @@ export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='loca
           reason:'independent_fact_review_unavailable',facts:[]};
       }
     }
-    const isBundle=proposal.ok&&proposal.decision==='EMIT'&&proposal.facts.length>1;
+    const isBundle=proposal.ok&&proposal.decision==='EMIT'&&
+      (proposal.facts.length>1||(proposal.recoverable_siblings||[]).length>0);
     const stored=isBundle?await store.createBundle(cluster,proposal):
       await store.create(cluster,proposal);
     if(!stored.created)continue;
@@ -400,6 +451,47 @@ export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='loca
         if(await queue.transition(e.event_id,'new','reserved'))
           await queue.transition(e.event_id,'reserved','approved');
       }else await queue.transition(e.event_id,'new',to);
+    }
+  }
+  // Only a durable format-rejected child is reconsidered. Valid siblings
+  // retain their original ReviewStore/Graphiti identities and are not re-run.
+  if(autonomousCuration){
+    const pending=(await allRecords(store)).filter(r=>
+      retryableAtStart.has(r.id)&&
+      r.state==='deferred'&&r.reconsideration&&
+      ['pending','running'].includes(r.reconsideration.status)&&
+      r.reconsideration.attempts<r.reconsideration.limit);
+    for(const row of pending.slice(0,Math.min(2,maxClusters))){
+      if(Date.now()>deadline-5000)break;
+      const reserved=await store.reserveSiblingRetry(row.id,row.revision);
+      if(!reserved)continue;
+      const source=reserved.events.find(e=>
+        e.source_strength==='native-id'&&
+        e.source_refs?.[0]===reserved.reconsideration.source_ref);
+      if(!source)throw Error('SIBLING_SOURCE_IDENTITY_LOST');
+      const focused={...reserved,events:[source],
+        source_event_ids:[source.event_id]};
+      const prompt=autonomousPrompt(focused);
+      prompt[0]={...prompt[0],content:prompt[0].content+' '+
+        'This is a bounded correction for one model-format-invalid sibling. '+
+        'Return AT MOST ONE independently useful exact source fact. '+
+        'Use ONLY the source handle in the supplied evidence. '+
+        'Do not restate any retained sibling or synthesize a fact from outside '+
+        'the single quoted source.'};
+      let decision=null,technicalFailure=false;
+      stats.model_attempts++;stats.sibling_retry_attempts++;
+      try{
+        const reply=await curate(focused,{endpoint:modelEndpoint,model:modelId,
+          apiKey,...modelOptions,promptMessages:prompt});
+        tallyModelUsage(stats,reply);
+        decision=validateAutonomousDecision(reply.content,focused);
+        technicalFailure=decision.ok!==true&&decision.retryable===true;
+      }catch{stats.model_errors++;technicalFailure=true;}
+      const outcome=await store.finishSiblingRetry(reserved.id,reserved.revision,
+        decision,{technicalFailure});
+      if(outcome.status==='recovered')stats.sibling_retry_recovered++;
+      else if(outcome.status==='pending')stats.sibling_retry_pending++;
+      else if(outcome.status==='exhausted')stats.sibling_retry_exhausted++;
     }
   }
   const after=await allRecords(store);
@@ -461,8 +553,13 @@ export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='loca
   // terminal drain to the EX wrapper while eligible work remains.
   await archive();
   const queueLeft=await queue.status();
-  const pendingReviews=(await allRecords(store)).some(r=>
-    ['approved','retry_authorized'].includes(r.state)||(r.state==='deferred'&&r.reevaluate_requested));
+  const reviewRecords=await allRecords(store);
+  const siblingRetryWork=reviewRecords.some(r=>r.state==='deferred'&&
+    r.reconsideration&&['pending','running'].includes(r.reconsideration.status)&&
+    r.reconsideration.attempts<r.reconsideration.limit);
+  const pendingReviews=siblingRetryWork||reviewRecords.some(r=>
+    ['approved','retry_authorized'].includes(r.state)||
+    (r.state==='deferred'&&r.reevaluate_requested));
   const localWork=pendingReviews||queueLeft.counts.new>0||
     queueLeft.counts.reserved>0;
   // Autonomous no-model/invalid-model leaves immutable NEW sources, not a
@@ -470,6 +567,7 @@ export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='loca
   // Graphiti submission_unknown; the EX holder may then safely release after
   // a positive reconcile-only check instead of looping on nonexistent ACKs.
   return {...stats,status:stats.unresolved?'unresolved':
-    localWork&&autonomousCuration&&stats.technical_retry>0?'technical_retry':
+    localWork&&autonomousCuration&&
+      (stats.technical_retry>0||siblingRetryWork)?'technical_retry':
     localWork?'incomplete':stats.deferred?'review_required':'settled'};
 }

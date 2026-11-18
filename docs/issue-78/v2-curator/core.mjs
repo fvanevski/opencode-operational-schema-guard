@@ -25,6 +25,21 @@ const validDate = s => typeof s === 'string' && Number.isFinite(Date.parse(s));
 const validText = (s,max,min=1) => typeof s==='string' && s.length>=min &&
   s.length<=max && s===s.trim() && cleanExcerpt(s,max)===s;
 export const normalizedAssertion = s => String(s).toLowerCase().replace(/\s+/g,' ').trim().replace(/[.!]+$/,'');
+/** Native occurrence identity, not independently verified factual evidence. */
+export function nativeFactOrigin(record,fact){
+  if(!Array.isArray(fact?.source_refs)||fact.source_refs.length!==1)return null;
+  const ref=fact.source_refs[0],prefix='opencode:'+record?.session_id+':';
+  const source=record?.events?.find(e=>e?.source_refs?.length===1&&
+    e.source_refs[0]===ref&&e.source_strength==='native-id');
+  if(!source||typeof ref!=='string'||!ref.startsWith(prefix))return null;
+  if(source.kind==='user_turn'&&ref.startsWith(prefix+'message:'))
+    return ref.replace(/:span:\d+$/,'');
+  if(source.kind==='assistant_turn'&&ref.startsWith(prefix+'message:'))
+    return ref;
+  if(source.kind==='tool_outcome'&&ref.startsWith(prefix+'tool:'))
+    return ref;
+  return null;
+}
 // This filter is a conservative source-text plausibility check, not semantic
 // verification; the evidence class remains exactly what the source proves.
 const tokens = s => new Set((String(s).toLowerCase().match(/[a-z0-9_./:-]{4,}/g)||[])
@@ -413,7 +428,19 @@ export class ReviewStore {
     await fs.mkdir(lock,{mode:0o700}); // collisions remain visible; never steal lock
     try{return await fn();}finally{await fs.rmdir(lock);}
   }
-  async create(cluster,decision,{origin='curated'}={}){
+  async create(cluster,decision,{origin='curated',pendingSibling=null}={}){
+    if(pendingSibling!==null&&(
+      origin!=='curated'||decision?.decision!=='DEFER'||
+      !HEX.test(cluster?.origin_cluster_id||'')||
+      pendingSibling.parent_id!==cluster.origin_cluster_id||
+      !Number.isInteger(pendingSibling.index)||pendingSibling.index<0||
+      pendingSibling.index>2||
+      !['invalid_utility_metadata','invalid_established_class',
+        'incomplete_source_token_boundary','invalid_exact_source_quote']
+        .includes(pendingSibling.reason)||
+      !cluster.events?.some(e=>e?.source_refs?.[0]===pendingSibling.source_ref&&
+        e.source_strength==='native-id')))
+      throw Error('INVALID_PENDING_SIBLING');
     if(!['curated','qualification_operator_seed'].includes(origin))
       throw Error('Invalid review creation origin');
     if(!HEX.test(cluster?.id||'')||!Array.isArray(cluster.events)||
@@ -452,6 +479,8 @@ export class ReviewStore {
         review_only_claims:Array.isArray(decision?.review_only_claims)?
           decision.review_only_claims.slice(0,3):[],
         reevaluate_requested:false,
+        ...(pendingSibling?{reconsideration:{...pendingSibling,
+          status:'pending',attempts:0,limit:2}}:{}),
         revision:1,created_at:now,updated_at:now,
         remote_episode_uuid:null,origin,
         audit:[{at:now,action:origin,outcome:state}]};
@@ -477,8 +506,20 @@ export class ReviewStore {
         ...f,utility_class:decision.fact_utilities?.[i]
       }))
     },cluster);
-    if(!verified.ok||verified.decision!=='EMIT'||verified.facts.length<2||
+    const pending=Array.isArray(decision.recoverable_siblings)?
+      decision.recoverable_siblings:[];
+    if(!verified.ok||verified.decision!=='EMIT'||verified.facts.length<1||
        verified.facts.length>3||
+       (verified.facts.length<2&&pending.length===0)||
+       pending.length+verified.facts.length>3||
+       pending.some(p=>!Number.isInteger(p?.index)||p.index<0||p.index>2||
+         typeof p.source_ref!=='string'||
+         !['invalid_utility_metadata','invalid_established_class',
+           'incomplete_source_token_boundary','invalid_exact_source_quote']
+           .includes(p.reason)||
+         !cluster.events?.some(e=>e.source_refs?.[0]===p.source_ref&&
+           e.source_strength==='native-id'))||
+       new Set(pending.map(p=>p.index)).size!==pending.length||
        !Array.isArray(decision.fact_utilities)||
        decision.fact_utilities.length!==verified.facts.length||
        decision.fact_utilities.some(x=>!PERSISTABLE_UTILITY.has(x))||
@@ -502,15 +543,21 @@ export class ReviewStore {
       const childIds=verified.facts.map((f,i)=>digest(
         'issue92-fact-v2\n'+id+'\n'+i+'\n'+f.assertion+'\n'+f.source_refs.join(',')));
       if(new Set(childIds).size!==childIds.length)throw Error('DUPLICATE_FACT_BUNDLE_CHILD');
+      const pendingIds=pending.map(p=>digest('issue107-format-sibling-v1\n'+
+        id+'\n'+p.index+'\n'+p.source_ref));
+      if(new Set([...childIds,...pendingIds]).size!==childIds.length+pendingIds.length)
+        throw Error('DUPLICATE_FACT_BUNDLE_CHILD');
       await atomic(this.bundlePath(id),{
-        schema:'issue92-bounded-fact-bundle-v1',parent_id:id,
-        child_ids:childIds,cluster,decision:{
+        schema:pending.length?'issue107-format-sibling-bundle-v1':
+          'issue92-bounded-fact-bundle-v1',parent_id:id,
+        child_ids:childIds,pending_ids:pendingIds,cluster,decision:{
           decision:'EMIT',reason:verified.reason,utility_class:decision.utility_class,
           facts:verified.facts,fact_utilities:decision.fact_utilities,
           fact_retentions:decision.fact_retentions,
           fact_utility_reasons:decision.fact_utility_reasons,
           fact_source_spans:decision.fact_source_spans,
           blocked_candidates:decision.blocked_candidates||[],
+          recoverable_siblings:pending,
           review_only_claims:decision.review_only_claims||[]
         },created_at:new Date().toISOString()
       });
@@ -521,9 +568,16 @@ export class ReviewStore {
     let b;
     try{b=JSON.parse(await fs.readFile(this.bundlePath(id),'utf8'));}
     catch(e){if(e.code==='ENOENT')return null;throw e;}
-    if(b?.schema!=='issue92-bounded-fact-bundle-v1'||b.parent_id!==id||
-      !Array.isArray(b.child_ids)||b.child_ids.length<2||b.child_ids.length>3||
-      b.child_ids.length!==b.decision?.facts?.length)
+    const modern=b?.schema==='issue107-format-sibling-bundle-v1';
+    if(!modern&&b?.schema!=='issue92-bounded-fact-bundle-v1')
+      throw Error('CORRUPT_FACT_BUNDLE');
+    const pending=modern?b.decision?.recoverable_siblings:[];
+    if(b.parent_id!==id||!Array.isArray(b.child_ids)||
+      b.child_ids.length<(modern?1:2)||b.child_ids.length>3||
+      b.child_ids.length!==b.decision?.facts?.length||
+      (modern&&(!Array.isArray(pending)||!pending.length||
+        !Array.isArray(b.pending_ids)||b.pending_ids.length!==pending.length||
+        b.child_ids.length+pending.length>3)))
       throw Error('CORRUPT_FACT_BUNDLE');
     const checked=validateDecision(b.decision,b.cluster);
     if(!checked.ok||checked.decision!=='EMIT')throw Error('INVALID_FACT_BUNDLE');
@@ -544,6 +598,22 @@ export class ReviewStore {
          review_only_claims:(b.decision.review_only_claims||[]).filter(x=>x.index===i)});
       records.push(r.record);
     }
+    if(modern)for(let i=0;i<pending.length;i++){
+      const p=pending[i],child=b.pending_ids[i];
+      if(!Number.isInteger(p?.index)||p.index<0||p.index>2||
+        !b.cluster.events?.some(e=>e.source_refs?.[0]===p.source_ref&&
+          e.source_strength==='native-id')||
+        !['invalid_utility_metadata','invalid_established_class',
+          'incomplete_source_token_boundary','invalid_exact_source_quote']
+          .includes(p.reason)||
+        child!==digest('issue107-format-sibling-v1\n'+id+'\n'+
+          p.index+'\n'+p.source_ref))throw Error('INVALID_BUNDLE_SIBLING');
+      const r=await this.create({...b.cluster,id:child,origin_cluster_id:id},
+        {decision:'DEFER',reason:'technical_format_sibling_pending',facts:[]},
+        {pendingSibling:{parent_id:id,index:p.index,source_ref:p.source_ref,
+          reason:p.reason}});
+      records.push(r.record);
+    }
     return {created:true,records};
   }
   async restoreBundles(){
@@ -553,6 +623,158 @@ export class ReviewStore {
     catch(e){if(e.code==='ENOENT')return 0;throw e;}
     for(const n of names)await this.restoreBundle(n.slice(0,-5));
     return names.length;
+  }
+  /** Consume one bounded model-only attempt before calling the model.
+   * A crash can resume at most once under a later genuine EX lease, but never
+   * creates a Graphiti write intent or replays a previously valid sibling.
+   */
+  async reserveSiblingRetry(id,expectedRevision){
+    if(process.env.GHDEV_MEMORY_POST_EXIT_LEASE!=='admitted')
+      throw Error('EX_POST_EXIT_ADMISSION_REQUIRED');
+    if(!HEX.test(id||'')||!Number.isInteger(expectedRevision)||expectedRevision<1)
+      throw Error('INVALID_SIBLING_RETRY_REQUEST');
+    return this._mutex(id,async()=>{
+      const old=await this.get(id),r=old?.reconsideration;
+      if(!old||old.revision!==expectedRevision||old.state!=='deferred'||
+         !r||!['pending','running'].includes(r.status)||r.attempts>=r.limit||
+         !HEX.test(r.parent_id||'')||r.parent_id!==old.origin_cluster_id)
+        return null;
+      const now=new Date().toISOString();
+      const next={...old,revision:old.revision+1,updated_at:now,
+        reconsideration:{...r,status:'running',attempts:r.attempts+1,
+          last_attempt_at:now},
+        audit:[...old.audit.slice(-59),{at:now,
+          action:'source_sibling_model_retry_reserved',outcome:'running'}]};
+      await atomic(this.filename(id),next);
+      return next;
+    });
+  }
+  /** An exclusive successor EX drain can settle a crashed final attempt.
+   * No model call or remote mutation is justified once the durable bound
+   * has already been consumed twice.
+   */
+  async expireInterruptedSibling(id,expectedRevision){
+    if(process.env.GHDEV_MEMORY_POST_EXIT_LEASE!=='admitted')
+      throw Error('EX_POST_EXIT_ADMISSION_REQUIRED');
+    if(!HEX.test(id||'')||!Number.isInteger(expectedRevision)||expectedRevision<1)
+      throw Error('INVALID_INTERRUPTED_SIBLING');
+    return this._mutex(id,async()=>{
+      const old=await this.get(id),r=old?.reconsideration;
+      if(!old||old.revision!==expectedRevision||old.state!=='deferred'||
+         r?.status!=='running'||r.attempts<r.limit)return false;
+      const now=new Date().toISOString();
+      await atomic(this.filename(id),{...old,revision:old.revision+1,
+        updated_at:now,reason:'sibling_retry_interrupted_at_limit',
+        reconsideration:{...r,status:'exhausted',last_result_at:now},
+        audit:[...old.audit.slice(-59),{at:now,
+          action:'source_sibling_model_retry_interrupted',outcome:'exhausted'}]});
+      return true;
+    });
+  }
+  /** Settle one strict source-validated sibling, or retain its deferred source
+   * with a bounded pending/exhausted disposition. No remote write occurs here.
+   */
+  async finishSiblingRetry(id,expectedRevision,proposal,{technicalFailure=false}={}){
+    if(process.env.GHDEV_MEMORY_POST_EXIT_LEASE!=='admitted')
+      throw Error('EX_POST_EXIT_ADMISSION_REQUIRED');
+    if(!HEX.test(id||'')||!Number.isInteger(expectedRevision)||expectedRevision<1||
+       typeof technicalFailure!=='boolean')throw Error('INVALID_SIBLING_RETRY_RESULT');
+    return this._mutex(id,async()=>{
+      const old=await this.get(id),r=old?.reconsideration;
+      if(!old||old.revision!==expectedRevision||old.state!=='deferred'||
+         !r||r.status!=='running')return {status:'stale'};
+      const valid=proposal?.ok===true&&proposal.decision==='EMIT'&&
+        proposal.facts?.length===1&&
+        proposal.facts[0].source_refs?.length===1&&
+        proposal.facts[0].source_refs[0]===r.source_ref;
+      let checked=null,retention=null;
+      if(valid){
+        checked=validateModelDecision({
+          decision:'EMIT',reason:proposal.reason,utility_class:proposal.utility_class,
+          facts:proposal.facts.map((f,i)=>({
+            ...f,utility_class:proposal.fact_utilities?.[i]}))
+        },old);
+        if(checked.ok&&checked.facts.length===1){
+          try{retention=validatedRetention(old,proposal,checked,0);}
+          catch{checked=null;}
+        }else checked=null;
+      }
+      if(checked&&retention){
+        // The original parent/child identities are immutable authority. A
+        // model retry cannot rediscover an already retained sibling.
+        let bundle;
+        try{bundle=JSON.parse(await fs.readFile(this.bundlePath(r.parent_id),'utf8'));}
+        catch{bundle=null;}
+        if(bundle?.schema!=='issue107-format-sibling-bundle-v1'||
+           !bundle.pending_ids?.includes(id))throw Error('SIBLING_PARENT_PLAN_UNAVAILABLE');
+        for(const child of [...bundle.child_ids,...bundle.pending_ids]){
+          if(child===id)continue;
+          const sibling=await this.get(child);
+          if(sibling?.facts?.some(f=>normalizedAssertion(f.assertion)===
+              normalizedAssertion(checked.facts[0].assertion))) {
+            checked=null;retention=null;break;
+          }
+        }
+      }
+      const now=new Date().toISOString();
+      const recovered=Boolean(checked&&retention);
+      const retryLater=!recovered&&technicalFailure&&r.attempts<r.limit;
+      const status=recovered?'recovered':retryLater?'pending':'exhausted';
+      const updated={...old,
+        state:recovered?'approved':'deferred',
+        decision:recovered?'EMIT':old.decision,
+        reason:recovered?checked.reason:
+          retryLater?'technical_sibling_retry_pending':'sibling_retry_exhausted',
+        ...(recovered?{facts:checked.facts,retention,
+          utility_class:proposal.fact_utilities?.[0]??null}:{}),
+        reconsideration:{...r,status,last_result_at:now},
+        revision:old.revision+1,updated_at:now,
+        audit:[...old.audit.slice(-59),{at:now,
+          action:'source_sibling_model_retry_result',outcome:status}]};
+      await atomic(this.filename(id),updated);
+      return {status,record:updated};
+    });
+  }
+  /** Preserve a second native source as a local evidence link, not a second episode. */
+  async deferCorroboration(id,expectedRevision,priorId){
+    if(!HEX.test(id||'')||!HEX.test(priorId||'')||id===priorId||
+       !Number.isSafeInteger(expectedRevision)||expectedRevision<1)
+      throw Error('INVALID_CORROBORATION_REQUEST');
+    return this._mutex(id,async()=>{
+      const current=await this.get(id),prior=await this.get(priorId);
+      if(!current||current.revision!==expectedRevision||
+         current.state!=='approved'||!prior||prior.state!=='persisted'||
+         prior.retention?.status==='logically_retired'||
+         prior.retention?.status==='superseded'||
+         !UUID.test(prior.remote_episode_uuid||'')||
+         current.facts?.length!==1||prior.facts?.length!==1||
+         current.group!==prior.group||current.project!==prior.project||
+         current.workspace!==prior.workspace||
+         normalizedAssertion(current.facts[0].assertion)!==
+           normalizedAssertion(prior.facts[0].assertion))return false;
+      const currentOrigin=nativeFactOrigin(current,current.facts[0]);
+      const priorOrigin=nativeFactOrigin(prior,prior.facts[0]);
+      if(!currentOrigin||!priorOrigin||currentOrigin===priorOrigin)return false;
+      let index;
+      try{index=JSON.parse(await fs.readFile(path.join(this.dir,
+        '_episode-index',prior.remote_episode_uuid+'.json'),'utf8'));}
+      catch(e){if(e.code==='ENOENT'||e instanceof SyntaxError)return false;throw e;}
+      if(index?.id!==prior.id||index.remote_episode_uuid!==prior.remote_episode_uuid)
+        return false;
+      const now=new Date().toISOString();
+      const updated={...current,state:'deferred',
+        reason:'LOCAL_DISTINCT_SOURCE_CORROBORATION',
+        corroboration:{relation:'same_normalized_reported_assertion',
+          prior_review_id:prior.id,prior_remote_episode_uuid:prior.remote_episode_uuid,
+          current_source_ref:current.facts[0].source_refs[0],
+          prior_source_ref:prior.facts[0].source_refs[0],
+          source_factually_verified:false,linked_at:now},
+        revision:current.revision+1,updated_at:now,
+        audit:[...current.audit.slice(-59),{at:now,
+          action:'link_distinct_source',outcome:'deferred',prior_review_id:prior.id}]};
+      await atomic(this.filename(id),updated);
+      return true;
+    });
   }
   /**
    * Only a genuinely EX-admitted curator may revise retention. This never

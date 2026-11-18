@@ -3,6 +3,11 @@ import test from 'node:test';
 import './curated-recall-candidates.test.mjs';
 import '../../issue-100/autonomous-policy.test.mjs';
 import '../../issue-100/consolidation.test.mjs';
+// #107 source-linked paired model comparison is pure; include regressions in trusted CI.
+import '../../issue-107/qualification.test.mjs';
+import '../../issue-107/corroboration.test.mjs';
+import '../../issue-107/sibling-reconsideration.test.mjs';
+import '../../issue-107/sibling-worker.test.mjs';
 import { spawnSync } from 'node:child_process';
 import assert from 'node:assert/strict';
 import { mkdtemp, rm } from 'node:fs/promises';
