@@ -193,6 +193,24 @@ export function validateDecision(raw,cluster) {
       diagnostic_field:match?match[1]:null,facts:[]};
   }
 }
+/** Map an excerpt-bounded quoted tool fragment back to the original tool-output
+ * UTF-16 offsets. Null means generated metadata, a cross-line synthesis,
+ * historical unsegmented evidence, or an invalid/unattested range.
+ */
+export function originalToolOutputSpan(source,start,end) {
+  if(source?.kind!=='tool_outcome'||!Array.isArray(source.source_fragments)||
+    !Number.isSafeInteger(start)||!Number.isSafeInteger(end)||start<0||end<=start)
+    return null;
+  for(const f of source.source_fragments){
+    if(!f||!Number.isSafeInteger(f.start)||!Number.isSafeInteger(f.end)||
+      !Number.isSafeInteger(f.original_start)||!Number.isSafeInteger(f.original_end)||
+      f.end-f.start!==f.original_end-f.original_start||start<f.start||end>f.end)
+      continue;
+    return {start:f.original_start+start-f.start,
+      end:f.original_start+end-f.start};
+  }
+  return null;
+}
 /** Bind only missing source metadata, never replace an incorrect model claim.
  * The strict validator still controls all authority, scope, source and privacy.
  * This adapter must NOT be used for operator edits, which require full fields.
@@ -222,7 +240,8 @@ export function validateModelDecision(raw,cluster) {
         p.source_ref!==f.source_refs[0]||
         !Number.isSafeInteger(p.start)||!Number.isSafeInteger(p.end)||
         p.start<0||p.end<=p.start||p.end>source.excerpt.length||
-        p.end-p.start<25||p.end-p.start>450)
+        p.end-p.start<25||p.end-p.start>450||
+        (source.kind==='tool_outcome'&&!originalToolOutputSpan(source,p.start,p.end)))
         return {...f,assertion:null};
       // Boundary whitespace is not part of the stored assertion. Preserve
       // exact contiguous source wording while respecting validText's existing
@@ -244,6 +263,10 @@ export function validateModelDecision(raw,cluster) {
           unsupportedClaim.push({index:i,source_ref:p.source_ref,
             suggested:f.normalized_claim,status:'review_only_unverified'});
       }
+    }else if(events.some(e=>e.kind==='tool_outcome')){
+      // A model assertion without an authenticated bounded evidence_span may
+      // quote synthesized command/line separators; it is not a tool fact.
+      return {...f,assertion:null};
     }
     return {...f,assertion,
       scope:f.scope===undefined?{
@@ -305,6 +328,11 @@ function validatedRetention(cluster,decision,checked,index){
     !Number.isSafeInteger(span.start)||!Number.isSafeInteger(span.end)||
     span.start<0||span.end<=span.start||!src||span.end>src.excerpt.length||
     src.excerpt.slice(span.start,span.end).trim()!==fact.assertion||
+    (src.kind==='tool_outcome'&&(()=>{
+      const actual=originalToolOutputSpan(src,span.start,span.end);
+      return !actual||span.original_start!==actual.start||
+        span.original_end!==actual.end;
+    })())||
     (status==='provisional_retention'&&utility!=='plausibly_useful')||
     (status==='established_retention'&&utility==='plausibly_useful'))
     throw Error('INVALID_RETENTION_SOURCE_OR_UTILITY');
@@ -402,7 +430,8 @@ export class ReviewStore {
         workspace:cluster.workspace,session_id:cluster.session_id,
         events:cluster.events.map(e=>({event_id:e.event_id,source_refs:e.source_refs,
           kind:e.kind,evidence_class:e.evidence_class,source_strength:e.source_strength,
-          excerpt:e.excerpt,observed_at:e.observed_at,related_event_ids:e.related_event_ids})),
+          excerpt:e.excerpt,observed_at:e.observed_at,related_event_ids:e.related_event_ids,
+          ...(e.source_fragments===undefined?{}:{source_fragments:e.source_fragments})})),
         source_event_ids:cluster.source_event_ids,
         origin_cluster_id:cluster.origin_cluster_id??cluster.id,
         state,decision:valid.decision,

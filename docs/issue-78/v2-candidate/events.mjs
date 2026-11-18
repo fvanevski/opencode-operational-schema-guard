@@ -96,6 +96,7 @@ function envelope(scope, data) {
     source_refs: [sourceRef], source_strength: data.weak ? 'session-scoped-fallback' : 'native-id',
     related_event_ids: [...new Set(related)], cluster_key: sha(group + '\n' + session).slice(0, 24),
     excerpt, state: 'new',
+    ...(data.sourceFragments === undefined ? {} : {source_fragments:data.sourceFragments}),
   });
 }
 // Long admitted user prompts have bounded, independent *contiguous* source
@@ -337,49 +338,70 @@ export function fromTool(event, scope, { lineSelection = 'coverage' } = {}) {
   const output = result?.output?.output ?? result?.output?.stdout ??
     (typeof result?.output === 'string' ? result.output : result?.stdout ?? '');
   if (typeof output !== 'string' || output.length > 16000 || containsPrivateValue(output) || SELF.test(output)) return null;
-  // Retain raw-output line numbers before filtering blank lines. The labels
-  // are source positions, not indices in the nonempty-line selection array.
-  const boundedLines=output.split(/\r?\n/)
-    .map((raw,i)=>({text:raw.trim(),lineNumber:i+1}))
-    .filter(x=>x.text);
-  // Historical first-three-marker selection is retained for an exact-input
-  // comparator. The candidate reserves head/middle/tail coverage, so a routine
-  // PASS marker cannot hide a useful unmarked technical result farther down.
+  // Preserve original UTF-16 offsets and raw line numbers before removing
+  // blank lines. Full original output is privacy-screened above, never stored.
+  let rawCursor=0;
+  const boundedLines=output.split(/\r?\n/).map((raw,i)=>{
+    const leading=raw.length-raw.trimStart().length;
+    const row={text:raw.trim(),lineNumber:i+1,original_start:rawCursor+leading};
+    rawCursor+=raw.length;
+    if(output.slice(rawCursor,rawCursor+2)==='\r\n')rawCursor+=2;
+    else if(output[rawCursor]==='\n')rawCursor++;
+    return row;
+  }).filter(x=>x.text);
   if (!['markers','coverage'].includes(lineSelection))
     throw Error('TOOL_LINE_SELECTION_MODE_INVALID');
   const matched=boundedLines.filter(x=>RESULT_INTEREST.test(x.text))
     .slice(0,3).map(x=>x.text);
   const legacy=matched.length?matched:boundedLines.slice(0,3).map(x=>x.text);
-  let evidence;
-  if (lineSelection==='markers' || boundedLines.length<=3) {
+  let evidence='',fragments;
+  if(lineSelection==='markers'){
+    // Byte-for-byte historical comparator. Never use this unsegmented output
+    // as automatic original-source evidence after the new validator is active.
     evidence=legacy.join(' ').slice(0,650);
   } else {
-    const firstFailure=boundedLines.findIndex(x=>RESULT_FAILURE.test(x.text));
-    const firstInterest=boundedLines.findIndex(x=>RESULT_INTEREST.test(x.text));
-    const head=firstFailure>=0?firstFailure:firstInterest>=0?firstInterest:0;
-    const tail=boundedLines.length-1;
-    const available=boundedLines.map((_,i)=>i).filter(i=>i!==head&&i!==tail);
-    const middle=available.sort((a,b)=>
-      Math.abs(a-(boundedLines.length-1)/2)-
-        Math.abs(b-(boundedLines.length-1)/2)||a-b)[0];
-    // Numbers mark disjoint source output lines, NOT a fabricated contiguous
-    // quote or reconstructed raw output offset. Whole-output privacy scan
-    // already occurred above, before any line or text was selected.
-    const indexes=[...new Set([head,middle,tail])].sort((a,b)=>a-b);
-    // Each displayed fragment ends at an authentic complete-token boundary;
-    // no second aggregate slice may bisect a token after line selection.
-    evidence=indexes.map(i=>{
+    let indexes;
+    if(boundedLines.length<=3){
+      indexes=boundedLines.map((_,i)=>i);
+    }else{
+      const firstFailure=boundedLines.findIndex(x=>RESULT_FAILURE.test(x.text));
+      const firstInterest=boundedLines.findIndex(x=>RESULT_INTEREST.test(x.text));
+      const head=firstFailure>=0?firstFailure:firstInterest>=0?firstInterest:0;
+      const tail=boundedLines.length-1;
+      const available=boundedLines.map((_,i)=>i).filter(i=>i!==head&&i!==tail);
+      const middle=available.sort((a,b)=>
+        Math.abs(a-(boundedLines.length-1)/2)-
+          Math.abs(b-(boundedLines.length-1)/2)||a-b)[0];
+      indexes=[...new Set([head,middle,tail])].sort((a,b)=>a-b);
+    }
+    const parts=[],relativeFragments=[];
+    for(const i of indexes){
       const row=boundedLines[i],prefix=boundedToolLinePrefix(row.text);
-      return prefix?'['+row.lineNumber+'] '+prefix:'';
-    }).filter(Boolean).join(' | ');
+      if(!prefix)continue;
+      const label='['+row.lineNumber+'] ';
+      const start=(parts.length?parts.join(' | ').length+3:0)+label.length;
+      relativeFragments.push({start,end:start+prefix.length,
+        original_start:row.original_start,
+        original_end:row.original_start+prefix.length,line_number:row.lineNumber});
+      parts.push(label+prefix);
+    }
+    // Labels, separators and command/status header are explanatory metadata,
+    // never quotable original output. Each fact must fit one source fragment.
+    evidence=parts.join(' | ');
+    fragments=relativeFragments;
   }
   if (!evidence && exit === undefined && event.status === 'completed') return null;
   const label = exit === undefined ? 'tool status ' + event.status :
     'tool exit ' + String(exit);
-  const excerpt = cleanExcerpt(label + '; command: ' + cmd + (evidence ? '; output: ' + evidence : ''), 1100);
+  const header=label+'; command: '+cmd+(evidence?'; output: ':'');
+  const excerpt = cleanExcerpt(header+evidence,1100);
   if (!excerpt) return null;
+  const sourceFragments=fragments?.map(f=>({
+    ...f,start:f.start+header.length,end:f.end+header.length
+  }));
   return envelope(scope, { kind: 'tool_outcome', evidenceClass: 'tool-reported',
     sourceType: 'tool', sourceID: callID, sessionID, excerpt,
+    ...(sourceFragments===undefined?{}:{sourceFragments}),
     time: event?.timestamp || event?.time, related: event?.related_event_ids });
 }
 export function fromFinishedTurn(event, scope) {

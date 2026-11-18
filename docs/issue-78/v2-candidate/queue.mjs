@@ -10,7 +10,9 @@ const STATES = ['new', 'reserved', 'deferred', 'skipped', 'approved', 'submissio
 // Immutable source fingerprint: exclude mutable state and updated_at only.
 export const sourceFingerprint = e => sha(JSON.stringify([
   e.event_id,e.group,e.project,e.workspace,e.session_id,e.kind,e.evidence_class,
-  e.source_strength,e.source_refs,e.excerpt,e.observed_at,e.related_event_ids,e.cluster_key
+  e.source_strength,e.source_refs,e.excerpt,e.observed_at,e.related_event_ids,e.cluster_key,
+  // Original legacy rows retain their exact fingerprint for archive integrity.
+  ...(e.source_fragments===undefined?[]:[e.source_fragments])
 ]));
 async function syncDir(dir) {
   const h=await fs.open(dir,'r');try {await h.sync();}finally {await h.close();}
@@ -200,6 +202,22 @@ export class CandidateQueue {
       assistant_turn: { cls: 'assistant-reported', types: ['message'] },
     }[event.kind];
     if (!allowed || event.evidence_class !== allowed.cls) return { status: 'invalid' };
+    // New tool evidence carries only bounded original-output offset attestations.
+    // Old already-staged rows remain readable but never gain invented offsets.
+    if(event.source_fragments!==undefined){
+      const spans=event.source_fragments;
+      if(event.kind!=='tool_outcome'||!Array.isArray(spans)||spans.length>3||
+        spans.some(f=>!f||!Number.isSafeInteger(f.start)||
+          !Number.isSafeInteger(f.end)||!Number.isSafeInteger(f.original_start)||
+          !Number.isSafeInteger(f.original_end)||!Number.isSafeInteger(f.line_number)||
+          f.start<0||f.end<=f.start||f.end>event.excerpt.length||
+          f.original_start<0||f.original_end<=f.original_start||
+          f.original_end>16000||f.end-f.start!==f.original_end-f.original_start||
+          f.line_number<1||f.line_number>16001)||
+        spans.some((f,i)=>i>0&&(f.start<=spans[i-1].end||
+          f.original_start<=spans[i-1].original_end||
+          f.line_number<=spans[i-1].line_number)))return {status:'invalid'};
+    }
     const source = event.source_refs[0];
     const prefix = 'opencode:' + event.session_id + ':';
     const parsed = allowed.types.map(type => ({ type, p: prefix + type + ':' }))
