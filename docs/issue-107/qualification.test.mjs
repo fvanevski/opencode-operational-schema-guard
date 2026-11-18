@@ -128,6 +128,16 @@ test('#107 reference cohort is frozen before model inference and excludes source
   foreign.opportunities[0].source_ref='opencode:foreign:message:fake';
   assert.throws(()=>freezeQualificationCases([foreign]),
     /B1_UNSUPPORTED_REFERENCE_GRADE/);
+  const invented=sourceCase('invented');
+  invented.cluster.events[0]={...invented.cluster.events[0],
+    event_id:'f'.repeat(64)};
+  assert.throws(()=>freezeQualificationCases([invented]),
+    /B1_CLUSTER_SOURCE_MEMBERSHIP_MISMATCH/);
+  const counterfeit=sourceCase('counterfeit');
+  counterfeit.cluster.events[0]={...counterfeit.cluster.events[0],
+    source_refs:['opencode:foreign:message:fake']};
+  assert.throws(()=>freezeQualificationCases([counterfeit]),
+    /B1_SOURCE_OCCURRENCE_MISMATCH/);
 });
 test('#107 host CLI never reads a private cohort without a genuine kernel EX lock',async()=>{
   await assert.rejects(()=>qualificationCli(['run','--cases','/tmp/not-a-cohort',

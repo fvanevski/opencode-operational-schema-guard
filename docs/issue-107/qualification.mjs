@@ -51,6 +51,14 @@ export function freezeQualificationCases(cases){
       !Array.isArray(cluster.source_event_ids)||
       cluster.source_event_ids.length!==cluster.events.length)
       throw Error('B1_INVALID_CLUSTER');
+    const sourceIDs=cluster.events.map(e=>e.event_id);
+    if(!/^[a-f0-9]{64}$/.test(cluster.id||'')||
+      cluster.id!==sha([...sourceIDs].sort().join('\n'))||
+      sourceIDs.some(x=>!(/^[a-f0-9]{64}$/).test(x))||
+      new Set(sourceIDs).size!==sourceIDs.length||
+      [...sourceIDs].sort().join('\n')!==
+        [...cluster.source_event_ids].sort().join('\n'))
+      throw Error('B1_CLUSTER_SOURCE_MEMBERSHIP_MISMATCH');
     const sources=new Map();
     for(const e of cluster.events){
       if(!e||e.group!==cluster.group||e.project!==cluster.project||
@@ -60,6 +68,21 @@ export function freezeQualificationCases(cases){
         typeof e.excerpt!=='string'||cleanExcerpt(e.excerpt)!==e.excerpt||
         typeof e.source_strength!=='string')
         throw Error('B1_UNAUTHENTICATED_COHORT_SOURCE');
+      // Match #106's admitted occurrence identity; metadata from arbitrary
+      // handwritten event JSON is not independent provenance authority.
+      const prefix='opencode:'+e.session_id+':';
+      const allowed={user_turn:['message','prompt'],assistant_turn:['message'],
+        tool_outcome:['tool'],file_change:['tool'],file_access:['tool']}[e.kind];
+      const match=allowed?.map(type=>({type,prefix:prefix+type+':'}))
+        .find(x=>e.source_refs[0].startsWith(x.prefix));
+      const sourceID=match&&e.source_refs[0].slice(match.prefix.length);
+      if(!sourceID||!/^[A-Za-z0-9_.:-]{1,160}$/.test(sourceID)||
+        e.source_strength!==(match.type==='prompt'?
+          'session-scoped-fallback':'native-id')||
+        e.event_id!==sha([1,e.group,e.project,e.workspace,e.session_id,
+          e.kind,sourceID].join('\n'))||
+        e.cluster_key!==sha(e.group+'\n'+e.session_id).slice(0,24))
+        throw Error('B1_SOURCE_OCCURRENCE_MISMATCH');
       sources.set(e.source_refs[0],e);
     }
     const grades=new Set();
@@ -107,7 +130,9 @@ function summarizeResponse(raw,variant,c) {
 }
 const emptyTotals=()=>({attempted_calls:0,completed_calls:0,model_errors:0,
   prompt_tokens:0,completion_tokens:0,usage_reported_calls:0,
-  model_ms:0,valid_decisions:0,technical_retries:0,
+  reasoning_tokens:0,reasoning_reported_calls:0,
+  model_ms:0,output_chars:0,length_limited_responses:0,
+  valid_decisions:0,technical_retries:0,
   accepted_facts:0,established:0,provisional:0,
   useful_reference_matched:0,useful_reference_total:0,
   missed_useful_reference:0,excluded_reference_retained:0,
@@ -125,6 +150,12 @@ function fold(t,r,referenceTotal){
     t.usage_reported_calls++;t.prompt_tokens+=r.usage.prompt_tokens;
     t.completion_tokens+=r.usage.completion_tokens;
   }
+  if(Number.isSafeInteger(r.usage?.reasoning_tokens)&&r.usage.reasoning_tokens>=0){
+    t.reasoning_reported_calls++;t.reasoning_tokens+=r.usage.reasoning_tokens;
+  }
+  if(Number.isSafeInteger(r.output_chars)&&r.output_chars>=0)
+    t.output_chars+=r.output_chars;
+  if(['length','max_tokens'].includes(r.finish_reason))t.length_limited_responses++;
   if(Number.isFinite(r.duration_ms)&&r.duration_ms>=0)t.model_ms+=r.duration_ms;
   const s=r.score;
   if(s.valid)t.valid_decisions++;
@@ -175,8 +206,9 @@ export async function runPairedQualification(cases,{curate,modelArgs={}}={}){
           throw Error('B1_INVALID_MODEL_REPLY');
       }catch{model_error=true;}
       const score=model_error?null:summarizeResponse(reply.content,v,c);
-      const observation={model_error,
-        usage:reply?.usage??null,duration_ms:reply?.duration_ms??null,score};
+      const observation={model_error,usage:reply?.usage??null,
+        duration_ms:reply?.duration_ms??null,output_chars:reply?.output_chars??null,
+        finish_reason:reply?.finish_reason??null,score};
       fold(totals[v],observation,c.opportunities.filter(x=>x.grade==='useful').length);
       out[v]=model_error?{model_error:true}:{
         ...score,model_error:false,
@@ -184,6 +216,11 @@ export async function runPairedQualification(cases,{curate,modelArgs={}}={}){
           reply.usage.prompt_tokens:null,
         completion_tokens:Number.isSafeInteger(reply?.usage?.completion_tokens)?
           reply.usage.completion_tokens:null,
+        reasoning_tokens:Number.isSafeInteger(reply?.usage?.reasoning_tokens)?
+          reply.usage.reasoning_tokens:null,
+        output_chars:Number.isSafeInteger(reply?.output_chars)?reply.output_chars:null,
+        finish_reason:['length','max_tokens'].includes(reply?.finish_reason)?
+          'length_limited':null,
         duration_ms:Number.isFinite(reply?.duration_ms)?reply.duration_ms:null};
     }
     items.push(out);
