@@ -39,21 +39,26 @@ export function selectClusters(items, {maxEvents=8,maxClusters=8,
     // Native messages are independent evidence opportunities. An unrelated
     // same-session message must not occupy its sibling's three-fact budget.
     const ref=e.source_refs?.[0];
+    const sourcePrefix='opencode:'+e.session_id+':';
     if(sourceMessageIsolation&&
        (e.source_refs?.length!==1||typeof ref!=='string'||
-        !ref.startsWith('opencode:'+e.session_id+':')))
+        !ref.startsWith(sourcePrefix)))
       throw Error('source isolation requires one authenticated source handle');
+    // A session ID may itself contain colons. Parse the type only AFTER the
+    // verified full session prefix; a single-component session regex is wrong.
+    const sourceSuffix=sourceMessageIsolation?ref.slice(sourcePrefix.length):'';
     if(sourceMessageIsolation&&
-       ((e.source_strength==='native-id'&&!/^opencode:[^:]+:(?:message|tool):/.test(ref))||
-        (e.source_strength==='session-scoped-fallback'&&!ref.startsWith(
-          'opencode:'+e.session_id+':prompt:'))||
+       ((e.source_strength==='native-id'&&
+         !/^(?:message|tool):/.test(sourceSuffix))||
+        (e.source_strength==='session-scoped-fallback'&&
+         !sourceSuffix.startsWith('prompt:'))||
         !['native-id','session-scoped-fallback'].includes(e.source_strength)))
       throw Error('source isolation strength/handle mismatch');
     // A long native USER message may have several independently attributable
     // :span:<offset> handles; they share one source-origin fact budget. Do not
     // accidentally strip an ordinary tool call ID with the same suffix.
     const origin=!sourceMessageIsolation?null:e.source_strength==='native-id'?
-      (e.kind==='user_turn'&&ref.includes(':message:')?
+      (e.kind==='user_turn'&&sourceSuffix.startsWith('message:')?
         ref.replace(/:span:\d+$/,''):ref):
       'fallback-event:'+e.event_id;
     const key=[e.group,e.project,e.workspace,e.session_id,

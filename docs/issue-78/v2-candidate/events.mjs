@@ -18,6 +18,17 @@ const RESULT_INTEREST = /\b(?:pass(?:ed)?|fail(?:ed|ure)?|error|exception|traceb
 // Preserve an explicit failure diagnostic over an earlier generic PASS marker.
 // This affects source presentation priority, never admission or privacy checks.
 const RESULT_FAILURE = /\b(?:fail(?:ed|ure)?|error|exception|traceback|timeout|denied|fatal|panic)\b/i;
+// A selected output prefix must not turn a mid-token truncation into an
+// apparently complete source quote once disjoint lines are labeled and joined.
+const TOOL_TOKEN_CHAR = c => typeof c === 'string' && /[\p{L}\p{N}_./-]/u.test(c);
+function boundedToolLinePrefix(text, maxChars = 180) {
+  if (text.length <= maxChars) return text;
+  let end = maxChars;
+  while (end > 0 && TOOL_TOKEN_CHAR(text[end - 1]) && TOOL_TOKEN_CHAR(text[end])) end--;
+  // An indivisible overlong token cannot be represented within the budget
+  // without inventing a token boundary. Omit that selected line instead.
+  return text.slice(0, end).trimEnd();
+}
 // This is a ranking hint, not an admission/security predicate. The uniform
 // control remains available for a paired source-exact comparison.
 const SOURCE_SIGNAL = /\b(?:root cause|decision|decided|must not|must always|requires|requirement|regression|failed because|rollback|breaking change)\b/gi;
@@ -322,20 +333,25 @@ export function fromTool(event, scope, { lineSelection = 'coverage' } = {}) {
   const output = result?.output?.output ?? result?.output?.stdout ??
     (typeof result?.output === 'string' ? result.output : result?.stdout ?? '');
   if (typeof output !== 'string' || output.length > 16000 || containsPrivateValue(output) || SELF.test(output)) return null;
-  const boundedLines=output.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+  // Retain raw-output line numbers before filtering blank lines. The labels
+  // are source positions, not indices in the nonempty-line selection array.
+  const boundedLines=output.split(/\r?\n/)
+    .map((raw,i)=>({text:raw.trim(),lineNumber:i+1}))
+    .filter(x=>x.text);
   // Historical first-three-marker selection is retained for an exact-input
   // comparator. The candidate reserves head/middle/tail coverage, so a routine
   // PASS marker cannot hide a useful unmarked technical result farther down.
   if (!['markers','coverage'].includes(lineSelection))
     throw Error('TOOL_LINE_SELECTION_MODE_INVALID');
-  const matched=boundedLines.filter(x=>RESULT_INTEREST.test(x)).slice(0,3);
-  const legacy=matched.length?matched:boundedLines.slice(0,3);
+  const matched=boundedLines.filter(x=>RESULT_INTEREST.test(x.text))
+    .slice(0,3).map(x=>x.text);
+  const legacy=matched.length?matched:boundedLines.slice(0,3).map(x=>x.text);
   let evidence;
   if (lineSelection==='markers' || boundedLines.length<=3) {
     evidence=legacy.join(' ').slice(0,650);
   } else {
-    const firstFailure=boundedLines.findIndex(x=>RESULT_FAILURE.test(x));
-    const firstInterest=boundedLines.findIndex(x=>RESULT_INTEREST.test(x));
+    const firstFailure=boundedLines.findIndex(x=>RESULT_FAILURE.test(x.text));
+    const firstInterest=boundedLines.findIndex(x=>RESULT_INTEREST.test(x.text));
     const head=firstFailure>=0?firstFailure:firstInterest>=0?firstInterest:0;
     const tail=boundedLines.length-1;
     const available=boundedLines.map((_,i)=>i).filter(i=>i!==head&&i!==tail);
@@ -346,8 +362,12 @@ export function fromTool(event, scope, { lineSelection = 'coverage' } = {}) {
     // quote or reconstructed raw output offset. Whole-output privacy scan
     // already occurred above, before any line or text was selected.
     const indexes=[...new Set([head,middle,tail])].sort((a,b)=>a-b);
-    evidence=indexes.map(i=>'['+(i+1)+'] '+boundedLines[i].slice(0,180))
-      .join(' | ').slice(0,650);
+    // Each displayed fragment ends at an authentic complete-token boundary;
+    // no second aggregate slice may bisect a token after line selection.
+    evidence=indexes.map(i=>{
+      const row=boundedLines[i],prefix=boundedToolLinePrefix(row.text);
+      return prefix?'['+row.lineNumber+'] '+prefix:'';
+    }).filter(Boolean).join(' | ');
   }
   if (!evidence && exit === undefined && event.status === 'completed') return null;
   const label = exit === undefined ? 'tool status ' + event.status :

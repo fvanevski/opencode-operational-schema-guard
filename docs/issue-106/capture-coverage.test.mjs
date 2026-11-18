@@ -66,6 +66,50 @@ test('#106 tool coverage retains an actionable failure behind a routine PASS mar
   assert.deepEqual(covered.source_refs,legacy.source_refs);
   assert.equal(covered.source_strength,'native-id');
 });
+test('#106 source line labels preserve original positions across blank lines',()=>{
+  const output='\nPASS smoke\n\nsecond\nthird\nfourth\n\nfifth';
+  const event={sessionID:'ses_line',callID:'call_line',tool:'shell',status:'completed',
+    input:{command:'node verify-lines.mjs'},result:{output:{exit:0,output}}};
+  const covered=fromTool(event,SCOPE,{lineSelection:'coverage'});
+  assert.ok(covered?.excerpt.includes('[2] PASS smoke | [5] third | [8] fifth'));
+  assert.ok(!covered.excerpt.includes('[1] PASS smoke'));
+});
+test('#106 tool line clipping preserves complete source tokens',()=>{
+  // At position 180 the original source is inside the word 'retrying'.
+  const line='PASS '+'x'.repeat(171)+' retrying continues after the line budget';
+  const output=[line,'ordinary row 2','middle source detail 3','row 4','tail source detail 5'].join('\n');
+  const event={sessionID:'ses_clip',callID:'call_clip',tool:'shell',status:'completed',
+    input:{command:'node verify-clipping.mjs'},result:{output:{exit:0,output}}};
+  const covered=fromTool(event,SCOPE,{lineSelection:'coverage'});
+  assert.ok(covered);
+  assert.ok(covered.excerpt.includes('[1] PASS '+'x'.repeat(171)+' | [3]'));
+  assert.ok(!covered.excerpt.includes('ret |'),
+    'the text must never present a clipped word as a complete quoted token');
+  assert.ok(covered.excerpt.includes('[5] tail source detail 5'));
+  const unbroken='x'.repeat(220);
+  const withoutBoundary=fromTool({...event,callID:'call_unbroken',
+    result:{output:{exit:0,output:[unbroken,'row 2','middle source detail 3','row 4','tail source detail 5'].join('\n')}}},
+    SCOPE,{lineSelection:'coverage'});
+  assert.ok(withoutBoundary?.excerpt.includes('[3] middle source detail 3'));
+  assert.ok(!withoutBoundary.excerpt.includes('[1] x'),
+    'indivisible overlong tokens must not be represented by a fabricated prefix');
+});
+test('#106 source-oriented isolation accepts colon-bearing authenticated session IDs',()=>{
+  const sessionID='ses:valid';
+  const native=fromPromptCandidates({sessionID,messageID:'native_msg',
+    prompt:{text:'The public compatibility contract requires source-origin isolation.'}},
+    SCOPE,{admitted:true});
+  const tool=fromTool({sessionID,callID:'native_call',tool:'shell',status:'completed',
+    input:{command:'node verify-source.mjs'},result:{output:{exit:0,output:'PASS source qualification'}}},SCOPE);
+  assert.equal(native.length,1);
+  assert.ok(tool);
+  const clusters=selectClusters([...native,tool],{sourceMessageIsolation:true});
+  assert.equal(clusters.length,2);
+  assert.ok(clusters.flatMap(x=>x.events).every(x=>x.session_id===sessionID));
+  assert.throws(()=>selectClusters([{...native[0],
+    source_refs:['opencode:ses:valid:prompt:forged_native_source']}],
+    {sourceMessageIsolation:true}),/source isolation strength\/handle mismatch/);
+});
 test('#106 weak fallback is isolated without becoming a native authenticated message',()=>{
   const text='The source author requires a bounded parser validation contract.';
   const fallback=fromPromptCandidates({sessionID:'ses_c',prompt:{text}},SCOPE,{admitted:true});
