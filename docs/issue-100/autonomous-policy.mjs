@@ -147,6 +147,20 @@ export function validateAutonomousDecision(raw,cluster){
       ...(mapped?{original_start:mapped.start,original_end:mapped.end}:{})});
     review_only_claims.push(...(checked.review_only_claims||[]).map(x=>({...x,index:i})));
   }
+  // Preserve only independently authenticated source handles and format-only
+  // failure classes for bounded later sibling reconsideration. Never persist
+  // the rejected model quote/metadata, a forged source, or unsafe rationale.
+  const recoverableReasons=new Set(['invalid_utility_metadata',
+    'invalid_established_class','incomplete_source_token_boundary',
+    'invalid_exact_source_quote']);
+  const recoverable_siblings=blocked_candidates.filter(b=>
+    recoverableReasons.has(b.reason)).map(b=>{
+      const refs=v.facts[b.index]?.source_refs;
+      if(!Array.isArray(refs)||refs.length!==1)return null;
+      const source=cluster.events.find(e=>e?.source_refs?.[0]===refs[0]);
+      if(!source||source.source_strength!=='native-id')return null;
+      return {index:b.index,source_ref:refs[0],reason:b.reason};
+    }).filter(Boolean);
   if(!facts.length){
     if(blocked_candidates.length){
       const quoteErrors=new Set(['invalid_exact_source_quote',
@@ -169,5 +183,5 @@ export function validateAutonomousDecision(raw,cluster){
     utility_class:fact_utilities[0],fact_utilities,fact_retentions,
     fact_utility_reasons,fact_source_spans,
     review_only_claims:review_only_claims.slice(0,3),
-    blocked_candidates,skipped_candidates};
+    blocked_candidates,skipped_candidates,recoverable_siblings};
 }
