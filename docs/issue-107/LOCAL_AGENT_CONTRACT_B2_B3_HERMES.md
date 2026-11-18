@@ -46,9 +46,33 @@ If an actual production defect is found, provide a bounded original-source repro
 
 ## C. Real EX test: prepare once, run only when admitted
 
+## C.0. Final operator-run corrections (source-verified)
+
+The first host evidence archive reported a blocked EX probe. It does **not** prove that the fixture events were staged, that the remote group is empty, or that the described Python command is executable. Before entering a maintenance window:
+
+1. **Choose a fresh, purpose-named fixture** accepted by `parseFixtureGroup`, e.g. `graphiti-opencode-qualification-r02` only if not previously used. Inspect both (a) the target's empty local state and (b) actual group-scoped, read-only `GraphitiMcp.call('get_episodes',{group_ids:[GROUP],max_episodes:100})` response. The absence of local files is not proof of a remote-empty group. If remote lookup is unavailable or not an authoritative complete empty response, do **not** perform a remote write.
+2. **Use a private directory as the *root***: e.g. `STATE_ROOT=/opt/filip/.hermes/cache/scratch/issue107-b2b3-live/state` mode `0700`. Both `CandidateQueue(STATE_ROOT,GROUP)` and `ReviewStore(STATE_ROOT,GROUP)` construct their own `candidate-events-v1/<group>` and `curation-v1/<group>` directories. Do **not** supply an already nested `.../curation-v1/<group>` as `--state-dir` unless that unconventional extra nesting was intentional and independently audited.
+3. **Seed actual safe synthetic source events in the disposable queue before the first EX drain.** Invoke the exact-head `fromPromptCandidates({sessionID,messageID,prompt:{text},timestamp}, {group,project,workspace}, {admitted:true})` and `new CandidateQueue(STATE_ROOT,GROUP).stage(event)`, with benign original test statements, unique correctly shaped native IDs and consistent time/scope. Read back `queue.status().counts.new>=1`, exact event IDs and source refs. No model/Graphiti call at fixture-preparation time. An empty queue cannot satisfy model/Graphiti acceptance even if the drain exits zero.
+4. **Authenticate the actual Python wrapper.** The exact repository source `docs/issue-75/v2-candidate/post-exit-drain.py` uses `argparse.add_argument('--autonomous-curation',action='store_true')` and `autonomous_curation_args` supplies `['--autonomous-curation','on']` to the Node curator in both initial and resumed drains. Thus **Python takes bare `--autonomous-curation`**; **Node takes `--autonomous-curation on`**. The historical installed Python wrapper may differ. If its inspected source/help lacks this option, prefer the exact-head repository Python wrapper with the same authenticated installed gate/config/child CLI, after comparing its safety and recovery contract; do not mutate the installed production copy or append `on` to the Python command.
+5. Use the canonical wrapper under a genuine EX window, with current auth-bound model env, and verify its actual direct-child `node curator-cli.mjs drain ... --autonomous-curation on` argv. The command template is:
+
+```bash
+python3 "$PY_WRAPPER" \
+  --gate-source "$GATE_SOURCE" --gate-config "$GATE_CONFIG" \
+  --cli "$CANDIDATE_CLI" --group "$GROUP" --state-dir "$STATE_ROOT" \
+  --endpoint "$GRAPHITI_MCP_ENDPOINT" --max-seconds 300 \
+  --lock-timeout 120 --autonomous-curation
+```
+
+The wrapper's real EX check, kernel flock, excluded-harness observation, scheduler-idle check and quiet grace remain authoritative. Do not invoke the drain with a manually forged lease marker. A live success requires model calls, *one-fact-per-episode*, and positive remote `get_episodes` UUID + local episode-index readbacks, not a zero-work exit.
+
+6. **Optional bounded second cycle for B3:** only after the first group's original fact has a positive exact-group/name/UUID and local index, stage a second authenticated native-shaped message with a *distinct* message origin repeating the same original assertion, then execute at most one additional canonical EX drain in the same otherwise-authorized maintenance window. If model selection differs, record the observed result; do not force/copy a model output or create a duplicate remote episode merely to meet a test. The deterministic mock B3 tests remain the source-behavior authority when the real model does not reproduce a same-text pair.
+
+Use the exact same disposable state root/group for both cycles; verify there was no production source/config/Graphiti mutation and that services were restored. Do not start a fresh discovery-only handoff, another PR, or an unsolicited campaign to fix ordinary SHARED-lease behavior.
+
 Prepare ONE disposable, isolated, freshly named source group accepted by the installed fixture-group contract. Avoid `development-knowledge`, `ghdev_gh_mcp` and any existing persisted/reused test group. Verify root/group remote and local initial emptiness before writes and preserve identities afterward. Use source-authenticated safe synthetic evidence; explicitly label it `synthetic_native_shaped`, not a real user session.
 
-Re-use the installed canonical Python wrapper, real lock, accepted `ex_admitted_node_bridge.py`, candidate `curator-cli.mjs`, and current private `curator.env` provider bindings. Verify CLI option shapes from the actual current code: Python wrapper `--autonomous-curation` versus Node CLI `--autonomous-curation on` are not interchangeable. Do not call `runAdmitted` directly outside inherited EX admission.
+Re-use the authenticated canonical Python EX wrapper (or the reviewed exact-head repository wrapper when the installed Python copy lacks the required autonomous flag), real lock, candidate `curator-cli.mjs`, and current private `curator.env` provider bindings. The Python EX wrapper passes the same inherited locked FD to the Node child; the separate `ex_admitted_node_bridge.py` is for the earlier B1 model-only qualification route, not a replacement for the Python drain. Verify supported parser shapes as in C.0, and do not call `runAdmitted` directly outside inherited EX admission.
 
 Qualify a bounded model/Graphiti positive path with normal one-pass baseline:
 - Current local `chat-fast` / actual authenticated alias, with source scope and untrusted source text strictly bound.
