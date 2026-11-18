@@ -25,6 +25,21 @@ const validDate = s => typeof s === 'string' && Number.isFinite(Date.parse(s));
 const validText = (s,max,min=1) => typeof s==='string' && s.length>=min &&
   s.length<=max && s===s.trim() && cleanExcerpt(s,max)===s;
 export const normalizedAssertion = s => String(s).toLowerCase().replace(/\s+/g,' ').trim().replace(/[.!]+$/,'');
+/** Native occurrence identity, not independently verified factual evidence. */
+export function nativeFactOrigin(record,fact){
+  if(!Array.isArray(fact?.source_refs)||fact.source_refs.length!==1)return null;
+  const ref=fact.source_refs[0],prefix='opencode:'+record?.session_id+':';
+  const source=record?.events?.find(e=>e?.source_refs?.length===1&&
+    e.source_refs[0]===ref&&e.source_strength==='native-id');
+  if(!source||typeof ref!=='string'||!ref.startsWith(prefix))return null;
+  if(source.kind==='user_turn'&&ref.startsWith(prefix+'message:'))
+    return ref.replace(/:span:\d+$/,'');
+  if(source.kind==='assistant_turn'&&ref.startsWith(prefix+'message:'))
+    return ref;
+  if(source.kind==='tool_outcome'&&ref.startsWith(prefix+'tool:'))
+    return ref;
+  return null;
+}
 // This filter is a conservative source-text plausibility check, not semantic
 // verification; the evidence class remains exactly what the source proves.
 const tokens = s => new Set((String(s).toLowerCase().match(/[a-z0-9_./:-]{4,}/g)||[])
@@ -553,6 +568,47 @@ export class ReviewStore {
     catch(e){if(e.code==='ENOENT')return 0;throw e;}
     for(const n of names)await this.restoreBundle(n.slice(0,-5));
     return names.length;
+  }
+  /** Preserve a second native source as a local evidence link, not a second episode. */
+  async deferCorroboration(id,expectedRevision,priorId){
+    if(!HEX.test(id||'')||!HEX.test(priorId||'')||id===priorId||
+       !Number.isSafeInteger(expectedRevision)||expectedRevision<1)
+      throw Error('INVALID_CORROBORATION_REQUEST');
+    return this._mutex(id,async()=>{
+      const current=await this.get(id),prior=await this.get(priorId);
+      if(!current||current.revision!==expectedRevision||
+         current.state!=='approved'||!prior||prior.state!=='persisted'||
+         prior.retention?.status==='logically_retired'||
+         prior.retention?.status==='superseded'||
+         !UUID.test(prior.remote_episode_uuid||'')||
+         current.facts?.length!==1||prior.facts?.length!==1||
+         current.group!==prior.group||current.project!==prior.project||
+         current.workspace!==prior.workspace||
+         normalizedAssertion(current.facts[0].assertion)!==
+           normalizedAssertion(prior.facts[0].assertion))return false;
+      const currentOrigin=nativeFactOrigin(current,current.facts[0]);
+      const priorOrigin=nativeFactOrigin(prior,prior.facts[0]);
+      if(!currentOrigin||!priorOrigin||currentOrigin===priorOrigin)return false;
+      let index;
+      try{index=JSON.parse(await fs.readFile(path.join(this.dir,
+        '_episode-index',prior.remote_episode_uuid+'.json'),'utf8'));}
+      catch(e){if(e.code==='ENOENT')return false;throw e;}
+      if(index?.id!==prior.id||index.remote_episode_uuid!==prior.remote_episode_uuid)
+        return false;
+      const now=new Date().toISOString();
+      const updated={...current,state:'deferred',
+        reason:'LOCAL_DISTINCT_SOURCE_CORROBORATION',
+        corroboration:{relation:'same_normalized_reported_assertion',
+          prior_review_id:prior.id,prior_remote_episode_uuid:prior.remote_episode_uuid,
+          current_source_ref:current.facts[0].source_refs[0],
+          prior_source_ref:prior.facts[0].source_refs[0],
+          source_factually_verified:false,linked_at:now},
+        revision:current.revision+1,updated_at:now,
+        audit:[...current.audit.slice(-59),{at:now,
+          action:'link_distinct_source',outcome:'deferred',prior_review_id:prior.id}]};
+      await atomic(this.filename(id),updated);
+      return true;
+    });
   }
   /**
    * Only a genuinely EX-admitted curator may revise retention. This never

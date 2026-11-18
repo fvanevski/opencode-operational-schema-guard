@@ -2,7 +2,7 @@
 import { CandidateQueue } from '../v2-candidate/queue.mjs';
 import { archiveOwnedSources } from '../../issue-99/archive-owned.mjs';
 import { GraphitiMcp, EXTRACTION_INSTRUCTIONS } from '../../issue-75/v2-candidate/memory-core.mjs';
-import { ReviewStore, selectClusters, validateDecision, validateModelDecision, normalizedAssertion } from './core.mjs';
+import { ReviewStore, selectClusters, validateDecision, validateModelDecision, normalizedAssertion, nativeFactOrigin } from './core.mjs';
 import { curateCluster } from './model.mjs';
 import {autonomousPrompt,validateAutonomousDecision} from '../../issue-100/autonomous-policy.mjs';
 import {selectConsolidationPairs,consolidationPrompt,validateConsolidationDecision} from '../../issue-100/consolidation.mjs';
@@ -65,11 +65,28 @@ async function duplicateState(record,store,graphiti) {
   // Cheap local semantic identity and confirmed remote factual equality.
   const listed=await allRecords(store);
   const ours=new Set(record.facts.map(f=>normalizedAssertion(f.assertion)));
+  let distinctCorroboration=null;
   for(const other of listed){
     if(other.id===record.id||!['persisted','queued','submission_unknown','failed_extraction','retry_authorized'].includes(other.state))continue;
-    for(const f of other.facts||[])if(ours.has(normalizedAssertion(f.assertion)))
-      return other.state==='failed_extraction'?'LOCAL_PRIOR_FAILED_EXTRACTION_NO_REPLAY':'LOCAL_REPEATED_ASSERTION';
+    for(const f of other.facts||[])if(ours.has(normalizedAssertion(f.assertion))){
+      if(other.state==='failed_extraction')return 'LOCAL_PRIOR_FAILED_EXTRACTION_NO_REPLAY';
+      // Distinct authentic source: preserve a local link to the indexed prior
+      // rather than labeling it a source replay or creating another episode.
+      // Unsettled remote states remain hard no-replay blockers.
+      if(other.state==='persisted'&&record.facts.length===1&&
+         other.facts.length===1&&other.group===record.group&&
+         other.project===record.project&&other.workspace===record.workspace&&
+         other.retention?.status!=='logically_retired'&&
+         other.retention?.status!=='superseded'&&
+         nativeFactOrigin(record,record.facts[0])&&nativeFactOrigin(other,f)&&
+         nativeFactOrigin(record,record.facts[0])!==nativeFactOrigin(other,f)){
+        distinctCorroboration??={kind:'source_distinct_corroboration',prior_id:other.id};
+        continue;
+      }
+      return 'LOCAL_REPEATED_ASSERTION';
+    }
   }
+  if(distinctCorroboration)return distinctCorroboration;
   for(const f of record.facts){
     const matches=await graphiti.call('search_memory_facts',{query:f.assertion,
       group_ids:[record.group],max_facts:12});
@@ -111,6 +128,15 @@ export async function promoteOne(store,record,graphiti){
       deferValidatedSnapshot(store,record,'duplicate_check_unavailable');
   }
   if(duplicate){
+    if(typeof duplicate==='object'&&
+       duplicate.kind==='source_distinct_corroboration'){
+      if(retry)return {status:'recovery_preflight_blocked',
+        reason:'LOCAL_DISTINCT_SOURCE_CORROBORATION'};
+      const linked=await store.deferCorroboration(record.id,record.revision,
+        duplicate.prior_id);
+      return linked?{status:'deferred',reason:'LOCAL_DISTINCT_SOURCE_CORROBORATION'}:
+        {status:'concurrent_transition'};
+    }
     return retry?{status:'recovery_preflight_blocked',reason:duplicate}:
       deferValidatedSnapshot(store,record,duplicate);
   }
