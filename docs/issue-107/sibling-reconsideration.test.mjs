@@ -123,6 +123,24 @@ test('#107 crash after reserved model-only retry permits one bounded recovery un
  assert.equal((await store.finishSiblingRetry(second.id,second.revision,result)).status,'recovered');
  assert.equal((await store.list()).total,2);
 }));
+test('#107 crash after final reserved attempt is durably exhausted on fresh EX',()=>tdir(async root=>{
+ const {e,cluster}=fixture(),store=new ReviewStore(root,scope.group);
+ const pair=await store.createBundle(cluster,savedProposal(e,cluster));
+ const pending=pair.records.find(r=>r.state==='deferred');
+ process.env.GHDEV_MEMORY_POST_EXIT_LEASE='admitted';
+ const one=await store.reserveSiblingRetry(pending.id,pending.revision);
+ const two=await new ReviewStore(root,scope.group)
+   .reserveSiblingRetry(one.id,one.revision);
+ assert.equal(two.reconsideration.attempts,2);
+ const recovered=new ReviewStore(root,scope.group);
+ assert.equal(await recovered.expireInterruptedSibling(two.id,two.revision),true);
+ const final=await recovered.get(two.id);
+ assert.equal(final.reconsideration.status,'exhausted');
+ assert.equal(final.state,'deferred');
+ assert.equal(final.remote_episode_uuid,null);
+ assert.equal(await recovered.reserveSiblingRetry(final.id,final.revision),null);
+ assert.equal((await recovered.list()).total,2);
+}));
 test('#107 rejected duplicate of accepted sibling never produces new approved child',()=>tdir(async root=>{
  const {e,cluster}=fixture(),store=new ReviewStore(root,scope.group);
  const pair=await store.createBundle(cluster,savedProposal(e,cluster));

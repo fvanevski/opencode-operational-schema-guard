@@ -649,6 +649,28 @@ export class ReviewStore {
       return next;
     });
   }
+  /** An exclusive successor EX drain can settle a crashed final attempt.
+   * No model call or remote mutation is justified once the durable bound
+   * has already been consumed twice.
+   */
+  async expireInterruptedSibling(id,expectedRevision){
+    if(process.env.GHDEV_MEMORY_POST_EXIT_LEASE!=='admitted')
+      throw Error('EX_POST_EXIT_ADMISSION_REQUIRED');
+    if(!HEX.test(id||'')||!Number.isInteger(expectedRevision)||expectedRevision<1)
+      throw Error('INVALID_INTERRUPTED_SIBLING');
+    return this._mutex(id,async()=>{
+      const old=await this.get(id),r=old?.reconsideration;
+      if(!old||old.revision!==expectedRevision||old.state!=='deferred'||
+         r?.status!=='running'||r.attempts<r.limit)return false;
+      const now=new Date().toISOString();
+      await atomic(this.filename(id),{...old,revision:old.revision+1,
+        updated_at:now,reason:'sibling_retry_interrupted_at_limit',
+        reconsideration:{...r,status:'exhausted',last_result_at:now},
+        audit:[...old.audit.slice(-59),{at:now,
+          action:'source_sibling_model_retry_interrupted',outcome:'exhausted'}]});
+      return true;
+    });
+  }
   /** Settle one strict source-validated sibling, or retain its deferred source
    * with a bounded pending/exhausted disposition. No remote write occurs here.
    */

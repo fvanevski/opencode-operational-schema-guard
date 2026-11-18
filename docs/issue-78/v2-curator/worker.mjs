@@ -262,6 +262,7 @@ export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='loca
      technical_retry:0,skipped_candidates:0,
       sibling_retry_attempts:0,sibling_retry_recovered:0,
       sibling_retry_pending:0,sibling_retry_exhausted:0,
+      sibling_retry_interrupted_exhausted:0,
      consolidation_attempts:0,consolidation_applied:0,consolidation_retry:0,
      consolidation_remote_blocked:0,consolidation_stale:0,
      consolidation_retain_provisional:0,consolidation_promote_retention:0,
@@ -275,6 +276,16 @@ export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='loca
   // Recover any crash-interrupted fact bundle from its durable local plan
   // before source ownership and remote identity reconciliation.
   if(typeof store.restoreBundles==='function')await store.restoreBundles();
+  if(autonomousCuration&&typeof store.expireInterruptedSibling==='function'){
+    // Under a new exclusive EX lease, a previous final-attempt owner is gone.
+    // Settle its interrupted, already exhausted model-only retry durably.
+    for(const r of (await allRecords(store)).filter(r=>
+      r.state==='deferred'&&r.reconsideration?.status==='running'&&
+      r.reconsideration.attempts>=r.reconsideration.limit)){
+      if(await store.expireInterruptedSibling(r.id,r.revision))
+        stats.sibling_retry_interrupted_exhausted++;
+    }
+  }
   await archive();
   let result=await reconcile(store,graphiti);
   stats.persisted+=result.persisted;stats.unresolved=result.unresolved;
