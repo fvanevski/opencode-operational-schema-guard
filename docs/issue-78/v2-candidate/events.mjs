@@ -15,6 +15,27 @@ const CHATTER = /^(?:ok(?:ay)?|thanks|thank you|great|yes|no|continue|proceed|go
 // Tool/command names are no longer eligibility vetoes. Preserve source
 // authenticity and hard privacy limits; model curation judges usefulness.
 const RESULT_INTEREST = /\b(?:pass(?:ed)?|fail(?:ed|ure)?|error|exception|traceback|warning|changed|modified|created|deleted|exit(?:ed)?|timeout|denied|success|diff|build|test)\b/i;
+// Preserve an explicit failure diagnostic over an earlier generic PASS marker.
+// This affects source presentation priority, never admission or privacy checks.
+const RESULT_FAILURE = /\b(?:fail(?:ed|ure)?|error|exception|traceback|timeout|denied|fatal|panic)\b/i;
+// A selected output prefix must not turn a mid-token truncation into an
+// apparently complete source quote once disjoint lines are labeled and joined.
+const TOOL_TOKEN_CHAR = c => typeof c === 'string' && /[\p{L}\p{N}_./-]/u.test(c);
+function boundedToolLinePrefix(text, maxChars = 180) {
+  if (text.length <= maxChars) return text;
+  let end = maxChars;
+  const splitsSurrogatePair = i => i > 0 && i < text.length &&
+    text.charCodeAt(i - 1) >= 0xD800 && text.charCodeAt(i - 1) <= 0xDBFF &&
+    text.charCodeAt(i) >= 0xDC00 && text.charCodeAt(i) <= 0xDFFF;
+  while (end > 0 && (splitsSurrogatePair(end) ||
+    (TOOL_TOKEN_CHAR(text[end - 1]) && TOOL_TOKEN_CHAR(text[end])))) end--;
+  // An indivisible overlong token cannot be represented within the budget
+  // without inventing a token boundary. Omit that selected line instead.
+  return text.slice(0, end).trimEnd();
+}
+// This is a ranking hint, not an admission/security predicate. The uniform
+// control remains available for a paired source-exact comparison.
+const SOURCE_SIGNAL = /\b(?:root cause|decision|decided|must not|must always|requires|requirement|regression|failed because|rollback|breaking change)\b/gi;
 
 export const sha = text => createHash('sha256').update(text).digest('hex');
 const valid = (s, re = SAFE_ID) => typeof s === 'string' && re.test(s);
@@ -75,6 +96,7 @@ function envelope(scope, data) {
     source_refs: [sourceRef], source_strength: data.weak ? 'session-scoped-fallback' : 'native-id',
     related_event_ids: [...new Set(related)], cluster_key: sha(group + '\n' + session).slice(0, 24),
     excerpt, state: 'new',
+    ...(data.sourceFragments === undefined ? {} : {source_fragments:data.sourceFragments}),
   });
 }
 // Long admitted user prompts have bounded, independent *contiguous* source
@@ -161,7 +183,37 @@ export function withoutInjectedOpenVikingContext(text) {
   return result?.fragments.length === 1
     ? result.fragments[0].text.trim() : '';
 }
-export function fromPromptCandidates(event, scope, { admitted = false } = {}) {
+function selectPromptSegments(segments, mode) {
+  if (mode !== 'uniform' && mode !== 'coverage')
+    throw Error('PROMPT_SELECTION_MODE_INVALID');
+  if (segments.length <= MAX_PROMPT_SPANS) return segments;
+  // Historical immutable comparator, including its first continuation and tail.
+  if (mode === 'uniform') return [segments[0], segments[1],
+    ...Array.from({length: MAX_PROMPT_SPANS - 2}, (_, i) =>
+      segments[Math.round(1 + (i + 1) * (segments.length - 2) /
+        (MAX_PROMPT_SPANS - 2))])];
+  // Keep head, immediate continuation and tail. Reserve at most ONE additional
+  // position for a source-text signal, leaving two coverage-distributed slots.
+  // Neither signal nor absence of signal changes source eligibility.
+  const picked = new Set([0, 1, segments.length - 1]);
+  const ranked = segments.map((part, i) => ({
+    i, score: [...part.excerpt.matchAll(SOURCE_SIGNAL)].length
+  })).filter(x => x.i > 1 && x.i < segments.length - 1 && x.score)
+    .sort((a, b) => b.score - a.score || a.i - b.i);
+  if (ranked.length) picked.add(ranked[0].i);
+  while (picked.size < MAX_PROMPT_SPANS) {
+    let best = -1, distance = -1;
+    for (let i = 2; i < segments.length - 1; i++) {
+      if (picked.has(i)) continue;
+      const gap = Math.min(...[...picked].map(j => Math.abs(i - j)));
+      if (gap > distance) { best = i; distance = gap; }
+    }
+    if (best < 0) break;
+    picked.add(best);
+  }
+  return [...picked].sort((a, b) => a - b).map(i => segments[i]);
+}
+export function fromPromptCandidates(event, scope, { admitted = false, selectionMode = 'coverage' } = {}) {
   if (!admitted) return [];
   const sessionID = field(event, ['sessionID', 'sessionId']);
   const text = promptText(event);
@@ -201,15 +253,9 @@ export function fromPromptCandidates(event, scope, { admitted = false } = {}) {
         offset: fragment.offset + part.offset });
     }
   }
-  // Reserve the opening scope AND the first detailed continuation. Uniform
-  // sampling skipped actionable evidence immediately after long preambles.
-  // Keep the remaining four positions distributed through the message, tail
-  // included; every selected excerpt remains an authentic contiguous span.
-  const selected = segments.length <= MAX_PROMPT_SPANS ? segments :
-    [segments[0], segments[1],
-      ...Array.from({length: MAX_PROMPT_SPANS - 2}, (_, i) =>
-        segments[Math.round(1 + (i + 1) * (segments.length - 2) /
-          (MAX_PROMPT_SPANS - 2))])];
+  // Source text is never rewritten: the selected offsets are still verified
+  // against the full decoded native message before envelope construction.
+  const selected = selectPromptSegments(segments, selectionMode);
   const partial = text.length > 1100 || authored.removed ||
     authored.fragments.length > 1;
   return selected.map(({ excerpt, offset }) => {
@@ -275,7 +321,7 @@ function fromFileTool(event, scope, sessionID, callID) {
     time: event.timestamp || event.time, related: event.related_event_ids });
 }
 
-export function fromTool(event, scope) {
+export function fromTool(event, scope, { lineSelection = 'coverage' } = {}) {
   if (!['completed', 'error', 'failed'].includes(event?.status)) return null;
   const sessionID = field(event, ['sessionID', 'sessionId']);
   const callID = field(event, ['callID', 'callId', 'id']);
@@ -292,19 +338,70 @@ export function fromTool(event, scope) {
   const output = result?.output?.output ?? result?.output?.stdout ??
     (typeof result?.output === 'string' ? result.output : result?.stdout ?? '');
   if (typeof output !== 'string' || output.length > 16000 || containsPrivateValue(output) || SELF.test(output)) return null;
-  const boundedLines=output.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
-  // Error/result markers prioritize, but never gate eligibility. Preserve
-  // ordinary read-only command outputs when no marker exists.
-  const matched=boundedLines.filter(x=>RESULT_INTEREST.test(x)).slice(0,3);
-  const lines=matched.length?matched:boundedLines.slice(0,3);
-  const evidence=lines.join(' ').slice(0,650);
+  // Preserve original UTF-16 offsets and raw line numbers before removing
+  // blank lines. Full original output is privacy-screened above, never stored.
+  let rawCursor=0;
+  const boundedLines=output.split(/\r?\n/).map((raw,i)=>{
+    const leading=raw.length-raw.trimStart().length;
+    const row={text:raw.trim(),lineNumber:i+1,original_start:rawCursor+leading};
+    rawCursor+=raw.length;
+    if(output.slice(rawCursor,rawCursor+2)==='\r\n')rawCursor+=2;
+    else if(output[rawCursor]==='\n')rawCursor++;
+    return row;
+  }).filter(x=>x.text);
+  if (!['markers','coverage'].includes(lineSelection))
+    throw Error('TOOL_LINE_SELECTION_MODE_INVALID');
+  const matched=boundedLines.filter(x=>RESULT_INTEREST.test(x.text))
+    .slice(0,3).map(x=>x.text);
+  const legacy=matched.length?matched:boundedLines.slice(0,3).map(x=>x.text);
+  let evidence='',fragments;
+  if(lineSelection==='markers'){
+    // Byte-for-byte historical comparator. Never use this unsegmented output
+    // as automatic original-source evidence after the new validator is active.
+    evidence=legacy.join(' ').slice(0,650);
+  } else {
+    let indexes;
+    if(boundedLines.length<=3){
+      indexes=boundedLines.map((_,i)=>i);
+    }else{
+      const firstFailure=boundedLines.findIndex(x=>RESULT_FAILURE.test(x.text));
+      const firstInterest=boundedLines.findIndex(x=>RESULT_INTEREST.test(x.text));
+      const head=firstFailure>=0?firstFailure:firstInterest>=0?firstInterest:0;
+      const tail=boundedLines.length-1;
+      const available=boundedLines.map((_,i)=>i).filter(i=>i!==head&&i!==tail);
+      const middle=available.sort((a,b)=>
+        Math.abs(a-(boundedLines.length-1)/2)-
+          Math.abs(b-(boundedLines.length-1)/2)||a-b)[0];
+      indexes=[...new Set([head,middle,tail])].sort((a,b)=>a-b);
+    }
+    const parts=[],relativeFragments=[];
+    for(const i of indexes){
+      const row=boundedLines[i],prefix=boundedToolLinePrefix(row.text);
+      if(!prefix)continue;
+      const label='['+row.lineNumber+'] ';
+      const start=(parts.length?parts.join(' | ').length+3:0)+label.length;
+      relativeFragments.push({start,end:start+prefix.length,
+        original_start:row.original_start,
+        original_end:row.original_start+prefix.length,line_number:row.lineNumber});
+      parts.push(label+prefix);
+    }
+    // Labels, separators and command/status header are explanatory metadata,
+    // never quotable original output. Each fact must fit one source fragment.
+    evidence=parts.join(' | ');
+    fragments=relativeFragments;
+  }
   if (!evidence && exit === undefined && event.status === 'completed') return null;
   const label = exit === undefined ? 'tool status ' + event.status :
     'tool exit ' + String(exit);
-  const excerpt = cleanExcerpt(label + '; command: ' + cmd + (evidence ? '; output: ' + evidence : ''), 1100);
+  const header=label+'; command: '+cmd+(evidence?'; output: ':'');
+  const excerpt = cleanExcerpt(header+evidence,1100);
   if (!excerpt) return null;
+  const sourceFragments=fragments?.map(f=>({
+    ...f,start:f.start+header.length,end:f.end+header.length
+  }));
   return envelope(scope, { kind: 'tool_outcome', evidenceClass: 'tool-reported',
     sourceType: 'tool', sourceID: callID, sessionID, excerpt,
+    ...(sourceFragments===undefined?{}:{sourceFragments}),
     time: event?.timestamp || event?.time, related: event?.related_event_ids });
 }
 export function fromFinishedTurn(event, scope) {

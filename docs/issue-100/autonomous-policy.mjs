@@ -1,5 +1,6 @@
 /** Issue #100: source-first autonomous utility decision. No I/O or remote authority. */
-import {modelPrompt, validateModelDecision, normalizedAssertion} from '../issue-78/v2-curator/core.mjs';
+import {modelPrompt, validateModelDecision, normalizedAssertion,
+  originalToolOutputSpan} from '../issue-78/v2-curator/core.mjs';
 import {cleanExcerpt} from '../issue-78/v2-candidate/events.mjs';
 
 const RETENTION = new Set(['established_retention','provisional_retention','skip_non_substantive']);
@@ -99,9 +100,19 @@ export function validateAutonomousDecision(raw,cluster){
          quote.trim()!==quote||cleanExcerpt(quote,450)!==quote){
         blocked_candidates.push({index:i,reason:'invalid_exact_source_quote'});continue;
       }
-      const start=source.excerpt.indexOf(quote);
+      // A tool outcome contains rendered labels and disjoint excerpts.
+      // Search ONLY each attested original-output fragment; never treat a
+      // composite label/command or line-crossing quote as original evidence.
+      let start=-1;
+      if(source.kind==='tool_outcome'){
+        for(const fragment of source.source_fragments||[]){
+          const relative=source.excerpt.slice(fragment.start,fragment.end).indexOf(quote);
+          if(relative>=0){start=fragment.start+relative;break;}
+        }
+      } else start=source.excerpt.indexOf(quote);
       if(start<0){
-        blocked_candidates.push({index:i,reason:'invalid_exact_source_quote'});continue;
+        blocked_candidates.push({index:i,reason:source.kind==='tool_outcome'?
+          'invalid_original_source_span':'invalid_exact_source_quote'});continue;
       }
       // Model-provided quoted text is checked against original source;
       // original offsets are host-derived rather than model-guessed.
@@ -110,6 +121,11 @@ export function validateAutonomousDecision(raw,cluster){
     if(!span||span.source_ref!==ref||!Number.isSafeInteger(span.start)||
        !Number.isSafeInteger(span.end)||span.start<0||
        span.end<=span.start||span.end>source.excerpt.length){
+      blocked_candidates.push({index:i,reason:'invalid_original_source_span'});continue;
+    }
+    const mapped=source.kind==='tool_outcome'?
+      originalToolOutputSpan(source,span.start,span.end):null;
+    if(source.kind==='tool_outcome'&&!mapped){
       blocked_candidates.push({index:i,reason:'invalid_original_source_span'});continue;
     }
     if(!completeSourceTokenSpan(source.excerpt,span.start,span.end)){
@@ -127,7 +143,8 @@ export function validateAutonomousDecision(raw,cluster){
     facts.push({...fact,evidence_span:{...span}});
     fact_utilities.push(cls);fact_retentions.push(status);
     fact_utility_reasons.push(f.utility_reason);
-    fact_source_spans.push({...span});
+    fact_source_spans.push({...span,
+      ...(mapped?{original_start:mapped.start,original_end:mapped.end}:{})});
     review_only_claims.push(...(checked.review_only_claims||[]).map(x=>({...x,index:i})));
   }
   if(!facts.length){
