@@ -548,11 +548,13 @@ export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='loca
   // terminal drain to the EX wrapper while eligible work remains.
   await archive();
   const queueLeft=await queue.status();
-  const pendingReviews=(await allRecords(store)).some(r=>
+  const reviewRecords=await allRecords(store);
+  const siblingRetryWork=reviewRecords.some(r=>r.state==='deferred'&&
+    r.reconsideration&&['pending','running'].includes(r.reconsideration.status)&&
+    r.reconsideration.attempts<r.reconsideration.limit);
+  const pendingReviews=siblingRetryWork||reviewRecords.some(r=>
     ['approved','retry_authorized'].includes(r.state)||
-    (r.state==='deferred'&&(r.reevaluate_requested||
-      (r.reconsideration&&['pending','running'].includes(r.reconsideration.status)&&
-        r.reconsideration.attempts<r.reconsideration.limit))));
+    (r.state==='deferred'&&r.reevaluate_requested));
   const localWork=pendingReviews||queueLeft.counts.new>0||
     queueLeft.counts.reserved>0;
   // Autonomous no-model/invalid-model leaves immutable NEW sources, not a
@@ -560,6 +562,7 @@ export async function runAdmitted({root,group,modelEndpoint,modelId,apiKey='loca
   // Graphiti submission_unknown; the EX holder may then safely release after
   // a positive reconcile-only check instead of looping on nonexistent ACKs.
   return {...stats,status:stats.unresolved?'unresolved':
-    localWork&&autonomousCuration&&stats.technical_retry>0?'technical_retry':
+    localWork&&autonomousCuration&&
+      (stats.technical_retry>0||siblingRetryWork)?'technical_retry':
     localWork?'incomplete':stats.deferred?'review_required':'settled'};
 }

@@ -61,6 +61,8 @@ test('#107 accepted fact is terminal before targeted sibling retry, with one epi
    const first=await runAdmitted(args);
    assert.equal(first.curated,1);
    assert.equal(first.sibling_retry_attempts,0);
+   assert.equal(first.status,'technical_retry',
+     'unsettled local-only sibling must not be mistaken for remote submission');
    assert.equal(modelCalls,1);
    assert.equal(remoteWrites,1);
    let rows=(await store.list()).items;
@@ -74,6 +76,7 @@ test('#107 accepted fact is terminal before targeted sibling retry, with one epi
    const second=await runAdmitted(args);
    assert.equal(second.sibling_retry_attempts,1);
    assert.equal(second.sibling_retry_recovered,1);
+   assert.equal(second.status,'settled');
    assert.equal(modelCalls,2);
    assert.equal(remoteWrites,2);
    rows=(await store.list()).items;

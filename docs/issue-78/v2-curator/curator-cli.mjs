@@ -179,7 +179,9 @@ if(command==='validate-tuning'){
     for(let offset=0;;offset+=500){
       const page=await store.list({limit:500,offset});
       if(page.items.some(r=>r.state==='approved'||r.state==='retry_authorized'||
-        (r.state==='deferred'&&r.reevaluate_requested)))pendingReview=true;
+        (r.state==='deferred'&&(r.reevaluate_requested||
+          (r.reconsideration&&['pending','running'].includes(r.reconsideration.status)&&
+            r.reconsideration.attempts<r.reconsideration.limit)))))pendingReview=true;
       if(!page.has_more)break;
     }
     const queueStatus=await new CandidateQueue(root,group).status();
