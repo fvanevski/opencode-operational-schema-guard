@@ -7,7 +7,8 @@ import path from 'node:path';
 import os from 'node:os';
 import {fromPromptCandidates} from '../issue-78/v2-candidate/events.mjs';
 import {CandidateQueue} from '../issue-78/v2-candidate/queue.mjs';
-import {ReviewStore} from '../issue-78/v2-curator/core.mjs';
+import {ReviewStore,selectClusters} from '../issue-78/v2-curator/core.mjs';
+import {validateAutonomousDecision} from '../issue-100/autonomous-policy.mjs';
 import {runAdmitted} from '../issue-78/v2-curator/worker.mjs';
 
 const scope={group:'siblingworker107',project:'gh_mcp',workspace:'/workspace/gh_mcp'};
@@ -112,6 +113,70 @@ test('#107 accepted fact is terminal before targeted sibling retry, with one epi
    assert.equal(third.sibling_retry_attempts,0);
    assert.equal(modelCalls,2);
    assert.equal(remoteWrites,2);
+ }finally{
+   if(previous===undefined)delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;
+   else process.env.GHDEV_MEMORY_POST_EXIT_LEASE=previous;
+   await rm(root,{recursive:true,force:true});
+ }
+});
+
+test('#107 final interrupted sibling remains local work until EX drain exhausts it',async()=>{
+ const root=await mkdtemp(path.join(os.tmpdir(),'ghdev107-final-attempt-'));
+ const previous=process.env.GHDEV_MEMORY_POST_EXIT_LEASE;
+ process.env.GHDEV_MEMORY_POST_EXIT_LEASE='admitted';
+ try{
+   const e=fromPromptCandidates({sessionID:'ses_final107',messageID:'msg_final107',
+     prompt:{text:a+' '+b},timestamp:'2026-11-18T12:30:00Z'},scope,
+     {admitted:true})[0];
+   const cluster=selectClusters([e],{sourceMessageIsolation:true})[0];
+   const proposal=validateAutonomousDecision(msg([fact(e,a),fact(e,b,false)]),cluster);
+   assert.equal(proposal.ok,true);
+   assert.equal(proposal.recoverable_siblings.length,1);
+   const store=new ReviewStore(root,scope.group),queue=new CandidateQueue(root,scope.group);
+   const {records}=await store.createBundle(cluster,proposal);
+   const accepted=records.find(r=>r.state==='approved');
+   const pending=records.find(r=>r.state==='deferred');
+   assert.ok(accepted&&pending);
+   assert.equal(await store.advance(accepted.id,'approved','submission_unknown',
+     {expected_revision:accepted.revision}),true);
+   assert.equal(await store.advance(accepted.id,'submission_unknown','queued'),true);
+   const episode='a2345678-1111-4111-a111-333333333333';
+   assert.equal(await store.advance(accepted.id,'queued','persisted',
+     {remote_episode_uuid:episode}),true);
+   // Simulate a crash after the final model-only reservation, without ever
+   // calling the model or sending a new Graphiti episode.
+   const once=await store.reserveSiblingRetry(pending.id,pending.revision);
+   const twice=await store.reserveSiblingRetry(once.id,once.revision);
+   assert.equal(twice.reconsideration.status,'running');
+   assert.equal(twice.reconsideration.attempts,twice.reconsideration.limit);
+   const cli=()=>spawnSync(process.execPath,[
+     fileURLToPath(new URL('../issue-78/v2-curator/curator-cli.mjs',import.meta.url)),
+     'reconcile-only','--group',scope.group,'--state-dir',root,
+     '--endpoint','http://127.0.0.1:9621/mcp'],{
+       encoding:'utf8',timeout:15000,env:{...process.env,
+         GHDEV_MEMORY_POST_EXIT_LEASE:'admitted'}});
+   const before=cli();
+   assert.equal(before.status,4,before.stderr);
+   assert.equal(JSON.parse(before.stdout).status,'work_remaining');
+   assert.equal(JSON.parse(before.stdout).pending_review,true);
+   let modelCalls=0,graphCalls=0;
+   const settled=await runAdmitted({root,group:scope.group,store,queue,
+     graphiti:{call:async()=>{graphCalls++;throw Error('remote call forbidden');}},
+     curate:async()=>{modelCalls++;throw Error('model call forbidden');},
+     autonomousCuration:true,maxClusters:4,maxSeconds:15});
+   assert.equal(settled.sibling_retry_interrupted_exhausted,1);
+   assert.equal(settled.status,'settled');
+   const final=await store.get(pending.id);
+   assert.equal(final.state,'deferred');
+   assert.equal(final.reconsideration.status,'exhausted');
+   assert.equal(final.reconsideration.attempts,2);
+   assert.equal(final.remote_episode_uuid,null);
+   assert.equal((await store.get(accepted.id)).remote_episode_uuid,episode);
+   assert.equal(modelCalls,0);
+   assert.equal(graphCalls,0);
+   const after=cli();
+   assert.equal(after.status,0,after.stderr);
+   assert.equal(JSON.parse(after.stdout).status,'settled');
  }finally{
    if(previous===undefined)delete process.env.GHDEV_MEMORY_POST_EXIT_LEASE;
    else process.env.GHDEV_MEMORY_POST_EXIT_LEASE=previous;
