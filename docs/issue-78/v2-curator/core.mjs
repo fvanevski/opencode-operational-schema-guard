@@ -624,6 +624,95 @@ export class ReviewStore {
     for(const n of names)await this.restoreBundle(n.slice(0,-5));
     return names.length;
   }
+  /** Consume one bounded model-only attempt before calling the model.
+   * A crash can resume at most once under a later genuine EX lease, but never
+   * creates a Graphiti write intent or replays a previously valid sibling.
+   */
+  async reserveSiblingRetry(id,expectedRevision){
+    if(process.env.GHDEV_MEMORY_POST_EXIT_LEASE!=='admitted')
+      throw Error('EX_POST_EXIT_ADMISSION_REQUIRED');
+    if(!HEX.test(id||'')||!Number.isInteger(expectedRevision)||expectedRevision<1)
+      throw Error('INVALID_SIBLING_RETRY_REQUEST');
+    return this._mutex(id,async()=>{
+      const old=await this.get(id),r=old?.reconsideration;
+      if(!old||old.revision!==expectedRevision||old.state!=='deferred'||
+         !r||!['pending','running'].includes(r.status)||r.attempts>=r.limit||
+         !HEX.test(r.parent_id||'')||r.parent_id!==old.origin_cluster_id)
+        return null;
+      const now=new Date().toISOString();
+      const next={...old,revision:old.revision+1,updated_at:now,
+        reconsideration:{...r,status:'running',attempts:r.attempts+1,
+          last_attempt_at:now},
+        audit:[...old.audit.slice(-59),{at:now,
+          action:'source_sibling_model_retry_reserved',outcome:'running'}]};
+      await atomic(this.filename(id),next);
+      return next;
+    });
+  }
+  /** Settle one strict source-validated sibling, or retain its deferred source
+   * with a bounded pending/exhausted disposition. No remote write occurs here.
+   */
+  async finishSiblingRetry(id,expectedRevision,proposal,{technicalFailure=false}={}){
+    if(process.env.GHDEV_MEMORY_POST_EXIT_LEASE!=='admitted')
+      throw Error('EX_POST_EXIT_ADMISSION_REQUIRED');
+    if(!HEX.test(id||'')||!Number.isInteger(expectedRevision)||expectedRevision<1||
+       typeof technicalFailure!=='boolean')throw Error('INVALID_SIBLING_RETRY_RESULT');
+    return this._mutex(id,async()=>{
+      const old=await this.get(id),r=old?.reconsideration;
+      if(!old||old.revision!==expectedRevision||old.state!=='deferred'||
+         !r||r.status!=='running')return {status:'stale'};
+      const valid=proposal?.ok===true&&proposal.decision==='EMIT'&&
+        proposal.facts?.length===1&&
+        proposal.facts[0].source_refs?.length===1&&
+        proposal.facts[0].source_refs[0]===r.source_ref;
+      let checked=null,retention=null;
+      if(valid){
+        checked=validateModelDecision({
+          decision:'EMIT',reason:proposal.reason,utility_class:proposal.utility_class,
+          facts:proposal.facts.map((f,i)=>({
+            ...f,utility_class:proposal.fact_utilities?.[i]}))
+        },old);
+        if(checked.ok&&checked.facts.length===1){
+          try{retention=validatedRetention(old,proposal,checked,0);}
+          catch{checked=null;}
+        }else checked=null;
+      }
+      if(checked&&retention){
+        // The original parent/child identities are immutable authority. A
+        // model retry cannot rediscover an already retained sibling.
+        let bundle;
+        try{bundle=JSON.parse(await fs.readFile(this.bundlePath(r.parent_id),'utf8'));}
+        catch{bundle=null;}
+        if(bundle?.schema!=='issue107-format-sibling-bundle-v1'||
+           !bundle.pending_ids?.includes(id))throw Error('SIBLING_PARENT_PLAN_UNAVAILABLE');
+        for(const child of [...bundle.child_ids,...bundle.pending_ids]){
+          if(child===id)continue;
+          const sibling=await this.get(child);
+          if(sibling?.facts?.some(f=>normalizedAssertion(f.assertion)===
+              normalizedAssertion(checked.facts[0].assertion))) {
+            checked=null;retention=null;break;
+          }
+        }
+      }
+      const now=new Date().toISOString();
+      const recovered=Boolean(checked&&retention);
+      const retryLater=!recovered&&technicalFailure&&r.attempts<r.limit;
+      const status=recovered?'recovered':retryLater?'pending':'exhausted';
+      const updated={...old,
+        state:recovered?'approved':'deferred',
+        decision:recovered?'EMIT':old.decision,
+        reason:recovered?checked.reason:
+          retryLater?'technical_sibling_retry_pending':'sibling_retry_exhausted',
+        ...(recovered?{facts:checked.facts,retention,
+          utility_class:proposal.fact_utilities?.[0]??null}:{}),
+        reconsideration:{...r,status,last_result_at:now},
+        revision:old.revision+1,updated_at:now,
+        audit:[...old.audit.slice(-59),{at:now,
+          action:'source_sibling_model_retry_result',outcome:status}]};
+      await atomic(this.filename(id),updated);
+      return {status,record:updated};
+    });
+  }
   /** Preserve a second native source as a local evidence link, not a second episode. */
   async deferCorroboration(id,expectedRevision,priorId){
     if(!HEX.test(id||'')||!HEX.test(priorId||'')||id===priorId||
