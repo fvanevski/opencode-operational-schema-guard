@@ -9,7 +9,8 @@ const ordinary='Routine operational notes describe the current sequence without 
 const NEEDLE='The root cause is an inverted retry predicate; preserve the original request identifier.';
 const TOOL_NEEDLE='The stable parser requires integer median input to preserve the public CLI contract.';
 const longPrompt=Array.from({length:16},(_,i)=>
-  (ordinary.repeat(9)+(i===3?' '+NEEDLE+' ':' '))).join('');
+  i===3?ordinary.repeat(5)+' '+NEEDLE+' '+ordinary.repeat(4):
+    ordinary.repeat(9)+' ').join('');
 const toolOutput=Array.from({length:11},(_,i)=>
   i===5?TOOL_NEEDLE:i<4?'PASS stage '+i+' completed':'Ordinary result row '+i+' from the previous test.').join('\n');
 export const FROZEN_CASES=Object.freeze([
