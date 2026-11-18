@@ -15,6 +15,9 @@ const CHATTER = /^(?:ok(?:ay)?|thanks|thank you|great|yes|no|continue|proceed|go
 // Tool/command names are no longer eligibility vetoes. Preserve source
 // authenticity and hard privacy limits; model curation judges usefulness.
 const RESULT_INTEREST = /\b(?:pass(?:ed)?|fail(?:ed|ure)?|error|exception|traceback|warning|changed|modified|created|deleted|exit(?:ed)?|timeout|denied|success|diff|build|test)\b/i;
+// Preserve an explicit failure diagnostic over an earlier generic PASS marker.
+// This affects source presentation priority, never admission or privacy checks.
+const RESULT_FAILURE = /\b(?:fail(?:ed|ure)?|error|exception|traceback|timeout|denied|fatal|panic)\b/i;
 // This is a ranking hint, not an admission/security predicate. The uniform
 // control remains available for a paired source-exact comparison.
 const SOURCE_SIGNAL = /\b(?:root cause|decision|decided|must not|must always|requires|requirement|regression|failed because|rollback|breaking change)\b/gi;
@@ -331,8 +334,10 @@ export function fromTool(event, scope, { lineSelection = 'coverage' } = {}) {
   if (lineSelection==='markers' || boundedLines.length<=3) {
     evidence=legacy.join(' ').slice(0,650);
   } else {
-    const first=boundedLines.findIndex(x=>RESULT_INTEREST.test(x));
-    const head=first>=0?first:0, tail=boundedLines.length-1;
+    const firstFailure=boundedLines.findIndex(x=>RESULT_FAILURE.test(x));
+    const firstInterest=boundedLines.findIndex(x=>RESULT_INTEREST.test(x));
+    const head=firstFailure>=0?firstFailure:firstInterest>=0?firstInterest:0;
+    const tail=boundedLines.length-1;
     const available=boundedLines.map((_,i)=>i).filter(i=>i!==head&&i!==tail);
     const middle=available.sort((a,b)=>
       Math.abs(a-(boundedLines.length-1)/2)-

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {compareFrozen,FROZEN_CASES,SCOPE} from './compare.mjs';
-import {fromPromptCandidates} from '../issue-78/v2-candidate/events.mjs';
+import {fromPromptCandidates,fromTool} from '../issue-78/v2-candidate/events.mjs';
 import {selectClusters} from '../issue-78/v2-curator/core.mjs';
 test('#106 frozen source opportunities compare baseline and candidate at unchanged inputs',()=>{
   const [base,next]=compareFrozen();
@@ -45,6 +45,26 @@ test('#106 one native message keeps its spans together and two native messages c
   assert.deepEqual(groups.map(x=>x.events.length),[a.length,b.length]);
   assert.deepEqual(groups.map(x=>x.source_event_ids.sort()),
     [a.map(x=>x.event_id).sort(),b.map(x=>x.event_id).sort()]);
+});
+test('#106 tool coverage retains an actionable failure behind a routine PASS marker',()=>{
+  const output=[
+    'PASS initial smoke check',
+    'ERROR: parser compatibility contract rejected the configured token',
+    'routine middle result row',
+    'ordinary progress row',
+    'final diagnostic review notes'
+  ].join('\n');
+  const native={sessionID:'ses_tool',callID:'call_tool',tool:'shell',status:'failed',
+    input:{command:'node run-compat-check.mjs'},result:{output:{exit:1,output}}};
+  const legacy=fromTool(native,SCOPE,{lineSelection:'markers'});
+  const covered=fromTool(native,SCOPE,{lineSelection:'coverage'});
+  assert.ok(legacy?.excerpt.includes('ERROR: parser compatibility contract'));
+  assert.ok(covered?.excerpt.includes('[2] ERROR: parser compatibility contract'));
+  assert.ok(covered?.excerpt.includes('[3] routine middle result row'));
+  assert.ok(covered?.excerpt.includes('[5] final diagnostic review notes'));
+  assert.ok(!covered.excerpt.includes('[1] PASS initial smoke check'));
+  assert.deepEqual(covered.source_refs,legacy.source_refs);
+  assert.equal(covered.source_strength,'native-id');
 });
 test('#106 weak fallback is isolated without becoming a native authenticated message',()=>{
   const text='The source author requires a bounded parser validation contract.';
