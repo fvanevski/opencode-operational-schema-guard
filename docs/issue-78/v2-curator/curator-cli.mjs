@@ -180,8 +180,13 @@ if(command==='validate-tuning'){
       const page=await store.list({limit:500,offset});
       if(page.items.some(r=>r.state==='approved'||r.state==='retry_authorized'||
         (r.state==='deferred'&&(r.reevaluate_requested||
-          (r.reconsideration&&['pending','running'].includes(r.reconsideration.status)&&
-            r.reconsideration.attempts<r.reconsideration.limit)))))pendingReview=true;
+          (r.reconsideration&&(
+            // A crashed final reservation has already spent its model budget,
+            // but the next EX-admitted drain must still durably exhaust it.
+            // Reporting settled here would abandon it in running forever.
+            r.reconsideration.status==='running'||
+            (r.reconsideration.status==='pending'&&
+              r.reconsideration.attempts<r.reconsideration.limit))))))pendingReview=true;
       if(!page.has_more)break;
     }
     const queueStatus=await new CandidateQueue(root,group).status();
