@@ -74,7 +74,12 @@ test('#107 forged handle, invented quote, and weak fallback remain blocked',()=>
     quote:'A fabricated source statement that is absent from the native input.'}]),c);
   assert.equal(invented.ok,false);assert.equal(invented.retryable,true);
   assert.equal(invented.blocked_candidates[0].reason,'invalid_exact_source_quote');
-  const weak={...e,source_strength:'session-scoped-fallback'};
+  // A genuine weak fallback uses the prompt handle. Forging a native handle
+  // with weak strength would be stopped earlier by #106 source isolation.
+  const weak=fromPromptCandidates({sessionID:'ses_weak',
+    prompt:{text:quoteA+' '+quoteB},
+    timestamp:'2026-11-18T10:00:00.000Z'},scope,{admitted:true})[0];
+  assert.equal(weak.source_strength,'session-scoped-fallback');
   const notNative=validateCompactDecision(decision([compact(weak)]),clusterFor(weak));
   assert.equal(notNative.ok,false);
   assert.equal(notNative.blocked_candidates[0].reason,'invalid_original_source_span');
@@ -116,7 +121,7 @@ test('#107 reference cohort is frozen before model inference and excludes source
   const frozen=freezeQualificationCases([one]);
   assert.match(frozen.freeze_sha256,/^[a-f0-9]{64}$/);
   assert.notEqual(frozen.cases[0],one);
-  one.cluster.events[0].excerpt='changed after freeze';
+  one.cluster.events[0]={...one.cluster.events[0],excerpt:'changed after freeze'};
   assert.equal(frozen.cases[0].cluster.events[0].excerpt,quoteA+' '+quoteB);
   const foreign=sourceCase('bad',promptSource('ses_bad'));
   foreign.opportunities[0].source_ref='opencode:foreign:message:fake';
