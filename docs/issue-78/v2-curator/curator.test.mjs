@@ -936,7 +936,7 @@ test('source-isolated selection keeps same-session native messages independently
  assert.equal(new Set(isolated.map(c=>c.id)).size,2);
  assert.deepEqual(selectClusters([b,a],{sourceMessageIsolation:true}),isolated);
  assert.throws(()=>selectClusters([a,{...b,source_strength:'session-scoped-fallback'}],
-  {sourceMessageIsolation:true}),/authenticated native source/);
+  {sourceMessageIsolation:true}),/source isolation strength\/handle mismatch/);
 });
 
 test('autonomous technical model error leaves NEW source and no remote ambiguity',()=>temp(async root=>{
@@ -955,9 +955,11 @@ test('autonomous technical model error leaves NEW source and no remote ambiguity
       autonomousCuration:true,curate:async()=>{throw Error('MODEL_URL_UNSET');},
       maxSeconds:20});
     assert.equal(result.status,'technical_retry');
-    assert.equal(result.technical_retry,1);
+    // Each authentic source origin can independently retry without ever
+    // acquiring a remote Graphiti submission intent.
+    assert.equal(result.technical_retry,3);
     assert.equal(result.unresolved,0);
-    assert.equal(result.model_errors,1);
+    assert.equal(result.model_errors,3);
     assert.equal(remoteWrites,0);
     assert.equal((await store.list()).total,0);
     assert.equal((await queue.status()).counts.new,3);
@@ -1051,16 +1053,18 @@ test('Codex #103: missing utility reason triggers bounded retry and leaves NEW s
       throw Error('Unexpected Graphiti method '+method);
     }};
     const result=await runAdmitted({root,group:scope.group,queue,store,graphiti,
-      autonomousCuration:true,maxSeconds:20,curate:async()=>({
+      autonomousCuration:true,maxSeconds:20,curate:async sourceCluster=>({
         content:JSON.stringify({decision:'EMIT',
           reason:'A valid original excerpt with malformed utility metadata',
           facts:[{kind:'decision',temporal_status:'observed',
-            source_refs:[U.source_refs[0]],evidence_quote:U.excerpt,
+            // Invalid utility metadata is independent of source identity.
+            source_refs:[sourceCluster.events[0].source_refs[0]],
+            evidence_quote:sourceCluster.events[0].excerpt,
             retention_status:'established_retention',
             utility_class:'durable_decision'}]}),
         duration_ms:10})});
     assert.equal(result.status,'technical_retry');
-    assert.equal(result.technical_retry,1);
+    assert.equal(result.technical_retry,3);
     assert.equal(result.unresolved,0);
     assert.equal(result.deferred,0);
     assert.equal(result.model_errors,0);
