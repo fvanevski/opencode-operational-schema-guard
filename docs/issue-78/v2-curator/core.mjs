@@ -758,7 +758,7 @@ export class ReviewStore {
       let index;
       try{index=JSON.parse(await fs.readFile(path.join(this.dir,
         '_episode-index',prior.remote_episode_uuid+'.json'),'utf8'));}
-      catch(e){if(e.code==='ENOENT')return false;throw e;}
+      catch(e){if(e.code==='ENOENT'||e instanceof SyntaxError)return false;throw e;}
       if(index?.id!==prior.id||index.remote_episode_uuid!==prior.remote_episode_uuid)
         return false;
       const now=new Date().toISOString();

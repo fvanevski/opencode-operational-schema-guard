@@ -96,7 +96,9 @@ test('#107 missing positive prior index denies local corroboration',()=>tmp(asyn
  await unlink(path.join(store.dir,'_episode-index',uuid+'.json'));
  const result=await promoteOne(store,await store.get(c.id),{
    call:async()=>{throw Error('No remote write');}});
- assert.equal(result.status,'concurrent_transition');
- assert.equal((await store.get(c.id)).state,'approved');
+ assert.equal(result.status,'deferred');
+ assert.equal(result.reason,'LOCAL_CORROBORATION_PROOF_UNAVAILABLE');
+ assert.equal((await store.get(c.id)).state,'deferred');
+ assert.equal((await store.get(c.id)).remote_episode_uuid,null);
  assert.equal((await store.get(prior.id)).state,'persisted');
 }));

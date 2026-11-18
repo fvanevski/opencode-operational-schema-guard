@@ -135,7 +135,12 @@ export async function promoteOne(store,record,graphiti){
       const linked=await store.deferCorroboration(record.id,record.revision,
         duplicate.prior_id);
       return linked?{status:'deferred',reason:'LOCAL_DISTINCT_SOURCE_CORROBORATION'}:
-        {status:'concurrent_transition'};
+        // Missing/stale positive index or superseded prior is a *local*
+        // corroboration-proof failure, not a remote submission and not
+        // automatically an operator race. CAS-defer this approved candidate
+        // without Graphiti writes; a real concurrent update still returns
+        // concurrent_transition through deferValidatedSnapshot.
+        deferValidatedSnapshot(store,record,'LOCAL_CORROBORATION_PROOF_UNAVAILABLE');
     }
     return retry?{status:'recovery_preflight_blocked',reason:duplicate}:
       deferValidatedSnapshot(store,record,duplicate);
