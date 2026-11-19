@@ -89,6 +89,10 @@ await test('malformed v10 cursor cannot be erased by ordinary delivered-turn adm
   assert.deepEqual(await readFile(statePath), corruptBytes, 'rejected admission must not overwrite invalid ledger')
   await assert.rejects(restarted.reloadSafetyStrict(), /persisted applied-turn identity is invalid/)
   assert.deepEqual(await readFile(statePath), corruptBytes, 'failed strict reload must not overwrite invalid ledger')
+  // Deleting the bad file must not turn an already-corrupt workspace into a new
+  // zero-cursor authority state. This is different from a brand-new workspace.
+  await rm(statePath)
+  await assert.rejects(restarted.reloadSafetyStrict(), /missing during strict recovery/)
   // An operator-authenticated restore is modeled only in disposable test state.
   await writeFile(statePath, intact)
   await restarted.reloadSafetyStrict()

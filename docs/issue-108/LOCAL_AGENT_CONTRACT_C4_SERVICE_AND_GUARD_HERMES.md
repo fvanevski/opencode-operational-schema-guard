@@ -14,7 +14,7 @@ WORK_BRANCH=issue/108-c4-remediation
 BASE_MAIN_SHA=288cbb48a68bffde8fb922714e22500b5db4dd66
 WORK_BRANCH_HEAD=<full exact SHA supplied by Central kickoff; re-read GitHub>
 V10_BASE_SHA256=b5452c987d8c9d7a520e082fe492f81f35d7d0484b85e89e0d1234c125d84a25
-V10_PATCHED_SHA256=fd1eba5d56f1dd72b4a6eced4d8c3677c85c2902d9a81f87b50b75272d9e5218
+V10_PATCHED_SHA256=8f8fe8cfc8932fcdc15e75fa742d26316bb27abcc5e63f53164d0dac8a8fb24a
 GRAPHITI_GROUP=development-knowledge
 WORKSPACE=/workspace/mcp_servers/gh_mcp
 MODE=HOST_SERVICE_RECOVERY_AND_CANDIDATE_READINESS
@@ -50,11 +50,11 @@ If diagnosis finds substantive wrapper/admission code needed, **do not redesign 
 
 ## 3. Integrate the exact Central-owned guard code into a disposable tree
 
-The branch includes `v10-guard/operational-schema-v5-capacity-and-corrupt-ledger.patch` and `guard-applied-cursor-capacity.test.mjs`. Authenticate their SHA-256 against the previously accepted Central packet: patch `fc575dfd779e04c468c58216a0fbdd78d254eff5c156f1ec803f6f24734543a5` and test `abc167a1d8e8c9fde61952fcd7194ece8f03fd3a54e589a1aa34ee7c146510d3`.
+The branch includes `v10-guard/operational-schema-v5-capacity-and-corrupt-ledger.patch` and `guard-applied-cursor-capacity.test.mjs`. Authenticate their SHA-256 against the previously accepted Central packet: patch `dc5bffe8d3c3da68c97164edbb94761610c0ded7c40b92e64c2712ba46b044d9` and test `aae4525cdf29c6a7c4280d35db916dcb3c4a611d0e26e53d5880290ccb7b1d73`.
 
 Verify installed V10 source exactly equals `V10_BASE_SHA256`. Copy the **complete** installed V5 and V2 adapter dependency trees to isolated scratch. Apply the staged patch to the scratch V10 copy, zero fuzz; resulting core **must** equal `V10_PATCHED_SHA256`. Do **not** apply it to repository-root V9 source. Run `node --check` and the supplied focused `node --test` with `OPERATION_GUARD_CORE_MODULE` pointing to the patched scratch core.
 
-Previously qualified same-source results were 2/2 supplied, 17/17 independent probe, 7/7 adapter, with identical two existing installed-suite failures on base and candidate. Do not rerun every suite merely to repeat those receipts if the code and dependencies are unchanged. If material source or environment changed, run impacted focused tests and classify precisely. Do not weaken a failing test or turn baseline failure into a false green result.
+Previously qualified predecessor-candidate results were 2/2 supplied, 17/17 independent probe, 7/7 adapter, with identical two existing installed-suite failures on base and candidate. The additional strict-reload-missing-file regression is **new** and must be executed once on the exact revised candidate (plus V2 adapter smoke where affected). Do not rerun every suite merely to repeat those receipts if the code and dependencies are unchanged. If material source or environment changed, run impacted focused tests and classify precisely. Do not weaken a failing test or turn baseline failure into a false green result.
 
 **Do not install the new core into production in this phase.** Central will independently review this PR's exact SHA, trusted CI and host evidence, then authorize merge and a controlled source promotion. A further local source redesign or direct GitHub push is not delegated.
 
