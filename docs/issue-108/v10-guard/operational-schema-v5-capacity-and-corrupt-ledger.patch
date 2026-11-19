@@ -1,0 +1,83 @@
+--- a/operational-schema-v5/lib/operation-guard-core.mjs
++++ b/operational-schema-v5/lib/operation-guard-core.mjs
+@@ -84,7 +84,10 @@
+ const WORKSPACE_IDENTITY_PATH = "/home/filip/.config/opencode/plugins/operational-schema-v5/scripts/workspace-identity.mjs"
+ const EXACT_HEAD_LEASE_SCHEMA = "opencode-exact-head-lease-v1"
+ const EXACT_HEAD_LEASE_POLICY_VERSION = 1
+-const MAX_APPLIED_SESSIONS = 128
++// A workspace cursor remains durable across active and historical native sessions.
++// Do not discard cursors to admit new sessions: that would weaken replay/order checks.
++// This conservative bound is an operational headroom increase, not cursor compaction.
++const MAX_APPLIED_SESSIONS = 4096
+ 
+ const TASK_EXECUTION_CONTRACTS = Object.freeze({
+   verify: "Operational child contract: use one bare supported invocation per shell call, without operators, redirects, appended status probes, or wrapper substitutions. End exactly with OPERATIONAL_RESULT: PASS|FAIL|BLOCKED; COMMANDS_RUN: <n>; COMMANDS_REQUIRED: <n>.",
+@@ -3790,6 +3793,9 @@
+   const path = workspaceStatePath(stateDirectory, directory)
+   let loaded = !path
+   let pending = Promise.resolve()
++  // An unreadable/invalid authoritative cursor file may not be replaced by a
++  // fresh in-memory map. Only an explicit successful strict reload clears this.
++  let invalidPersistedState = false
+   return {
+     path,
+     async reloadStrict() {
+@@ -3798,14 +3804,26 @@
+       try {
+         persisted = JSON.parse(await readFile(path, "utf8"))
+       } catch (error) {
+-        if (error?.code !== "ENOENT") throw error
++        if (error?.code !== "ENOENT") {
++          invalidPersistedState = true
++          throw error
++        }
++        // A damaged ledger cannot be rehabilitated by deleting its file.
++        // Fresh-workspace initialization is still allowed before a bad load.
++        if (invalidPersistedState) throw new Error("persisted workspace authority state missing during strict recovery")
+       }
+       const fresh = emptySafetyState()
+       if (persisted !== undefined) {
+-        if (!persisted || !Number.isSafeInteger(persisted.version) || persisted.version < 1 || persisted.version > 10) throw new Error("persisted workspace authority version is invalid")
+-        hydrateSafetyState(fresh, persisted)
++        try {
++          if (!persisted || !Number.isSafeInteger(persisted.version) || persisted.version < 1 || persisted.version > 10) throw new Error("persisted workspace authority version is invalid")
++          hydrateSafetyState(fresh, persisted)
++        } catch (error) {
++          invalidPersistedState = true
++          throw error
++        }
+       }
+       Object.assign(safety, fresh)
++      invalidPersistedState = false
+       loaded = true
+     },
+     async load() {
+@@ -3815,6 +3833,7 @@
+         hydrateSafetyState(safety, JSON.parse(await readFile(path, "utf8")))
+       } catch (error) {
+         if (error?.code !== "ENOENT") {
++          invalidPersistedState = true
+           if (safety.authorityMode === "target" && safety.authorityStatus === "verified") {
+             safety.authorityStatus = "pending"
+             safety.exactHeadLease = undefined
+@@ -3836,8 +3855,12 @@
+         }
+       }
+     },
++    assertDeliveryAllowed() {
++      if (invalidPersistedState) throw new Error("invalid persisted workspace authority state: delivered turn blocked until strict recovery")
++    },
+     async save() {
+       if (!path) return
++      if (invalidPersistedState) throw new Error("invalid persisted workspace authority state: persistence blocked until strict recovery")
+       const snapshot = `${JSON.stringify(serializedSafetyState(safety), null, 2)}\n`
+       pending = pending.then(async () => {
+         await mkdir(resolve(stateDirectory), { recursive: true, mode: 0o700 })
+@@ -4490,6 +4513,7 @@
+     "chat.message": async (input, output, admitted) => {
+       await safetyStore.load()
+       if (admitted) {
++        safetyStore.assertDeliveryAllowed()
+         const sessionID = String(input?.sessionID ?? "")
+         const messageID = String(admitted.messageID ?? "")
+         const previousMessageID = admitted.previousMessageID === undefined ? undefined : String(admitted.previousMessageID)
