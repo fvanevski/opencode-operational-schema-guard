@@ -27,7 +27,7 @@ export function readOnlyJournal(directory,group,{onPage=()=>{}}={}) {
     assert(Number.isInteger(pageSize)&&pageSize>=1&&pageSize<=500,
       'Journal pageSize must be 1..500');
     // ENOENT is an explicit diagnostic failure, never permission to initialize.
-    const names=(await readdir(original.dir)).filter(n=>/^[0-9a-f-]{36}\\.json$/.test(n)).sort();
+    const names=(await readdir(original.dir)).filter(n=>/^[0-9a-f-]{36}\.json$/.test(n)).sort();
     for(let offset=0;offset<names.length;offset+=pageSize) {
       const rows=[];
       for(const name of names.slice(offset,offset+pageSize)) {
