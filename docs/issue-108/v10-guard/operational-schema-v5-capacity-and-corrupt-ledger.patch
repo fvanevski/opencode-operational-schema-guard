@@ -40,7 +40,8 @@
              safety.exactHeadLease = undefined
 @@ -3836,8 +3844,12 @@
          }
-       },
+       }
+     },
 +    assertDeliveryAllowed() {
 +      if (invalidPersistedState) throw new Error("invalid persisted workspace authority state: delivered turn blocked until strict recovery")
 +    },
