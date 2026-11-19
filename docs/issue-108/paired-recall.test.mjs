@@ -134,7 +134,7 @@ test('post-search settlement records delayed optional errors without inflating s
 
 test('post-return indexed evidence cannot retroactively change search-stage reach',async()=>{
   const f=freeze();f.cases=[f.cases[0]];
-  const sourceKey=createHash('sha256').update(source+'\\u0000'+fact).digest('hex');
+  const sourceKey=createHash('sha256').update(source+String.fromCharCode(0)+fact).digest('hex');
   const report=await runPairedRecall(f,{}, {rounds:1,optionalSettleMs:1000,
     makeMemory:(_freeze,_config,_policy,trace)=>({search:async()=>{
       const late=new Promise(resolve=>setTimeout(()=>{
