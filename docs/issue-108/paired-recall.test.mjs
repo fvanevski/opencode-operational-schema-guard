@@ -103,7 +103,7 @@ test('diagnostic journal cannot create a missing root and preserves read-only pa
     assert.equal(pages.length,1);
     assert.deepEqual(pages[0].map(row=>row.uuid),[uuid]);
     await assert.rejects(async()=>{for await(const _ of
-      readOnlyJournal(existing,group).pages({pageSize:501}){}},/pageSize/);
+      readOnlyJournal(existing,group).pages({pageSize:501})){}},/pageSize/);
   }finally{await rm(root,{recursive:true,force:true});}
 });
 
