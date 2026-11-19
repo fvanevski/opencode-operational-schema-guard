@@ -263,7 +263,7 @@ export function summarize(rows){
       decoded_rpc_json_chars:subset.reduce((n,x)=>n+Object.values(x.trace.rpc_decoded_json_chars).reduce((a,b)=>a+b,0),0),
       rpc_calls:subset.reduce((n,x)=>n+Object.values(x.trace.rpc).reduce((a,b)=>a+b,0),0)};
   }
-  summary.meaning='search timings exclude post-search optional settlement; incomplete optional work has null definitive error count; decoded JSON chars, not network bytes; missing facts may have been omitted at an earlier source stage';
+  summary.meaning='search timings, not hook p95; exclude post-search optional settlement; incomplete optional work has null definitive error count; decoded JSON chars, not network bytes; missing facts may have been omitted at an earlier source stage';
   return summary;
 }
 
