@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {createHash} from 'node:crypto';
 import {mkdtemp,mkdir,writeFile,stat,rm} from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -128,6 +129,24 @@ test('post-search settlement records delayed optional errors without inflating s
   for(const policy of ['strict','semantic']){
     assert.equal(report.aggregate[policy].swallowed_optional_errors,1);
     assert.equal(report.aggregate[policy].optional_work_incomplete_observations,0);
+  }
+});
+
+test('post-return indexed evidence cannot retroactively change search-stage reach',async()=>{
+  const f=freeze();f.cases=[f.cases[0]];
+  const sourceKey=createHash('sha256').update(source+'\\u0000'+fact).digest('hex');
+  const report=await runPairedRecall(f,{}, {rounds:1,optionalSettleMs:1000,
+    makeMemory:(_freeze,_config,_policy,trace)=>({search:async()=>{
+      const late=new Promise(resolve=>setTimeout(()=>{
+        trace.indexed_exact_keys.add(sourceKey);
+        resolve();
+      },100));
+      trackOptionalWork(trace,late);
+      return [];
+    }})});
+  for(const row of report.observations){
+    assert.equal(row.trace.optional_work_complete,true);
+    assert.equal(row.stages['fact-a'].curated_source_candidate_seen,false);
   }
 });
 

@@ -199,13 +199,13 @@ export async function runPairedRecall(freeze,config,{rounds=2,makeMemory=instrum
       try{selected=await mem.search(c.query,{limit:5,maxChars:1400});}
       catch(e){error=e?.name==='AbortError'?'AbortError':'SearchError';}
       const elapsed=Math.round((performance.now()-start)*100)/100;
-      // Wait ONLY after measuring the direct-search interval. Bound diagnostic
-      // settlement; an unfinished optional lookup is explicitly incomplete.
+      assert(Array.isArray(selected)&&selected.length<=5,'selection bound violated');
+      // Snapshot stage reach AT the search-return boundary. Work that completes
+      // afterward may contribute failure counters, never retroactive recall.
+      const facts=classify(c,selected,trace);
       const optionalStarted=performance.now();
       const optionalComplete=await awaitOptionalWork(trace,optionalSettleMs);
       const optionalWaitMs=Math.round((performance.now()-optionalStarted)*100)/100;
-      assert(Array.isArray(selected)&&selected.length<=5,'selection bound violated');
-      const facts=classify(c,selected,trace);
       observations.push({case_id:c.id,cohort:c.cohort,round:round+1,
         order:order.join('/'),policy,search_ms:elapsed,selected_count:selected.length,
         context_chars:formatContext(selected).length,error,
