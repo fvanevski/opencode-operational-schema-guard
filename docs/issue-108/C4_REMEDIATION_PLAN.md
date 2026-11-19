@@ -4,11 +4,11 @@
 
 ## Central-owned code and design
 
-The installed stock-V2 adapter imports a **different V10** `operational-schema-v5/lib/operation-guard-core.mjs` than the repository-root V9 core at the above base. **Never patch, replace, or deploy the repository V9 file in place of the host V10 core.** The host-origin source identity is SHA-256 `b5452c987d8c9d7a520e082fe492f81f35d7d0484b85e89e0d1234c125d84a25`. The exact patch in `v10-guard/` must produce SHA-256 `8f8fe8cfc8932fcdc15e75fa742d26316bb27abcc5e63f53164d0dac8a8fb24a`, without fuzz or an unstated migration. Both are **content hashes**, not Git commit SHAs.
+The installed stock-V2 adapter imports a **different V10** `operational-schema-v5/lib/operation-guard-core.mjs` than the repository-root V9 core at the above base. **Never patch, replace, or deploy the repository V9 file in place of the host V10 core.** The host-origin source identity is SHA-256 `b5452c987d8c9d7a520e082fe492f81f35d7d0484b85e89e0d1234c125d84a25`. The exact patch in `v10-guard/` must produce SHA-256 `a18edc96f7c5d1d32493d47d4e387a46a3e7aca20727c4f5b9b3130291fd764d`, without fuzz or an unstated migration. Both are **content hashes**, not Git commit SHAs.
 
 The change is deliberately small:
 - Raise the **per-workspace applied-turn cursor** capacity from 128 to 4096, retaining all historical cursors and the V10 disk schema.
-- Latch a failed ordinary load of malformed authoritative persisted safety state, blocking delivered-turn admission and implicit `save()` until an explicit successful strict reload of valid recovered state. After a failed load, a missing ledger file must not be accepted as a fresh empty authority.
+- Latch failed ordinary **and strict** loading of malformed authoritative persisted safety state, blocking delivered-turn admission and implicit `save()` until a successful strict reload of valid recovered state. Once either load path detects corruption, deleting the file cannot reset workspace authority.
 - Preserve duplicate/replay, content integrity, message ordering, atomic persistence and the hard 4096 ceiling. There is no ledger deletion, compaction or historical evictions.
 
 This is an interim operational headroom measure, not a permanent append-only ledger lifecycle solution. Separate long-term retention/compaction design is not necessary for this bounded C4 recovery.

@@ -22,25 +22,37 @@
    return {
      path,
      async reloadStrict() {
-@@ -3799,6 +3805,9 @@
+@@ -3798,14 +3804,26 @@
+       try {
          persisted = JSON.parse(await readFile(path, "utf8"))
        } catch (error) {
-         if (error?.code !== "ENOENT") throw error
+-        if (error?.code !== "ENOENT") throw error
++        if (error?.code !== "ENOENT") {
++          invalidPersistedState = true
++          throw error
++        }
 +        // A damaged ledger cannot be rehabilitated by deleting its file.
 +        // Fresh-workspace initialization is still allowed before a bad load.
 +        if (invalidPersistedState) throw new Error("persisted workspace authority state missing during strict recovery")
        }
        const fresh = emptySafetyState()
        if (persisted !== undefined) {
-@@ -3806,6 +3815,7 @@
-         hydrateSafetyState(fresh, persisted)
+-        if (!persisted || !Number.isSafeInteger(persisted.version) || persisted.version < 1 || persisted.version > 10) throw new Error("persisted workspace authority version is invalid")
+-        hydrateSafetyState(fresh, persisted)
++        try {
++          if (!persisted || !Number.isSafeInteger(persisted.version) || persisted.version < 1 || persisted.version > 10) throw new Error("persisted workspace authority version is invalid")
++          hydrateSafetyState(fresh, persisted)
++        } catch (error) {
++          invalidPersistedState = true
++          throw error
++        }
        }
        Object.assign(safety, fresh)
 +      invalidPersistedState = false
        loaded = true
      },
      async load() {
-@@ -3815,6 +3825,7 @@
+@@ -3815,6 +3833,7 @@
          hydrateSafetyState(safety, JSON.parse(await readFile(path, "utf8")))
        } catch (error) {
          if (error?.code !== "ENOENT") {
@@ -48,7 +60,7 @@
            if (safety.authorityMode === "target" && safety.authorityStatus === "verified") {
              safety.authorityStatus = "pending"
              safety.exactHeadLease = undefined
-@@ -3836,8 +3847,12 @@
+@@ -3836,8 +3855,12 @@
          }
        }
      },
@@ -61,7 +73,7 @@
        const snapshot = `${JSON.stringify(serializedSafetyState(safety), null, 2)}\n`
        pending = pending.then(async () => {
          await mkdir(resolve(stateDirectory), { recursive: true, mode: 0o700 })
-@@ -4490,6 +4505,7 @@
+@@ -4490,6 +4513,7 @@
      "chat.message": async (input, output, admitted) => {
        await safetyStore.load()
        if (admitted) {
