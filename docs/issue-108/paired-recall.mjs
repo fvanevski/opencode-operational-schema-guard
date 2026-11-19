@@ -3,7 +3,7 @@
  * This is NOT native context-hook, model-bound, remote-authority, or answer-quality proof.
  */
 import {createHash} from 'node:crypto';
-import {readFile, writeFile} from 'node:fs/promises';
+import {readFile, readdir, writeFile} from 'node:fs/promises';
 import {performance} from 'node:perf_hooks';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -18,6 +18,47 @@ const uuid=/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i;
 const pct=(nums,p)=>nums.length?([...nums].sort((a,b)=>a-b)[Math.ceil(nums.length*p)-1]):null;
 const assert=(condition,message)=>{if(!condition)throw Error(message);};
 const object=v=>v&&typeof v==='object'&&!Array.isArray(v);
+const OPTIONAL_SETTLE_MS=1500;
+
+/** Preserve Journal.pages read semantics without its directory-creating init(). */
+export function readOnlyJournal(directory,group,{onPage=()=>{}}={}) {
+  const original=new Journal(directory,group);
+  return {pages:async function*({pageSize=128}={}) {
+    assert(Number.isInteger(pageSize)&&pageSize>=1&&pageSize<=500,
+      'Journal pageSize must be 1..500');
+    // ENOENT is an explicit diagnostic failure, never permission to initialize.
+    const names=(await readdir(original.dir)).filter(n=>/^[0-9a-f-]{36}\\.json$/.test(n)).sort();
+    for(let offset=0;offset<names.length;offset+=pageSize) {
+      const rows=[];
+      for(const name of names.slice(offset,offset+pageSize)) {
+        const value=await original.get(name.slice(0,-5));
+        if(value)rows.push(value);
+      }
+      onPage(rows);
+      yield rows;
+    }
+  }};
+}
+
+/** Observe completion of optional work, including rejection after Memory.search returns. */
+export function trackOptionalWork(trace,work) {
+  const task=Promise.resolve(work);
+  trace.pendingOptional++;
+  trace.optionalTasks.push(task.then(
+    ()=>{trace.pendingOptional--;},
+    ()=>{trace.pendingOptional--;}));
+  return task;
+}
+async function awaitOptionalWork(trace,budgetMs) {
+  if(!trace.optionalTasks.length)return true;
+  let timer;
+  try {
+    return await Promise.race([
+      Promise.all(trace.optionalTasks).then(()=>true),
+      new Promise(resolve=>{timer=setTimeout(()=>resolve(false),budgetMs);})
+    ]);
+  } finally {clearTimeout(timer);}
+}
 
 export function validateFreeze(freeze){
   assert(object(freeze)&&freeze.schema==='ghdev-108-freeze-v1','bad freeze schema');
@@ -51,6 +92,7 @@ export function validateFreeze(freeze){
 
 function newTrace(){return {rpc:{},rpc_errors:{},rpc_chars:{},rpc_ms:{},curated_count:0,curated_errors:0,resolver_errors:0,
   curated_ms:0,legacy_pages:0,legacy_records:0,source_resolved:0,
+  pendingOptional:0,optionalTasks:[],
   remote_list_count:null,remote_list_complete:null,native_fact_count:0,
   indexed_exact_keys:new Set(),indexed_uuid_by_key:new Map(),native_fact_hashes:new Set(),
   resolver_source_hashes:new Set(),remote_uuids:new Set(),curated_remote_keys:new Set()};}
@@ -82,25 +124,25 @@ function instrument(freeze,config,policy,trace){
     }catch(e){trace.rpc_errors[name]=(trace.rpc_errors[name]||0)+1;throw e;
     }finally{trace.rpc_ms[name]=(trace.rpc_ms[name]||0)+performance.now()-started;}
   }};
-  const original=new Journal(config.journalDir,freeze.group);
-  const journal={pages:async function*(opts){
-    for await(const page of original.pages(opts)){
-      trace.legacy_pages++;trace.legacy_records+=page.length;yield page;
-    }
-  }};
+  const journal=readOnlyJournal(config.journalDir,freeze.group,{
+    onPage:page=>{trace.legacy_pages++;trace.legacy_records+=page.length;}
+  });
   const baseRetriever=curatedRecallRetriever(config.reviewRoot,freeze.group,
     freeze.workspace,freeze.project);
-  const curatedCandidateRetriever=async(query,selectedPolicy)=>{
-    const started=performance.now();
-    try{
-      const rows=await baseRetriever(query,selectedPolicy);
-      trace.curated_count+=rows.length;
-      for(const row of rows)if(typeof row?.fact==='string'&&typeof row?.source==='string')
-        {const k=key(row.source,row.fact);trace.indexed_exact_keys.add(k);
-          if(typeof row.remoteEpisodeUuid==='string')trace.indexed_uuid_by_key.set(k,row.remoteEpisodeUuid);}
-      return rows;
-    }catch(e){trace.curated_errors++;throw e;
-    }finally{trace.curated_ms+=performance.now()-started;}
+  const curatedCandidateRetriever=(query,selectedPolicy)=>{
+    const task=(async()=>{
+      const started=performance.now();
+      try{
+        const rows=await baseRetriever(query,selectedPolicy);
+        trace.curated_count+=rows.length;
+        for(const row of rows)if(typeof row?.fact==='string'&&typeof row?.source==='string')
+          {const k=key(row.source,row.fact);trace.indexed_exact_keys.add(k);
+            if(typeof row.remoteEpisodeUuid==='string')trace.indexed_uuid_by_key.set(k,row.remoteEpisodeUuid);}
+        return rows;
+      }catch(e){trace.curated_errors++;throw e;
+      }finally{trace.curated_ms+=performance.now()-started;}
+    })();
+    return trackOptionalWork(trace,task);
   };
   const extraSourceResolver=async(ids)=>{
     try {
@@ -142,9 +184,12 @@ function classify(c,items,trace){
 }
 
 /** Inject a mock makeMemory ONLY for deterministic tests. Real CLI uses actual classes. */
-export async function runPairedRecall(freeze,config,{rounds=2,makeMemory=instrument}={}){
+export async function runPairedRecall(freeze,config,{rounds=2,makeMemory=instrument,
+    optionalSettleMs=OPTIONAL_SETTLE_MS}={}){
   validateFreeze(freeze);
   assert(Number.isInteger(rounds)&&rounds>=1&&rounds<=3,'bad rounds');
+  assert(Number.isInteger(optionalSettleMs)&&optionalSettleMs>=1&&
+    optionalSettleMs<=5000,'bad optional settle budget');
   const observations=[];
   for(let round=0;round<rounds;round++)for(let i=0;i<freeze.cases.length;i++){
     const c=freeze.cases[i],order=(round+i)%2?['semantic','strict']:['strict','semantic'];
@@ -154,6 +199,11 @@ export async function runPairedRecall(freeze,config,{rounds=2,makeMemory=instrum
       try{selected=await mem.search(c.query,{limit:5,maxChars:1400});}
       catch(e){error=e?.name==='AbortError'?'AbortError':'SearchError';}
       const elapsed=Math.round((performance.now()-start)*100)/100;
+      // Wait ONLY after measuring the direct-search interval. Bound diagnostic
+      // settlement; an unfinished optional lookup is explicitly incomplete.
+      const optionalStarted=performance.now();
+      const optionalComplete=await awaitOptionalWork(trace,optionalSettleMs);
+      const optionalWaitMs=Math.round((performance.now()-optionalStarted)*100)/100;
       assert(Array.isArray(selected)&&selected.length<=5,'selection bound violated');
       const facts=classify(c,selected,trace);
       observations.push({case_id:c.id,cohort:c.cohort,round:round+1,
@@ -165,6 +215,9 @@ export async function runPairedRecall(freeze,config,{rounds=2,makeMemory=instrum
           rpc_ms:trace.rpc_ms,curated_candidate_count:trace.curated_count,
           curated_ms:Math.round(trace.curated_ms*100)/100,
           curated_errors:trace.curated_errors,resolver_errors:trace.resolver_errors,
+          optional_work_complete:optionalComplete&&trace.pendingOptional===0,
+          optional_work_pending:trace.pendingOptional,
+          optional_settle_wait_ms:optionalWaitMs,
           legacy_pages:trace.legacy_pages,legacy_records:trace.legacy_records,
           source_resolved_count:trace.source_resolved,
           native_fact_count:trace.native_fact_count,
@@ -192,6 +245,10 @@ export function summarize(rows){
       for(const id of row.missed)missed.add(`${row.case_id}:${id}`);
       for(const id of row.selected)selected.add(`${row.case_id}:${id}`);
     }
+    const incomplete=subset.filter(x=>x.trace.optional_work_complete===false).length;
+    const observedOptionalErrors=subset.reduce((n,x)=>n+
+      Object.values(x.trace.rpc_errors||{}).reduce((a,b)=>a+b,0)+
+      (x.trace.curated_errors||0)+(x.trace.resolver_errors||0),0);
     summary[policy]={n:subset.length,search_p50_ms:pct(times,.5),
       search_p95_ms:pct(times,.95),search_max_ms:times.length?Math.max(...times):null,
       cases_with_expected_hit:new Set(subset.filter(x=>x.selected.length).map(x=>x.case_id)).size,
@@ -200,13 +257,13 @@ export function summarize(rows){
       forbidden_selected:subset.reduce((n,x)=>n+x.forbidden_selected.length,0),
       unadjudicated_selection:subset.reduce((n,x)=>n+x.unknown_selected_digests.length,0),
       search_errors:subset.filter(x=>x.error).length,
-      swallowed_optional_errors:subset.reduce((n,x)=>n+
-        Object.values(x.trace.rpc_errors||{}).reduce((a,b)=>a+b,0)+
-        (x.trace.curated_errors||0)+(x.trace.resolver_errors||0),0),
+      swallowed_optional_errors:incomplete?null:observedOptionalErrors,
+      observed_swallowed_optional_errors_lower_bound:observedOptionalErrors,
+      optional_work_incomplete_observations:incomplete,
       decoded_rpc_json_chars:subset.reduce((n,x)=>n+Object.values(x.trace.rpc_decoded_json_chars).reduce((a,b)=>a+b,0),0),
       rpc_calls:subset.reduce((n,x)=>n+Object.values(x.trace.rpc).reduce((a,b)=>a+b,0),0)};
   }
-  summary.meaning='search timings, not hook p95; decoded JSON chars, not network bytes; missing facts may have been omitted at an earlier source stage';
+  summary.meaning='search timings exclude post-search optional settlement; incomplete optional work has null definitive error count; decoded JSON chars, not network bytes; missing facts may have been omitted at an earlier source stage';
   return summary;
 }
 
