@@ -49,7 +49,7 @@ export function validateFreeze(freeze){
   return freeze;
 }
 
-function newTrace(){return {rpc:{},rpc_chars:{},rpc_ms:{},curated_count:0,
+function newTrace(){return {rpc:{},rpc_errors:{},rpc_chars:{},rpc_ms:{},curated_count:0,curated_errors:0,resolver_errors:0,
   curated_ms:0,legacy_pages:0,legacy_records:0,source_resolved:0,
   remote_list_count:null,remote_list_complete:null,native_fact_count:0,
   indexed_exact_keys:new Set(),indexed_uuid_by_key:new Map(),native_fact_hashes:new Set(),
@@ -79,6 +79,7 @@ function instrument(freeze,config,policy,trace){
         if(trace.remote_list_complete)for(const x of rows)trace.remote_uuids.add(x.uuid);
       }
       return v;
+    }catch(e){trace.rpc_errors[name]=(trace.rpc_errors[name]||0)+1;throw e;
     }finally{trace.rpc_ms[name]=(trace.rpc_ms[name]||0)+performance.now()-started;}
   }};
   const original=new Journal(config.journalDir,freeze.group);
@@ -98,14 +99,17 @@ function instrument(freeze,config,policy,trace){
         {const k=key(row.source,row.fact);trace.indexed_exact_keys.add(k);
           if(typeof row.remoteEpisodeUuid==='string')trace.indexed_uuid_by_key.set(k,row.remoteEpisodeUuid);}
       return rows;
+    }catch(e){trace.curated_errors++;throw e;
     }finally{trace.curated_ms+=performance.now()-started;}
   };
   const extraSourceResolver=async(ids)=>{
-    const rows=await sourcedEpisodeResolver(config.reviewRoot,freeze.group,
-      freeze.workspace,freeze.project,ids);
-    trace.source_resolved+=rows.length;
-    for(const row of rows)if(row?.sourceRef)trace.resolver_source_hashes.add(hash(row.sourceRef));
-    return rows;
+    try {
+      const rows=await sourcedEpisodeResolver(config.reviewRoot,freeze.group,
+        freeze.workspace,freeze.project,ids);
+      trace.source_resolved+=rows.length;
+      for(const row of rows)if(row?.sourceRef)trace.resolver_source_hashes.add(hash(row.sourceRef));
+      return rows;
+    } catch(e){trace.resolver_errors++;throw e;}
   };
   return new Memory({journal,graphiti,group:freeze.group,curatedCandidateRetriever,
     extraSourceResolver,recallPolicy:policy,ranker:null});
@@ -156,9 +160,11 @@ export async function runPairedRecall(freeze,config,{rounds=2,makeMemory=instrum
         order:order.join('/'),policy,search_ms:elapsed,selected_count:selected.length,
         context_chars:formatContext(selected).length,error,
         ...facts,
-        trace:{rpc:trace.rpc,rpc_decoded_json_chars:trace.rpc_chars,
+        trace:{rpc:trace.rpc,rpc_errors:trace.rpc_errors,
+          rpc_decoded_json_chars:trace.rpc_chars,
           rpc_ms:trace.rpc_ms,curated_candidate_count:trace.curated_count,
           curated_ms:Math.round(trace.curated_ms*100)/100,
+          curated_errors:trace.curated_errors,resolver_errors:trace.resolver_errors,
           legacy_pages:trace.legacy_pages,legacy_records:trace.legacy_records,
           source_resolved_count:trace.source_resolved,
           native_fact_count:trace.native_fact_count,
@@ -194,6 +200,9 @@ export function summarize(rows){
       forbidden_selected:subset.reduce((n,x)=>n+x.forbidden_selected.length,0),
       unadjudicated_selection:subset.reduce((n,x)=>n+x.unknown_selected_digests.length,0),
       search_errors:subset.filter(x=>x.error).length,
+      swallowed_optional_errors:subset.reduce((n,x)=>n+
+        Object.values(x.trace.rpc_errors||{}).reduce((a,b)=>a+b,0)+
+        (x.trace.curated_errors||0)+(x.trace.resolver_errors||0),0),
       decoded_rpc_json_chars:subset.reduce((n,x)=>n+Object.values(x.trace.rpc_decoded_json_chars).reduce((a,b)=>a+b,0),0),
       rpc_calls:subset.reduce((n,x)=>n+Object.values(x.trace.rpc).reduce((a,b)=>a+b,0),0)};
   }
