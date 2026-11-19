@@ -8,6 +8,8 @@ import '../../issue-107/qualification.test.mjs';
 import '../../issue-107/corroboration.test.mjs';
 import '../../issue-107/sibling-reconsideration.test.mjs';
 import '../../issue-107/sibling-worker.test.mjs';
+// #108 C1-C3 paired read-only recall comparator contract.
+import '../../issue-108/paired-recall.test.mjs';
 import { spawnSync } from 'node:child_process';
 import assert from 'node:assert/strict';
 import { mkdtemp, rm } from 'node:fs/promises';
