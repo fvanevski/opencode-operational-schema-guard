@@ -97,33 +97,44 @@ function newTrace(){return {rpc:{},rpc_errors:{},rpc_chars:{},rpc_ms:{},curated_
   indexed_exact_keys:new Set(),indexed_uuid_by_key:new Map(),native_fact_hashes:new Set(),
   resolver_source_hashes:new Set(),remote_uuids:new Set(),curated_remote_keys:new Set()};}
 
-function instrument(freeze,config,policy,trace){
-  const client=new GraphitiMcp(config.endpoint);
-  const graphiti={call:async(name,args,opts)=>{
+/** Instrument the exact Graphiti interface consumed by Memory.search, including
+ * optional remote episode-proof operations that can outlive the hook allowance. */
+export function observeGraphitiCalls(client,freeze,trace) {
+  return {call:(name,args,opts)=>{
     if(!['get_episodes','search_memory_facts'].includes(name))throw Error('read-only tool boundary');
     assert(Array.isArray(args?.group_ids)&&args.group_ids.length===1&&
       args.group_ids[0]===freeze.group,'wrong Graphiti query group');
     const started=performance.now();
     trace.rpc[name]=(trace.rpc[name]||0)+1;
-    try{
-      const v=await client.call(name,args,opts);
-      trace.rpc_chars[name]=(trace.rpc_chars[name]||0)+JSON.stringify(v??null).length;
-      if(name==='search_memory_facts'){
-        const rows=Array.isArray(v?.facts)?v.facts:[];
-        trace.native_fact_count+=rows.length;
-        for(const row of rows)if(typeof row?.fact==='string')trace.native_fact_hashes.add(hash(row.fact));
-      }
-      if(name==='get_episodes'){
-        const rows=Array.isArray(v?.episodes)?v.episodes:null;
-        trace.remote_list_count=rows?.length??null;
-        trace.remote_list_complete=Boolean(rows&&rows.length<1000&&
-          rows.every(x=>x?.group_id===freeze.group&&uuid.test(x.uuid||'')));
-        if(trace.remote_list_complete)for(const x of rows)trace.remote_uuids.add(x.uuid);
-      }
-      return v;
-    }catch(e){trace.rpc_errors[name]=(trace.rpc_errors[name]||0)+1;throw e;
-    }finally{trace.rpc_ms[name]=(trace.rpc_ms[name]||0)+performance.now()-started;}
+    const work=(async()=>{
+      try{
+        const v=await client.call(name,args,opts);
+        trace.rpc_chars[name]=(trace.rpc_chars[name]||0)+JSON.stringify(v??null).length;
+        if(name==='search_memory_facts'){
+          const rows=Array.isArray(v?.facts)?v.facts:[];
+          trace.native_fact_count+=rows.length;
+          for(const row of rows)if(typeof row?.fact==='string')trace.native_fact_hashes.add(hash(row.fact));
+        }
+        if(name==='get_episodes'){
+          const rows=Array.isArray(v?.episodes)?v.episodes:null;
+          trace.remote_list_count=rows?.length??null;
+          trace.remote_list_complete=Boolean(rows&&rows.length<1000&&
+            rows.every(x=>x?.group_id===freeze.group&&uuid.test(x.uuid||'')));
+          if(trace.remote_list_complete)for(const x of rows)trace.remote_uuids.add(x.uuid);
+        }
+        return v;
+      }catch(e){trace.rpc_errors[name]=(trace.rpc_errors[name]||0)+1;throw e;
+      }finally{trace.rpc_ms[name]=(trace.rpc_ms[name]||0)+performance.now()-started;}
+    })();
+    // Memory.search awaits the native fact query, but bounded proof can finish
+    // after the search returns. Count it in diagnostic settlement, not search_ms.
+    return name==='get_episodes'?trackOptionalWork(trace,work):work;
   }};
+}
+
+function instrument(freeze,config,policy,trace){
+  const client=new GraphitiMcp(config.endpoint);
+  const graphiti=observeGraphitiCalls(client,freeze,trace);
   const journal=readOnlyJournal(config.journalDir,freeze.group,{
     onPage:page=>{trace.legacy_pages++;trace.legacy_records+=page.length;}
   });

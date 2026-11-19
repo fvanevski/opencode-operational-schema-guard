@@ -4,8 +4,8 @@ import {createHash} from 'node:crypto';
 import {mkdtemp,mkdir,writeFile,stat,rm} from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import {validateFreeze,runPairedRecall,summarize,readOnlyJournal,trackOptionalWork}
-  from './paired-recall.mjs';
+import {validateFreeze,runPairedRecall,summarize,readOnlyJournal,trackOptionalWork,
+  observeGraphitiCalls} from './paired-recall.mjs';
 
 const source='opencode:ses_mock:user:msg_1';
 const fact='The reviewed migration uses the safe local rollback controller.';
@@ -147,6 +147,55 @@ test('post-return indexed evidence cannot retroactively change search-stage reac
   for(const row of report.observations){
     assert.equal(row.trace.optional_work_complete,true);
     assert.equal(row.stages['fact-a'].curated_source_candidate_seen,false);
+  }
+});
+
+test('late remote episode-proof rejection is counted after search without extending search_ms',async()=>{
+  const f=freeze();f.cases=[f.cases[0]];
+  const fakeClient={call:async(name)=>{
+    assert.equal(name,'get_episodes');
+    await new Promise(resolve=>setTimeout(resolve,160));
+    throw Error('delayed remote proof failed');
+  }};
+  const report=await runPairedRecall(f,{}, {rounds:1,optionalSettleMs:1000,
+    makeMemory:(truth,_config,_policy,trace)=>({search:async()=>{
+      const graphiti=observeGraphitiCalls(fakeClient,truth,trace);
+      // The caller is allowed to time out independently of the transport.
+      void graphiti.call('get_episodes',
+        {group_ids:[truth.group],max_episodes:1000},{deadlineMs:1}).catch(()=>{});
+      return [];
+    }})});
+  for(const row of report.observations){
+    assert.equal(row.trace.rpc.get_episodes,1);
+    assert.equal(row.trace.rpc_errors.get_episodes,1);
+    assert.equal(row.trace.optional_work_complete,true);
+    assert.equal(row.trace.optional_work_pending,0);
+    assert.ok(row.search_ms<160);
+  }
+  for(const policy of ['strict','semantic']){
+    assert.equal(report.aggregate[policy].swallowed_optional_errors,1);
+    assert.equal(report.aggregate[policy].optional_work_incomplete_observations,0);
+  }
+});
+
+test('unsettled remote proof is reported incomplete, not as zero errors',async()=>{
+  const f=freeze();f.cases=[f.cases[0]];
+  const fakeClient={call:async()=>new Promise(()=>{})};
+  const report=await runPairedRecall(f,{}, {rounds:1,optionalSettleMs:5,
+    makeMemory:(truth,_config,_policy,trace)=>({search:async()=>{
+      const graphiti=observeGraphitiCalls(fakeClient,truth,trace);
+      void graphiti.call('get_episodes',
+        {group_ids:[truth.group],max_episodes:1000},{deadlineMs:1}).catch(()=>{});
+      return [];
+    }})});
+  for(const row of report.observations){
+    assert.equal(row.trace.rpc.get_episodes,1);
+    assert.equal(row.trace.optional_work_complete,false);
+    assert.equal(row.trace.optional_work_pending,1);
+  }
+  for(const policy of ['strict','semantic']){
+    assert.equal(report.aggregate[policy].swallowed_optional_errors,null);
+    assert.equal(report.aggregate[policy].optional_work_incomplete_observations,1);
   }
 });
 
