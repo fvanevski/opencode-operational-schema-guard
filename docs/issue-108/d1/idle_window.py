@@ -284,6 +284,28 @@ class Host:
             sock.settimeout(1)
             return sock.connect_ex(("127.0.0.1",int(self.cfg["service_port"]))) == 0
 
+def wait_for_backend_ready(host, *, timeout_seconds=30.0, poll_seconds=0.25,
+                           sleep=time.sleep, now=time.monotonic):
+    """Wait for an already-started native backend to become actually available.
+
+    systemctl start can succeed before OpenCode binds its private listener.
+    Keep the maintenance journal in 'starting' until the service has a live,
+    positive PID and the private listener accepts connections. Never start
+    the service again here, release EX, or clear an uncertain journal.
+    """
+    deadline = now() + timeout_seconds
+    while True:
+        state, pid = host.active()
+        if state == "failed":
+            raise Blocked("backend service failed after terminal EX")
+        if (state == "active" and isinstance(pid, str) and pid.isdecimal()
+                and int(pid) > 0 and host.listener_up()):
+            return pid
+        if now() >= deadline:
+            raise Blocked("backend did not become ready after terminal EX")
+        sleep(poll_seconds)
+
+
 def front_start_ready(cfg, *, timeout_seconds=8.0, sleep=time.sleep):
     """Refuse backend startup unless the real managed ingress fence is live.
 
@@ -363,9 +385,10 @@ def run_cycle(cfg, host: Host, *, sleep=time.sleep):
             # while the backend restarts, then reopen only after its health.
             _write_journal(journal,"starting",attempt,"EX terminal; backend restart")
             host.start()
-            state,pid=host.active()
-            if state!="active" or pid in ("0","") or not host.listener_up():
-                raise Blocked("server did not return after terminal EX")
+            # systemd Type=exec/start success is not proof that OpenCode has
+            # finished booting and bound the private listener. Retry only
+            # read-only readiness checks, with ingress fenced throughout.
+            wait_for_backend_ready(host, sleep=sleep)
             host.ingress(expect_fenced=True)
             _write_journal(journal,"idle",attempt,"canonical EX and backend healthy")
             return "completed" if result==0 else "safe_local_retry"

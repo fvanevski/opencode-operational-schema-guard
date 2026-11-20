@@ -28,3 +28,8 @@ jobs:
         run: node --test docs/issue-99/archive.test.mjs docs/issue-99/lifecycle.test.mjs
       - name: Issue #92 post-exit EX launcher regressions
         run: python3 -m unittest discover -s docs/issue-75/v2-candidate -p 'test_post_exit_drain.py' -v
+      - name: Issue #108 native backend readiness regressions
+        run: |
+          python3 -m py_compile docs/issue-108/d1/idle_window.py
+          python3 -m unittest discover -s docs/issue-108/d1 -p 'test_idle_window.py' -v
+          python3 -m unittest discover -s docs/issue-108/d1 -p 'test_unit_lifecycle.py' -v
