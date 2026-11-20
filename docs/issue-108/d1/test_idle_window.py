@@ -13,7 +13,7 @@ class FakeHost:
     def __init__(self, result=0, work=True, fail=None):
         self.result=result; self.work=work; self.fail=fail
         self.service="active"; self.pid="4321"; self.events=[]
-        self.calls=0;self.listener_checks=0
+        self.calls=0;self.listener_checks=0;self.gate_calls=0
     def status(self): self.events.append("status"); return self.work
     def active(self): self.events.append("active"); return self.service,self.pid
     def ingress(self, *, expect_fenced):
@@ -25,7 +25,16 @@ class FakeHost:
         if self.fail=="busy": raise m.Blocked("session busy")
     def gate_idle(self):
         self.events.append("gate_idle")
+        self.gate_calls+=1
         if self.fail=="gate_busy": raise m.Blocked("scheduler busy")
+        if self.fail=="pre_ex_scheduler_busy" and self.gate_calls==3:
+            raise m.SchedulerBusy("inference scheduler busy")
+        if self.fail=="post_ex_scheduler_busy" and self.gate_calls==4:
+            raise m.SchedulerBusy("inference scheduler busy")
+        if self.fail=="post_stop_unclassified" and self.gate_calls==3:
+            raise m.Blocked("inference scheduler busy")
+        if self.fail=="post_ex_unclassified" and self.gate_calls==4:
+            raise m.Blocked("unresolved Graphiti gate state")
     def stop(self):
         self.events.append("stop")
         if self.fail=="stop": raise m.Blocked("systemd stop failed")
@@ -78,6 +87,47 @@ class Safety(unittest.TestCase):
     def test_safe_local_retry_can_restart(self):
         host=FakeHost(result=4);self.assertEqual(self.run_cycle(host),"safe_local_retry")
         self.assertEqual(self.state(),"idle")
+    def test_post_stop_pre_ex_scheduler_busy_restores_without_drain(self):
+        host=FakeHost(fail="pre_ex_scheduler_busy")
+        self.assertEqual(self.run_cycle(host),"scheduler_deferred")
+        self.assertEqual(host.gate_calls,3)
+        self.assertEqual(host.events.count("stop"),1)
+        self.assertEqual(host.events.count("start"),1)
+        self.assertNotIn("drain",host.events)
+        self.assertEqual(host.service,"active")
+        self.assertEqual(self.state(),"idle")
+        self.assertEqual(host.events[-1],"ingress_fenced")
+
+    def test_post_terminal_scheduler_busy_restores_once_without_replay(self):
+        for result,expected in ((0,"completed"),(4,"safe_local_retry")):
+            with self.subTest(result=result):
+                host=FakeHost(result=result,fail="post_ex_scheduler_busy")
+                self.assertEqual(self.run_cycle(host),expected)
+                self.assertEqual(host.gate_calls,4)
+                self.assertEqual(host.events.count("drain"),1)
+                self.assertEqual(host.events.count("start"),1)
+                self.assertLess(host.events.index("drain"),host.events.index("start"))
+                self.assertEqual(host.service,"active")
+                self.assertEqual(self.state(),"idle")
+
+    def test_unclassified_post_stop_failures_remain_unsafe(self):
+        for failure in ("post_stop_unclassified","post_ex_unclassified"):
+            with self.subTest(failure=failure):
+                host=FakeHost(fail=failure)
+                with self.assertRaises(m.Blocked):self.run_cycle(host)
+                self.assertEqual(self.state(),"unsafe")
+                self.assertNotIn("start",host.events)
+                self.assertEqual(host.service,"inactive")
+                with self.assertRaises(m.Blocked):m.check_start(Path(self.cfg["journal"]))
+                m._write_journal(Path(self.cfg["journal"]),"idle","reset-test-only","disposable fixture")
+
+    def test_safe_scheduler_path_restart_failure_remains_fenced(self):
+        host=FakeHost(fail="pre_ex_scheduler_busy")
+        with patch.object(host,"start",side_effect=m.Blocked("restart failed")):
+            with self.assertRaisesRegex(m.Blocked,"restart failed"):self.run_cycle(host)
+        self.assertEqual(self.state(),"unsafe")
+        with self.assertRaises(m.Blocked):m.check_start(Path(self.cfg["journal"]))
+
     def test_delayed_backend_listener_does_not_poison_journal(self):
         for result,expected in ((0,"completed"),(4,"safe_local_retry")):
             with self.subTest(result=result):
@@ -225,6 +275,20 @@ class NativeActivity(unittest.TestCase):
     def test_unavailable_background_job_api_fails_closed(self):
         with self.assertRaisesRegex(m.Blocked,"background jobs HTTP non-200"):
             self.check('{"data":{}}',job_http_status=404)
+
+class GateSchedulerBusy(unittest.TestCase):
+    def test_only_nonzero_scheduler_metrics_raise_typed_busy(self):
+        from types import SimpleNamespace
+        class Worker:
+            def _active_harness_processes(self):return False
+            def _unresolved_graphiti_from_existing_db(self):return False
+            def _metrics(self):return (1,0)
+        gate=SimpleNamespace(
+            Config=SimpleNamespace(load=lambda _path:SimpleNamespace(database="/unused")),
+            Worker=Worker)
+        host=m.Host({"gate_source":"/source","gate_config":"/config"})
+        with patch.object(m,"_load_gate_source",return_value=gate):
+            with self.assertRaises(m.SchedulerBusy):host.gate_idle()
 
 class GateImport(unittest.TestCase):
     def test_pinned_gate_sibling_dependency_loads_in_clean_coordinator(self):

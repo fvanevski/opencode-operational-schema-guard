@@ -35,6 +35,11 @@ class Blocked(RuntimeError):
     pass
 
 
+class SchedulerBusy(Blocked):
+    """Canonical model scheduler has active/waiting inference, not remote ambiguity."""
+    pass
+
+
 def _read_json(path: Path):
     return json.loads(path.read_text(encoding="utf-8"))
 
@@ -264,7 +269,7 @@ class Host:
         if checker._active_harness_processes(): raise Blocked("interactive harness present")
         if checker._unresolved_graphiti_from_existing_db(): raise Blocked("unresolved Graphiti gate state")
         running, waiting = checker._metrics()
-        if running != 0 or waiting != 0: raise Blocked("inference scheduler busy")
+        if running != 0 or waiting != 0: raise SchedulerBusy("inference scheduler busy")
     def stop(self):
         p=_run(["/usr/bin/systemctl","--user","stop",self.cfg["service_unit"]],timeout=45)
         if p.returncode: raise Blocked("service stop failed: " + str(p.returncode))
@@ -343,6 +348,21 @@ def front_start_ready(cfg, *, timeout_seconds=8.0, sleep=time.sleep):
         sleep(0.2)
 
 
+def _restart_after_safe_boundary(host: Host, journal: Path, attempt: str,
+                                 reason: str, *, sleep=time.sleep):
+    """Reopen only after a proven no-EX or terminal-safe-EX boundary.
+
+    Keep ingress fenced through a single normal SH-gated service start,
+    bounded backend readiness, and a final fenced front check. Any failure
+    propagates to run_cycle's fail-closed unsafe handler.
+    """
+    _write_journal(journal, "starting", attempt, reason)
+    host.start()
+    wait_for_backend_ready(host, sleep=sleep)
+    host.ingress(expect_fenced=True)
+    _write_journal(journal, "idle", attempt, "backend healthy after safe boundary")
+
+
 def run_cycle(cfg, host: Host, *, sleep=time.sleep):
     journal=Path(cfg["journal"])
     coordinator=Path(cfg["coordinator_lock"])
@@ -375,22 +395,29 @@ def run_cycle(cfg, host: Host, *, sleep=time.sleep):
             _write_journal(journal,"stopped",attempt,"listener and process down")
             # Confirm all inference-capable external workers settled before
             # releasing the original service SH and entering canonical EX.
-            host.gate_idle()
+            try:
+                host.gate_idle()
+            except SchedulerBusy:
+                # The backend is stopped but the curator has NOT run; no
+                # remote result exists to reconcile. Do not strand the
+                # service merely because a separate model request arrived.
+                _restart_after_safe_boundary(
+                    host, journal, attempt, "scheduler busy before EX; no drain attempted", sleep=sleep)
+                return "scheduler_deferred"
             _write_journal(journal,"draining",attempt,"canonical EX worker in progress")
             result=host.drain()
             if result not in (0,4):
                 raise Blocked("curator not terminal-safe; do not restart server")
-            host.gate_idle()  # canonical remote uncertainty check must be clear
-            # EX child returned and released its lock. Keep ingress fenced
-            # while the backend restarts, then reopen only after its health.
-            _write_journal(journal,"starting",attempt,"EX terminal; backend restart")
-            host.start()
-            # systemd Type=exec/start success is not proof that OpenCode has
-            # finished booting and bound the private listener. Retry only
-            # read-only readiness checks, with ingress fenced throughout.
-            wait_for_backend_ready(host, sleep=sleep)
-            host.ingress(expect_fenced=True)
-            _write_journal(journal,"idle",attempt,"canonical EX and backend healthy")
+            try:
+                host.gate_idle()  # reconcile/uncertainty checks precede scheduler metrics
+            except SchedulerBusy:
+                # The canonical drain has already returned a terminal-safe
+                # 0/4; the scheduler becoming busy does not unclassify it.
+                _restart_after_safe_boundary(
+                    host, journal, attempt, "terminal EX; scheduler busy after drain", sleep=sleep)
+                return "completed" if result==0 else "safe_local_retry"
+            _restart_after_safe_boundary(
+                host, journal, attempt, "canonical EX terminal; backend restart", sleep=sleep)
             return "completed" if result==0 else "safe_local_retry"
         except BaseException as exc:
             # Before stop is requested, source and native work are unchanged;
