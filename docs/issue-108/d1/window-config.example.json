@@ -1,0 +1,36 @@
+{
+  "schema": "ghdev-idle-window-v1",
+  "journal": "/home/filip/.local/state/ghdev-graphiti/maintenance-window-v1.json",
+  "coordinator_lock": "/run/user/1000/ghdev-curator-coordinator.lock",
+  "service_unit": "opencode-serve.service",
+  "service_port": 49375,
+  "service_url": "http://127.0.0.1:49375",
+  "ingress_status_url": "http://127.0.0.1:49374/__ghdev_ingress/status",
+  "quiet_seconds": 30,
+  "gate_source": "/home/filip/.local/share/openviking-commit-gate/openviking_commit_gate.py",
+  "gate_config": "/home/filip/.config/openviking/commit-gate.toml",
+  "status_argv": [
+    "/usr/bin/node",
+    "/home/filip/.config/opencode/plugins/ghdev-graphiti-memory/docs/issue-78/v2-curator/curator-cli.mjs",
+    "status", "--group", "development-knowledge",
+    "--state-dir", "/home/filip/.local/state/ghdev-graphiti"
+  ],
+  "drain_argv": [
+    "/usr/bin/python3",
+    "/home/filip/.config/opencode/plugins/ghdev-graphiti-memory/docs/issue-75/v2-candidate/post-exit-drain.py",
+    "--gate-source", "/home/filip/.local/share/openviking-commit-gate/openviking_commit_gate.py",
+    "--gate-config", "/home/filip/.config/openviking/commit-gate.toml",
+    "--cli", "/home/filip/.config/opencode/plugins/ghdev-graphiti-memory/docs/issue-78/v2-curator/curator-cli.mjs",
+    "--group", "development-knowledge",
+    "--state-dir", "/home/filip/.local/state/ghdev-graphiti",
+    "--endpoint", "http://127.0.0.1:8766/mcp",
+    "--max-seconds", "600", "--lock-timeout", "120", "--autonomous-curation"
+  ],
+  "pinned_files": {
+    "/home/filip/.local/bin/openviking-agent-run": "29d4b1087fab4ec2d4850419e7e614231ba59c2352b52692ce95de6e25f62a85",
+    "/home/filip/.local/share/openviking-commit-gate/admission_exec.py": "08fc29d1c89d14595826eb2601e832a9ff3f3566015162ea1a74625065c4af7f",
+    "/home/filip/.local/share/openviking-commit-gate/openviking_commit_gate.py": "c5d7f3f38a75c2dfb9a8e4366ae27b89015f4016d4cc8bbcaaca85401031d928",
+    "/home/filip/.config/opencode/plugins/ghdev-graphiti-memory/docs/issue-75/v2-candidate/post-exit-drain.py": "428ac92f34a22da9f5f29c3a2a3a502855650d5438b8d255c0fc9a51500ef977",
+    "/home/filip/.config/opencode/plugins/ghdev-graphiti-memory/docs/issue-78/v2-curator/curator-cli.mjs": "1ce777313bb162344f9acf21bd9410d94d1d9916d31d970fd526a7626e09bf40"
+  }
+}
