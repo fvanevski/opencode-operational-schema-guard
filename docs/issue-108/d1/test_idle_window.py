@@ -148,17 +148,26 @@ class NativeActivity(unittest.TestCase):
         self.host=m.Host({"service_url":"http://127.0.0.1:49375"})
         self.auth=patch.dict(os.environ,{"OPENCODE_PASSWORD":"disposable-test-password"})
         self.auth.start();self.addCleanup(self.auth.stop)
-    def check(self, response, *, http_status=200):
+    def check(self, response, *, jobs_response='{"data":[]}', http_status=200, job_http_status=200):
+        urls=[]
         class Response:
-            status=http_status
+            def __init__(self, text, status): self.text=text; self.status=status
             def __enter__(self): return self
             def __exit__(self, *_): return None
-            def read(self, _n): return response.encode("utf-8")
-        with patch.object(m.urllib.request,"urlopen",return_value=Response()) as opener:
-            self.host.sessions_idle()
-            req=opener.call_args.args[0]
-            self.assertEqual(req.full_url,"http://127.0.0.1:49375/api/session/active")
+            def read(self, _n): return self.text.encode("utf-8")
+        def respond(req, **_):
+            urls.append(req.full_url)
             self.assertTrue(req.get_header("Authorization").startswith("Basic "))
+            if req.full_url.endswith("/api/session/active"):
+                return Response(response,http_status)
+            if req.full_url.endswith("/api/experimental/job?status=running"):
+                return Response(jobs_response,job_http_status)
+            raise AssertionError("unexpected native activity URL")
+        with patch.object(m.urllib.request,"urlopen",side_effect=respond):
+            self.host.sessions_idle()
+        self.assertEqual(urls,[
+            "http://127.0.0.1:49375/api/session/active",
+            "http://127.0.0.1:49375/api/experimental/job?status=running"])
     def test_empty_owned_active_set_allows_idle(self):
         self.check('{"data":{}}')
     def test_owned_running_drain_blocks_stop(self):
@@ -171,6 +180,16 @@ class NativeActivity(unittest.TestCase):
     def test_missing_service_password_fails_closed(self):
         with patch.dict(os.environ,{"OPENCODE_PASSWORD":""}):
             with self.assertRaises(m.Blocked): self.host.sessions_idle()
+    def test_running_background_job_blocks_even_with_empty_active_sessions(self):
+        with self.assertRaisesRegex(m.Blocked,"background execution"):
+            self.check('{"data":{}}',jobs_response='{"data":[{"id":"job-1","status":"running","kind":"shell"}]}')
+    def test_background_jobs_shape_must_be_complete_and_valid(self):
+        for body in ('{}','{"data":{}}','{"data":[{"status":"completed"}]}','<html>SPA</html>'):
+            with self.subTest(body=body),self.assertRaises(m.Blocked):
+                self.check('{"data":{}}',jobs_response=body)
+    def test_unavailable_background_job_api_fails_closed(self):
+        with self.assertRaisesRegex(m.Blocked,"background jobs HTTP non-200"):
+            self.check('{"data":{}}',job_http_status=404)
 
 class GateImport(unittest.TestCase):
     def test_pinned_gate_sibling_dependency_loads_in_clean_coordinator(self):

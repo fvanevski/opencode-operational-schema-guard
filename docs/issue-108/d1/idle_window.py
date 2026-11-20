@@ -218,6 +218,29 @@ class Host:
                 raise Blocked("native activity entry invalid")
         if body["data"]:
             raise Blocked("native foreground execution still active")
+        # A session background transition removes its foreground drain while
+        # a shell/subagent/image Job can keep executing. Model scheduler idle
+        # does not prove such host-side work has finished. OpenCode v2.3.0
+        # provides a process-scoped running-background-job inventory; require
+        # an empty authenticated response before the backend can be stopped.
+        # This endpoint is experimental: an unsupported/changed response
+        # fails closed instead of silently treating background work as idle.
+        jobs_req = urllib.request.Request(
+            self.cfg["service_url"]+"/api/experimental/job?status=running",
+            headers={"Authorization":"Basic "+token,"Accept":"application/json"})
+        try:
+            with urllib.request.urlopen(jobs_req, timeout=8) as r:
+                if r.status != 200: raise Blocked("native background jobs HTTP non-200")
+                jobs_body = json.loads(r.read(1024*1024))
+        except (OSError, ValueError, TimeoutError) as e:
+            raise Blocked("native background jobs unavailable") from e
+        if not isinstance(jobs_body,dict) or not isinstance(jobs_body.get("data"),list):
+            raise Blocked("native background jobs shape invalid")
+        for job in jobs_body["data"]:
+            if not isinstance(job,dict) or job.get("status")!="running":
+                raise Blocked("native background job entry invalid")
+        if jobs_body["data"]:
+            raise Blocked("native background execution still active")
     def gate_idle(self):
         # Same class, state rules and metrics parser as the authenticated
         # existing EX gate/curator. This does NOT acquire/release EX.
