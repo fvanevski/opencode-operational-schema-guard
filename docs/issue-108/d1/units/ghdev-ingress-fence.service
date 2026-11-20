@@ -1,0 +1,17 @@
+[Unit]
+Description=GHDEV guarded loopback ingress fence for persistent OpenCode server
+After=network.target
+
+[Service]
+Type=exec
+Environment=GHDEV_WINDOW_JOURNAL=/home/filip/.local/state/ghdev-graphiti/maintenance-window-v1.json
+Environment=GHDEV_INGRESS_PORT=49374
+Environment=GHDEV_BACKEND_PORT=49375
+ExecStart=/usr/bin/node /home/filip/.local/share/ghdev-108/ingress_fence.mjs
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=yes
+UMask=0077
+
+[Install]
+WantedBy=default.target

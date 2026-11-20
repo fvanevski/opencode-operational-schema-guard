@@ -1,0 +1,12 @@
+[Unit]
+Description=Bounded periodic retry of autonomous post-exit curation admission
+
+[Timer]
+OnBootSec=2min
+OnCalendar=*:0/2
+AccuracySec=15s
+Unit=ghdev-curator-prod.service
+Persistent=false
+
+[Install]
+WantedBy=timers.target
