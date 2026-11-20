@@ -92,6 +92,12 @@ The bounded correction **does not invoke another start or loosen admission**: af
 
 Focused regressions prove a delayed listener can settle without an unsafe journal, a never-ready or failed listener cannot authorize reopening, and a failed readiness verification leaves an unsafe journal. Deploy from the exact new merged-main revision through the existing rollback, then re-arm the scheduler only after the installed source and service are independently revalidated. One natural autonomous cycle is required to show hands-off `starting→idle` without manual journal repair; re-use the prior source-qualified dual-memory and callback-performance evidence for unchanged code.
 
+## D1.8 post-stop scheduler-busy recovery (Issue #108)
+
+The 2026-11-20 host recovery established two separate failures after a normal backend stop: a **pre-EX** scheduler-busy observation with no curator drain attempted, and a **post-EX** observation after the canonical drain had returned terminal-safe exit 4 with no unresolved submission. The previous generic exception handler wrote `unsafe` in both cases, stranding the shared service despite no unclassified remote result. The canonical source change distinguishes the specific typed `SchedulerBusy` result from other `Blocked` conditions.
+
+When only scheduler metrics become busy after stop, the controller may use the existing single-start `starting` -> backend-ready -> fenced-ingress-check -> `idle` path **only** before any EX drain attempt, or after the wrapper has returned a terminal-safe 0/4. Pre-EX deferral reports `scheduler_deferred` and permits a later natural timer attempt. An unknown drain outcome, unresolved Graphiti admission, missing gate/host identity, failed backend start, failed readiness, or any other unclassified post-stop error continues to write `unsafe`. No remote replay, gate suppression, new service manager, lease bypass or direct Graphiti mutation is introduced. The curator's production path/timer were deliberately inactive at handback and must be rearmed only after exact merged-source deployment and bounded host qualification.
+
 ## Scope fences
 
 No D2 graph repair, old-UUID downgrade/replay, Graphiti restore, historical SQLite repair, curation-bundle quarantine repair, OpenViking commit-gate rewrite, broad plugin upgrade, second memory authority, untrusted client backdoor, or new PR per acceptance test. Treat the 397/397 target-group readback as accepted host evidence and recheck the correct group in final qualification. The parent #105 gate remains independent.
