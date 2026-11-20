@@ -1,4 +1,7 @@
 import json
+import io
+import os
+import sys
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
@@ -138,5 +141,52 @@ class Safety(unittest.TestCase):
            "status_argv":["/usr/bin/node","/none"],"drain_argv":["/usr/bin/python3","/none"],
            "gate_source":"/none","gate_config":"/none","pinned_files":{"/none":"0"*64}}
         with self.assertRaises(m.Blocked):m._assert_config(c)
+
+
+class NativeActivity(unittest.TestCase):
+    def setUp(self):
+        self.host=m.Host({"service_url":"http://127.0.0.1:49375"})
+        self.auth=patch.dict(os.environ,{"OPENCODE_PASSWORD":"disposable-test-password"})
+        self.auth.start();self.addCleanup(self.auth.stop)
+    def check(self, response, *, http_status=200):
+        class Response:
+            status=http_status
+            def __enter__(self): return self
+            def __exit__(self, *_): return None
+            def read(self, _n): return response.encode("utf-8")
+        with patch.object(m.urllib.request,"urlopen",return_value=Response()) as opener:
+            self.host.sessions_idle()
+            req=opener.call_args.args[0]
+            self.assertEqual(req.full_url,"http://127.0.0.1:49375/api/session/active")
+            self.assertTrue(req.get_header("Authorization").startswith("Basic "))
+    def test_empty_owned_active_set_allows_idle(self):
+        self.check('{"data":{}}')
+    def test_owned_running_drain_blocks_stop(self):
+        with self.assertRaisesRegex(m.Blocked,"foreground execution"):
+            self.check('{"data":{"ses_test":{"type":"running"}}}')
+    def test_no_legacy_spa_or_invalid_shape_can_prove_idle(self):
+        for body in ('<html>SPA</html>','{}','{"data":[]}','{"data":{"ses_test":{"type":"idle"}}}'):
+            with self.subTest(body=body),self.assertRaises(m.Blocked):
+                self.check(body)
+    def test_missing_service_password_fails_closed(self):
+        with patch.dict(os.environ,{"OPENCODE_PASSWORD":""}):
+            with self.assertRaises(m.Blocked): self.host.sessions_idle()
+
+class GateImport(unittest.TestCase):
+    def test_pinned_gate_sibling_dependency_loads_in_clean_coordinator(self):
+        with TemporaryDirectory() as temp:
+            root=Path(temp)
+            dep="gh108_disposable_gate_sibling"
+            (root/(dep+".py")).write_text("TOKEN='ok'\n")
+            (root/"gate.py").write_text("from "+dep+" import TOKEN\n")
+            oldpath=list(sys.path)
+            try:
+                sys.path[:]=[x for x in sys.path if x != str(root)]
+                module=m._load_gate_source(str(root/"gate.py"),"gh108_gate_test")
+                self.assertEqual(module.TOKEN,"ok")
+            finally:
+                sys.path[:]=oldpath
+                sys.modules.pop(dep,None)
+                sys.modules.pop("gh108_gate_test",None)
 
 if __name__=="__main__":unittest.main()

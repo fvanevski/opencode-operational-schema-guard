@@ -113,6 +113,24 @@ def _assert_identities(cfg):
             raise Blocked("source/config identity mismatch: " + path)
 
 
+def _load_gate_source(source, name):
+    """Load the pinned gate with its sibling receipt protocol on the import path.
+
+    This mirrors the existing post-exit wrapper's import rule. Authentication
+    of source identity is performed by the caller before this helper is used.
+    """
+    parent = str(Path(source).resolve(strict=True).parent)
+    if parent not in sys.path:
+        sys.path.insert(0, parent)
+    spec = importlib.util.spec_from_file_location(name, source)
+    if spec is None or spec.loader is None:
+        raise Blocked("gate source unavailable")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
 def _assert_config(cfg):
     required = ("journal", "coordinator_lock", "service_unit", "service_port", "service_url", "ingress_status_url",
                 "status_argv", "drain_argv", "gate_source", "gate_config", "pinned_files")
@@ -176,30 +194,34 @@ class Host:
         if body["blocked"] != expect_fenced or body["active"]!=0:
             raise Blocked("inference ingress not quiescent/fenced")
     def sessions_idle(self):
+        # Stock OpenCode 2.3.0 exposes process-owned foreground drains here,
+        # not on the legacy /session/status route (which serves SPA HTML).
+        # Empty data => no owned active drain. It is not a durable-queue proof;
+        # ingress fencing, the second quiet-grace read and gate/scheduler
+        # checks remain separately mandatory before stopping the backend.
         password = os.environ.get("OPENCODE_PASSWORD", "")
         if not password: raise Blocked("service auth absent; session state unverifiable")
         token = base64.b64encode(("opencode:"+password).encode()).decode()
-        req = urllib.request.Request(self.cfg["service_url"]+"/session/status",
-                                     headers={"Authorization":"Basic "+token})
+        req = urllib.request.Request(self.cfg["service_url"]+"/api/session/active",
+                                     headers={"Authorization":"Basic "+token,
+                                              "Accept":"application/json"})
         try:
             with urllib.request.urlopen(req, timeout=8) as r:
-                if r.status != 200: raise Blocked("native status HTTP non-200")
+                if r.status != 200: raise Blocked("native activity HTTP non-200")
                 body = json.loads(r.read(1024*1024))
         except (OSError, ValueError, TimeoutError) as e:
-            raise Blocked("native status unavailable") from e
-        if not isinstance(body,dict): raise Blocked("native status shape invalid")
-        for state in body.values():
-            if not isinstance(state,dict) or state.get("type") not in ("idle",):
-                raise Blocked("native session not proven idle")
+            raise Blocked("native activity unavailable") from e
+        if not isinstance(body,dict) or not isinstance(body.get("data"),dict):
+            raise Blocked("native activity shape invalid")
+        for session_id,state in body["data"].items():
+            if not isinstance(session_id,str) or not session_id or not isinstance(state,dict) or state.get("type") != "running":
+                raise Blocked("native activity entry invalid")
+        if body["data"]:
+            raise Blocked("native foreground execution still active")
     def gate_idle(self):
         # Same class, state rules and metrics parser as the authenticated
         # existing EX gate/curator. This does NOT acquire/release EX.
-        source = self.cfg["gate_source"]
-        spec = importlib.util.spec_from_file_location("gh108_gate_reader", source)
-        if spec is None or spec.loader is None: raise Blocked("gate source unavailable")
-        module = importlib.util.module_from_spec(spec)
-        sys.modules[spec.name]=module
-        spec.loader.exec_module(module)
+        module = _load_gate_source(self.cfg["gate_source"], "gh108_gate_reader")
         from types import SimpleNamespace
         import sqlite3
         gate_cfg=module.Config.load(self.cfg["gate_config"])
@@ -308,12 +330,7 @@ def bootstrap(cfg):
     target=Path(cfg["journal"])
     if target.exists() or target.is_symlink(): raise Blocked("existing journal: bootstrap forbidden")
     _assert_identities(cfg)
-    source=cfg["gate_source"]
-    spec=importlib.util.spec_from_file_location("gh108_gate_config_init",source)
-    if spec is None or spec.loader is None: raise Blocked("gate source unavailable")
-    mod=importlib.util.module_from_spec(spec)
-    sys.modules[spec.name]=mod
-    spec.loader.exec_module(mod)
+    mod = _load_gate_source(cfg["gate_source"], "gh108_gate_config_init")
     gate=mod.Config.load(cfg["gate_config"])
     lock_path=Path(gate.lock_file)
     if not lock_path.is_file(): raise Blocked("canonical kernel lock unavailable")
