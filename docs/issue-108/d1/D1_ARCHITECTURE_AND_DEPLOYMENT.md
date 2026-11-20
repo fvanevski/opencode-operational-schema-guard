@@ -84,6 +84,14 @@ The second and final permitted manual Codex review of PR #113 (`8ac8ed6277ed1efd
 
 The focused real-loopback Node tests cover both cases and assert the proxy survives, the backend stream/tunnel closes, `active` returns to zero, and subsequent healthy requests still succeed. Reuse D1.5's prior truncated-upstream SSE regression as a complementary directional control. Exact-head host evidence and fresh Central independent review are still required. Both manual Codex requests for PR #113 have been consumed; a new request is not authorized without an explicit user override.
 
+## D1.7 post-curation backend readiness (Phase B deployment correction)
+
+The first real deployment proved two unattended terminal-safe SH→EX→SH curation cycles but exposed a deterministic availability defect after `systemctl --user start`: systemd returned success before OpenCode had bound its private 49375 listener. The immediate `active()+listener_up()` check marked the journal `unsafe` despite the backend becoming healthy seconds later. The local operator reconciled those specific settled cycles to `idle` and deactivated the watcher/timer pending source remediation. This precludes final hands-off service acceptance as originally merged.
+
+The bounded correction **does not invoke another start or loosen admission**: after the canonical terminal-safe curator return and journal `starting`, poll read-only systemd ActiveState/MainPID and TCP readiness on private 49375 for up to **30 seconds**, with ingress still fenced. Admit `idle` only after the service is `active`, has a positive PID, the listener accepts connections, and the existing ingress-fenced check passes. A failed service or timeout remains `unsafe` and requires operator adjudication; never rewrite uncertain remote status, requeue a submission or automatically reopen ingress. The earlier SH/EX, Graphiti and background-job invariants remain unchanged.
+
+Focused regressions prove a delayed listener can settle without an unsafe journal, a never-ready or failed listener cannot authorize reopening, and a failed readiness verification leaves an unsafe journal. Deploy from the exact new merged-main revision through the existing rollback, then re-arm the scheduler only after the installed source and service are independently revalidated. One natural autonomous cycle is required to show hands-off `starting→idle` without manual journal repair; re-use the prior source-qualified dual-memory and callback-performance evidence for unchanged code.
+
 ## Scope fences
 
 No D2 graph repair, old-UUID downgrade/replay, Graphiti restore, historical SQLite repair, curation-bundle quarantine repair, OpenViking commit-gate rewrite, broad plugin upgrade, second memory authority, untrusted client backdoor, or new PR per acceptance test. Treat the 397/397 target-group readback as accepted host evidence and recheck the correct group in final qualification. The parent #105 gate remains independent.

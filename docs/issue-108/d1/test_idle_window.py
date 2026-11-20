@@ -13,7 +13,7 @@ class FakeHost:
     def __init__(self, result=0, work=True, fail=None):
         self.result=result; self.work=work; self.fail=fail
         self.service="active"; self.pid="4321"; self.events=[]
-        self.calls=0
+        self.calls=0;self.listener_checks=0
     def status(self): self.events.append("status"); return self.work
     def active(self): self.events.append("active"); return self.service,self.pid
     def ingress(self, *, expect_fenced):
@@ -39,7 +39,11 @@ class FakeHost:
         self.events.append("start")
         if self.fail=="restart":raise m.Blocked("restart failed")
         self.service="active";self.pid="12345"
-    def listener_up(self):self.events.append("up");return self.service=="active"
+    def listener_up(self):
+        self.listener_checks+=1;self.events.append("up")
+        if self.fail=="delayed_listener" and self.listener_checks<3: return False
+        if self.fail=="never_listener": return False
+        return self.service=="active"
 
 class Safety(unittest.TestCase):
     def setUp(self):
@@ -74,6 +78,37 @@ class Safety(unittest.TestCase):
     def test_safe_local_retry_can_restart(self):
         host=FakeHost(result=4);self.assertEqual(self.run_cycle(host),"safe_local_retry")
         self.assertEqual(self.state(),"idle")
+    def test_delayed_backend_listener_does_not_poison_journal(self):
+        for result,expected in ((0,"completed"),(4,"safe_local_retry")):
+            with self.subTest(result=result):
+                host=FakeHost(result=result,fail="delayed_listener")
+                self.assertEqual(self.run_cycle(host),expected)
+                self.assertEqual(host.listener_checks,3)
+                self.assertEqual(self.state(),"idle")
+                self.assertLess(host.events.index("start"),host.events.index("up"))
+                self.assertEqual(host.events[-1],"ingress_fenced")
+    def test_backend_never_ready_times_out_without_restarting_it(self):
+        host=FakeHost(fail="never_listener")
+        ticks=iter([0.0,0.1,1.0])
+        with self.assertRaisesRegex(m.Blocked,"did not become ready"):
+            m.wait_for_backend_ready(host,timeout_seconds=0.5,
+                                     sleep=lambda _:None,now=lambda:next(ticks))
+        self.assertEqual(host.events.count("start"),0)
+        self.assertEqual(host.listener_checks,2)
+    def test_backend_failed_state_does_not_wait_or_reopen(self):
+        host=FakeHost();host.service="failed";host.pid="0"
+        with self.assertRaisesRegex(m.Blocked,"service failed"):
+            m.wait_for_backend_ready(host,sleep=lambda _:None)
+        self.assertNotIn("up",host.events)
+    def test_post_drain_readiness_failure_retains_unsafe_journal(self):
+        host=FakeHost()
+        with patch.object(m,"wait_for_backend_ready",
+                          side_effect=m.Blocked("backend did not become ready after terminal EX")):
+            with self.assertRaises(m.Blocked):self.run_cycle(host)
+        self.assertEqual(self.state(),"unsafe")
+        self.assertIn("start",host.events)
+        self.assertNotIn("ingress_open",host.events[host.events.index("start"):])
+        with self.assertRaises(m.Blocked):m.check_start(Path(self.cfg["journal"]))
     def test_unknown_remote_result_stays_fenced(self):
         host=FakeHost(result=3)
         with self.assertRaisesRegex(m.Blocked,"not terminal-safe"):self.run_cycle(host)
