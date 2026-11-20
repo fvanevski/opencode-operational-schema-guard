@@ -193,6 +193,7 @@ class Host:
             raise Blocked("ingress fence response invalid")
         if body["blocked"] != expect_fenced or body["active"]!=0:
             raise Blocked("inference ingress not quiescent/fenced")
+        return body["pid"]
     def sessions_idle(self):
         # Stock OpenCode 2.3.0 exposes process-owned foreground drains here,
         # not on the legacy /session/status route (which serves SPA HTML).
@@ -282,6 +283,42 @@ class Host:
         with socket.socket(socket.AF_INET,socket.SOCK_STREAM) as sock:
             sock.settimeout(1)
             return sock.connect_ex(("127.0.0.1",int(self.cfg["service_port"]))) == 0
+
+def front_start_ready(cfg, *, timeout_seconds=8.0, sleep=time.sleep):
+    """Refuse backend startup unless the real managed ingress fence is live.
+
+    Wants/After starts the fence opportunistically, without propagating its
+    subsequent process failure to existing native work. This synchronous
+    ExecStartPre check is the independent, fail-closed startup authority.
+    Give Type=exec proxy a bounded chance to bind after systemd exec.
+    """
+    journal=Path(cfg["journal"])
+    check_start(journal)
+    deadline=time.monotonic()+timeout_seconds
+    last=None
+    while True:
+        # Never carry an earlier positive journal check across a retry.
+        check_start(journal)
+        current=_safe_journal(journal)
+        try:
+            p=_run(["/usr/bin/systemctl","--user","show",
+                    "ghdev-ingress-fence.service",
+                    "--property=ActiveState","--property=MainPID"],timeout=8)
+            if p.returncode:
+                raise Blocked("ingress fence unit state unavailable")
+            fields=dict(s.split("=",1) for s in p.stdout.splitlines() if "=" in s)
+            pid_text=fields.get("MainPID","")
+            if fields.get("ActiveState")!="active" or not pid_text.isdecimal() or int(pid_text)<=0:
+                raise Blocked("ingress fence unit inactive or PID unavailable")
+            observed=Host(cfg).ingress(expect_fenced=current["state"]!="idle")
+            if observed!=int(pid_text):
+                raise Blocked("ingress fence PID differs from managed unit")
+            return True
+        except Blocked as exc:
+            last=exc
+        if time.monotonic()>=deadline:
+            raise Blocked("ingress fence not healthy for backend startup") from last
+        sleep(0.2)
 
 
 def run_cycle(cfg, host: Host, *, sleep=time.sleep):
@@ -377,7 +414,7 @@ def main(argv=None):
         if args.mode=="bootstrap":
             bootstrap(cfg); return 0
         if args.mode=="check-start":
-            check_start(Path(cfg["journal"])); return 0
+            front_start_ready(cfg); return 0
         result=run_cycle(cfg,Host(cfg))
         print("GH108_IDLE_WINDOW="+result,flush=True)
         return 0
