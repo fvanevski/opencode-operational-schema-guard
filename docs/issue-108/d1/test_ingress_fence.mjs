@@ -113,3 +113,89 @@ await test('aborted upstream SSE closes downstream and releases ingress activity
   assert.deepEqual({blocked:(await status(front)).blocked,active:(await status(front)).active},
     {blocked:true,active:0});
 });
+
+
+await test('client SSE disconnect closes upstream backend response', {timeout:7000}, async t=>{
+  const tmp=await fs.mkdtemp(path.join(os.tmpdir(),'gh108-sse-client-close-'));
+  t.after(async()=>fs.rm(tmp,{recursive:true,force:true}));
+  const journal=path.join(tmp,'journal.json');await atomicallyWrite(journal,'idle');
+  const [front,backend]=await Promise.all([port(),port()]);
+  let backendClosed=false;let backendOpened=false;
+  const backendServer=http.createServer((req,res)=>{
+    if(req.url==='/stream'){
+      backendOpened=true;
+      res.once('close',()=>{backendClosed=true});
+      res.writeHead(200,{'Content-Type':'text/event-stream'});
+      res.write('data: connected\n\n');
+    }else res.end('healthy');
+  });
+  backendServer.listen(backend,'127.0.0.1');await once(backendServer,'listening');
+  t.after(async()=>{backendServer.closeAllConnections();await new Promise(resolve=>backendServer.close(resolve))});
+  const child=spawn(process.execPath,[script],{env:{...process.env,
+    GHDEV_WINDOW_JOURNAL:journal,GHDEV_INGRESS_PORT:String(front),
+    GHDEV_BACKEND_PORT:String(backend)},stdio:'ignore'});
+  t.after(async()=>{
+    if(child.exitCode===null && child.signalCode===null){
+      child.kill('SIGTERM');await once(child,'exit').catch(()=>{});
+    }
+  });
+  await until(async()=>(await status(front)).schema==='ghdev-ingress-fence-v1');
+  let gotEvent=false;
+  const client=http.get({hostname:'127.0.0.1',port:front,path:'/stream'},res=>{
+    res.on('error',()=>{});
+    res.once('data',buf=>{
+      gotEvent=buf.toString().includes('connected');
+      res.destroy(); // Drop downstream but leave backend response unfinished
+    });
+  });
+  client.on('error',()=>{});
+  t.after(()=>client.destroy());
+  await until(()=>backendOpened && gotEvent);
+  await until(async()=>(await status(front)).active===0);
+  await until(()=>backendClosed);
+  assert.equal(child.exitCode,null,'fence must remain alive after client disconnect');
+  assert.equal((await request(front,'/probe')).code,200);
+});
+
+await test('upgraded client TCP reset does not terminate ingress fence', {timeout:7000}, async t=>{
+  const tmp=await fs.mkdtemp(path.join(os.tmpdir(),'gh108-upgrade-reset-'));
+  t.after(async()=>fs.rm(tmp,{recursive:true,force:true}));
+  const journal=path.join(tmp,'journal.json');await atomicallyWrite(journal,'idle');
+  const [front,backend]=await Promise.all([port(),port()]);
+  const backendServer=http.createServer((_req,res)=>res.end('healthy'));
+  const openTunnels=new Set();
+  backendServer.on('upgrade',(_req,socket)=>{
+    openTunnels.add(socket);socket.on('error',()=>{});socket.on('close',()=>openTunnels.delete(socket));
+    socket.write('HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nUpgrade: test\r\n\r\n');
+  });
+  backendServer.listen(backend,'127.0.0.1');await once(backendServer,'listening');
+  t.after(async()=>{
+    for(const tunnel of openTunnels)tunnel.destroy();
+    backendServer.closeAllConnections();
+    await new Promise(resolve=>backendServer.close(resolve));
+  });
+  const child=spawn(process.execPath,[script],{env:{...process.env,
+    GHDEV_WINDOW_JOURNAL:journal,GHDEV_INGRESS_PORT:String(front),
+    GHDEV_BACKEND_PORT:String(backend)},stdio:'ignore'});
+  t.after(async()=>{
+    if(child.exitCode===null && child.signalCode===null){
+      child.kill('SIGTERM');await once(child,'exit').catch(()=>{});
+    }
+  });
+  await until(async()=>(await status(front)).schema==='ghdev-ingress-fence-v1');
+  const client=net.connect({host:'127.0.0.1',port:front});
+  client.on('error',()=>{});
+  t.after(()=>client.destroy());
+  let upgraded=false;
+  client.on('data',chunk=>{
+    if(chunk.toString().includes('101 Switching Protocols'))upgraded=true;
+  });
+  await once(client,'connect');
+  client.write('GET /upgrade HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: Upgrade\r\nUpgrade: test\r\n\r\n');
+  await until(()=>upgraded);
+  await until(async()=>(await status(front)).active===1);
+  client.resetAndDestroy(); // RST, not orderly FIN: the reported crash boundary
+  await until(async()=>(await status(front)).active===0);
+  assert.equal(child.exitCode,null,'an upgraded-client RST must not crash the fence');
+  assert.equal((await request(front,'/probe')).code,200);
+});

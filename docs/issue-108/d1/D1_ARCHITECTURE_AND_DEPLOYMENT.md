@@ -74,6 +74,16 @@ The disposable controller and loopback proxy tests do not by themselves qualify 
 
 Late independent Codex review of PR #113 identified an incomplete SSE response after an OpenCode/backend crash: `IncomingMessage.pipe(res)` does not automatically close the client response on upstream abort, potentially leaving the fence `active>0` indefinitely and starving autonomous maintenance. The proxy now explicitly destroys downstream responses on upstream `aborted`, `error` or premature `close` (and on request errors after response headers). The existing downstream `close` handler releases exactly one active admission. The new real loopback regression sends one SSE event then crashes the backend socket; it requires prompt downstream disconnect, active-count release and fail-closed `preparing` behavior. Normal long-lived connected SSE remains intentionally counted and may defer maintenance; it is not forcibly closed for administrative convenience. No Python controller, systemd unit, SH/EX lock, Graphiti or model authority changes.
 
+
+## D1.6 client disconnect and upgraded-socket error recovery
+
+The second and final permitted manual Codex review of PR #113 (`8ac8ed6277ed1efd38fe011df8163475215cd74d`) identified two distinct validated proxy teardown gaps. On an established HTTP/SSE response, a downstream client disconnect released the proxy's `active` count but left the upstream backend subscription running. On a successful WebSocket upgrade, an abrupt downstream TCP RST could emit an unhandled socket `error` and crash the whole proxy. D1.6 addresses both **without** touching the journal, EX/SH locking, coordinator, units, native session handling or memory sources:
+
+- Downstream HTTP response `close` idempotently releases admission and destroys the associated upstream request and response so abandoned SSE subscriptions do not accumulate.
+- Upgraded downstream sockets receive an explicit `error` listener before any fence decision; a reset destroys the socket, which triggers the existing tunnel-close path and upstream cleanup instead of an unhandled process exception.
+
+The focused real-loopback Node tests cover both cases and assert the proxy survives, the backend stream/tunnel closes, `active` returns to zero, and subsequent healthy requests still succeed. Reuse D1.5's prior truncated-upstream SSE regression as a complementary directional control. Exact-head host evidence and fresh Central independent review are still required. Both manual Codex requests for PR #113 have been consumed; a new request is not authorized without an explicit user override.
+
 ## Scope fences
 
 No D2 graph repair, old-UUID downgrade/replay, Graphiti restore, historical SQLite repair, curation-bundle quarantine repair, OpenViking commit-gate rewrite, broad plugin upgrade, second memory authority, untrusted client backdoor, or new PR per acceptance test. Treat the 397/397 target-group readback as accepted host evidence and recheck the correct group in final qualification. The parent #105 gate remains independent.

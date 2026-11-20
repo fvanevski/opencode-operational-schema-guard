@@ -61,9 +61,10 @@ const server = http.createServer((req, res) => {
   active++;
   let completed=false;
   const done=()=>{if (!completed) {completed=true;active--;}};
-  res.once('close', done);
+  let remoteResponse;
   const upstream = http.request({hostname:'127.0.0.1',port:backendPort,
       method:req.method,path:req.url,headers:req.headers,agent:false}, upstreamRes => {
+    remoteResponse = upstreamRes;
     // A backend crash/aborted SSE stream does not automatically end the
     // downstream ServerResponse when IncomingMessage.pipe() is unpiped.
     // Preserve the admission count until the downstream socket is closed,
@@ -80,6 +81,15 @@ const server = http.createServer((req, res) => {
     res.writeHead(upstreamRes.statusCode || 502, upstreamRes.headers);
     upstreamRes.pipe(res);
   });
+  // Client disconnection during a healthy SSE response is independent of an
+  // upstream abort. Destroy both sides of the upstream stream on downstream
+  // close so no orphaned backend subscriptions survive a client disconnect.
+  // This is also invoked on normal completed responses; destroy is idempotent.
+  res.once('close', () => {
+    done();
+    upstream.destroy();
+    remoteResponse?.destroy();
+  });
   upstream.once('error',()=>{
     if (res.destroyed || res.writableEnded) return;
     if (res.headersSent) {res.destroy(); return;}
@@ -90,6 +100,10 @@ const server = http.createServer((req, res) => {
   req.pipe(upstream);
 });
 server.on('upgrade',(req, socket, head)=>{
+  // Node hands an upgraded socket over to the application and may detach its
+  // HTTP error listener. A client TCP reset must close this tunnel, not crash
+  // the entire ingress fence via an unhandled ECONNRESET.
+  socket.on('error',()=>socket.destroy());
   if (blocked().blocked) {forbidden(socket);return;}
   active++;
   let completed=false;
