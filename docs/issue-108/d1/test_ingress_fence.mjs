@@ -73,7 +73,7 @@ await test('aborted upstream SSE closes downstream and releases ingress activity
   const backendServer=http.createServer(async(req,res)=>{
     assert.equal(req.url,'/stream');
     res.writeHead(200,{'Content-Type':'text/event-stream','Cache-Control':'no-cache'});
-    res.write('data: first-event\\n\\n');
+    res.write('data: first-event\n\n');
     upstreamStarted=true;
     await delay(50);
     res.socket?.destroy(); // Real truncated chunked SSE, no terminating frame
