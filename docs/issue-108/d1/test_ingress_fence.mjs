@@ -61,3 +61,55 @@ await test('fences new HTTP ingress before native quiescence while allowing prio
   assert.equal((await request(front,'/missing_journal')).code,503,
     'deleting the journal must never reopen ingress');
 });
+
+
+await test('aborted upstream SSE closes downstream and releases ingress activity', {timeout:5000}, async t=>{
+  const tmp=await fs.mkdtemp(path.join(os.tmpdir(),'gh108-sse-abort-'));
+  t.after(async()=>fs.rm(tmp,{recursive:true,force:true}));
+  const journal=path.join(tmp,'journal.json');
+  await atomicallyWrite(journal,'idle');
+  const [front,backend]=await Promise.all([port(),port()]);
+  let upstreamStarted=false;
+  const backendServer=http.createServer(async(req,res)=>{
+    assert.equal(req.url,'/stream');
+    res.writeHead(200,{'Content-Type':'text/event-stream','Cache-Control':'no-cache'});
+    res.write('data: first-event\\n\\n');
+    upstreamStarted=true;
+    await delay(50);
+    res.socket?.destroy(); // Real truncated chunked SSE, no terminating frame
+  });
+  backendServer.listen(backend,'127.0.0.1');
+  await once(backendServer,'listening');
+  t.after(async()=>{
+    backendServer.closeAllConnections();
+    await new Promise(resolve=>backendServer.close(resolve));
+  });
+  const proxy=spawn(process.execPath,[script],{
+    env:{...process.env,GHDEV_WINDOW_JOURNAL:journal,
+      GHDEV_INGRESS_PORT:String(front),GHDEV_BACKEND_PORT:String(backend)},
+    stdio:'ignore'
+  });
+  t.after(async()=>{
+    if(proxy.exitCode===null && proxy.signalCode===null){
+      proxy.kill('SIGTERM');
+      await once(proxy,'exit').catch(()=>{});
+    }
+  });
+  await until(async()=>(await status(front)).schema==='ghdev-ingress-fence-v1');
+  let gotEvent=false;
+  let downstreamClosed=false;
+  const client=http.get({hostname:'127.0.0.1',port:front,path:'/stream'},resp=>{
+    resp.on('data',chunk=>{if(chunk.toString().includes('first-event'))gotEvent=true;});
+    resp.on('error',()=>{}); // Aborted chunked response emits ECONNRESET
+    resp.on('close',()=>{downstreamClosed=true;});
+  });
+  client.on('error',()=>{});
+  t.after(()=>client.destroy());
+  await until(()=>upstreamStarted && gotEvent);
+  await until(()=>downstreamClosed);
+  await until(async()=>(await status(front)).active===0);
+  // Stale in-flight count must not indefinitely defer the coordinator.
+  await atomicallyWrite(journal,'preparing');
+  assert.deepEqual({blocked:(await status(front)).blocked,active:(await status(front)).active},
+    {blocked:true,active:0});
+});

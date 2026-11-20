@@ -64,13 +64,27 @@ const server = http.createServer((req, res) => {
   res.once('close', done);
   const upstream = http.request({hostname:'127.0.0.1',port:backendPort,
       method:req.method,path:req.url,headers:req.headers,agent:false}, upstreamRes => {
+    // A backend crash/aborted SSE stream does not automatically end the
+    // downstream ServerResponse when IncomingMessage.pipe() is unpiped.
+    // Preserve the admission count until the downstream socket is closed,
+    // then force that closure on incomplete/erroring upstream responses.
+    const abortDownstream = () => {
+      if (!res.destroyed && !res.writableEnded) res.destroy();
+    };
+    upstreamRes.once('aborted', abortDownstream);
+    upstreamRes.once('error', abortDownstream);
+    upstreamRes.once('close', () => {
+      if (!upstreamRes.complete) abortDownstream();
+    });
     if (res.destroyed) {upstreamRes.destroy(); return;}
     res.writeHead(upstreamRes.statusCode || 502, upstreamRes.headers);
     upstreamRes.pipe(res);
   });
   upstream.once('error',()=>{
-    if (!res.headersSent) res.writeHead(502,{'Content-Type':'text/plain'});
-    if (!res.writableEnded) res.end('Backend unavailable\n');
+    if (res.destroyed || res.writableEnded) return;
+    if (res.headersSent) {res.destroy(); return;}
+    res.writeHead(502,{'Content-Type':'text/plain'});
+    res.end('Backend unavailable\n');
   });
   req.once('aborted',()=>upstream.destroy());
   req.pipe(upstream);
