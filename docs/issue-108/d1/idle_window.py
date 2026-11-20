@@ -306,6 +306,29 @@ def wait_for_backend_ready(host, *, timeout_seconds=30.0, poll_seconds=0.25,
         sleep(poll_seconds)
 
 
+def wait_for_post_terminal_idle(host, *, timeout_seconds=600.0,
+                                poll_seconds=2.0, sleep=time.sleep,
+                                now=time.monotonic):
+    """Allow bounded scheduler settling only after a proven terminal-safe drain.
+
+    No additional curator invocation and no EX bypass. Other canonical gate
+    denials (harness, unresolved Graphiti state, malformed/absent metrics)
+    remain immediately fail-closed. The ingress journal stays 'draining'
+    throughout; if the bound expires, caller retains the unsafe fence.
+    """
+    deadline = now() + timeout_seconds
+    while True:
+        try:
+            host.gate_idle()
+            return
+        except Blocked as exc:
+            if str(exc) != "inference scheduler busy":
+                raise
+            if now() >= deadline:
+                raise Blocked("post-terminal inference scheduler busy beyond bounded wait") from exc
+            sleep(poll_seconds)
+
+
 def front_start_ready(cfg, *, timeout_seconds=8.0, sleep=time.sleep):
     """Refuse backend startup unless the real managed ingress fence is live.
 
@@ -380,7 +403,10 @@ def run_cycle(cfg, host: Host, *, sleep=time.sleep):
             result=host.drain()
             if result not in (0,4):
                 raise Blocked("curator not terminal-safe; do not restart server")
-            host.gate_idle()  # canonical remote uncertainty check must be clear
+            # The terminal-safe post-exit wrapper has already returned 0/4 and
+            # released EX. A separate model client may still briefly occupy
+            # the scheduler; wait only for that exact transient condition.
+            wait_for_post_terminal_idle(host, sleep=sleep)
             # EX child returned and released its lock. Keep ingress fenced
             # while the backend restarts, then reopen only after its health.
             _write_journal(journal,"starting",attempt,"EX terminal; backend restart")

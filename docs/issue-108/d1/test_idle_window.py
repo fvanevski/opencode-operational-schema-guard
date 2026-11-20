@@ -13,7 +13,7 @@ class FakeHost:
     def __init__(self, result=0, work=True, fail=None):
         self.result=result; self.work=work; self.fail=fail
         self.service="active"; self.pid="4321"; self.events=[]
-        self.calls=0;self.listener_checks=0
+        self.calls=0;self.listener_checks=0;self.post_drain_gate_checks=0
     def status(self): self.events.append("status"); return self.work
     def active(self): self.events.append("active"); return self.service,self.pid
     def ingress(self, *, expect_fenced):
@@ -26,6 +26,14 @@ class FakeHost:
     def gate_idle(self):
         self.events.append("gate_idle")
         if self.fail=="gate_busy": raise m.Blocked("scheduler busy")
+        if "drain" in self.events:
+            self.post_drain_gate_checks+=1
+            if self.fail=="post_terminal_busy_once" and self.post_drain_gate_checks==1:
+                raise m.Blocked("inference scheduler busy")
+            if self.fail=="post_terminal_busy_forever":
+                raise m.Blocked("inference scheduler busy")
+            if self.fail=="post_terminal_remote_unknown":
+                raise m.Blocked("unresolved Graphiti gate state")
     def stop(self):
         self.events.append("stop")
         if self.fail=="stop": raise m.Blocked("systemd stop failed")
@@ -78,6 +86,43 @@ class Safety(unittest.TestCase):
     def test_safe_local_retry_can_restart(self):
         host=FakeHost(result=4);self.assertEqual(self.run_cycle(host),"safe_local_retry")
         self.assertEqual(self.state(),"idle")
+    def test_post_terminal_scheduler_busy_recovers_without_repeat_drain(self):
+        host=FakeHost(result=4,fail="post_terminal_busy_once")
+        self.assertEqual(self.run_cycle(host),"safe_local_retry")
+        self.assertEqual(self.state(),"idle")
+        self.assertEqual(host.events.count("drain"),1)
+        self.assertEqual(host.post_drain_gate_checks,2)
+        self.assertEqual(host.events.count("start"),1)
+        self.assertLess(host.events.index("drain"),host.events.index("start"))
+
+    def test_post_terminal_non_scheduler_denial_stays_unsafe(self):
+        host=FakeHost(result=4,fail="post_terminal_remote_unknown")
+        with self.assertRaisesRegex(m.Blocked,"unresolved Graphiti gate state"):
+            self.run_cycle(host)
+        self.assertEqual(host.post_drain_gate_checks,1)
+        self.assertEqual(host.events.count("drain"),1)
+        self.assertNotIn("start",host.events)
+        self.assertEqual(self.state(),"unsafe")
+        with self.assertRaises(m.Blocked):m.check_start(Path(self.cfg["journal"]))
+
+    def test_post_terminal_scheduler_timeout_stays_unsafe(self):
+        host=FakeHost(result=4,fail="post_terminal_busy_forever")
+        with patch.object(m,"wait_for_post_terminal_idle",
+                          side_effect=m.Blocked("post-terminal inference scheduler busy beyond bounded wait")):
+            with self.assertRaises(m.Blocked):self.run_cycle(host)
+        self.assertEqual(self.state(),"unsafe")
+        self.assertNotIn("start",host.events)
+        self.assertEqual(host.events.count("drain"),1)
+
+    def test_post_terminal_wait_is_bounded_and_no_other_admission_retries(self):
+        host=FakeHost(fail="post_terminal_busy_forever")
+        host.events.append("drain")
+        ticks=iter([0.0,0.1,1.0])
+        with self.assertRaisesRegex(m.Blocked,"beyond bounded wait"):
+            m.wait_for_post_terminal_idle(host,timeout_seconds=0.5,
+                                          sleep=lambda _:None,now=lambda:next(ticks))
+        self.assertEqual(host.post_drain_gate_checks,2)
+
     def test_delayed_backend_listener_does_not_poison_journal(self):
         for result,expected in ((0,"completed"),(4,"safe_local_retry")):
             with self.subTest(result=result):
