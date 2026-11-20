@@ -45,19 +45,22 @@ class Safety(unittest.TestCase):
         trusted=root/"source";trusted.write_text("source",encoding="utf-8")
         self.cfg={"journal":str(root/"journal.json"),"coordinator_lock":str(root/"lock"),
                   "pinned_files":{str(trusted):m._sha256(str(trusted))},"quiet_seconds":0}
-    def run_cycle(self,host): return m.run_cycle(self.cfg,host,sleep=lambda _:None)
+    def run_cycle(self,host):
+        if not Path(self.cfg["journal"]).exists():
+            m._write_journal(Path(self.cfg["journal"]),"idle","test-bootstrap","fixture initial state")
+        return m.run_cycle(self.cfg,host,sleep=lambda _:None)
     def state(self):
         item=m._safe_journal(Path(self.cfg["journal"]))
         return item["state"] if item else None
     def test_no_work_never_stops(self):
         host=FakeHost(work=False);self.assertEqual(self.run_cycle(host),"no_work")
-        self.assertNotIn("stop",host.events);self.assertIn(self.state(),(None,"idle"))
+        self.assertNotIn("stop",host.events);self.assertEqual(self.state(),"idle")
     def test_busy_never_stops_or_fences(self):
         for how in ("busy","second_busy","gate_busy","ingress_busy"):
             with self.subTest(how=how):
                 host=FakeHost(fail=how)
                 with self.assertRaises(m.Blocked):self.run_cycle(host)
-                self.assertNotIn("stop",host.events);self.assertIn(self.state(),(None,"idle"))
+                self.assertNotIn("stop",host.events);self.assertEqual(self.state(),"idle")
     def test_clean_drain_server_restored_only_after_terminal(self):
         host=FakeHost();self.assertEqual(self.run_cycle(host),"completed")
         self.assertEqual(self.state(),"idle")
@@ -90,9 +93,30 @@ class Safety(unittest.TestCase):
         host=FakeHost()
         with self.assertRaises(m.Blocked):self.run_cycle(host)
         self.assertNotIn("stop",host.events)
+    def test_missing_journal_denies_start(self):
+        with self.assertRaises(m.Blocked):m.check_start(Path(self.cfg["journal"]))
     def test_corrupt_journal_denies_start(self):
         p=Path(self.cfg["journal"]);p.write_text('{broken')
         with self.assertRaises(Exception):m.check_start(p)
+    def test_bootstrap_rejects_existing_and_ex_lock(self):
+        import fcntl,os
+        root=Path(self.temp.name)
+        kernel_lock=root/"kernel.lock";kernel_lock.touch(mode=0o600)
+        gate=root/"gate.py"
+        gate.write_text("from types import SimpleNamespace\nclass Config:\n    @staticmethod\n    def load(path): return SimpleNamespace(lock_file="+repr(str(kernel_lock))+")\n")
+        self.cfg["gate_source"]=str(gate)
+        self.cfg["gate_config"]=str(root/"config")
+        self.cfg["pinned_files"][str(gate)]=m._sha256(str(gate))
+        fd=os.open(kernel_lock,os.O_RDWR)
+        try:
+            fcntl.flock(fd,fcntl.LOCK_EX|fcntl.LOCK_NB)
+            with self.assertRaises(m.Blocked):m.bootstrap(self.cfg)
+            self.assertIsNone(self.state())
+            fcntl.flock(fd,fcntl.LOCK_UN)
+            self.assertTrue(m.bootstrap(self.cfg))
+            self.assertEqual(self.state(),"idle")
+            with self.assertRaises(m.Blocked):m.bootstrap(self.cfg)
+        finally:os.close(fd)
     def test_unsafe_restart_denial(self):
         p=Path(self.cfg["journal"])
         m._write_journal(p,"draining","dead", "interrupted")

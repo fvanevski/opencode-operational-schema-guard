@@ -57,4 +57,7 @@ await test('fences new HTTP ingress before native quiescence while allowing prio
   // Malformed journal is closed, not a permission to reopen.
   await fs.writeFile(journal,'{bad',{mode:0o600});
   assert.equal((await request(front,'/bad_journal')).code,503);
+  await fs.rm(journal);
+  assert.equal((await request(front,'/missing_journal')).code,503,
+    'deleting the journal must never reopen ingress');
 });

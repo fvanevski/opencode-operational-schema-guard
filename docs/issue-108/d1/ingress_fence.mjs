@@ -34,7 +34,7 @@ const blocked = () => {
     if (value?.schema !== schema || value?.state !== 'idle') return {blocked:true, reason:'maintenance'};
     return {blocked:false, reason:'idle'};
   } catch (err) {
-    if (err?.code === 'ENOENT') return {blocked:false, reason:'uninitialized'};
+    if (err?.code === 'ENOENT') return {blocked:true, reason:'missing_journal'};
     return {blocked:true, reason:'journal_unreadable'};
   }
 };

@@ -61,8 +61,8 @@ def _safe_journal(path: Path):
 
 def check_start(path: Path):
     journal = _safe_journal(path)
-    if journal is not None and journal["state"] not in ("idle", "starting"):
-        raise Blocked("maintenance fence active: service start denied")
+    if journal is None or journal["state"] not in ("idle", "starting"):
+        raise Blocked("maintenance journal absent/active: service start denied")
     return True
 
 
@@ -299,13 +299,43 @@ def run_cycle(cfg, host: Host, *, sleep=time.sleep):
             raise
 
 
+def bootstrap(cfg):
+    """One-time initialization with a real canonical SH lock, never under EX.
+
+    Requires operator preflight of the original listening service and source
+    identities. No missing/corrupted journal can be silently reinitialized.
+    """
+    target=Path(cfg["journal"])
+    if target.exists() or target.is_symlink(): raise Blocked("existing journal: bootstrap forbidden")
+    _assert_identities(cfg)
+    source=cfg["gate_source"]
+    spec=importlib.util.spec_from_file_location("gh108_gate_config_init",source)
+    if spec is None or spec.loader is None: raise Blocked("gate source unavailable")
+    mod=importlib.util.module_from_spec(spec)
+    sys.modules[spec.name]=mod
+    spec.loader.exec_module(mod)
+    gate=mod.Config.load(cfg["gate_config"])
+    lock_path=Path(gate.lock_file)
+    if not lock_path.is_file(): raise Blocked("canonical kernel lock unavailable")
+    with lock_path.open("a+") as handle:
+        try: fcntl.flock(handle,fcntl.LOCK_SH|fcntl.LOCK_NB)
+        except BlockingIOError as exc: raise Blocked("EX admission active: cannot bootstrap") from exc
+        # A parent/agent operator must have independently proved that this is
+        # an initial migration while the original SH-gated server is healthy.
+        _write_journal(target,"idle","bootstrap-"+uuid.uuid4().hex,
+                       "initial source-authenticated SH-admitted install")
+    return True
+
+
 def main(argv=None):
     p=argparse.ArgumentParser()
-    p.add_argument("mode",choices=("run","check-start"))
+    p.add_argument("mode",choices=("run","check-start","bootstrap"))
     p.add_argument("--config",required=True)
     args=p.parse_args(argv)
     try:
         cfg=_read_config(Path(args.config)); _assert_config(cfg)
+        if args.mode=="bootstrap":
+            bootstrap(cfg); return 0
         if args.mode=="check-start":
             check_start(Path(cfg["journal"])); return 0
         result=run_cycle(cfg,Host(cfg))

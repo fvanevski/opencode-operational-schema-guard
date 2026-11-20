@@ -21,7 +21,7 @@ Reconcile any changed host source identity, missing writable unit property, or n
 
 ## B. Deterministic and disposable integration (required)
 
-Run Central's `idle_window.py` Python tests and `ingress_fence.mjs` Node loopback tests, syntax checks, and focused manual negative probes in isolated scratch. The tests must preserve: journal fail-closed and crash restart, HTTP request admitted before fence is honored until response exit, new request/upgrade denied while fenced, safe un-fence only after canonical curator terminal result, no stop while native/Graphiti/scheduler activity is detectable, no ambiguous remote replay, and service restart denied during an uncertain EX window.
+Run Central's `idle_window.py` Python tests and `ingress_fence.mjs` Node loopback tests, syntax checks, and focused manual negative probes in isolated scratch. Include the one-time bootstrap lock test and verify that deleting the journal denies both new ingress and backend start. The tests must preserve: journal fail-closed and crash restart, HTTP request admitted before fence is honored until response exit, new request/upgrade denied while fenced, safe un-fence only after canonical curator terminal result, no stop while native/Graphiti/scheduler activity is detectable, no ambiguous remote replay, and service restart denied during an uncertain EX window.
 
 Run a **disposable** OpenCode server (different ports and isolated HOME/XDG storage, no live plugins or production credentials) through a disposable ingress fence if its launch contracts support it; check the actual `/session/status`, streaming/SSE, request auth and native client attachment. Do not use this as evidence that production graph/model behavior executed.
 
@@ -31,7 +31,7 @@ The configured candidate uses a private backend at 49375 and the existing client
 
 **Default: readiness only.** Preserve the current healthy production service/EX/Graphiti/OV and do not install live units, change listening ports or run production curator in this branch-validation phase. If a previous explicit Central approval has already authorized the exact reviewed/merged candidate to be promoted, apply the controlled cutover described in the architecture document. Do not treat a draft PR as deployment authorization.
 
-For the later authorized cutover, preserve exact unit/source rollback, stop only a proven-idle existing service, install the two controller files, owner-only config and systemd user-unit/drop-in/timer, activate gateway then backend, verify authentic native client/guard/lease, **then** rearm `ghdev-curator-prod.path` and `.timer`. Do not activate watcher before the ingress fence and backend are qualified.
+For the later authorized cutover, preserve exact unit/source rollback, bootstrap the owner-only journal only under the original authenticated canonical SH lock, stop only a proven-idle existing service, install the two controller files, owner-only config and systemd user-unit/drop-in/timer, activate gateway then backend, verify authentic native client/guard/lease, **then** rearm `ghdev-curator-prod.path` and `.timer`. Do not activate watcher before the ingress fence and backend are qualified.
 
 A natural post-exit test must cover a genuine queued source or a valid SKIP/DEFER and no unresolved submission, plus one concurrently arriving request receiving a bounded 503 and succeeding on retry after EX. If EX uncertainty or a journal `unsafe` state appears, do not force service restart or reset the journal; preserve evidence and stop that unsafe branch.
 
